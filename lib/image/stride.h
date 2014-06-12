@@ -99,20 +99,21 @@ namespace MR
       //! \cond skip
       namespace
       {
-        template <class Set> class Compare
-        {
-          public:
-            Compare (const Set& set) : S (set) { }
-            bool operator() (const size_t a, const size_t b) const {
-              if (S.stride(a) == 0)
-                return false;
-              if (S.stride(b) == 0)
-                return true;
-              return abs (S.stride (a)) < abs (S.stride (b));
-            }
-          private:
-            const Set& S;
-        };
+        template <class InfoType> 
+          class Compare
+          {
+            public:
+              Compare (const InfoType& info) : S (info) { }
+              bool operator() (const size_t a, const size_t b) const {
+                if (S.stride(a) == 0)
+                  return false;
+                if (S.stride(b) == 0)
+                  return true;
+                return abs (S.stride (a)) < abs (S.stride (b));
+              }
+            private:
+              const InfoType& S;
+          };
 
         class Wrapper
         {
@@ -131,17 +132,18 @@ namespace MR
             List& S;
         };
 
-        template <class Set> class WrapperSet : public Wrapper
+        template <class InfoType> 
+          class WrapperSet : public Wrapper
         {
           public:
-            WrapperSet (List& strides, const Set& set) : Wrapper (strides), D (set) {
+            WrapperSet (List& strides, const InfoType& info) : Wrapper (strides), D (info) {
               assert (ndim() == D.ndim());
             }
             ssize_t dim (size_t axis) const {
               return D.dim (axis);
             }
           private:
-            const Set& D;
+            const InfoType& D;
         };
       }
       //! \endcond
@@ -149,228 +151,233 @@ namespace MR
 
 
 
-      //! return the strides of \a set as a std::vector<ssize_t>
-      template <class Set> List get (const Set& set)
-      {
-        List ret (set.ndim());
-        for (size_t i = 0; i < set.ndim(); ++i)
-          ret[i] = set.stride (i);
-        return ret;
-      }
+      //! return the strides of \a info as a std::vector<ssize_t>
+      template <class InfoType> 
+        List get (const InfoType& info)
+        {
+          List ret (info.ndim());
+          for (size_t i = 0; i < info.ndim(); ++i)
+            ret[i] = info.stride (i);
+          return ret;
+        }
 
-      //! set the strides of \a set from a std::vector<ssize_t>
-      template <class Set> void set (Set& ds, const List& stride)
-      {
-        for (size_t i = 0; i < ds.ndim(); ++i)
-          ds.stride (i) = stride[i];
-      }
+      //! set the strides of \a info from a std::vector<ssize_t>
+      template <class InfoType>
+        void set (InfoType& info, const List& stride)
+        {
+          for (size_t i = 0; i < info.ndim(); ++i)
+            info.stride (i) = stride[i];
+        }
 
 
 
-
-      //! sort axes with respect to their absolute stride.
-      /*! \return a vector of indices of the axes in order of increasing
-       * absolute stride.
-       * \note all strides should be valid (i.e. non-zero). */
-      template <class Set> std::vector<size_t> order (const Set& set)
-      {
-        std::vector<size_t> ret (set.ndim());
-        for (size_t i = 0; i < ret.size(); ++i) ret[i] = i;
-        Compare<Set> compare (set);
-        std::sort (ret.begin(), ret.end(), compare);
-        return ret;
-      }
-
-      //! sort axes with respect to their absolute stride.
-      /*! \return a vector of indices of the axes in order of increasing
-       * absolute stride.
-       * \note all strides should be valid (i.e. non-zero). */
-      template <> inline std::vector<size_t> order<List> (const List& strides)
-      {
-        const Wrapper wrapper (const_cast<List&> (strides));
-        return order (wrapper);
-      }
 
       //! sort range of axes with respect to their absolute stride.
       /*! \return a vector of indices of the axes in order of increasing
        * absolute stride.
        * \note all strides should be valid (i.e. non-zero). */
-      template <class Set> std::vector<size_t> order (const Set& set, size_t from_axis, size_t to_axis)
-      {
-        to_axis = std::min (to_axis, set.ndim());
-        assert (to_axis > from_axis);
-        std::vector<size_t> ret (to_axis-from_axis);
-        for (size_t i = 0; i < ret.size(); ++i) ret[i] = from_axis+i;
-        Compare<Set> compare (set);
-        std::sort (ret.begin(), ret.end(), compare);
-        return ret;
-      }
+      template <class InfoType> 
+        std::vector<size_t> order (const InfoType& info, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+        {
+          to_axis = std::min (to_axis, info.ndim());
+          assert (to_axis > from_axis);
+          std::vector<size_t> ret (to_axis-from_axis);
+          for (size_t i = 0; i < ret.size(); ++i) 
+            ret[i] = from_axis+i;
+          Compare<InfoType> compare (info);
+          std::sort (ret.begin(), ret.end(), compare);
+          return ret;
+        }
+
+      //! sort axes with respect to their absolute stride.
+      /*! \return a vector of indices of the axes in order of increasing
+       * absolute stride.
+       * \note all strides should be valid (i.e. non-zero). */
+      template <> inline 
+        std::vector<size_t> order<List> (const List& strides, size_t from_axis, size_t to_axis)
+        {
+          const Wrapper wrapper (const_cast<List&> (strides));
+          return order (wrapper, from_axis, to_axis);
+        }
 
 
 
 
       //! remove duplicate and invalid strides.
-      /*! sanitise the strides of DataSet \a set by identifying invalid (i.e.
+      /*! sanitise the strides of DataSet \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
        * suitable value. The value chosen for each sanitised stride is the
        * lowest number greater than any of the currently valid strides. */
-      template <class Set> void sanitise (Set& set)
-      {
-        for (size_t i = 0; i < set.ndim()-1; ++i) {
-          if (!set.stride (i)) continue;
-          for (size_t j = i+1; j < set.ndim(); ++j) {
-            if (!set.stride (j)) continue;
-            if (abs (set.stride (i)) == abs (set.stride (j))) set.stride (j) = 0;
+      template <class InfoType> 
+        void sanitise (InfoType& info)
+        {
+          for (size_t i = 0; i < info.ndim()-1; ++i) {
+            if (!info.stride (i)) continue;
+            for (size_t j = i+1; j < info.ndim(); ++j) {
+              if (!info.stride (j)) continue;
+              if (abs (info.stride (i)) == abs (info.stride (j))) info.stride (j) = 0;
+            }
+          }
+
+          size_t max = 0;
+          for (size_t i = 0; i < info.ndim(); ++i)
+            if (size_t (abs (info.stride (i))) > max)
+              max = abs (info.stride (i));
+
+          for (size_t i = 0; i < info.ndim(); ++i) {
+            if (info.stride (i)) continue;
+            info.stride (i) = ++max;
           }
         }
-
-        size_t max = 0;
-        for (size_t i = 0; i < set.ndim(); ++i)
-          if (size_t (abs (set.stride (i))) > max)
-            max = abs (set.stride (i));
-
-        for (size_t i = 0; i < set.ndim(); ++i) {
-          if (set.stride (i)) continue;
-          set.stride (i) = ++max;
-        }
-      }
       //! remove duplicate and invalid strides.
-      /*! sanitise the strides of DataSet \a set by identifying invalid (i.e.
+      /*! sanitise the strides of DataSet \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
        * suitable value. The value chosen for each sanitised stride is the
        * lowest number greater than any of the currently valid strides. */
-      template <> inline void sanitise<List> (List& strides)
-      {
-        Wrapper wrapper (strides);
-        sanitise (wrapper);
-      }
+      template <> 
+        inline void sanitise<List> (List& strides)
+        {
+          Wrapper wrapper (strides);
+          sanitise (wrapper);
+        }
 
 
 
 
       //! convert strides from symbolic to actual strides
-      template <class Set> void actualise (Set& set)
-      {
-        sanitise (set);
-        std::vector<size_t> x (order (set));
-        ssize_t skip = 1;
-        for (size_t i = 0; i < set.ndim(); ++i) {
-          set.stride (x[i]) = set.stride (x[i]) > 0 ? skip : -skip;
-          skip *= set.dim (x[i]);
+      template <class InfoType> 
+        void actualise (InfoType& info)
+        {
+          sanitise (info);
+          std::vector<size_t> x (order (info));
+          ssize_t skip = 1;
+          for (size_t i = 0; i < info.ndim(); ++i) {
+            info.stride (x[i]) = info.stride (x[i]) > 0 ? skip : -skip;
+            skip *= info.dim (x[i]);
+          }
         }
-      }
       //! convert strides from symbolic to actual strides
       /*! convert strides from symbolic to actual strides, assuming the strides
-       * in \a strides and DataSet dimensions of \a set. */
-      template <class Set> inline void actualise (List& strides, const Set& set)
-      {
-        WrapperSet<Set> wrapper (strides, set);
-        actualise (wrapper);
-      }
+       * in \a strides and DataSet dimensions of \a info. */
+      template <class InfoType> 
+        inline void actualise (List& strides, const InfoType& info)
+        {
+          WrapperSet<InfoType> wrapper (strides, info);
+          actualise (wrapper);
+        }
 
       //! get actual strides:
-      template <class Set> inline List get_actual (Set& set)
-      {
-        List strides (get (set));
-        actualise (strides, set);
-        return strides;
-      }
+      template <class InfoType> 
+        inline List get_actual (InfoType& info)
+        {
+          List strides (get (info));
+          actualise (strides, info);
+          return strides;
+        }
 
       //! get actual strides:
-      template <class Set> inline List get_actual (const List& strides, const Set& set)
-      {
-        List out (strides);
-        actualise (out, set);
-        return out;
-      }
+      template <class InfoType> 
+        inline List get_actual (const List& strides, const InfoType& info)
+        {
+          List out (strides);
+          actualise (out, info);
+          return out;
+        }
 
 
 
       //! convert strides from actual to symbolic strides
-      template <class Set> void symbolise (Set& set)
-      {
-        std::vector<size_t> p (order (set));
-        for (ssize_t i = 0; i < ssize_t (p.size()); ++i)
-          if (set.stride (p[i]) != 0)
-            set.stride (p[i]) = set.stride (p[i]) > 0 ? i+1 : - (i+1);
-      }
+      template <class InfoType> 
+        void symbolise (InfoType& info)
+        {
+          std::vector<size_t> p (order (info));
+          for (ssize_t i = 0; i < ssize_t (p.size()); ++i)
+            if (info.stride (p[i]) != 0)
+              info.stride (p[i]) = info.stride (p[i]) > 0 ? i+1 : - (i+1);
+        }
       //! convert strides from actual to symbolic strides
-      template <> inline void symbolise<List> (List& strides)
-      {
-        Wrapper wrapper (strides);
-        symbolise (wrapper);
-      }
+      template <> 
+        inline void symbolise<List> (List& strides)
+        {
+          Wrapper wrapper (strides);
+          symbolise (wrapper);
+        }
 
       //! get symbolic strides:
-      template <class Set> inline List get_symbolic (const Set& set)
-      {
-        List strides (get (set));
-        symbolise (strides);
-        return strides;
-      }
+      template <class InfoType> 
+        inline List get_symbolic (const InfoType& info)
+        {
+          List strides (get (info));
+          symbolise (strides);
+          return strides;
+        }
 
       //! get symbolic strides:
-      template <> inline List get_symbolic (const List& list)
-      {
-        List strides (list);
-        symbolise (strides);
-        return strides;
-      }
+      template <> 
+        inline List get_symbolic (const List& list)
+        {
+          List strides (list);
+          symbolise (strides);
+          return strides;
+        }
 
 
       //! calculate offset to start of data
       /*! this function caculate the offset (in number of voxels) from the start of the data region
        * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]). */
-      template <class Set> size_t offset (const Set& set)
-      {
-        size_t offset = 0;
-        for (size_t i = 0; i < set.ndim(); ++i)
-          if (set.stride (i) < 0)
-            offset += size_t (-set.stride (i)) * (set.dim (i) - 1);
-        return offset;
-      }
+      template <class InfoType> 
+        size_t offset (const InfoType& info)
+        {
+          size_t offset = 0;
+          for (size_t i = 0; i < info.ndim(); ++i)
+            if (info.stride (i) < 0)
+              offset += size_t (-info.stride (i)) * (info.dim (i) - 1);
+          return offset;
+        }
 
       //! calculate offset to start of data
       /*! this function caculate the offset (in number of voxels) from the start of the data region
        * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
-       * strides in \a strides and DataSet dimensions of \a set. */
-      template <class Set> size_t offset (List& strides, const Set& set)
-      {
-        WrapperSet<Set> wrapper (strides, set);
-        return offset (wrapper);
-      }
+       * strides in \a strides and DataSet dimensions of \a info. */
+      template <class InfoType> 
+        size_t offset (List& strides, const InfoType& info)
+        {
+          WrapperSet<InfoType> wrapper (strides, info);
+          return offset (wrapper);
+        }
 
 
 
-      //! produce strides from \c set that match those specified in \c desired
+      //! produce strides from \c info that match those specified in \c desired
       /*! The strides in \c desired should be specified as symbolic strides,
        * and any zero strides will be ignored and replaced with sensible values
        * if needed.  Essentially, this function checks whether the symbolic
-       * strides in \c set already match those specified in \c desired. If so,
+       * strides in \c info already match those specified in \c desired. If so,
        * these will be used as-is, otherwise a new set of strides based on \c
        * desired will be produced. */
-      template <class Set> List get_nearest_match (const Set& set, const List& desired)
-      {
-        List in (get_symbolic (set)), out (desired);
-        out.resize (in.size(), 0);
+      template <class InfoType> 
+        List get_nearest_match (const InfoType& info, const List& desired)
+        {
+          List in (get_symbolic (info)), out (desired);
+          out.resize (in.size(), 0);
 
-        bool strides_match = true;
-        for (size_t i = 0; i < out.size(); ++i) {
-          if (out[i]) {
-            if (Math::abs (out[i]) != Math::abs (in[i])) {
-              strides_match = false;
-              break;
+          bool strides_match = true;
+          for (size_t i = 0; i < out.size(); ++i) {
+            if (out[i]) {
+              if (Math::abs (out[i]) != Math::abs (in[i])) {
+                strides_match = false;
+                break;
+              }
             }
           }
+
+          if (strides_match)
+            out = in;
+
+          sanitise (out);
+
+          return out;
         }
-
-        if (strides_match)
-          out = in;
-
-        sanitise (out);
-
-        return out;
-      }
 
 
 
