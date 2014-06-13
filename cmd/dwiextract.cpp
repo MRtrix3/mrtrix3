@@ -59,7 +59,7 @@ void run() {
   Image::BufferPreload<float> data_in (argument[0], strides);
   Image::BufferPreload<float>::voxel_type voxel_in (data_in);
 
-  Math::Matrix<value_type> grad (DWI::get_DW_scheme<float> (data_in));
+  Math::Matrix<value_type> grad (DWI::get_valid_DW_scheme<float> (data_in));
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
