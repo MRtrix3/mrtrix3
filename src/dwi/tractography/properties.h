@@ -72,7 +72,7 @@ namespace MR
         Properties::const_iterator stamb_b = b.find ("timestamp");
         if (stamp_a == a.end() || stamb_b == b.end())
           throw Exception ("unable to verify " + type + " pair: missing timestamp");
-        if (a->second != b->second)
+        if (stamp_a->second != stamb_b->second)
           throw Exception ("invalid " + type + " combination - timestamps do not match");
       }
 
