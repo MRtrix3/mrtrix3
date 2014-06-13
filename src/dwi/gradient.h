@@ -148,17 +148,13 @@ namespace MR
     //! get the DW gradient encoding matrix
     /*! attempts to find the DW gradient encoding matrix, using the following
      * procedure: 
-     * - if the -grad option has been supplied, then:
-     *   - if the file supplied the -grad option ends with 'bvals' or 'bvecs',
-     *   then load and rectify the bvecs/bvals pair using load_bvecs_bvals()
-     *   and return it; 
-     *   - otherwise load the matrix assuming it is in MRtrix
-     *   format, and return it;
+     * - if the -grad option has been supplied, then load the matrix assuming
+     *     it is in MRtrix format, and return it;
+     * - if the -fslgrad option has been supplied, then load and rectify the
+     *     bvecs/bvals pair using load_bvecs_bvals() and return it;
      * - if the DW_scheme member of the header is non-empty, return it;
-     * - otherwise, if a bvecs/bvals pair can be found in the same folder as
-     * the image, named either 'bvecs' & 'bvals', or with the same prefix as
-     * the image and the '_bvecs' & '_bvals' extension, then load and rectify
-     * that and return it.  */
+     * - if no source of gradient encoding is found, return an empty matrix.
+     */
     template <typename ValueType> 
       Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header)
       {
@@ -167,18 +163,25 @@ namespace MR
         Math::Matrix<ValueType> grad;
 
         try {
-          Options opt = get_options ("grad");
-          if (opt.size()) 
-            grad.load (opt[0][0]);
-          else if ((opt = get_options ("fslgrad")).size())
-            load_bvecs_bvals (grad, header, opt[0][0], opt[0][1]);
-          else if (header.DW_scheme().is_set()) 
+          const Options opt_mrtrix = get_options ("grad");
+          if (opt_mrtrix.size())
+            grad.load (opt_mrtrix[0][0]);
+          const Options opt_fsl = get_options ("fslgrad");
+          if (opt_fsl.size()) {
+            if (opt_mrtrix.size())
+              throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
+            load_bvecs_bvals (grad, header, opt_fsl[0][0], opt_fsl[0][1]);
+          }
+          if (!opt_mrtrix.size() && !opt_fsl.size() && header.DW_scheme().is_set())
             grad = header.DW_scheme();
         }
         catch (Exception& E) {
           E.display (3);
-          throw Exception ("no diffusion encoding found in image \"" + header.name() + "\" or corresponding directory");
+          throw Exception ("error importing diffusion encoding for image \"" + header.name() + "\"");
         }
+
+        if (!grad.rows())
+          return grad;
 
         if (grad.columns() != 4 || grad.rows() < 7)
           throw Exception ("unexpected diffusion encoding matrix dimensions");
@@ -193,6 +196,9 @@ namespace MR
     template <typename ValueType> 
       inline void check_DW_scheme (const Image::Header& header, const Math::Matrix<ValueType>& grad)
       {
+        if (!grad.rows())
+          throw Exception ("no valid diffusion encoding scheme found");
+
         if (header.ndim() != 4)
           throw Exception ("dwi image should contain 4 dimensions");
 
