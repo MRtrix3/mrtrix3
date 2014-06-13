@@ -26,7 +26,6 @@
 #include <map>
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
-#include "timer.h"
 
 
 namespace MR
@@ -40,24 +39,15 @@ namespace MR
       class Properties : public std::map<std::string, std::string> {
         public:
 
-          Properties () : timestamp_precision (20) {
-            set_timestamp();
-          }
+          Properties () { }
 
           ROISet include, exclude, mask;
           Seeding::List seeds;
           std::vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
-          mutable double timestamp;
-          const size_t timestamp_precision;
-
-
-          void set_timestamp() const { timestamp = Timer::current_time(); }
-
 
           void  clear () { 
-            timestamp = 0.0;
             std::map<std::string, std::string>::clear(); 
             seeds.clear();
             include.clear();
@@ -88,7 +78,6 @@ namespace MR
         stream << "comments: ";
         for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
-        stream << "timestamp: " << P.timestamp;
         return (stream);
       }
 

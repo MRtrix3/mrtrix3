@@ -63,7 +63,11 @@ namespace MR
        * */
       void validate_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
-        if (p_tsf.timestamp != p_tck.timestamp)
+        Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
+        Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
+        if (tck_stamp == p_tck.end() || tsf_stamp == p_tsf.end())
+          throw Exception ("unable to verify .tck / .tsf pair: missing timestamp");
+        if (tck_stamp->second != tsf_stamp->second)
           throw Exception ("input scalar file does not correspond to the input track file");
         Properties::const_iterator count_tck = p_tck.find ("count");
         Properties::const_iterator count_tsf = p_tsf.find ("count");
@@ -75,7 +79,11 @@ namespace MR
 
       void check_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
-        if (p_tsf.timestamp != p_tck.timestamp)
+        Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
+        Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
+        if (tck_stamp == p_tck.end() || tsf_stamp == p_tsf.end())
+          throw Exception ("unable to verify .tck / .tsf pair: missing timestamp");
+        if (tck_stamp->second != tsf_stamp->second)
           throw Exception ("input scalar file does not correspond to the input track file");
         Properties::const_iterator count_tck = p_tck.find ("count");
         Properties::const_iterator count_tsf = p_tsf.find ("count");
@@ -88,7 +96,11 @@ namespace MR
 
       void validate_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
-        if (p_one.timestamp != p_two.timestamp)
+        Properties::const_iterator one_stamp = p_one.find ("timestamp");
+        Properties::const_iterator two_stamp = p_two.find ("timestamp");
+        if (one_stamp == p_one.end() || two_stamp == p_two.end())
+          throw Exception ("unable to verify .tsf pair: missing timestamp");
+        if (one_stamp->second != two_stamp->second)
           throw Exception ("input scalar files do not correspond to the same track file");
         Properties::const_iterator count_one = p_one.find ("count");
         Properties::const_iterator count_two = p_two.find ("count");
@@ -100,7 +112,11 @@ namespace MR
 
       void check_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
-        if (p_one.timestamp != p_two.timestamp)
+        Properties::const_iterator one_stamp = p_one.find ("timestamp");
+        Properties::const_iterator two_stamp = p_two.find ("timestamp");
+        if (one_stamp == p_one.end() || two_stamp == p_two.end())
+          throw Exception ("unable to verify .tsf pair: missing timestamp");
+        if (one_stamp->second != two_stamp->second)
           throw Exception ("input scalar files do not correspond to the same track file");
         Properties::const_iterator count_one = p_one.find ("count");
         Properties::const_iterator count_two = p_two.find ("count");
