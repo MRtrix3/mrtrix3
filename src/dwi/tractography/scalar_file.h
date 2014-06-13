@@ -61,7 +61,7 @@ namespace MR
        * to a .tsf file, and those comparing a pair of .tsf files, is the information
        * provided to the user if the comparison fails.
        * */
-      void validate_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
+      inline void validate_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
         Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
         Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
@@ -77,7 +77,7 @@ namespace MR
           throw Exception ("input scalar file does not contain same number of elements as input track file");
       }
 
-      void check_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
+      inline void check_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
         Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
         Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
@@ -94,7 +94,7 @@ namespace MR
         }
       }
 
-      void validate_tsf_pair (const Properties& p_one, const Properties& p_two)
+      inline void validate_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
         Properties::const_iterator one_stamp = p_one.find ("timestamp");
         Properties::const_iterator two_stamp = p_two.find ("timestamp");
@@ -110,7 +110,7 @@ namespace MR
           throw Exception ("input scalar files do not contain the same number of elements");
       }
 
-      void check_tsf_pair (const Properties& p_one, const Properties& p_two)
+      inline void check_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
         Properties::const_iterator one_stamp = p_one.find ("timestamp");
         Properties::const_iterator two_stamp = p_two.find ("timestamp");
