@@ -291,10 +291,7 @@ void run ()
         DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
       Math::SH::S2C (directions_el_az, directions_cartesian);
 
-      stride[0] = 2;
-      stride[1] = 3;
-      stride[2] = 4;
-      stride[3] = 1;
+      stride = Image::Stride::contiguous_along_axis (3, input_header);
       Image::Stride::set (output_header, stride);
     }
 
