@@ -66,6 +66,36 @@ namespace MR
       };
 
 
+      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
+      {
+        Properties::const_iterator stamp_a = a.find ("timestamp");
+        Properties::const_iterator stamb_b = b.find ("timestamp");
+        if (stamp_a == a.end() || stamb_b == b.end())
+          throw Exception ("unable to verify " + type + " pair: missing timestamp");
+        if (a->second != b->second)
+          throw Exception ("invalid " + type + " combination - timestamps do not match");
+      }
+
+
+
+
+      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail) 
+      {
+        Properties::const_iterator count_a = a.find ("count");
+        Properties::const_iterator count_b = b.find ("count");
+        if ((count_a == a.end()) || (count_b == b.end())) {
+          std::string mesg = "unable to validate " + type + " pair: missing count field";
+          if (abort_on_fail) throw Exception (mesg);
+          else WARN (mesg);
+        }
+        if (to<size_t>(count_a->second) != to<size_t>(count_b->second)) {
+          std::string mesg = type + " files do not contain same number of elements";
+          if (abort_on_fail) throw Exception (mesg);
+          else WARN (mesg);
+        }
+      }
+
+
 
 
 

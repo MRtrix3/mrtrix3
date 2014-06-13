@@ -63,68 +63,26 @@ namespace MR
        * */
       inline void validate_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
-        Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
-        Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
-        if (tck_stamp == p_tck.end() || tsf_stamp == p_tsf.end())
-          throw Exception ("unable to verify .tck / .tsf pair: missing timestamp");
-        if (tck_stamp->second != tsf_stamp->second)
-          throw Exception ("input scalar file does not correspond to the input track file");
-        Properties::const_iterator count_tck = p_tck.find ("count");
-        Properties::const_iterator count_tsf = p_tsf.find ("count");
-        if ((count_tck == p_tck.end()) || (count_tsf == p_tsf.end()))
-          throw Exception ("Unable to validate .tck / .tsf file pair due to missing count field");
-        if (to<size_t>(count_tsf->second) != to<size_t>(count_tck->second))
-          throw Exception ("input scalar file does not contain same number of elements as input track file");
+        check_timestamps (p_tck, p_tsf, ".tck / .tsf");
+        check_counts (p_tck, p_tsf, ".tck / .tsf", true);
       }
 
       inline void check_tck_tsf_pair (const Properties& p_tck, const Properties& p_tsf)
       {
-        Properties::const_iterator tck_stamp = p_tck.find ("timestamp");
-        Properties::const_iterator tsf_stamp = p_tsf.find ("timestamp");
-        if (tck_stamp == p_tck.end() || tsf_stamp == p_tsf.end())
-          throw Exception ("unable to verify .tck / .tsf pair: missing timestamp");
-        if (tck_stamp->second != tsf_stamp->second)
-          throw Exception ("input scalar file does not correspond to the input track file");
-        Properties::const_iterator count_tck = p_tck.find ("count");
-        Properties::const_iterator count_tsf = p_tsf.find ("count");
-        if ((count_tck == p_tck.end()) || (count_tsf == p_tsf.end())) {
-          WARN ("Missing count field in .tck / .tsf file pair; unable to compare");
-        } else if (to<size_t>(count_tsf->second) != to<size_t>(count_tck->second)) {
-          WARN ("input scalar file does not contain same number of elements as input track file");
-        }
+        check_timestamps (p_tck, p_tsf, ".tck / .tsf");
+        check_counts (p_tck, p_tsf, ".tck / .tsf", false);
       }
 
       inline void validate_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
-        Properties::const_iterator one_stamp = p_one.find ("timestamp");
-        Properties::const_iterator two_stamp = p_two.find ("timestamp");
-        if (one_stamp == p_one.end() || two_stamp == p_two.end())
-          throw Exception ("unable to verify .tsf pair: missing timestamp");
-        if (one_stamp->second != two_stamp->second)
-          throw Exception ("input scalar files do not correspond to the same track file");
-        Properties::const_iterator count_one = p_one.find ("count");
-        Properties::const_iterator count_two = p_two.find ("count");
-        if ((count_one == p_one.end()) || (count_two == p_two.end()))
-          throw Exception ("Unable to validate track scalar file pair due to missing count field");
-        if (to<size_t>(count_one->second) != to<size_t>(count_two->second))
-          throw Exception ("input scalar files do not contain the same number of elements");
+        check_timestamps (p_one, p_two, "scalar");
+        check_counts (p_one, p_two, "scalar", true);
       }
 
       inline void check_tsf_pair (const Properties& p_one, const Properties& p_two)
       {
-        Properties::const_iterator one_stamp = p_one.find ("timestamp");
-        Properties::const_iterator two_stamp = p_two.find ("timestamp");
-        if (one_stamp == p_one.end() || two_stamp == p_two.end())
-          throw Exception ("unable to verify .tsf pair: missing timestamp");
-        if (one_stamp->second != two_stamp->second)
-          throw Exception ("input scalar files do not correspond to the same track file");
-        Properties::const_iterator count_one = p_one.find ("count");
-        Properties::const_iterator count_two = p_two.find ("count");
-        if ((count_one == p_one.end()) || (count_two == p_two.end())) {
-          WARN ("Unable to validate track scalar file pair due to missing count field");
-        } else if (to<size_t>(count_one->second) != to<size_t>(count_two->second)) {
-          WARN ("input scalar files do not contain the same number of elements");
-        }
+        check_timestamps (p_one, p_two, "scalar");
+        check_counts (p_one, p_two, "scalar", false);
       }
 
 
