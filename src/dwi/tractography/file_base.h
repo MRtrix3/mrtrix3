@@ -27,7 +27,6 @@
 #include <iomanip>
 #include <map>
 
-#include "timer.h"
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
@@ -35,7 +34,6 @@
 #include "dwi/tractography/properties.h"
 
 
-#define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
 
 
 namespace MR
@@ -97,10 +95,8 @@ namespace MR
           void create (std::ofstream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
-            out << "timestamp: " << str (Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION) << "\n";
-
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
-              if ((i->first != "count") && (i->first != "total_count") && (i->first != "timestamp"))
+              if ((i->first != "count") && (i->first != "total_count"))
                 out << i->first << ": " << i->second << "\n";
             }
 

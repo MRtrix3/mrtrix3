@@ -213,6 +213,8 @@ namespace MR
           if (!out)
             throw Exception ("error creating tracks file \"" + name + "\": " + strerror (errno));
 
+          const_cast<Properties&> (properties).set_timestamp();
+
           create (out, properties, "tracks");
           barrier_addr = out.tellp();
 

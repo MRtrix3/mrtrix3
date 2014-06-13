@@ -24,8 +24,12 @@
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "timer.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
+
+
+#define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
 
 
 namespace MR
@@ -39,7 +43,13 @@ namespace MR
       class Properties : public std::map<std::string, std::string> {
         public:
 
-          Properties () { }
+          Properties () { 
+            set_timestamp();
+          }
+
+          void set_timestamp () {
+            (*this)["timestamp"] = str (Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION);
+          }
 
           ROISet include, exclude, mask;
           Seeding::List seeds;
