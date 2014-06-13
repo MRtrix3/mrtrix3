@@ -24,6 +24,7 @@
 #define __image_stride_h__
 
 #include "app.h"
+#include "debug.h"
 #include "datatype.h"
 #include "math/math.h"
 
@@ -32,33 +33,33 @@ namespace MR
   namespace Image
   {
 
-    //! Functions to handle the memory layout of DataSet classes
+    //! Functions to handle the memory layout of InfoType classes
     /*! Strides are typically supplied as a symbolic list of increments,
      * representing the layout of the data in memory. In this symbolic
      * representation, the actual magnitude of the strides is only important
      * in that it defines the ordering of the various axes.
      *
      * For example, the vector of strides [ 3 -1 -2 ] is valid as a symbolic
-     * representation of a DataSet stored as a stack of sagittal slices. Each
+     * representation of a InfoType stored as a stack of sagittal slices. Each
      * sagittal slice is stored as rows of voxels ordered from anterior to
      * posterior (i.e. negative y: -1), then stacked superior to inferior (i.e.
      * negative z: -2). These slices are then stacked from left to right (i.e.
      * positive x: 3).
      *
      * This representation is symbolic since it does not take into account the
-     * size of the DataSet along each dimension. To be used in practice, these
+     * size of the InfoType along each dimension. To be used in practice, these
      * strides must correspond to the number of intensity values to skip
      * between adjacent voxels along the respective axis. For the example
-     * above, the DataSet might consists of 128 sagittal slices, each with
-     * dimensions 256x256. The dimensions of the DataSet (as returned by dim())
+     * above, the InfoType might consists of 128 sagittal slices, each with
+     * dimensions 256x256. The dimensions of the InfoType (as returned by dim())
      * are therefore [ 128 256 256 ]. The actual strides needed to navigate
-     * through the DataSet, given the symbolic strides above, should therefore
+     * through the InfoType, given the symbolic strides above, should therefore
      * be [ 65536 -256 -1 ] (since 256x256 = 65532).
      *
      * Note that a stride of zero is treated as undefined or invalid. This can
      * be used in the symbolic representation to specify that the ordering of
      * the corresponding axis is not important. A suitable stride will be
-     * allocated to that axis when the DataSet is initialised (this is done
+     * allocated to that axis when the InfoType is initialised (this is done
      * with a call to sanitise()).
      *
      * The functions defined in this namespace provide an interface to
@@ -133,10 +134,10 @@ namespace MR
         };
 
         template <class InfoType> 
-          class WrapperSet : public Wrapper
+          class InfoWrapper : public Wrapper
         {
           public:
-            WrapperSet (List& strides, const InfoType& info) : Wrapper (strides), D (info) {
+            InfoWrapper (List& strides, const InfoType& info) : Wrapper (strides), D (info) {
               assert (ndim() == D.ndim());
             }
             ssize_t dim (size_t axis) const {
@@ -204,13 +205,14 @@ namespace MR
 
 
       //! remove duplicate and invalid strides.
-      /*! sanitise the strides of DataSet \a info by identifying invalid (i.e.
+      /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
        * suitable value. The value chosen for each sanitised stride is the
        * lowest number greater than any of the currently valid strides. */
       template <class InfoType> 
         void sanitise (InfoType& info)
         {
+          // remove duplicates
           for (size_t i = 0; i < info.ndim()-1; ++i) {
             if (!info.stride (i)) continue;
             for (size_t j = i+1; j < info.ndim(); ++j) {
@@ -230,7 +232,7 @@ namespace MR
           }
         }
       //! remove duplicate and invalid strides.
-      /*! sanitise the strides of DataSet \a info by identifying invalid (i.e.
+      /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
        * suitable value. The value chosen for each sanitised stride is the
        * lowest number greater than any of the currently valid strides. */
@@ -242,6 +244,12 @@ namespace MR
         }
 
 
+      //! remove duplicate and invalid strides.
+      /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
+       * zero) or duplicate (absolute) strides, and assigning to each a
+       * suitable value. The value chosen for each sanitised stride is the
+       * lowest number greater than any of the currently valid strides. */
+      List& sanitise (List& strides, const List& ref);
 
 
       //! convert strides from symbolic to actual strides
@@ -252,17 +260,17 @@ namespace MR
           std::vector<size_t> x (order (info));
           ssize_t skip = 1;
           for (size_t i = 0; i < info.ndim(); ++i) {
-            info.stride (x[i]) = info.stride (x[i]) > 0 ? skip : -skip;
+            info.stride (x[i]) = info.stride (x[i]) < 0 ? -skip : skip;
             skip *= info.dim (x[i]);
           }
         }
       //! convert strides from symbolic to actual strides
       /*! convert strides from symbolic to actual strides, assuming the strides
-       * in \a strides and DataSet dimensions of \a info. */
+       * in \a strides and InfoType dimensions of \a info. */
       template <class InfoType> 
         inline void actualise (List& strides, const InfoType& info)
         {
-          WrapperSet<InfoType> wrapper (strides, info);
+          InfoWrapper<InfoType> wrapper (strides, info);
           actualise (wrapper);
         }
 
@@ -293,11 +301,11 @@ namespace MR
           std::vector<size_t> p (order (info));
           for (ssize_t i = 0; i < ssize_t (p.size()); ++i)
             if (info.stride (p[i]) != 0)
-              info.stride (p[i]) = info.stride (p[i]) > 0 ? i+1 : - (i+1);
+              info.stride (p[i]) = info.stride (p[i]) < 0 ? -(i+1) : i+1;
         }
       //! convert strides from actual to symbolic strides
       template <> 
-        inline void symbolise<List> (List& strides)
+        inline void symbolise (List& strides)
         {
           Wrapper wrapper (strides);
           symbolise (wrapper);
@@ -338,11 +346,11 @@ namespace MR
       //! calculate offset to start of data
       /*! this function caculate the offset (in number of voxels) from the start of the data region
        * to the first voxel value (i.e. at voxel [ 0 0 0 ... ]), assuming the
-       * strides in \a strides and DataSet dimensions of \a info. */
+       * strides in \a strides and InfoType dimensions of \a info. */
       template <class InfoType> 
         size_t offset (List& strides, const InfoType& info)
         {
-          WrapperSet<InfoType> wrapper (strides, info);
+          InfoWrapper<InfoType> wrapper (strides, info);
           return offset (wrapper);
         }
 
@@ -361,22 +369,19 @@ namespace MR
           List in (get_symbolic (info)), out (desired);
           out.resize (in.size(), 0);
 
-          bool strides_match = true;
-          for (size_t i = 0; i < out.size(); ++i) {
-            if (out[i]) {
-              if (Math::abs (out[i]) != Math::abs (in[i])) {
-                strides_match = false;
-                break;
-              }
-            }
-          }
+          for (size_t i = 0; i < out.size(); ++i) 
+            if (out[i]) 
+              if (Math::abs (out[i]) != Math::abs (in[i])) 
+                return sanitise (in, out);
 
-          if (strides_match)
-            out = in;
-
-          sanitise (out);
-
-          return out;
+          sanitise (in);
+          return in;
+        }
+      template <> 
+        inline List get_nearest_match<List> (const List& strides, const List& desired) 
+        {
+          Wrapper wrapper (const_cast<List&> (strides));
+          return get_nearest_match (wrapper, desired);
         }
 
 
@@ -390,6 +395,29 @@ namespace MR
         strides[axis] = 1;
         return strides;
       }
+
+      //! convenience function for use with Image::BufferPreload
+      /*! when passed as the second argument to the Image::BufferPreload
+       * constructor, ensures the specified axis will be contiguous in RAM,
+       * while matching the strides in \a info as closely as possible. */
+      template <class InfoType> 
+        inline List contiguous_along_axis (size_t axis, const InfoType& info) 
+        {
+          return get_nearest_match (contiguous_along_axis(3), Image::Stride::get (info));
+        }
+
+      //! convenience function for use with Image::BufferPreload
+      /*! when passed as the second argument to the Image::BufferPreload
+       * constructor, ensures the spatial axes will be contiguous in RAM,
+       * preserving the original order as on file as closely as possible. */
+      template <class InfoType>
+        inline List contiguous_along_spatial_axes (const InfoType& info)
+        {
+          List strides = get (info);
+          for (size_t n = 3; n < strides.size(); ++n)
+            strides[n] = 0;
+          return strides;
+        }
 
 
 
