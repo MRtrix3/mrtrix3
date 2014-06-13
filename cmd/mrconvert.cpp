@@ -135,9 +135,7 @@ inline std::vector<int> set_header (
       header.stride(n) = strides[n];
   }
 
-
-  opt = get_options ("grad");
-  if (opt.size()) 
+  if (get_options ("grad").size() || get_options ("fslgrad").size())
     header.DW_scheme() = DWI::get_DW_scheme<float> (header);
 
   opt = get_options ("prs");
