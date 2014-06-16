@@ -169,8 +169,9 @@ class TrackProcessor {
 };
 
 
+template <class DataType>
 void write_fixel_output (const std::string& filename,
-                         const float* data,
+                         const DataType data,
                          const Image::Header& header,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
@@ -319,7 +320,7 @@ void run() {
         Thread::batch (SetVoxelDir()),
         tract_processor);
   }
-  track_file.close();
+  ccs.close();
 
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
@@ -422,14 +423,14 @@ void run() {
 
   Math::Stats::GLM::solve_betas (data, design, temp);
   for (size_t i = 0; i < contrast.columns(); ++i)
-    write_fixel_output (output_prefix + "_beta" + str(i) + ".msf", temp.column (i).ptr(), input_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "_beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
 
   Math::Stats::GLM::abs_effect_size (data, design, contrast, temp);
-  write_fixel_output (output_prefix + "_abs_effect.msf", temp.ptr(), input_header, mask_vox, indexer_vox);
+  write_fixel_output (output_prefix + "_abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
   Math::Stats::GLM::std_effect_size (data, design, contrast, temp);
-  write_fixel_output (output_prefix + "_std_effect.msf", temp.ptr(), input_header, mask_vox, indexer_vox);
+  write_fixel_output (output_prefix + "_std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
   Math::Stats::GLM::stdev (data, design, temp);
-  write_fixel_output (output_prefix + "_std_dev.msf", temp.ptr(), input_header, mask_vox, indexer_vox);
+  write_fixel_output (output_prefix + "_std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
 
 
 
@@ -458,10 +459,10 @@ void run() {
      Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
      Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-     write_fixel_output (output_prefix + "_tfce_pos.msf", tfce_output_pos.data(), input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_tfce_neg.msf", tfce_output_neg.data(), input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output.data(), input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_pvalue_pos.msf", pvalue_output_pos.data(), input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg.data(), input_header, mask_vox, indexer_vox);
+     write_fixel_output (output_prefix + "_tfce_pos.msf", tfce_output_pos, input_header, mask_vox, indexer_vox);
+     write_fixel_output (output_prefix + "_tfce_neg.msf", tfce_output_neg, input_header, mask_vox, indexer_vox);
+     write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, input_header, mask_vox, indexer_vox);
+     write_fixel_output (output_prefix + "_pvalue_pos.msf", pvalue_output_pos, input_header, mask_vox, indexer_vox);
+     write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, input_header, mask_vox, indexer_vox);
   }
 }
