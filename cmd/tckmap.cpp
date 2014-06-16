@@ -291,10 +291,7 @@ void run () {
     header.set_ndim (4);
     header.dim(3) = 3;
     //header.set_description (3, "directionally-encoded colour");
-    header.stride (3) = 1;
-    header.stride (0) = 2;
-    header.stride (1) = 3;
-    header.stride (2) = 4;
+    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
   // Deal with erroneous statistics & provide appropriate messages

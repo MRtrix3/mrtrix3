@@ -156,15 +156,7 @@ void run () {
 
   Image::Header header;
   header.info() = filter->info();
-
-  Options opt = get_options ("stride");
-  if (opt.size()) {
-    std::vector<int> strides = opt[0][0];
-    if (strides.size() > input_data.ndim())
-      throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n)
-      header.stride(n) = strides[n];
-  }
+  Image::Stride::set_from_command_line (header);
 
   Image::Buffer<bool> output_data (argument[2], header);
   Image::Buffer<bool>::voxel_type output_voxel (output_data);

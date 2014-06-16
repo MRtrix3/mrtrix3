@@ -204,19 +204,6 @@ Image::Filter::Base* create_smooth_filter (Image::BufferPreload<float>::voxel_ty
 
 
 
-void set_strides (Image::Header& header)
-{
-  Options opt = get_options ("stride");
-  if (opt.size()) {
-    std::vector<int> strides = opt[0][0];
-    if (strides.size() > header.ndim())
-      throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n)
-      header.stride(n) = strides[n];
-  }
-}
-
-
 
 
 void usage ()
@@ -242,7 +229,6 @@ void usage ()
   + GradientOption
   + MedianOption
   + SmoothOption
-
   + Image::Stride::StrideOption;
 
 }
@@ -265,7 +251,7 @@ void run () {
 
     Image::Header header;
     header.info() = filter->info();
-    set_strides (header);
+    Image::Stride::set_from_command_line (header);
 
     filter->set_message (std::string("applying FFT filter to image " + std::string(argument[0]) + "..."));
 
@@ -310,7 +296,7 @@ void run () {
 
   Image::Header header;
   header.info() = filter->info();
-  set_strides (header);
+  Image::Stride::set_from_command_line (header);
 
   Image::Buffer<float> output_data (argument[2], header);
   Image::Buffer<float>::voxel_type output_voxel (output_data);

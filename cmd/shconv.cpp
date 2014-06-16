@@ -103,9 +103,7 @@ void run() {
   Image::Header input_SH_header (argument[0]);
   if (input_SH_header.ndim() != 4)
     throw Exception ("input SH image should contain 4 dimensions");
-  std::vector<ssize_t> strides (4, 0);
-  strides[3] = 1;
-  Image::BufferPreload<value_type> input_buf (input_SH_header, strides);
+  Image::BufferPreload<value_type> input_buf (input_SH_header, Image::Stride::contiguous_along_axis (3));
 
   Math::Vector<value_type> responseSH;
   responseSH.load (argument[1]);

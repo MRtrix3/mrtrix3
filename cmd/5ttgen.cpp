@@ -75,10 +75,7 @@ void run ()
   H_out.set_ndim (4);
   H_out.dim(3) = 5;
   H_out.datatype() = DataType::Float32;
-  H_out.stride(0) = 2;
-  H_out.stride(1) = 3;
-  H_out.stride(2) = 4;
-  H_out.stride(3) = 1;
+  Image::Stride::set (H_out, Image::Stride::contiguous_along_axis (3, fast_csf));
   Image::Buffer<float> out (argument[4], H_out);
 
   Image::Buffer<float>::voxel_type v_out      (out);

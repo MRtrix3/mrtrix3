@@ -154,10 +154,7 @@ class Processor
 
 void run ()
 {
-
-  std::vector<ssize_t> strides (4, 0);
-  strides[3] = 1;
-  InputBufferType dwi_buffer (argument[0], strides);
+  InputBufferType dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
 
   Ptr<MaskBufferType> mask_data;
   Ptr<MaskBufferType::voxel_type> mask_vox;
@@ -176,19 +173,7 @@ void run ()
   Image::Header header (dwi_buffer);
   header.dim(3) = shared.nSH();
   header.datatype() = DataType::Float32;
-  opt = get_options ("stride");
-  if (opt.size()) {
-    std::vector<int> strides = opt[0][0];
-    if (strides.size() > header.ndim())
-      throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n)
-      header.stride(n) = strides[n];
-  } else {
-    header.stride(0) = 2;
-    header.stride(1) = 3;
-    header.stride(2) = 4;
-    header.stride(3) = 1;
-  }
+  Image::Stride::set_from_command_line (header);
   OutputBufferType FOD_buffer (argument[2], header);
 
   InputBufferType::voxel_type dwi_vox (dwi_buffer);

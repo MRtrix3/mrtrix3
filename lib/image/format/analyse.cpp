@@ -56,7 +56,7 @@ namespace MR
       bool Analyse::check (Header& H, size_t num_axes) const
       {
         if (!Path::has_suffix (H.name(), ".img"))
-          return (false);
+          return false;
 
         if (num_axes < 3)
           throw Exception ("cannot create NIfTI-1.1 image with less than 3 dimensions");
@@ -67,7 +67,7 @@ namespace MR
         H.set_ndim (num_axes);
         File::NIfTI::check (H, false);
 
-        return (true);
+        return true;
       }
 
 
