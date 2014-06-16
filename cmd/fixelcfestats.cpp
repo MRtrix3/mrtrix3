@@ -320,7 +320,7 @@ void run() {
         Thread::batch (SetVoxelDir()),
         tract_processor);
   }
-  ccs.close();
+  track_file.close();
 
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
