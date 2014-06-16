@@ -169,9 +169,9 @@ class TrackProcessor {
 };
 
 
-template <class DataType>
+template <class VectorType>
 void write_fixel_output (const std::string& filename,
-                         const DataType data,
+                         const VectorType data,
                          const Image::Header& header,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
@@ -263,7 +263,7 @@ void run() {
   Image::BufferSparse<FixelMetric> mask (input_header);
   Image::BufferSparse<FixelMetric>::voxel_type mask_vox (mask);
 
-  // Create an image to store the fixel indices  //TODO, if we had a fixel buffer scratch this would be cleaner
+  // Create an image to store the fixel indices, if we had a fixel scratch buffer this would be cleaner
   Image::Header index_header (input_header);
   index_header.set_ndim(4);
   index_header.dim(3) = 2;
@@ -274,7 +274,7 @@ void run() {
     indexer_vox.value() = -1;
 
   std::vector<Point<value_type> > positions;
-  std::vector<Point<value_type> > directions;  //TODO could use fixel mask instead
+  std::vector<Point<value_type> > directions;
 
   Image::Transform image_transform (indexer_vox);
   Image::LoopInOrder loop (mask_vox);
@@ -320,7 +320,7 @@ void run() {
         Thread::batch (SetVoxelDir()),
         tract_processor);
   }
-  track_file.close();
+  track_fileged.close();
 
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
@@ -382,7 +382,7 @@ void run() {
       Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
       Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
       Image::check_dimensions (fixel, mask, 0, 3);
-      std::vector<value_type> temp_fixel_data (directions.size(), 0.0);
+      std::vector<value_type> temp_fixel_data (num_fixels, 0.0);
 
       for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
          indexer_vox[3] = 0;
@@ -407,7 +407,7 @@ void run() {
        }
 
       // Smooth the data
-      for (size_t fixel = 0; fixel < directions.size(); ++fixel) {
+      for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
         value_type value = 0.0;
         std::map<int32_t, value_type>::const_iterator it = smoothing_weights[fixel].begin();
         for (; it != smoothing_weights[fixel].end(); ++it)
@@ -437,7 +437,6 @@ void run() {
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-     int num_fixels = directions.size();
      Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
      Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
      std::vector<value_type> tfce_output_pos (num_fixels, 0.0);
