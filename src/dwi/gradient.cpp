@@ -5,6 +5,8 @@ namespace MR
   namespace DWI
   {
 
+    const char* bvalue_scaling_options[] = { "none", "auto", "always", NULL };
+
     using namespace App;
 
     const OptionGroup GradOption = OptionGroup ("DW gradient encoding options")
@@ -14,23 +16,52 @@ namespace MR
           "header. This should be supplied as a 4xN text file with each line is in "
           "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
           "applied gradient, and b gives the b-value in units of s/mm^2.")
-        + Argument ("encoding").type_file()
+      + Argument ("encoding").type_file()
 
       + Option ("fslgrad",
           "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
-        + Argument ("bvecs").type_file()
-        + Argument ("bvals").type_file()
+      + Argument ("bvecs").type_file()
+      + Argument ("bvals").type_file()
 
-      + Option ("scale_bvalue_by_grad",
-          "assume the amplitude of the gradient directions represents a scale "
-          "factor actually applied to the gradients at acquisition time. This is "
-          "used to provide multi-shell or DSI sampling schemes when the scanner "
-          "is not otherwise capable of accomodating the required DW sampling "
-          "scheme (this is used particularly with Siemens' DiffusionVectors.txt "
-          "file). Essentially, this option will scale each b-value by the "
-          "square of the corresponding gradient norm.");
+      + Option ("bvalue_scaling",
+          "specifies whether the b-values should be scaled according to the "
+          "gradient amplitudes. Due to the way different MR scanners operate, "
+          "multi-shell or DSI DW acquisition schemes are often stored as a "
+          "constant nominal b-value, using the norm of the gradient amplitude "
+          "to modulate the actual b-value (particularly with Siemens' "
+          "DiffusionVectors.txt file). By default ('auto'), MRtrix will try to "
+          "detect the presence of more than 2 b-values, and in this case it will "
+          "scale the b-value by the square of the corresponding gradient norm. "
+          "Use 'none' to disable all scaling, and 'always' to force the scaling. "
+          "The default action can also be set in the MRtrix config file, as a "
+          "BValueScaling entry.")
+      + Argument ("mode").type_choice (bvalue_scaling_options, 1);
 
 
+
+
+    //CONF option: BValueScaling
+    //CONF default: auto
+    //CONF specifies whether b-values should be scaled according the DW gradient
+    //CONF amplitudes - see the -bvalue_scaling option for details.
+
+    int get_bvalue_scaling_mode() 
+    {
+      App::Options opt = App::get_options ("bvalue_scaling");
+      if (opt.size()) 
+        return opt[0][0];
+
+      std::string scaling_config = File::Config::get ("BValueScaling");
+      if (scaling_config.empty())
+        return 1;
+
+      for (int n = 0; bvalue_scaling_options[n]; ++n)
+        if (scaling_config == bvalue_scaling_options[n])
+          return n;
+
+      throw Exception ("unknown value for config file entry 'BValueScaling': " + scaling_config 
+          + " (expected one of " + join (bvalue_scaling_options, ", ") + ")");
+    }
 
 
 

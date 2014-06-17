@@ -89,16 +89,12 @@ namespace MR
 
 
 
-    //! locate, load and rectify FSL-style bvecs/bvals DW encoding files
-    /*! This will first look for files names 'bvecs' & 'bvals' in the same
-     * folder as the image, assuming its path is stored in header.name(). If
-     * not found, then it will look for files with the same prefix as the
-     * image and the '_bvecs' & '_bvals' extension. 
-     *
-     * Once loaded, these are then converted to the format expected by MRtrix.
-     * This involves rotating the vectors into the scanner frame of reference,
-     * and may also involve re-ordering and/or inverting of the vector elements
-     * to match the re-ordering performed by MRtrix for non-axial scans. */
+    //! load and rectify FSL-style bvecs/bvals DW encoding files
+    /*! This will load the bvecs/bvals files at the path specified, and convert
+     * them to the format expected by MRtrix.  This involves rotating the
+     * vectors into the scanner frame of reference, and may also involve
+     * re-ordering and/or inverting of the vector elements to match the
+     * re-ordering performed by MRtrix for non-axial scans. */
     template <typename ValueType> 
       void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
       {
@@ -149,6 +145,7 @@ namespace MR
     template <typename ValueType>
       void scale_bvalue_by_G_squared (Math::Matrix<ValueType>& G) 
       {
+        INFO ("b-values will be scaled by the square of DW gradient norm");
         for (size_t n = 0; n < G.rows(); ++n) {
           if (G(n,3)) {
             float norm = Math::norm (G.row(n).sub(0,3));
@@ -221,6 +218,10 @@ namespace MR
 
 
 
+    //! internal function to determine b-value scaling mode
+    int get_bvalue_scaling_mode();
+
+
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
@@ -232,7 +233,17 @@ namespace MR
       {
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);
-        if (App::get_options ("scale_bvalue_by_grad").size())
+        int bvalue_scaling_mode = get_bvalue_scaling_mode();
+        if (bvalue_scaling_mode == 1) { // auto
+          LogLevelLatch latch (0);
+          bvalue_scaling_mode = DWI::Shells (grad).count() > 2;
+          if (bvalue_scaling_mode) {
+            INFO ("DW scheme contains more than 2 b-values - applying b-value scaling");
+          } else {
+            INFO ("DW scheme contains no more than 2 b-values - b-value scaling will NOT be applied");
+          }
+        }
+        if (bvalue_scaling_mode)
           scale_bvalue_by_G_squared (grad);
         normalise_grad (grad);
         return grad;
