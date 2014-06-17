@@ -148,10 +148,9 @@ namespace MR {
           // implicit encoding:
           std::string name = tag_name();
           if (!name.size()) {
-            if (group%2 == 0) 
-              DEBUG (printf ("WARNING: unknown DICOM tag (%02X %02X) "
-                    "with implicit encoding in file \"", group, element) 
-                  + fmap->name() + "\"");
+            DEBUG (printf ("WARNING: unknown DICOM tag (%02X %02X) "
+                  "with implicit encoding in file \"", group, element) 
+                + fmap->name() + "\"");
             VR = VR_UN;
           }
           else {
