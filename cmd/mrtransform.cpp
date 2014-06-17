@@ -247,6 +247,8 @@ void run ()
     output_header.vox(1) = template_header.vox (1);
     output_header.vox(2) = template_header.vox (2);
 
+    Image::Stride::set (output_header, template_header);
+
     output_header.transform() = template_header.transform();
     output_header.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
