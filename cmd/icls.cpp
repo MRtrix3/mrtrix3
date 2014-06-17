@@ -55,8 +55,8 @@ void run ()
   Math::Vector<double> b;
   b.load (argument[2]);
 
-  Math::ICLS::Problem<double> icls_problem (H, A);
-  Math::ICLS::Solver<double> icls_solver (icls_problem);
+  Math::ICLS2::Problem<double> icls_problem (H, A);
+  Math::ICLS2::Solver<double> icls_solver (icls_problem);
 
   Math::Vector<double> x;
   Timer timer;

@@ -41,7 +41,7 @@
 /** \brief Prints a variable name and its value, followed by the function, file and line number. */
 #define VAR(variable) \
   std::cerr << MR::App::NAME << ": " << #variable << " = " << (variable) \
-  << " (" << __PRETTY_FUNCTION__ << "; " << __FILE__  << ": " << __LINE__ << ")\n"
+  << " (" << __FILE__  << ": " << __LINE__ << ")\n"
 
 /** \brief Stops execution and prints current function, file and line number. 
   Remuses on user input (i.e. Return key). */

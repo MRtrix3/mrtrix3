@@ -999,7 +999,7 @@ namespace MR
         return C;
       }
 
-    //! computes the general matrix-matrix multiplication \a C = \a alpha \a op_A (\a A) \a op_A (\a B), allocating storage for \a C
+    //! computes the general matrix-matrix multiplication \a C = \a alpha \a op_A (\a A) \a op_B (\a B), allocating storage for \a C
     /** \param C the target matrix
      * \param alpha used to scale the product
      * \param op_A determines how to use the matrix \a A:

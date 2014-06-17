@@ -172,6 +172,83 @@ namespace MR
 
     }
 
+
+
+
+
+    namespace ICLS2 {
+
+      template <typename ValueType>
+        class Problem {
+          public:
+            Problem () { }
+            Problem (const Matrix<ValueType>& problem_matrix, const Matrix<ValueType>& constraint_matrix) :
+              problem_matrix (problem_matrix),
+              problem_matrix_decomp (problem_matrix.columns(), problem_matrix.columns()),
+              transformed_problem_matrix (problem_matrix.columns(), problem_matrix.rows()),
+              transformed_constraint_matrix (constraint_matrix.columns(), constraint_matrix.rows()) {
+                rankN_update (problem_matrix_decomp, problem_matrix, CblasTrans, CblasLower);
+                Cholesky::decomp (problem_matrix_decomp);
+
+                transformed_problem_matrix = problem_matrix;
+                solve_triangular (problem_matrix_decomp, transformed_problem_matrix, CblasRight);
+
+                transformed_constraint_matrix = constraint_matrix;
+                solve_triangular (problem_matrix_decomp, transformed_constraint_matrix, CblasRight);
+
+                mult (lambda_matrix, ValueType(1.0), CblasNoTrans, transformed_constraint_matrix, CblasTrans, transformed_constraint_matrix);
+              }
+            
+            Matrix<ValueType> problem_matrix, problem_matrix_decomp;
+            Matrix<ValueType> transformed_problem_matrix, transformed_constraint_matrix;
+            Matrix<ValueType> lambda_matrix;
+      };
+
+
+
+
+
+      template <typename ValueType>
+        class Solver {
+          public:
+            Solver (const Problem<ValueType>& problem) :
+              problem (problem),
+              transformed_unconstrained_solution (problem.problem_matrix_decomp.rows()),
+              lambda (problem.lambda_matrix.rows()),
+              gradient (lambda.size()) { }
+
+            void operator() (Vector<ValueType>& x, const Vector<ValueType>& b) {
+              mult (transformed_unconstrained_solution, ValueType (1.0), CblasTrans, problem.transformed_problem_matrix, b);
+              mult (gradient, problem.transformed_constraint_matrix, transformed_unconstrained_solution);
+              lambda.zero();
+              //std::cout << lambda << "\n";
+
+              for (size_t niter = 0; niter < 10000; ++niter) {
+                for (size_t n = 0; n < lambda.size(); ++n) {
+                  ValueType l = std::max (ValueType (0.0), lambda[n] - gradient[n]/problem.lambda_matrix(n,n));
+                  if (l != lambda[n]) {
+                    ValueType dl = l - lambda[n];
+                    for (size_t k = 0; k < gradient.size(); ++k)
+                      gradient[k] += problem.lambda_matrix(k,n) * dl;
+                    lambda[n] = l;
+                  }
+                }
+                //std::cout << lambda << "\n";
+              }
+
+              x = transformed_unconstrained_solution;
+              mult (x, ValueType(1.0), ValueType(1.0), CblasTrans, problem.transformed_constraint_matrix, lambda);
+              solve_triangular (x, problem.problem_matrix_decomp);
+            }
+
+          protected:
+            const Problem<ValueType>& problem;
+            Vector<ValueType> transformed_unconstrained_solution, lambda, gradient;
+
+        };
+
+    }
+
     /** @} */
     /** @} */
 
