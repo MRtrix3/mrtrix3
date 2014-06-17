@@ -16,6 +16,11 @@ namespace MR
           "applied gradient, and b gives the b-value in units of s/mm^2.")
         + Argument ("encoding").type_file()
 
+      + Option ("fslgrad",
+          "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
+        + Argument ("bvecs").type_file()
+        + Argument ("bvals").type_file()
+
       + Option ("scale_bvalue_by_grad",
           "assume the amplitude of the gradient directions represents a scale "
           "factor actually applied to the gradients at acquisition time. This is "
@@ -24,6 +29,7 @@ namespace MR
           "scheme (this is used particularly with Siemens' DiffusionVectors.txt "
           "file). Essentially, this option will scale each b-value by the "
           "square of the corresponding gradient norm.");
+
 
 
 

@@ -74,11 +74,6 @@ void run ()
       std::cout << "    " << S << i->second << "\n";
     }
 
-    std::cout.precision (properties.timestamp_precision);
-    std::string S ("timestamp:");
-    S.resize (22, ' ');
-    std::cout << "    " << S << properties.timestamp << "\n";
-
     if (properties.comments.size()) {
       std::cout << "    Comments:             ";
       for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)

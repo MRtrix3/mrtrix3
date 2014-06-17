@@ -24,9 +24,12 @@
 #define __dwi_tractography_properties_h__
 
 #include <map>
+#include "timer.h"
 #include "dwi/tractography/roi.h"
 #include "dwi/tractography/seeding/list.h"
-#include "timer.h"
+
+
+#define TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION 20
 
 
 namespace MR
@@ -40,8 +43,12 @@ namespace MR
       class Properties : public std::map<std::string, std::string> {
         public:
 
-          Properties () : timestamp_precision (20) {
+          Properties () { 
             set_timestamp();
+          }
+
+          void set_timestamp () {
+            (*this)["timestamp"] = str (Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION);
           }
 
           ROISet include, exclude, mask;
@@ -49,15 +56,8 @@ namespace MR
           std::vector<std::string> comments;
           std::multimap<std::string, std::string> roi;
 
-          mutable double timestamp;
-          const size_t timestamp_precision;
-
-
-          void set_timestamp() const { timestamp = Timer::current_time(); }
-
 
           void  clear () { 
-            timestamp = 0.0;
             std::map<std::string, std::string>::clear(); 
             seeds.clear();
             include.clear();
@@ -76,6 +76,36 @@ namespace MR
       };
 
 
+      inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
+      {
+        Properties::const_iterator stamp_a = a.find ("timestamp");
+        Properties::const_iterator stamb_b = b.find ("timestamp");
+        if (stamp_a == a.end() || stamb_b == b.end())
+          throw Exception ("unable to verify " + type + " pair: missing timestamp");
+        if (stamp_a->second != stamb_b->second)
+          throw Exception ("invalid " + type + " combination - timestamps do not match");
+      }
+
+
+
+
+      inline void check_counts (const Properties& a, const Properties& b, const std::string& type, bool abort_on_fail) 
+      {
+        Properties::const_iterator count_a = a.find ("count");
+        Properties::const_iterator count_b = b.find ("count");
+        if ((count_a == a.end()) || (count_b == b.end())) {
+          std::string mesg = "unable to validate " + type + " pair: missing count field";
+          if (abort_on_fail) throw Exception (mesg);
+          else WARN (mesg);
+        }
+        if (to<size_t>(count_a->second) != to<size_t>(count_b->second)) {
+          std::string mesg = type + " files do not contain same number of elements";
+          if (abort_on_fail) throw Exception (mesg);
+          else WARN (mesg);
+        }
+      }
+
+
 
 
 
@@ -88,7 +118,6 @@ namespace MR
         stream << "comments: ";
         for (std::vector<std::string>::const_iterator i = P.comments.begin(); i != P.comments.end(); ++i)
           stream << "\"" << *i << "\", ";
-        stream << "timestamp: " << P.timestamp;
         return (stream);
       }
 

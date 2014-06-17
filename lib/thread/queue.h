@@ -822,11 +822,9 @@ namespace MR
                typename Queue<Type1>::Reader::Item in (reader);
                typename Queue<Type2>::Writer::Item out (writer);
                do {
-                 if (!in.read()) return;
-                 if (!func (*in, *out))
-                   return;
-               }
-               while (out.write());
+                 do { if (!in.read()) return; } 
+                 while (!func (*in, *out));
+               } while (out.write());
              }
 
            private:
@@ -954,8 +952,10 @@ namespace MR
      * \endcode
      * This function processes the \a item_in passed to it, and prepares
      * \a item_out for the next stage of the pipeline. It should return \c
-     * true when ready to process further items, or \c false to signal the end
-     * of processing (at which point the corresponding thread(s) will exit).
+     * true if the item processed is to be sent to the next stage in the
+     * pipeline, and false if it is to be discarded - note that this is
+     * very different from the other functors, where returning false signals
+     * end of processing. 
      *
      * \section thread_run_queue_example Simple example
      *
@@ -1153,9 +1153,15 @@ namespace MR
      * }
      * \endcode
      *
-     * Note that any functor can be executed in parallel (i.e. wrapped in
-     * Thread::multi()), Items do not need to be of the same type, and can be
-     * batched independently with any desired size. 
+     * Note that the return value of the Pipe functor's operator() method is
+     * used in this case to signal whether or not the corresponding item should
+     * be sent through to the next stage (true) or discarded (false). This
+     * differs from the Source & Sink functors where the corresponding return
+     * value is used to signal end of processing.
+     *
+     * As with the 2-stage pipeline, any functor can be executed in parallel
+     * (i.e. wrapped in Thread::multi()), Items do not need to be of the same
+     * type, and can be batched independently with any desired size. 
      * */
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_queue (
@@ -1170,10 +1176,9 @@ namespace MR
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
           while (const_cast <Source&> (source) (item1)) {
-            if (!const_cast<Pipe&> (pipe) (item1, item2))
-              return;
-            if (!const_cast<Sink&> (sink) (item2))
-              return;
+            if (const_cast<Pipe&> (pipe) (item1, item2))
+              if (!const_cast<Sink&> (sink) (item2))
+                return;
           }
           return;
         }

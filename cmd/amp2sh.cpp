@@ -82,7 +82,6 @@ void usage ()
 
   + DWI::GradOption
   + DWI::ShellOption
-
   + Image::Stride::StrideOption;
 }
 
@@ -90,9 +89,7 @@ void usage ()
 
 void run ()
 {
-  std::vector<ssize_t> strides (4, 0);
-  strides[3] = 1;
-  Image::BufferPreload<float> amp_data (argument[0], strides);
+  Image::BufferPreload<float> amp_data (argument[0], Image::Stride::contiguous_along_axis (3));
   Image::Header header (amp_data);
 
   std::vector<size_t> bzeros, dwis;
@@ -141,19 +138,7 @@ void run ()
 
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
-  opt = get_options ("stride");
-  if (opt.size()) {
-    std::vector<int> strides = opt[0][0];
-    if (strides.size() > header.ndim())
-      throw Exception ("too many axes supplied to -stride option");
-    for (size_t n = 0; n < strides.size(); ++n)
-      header.stride(n) = strides[n];
-  } else {
-    header.stride(0) = 2;
-    header.stride(1) = 3;
-    header.stride(2) = 4;
-    header.stride(3) = 1;
-  }
+  Image::Stride::set_from_command_line (header);
   Image::Buffer<float> SH_data (argument[1], header);
 
   Image::BufferPreload<float>::voxel_type amp_vox (amp_data);

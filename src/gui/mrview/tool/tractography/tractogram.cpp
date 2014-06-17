@@ -400,7 +400,7 @@ namespace MR
           if (Path::has_suffix (filename, ".tsf")) {
             DWI::Tractography::Properties scalar_properties;
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
-            DWI::Tractography::validate_tck_tsf_pair (properties, scalar_properties);
+            DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
             while (file (tck_scalar)) {
               buffer.push_back (NAN);
               for (size_t i = 0; i < tck_scalar.size(); ++i) {
