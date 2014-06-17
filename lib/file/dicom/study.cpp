@@ -32,6 +32,10 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
+      namespace {
+        bool series_time_mismatch_warning_issued = false;
+      }
+
       RefPtr<Series> Study::find (const std::string& series_name, size_t series_number,
           const std::string& series_modality, const std::string& series_date, const std::string& series_time)
       {
@@ -46,6 +50,12 @@ namespace MR {
                 if (series_date.size() && (*this)[n]->date.size()) 
                   if (series_date != (*this)[n]->date) 
                     match = false;
+              }
+              if (match && !series_time_mismatch_warning_issued) {
+                if (to<float> (series_time) != to<float> ((*this)[n]->time)) {
+                  INFO ("WARNING: series times do not match - this may cause problem with series grouping");
+                  series_time_mismatch_warning_issued = true;
+                }
               }
               if (match)
                 return (*this)[n];
