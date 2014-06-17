@@ -170,6 +170,13 @@ namespace MR
             info.stride (i) = stride[i];
         }
 
+      //! set the strides of \a info from another Infotype
+      template <class InfoType, class FromInfoType>
+        void set (InfoType& info, const FromInfoType& from)
+        {
+          set (info, get(from));
+        }
+
 
 
 
