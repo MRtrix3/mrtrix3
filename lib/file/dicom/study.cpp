@@ -47,10 +47,6 @@ namespace MR {
                   if (series_date != (*this)[n]->date) 
                     match = false;
               }
-              if (match) {
-                if (to<float> (series_time) != to<float> ((*this)[n]->time))
-                  match = false;
-              }
               if (match)
                 return (*this)[n];
             }
