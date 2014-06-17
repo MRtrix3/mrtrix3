@@ -265,7 +265,7 @@ namespace MR
 
         // ensure first 3 axes correspond to spatial dimensions
         // while preserving original strides as much as possible
-        size_t max_spatial_stride = 0;
+        ssize_t max_spatial_stride = 0;
         for (size_t n = 0; n < 3; ++n)
           if (abs(H.stride(n)) > max_spatial_stride)
             max_spatial_stride = abs(H.stride(n));
