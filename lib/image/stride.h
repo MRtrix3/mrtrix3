@@ -166,8 +166,11 @@ namespace MR
       template <class InfoType>
         void set (InfoType& info, const List& stride)
         {
-          for (size_t i = 0; i < info.ndim(); ++i)
-            info.stride (i) = stride[i];
+          size_t n = 0;
+          for (; n < std::min (info.ndim(), stride.size()); ++n)
+            info.stride (n) = stride[n];
+          for (; n < stride.size(); ++n)
+            info.stride (n) = 0;
         }
 
       //! set the strides of \a info from another Infotype
