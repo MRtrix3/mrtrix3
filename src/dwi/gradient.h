@@ -236,11 +236,11 @@ namespace MR
         int bvalue_scaling_mode = get_bvalue_scaling_mode();
         if (bvalue_scaling_mode == 1) { // auto
           LogLevelLatch latch (0);
-          bvalue_scaling_mode = DWI::Shells (grad).count() > 2;
+          bvalue_scaling_mode = !DWI::Shells (grad).is_single_shell();
           if (bvalue_scaling_mode) {
-            INFO ("DW scheme contains more than 2 b-values - applying b-value scaling");
+            INFO ("DW scheme is multi-shell - applying b-value scaling");
           } else {
-            INFO ("DW scheme contains no more than 2 b-values - b-value scaling will NOT be applied");
+            INFO ("DW scheme is single-shell - b-value scaling will NOT be applied");
           }
         }
         if (bvalue_scaling_mode)
