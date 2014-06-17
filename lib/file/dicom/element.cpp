@@ -142,6 +142,13 @@ namespace MR {
           }
           else size = get<uint16_t> (start+6, is_BE);
 
+          // try figuring out VR from dictionary if vendors haven't bothered
+          // filling it in...
+          if (VR == VR_UN) {
+            std::string name = tag_name();
+            if (name.size()) 
+              VR = get_VR_from_tag_name (name); 
+          }
         }
         else {
 
@@ -153,13 +160,8 @@ namespace MR {
                 + fmap->name() + "\"");
             VR = VR_UN;
           }
-          else {
-            union { 
-              char t[2];
-              uint16_t i;
-            } d = { { name[0], name[1] } };
-            VR = ByteOrder::BE (d.i);
-          }
+          else 
+            VR = get_VR_from_tag_name (name);
           size = get<uint32_t> (start+4, is_BE);
         }
 
