@@ -5,7 +5,7 @@ namespace MR
   namespace DWI
   {
 
-    const char* bvalue_scaling_options[] = { "none", "auto", "always", NULL };
+    const char* bvalue_scaling_options[] = { "no", "auto", "yes", NULL };
 
     using namespace App;
 
@@ -25,15 +25,14 @@ namespace MR
 
       + Option ("bvalue_scaling",
           "specifies whether the b-values should be scaled according to the "
-          "gradient amplitudes. Due to the way different MR scanners operate, "
-          "multi-shell or DSI DW acquisition schemes are often stored as a "
-          "constant nominal b-value, using the norm of the gradient amplitude "
-          "to modulate the actual b-value. By default ('auto'), MRtrix will try to "
-          "detect the presence of a multi-shell scheme, and in this case it will "
-          "scale the b-value by the square of the corresponding gradient norm. "
-          "Use 'none' to disable all scaling, and 'always' to force the scaling. "
-          "The default action can also be set in the MRtrix config file, as a "
-          "BValueScaling entry.")
+          "gradient amplitudes. Multi-shell or DSI DW acquisition schemes are "
+          "often stored as a constant nominal b-value, using the norm of the "
+          "gradient amplitude to modulate the actual b-value. By default "
+          "('auto'), MRtrix will try to detect the presence of a multi-shell "
+          "scheme, and in this case it will scale the b-value by the square of "
+          "the corresponding gradient norm. The default action can also be set "
+          "in the MRtrix config file, under the BValueScaling entry. "
+          "Valid options are: " + join (bvalue_scaling_options, ", ") + ".")
       + Argument ("mode").type_choice (bvalue_scaling_options, 1);
 
 
