@@ -345,10 +345,9 @@ class Processor {
           if (truth_statistic[f] >= 1.0) {
             if (cfe_path_test_statistic[f] > threshold)
               num_true_positives[t]++;
-          } else {
-            if (cfe_control_test_statistic[f] > threshold)
-              contains_false_positive = true;
           }
+          if (cfe_control_test_statistic[f] > threshold)
+              contains_false_positive = true;
         }
         if (contains_false_positive)
           num_permutations_with_a_false_positive[t]++;
