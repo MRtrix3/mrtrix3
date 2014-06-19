@@ -5,8 +5,6 @@ namespace MR
   namespace DWI
   {
 
-    const char* bvalue_scaling_options[] = { "no", "auto", "yes", NULL };
-
     using namespace App;
 
     const OptionGroup GradOption = OptionGroup ("DW gradient encoding options")
@@ -24,45 +22,12 @@ namespace MR
       + Argument ("bvals").type_file()
 
       + Option ("bvalue_scaling",
-          "specifies whether the b-values should be scaled according to the "
-          "gradient amplitudes. Multi-shell or DSI DW acquisition schemes are "
-          "often stored as a constant nominal b-value, using the norm of the "
-          "gradient amplitude to modulate the actual b-value. By default "
-          "('auto'), MRtrix will try to detect the presence of a multi-shell "
-          "scheme, and in this case it will scale the b-value by the square of "
-          "the corresponding gradient norm. The default action can also be set "
-          "in the MRtrix config file, under the BValueScaling entry. "
-          "Valid options are: " + join (bvalue_scaling_options, ", ") + ".")
-      + Argument ("mode").type_choice (bvalue_scaling_options, 1);
-
-
-
-
-    //CONF option: BValueScaling
-    //CONF default: auto
-    //CONF specifies whether b-values should be scaled according the DW gradient
-    //CONF amplitudes - see the -bvalue_scaling option for details.
-
-    int get_bvalue_scaling_mode() 
-    {
-      App::Options opt = App::get_options ("bvalue_scaling");
-      if (opt.size()) 
-        return opt[0][0];
-
-      std::string scaling_config = File::Config::get ("BValueScaling");
-      if (scaling_config.empty())
-        return 1;
-
-      for (int n = 0; bvalue_scaling_options[n]; ++n)
-        if (scaling_config == bvalue_scaling_options[n])
-          return n;
-
-      throw Exception ("unknown value for config file entry 'BValueScaling': " + scaling_config 
-          + " (expected one of " + join (bvalue_scaling_options, ", ") + ")");
-    }
-
-
-
+          "specifies whether the b-values should be scaled by the square of "
+          "the corresponding DW gradient norm, as often required for "
+          "multi-shell or DSI DW acquisition schemes. The default action can "
+          "also be set in the MRtrix config file, under the BValueScaling entry. "
+          "Valid choices are yes/no, true/false, 0/1.")
+      + Argument ("mode").type_bool (true);
 
 
 

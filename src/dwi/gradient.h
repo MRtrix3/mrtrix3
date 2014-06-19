@@ -218,9 +218,11 @@ namespace MR
 
 
 
-    //! internal function to determine b-value scaling mode
-    int get_bvalue_scaling_mode();
 
+    //CONF option: BValueScaling
+    //CONF default: yes
+    //CONF specifies whether b-values should be scaled according the DW gradient
+    //CONF amplitudes - see the -bvalue_scaling option for details.
 
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
@@ -233,17 +235,15 @@ namespace MR
       {
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);
-        int bvalue_scaling_mode = get_bvalue_scaling_mode();
-        if (bvalue_scaling_mode == 1) { // auto
-          LogLevelLatch latch (0);
-          bvalue_scaling_mode = !DWI::Shells (grad).is_single_shell();
-          if (bvalue_scaling_mode) {
-            INFO ("DW scheme is multi-shell - applying b-value scaling");
-          } else {
-            INFO ("DW scheme is single-shell - b-value scaling will NOT be applied");
-          }
-        }
-        if (bvalue_scaling_mode)
+
+        bool scale_bvalues = true;
+        App::Options opt = App::get_options ("bvalue_scaling");
+        if (opt.size()) 
+          scale_bvalues = opt[0][0];
+        else
+          scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
+
+        if (scale_bvalues)
           scale_bvalue_by_G_squared (grad);
         normalise_grad (grad);
         return grad;
