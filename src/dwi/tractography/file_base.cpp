@@ -52,7 +52,6 @@ namespace MR {
           else if (key == "comment") properties.comments.push_back (kv.value());
           else if (key == "file") data_file = kv.value();
           else if (key == "datatype") dtype = DataType::parse (kv.value());
-          else if (key == "timestamp") properties.timestamp = atof(kv.value().c_str());
           else properties[key] = kv.value();
         }
 

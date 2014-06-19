@@ -49,21 +49,21 @@ namespace MR
 
 
 
-      class GMWMI : public Base
-      {
+        class GMWMI : public Base
+        {
 
-        public:
-        GMWMI (const std::string&, const Math::RNG&, const std::string&);
+          public:
+            GMWMI (const std::string&, const Math::RNG&, const std::string&);
 
-        bool get_seed (Point<float>&);
+            bool get_seed (Point<float>&);
 
 
-        private:
-        Default init_seeder;
-        Image::Buffer<float> anat_data;
-        ACT::GMWMI_finder interface;
+          private:
+            SeedMask init_seeder;
+            Image::Buffer<float> anat_data;
+            ACT::GMWMI_finder interface;
 
-      };
+        };
 
 
 

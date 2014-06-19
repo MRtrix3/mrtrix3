@@ -41,9 +41,12 @@ void usage ()
   DESCRIPTION
   + "generate maps of tensor-derived parameters.";
 
+  REFERENCES = "Basser, P. J.; Mattiello, J. & Lebihan, D. "
+               "MR diffusion tensor spectroscopy and imaging. "
+               "Biophysical Journal, 1994, 66, 259-267";
+
   ARGUMENTS
   + Argument ("tensor", "the input diffusion tensor image.").type_image_in ();
-
 
   OPTIONS
   + Option ("adc",

@@ -104,8 +104,15 @@ const OptionGroup FixelOutputOptions = OptionGroup ("Fixel-based sparse output i
 
 void usage ()
 {
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
+
+  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+               "NeuroImage, 2013, 67, 298-312 (Appendix 2)";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ();
@@ -260,9 +267,6 @@ void Segmented_FOD_receiver::set_fixel_afd_output (const std::string& path)
   assert (!fixel_afd_data);
   fixel_afd_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
   fixel_afd = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_afd_data);
-  Image::LoopInOrder loop (*fixel_afd);
-  for (loop.start (*fixel_afd); loop.ok(); loop.next (*fixel_afd))
-    fixel_afd->value().zero();
 }
 
 void Segmented_FOD_receiver::set_fixel_peak_output (const std::string& path)
@@ -270,9 +274,6 @@ void Segmented_FOD_receiver::set_fixel_peak_output (const std::string& path)
   assert (!fixel_peak_data);
   fixel_peak_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
   fixel_peak = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_peak_data);
-  Image::LoopInOrder loop (*fixel_peak);
-  for (loop.start (*fixel_peak); loop.ok(); loop.next (*fixel_peak))
-    fixel_peak->value().zero();
 }
 
 void Segmented_FOD_receiver::set_fixel_disp_output (const std::string& path)
@@ -280,9 +281,6 @@ void Segmented_FOD_receiver::set_fixel_disp_output (const std::string& path)
   assert (!fixel_disp_data);
   fixel_disp_data = new Image::BufferSparse<FixelMetric> (path, H_fixel);
   fixel_disp = new Image::BufferSparse<FixelMetric>::voxel_type (*fixel_disp_data);
-  Image::LoopInOrder loop (*fixel_disp);
-  for (loop.start (*fixel_disp); loop.ok(); loop.next (*fixel_disp))
-    fixel_disp->value().zero();
 }
 
 

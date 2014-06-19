@@ -22,7 +22,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "gui/init.h"
+#include "gui/app.h"
 #include "file/path.h"
 #include "math/SH.h"
 #include "gui/shview/icons.h"
@@ -49,8 +49,6 @@ void usage ()
             "display the response function as produced by estimate_response");
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
-
-  GUI::init();
 }
 
 
@@ -59,6 +57,7 @@ void usage ()
 
 void run ()
 {
+  GUI::App app;
   GUI::DWI::Window window (get_options ("response").size());
 
   if (argument.size())

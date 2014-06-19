@@ -3556,6 +3556,18 @@ namespace MR {
         dict[0x20500000UL] =  "ULPhilips_2050_0000";
         dict[0x52000000UL] =  "ULPhilips_5200_0000";
 
+        // GE private tags:
+        dict[0x001910BBUL] =  "DSGEGradDirX";
+        dict[0x001910BCUL] =  "DSGEGradDirY";
+        dict[0x001910BDUL] =  "DSGEGradDirZ";
+        dict[0x00431039UL] =  "ISGEMS_PARMS_01";
+
+        // Siemens private tags:
+        dict[0x0019100CUL] =  "DSSiemensBValue";
+        dict[0x0019100EUL] =  "FDSiemensBValue";
+        dict[0x00291010UL] =  "UNSiemensCSA1";
+        dict[0x00291020UL] =  "UNSiemensCSA2";
+        
       }
     }
   }

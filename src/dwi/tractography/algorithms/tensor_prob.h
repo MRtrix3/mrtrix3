@@ -20,11 +20,11 @@
 
 */
 
-#ifndef __dwi_tractography_algorithms_WBFACT_h__
-#define __dwi_tractography_algorithms_WBFACT_h__
+#ifndef __dwi_tractography_algorithms_tensor_prob_h__
+#define __dwi_tractography_algorithms_tensor_prob_h__
 
 #include "dwi/bootstrap.h"
-#include "dwi/tractography/algorithms/fact.h"
+#include "dwi/tractography/algorithms/tensor_det.h"
 
 
 namespace MR
@@ -38,18 +38,18 @@ namespace MR
 
       using namespace MR::DWI::Tractography::Tracking;
 
-      class WBFACT : public FACT {
+      class Tensor_Prob : public Tensor_Det {
         public:
-          class Shared : public FACT::Shared {
+          class Shared : public Tensor_Det::Shared {
             public:
               Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
-                FACT::Shared (diff_path, property_set)
+                Tensor_Det::Shared (diff_path, property_set)
               {
 
                 if (is_act() && act().backtrack())
-                  throw Exception ("Sorry, backtracking not currently enabled for WBFACT algorithm");
+                  throw Exception ("Sorry, backtracking not currently enabled for TensorProb algorithm");
 
-                properties["method"] = "WBFACT";
+                properties["method"] = "TensorProb";
 
                 mult (Hat, bmat, binv);
               }
@@ -62,23 +62,23 @@ namespace MR
 
 
 
-          WBFACT (const Shared& shared) :
-            FACT (shared),
+          Tensor_Prob (const Shared& shared) :
+            Tensor_Det (shared),
             S (shared),
             source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
 
-          WBFACT (const WBFACT& F) :
-            FACT (F.S),
+          Tensor_Prob (const Tensor_Prob& F) :
+            Tensor_Det (F.S),
             S (F.S),
             source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
 
 
 
-          bool init () {
+          bool init() {
             source.clear();
             if (!source.get (pos, values))
               return false;
-            return FACT::do_init();
+            return Tensor_Det::do_init();
           }
 
 
@@ -86,10 +86,9 @@ namespace MR
           term_t next () {
             if (!source.get (pos, values))
               return EXIT_IMAGE;
-            return FACT::do_next();
+            return Tensor_Det::do_next();
           }
 
-          // TODO Re-implement back-tracking for WBFACT; bootstrapping framework was changed at some point
 
 /*
           void truncate_track (Track& tck, const int revert_step)

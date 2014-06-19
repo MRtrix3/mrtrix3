@@ -246,53 +246,6 @@ namespace MR {
       }
 
 
-/*
-        if (image.frames.size()) { // need to preload and re-arrange:
-          ProgressBar progress ("DICOM image contains multiple frames - reformating...", frames.size()); 
-
-          uint8_t* mem = NULL;
-          try { 
-            mem = new uint8_t [MR::Image::footprint (H)]; 
-            if (!mem) 
-              throw;
-          }
-          catch (...) { 
-            throw Exception ("failed to allocate memory for image data!"); 
-          }
-
-          uint8_t* dest = mem;
-          const size_t row_stride = nchannels * frames[0]->dim[0] * (frames[0]->bits_alloc/8);
-          const size_t row_size = nchannels * frames[0]->dim[0] * (frames[0]->bits_alloc/8);
-          for (size_t n = 0; n < frames.size(); ++n) {
-            File::MMap mmap (frames[n]->filename);
-            const uint8_t* src = mmap.address() + frames[n]->data;
-            for (size_t row = 0; row < frames[n]->dim[1]; ++row) {
-              memcpy (dest, src, row_size);
-              dest += row_size;
-              src += row_stride;
-            }
-            ++progress;
-          }
-
-          dmap.add (mem);
-
-        }
-        else { // use standard backend:
-          
-          for (size_t n = 0; n < frames.size(); ++n) {
-            const Image* image = static_cast<const Image*> (frames[n]);
-            dmap.add (image->filename, image->data);
-          }
-
-        }
-*/
-
-      
-
-
-
-
-
 
     }
   }

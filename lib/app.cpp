@@ -58,6 +58,7 @@ namespace MR
       "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
       "This is free software; see the source for copying conditions.\n"
       "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
+    const char* REFERENCES = NULL;
 
 
     std::string NAME;

@@ -456,11 +456,6 @@ void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, C
             out.factor = 0.0;
           break;
 
-        case ENDS_CORR:
-          assert (factors.size() == 1);
-          out.factor = factors.front();
-          break;
-
         default:
           throw Exception ("FIXME: Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
 
@@ -564,39 +559,6 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
           else
             TrackMapperTWI<Cont>::factors.push_back (NAN);
         }
-
-      } else if (TrackMapperTWI<Cont>::track_statistic == ENDS_CORR) {
-
-        TrackMapperTWI<Cont>::factors.assign (1, 0.0);
-        input_voxel_type start (voxel), end (voxel);
-        const Point<float> p_start (get_last_point_in_fov (tck, false));
-        if (!p_start) return;
-        const Point<int> v_start (int(Math::round (p_start[0])), int(Math::round (p_start[1])), int(Math::round (p_start[2])));
-        Image::Nav::set_pos (start, v_start);
-        const Point<float> p_end (get_last_point_in_fov (tck, true));
-        if (!p_end) return;
-        const Point<int> v_end (int(Math::round (p_end[0])), int(Math::round (p_end[1])), int(Math::round (p_end[2])));
-        Image::Nav::set_pos (end, v_end);
-
-        double start_sum = 0.0, end_sum = 0.0;
-        for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
-          start_sum += start.value();
-          end_sum   += end  .value();
-        }
-        const float start_mean = start_sum / double (start.dim (3));
-        const float end_mean   = end_sum   / double (end  .dim (3));
-
-        double product = 0.0, start_sum_variance = 0.0, end_sum_variance = 0.0;
-        for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
-          product += ((start.value() - start_mean) * (end.value() - end_mean));
-          start_sum_variance += Math::pow2 (start.value() - start_mean);
-          end_sum_variance   += Math::pow2 (end  .value() - end_mean);
-        }
-        const float product_expectation = product / double (start.dim(3));
-        const float start_stdev = Math::sqrt (start_sum_variance / double(start.dim(3) - 1));
-        const float end_stdev   = Math::sqrt (end_sum_variance   / double(end  .dim(3) - 1));
-
-        TrackMapperTWI<Cont>::factors[0] = product_expectation / (start_stdev * end_stdev);
 
       } else { // The entire length of the track contributes
 

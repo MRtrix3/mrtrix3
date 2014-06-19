@@ -60,8 +60,8 @@ namespace MR
           format_ (NULL),
           offset_ (0.0),
           scale_ (1.0) {
-          open (image_name);
-        }
+            open (image_name);
+          }
 
         //! copy constructor
         /*! This copies everything over apart from the handler and the
@@ -88,11 +88,11 @@ namespace MR
         }
 
         const Info& info() const {
-          return (*this);
+          return *this;
         }
 
         Info& info() {
-          return (*this);
+          return *this;
         }
 
         const std::vector<std::string>& comments () const {
@@ -201,11 +201,20 @@ namespace MR
       public:
         ConstHeader () { }
 
-        ConstHeader (const Header& H) : Header (H) { }
+        ConstHeader (const Header& H) : Header (H) { 
+          set_intensity_scaling (H);
+        }
 
         //! constructor to open an image file.
         ConstHeader (const std::string& image_name) :
           Header (image_name) { }
+
+        ConstHeader& operator= (const Header& H) {
+          Header::operator= (H);
+          set_intensity_scaling (H);
+          return *this;
+        }
+
 
         const Info& info () const {
           return *this;

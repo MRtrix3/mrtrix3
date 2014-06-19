@@ -46,6 +46,7 @@ namespace MR
     extern OptionGroup __standard_options;
     extern const char* AUTHOR;
     extern const char* COPYRIGHT;
+    extern const char* REFERENCES;
     extern int log_level;
     extern std::string NAME;
     extern bool overwrite_files;
@@ -129,6 +130,10 @@ namespace MR
         }
         operator float () const;
         operator double () const;
+
+        operator bool () const {
+          return to<bool> (p);
+        }
 
         operator std::vector<int> () const {
           assert (arg->type == IntSeq);

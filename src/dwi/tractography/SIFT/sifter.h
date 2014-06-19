@@ -79,7 +79,7 @@ namespace MR
         // CORE OPERATIONS
         void perform_filtering();
         void output_filtered_tracks (const std::string&, const std::string&) const;
-
+        void output_selection (const std::string&) const;
 
         // CONFIGURATION OPTIONS
         void set_term_number (const track_t i)      { term_number = i; }

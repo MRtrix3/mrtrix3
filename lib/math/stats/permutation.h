@@ -31,6 +31,9 @@ namespace MR
     namespace Stats
     {
 
+      typedef float value_type;
+
+
       inline bool is_duplicate_vector (const std::vector<size_t>& v1, const std::vector<size_t>& v2)
       {
         for (size_t i = 0; i < v1.size(); i++) {
@@ -40,7 +43,9 @@ namespace MR
         return true;
       }
 
-      inline bool is_duplicate_permutation (const std::vector<size_t>& perm, const std::vector<std::vector<size_t> >& previous_permutations)
+
+      inline bool is_duplicate_permutation (const std::vector<size_t>& perm,
+                                            const std::vector<std::vector<size_t> >& previous_permutations)
       {
         for (unsigned int p = 0; p < previous_permutations.size(); p++) {
           if (is_duplicate_vector (perm, previous_permutations[p]))
@@ -49,7 +54,12 @@ namespace MR
         return false;
       }
 
-      inline void generate_permutations (const size_t num_perms, const size_t num_subjects, std::vector<std::vector<size_t> >& permutations)
+      // Note that this function does not take into account grouping of subjects and therefore generated
+      // permutations are not guaranteed to be unique wrt the computed test statistic.
+      // If the number of subjects is large then the likelyhood of generating duplicates is low.
+      inline void generate_permutations (const size_t num_perms,
+                                         const size_t num_subjects,
+                                         std::vector<std::vector<size_t> >& permutations)
       {
         permutations.clear();
         std::vector<size_t> default_labelling (num_subjects);
@@ -61,13 +71,14 @@ namespace MR
           do {
             std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());
           } while (is_duplicate_permutation (permuted_labelling, permutations));
-          permutations.push_back(permuted_labelling);
+          permutations.push_back (permuted_labelling);
         }
       }
 
-      typedef float value_type;
 
-      inline void statistic2pvalue (const Math::Vector<value_type>& perm_dist, const std::vector<value_type>& stats, std::vector<value_type>& pvalues)
+      inline void statistic2pvalue (const Math::Vector<value_type>& perm_dist,
+                                    const std::vector<value_type>& stats,
+                                    std::vector<value_type>& pvalues)
       {
         std::vector <value_type> permutations (perm_dist.size(), 0);
         for (size_t i = 0; i < perm_dist.size(); i++)

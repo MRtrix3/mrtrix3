@@ -348,7 +348,6 @@ try:
   if len(compiler_version) == 0: report ('(no version information)')
   else: report (compiler_version)
 except:
-  raise
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:

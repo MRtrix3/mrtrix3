@@ -52,7 +52,7 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader2 (argument[1], properties2);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[2], properties1);
 
-  DWI::Tractography::check_tsf_pair (properties1, properties2);
+  DWI::Tractography::check_properties_match (properties1, properties2, "scalar", false);
 
   std::vector<value_type> tck_scalar1;
   std::vector<value_type> tck_scalar2;

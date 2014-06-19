@@ -65,28 +65,12 @@ namespace MR
       //     is written at the start of the sparse data. This is done so that uninitialised voxels
       //     can have their raw image value set to 0, and if they are dereferenced, the handler will
       //     indicate that there are zero elements for that voxel.
-      //     - Note however that nulling all image data on image construction is NOT currently handled
-      //       by either the Handler::Sparse class nor the Image::BufferSparse class. The programmer
-      //       is responsible for this initialisation for the time being.
       // * The handler does not attempt any type of endianness conversion of the sparse data, so the
       //     systems that read/write the image files must have the same endianness. Since this can't
       //     be determined from the sparse data alone, the relevant Image::Format instead enforces
       //     the endianness of the image data to be native, and assumes that the sparse data has
       //     the same endianness. If the endianness does not match, the file won't open.
 
-
-
-    // FIXME Currently, this is using the Base::writable flag to initialise MMap
-    // Within the MMap constructor, this influences whether or not the data is allocated in RAM
-    //   using new[], or memory-mapped as read-only
-    // What is in fact required for this class is a memory-mapping that is read-write and does NOT use a
-    //   RAM buffer
-    // For now, this will simply mean that sparse data greater than available RAM cannot be written
-    // Long-term, it would be preferable to enhance the MMap constructor; have separate flags for whether
-    //   the memory should be allocated in RAM beforehand, and if it is not, whether the memory-mapped
-    //   region should be read-write. Additionally could have a config file entry that can be set on HPC
-    //   systems / systems with distributed storage that forbids creation of readwrite memory-mapped
-    //   regions and therefore forces use of a RAM buffer.
 
 
       class Sparse : public Default
@@ -111,7 +95,7 @@ namespace MR
 
 
           const std::string& get_class_name() const { return class_name; }
-          size_t       get_class_size() const { return class_size; }
+          size_t             get_class_size() const { return class_size; }
 
 
         protected:

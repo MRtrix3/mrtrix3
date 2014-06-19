@@ -191,6 +191,9 @@ namespace MR
 
             if (recompute_amplitudes) {
               Math::Vector<float> r_del_daz;
+              const size_t nSH = Math::SH::NforL (lmax_computed);
+              if (values.size() < nSH) 
+                values.resize (nSH, 0.0);
               renderer.compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (lmax_computed)));
               renderer.set_data (r_del_daz);
               recompute_amplitudes = false;

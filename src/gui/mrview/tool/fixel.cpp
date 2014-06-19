@@ -70,6 +70,8 @@ namespace MR
             gl::DeleteVertexArrays (1, &vertex_array_object);
           if (value_buffer)
             gl::DeleteBuffers (1, &value_buffer);
+          if (value_array_object)
+            gl::DeleteBuffers (1, &value_array_object);
         }
 
 
@@ -79,6 +81,7 @@ namespace MR
                "layout (location = 0) in vec3 pos;\n"
                "layout (location = 1) in vec3 prev;\n"
                "layout (location = 2) in vec3 next;\n"
+               "layout (location = 3) in float value;\n"
                "uniform mat4 MVP;\n"
                "uniform float line_length;\n"
                "uniform float max_value;\n"
@@ -104,11 +107,11 @@ namespace MR
                "    centre = prev;\n"
                "    dir = -pos;\n"
                "  }\n"
-               "  value_out = length (dir);\n"
+               "  value_out = value;\n"
                "  if (scale_line_length_by_value)\n"
-               "    gl_Position =  MVP * vec4 (centre + line_length * dir,1);\n"
-               "  else"
-               "    gl_Position =  MVP * vec4 (centre + line_length * normalize (dir),1);\n";
+               "    gl_Position =  MVP * vec4 (centre + line_length * value * dir,1);\n"
+               "  else\n"
+               "    gl_Position =  MVP * vec4 (centre + line_length * dir,1);\n";
 
            switch (color_type) {
              case Colour:
@@ -188,12 +191,18 @@ namespace MR
 
         void Fixel::render (const Projection& projection, int axis, int slice)
         {
+
+          if (fixel_tool.do_crop_to_slice && (slice < 0 || slice >= header.dim(axis)))
+            return;
+
           start (fixel_shader);
           projection.set (fixel_shader);
 
-          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_length"), line_length * line_length_multiplier);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_length"),
+                         line_length * line_length_multiplier);
           gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "max_value"), value_max);
-          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "scale_line_length_by_value"), scale_line_length_by_value);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "scale_line_length_by_value"),
+                         scale_line_length_by_value);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -246,9 +255,11 @@ namespace MR
           }
 
           MR::Image::LoopInOrder loop (fixel_vox);
-          std::vector<Point<float> > buffer;
+          std::vector<Point<float> > buffer_dir;
+          std::vector<float> buffer_val;
+          buffer_dir.push_back(Point<float>());
+          buffer_val.push_back(NAN);
           Point<float> voxel_pos;
-          buffer.push_back(Point<float>());
           for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               if (fixel_vox.value()[f].value > value_max)
@@ -256,24 +267,27 @@ namespace MR
               if (fixel_vox.value()[f].value < value_min)
                 value_min = fixel_vox.value()[f].value;
               for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer.size() - 1);
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
                 slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
                 slice_fixel_counts[dim][fixel_vox[dim]]++;
               }
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
-              buffer.push_back (voxel_pos);
-              buffer.push_back (fixel_vox.value()[f].dir * fixel_vox.value()[f].value);
+              buffer_dir.push_back (voxel_pos);
+              buffer_dir.push_back (fixel_vox.value()[f].dir);
+              buffer_val.push_back (fixel_vox.value()[f].value);
+              buffer_val.push_back (fixel_vox.value()[f].value);
             }
           }
-          buffer.push_back(Point<float>());
+          buffer_dir.push_back (Point<float>());
+          buffer_val.push_back (NAN);
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
 
+          // voxel centres and fixel directions
           gl::GenBuffers (1, &vertex_buffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffer);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
-
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_dir.size() * sizeof(Point<float>), &buffer_dir[0][0], gl::STATIC_DRAW);
           gl::GenVertexArrays (1, &vertex_array_object);
           gl::BindVertexArray (vertex_array_object);
           gl::EnableVertexAttribArray (0);
@@ -283,6 +297,12 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
+          // fixel values
+          gl::GenBuffers (1, &value_buffer);
+          gl::BindBuffer (gl::ARRAY_BUFFER, value_buffer);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
+          gl::EnableVertexAttribArray (3);
+          gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
         }
       }
     }

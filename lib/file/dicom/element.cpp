@@ -142,25 +142,26 @@ namespace MR {
           }
           else size = get<uint16_t> (start+6, is_BE);
 
+          // try figuring out VR from dictionary if vendors haven't bothered
+          // filling it in...
+          if (VR == VR_UN) {
+            std::string name = tag_name();
+            if (name.size()) 
+              VR = get_VR_from_tag_name (name); 
+          }
         }
         else {
 
           // implicit encoding:
           std::string name = tag_name();
           if (!name.size()) {
-            if (group%2 == 0) 
-              DEBUG (printf ("WARNING: unknown DICOM tag (%02X %02X) "
-                    "with implicit encoding in file \"", group, element) 
-                  + fmap->name() + "\"");
+            DEBUG (printf ("WARNING: unknown DICOM tag (%02X %02X) "
+                  "with implicit encoding in file \"", group, element) 
+                + fmap->name() + "\"");
             VR = VR_UN;
           }
-          else {
-            union { 
-              char t[2];
-              uint16_t i;
-            } d = { { name[0], name[1] } };
-            VR = ByteOrder::BE (d.i);
-          }
+          else 
+            VR = get_VR_from_tag_name (name);
           size = get<uint32_t> (start+4, is_BE);
         }
 
@@ -270,7 +271,8 @@ namespace MR {
             V[n] = to<int32_t> (strings[n]);
         }
         else
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
+
         return V;
       }
 
@@ -292,7 +294,7 @@ namespace MR {
           for (size_t n = 0; n < V.size(); n++) V[n] = to<uint32_t> (strings[n]);
         }
         else
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
         return V;
       }
 
@@ -314,7 +316,7 @@ namespace MR {
             V[n] = to<double> (strings[n]);
         }
         else 
-          throw Exception ("attempt to read data item of unknown value representation in DICOM implicit syntax");
+          report_unknown_tag_with_implicit_syntax();
         return V;
       }
 

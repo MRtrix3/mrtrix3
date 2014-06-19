@@ -179,6 +179,9 @@ namespace MR
               if (!(S.is_act() && S.act().backtrack()))
                 S.properties.include.contains (method.pos, track_included);
 
+              if (S.stop_on_all_include && traversed_all_include_regions())
+                return TRAVERSE_ALL_INCLUDE;
+
               return CONTINUE;
 
             };
@@ -330,7 +333,7 @@ namespace MR
                   case CONTINUE:
                     throw Exception ("\nFIXME: undefined termination of track in apply_priors()\n");
 
-                  case ENTER_CGM: case EXIT_IMAGE: case EXIT_MASK: case EXIT_SGM: case TERM_IN_SGM:
+                  case ENTER_CGM: case EXIT_IMAGE: case EXIT_MASK: case EXIT_SGM: case TERM_IN_SGM: case TRAVERSE_ALL_INCLUDE:
                     break;
 
                   case ENTER_CSF: case LENGTH_EXCEED: case ENTER_EXCLUDE:
@@ -356,7 +359,7 @@ namespace MR
                   case ENTER_CGM: case ENTER_CSF: case EXIT_SGM: case TERM_IN_SGM:
                     throw Exception ("\nFIXME: Have received ACT-based termination for non-ACT tracking in apply_priors()\n");
 
-                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE:
+                  case EXIT_IMAGE: case EXIT_MASK: case LENGTH_EXCEED: case CALIBRATE_FAIL: case BAD_SIGNAL: case HIGH_CURVATURE: case TRAVERSE_ALL_INCLUDE:
                     break;
 
                   case ENTER_EXCLUDE:

@@ -257,45 +257,39 @@ namespace MR
 
 
 
-      void check (Image::Header& H, bool single_file)
+      void check (Image::Header& H, bool has_nii_suffix)
       {
         for (size_t i = 0; i < H.ndim(); ++i)
           if (H.dim (i) < 1)
             H.dim(i) = 1;
 
-        if (single_file) {
-          VLA_MAX (order, ssize_t, H.ndim(), 32);
-          size_t i, axis = 0;
-          for (i = 0; i < H.ndim() && axis < 3; ++i)
-            if (abs (H.stride (i)) <= 3)
-              order[axis++] = H.stride (i);
+        // ensure first 3 axes correspond to spatial dimensions
+        // while preserving original strides as much as possible
+        ssize_t max_spatial_stride = 0;
+        for (size_t n = 0; n < 3; ++n)
+          if (abs(H.stride(n)) > max_spatial_stride)
+            max_spatial_stride = abs(H.stride(n));
+        for (size_t n = 3; n < H.ndim(); ++n)
+          H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
+        Image::Stride::symbolise (H);
 
-          assert (axis == 3);
-
-          for (i = 0; i < H.ndim(); ++i)
-            if (abs (H.stride (i)) > 3)
-              order[axis++] = H.stride (i);
-
-          assert (axis == H.ndim());
-
-          for (i = 0; i < 3; ++i)
-            H.stride(i) = order[i];
-
-          for (; i < H.ndim(); ++i)
-            H.stride(i) = abs (order[i]);
-        }
-        else {
+        // if .img, reset all strides to defaults, since it can't be assumed
+        // that downstream software will be able to parse the NIfTI transform 
+        if (!has_nii_suffix) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
-          if (File::Config::get_bool ("Analyse.LeftToRight", true))
+          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", true);
+          if (analyse_left_to_right)
             H.stride(0) = -H.stride (0);
 
           if (!right_left_warning_issued) {
-            INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
+            INFO ("assuming Analyse images are encoded " + std::string (analyse_left_to_right ? "left to right" : "right to left"));
             right_left_warning_issued = true;
           }
         }
 
+        // by default, prevent output of bitwise data in NIfTI, since most 3rd
+        // party software package can't handle them
         if (H.datatype() == DataType::Bit) 
           if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
             H.datatype() = DataType::UInt8;
@@ -305,7 +299,7 @@ namespace MR
 
 
 
-      void write (nifti_1_header& NH, const Image::Header& H, bool single_file)
+      void write (nifti_1_header& NH, const Image::Header& H, bool has_nii_suffix)
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -478,7 +472,7 @@ namespace MR
         put<float32> (H.vox (perm[2]) *M (2,2), &NH.srow_z[2], is_BE);
         put<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
-        strncpy ( (char*) &NH.magic, single_file ? "n+1\0" : "ni1\0", 4);
+        strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);
       }
 
     }
