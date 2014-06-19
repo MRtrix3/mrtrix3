@@ -407,6 +407,18 @@ namespace MR
 
 
 
+  template <> inline bool to<bool> (const std::string& string)
+  {
+    std::string value = lowercase (string);
+    if (value == "true" || value == "yes") 
+      return true;
+    if (value == "false" || value == "no") 
+      return false;
+    return to<int> (value);
+  }
+
+
+
 
 
 
