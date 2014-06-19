@@ -1,24 +1,24 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+   Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+   Written by J-Donald Tournier, 27/06/08.
 
-    This file is part of MRtrix.
+   This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   MRtrix is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   MRtrix is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
+ */
 
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
@@ -49,19 +49,19 @@ namespace MR
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
     template <typename ValueType> 
       Math::Matrix<ValueType>& normalise_grad (Math::Matrix<ValueType>& grad)
-    {
-      if (grad.columns() != 4)
-        throw Exception ("invalid gradient matrix dimensions");
-      for (size_t i = 0; i < grad.rows(); i++) {
-        ValueType norm = Math::norm (grad.row (i).sub (0,3));
-        if (norm) {
-          grad.row (i).sub (0,3) /= norm;
-        } else {
-          grad (i,3) = 0;
+      {
+        if (grad.columns() != 4)
+          throw Exception ("invalid gradient matrix dimensions");
+        for (size_t i = 0; i < grad.rows(); i++) {
+          ValueType norm = Math::norm (grad.row (i).sub (0,3));
+          if (norm) {
+            grad.row (i).sub (0,3) /= norm;
+          } else {
+            grad (i,3) = 0;
+          }
         }
+        return grad;
       }
-      return (grad);
-    }
 
 
     /*! \brief convert the DW encoding matrix in \a grad into a
@@ -72,65 +72,61 @@ namespace MR
           Math::Matrix<ValueType>& dirs, 
           const Math::Matrix<ValueType>& grad, 
           const std::vector<size_t>& dwi)
-    {
-      dirs.allocate (dwi.size(),2);
-      for (size_t i = 0; i < dwi.size(); i++) {
-        dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-        ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
-        if (z >= 1.0) 
-          dirs(i,1) = 0.0;
-        else if (z <= -1.0)
-          dirs (i,1) = M_PI;
-        else 
-          dirs (i,1) = Math::acos (z);
+      {
+        dirs.allocate (dwi.size(),2);
+        for (size_t i = 0; i < dwi.size(); i++) {
+          dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+          ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
+          if (z >= 1.0) 
+            dirs(i,1) = 0.0;
+          else if (z <= -1.0)
+            dirs (i,1) = M_PI;
+          else 
+            dirs (i,1) = Math::acos (z);
+        }
+        return dirs;
       }
-      return dirs;
-    }
 
 
 
-    //! locate, load and rectify FSL-style bvecs/bvals DW encoding files
-    /*! This will first look for files names 'bvecs' & 'bvals' in the same
-     * folder as the image, assuming its path is stored in header.name(). If
-     * not found, then it will look for files with the same prefix as the
-     * image and the '_bvecs' & '_bvals' extension. 
-     *
-     * Once loaded, these are then converted to the format expected by MRtrix.
-     * This involves rotating the vectors into the scanner frame of reference,
-     * and may also involve re-ordering and/or inverting of the vector elements
-     * to match the re-ordering performed by MRtrix for non-axial scans. */
+    //! load and rectify FSL-style bvecs/bvals DW encoding files
+    /*! This will load the bvecs/bvals files at the path specified, and convert
+     * them to the format expected by MRtrix.  This involves rotating the
+     * vectors into the scanner frame of reference, and may also involve
+     * re-ordering and/or inverting of the vector elements to match the
+     * re-ordering performed by MRtrix for non-axial scans. */
     template <typename ValueType> 
       void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
-    {
-      Math::Matrix<ValueType> bvals, bvecs;
-      bvals.load (bvals_path);
-      bvecs.load (bvecs_path);
+      {
+        Math::Matrix<ValueType> bvals, bvecs;
+        bvals.load (bvals_path);
+        bvecs.load (bvecs_path);
 
-      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
-      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
+        if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
+        if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
 
-      if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t(header.dim (3)))
-        throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
+        if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t(header.dim (3)))
+          throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
 
-      // account for the fact that bvecs are specified wrt original image axes,
-      // which may have been re-ordered and/or inverted by MRtrix to match the
-      // expected anatomical frame of reference:
-      std::vector<size_t> order = Image::Stride::order (header, 0, 3);
-      Math::Matrix<ValueType> G (bvecs.columns(), 3);
-      for (size_t n = 0; n < G.rows(); ++n) {
-        G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
-        G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
-        G(n,order[2]) = header.stride(order[2]) > 0 ? bvecs(2,n) : -bvecs(2,n);
+        // account for the fact that bvecs are specified wrt original image axes,
+        // which may have been re-ordered and/or inverted by MRtrix to match the
+        // expected anatomical frame of reference:
+        std::vector<size_t> order = Image::Stride::order (header, 0, 3);
+        Math::Matrix<ValueType> G (bvecs.columns(), 3);
+        for (size_t n = 0; n < G.rows(); ++n) {
+          G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
+          G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
+          G(n,order[2]) = header.stride(order[2]) > 0 ? bvecs(2,n) : -bvecs(2,n);
+        }
+
+        // rotate gradients into scanner coordinate system:
+        grad.allocate (G.rows(), 4);
+        Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
+        Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
+        Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
+
+        grad.column(3) = bvals.row(0);
       }
-
-      // rotate gradients into scanner coordinate system:
-      grad.allocate (G.rows(), 4);
-      Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
-      Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
-
-      grad.column(3) = bvals.row(0);
-    }
 
 
 
@@ -143,6 +139,20 @@ namespace MR
      */
     void save_bvecs_bvals (const Image::Header&, const std::string&);
 
+
+
+    //! scale b-values by square of gradient norm 
+    template <typename ValueType>
+      void scale_bvalue_by_G_squared (Math::Matrix<ValueType>& G) 
+      {
+        INFO ("b-values will be scaled by the square of DW gradient norm");
+        for (size_t n = 0; n < G.rows(); ++n) {
+          if (G(n,3)) {
+            float norm = Math::norm (G.row(n).sub(0,3));
+            G(n,3) *= norm*norm;
+          }
+        }
+      }
 
 
     //! get the DW gradient encoding matrix
@@ -209,6 +219,12 @@ namespace MR
 
 
 
+    //CONF option: BValueScaling
+    //CONF default: yes
+    //CONF specifies whether b-values should be scaled according the DW gradient
+    //CONF amplitudes - see the -bvalue_scaling option for details.
+
+
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
      *
@@ -219,6 +235,17 @@ namespace MR
       {
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);
+
+        bool scale_bvalues = true;
+        App::Options opt = App::get_options ("bvalue_scaling");
+        if (opt.size()) 
+          scale_bvalues = opt[0][0];
+        else
+          scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
+
+        if (scale_bvalues)
+          scale_bvalue_by_G_squared (grad);
+        normalise_grad (grad);
         return grad;
       }
 
@@ -247,7 +274,6 @@ namespace MR
           ValueType bvalue_threshold = NAN)
       {
         grad = get_valid_DW_scheme<ValueType> (header);
-        normalise_grad (grad);
 
         DWI::Shells shells (grad);
         shells.select_shells (true, true);

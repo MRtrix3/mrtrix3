@@ -131,6 +131,10 @@ namespace MR
         operator float () const;
         operator double () const;
 
+        operator bool () const {
+          return to<bool> (p);
+        }
+
         operator std::vector<int> () const {
           assert (arg->type == IntSeq);
           try {

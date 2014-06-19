@@ -83,11 +83,6 @@ namespace MR
       std::string value = get (key);
       if (value.empty()) 
         return default_value;
-      value = lowercase (value);
-      if (value == "true") 
-        return true;
-      if (value == "false") 
-        return false;
       try {
         return to<bool> (value);
       }

@@ -27,6 +27,7 @@
 
 #include "ptr.h"
 #include "hash_map.h"
+#include "get_set.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
 
@@ -119,6 +120,14 @@ namespace MR {
           bool is_explicit, is_BE, is_transfer_syntax_BE;
 
           std::vector<uint8_t*>  end_seq;
+
+          uint16_t get_VR_from_tag_name (const std::string& name) {
+            union { 
+              char t[2];
+              uint16_t i;
+            } d = { { name[0], name[1] } };
+            return ByteOrder::BE (d.i);
+          }
 
           static UnorderedMap<uint32_t, const char*>::Type dict;
           static void init_dict();
