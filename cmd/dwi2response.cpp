@@ -58,8 +58,8 @@ using namespace App;
 
 
 
-#define DWI2RESPONSE_DEFAULT_MAX_ITERS 0
-#define DWI2RESPONSE_DEFAULT_MAX_CHANGE 0.0
+#define DWI2RESPONSE_DEFAULT_MAX_ITERS 20
+#define DWI2RESPONSE_DEFAULT_MAX_CHANGE 0.005
 
 #define DWI2RESPONSE_DEFAULT_VOLUME_RATIO 0.15
 #define DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER 1.0
@@ -293,7 +293,7 @@ void run ()
         Thread::run_queue (selector, FODSegResult(), Thread::multi (estimator));
       }
       if (!output.get_count())
-        throw Exception ("Cannot estimate response function; all voxels have been excluded from slection");
+        throw Exception ("Cannot estimate response function; all voxels have been excluded from selection");
       const Math::Vector<float> new_response = output.result();
       const size_t sf_count = output.get_count();
 
