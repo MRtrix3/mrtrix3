@@ -174,6 +174,8 @@ namespace MR
     if (stream.fail()) {
       if (lowercase (string) == "nan") 
         return std::numeric_limits<T>::quiet_NaN();
+      else if (lowercase (string) == "-nan") 
+        return -std::numeric_limits<T>::quiet_NaN();
       else if (lowercase (string) == "inf") 
         return std::numeric_limits<T>::infinity();
       else if (lowercase (string) == "-inf")
