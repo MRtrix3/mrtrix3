@@ -24,7 +24,6 @@
 #include "mhsampler.h"
 
 #include "math/math.h"
-#include "progressbar.h"
 
 
 namespace MR {
@@ -33,10 +32,10 @@ namespace MR {
       namespace GT {
 
         MHSampler::MHSampler(const Image::Info &dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
-                             EnergyComputer &e, Image::BufferPreload<bool>* m)
+                             EnergyComputer* e, Image::BufferPreload<bool>* m)
           : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), sigpos(Particle::L / 8.), sigdir(0.2)
         {
-          lock = new SpatialLock<>(3*Particle::L);  // FIXME take voxel size into account for setting lock threshold.
+          lock = new SpatialLock<>(5*Particle::L);  // FIXME take voxel size into account for setting lock threshold.
           if (m) {
             T = Image::Transform(*m);
             dims[0] = m->dim(0);
@@ -52,21 +51,14 @@ namespace MR {
         }
         
         
+        // RUNTIME METHODS --------------------------------------------------------------
         
-        void MHSampler::execute(const int niter, const double t0, const double t1)
-        {
-          ProgressBar progress ("running MH sampler", niter/1000);
-          // exponential annealing factor
-          double alpha = Math::pow(t1/t0, 1.0/double(niter/1000));
-          for (int k = 0; k < niter; k++)
-          {
+        void MHSampler::execute()
+        {          
+          do {
             next();
-            if (k % 1000 == 0) {
-              progress++;
-              stats.setTint(stats.getTint()*alpha);
-              //std::cout << stats << std::endl;
-            }
-          }
+          } while (stats.next());
+          
         }
         
         
@@ -74,33 +66,24 @@ namespace MR {
         {
           float p = rng.uniform();
           float s = props.p_birth;
-          if (p < s) {
-            birth();
-            return;
-          }
+          if (p < s)
+            return birth();
           s += props.p_death;
-          if (p < s) {
-            death();
-            return;
-          }
+          if (p < s)
+            return death();
           s += props.p_shift;
-          if (p < s) {
-            randshift();
-            return;
-          }
+          if (p < s)
+            return randshift();
           s += props.p_optshift;
-          if (p < s) {
-            optshift();
-            return;
-          }
+          if (p < s)
+            return optshift();
           s += props.p_connect;
-          if (p < s) {
-            connect();
-            return;
-          }
+          if (p < s)
+            return connect();
         }
         
         
+        // PROPOSAL DISTRIBUTIONS -------------------------------------------------------
         
         void MHSampler::birth()
         {
@@ -113,17 +96,16 @@ namespace MR {
           } while (! lock->lockIfNotLocked(pos));
           Point_t dir = getRandDir();
           
-          double dE = E.stageAdd(pos, dir);
+          double dE = E->stageAdd(pos, dir);
           double R = Math::exp(-dE) * props.density / (pGrid.getTotalCount()+1) * props.p_death / props.p_birth;
           if (R > rng.uniform()) {
-            E.acceptChanges();
+            E->acceptChanges();
             pGrid.add(pos, dir);
             stats.incNa('b');
           }
           else {
-            E.clearChanges();
+            E->clearChanges();
           }
-          
           lock->unlock(pos);
         }
         
@@ -142,15 +124,15 @@ namespace MR {
           } while (! lock->lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
-          double dE = E.stageRemove(par);
+          double dE = E->stageRemove(par);
           double R = Math::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
           if (R > rng.uniform()) {
-            E.acceptChanges();
+            E->acceptChanges();
             pGrid.remove(idx);
             stats.incNa('d');
           }
           else {
-            E.clearChanges();
+            E->clearChanges();
           }
           
           lock->unlock(pos0);
@@ -178,15 +160,15 @@ namespace MR {
             lock->unlock(pos0);
             return;
           }
-          double dE = E.stageShift(par, pos, dir);
+          double dE = E->stageShift(par, pos, dir);
           double R = exp(-dE);
           if (R > rng.uniform()) {
-            E.acceptChanges();
+            E->acceptChanges();
             pGrid.shift(idx, pos, dir);
             stats.incNa('r');
           }
           else {
-            E.clearChanges();
+            E->clearChanges();
           }
           
           lock->unlock(pos0);
@@ -214,16 +196,16 @@ namespace MR {
             return;
           }
           
-          double dE = E.stageShift(par, pos, dir);
+          double dE = E->stageShift(par, pos, dir);
           double p_prop = calcShiftProb(par, pos, dir);
           double R = exp(-dE) * props.p_shift * p_prop / (props.p_shift * p_prop + props.p_optshift);
           if (R > rng.uniform()) {
-            E.acceptChanges();
+            E->acceptChanges();
             pGrid.shift(idx, pos, dir);
             stats.incNa('o');
           }
           else {
-            E.clearChanges();
+            E->clearChanges();
           }
           
           lock->unlock(pos0);
@@ -250,10 +232,10 @@ namespace MR {
           
           ParticleEnd pe2;
           pe2.par = NULL;
-          double dE = E.stageConnect(pe0, pe2);
+          double dE = E->stageConnect(pe0, pe2);
           double R = exp(-dE);
           if (R > rng.uniform()) {
-            E.acceptChanges();
+            E->acceptChanges();
             if (pe2.par) {
               if (alpha0 == -1)
                 par->connectPredecessor(pe2.par, pe2.alpha);
@@ -268,14 +250,14 @@ namespace MR {
             stats.incNa('c');
           }
           else {
-            E.clearChanges();
+            E->clearChanges();
           }
           
           lock->unlock(pos0);
         }
         
         
-        
+        // SUPPORTING METHODS -----------------------------------------------------------
         
         Point_t MHSampler::getRandPosInMask()
         {

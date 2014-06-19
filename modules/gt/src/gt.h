@@ -24,12 +24,16 @@
 #ifndef __gt_gt_h__
 #define __gt_gt_h__
 
+#define ITER_BIGSTEP 1000
+#define FRAC_BURNIN 10
+
 #include <iostream>
 #include <vector>
 
 #include "thread/mutex.h"
 #include "math/matrix.h"
 #include "math/vector.h"
+#include "progressbar.h"
 
 
 namespace MR {
@@ -64,11 +68,25 @@ namespace MR {
         {
         public:
           
-          Stats(double T0, double T1) 
-            : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_total(0) 
+          Stats(const double T0, const double T1, const int maxiter) 
+            : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter + maxiter/FRAC_BURNIN), 
+              progress("running MH sampler", n_max/ITER_BIGSTEP)
           {
             for (int k = 0; k != 5; k++)
               n_gen[k] = n_acc[k] = 0;
+            alpha = Math::pow(T1/T0, double(ITER_BIGSTEP)/double(maxiter));
+          }
+          
+          
+          bool next() {
+            Thread::Mutex::Lock lock (mutex);            
+            ++n_iter;
+            if (n_iter % ITER_BIGSTEP == 0) {
+              if (n_iter >= n_max/FRAC_BURNIN)
+                Tint *= alpha;
+              progress++;
+            }
+            return (n_iter < n_max);
           }
           
           
@@ -139,7 +157,6 @@ namespace MR {
               case 'c': n_gen[4] += i; break;
               default: return;
             }
-            n_total += i;
           }
           
           void incNa(const char p, unsigned int i = 1) {
@@ -172,11 +189,14 @@ namespace MR {
           Thread::Mutex mutex;
           double Text, Tint;
           double EextTot, EintTot;
+          double alpha;
 
           unsigned int n_gen[5];
           unsigned int n_acc[5];
-          unsigned int n_total;
+          unsigned int n_iter;
+          const unsigned int n_max;
           
+          ProgressBar progress;
           
         };
         

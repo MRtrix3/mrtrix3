@@ -90,7 +90,9 @@ namespace MR {
               size_t r = *it;
               // K
               unit_dir = Point<double>(grad(r,0), grad(r,1), grad(r,2));
-              unit_dir.normalise();
+              double n = unit_dir.norm();
+              if (n > 0.0)
+                unit_dir /= n;
               Math::SH::delta(delta_vec, unit_dir, lmax);
               Math::SH::sconv(delta_vec, wmr_rh, delta_vec);
               K.row(r) = delta_vec;
@@ -141,7 +143,9 @@ namespace MR {
             memcpy(fiso_vox.address(), fiso.ptr(), s.nf*sizeof(float));
           }
           stats.incEextTotal(dE - stats.getEextTotal());  // Reset total external energy
+          dE = 0.0;
         }
+        
         
         void ExternalEnergyComputer::acceptChanges()
         {
@@ -207,8 +211,7 @@ namespace MR {
             return;
           t = d;
           t *= w;
-          int k;
-          for (k = 0; k != changes_vox.size(); ++k) {
+          for (int k = 0; k != changes_vox.size(); ++k) {
             if (changes_vox[k] == vox) {
               changes_tod[k] += t;
               return;

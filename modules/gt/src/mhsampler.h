@@ -50,9 +50,20 @@ namespace MR {
         {
         public:
           MHSampler(const Image::Info &dwi, Properties& p, Stats& s, ParticleGrid& pgrid, 
-                    EnergyComputer& e, Image::BufferPreload<bool>* m = NULL);
+                    EnergyComputer* e, Image::BufferPreload<bool>* m = NULL);
+          
+          MHSampler(const MHSampler& other)
+            : props(other.props), stats(other.stats), pGrid(other.pGrid), E(other.E->clone()), 
+              T(other.T), mask(other.mask), lock(other.lock), rng(other.rng), sigpos(other.sigpos), sigdir(other.sigdir)
+          {
+            dims[0] = other.dims[0];
+            dims[1] = other.dims[1];
+            dims[2] = other.dims[2];
+          }
+          
+          ~MHSampler() { delete E; }
                     
-          void execute(const int niter, const double t0, const double t1);
+          void execute();
           
           void next();
           
@@ -68,8 +79,8 @@ namespace MR {
           Properties& props;
           Stats& stats;
           ParticleGrid& pGrid;
-          EnergyComputer& E;      // FIXME For safe copy-construction (multi-threading), this should be an lvalue instead of
-                                  // an rvalue. However, in that case the dynamic type is wrong!
+          EnergyComputer* E;      // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
+          
           Image::Transform T;
           int dims[3];
           Ptr<Image::BufferPreload<bool>::voxel_type > mask;    // Smart pointers make deep copy in copy constructor.

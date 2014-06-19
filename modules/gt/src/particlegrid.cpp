@@ -81,8 +81,8 @@ namespace MR {
             }
           }
           Thread::Mutex::Lock lock (mutex);
-          list[idx] = list.back();    // FIXME Not thread safe if last element is in use !
-          list.pop_back();
+          list[idx] = list.back();    // FIXME Not thread safe if last element is in use !  May corrupt datastructure,
+          list.pop_back();            // but program won't crash. Ignore for now.
         }
         
         void ParticleGrid::clear()

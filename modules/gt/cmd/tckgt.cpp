@@ -29,6 +29,7 @@
 #include "math/SH.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
+#include "thread/exec.h"
 
 #include "particlegrid.h"
 #include "gt.h"
@@ -146,6 +147,11 @@ void usage ()
 
 };
 
+
+void launch_MHS(DWI::Tractography::GT::MHSampler& mhs) {
+  Thread::Array<DWI::Tractography::GT::MHSampler> mhs_threaded (mhs);
+  Thread::Exec exec (mhs_threaded, "MH sampler");
+}
 
 
 void run ()
@@ -269,32 +275,24 @@ void run ()
   Image::BufferPreload<float> dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
   //Image::ConstInfo dwi_info (dwi_buffer);
 
-  Stats stats (t0, t1);
+  Stats stats (t0, t1, niter);
   
   ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi_buffer, properties);
-  ExternalEnergyComputer Eext = ExternalEnergyComputer(stats, EextShared);
-  
+  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, EextShared);
   
   ParticleGrid pgrid = ParticleGrid(dwi_buffer);
   
-  InternalEnergyComputer Eint = InternalEnergyComputer(stats, pgrid);
-  Eint.setChemPot(ChemPot);
+  InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
+  Eint->setChemPot(ChemPot);
   
   
-  EnergySumComputer Esum = EnergySumComputer(stats, Eint, properties.lam_int, 
+  EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, 
                                              Eext, properties.lam_ext * 4*M_PI/(properties.resp_WM(0,0)*properties.resp_WM(0,0)*properties.weight*properties.weight));
   
   
-  MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);
-  
-  // Burn-in phase
-  mhs.execute(niter/10, t0, t0);
-  
-  // Annealing
-  mhs.execute(niter, t0, t1);
-  
-  // Phase out (testing only)
-  //mhs.execute(niter/2, t1, t1);
+  MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
+    
+  launch_MHS(mhs);
   
   VAR(pgrid.getTotalCount());
   

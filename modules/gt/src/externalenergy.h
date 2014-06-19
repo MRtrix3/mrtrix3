@@ -97,9 +97,13 @@ namespace MR {
             resetEnergy();
           }
           
-//          ExternalEnergyComputer(ExternalEnergyComputer& E);
+          ExternalEnergyComputer(const ExternalEnergyComputer& E)
+            : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
+              T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
+              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0), beta(0.1)
+          {  }
           
-//          ~ExternalEnergyComputer();
+          ~ExternalEnergyComputer() { }
           
           
           void resetEnergy();
@@ -126,6 +130,8 @@ namespace MR {
           void acceptChanges();
           
           void clearChanges();
+          
+          EnergyComputer* clone() const { return new ExternalEnergyComputer(*this); }
           
           
           
