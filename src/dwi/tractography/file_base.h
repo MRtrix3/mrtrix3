@@ -34,6 +34,8 @@
 #include "dwi/tractography/properties.h"
 
 
+
+
 namespace MR
 {
   namespace DWI
@@ -93,8 +95,6 @@ namespace MR
           void create (std::ofstream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
-            out.precision (properties.timestamp_precision);
-            out << "timestamp: " << properties.timestamp << "\n";
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
               if ((i->first != "count") && (i->first != "total_count"))
                 out << i->first << ": " << i->second << "\n";

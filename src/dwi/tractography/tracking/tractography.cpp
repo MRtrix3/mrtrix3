@@ -16,8 +16,8 @@ namespace MR
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
 
       + Option ("grad",
-            "specify the diffusion encoding scheme (may be required for FACT "
-            "and WBFACT, ignored otherwise)")
+            "specify the diffusion encoding scheme (may be required for Tensor_Det "
+            "and Tensor_Prob, ignored otherwise)")
           + Argument ("file")
 
       + Option ("step",

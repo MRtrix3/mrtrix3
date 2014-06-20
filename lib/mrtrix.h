@@ -174,6 +174,8 @@ namespace MR
     if (stream.fail()) {
       if (lowercase (string) == "nan") 
         return std::numeric_limits<T>::quiet_NaN();
+      else if (lowercase (string) == "-nan") 
+        return -std::numeric_limits<T>::quiet_NaN();
       else if (lowercase (string) == "inf") 
         return std::numeric_limits<T>::infinity();
       else if (lowercase (string) == "-inf")
@@ -401,6 +403,18 @@ namespace MR
     else if (stream.peek() != 'i')
       throw Exception ("error converting string \"" + string + "\"");
     return cdouble (real, imag);
+  }
+
+
+
+  template <> inline bool to<bool> (const std::string& string)
+  {
+    std::string value = lowercase (string);
+    if (value == "true" || value == "yes") 
+      return true;
+    if (value == "false" || value == "no") 
+      return false;
+    return to<int> (value);
   }
 
 

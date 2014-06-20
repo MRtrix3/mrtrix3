@@ -135,12 +135,16 @@ bool FODCalcAndSeg::operator() (const Image::Iterator& pos)
   csd.set (dwi_data);
 
   // Perform CSD
-  size_t n;
-  for (n = 0; n < csd.shared.niter; n++)
-    if (csd.iterate())
-      break;
-  if (n == csd.shared.niter)
+  try {
+    size_t n;
+    for (n = 0; n < csd.shared.niter; n++)
+      if (csd.iterate())
+        break;
+    if (n == csd.shared.niter)
+      return true;
+  } catch (...) {
     return true;
+  }
 
   // Perform FOD segmentation
   DWI::FMLS::SH_coefs coefs (csd.FOD());

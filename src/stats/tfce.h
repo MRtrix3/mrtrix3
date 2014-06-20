@@ -122,8 +122,7 @@ namespace MR
                           connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
           // TODO remove tfce_C for tckpermute after cfe_roc experiments
-          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>* get_tfce_stats, value_type tfce_C = 1.0)
+          value_type operator() (const value_type max_stat, const std::vector<value_type>& stats, std::vector<value_type>* get_tfce_stats)
           {
             tfce_stats.resize (stats.size());
             std::fill (tfce_stats.begin(), tfce_stats.end(), 0.0);
@@ -135,7 +134,7 @@ namespace MR
                 value_type extent = 0.0;
                 for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
                   if (stats[connected_fixel->first] > h)
-                    extent += Math::pow (connected_fixel->second.value, tfce_C);
+                    extent += connected_fixel->second.value;
                 tfce_stats[fixel] += pow (extent, E) * pow (h, H);
               }
               if (tfce_stats[fixel] > max_tfce_stat)
