@@ -96,6 +96,8 @@ namespace MR
 
         using Buffer<value_type>::name;
         using Buffer<value_type>::datatype;
+        using Buffer<value_type>::intensity_offset;
+        using Buffer<value_type>::intensity_scale;
 
       protected:
         value_type* data_;
@@ -125,7 +127,9 @@ namespace MR
           assert (handler_);
           assert (handler_->nsegments());
 
-          if (handler_->nsegments() == 1 && datatype() == DataType::from<value_type>()) {
+          if (handler_->nsegments() == 1 && 
+              datatype() == DataType::from<value_type>() &&
+              intensity_offset() == 0.0 && intensity_scale() == 1.0) {
             INFO ("data in \"" + name() + "\" already in required format - mapping as-is");
             data_ = reinterpret_cast<value_type*> (handler_->segment (0));
             return;

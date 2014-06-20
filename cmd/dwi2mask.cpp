@@ -56,9 +56,7 @@ OPTIONS
 
 
 void run () {
-  std::vector<ssize_t> strides (4, 0);
-  strides[3] = 1;
-  Image::BufferPreload<float> input_data (argument[0], strides);
+  Image::BufferPreload<float> input_data (argument[0], Image::Stride::contiguous_along_axis (3));
   Image::BufferPreload<float>::voxel_type input_voxel (input_data);
 
   Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);

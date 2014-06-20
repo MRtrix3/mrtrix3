@@ -55,6 +55,10 @@ void usage ()
   DESCRIPTION
   + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
 
+  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+               "NeuroImage, 2013, 67, 298-312";
+
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_file()
   + Argument ("in_fod",     "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
@@ -71,6 +75,10 @@ void usage ()
   + SIFTModelProcMaskOption
   + SIFTModelOption
   + SIFTOutputOption
+
+  + Option ("out_selection", "output a text file containing the binary selection of streamlines")
+    + Argument ("path").type_file()
+
   + SIFTTermOption;
 
 };
@@ -131,6 +139,10 @@ void run ()
       sifter.output_all_debug_images ("after");
 
     sifter.output_filtered_tracks (argument[0], argument[2]);
+
+    opt = get_options ("out_selection");
+    if (opt.size())
+      sifter.output_selection (opt[0][0]);
 
   }
 

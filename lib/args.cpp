@@ -171,7 +171,10 @@ namespace MR
       return bold ("AUTHOR") + "\n" 
         + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
         + bold ("COPYRIGHT") + "\n" 
-        + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n";
+        + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
+        + (REFERENCES ? (  bold ("REFERENCES") + "\n"
+                         + paragraph ("", REFERENCES, HELP_PURPOSE_INDENT) + "\n")
+                      : "");
     }
 
 

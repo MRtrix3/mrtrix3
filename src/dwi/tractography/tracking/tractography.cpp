@@ -16,8 +16,8 @@ namespace MR
       const OptionGroup TrackOption = OptionGroup ("Streamlines tractography options")
 
       + Option ("grad",
-            "specify the diffusion encoding scheme (may be required for FACT "
-            "and WBFACT, ignored otherwise)")
+            "specify the diffusion encoding scheme (may be required for Tensor_Det "
+            "and Tensor_Prob, ignored otherwise)")
           + Argument ("file")
 
       + Option ("step",
@@ -88,6 +88,8 @@ namespace MR
       + Option ("rk4", "use 4th-order Runge-Kutta integration "
                        "(slower, but eliminates curvature overshoot in 1st-order deterministic methods)")
 
+      + Option ("stop", "stop propagating a streamline once it has traversed all include regions")
+
       + Option ("downsample", "downsample the generated streamlines to reduce output file size")
           + Argument ("factor").type_integer (1, 1, 100);
 
@@ -157,6 +159,14 @@ namespace MR
 
         opt = get_options ("rk4");
         if (opt.size()) properties["rk4"] = "1";
+
+        opt = get_options ("stop");
+        if (opt.size()) {
+          if (properties.include.size())
+            properties["stop_on_all_include"] = "1";
+          else
+            WARN ("-stop option ignored - no -include regions specified");
+        }
 
         opt = get_options ("downsample");
         if (opt.size()) properties["downsample_factor"] = std::string (opt[0][0]);

@@ -199,8 +199,6 @@ namespace MR
                 quantisation += this_fixel.calc_quantisation (old_mu, length);
                 const double undo_change_mu_only = this_fixel.get_d_cost_d_mu (old_mu) * mu_change;
                 const double change_remove_tck = this_fixel.get_cost_wo_track (new_mu, length) - this_fixel.get_cost (old_mu);
-                // TODO Could the first candidate nonlinearity be caused by multiple visitations of the same fixel having
-                //   different effects because of remove_TD()'s operation?
                 this_actual_cf_change = this_actual_cf_change - undo_change_mu_only + change_remove_tck;
               }
 
@@ -325,6 +323,21 @@ namespace MR
           ++progress;
         }
         reader.close();
+      }
+
+
+
+
+
+      void SIFTer::output_selection (const std::string& path) const
+      {
+        std::ofstream out (path.c_str(), std::ios_base::out | std::ios_base::trunc);
+        for (track_t i = 0; i != contributions.size(); ++i) {
+          if (contributions[i])
+            out << "1\n";
+          else
+            out << "0\n";
+        }
       }
 
 

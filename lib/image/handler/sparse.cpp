@@ -68,12 +68,19 @@ namespace MR
 
           // Writes a single uint32_t(0) to the start of the sparse data region
           // Any voxel that has its value initialised to 0 will point here, and therefore dereferencing of any
-          //   such voxel will yield a SParse::Value with zero elements
-          uint32_t zero (0);
-          memcpy (off2mem(0), &zero, sizeof(uint32_t));
+          //   such voxel will yield a Sparse::Value with zero elements
+          memset (off2mem (0), 0x00, sizeof (uint32_t));
 
           data_end = sizeof(uint32_t);
 
+        }
+
+        // If this is the formation of a new image, want to explicitly zero all of the
+        //   raw image data - otherwise any random data could be misinterpreted as a large
+        //   pointer offset from the start of the sparse image data
+        if (Base::is_new) {
+          for (std::vector< RefPtr<File::MMap> >::iterator i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
+            memset ((*i)->address(), 0x00, (*i)->size());
         }
 
       }

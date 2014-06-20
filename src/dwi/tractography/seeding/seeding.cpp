@@ -67,8 +67,16 @@ namespace MR
         + Argument ("fod_image").type_image_in()
 
 
+      + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
+                                 "attempt to find an appropriate tracking direction from a given seed point")
+        + Argument ("count").type_integer (1, 1, 1e6)
+
+
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
         + Argument ("path").type_text();
+
+
+
 
 
 
@@ -86,7 +94,7 @@ namespace MR
 
         opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Default* seed = new Default (opt[i][0], list.get_rng());
+          SeedMask* seed = new SeedMask (opt[i][0], list.get_rng());
           list.add (seed);
         }
 
@@ -128,6 +136,9 @@ namespace MR
         } else if (!list.num_seeds()) {
           throw Exception ("Must provide at least one source of streamline seeds!");
         }
+
+        opt = get_options ("max_seed_attempts");
+        if (opt.size()) properties["max_seed_attempts"] = std::string (opt[0][0]);
 
         opt = get_options ("output_seeds");
         if (opt.size()) properties["seed_output"] = std::string (opt[0][0]);

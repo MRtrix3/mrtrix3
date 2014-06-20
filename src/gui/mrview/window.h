@@ -57,7 +57,7 @@ namespace MR
 
           int slice () const {
             if (!image())
-              return NAN;
+              return -1;
             else
               return Math::round<int> (image()->interp.scanner2voxel (focus())[anatomical_plane]);
           }

@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier, 22/01/09.
 
     This file is part of MRtrix.
 
@@ -20,20 +20,35 @@
 
 */
 
-#ifndef __gui_init_h__
-#define __gui_init_h__
-
-#include "gui/opengl/gl.h"
+#include "app.h"
+#include "progressbar.h"
+#include "file/config.h"
+#include "gui/app.h"
+#include "gui/dialog/progress.h"
+#include "gui/dialog/report_exception.h"
+#include "gui/dialog/dicom.h"
 
 namespace MR
 {
   namespace GUI
   {
 
-    void init ();
+    App::App ()
+    {
+      new QApplication (MR::App::argc, MR::App::argv);
+
+      MR::ProgressBar::display_func = Dialog::ProgressBar::display;
+      MR::ProgressBar::done_func = Dialog::ProgressBar::done;
+      MR::File::Dicom::select_func = Dialog::select_dicom;
+      MR::Exception::display_func = Dialog::display_exception;
+    }
+
+    App::~App () 
+    {
+      delete qApp;
+    }
+
 
   }
 }
-
-#endif
 

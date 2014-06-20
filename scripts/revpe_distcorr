@@ -81,8 +81,12 @@ AP_dim     = getHeaderInfo ('AP.mif',     'dimensions', verbose).split()
 PA_dim     = getHeaderInfo ('PA.mif',     'dimensions', verbose).split()
 series_dim = getHeaderInfo ('series.mif', 'dimensions', verbose).split()
 
-if len(AP_dim) != 3 or len(PA_dim) != 3:
-  errorMessage ('First two images (reversed phase-encode pair) must be 3D images')
+if len(AP_dim) != 3:
+  if not (len(AP_dim) == 4 and AP_dim[3] == 1):
+    errorMessage ('First image of reversed phase-encode pair must be a 3D image')
+if len(PA_dim) != 3:
+  if not (len(PA_dim) == 4 and PA_dim[3] == 1):
+    errorMessage ('Second image of reversed phase-encode pair must be a 3D image')
 if AP_dim != PA_dim:
   errorMessage ('Dimensions of reversed phase-encode image pair do not match')
 if series_dim[:3] != AP_dim:
@@ -110,7 +114,7 @@ series_imain = 'series_before.nii'
 crop_option = ''        
 for axis, axis_dim in enumerate(AP_dim):
   if int(axis_dim)%2:
-    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(axis_dim-1) 
+    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_dim)-1) 
 
 if crop_option:
   warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 

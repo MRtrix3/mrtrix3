@@ -14,11 +14,20 @@ namespace MR
           "header. This should be supplied as a 4xN text file with each line is in "
           "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
           "applied gradient, and b gives the b-value in units of s/mm^2.")
-        + Argument ("encoding").type_file();
+      + Argument ("encoding").type_file()
 
+      + Option ("fslgrad",
+          "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
+      + Argument ("bvecs").type_file()
+      + Argument ("bvals").type_file()
 
-
-
+      + Option ("bvalue_scaling",
+          "specifies whether the b-values should be scaled by the square of "
+          "the corresponding DW gradient norm, as often required for "
+          "multi-shell or DSI DW acquisition schemes. The default action can "
+          "also be set in the MRtrix config file, under the BValueScaling entry. "
+          "Valid choices are yes/no, true/false, 0/1.")
+      + Argument ("mode").type_bool (true);
 
 
 
