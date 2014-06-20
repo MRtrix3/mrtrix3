@@ -1213,7 +1213,7 @@ namespace MR
         return A;
       }
 
-    //! symmetric rank-N update: \a C = \a alpha \a op_A(\a A) op_A(\a A)^T + \a beta C, for symmetric \a A
+    //! symmetric rank-N update: \a C = \a alpha \a op_A(\a A) op_A(\a A)^T + \a beta C, for symmetric \a C
     /** \param C the target matrix. If \a beta is non-zero, \a C should be symmetric
      * \param A a Matrix
      * \param op_A determines how to use the matrix \a A:
