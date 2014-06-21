@@ -175,14 +175,15 @@ void run ()
 
   DWI::CSDeconv<float>::Shared shared (H);
 
-  size_t lmax = Math::SH::LforN (shared.dwis.size());
+  const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
+  size_t lmax = std::min (size_t(8), max_lmax);
   opt = get_options ("lmax");
   if (opt.size()) {
     const size_t desired_lmax = int(opt[0][0]);
     if (desired_lmax % 2)
       throw Exception ("lmax must be an even number");
-    if (desired_lmax > lmax)
-      throw Exception ("Image data does not support estimating response function above an lmax of " + str(lmax));
+    if (desired_lmax > max_lmax)
+      throw Exception ("Image data does not support estimating response function above an lmax of " + str(max_lmax));
     lmax = desired_lmax;
   }
   shared.lmax = lmax;
