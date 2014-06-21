@@ -62,6 +62,10 @@ const OptionGroup ScalarOutputOptions = OptionGroup ("Scalar output image option
             "compute the sum of per-fixel Apparent Fibre Density in each voxel")
     + Argument ("image").type_image_out()
 
+  + Option ("complexity",
+            "compute a measure of FOD complexity in each voxel")
+    + Argument ("image").type_image_out()
+
   + Option ("count",
             "compute the number of discrete fibre populations in each voxel")
     + Argument ("image").type_image_out()
@@ -75,7 +79,7 @@ const OptionGroup ScalarOutputOptions = OptionGroup ("Scalar output image option
     + Argument ("image").type_image_out()
 
   + Option ("pseudo_fod",
-            "compute a pseudo-FOD image in the SH basis, showing the orientations & relative amplitudes of segmented fibre populations (useful for assessing segmentation performance until sparse image format is implemented)")
+            "compute a pseudo-FOD image in the SH basis, showing the orientations & relative amplitudes of segmented fibre populations")
     + Argument ("image").type_image_out()
 
   + Option ("sf",
@@ -108,11 +112,17 @@ void usage ()
   AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "generate parameter maps from fibre orientation distributions using the fast-marching level-set segmenter.";
+  + "generate parameter maps or fixel images from fibre orientation distributions using the fast-marching level-set segmenter.";
 
-  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+  REFERENCES = "Reference for the FOD segmentation method:\n"
+               "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
                "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-               "NeuroImage, 2013, 67, 298-312 (Appendix 2)";
+               "NeuroImage, 2013, 67, 298-312 (Appendix 2)\n\n"
+               ""
+               "Option -complexity:\n"
+               "Riffert, T. W.; Schreiber, J.; Anwander, A. & Knosche, T. R. "
+               "Beyond Fractional Anisotropy: Extraction of bundle-specific structural metrics from crossing fibre models. "
+               "NeuroImage 2014 (in press)";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ();
@@ -162,6 +172,7 @@ class Segmented_FOD_receiver
 
 
     void set_afd_output        (const std::string&);
+    void set_complexity_output (const std::string&);
     void set_count_output      (const std::string&);
     void set_dec_output        (const std::string&);
     void set_gfa_output        (const std::string&);
@@ -184,6 +195,8 @@ class Segmented_FOD_receiver
 
     Ptr< Image::Buffer<float> > afd_data;
     Ptr< Image::Buffer<float>::voxel_type > afd;
+    Ptr< Image::Buffer<float> > complexity_data;
+    Ptr< Image::Buffer<float>::voxel_type > complexity;
     Ptr< Image::Buffer<uint8_t> > count_data;
     Ptr< Image::Buffer<uint8_t>::voxel_type > count;
     Ptr< Image::Buffer<float> > dec_data;
@@ -214,6 +227,13 @@ void Segmented_FOD_receiver::set_afd_output (const std::string& path)
   assert (!afd_data);
   afd_data = new Image::Buffer<float> (path, H);
   afd = new Image::Buffer<float>::voxel_type (*afd_data);
+}
+
+void Segmented_FOD_receiver::set_complexity_output (const std::string& path)
+{
+  assert (!complexity_data);
+  complexity_data = new Image::Buffer<float> (path, H);
+  complexity = new Image::Buffer<float>::voxel_type (*complexity_data);
 }
 
 void Segmented_FOD_receiver::set_count_output (const std::string& path)
@@ -297,6 +317,20 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
     for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
       sum_integrals += i->get_integral();
     Image::Nav::set_value_at_pos (*afd, in.vox, sum_integrals);
+  }
+
+  if (complexity) {
+    Image::Nav::set_pos (*complexity, in.vox);
+    if (in.size() <= 1) {
+      complexity->value() = 0.0;
+    } else {
+      float max_density = 0.0, sum_density = 0.0;
+      for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+        max_density = std::max (max_density, i->get_integral());
+        sum_density += i->get_integral();
+      }
+      complexity->value() = (float(in.size()) / float(in.size()-1.0)) * (1.0 - (max_density / sum_density));
+    }
   }
 
   if (count)
@@ -422,6 +456,11 @@ void run ()
   Options opt = get_options ("afd");
   if (opt.size()) {
     receiver.set_afd_output (opt[0][0]);
+    ++output_count;
+  }
+  opt = get_options ("complexity");
+  if (opt.size()) {
+    receiver.set_complexity_output (opt[0][0]);
     ++output_count;
   }
   opt = get_options ("count");
