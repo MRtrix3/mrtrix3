@@ -79,10 +79,10 @@ namespace MR
       inline void check_timestamps (const Properties& a, const Properties& b, const std::string& type) 
       {
         Properties::const_iterator stamp_a = a.find ("timestamp");
-        Properties::const_iterator stamb_b = b.find ("timestamp");
-        if (stamp_a == a.end() || stamb_b == b.end())
+        Properties::const_iterator stamp_b = b.find ("timestamp");
+        if (stamp_a == a.end() || stamp_b == b.end())
           throw Exception ("unable to verify " + type + " pair: missing timestamp");
-        if (stamp_a->second != stamb_b->second)
+        if (stamp_a->second != stamp_b->second)
           throw Exception ("invalid " + type + " combination - timestamps do not match");
       }
 

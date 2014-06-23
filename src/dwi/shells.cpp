@@ -23,8 +23,7 @@ namespace MR
 
 
 
-    // TODO Want to re-name this config option to BZeroThreshold
-    const float bzero_threshold = File::Config::get_float ("BValueThreshold", 10.0);
+    const float bzero_threshold = File::Config::get_float ("BZeroThreshold", 10.0);
 
 
 
@@ -60,7 +59,7 @@ namespace MR
       // Easiest way to restrict processing to particular shells is to simply erase
       //   the unwanted shells; makes it command independent
 
-      BitSet to_retain (shells.size(), 0);
+      BitSet to_retain (shells.size(), false);
       if (keep_bzero && smallest().is_bzero())
         to_retain[0] = true;
 
@@ -182,6 +181,17 @@ namespace MR
 
 
 
+    void Shells::reject_small_shells (const size_t min_volumes)
+    {
+      for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
+        if (!s->is_bzero() && s->count() < min_volumes)
+          s = shells.erase (s);
+        else
+          ++s;
+      }
+    }
+
+
 
 
     void Shells::initialise (const Math::Matrix<float>& grad)
@@ -190,7 +200,6 @@ namespace MR
       std::vector<size_t> clusters (bvals.size(), 0);
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
-      INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells");
       if ((num_shells < 1) || (num_shells > Math::sqrt (float(grad.rows()))))
         throw Exception ("Gradient encoding matrix does not represent a HARDI sequence");
 
@@ -218,6 +227,12 @@ namespace MR
       }
 
       std::sort (shells.begin(), shells.end());
+
+      if (smallest().is_bzero()) {
+        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " + str(smallest().count()) + " b=0 volumes");
+      } else {
+        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells");
+      }
     }
 
 
@@ -261,7 +276,6 @@ namespace MR
         }
       }
 
-      clusterIdx = rejectSmallShells (bvals, clusters, clusterIdx);
       return clusterIdx;
     }
 
@@ -273,37 +287,6 @@ namespace MR
         if (Math::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
-    }
-
-
-
-    size_t Shells::rejectSmallShells (const BValueList& bvals, std::vector<size_t>& clusters, const size_t max_index) const
-    {
-      // Count the number of volumes in each shell
-      std::vector<size_t> counts (max_index + 1, 0);
-      // Also need the mean b-value; don't want to reject b=0 due to having too few volumes
-      std::vector<float> means (max_index + 1, 0.0);
-      for (size_t vol = 0; vol != bvals.size(); ++vol) {
-        const size_t shell = clusters[vol];
-        ++counts[shell];
-        means[shell] += bvals[vol];
-      }
-      // Generate a mapping from old shell index to new shell index
-      //   (if one shell is rejected, the indices of the shells above it need to decrease)
-      std::vector<size_t> index_mapping (max_index + 1, 0);
-      size_t new_index = 0;
-      for (size_t shell = 1; shell <= max_index; ++shell) {
-        means[shell] /= float(counts[shell]);
-        if ((means[shell] < bzero_threshold) || (counts[shell] >= DWI_SHELLS_MIN_DIRECTIONS))
-          index_mapping[shell] = ++new_index;
-      }
-      // At least one shell rejected
-      if (new_index != max_index) {
-        // Re-map the shell indices; volumes belong to a rejected shell will be reset to an index of 0
-        for (size_t i = 0; i != clusters.size(); ++i)
-          clusters[i] = index_mapping[clusters[i]];
-      }
-      return max_index;
     }
 
 
