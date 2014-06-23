@@ -71,14 +71,18 @@ void usage ()
             "set the maximum harmonic order for the output series. By default, the "
             "program will use the highest possible lmax given the number of "
             "diffusion-weighted images.")
-  + Argument ("order").type_integer (0, 8, 30)
+  +   Argument ("order").type_integer (0, 8, 30)
 
   + Option ("normalise", "normalise the DW signal to the b=0 image")
 
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD. "
                           "By default this option is not required providing the direction set is supplied "
-                          "in the amplitude image.")
-  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
+                          "in the amplitude image. This should be supplied as a list of directions [az el], "
+                          "as generated using the gendir command")
+  +   Argument ("file").type_file()
+
+  + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
+  +   Argument ("noise").type_image_in()
 
   + DWI::GradOption
   + DWI::ShellOption
@@ -87,6 +91,7 @@ void usage ()
 
 
 
+#define RICIAN_POWER 2.25
 
 
 typedef float value_type;
@@ -114,12 +119,52 @@ class Amp2SH {
     Amp2SH (const Amp2SHCommon& common) : 
       C (common), 
       a (C.SHT.n_amp()), 
-      c (C.SHT.n_SH())
-  { }
+      c (C.SHT.n_SH()) { }
 
     template <class SHVoxelType, class AmpVoxelType>
       void operator() (SHVoxelType& SH, AmpVoxelType& amp) 
       {
+        get_amps (amp);
+        C.SHT.A2SH (c, a);
+        write_SH (SH);
+      }
+
+
+
+    // Rician-corrected version:
+    template <class SHVoxelType, class AmpVoxelType, class NoiseVoxelType>
+      void operator() (SHVoxelType& SH, AmpVoxelType& amp, const NoiseVoxelType& noise) 
+      {
+        const Math::Matrix<value_type>& M (C.SHT.mat_SH2A());
+        w.allocate (M.rows());
+        w = value_type(1.0);
+
+        get_amps (amp);
+        C.SHT.A2SH (c, a);
+
+        for (size_t iter = 0; iter < 20; ++iter) {
+          MW = M;
+          if (get_rician_bias (M, noise.value()))
+            break;
+          for (size_t n = 0; n < MW.rows(); ++n) 
+            MW.row (n) *= w[n];
+
+          Math::mult (c, value_type(1.0), CblasTrans, MW, ap);
+          Math::mult (Q, value_type(1.0), CblasTrans, MW, CblasNoTrans, M);
+          Math::Cholesky::decomp (Q);
+          Math::Cholesky::solve (c, Q);
+        }
+
+        write_SH (SH);
+      }
+
+  protected:
+    const Amp2SHCommon& C;
+    Math::Vector<value_type> a, c, w, ap;
+    Math::Matrix<value_type> Q, MW;
+
+    template <class AmpVoxelType>
+      void get_amps (AmpVoxelType& amp) {
         double norm = 1.0;
         if (C.normalise) {
           for (size_t n = 0; n < C.bzeros.size(); n++) {
@@ -133,16 +178,29 @@ class Amp2SH {
           amp[3] = C.dwis.size() ? C.dwis[n] : n;
           a[n] = amp.value() * norm;
         }
+      }
 
-        C.SHT.A2SH (c, a);
-
+    template <class SHVoxelType>
+      void write_SH (SHVoxelType& SH) {
         for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
           SH.value() = c[SH[3]];
       }
 
-  protected:
-    const Amp2SHCommon& C;
-    Math::Vector<value_type> a, c;
+    bool get_rician_bias (const Math::Matrix<value_type>& M, value_type noise) {
+      Math::mult (ap, M, c);
+      value_type norm_diff = 0.0;
+      value_type norm_amp = 0.0;
+      for (size_t n = 0; n < ap.size() ; ++n) {
+        ap[n] = std::max (ap[n], value_type(0.0));
+        value_type t = Math::pow (ap[n]/noise, value_type(RICIAN_POWER));
+        w[n] = 1.0;//Math::pow2 ((t + 1.7)/(t + 1.12));
+        value_type diff = a[n] - noise * Math::pow (t + 1.65, 1.0/RICIAN_POWER);
+        norm_diff += Math::pow2 (diff);
+        norm_amp += Math::pow2 (a[n]);
+        ap[n] += diff;
+      }
+      return norm_diff/norm_amp < 1.0e-8; 
+    }
 };
 
 
@@ -197,6 +255,7 @@ void run ()
   if (normalise && !bzeros.size())
     throw Exception ("the normalise option is only available if the input data contains b=0 images.");
 
+
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
   Image::Stride::set_from_command_line (header);
@@ -206,6 +265,16 @@ void run ()
   Image::Buffer<value_type>::voxel_type SH_vox (SH_data);
 
   Amp2SHCommon common (dirs, lmax, bzeros, dwis, normalise);
-  Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox)
-    .run (Amp2SH (common), SH_vox, amp_vox);
+
+  opt = get_options ("rician");
+  if (opt.size()) {
+    Image::BufferPreload<value_type> noise_data (opt[0][0]);
+    Image::BufferPreload<value_type>::voxel_type noise_vox (noise_data);
+    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 1, 0, 3)
+      .run (Amp2SH (common), SH_vox, amp_vox, noise_vox);
+  }
+  else {
+    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 1, 0, 3)
+      .run (Amp2SH (common), SH_vox, amp_vox);
+  }
 }
