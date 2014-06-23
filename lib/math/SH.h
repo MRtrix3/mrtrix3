@@ -155,10 +155,10 @@ namespace MR
               scale_degrees_forward (SHT, invert (filter));
               scale_degrees_inverse (iSHT, filter);
             }
-            void A2SH (Math::Vector<ValueType>& SH, const Math::Vector<ValueType>& amplitudes)  {
+            void A2SH (Math::Vector<ValueType>& SH, const Math::Vector<ValueType>& amplitudes) const {
               Math::mult (SH, iSHT, amplitudes);
             }
-            void SH2A (Math::Vector<ValueType>& amplitudes, const Math::Vector<ValueType>& SH)  {
+            void SH2A (Math::Vector<ValueType>& amplitudes, const Math::Vector<ValueType>& SH) const {
               Math::mult (amplitudes, SHT, SH);
             }
 
