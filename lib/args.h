@@ -52,6 +52,7 @@ namespace MR
     //! \cond skip
     typedef enum {
       Text,
+      Boolean,
       Integer,
       Float,
       ArgFile,
@@ -169,14 +170,14 @@ namespace MR
          */
         Argument& optional () {
           flags |= Optional;
-          return (*this);
+          return *this;
         }
 
         //! specifies that multiple such arguments can be specified
         /*! See optional() for details. */
         Argument& allow_multiple () {
           flags |= AllowMultiple;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be a text string
@@ -185,21 +186,21 @@ namespace MR
         Argument& type_text (const char* default_text = NULL) {
           type = Text;
           defaults.text = default_text;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be an input image
         Argument& type_image_in () {
           type = ImageIn;
           defaults.text = NULL;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be an output image
         Argument& type_image_out () {
           type = ImageOut;
           defaults.text = NULL;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be an integer
@@ -210,7 +211,16 @@ namespace MR
           defaults.i.min = min;
           defaults.i.def = def;
           defaults.i.max = max;
-          return (*this);
+          return *this;
+        }
+
+        //! specifies that the argument should be a boolean
+        /*! Valid responses are 0,no,false or any non-zero integer, yes, true. 
+         * If desired, a default value can be specified. */
+        Argument& type_bool (bool def = false) {
+          type = Boolean;
+          defaults.i.def = def;
+          return *this;
         }
 
         //! specifies that the argument should be a floating-point value
@@ -221,7 +231,7 @@ namespace MR
           defaults.f.min = min;
           defaults.f.def = def;
           defaults.f.max = max;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be selected from a predefined list
@@ -240,28 +250,28 @@ namespace MR
           type = Choice;
           defaults.choices.list = choices;
           defaults.choices.def = default_index;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be a file
         Argument& type_file () {
           type = ArgFile;
           defaults.text = NULL;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated integer values
         Argument& type_sequence_int () {
           type = IntSeq;
           defaults.text = NULL;
-          return (*this);
+          return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
           defaults.text = NULL;
-          return (*this);
+          return *this;
         }
 
 
@@ -365,7 +375,7 @@ namespace MR
         /*! See required() for details. */
         Option& allow_multiple () {
           flags |= AllowMultiple;
-          return (*this);
+          return *this;
         }
 
         bool is (const std::string& name) const {

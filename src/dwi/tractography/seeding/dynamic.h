@@ -42,6 +42,9 @@
 
 #include "dwi/tractography/SIFT/model_base.h"
 
+#include "dwi/tractography/tracking/generated_track.h"
+#include "dwi/tractography/tracking/write_kernel.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -154,8 +157,12 @@ namespace MR
         //   includes the voxel location for easier determination of seed location
         bool operator() (const FMLS::FOD_lobes&);
 
-        // Default from ModelBase<> has adequate functionality
-        bool operator() (const Mapping::SetDixel& i) { return SIFT::ModelBase<Fixel_TD_seed>::operator() (i); }
+        bool operator() (const Mapping::SetDixel& i)
+        {
+          if (!i.weight) // Flags that tracking should terminate
+            return false;
+          return SIFT::ModelBase<Fixel_TD_seed>::operator() (i);
+        }
 
 
         private:
@@ -181,6 +188,19 @@ namespace MR
         Ptr<Dynamic_ACT_additions> act;
 
       };
+
+
+
+
+
+      class WriteKernelDynamic : public Tracking::WriteKernel
+      {
+        public:
+          WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const DWI::Tractography::Properties& properties) :
+              Tracking::WriteKernel (shared, output_file, properties) { }
+          bool operator() (const Tracking::GeneratedTrack&, Tractography::Streamline<>&);
+      };
+
 
 
 

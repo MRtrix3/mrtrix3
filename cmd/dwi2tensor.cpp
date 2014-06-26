@@ -384,9 +384,7 @@ class Processor
 
 void run()
 {
-  std::vector<ssize_t> strides (4, 0);
-  strides[3] = 1;
-  InputBufferType dwi_buffer (argument[0], strides);
+  InputBufferType dwi_buffer (argument[0], Image::Stride::contiguous_along_axis (3));
   Math::Matrix<cost_value_type> grad = DWI::get_valid_DW_scheme<cost_value_type> (dwi_buffer);
 
   size_t dwi_axis = 3;
@@ -422,8 +420,6 @@ void run()
   dt_header.set_ndim (4);
   dt_header.dim (3) = 6;
   dt_header.datatype() = DataType::Float32;
-  dt_header.stride(0) = dt_header.stride(1) = dt_header.stride(2) = 0;
-  dt_header.stride(3) = 1;
   dt_header.DW_scheme() = grad;
 
   OutputBufferType dt_buffer (argument[1], dt_header);

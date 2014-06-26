@@ -38,12 +38,14 @@ using namespace App;
 
 void usage ()
 {
+
+  AUTHOR = "Robert E. Smith (robert.smith@florey.edu.au)";
+
   DESCRIPTION
   + "fix a streamlines .tck file where the 'count' field has not been set correctly.";
 
   ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ();
-
 
 }
 

@@ -47,6 +47,10 @@ void usage ()
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in()
   + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out();
 
+  REFERENCES = "Hess, C. P.; Mukherjee, P.; Han, E. T.; Xu, D. & Vigneron, D. B. "
+               "Q-ball reconstruction of multimodal fiber orientations using the spherical harmonic basis. "
+               "Magnetic Resonance in Medicine, 2006, 56, 104-117";
+
   OPTIONS
   + DWI::GradOption
   + DWI::ShellOption
@@ -298,10 +302,7 @@ void run ()
   Image::Header SH_header (dwi_data);
   SH_header.dim(3) = Math::SH::NforL (lmax);
   SH_header.datatype() = DataType::Float32;
-  SH_header.stride(0) = 2;
-  SH_header.stride(1) = 3;
-  SH_header.stride(2) = 4;
-  SH_header.stride(3) = 1;
+  Image::Stride::set (SH_header, Image::Stride::contiguous_along_axis (3, dwi_data));
   Image::Buffer<value_type> SH_data (argument[1], SH_header);
 
 

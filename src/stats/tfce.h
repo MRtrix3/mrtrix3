@@ -121,13 +121,11 @@ namespace MR
                         value_type dh, value_type E, value_type H) :
                           connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
-
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
                                  std::vector<value_type>* get_tfce_stats)
           {
             tfce_stats.resize (stats.size());
             std::fill (tfce_stats.begin(), tfce_stats.end(), 0.0);
-
             value_type max_tfce_stat = 0.0;
             for (size_t fixel = 0; fixel < connectivity_map.size(); ++fixel) {
               std::map<int32_t, connectivity>::const_iterator connected_fixel;
@@ -261,4 +259,4 @@ namespace MR
   }
 }
 
-#endif
+T#endif

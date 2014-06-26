@@ -34,7 +34,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "sum the Apparent Fibre Density (AFD) for all fixels belonging to a fibre bundle, "

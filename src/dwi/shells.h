@@ -43,8 +43,16 @@
 #define DWI_SHELLS_EPSILON 100
 // Minimum number of volumes within DWI_SHELL_EPSILON necessary to continue expansion of the cluster selection
 #define DWI_SHELLS_MIN_LINKAGE 3
-// Number of volumes necessary for a shell to be retained
+// Default number of volumes necessary for a shell to be retained
+//   (note: only applies if function reject_small_shells() is called explicitly)
 #define DWI_SHELLS_MIN_DIRECTIONS 6
+
+
+
+//CONF option: BZeroThreshold
+//CONF default: 10.0
+//CONF specifies the b-value threshold for determining those image
+//CONF volumes that correspond to b=0
 
 
 
@@ -99,7 +107,7 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Shell& S)
         {
           stream << "Shell: " << S.volumes.size() << " volumes, b-value "
-              << S.mean << " =- " << S.stdev << " (range [" << S.min << " - " << S.max << "])";
+              << S.mean << " +- " << S.stdev << " (range [" << S.min << " - " << S.max << "])";
           return stream;
         }
 
@@ -130,6 +138,7 @@ namespace MR
 
         void select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
 
+        void reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
 
         bool is_single_shell() const {
           return ((shells.size() == 1) || ((shells.size() == 2 && smallest().is_bzero())));
@@ -158,7 +167,6 @@ namespace MR
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;
         void regionQuery (const BValueList&, const float, std::vector<size_t>&) const;
-        size_t rejectSmallShells (const BValueList&, std::vector<size_t>&, const size_t) const;
 
 
     };

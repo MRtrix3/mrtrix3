@@ -75,10 +75,16 @@ namespace MR
         QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
         int swap_interval = MR::File::Config::get_int ("VSync", 0);
         f.setSwapInterval (swap_interval);
+        bool need_core_profile = 
 #ifdef MRTRIX_MACOSX
-        f.setVersion (3,3);
-        f.setProfile (QGLFormat::CoreProfile);
+        true;
+#else
+        false;
 #endif
+        if (File::Config::get_bool ("NeedOpenGLCoreProfile", need_core_profile)) {
+          f.setVersion (3,3);
+          f.setProfile (QGLFormat::CoreProfile);
+        }
         int nsamples = File::Config::get_int ("MSAA", 0);
         if (nsamples > 1) {
           f.setSampleBuffers (true);

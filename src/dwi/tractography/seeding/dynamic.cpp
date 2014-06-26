@@ -207,6 +207,29 @@ namespace MR
 
 
 
+
+
+
+        bool WriteKernelDynamic::operator() (const Tracking::GeneratedTrack& in, Tractography::Streamline<>& out)
+        {
+          out.index = writer.count;
+          out.weight = 1.0;
+          if (!WriteKernel::operator() (in)) {
+            out.clear();
+            // Flag to indicate that tracking has completed, and threads should therefore terminate
+            out.weight = 0.0;
+            // Actually need to pass this down the queue so that the seeder thread receives it and knows to terminate
+            return true;
+          }
+          out = in;
+          return true;
+        }
+
+
+
+
+
+
       }
     }
   }

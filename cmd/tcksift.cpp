@@ -55,6 +55,10 @@ void usage ()
   DESCRIPTION
   + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
 
+  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+               "NeuroImage, 2013, 67, 298-312";
+
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_file()
   + Argument ("in_fod",     "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
