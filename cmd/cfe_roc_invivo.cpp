@@ -69,6 +69,8 @@ void usage ()
 
   + Argument ("contrast", "the contrast matrix").type_file()
 
+  + Argument ("permutations", "the set of indices for all permutations").type_file()
+
   + Argument ("output", "the output prefix").type_file();
 
   OPTIONS
@@ -86,9 +88,6 @@ void usage ()
 
   + Option ("connectivity", "the connectivity weight")
   + Argument ("C").type_float (1.0, 1.0, 100).type_sequence_float()
-
-  + Option ("permutations", "the number of permutations")
-  + Argument ("num").type_integer(1, 1000, 10000)
 
   + Option ("roc", "the number of thresholds for ROC curve generation")
   + Argument ("num").type_integer (1, 1000, 10000);
@@ -140,6 +139,41 @@ void write_fixel_output (const std::string filename,
   }
 }
 
+
+class PermutationStack {
+  public:
+    PermutationStack (const Math::Matrix<float>& permutations_matrix) :
+      num_permutations (permutations_matrix.rows()),
+      current_permutation (0),
+      progress ("running " + str(permutations_matrix.rows()) + " permutations...", permutations_matrix.rows()),
+      permutations (permutations_matrix.rows())
+    {
+      for (size_t p = 0; p < permutations_matrix.rows(); ++p){
+        permutations[p].resize(permutations_matrix.columns());
+        for (size_t c = 0; c < permutations_matrix.columns(); ++c)
+          permutations[p][c] = static_cast<size_t>(permutations_matrix(p,c));
+      }
+    }
+
+    size_t next () {
+      Thread::Mutex::Lock lock (permutation_mutex);
+      size_t index = current_permutation++;
+      if (index < permutations.size())
+        ++progress;
+      return index;
+    }
+    const std::vector<size_t>& permutation (size_t index) const {
+      return permutations[index];
+    }
+
+    const size_t num_permutations;
+
+  protected:
+    size_t current_permutation;
+    ProgressBar progress;
+    std::vector <std::vector<size_t> > permutations;
+    Thread::Mutex permutation_mutex;
+};
 
 
 class FixelIndex
@@ -223,7 +257,7 @@ class TrackProcessor {
 
 class Processor {
   public:
-    Processor (Stats::TFCE::PermutationStack& perm_stack,
+    Processor (PermutationStack& perm_stack,
                const Math::Matrix<value_type>& control_data,
                const Math::Matrix<value_type>& path_data,
                const Math::Matrix<value_type>& design,
@@ -356,7 +390,7 @@ class Processor {
 
     }
 
-    Stats::TFCE::PermutationStack& perm_stack;
+    PermutationStack& perm_stack;
     const Math::Matrix<value_type>& control_data;
     const Math::Matrix<value_type>& path_data;
     const Math::Matrix<value_type>& design;
@@ -399,8 +433,6 @@ bool file_exists (const std::string& filename)
 
 
 
-
-
 void run ()
 {
   const value_type angular_threshold_dp = cos (ANGULAR_THRESHOLD * (M_PI/180.0));
@@ -411,11 +443,6 @@ void run ()
   int num_ROC_samples = 2000;
   if (opt.size())
     num_ROC_samples = opt[0][0];
-
-  int num_permutations = 1000;
-  opt = get_options("permutations");
-  if (opt.size())
-    num_permutations = opt[0][0];
 
   std::vector<value_type> effect(1);
   effect[0] = 0.2;
@@ -468,6 +495,12 @@ void run ()
   Math::Matrix<value_type> contrast;
   contrast.load (argument[4]);
 
+  // Load permutation matrix:
+  Math::Matrix<value_type> permutations;
+  permutations.load (argument[5]);
+
+  size_t num_permutations = permutations.rows();
+
   if (contrast.columns() > design.columns())
     throw Exception ("too many contrasts for design matrix");
   contrast.resize (contrast.rows(), design.columns());
@@ -518,42 +551,6 @@ void run ()
     indexer_vox.value() = f;
   }
 
-  // load each fixel image, identify fixel correspondence and save AFD in 2D vector
-  Math::Matrix<value_type> control_data (num_fixels, num_subjects);
-  {
-    ProgressBar progress ("loading input images...", num_subjects);
-    for (size_t subject = 0; subject < num_subjects; subject++) {
-      Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
-      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
-      Image::check_dimensions (fixel, template_vox, 0, 3);
-
-      for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
-         indexer_vox[3] = 0;
-         int32_t index = indexer_vox.value();
-         indexer_vox[3] = 1;
-         int32_t number_fixels = indexer_vox.value();
-
-         // for each fixel in the template, find the corresponding fixel in this subject voxel
-         for (int32_t i = index; i < index + number_fixels; ++i) {
-           value_type largest_dp = 0.0;
-           int index_of_closest_fixel = -1;
-           for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-             value_type dp = Math::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
-             if (dp > largest_dp) {
-               largest_dp = dp;
-               index_of_closest_fixel = f;
-             }
-           }
-           if (largest_dp > angular_threshold_dp)
-             control_data (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
-         }
-       }
-
-      progress++;
-    }
-  }
-
-
   //  write_fixel_output ("before.msf", control_data.column(4), input_header, template_vox, indexer_vox);
 
   // fixel-fixel connectivity matrix (sparse)
@@ -596,7 +593,40 @@ void run ()
   }
 
 
+  // load each fixel image, identify fixel correspondence and save AFD in 2D vector
+  Math::Matrix<value_type> control_data (num_fixels, num_subjects);
+  {
+    ProgressBar progress ("loading input images...", num_subjects);
+    for (size_t subject = 0; subject < num_subjects; subject++) {
+      Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
+      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
+      Image::check_dimensions (fixel, template_vox, 0, 3);
 
+      for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
+         indexer_vox[3] = 0;
+         int32_t index = indexer_vox.value();
+         indexer_vox[3] = 1;
+         int32_t number_fixels = indexer_vox.value();
+
+         // for each fixel in the template, find the corresponding fixel in this subject voxel
+         for (int32_t i = index; i < index + number_fixels; ++i) {
+           value_type largest_dp = 0.0;
+           int index_of_closest_fixel = -1;
+           for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+             value_type dp = Math::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
+             if (dp > largest_dp) {
+               largest_dp = dp;
+               index_of_closest_fixel = f;
+             }
+           }
+           if (largest_dp > angular_threshold_dp)
+             control_data (i, subject) = fixel_vox.value()[index_of_closest_fixel].value;
+         }
+       }
+
+      progress++;
+    }
+  }
 
   for (size_t effect_size = 0; effect_size < effect.size(); ++effect_size) {
     // generate images effected by pathology for all images
@@ -686,7 +716,7 @@ void run ()
                      ", effect = " + str(effect[effect_size]) + ", h = " + str(H[h]) +
                      ", e = " + str(E[e]) + ", c = " + str(C[c]));
 
-            std::string filename (argument[5]);
+            std::string filename (argument[6]);
             filename.append ("_s" + str(smooth[s]) + "_effect" + str(effect[effect_size]) +
                              "_h" + str(H[h]) + "_e" + str(E[e]) +
                              "_c" + str (C[c]));
@@ -702,7 +732,7 @@ void run ()
               std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
               {
 
-                Stats::TFCE::PermutationStack perm_stack (num_permutations, num_subjects);
+                PermutationStack perm_stack (permutations);
                 Math::Stats::GLMTTest ttest_control (control_data, design, contrast);
 
                 int index = 0;
@@ -737,7 +767,7 @@ void run ()
               for (int t = 0; t < num_ROC_samples; ++t) {
                 // average TPR across all permutations realisations
                 double sum = 0.0;
-                for (int p = 0; p < num_permutations; ++p)
+                for (size_t p = 0; p < num_permutations; ++p)
                   sum += TPRates (t,p);
                 output << sum / (value_type) num_permutations << " ";
                 // FPR is defined as the fraction of permutations realisations with a false positive
