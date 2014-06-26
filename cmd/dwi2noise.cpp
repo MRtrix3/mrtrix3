@@ -59,7 +59,8 @@ void usage ()
             "diffusion-weighted images up to lmax = 8.")
   +   Argument ("order").type_integer (0, 8, 8)
 
-  + DWI::GradOption;
+  + DWI::GradOption
+  + DWI::ShellOption;
 
 }
 
@@ -87,8 +88,6 @@ void run ()
   Image::Buffer<value_type>::voxel_type dwi_voxel (dwi_buffer);
   Image::Adapter::Extract1D<Image::Buffer<value_type>::voxel_type> dwi (dwi_voxel, 3, container_cast< std::vector<int> > (dwis));
   Image::Buffer<value_type>::voxel_type noise (noise_buffer);
-
-  VAR (dwi.info());
 
   estimator (dwi, noise, mapping);
 }
