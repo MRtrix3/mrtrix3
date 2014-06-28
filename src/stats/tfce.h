@@ -150,10 +150,10 @@ namespace MR
 
       class PermutationStack {
         public:
-          PermutationStack (size_t num_permutations, size_t num_samples) :
+          PermutationStack (size_t num_permutations, size_t num_samples, std::string msg) :
             num_permutations (num_permutations),
             current_permutation (0),
-            progress ("running " + str(num_permutations) + " permutations...", num_permutations) {
+            progress (msg, num_permutations) {
               Math::Stats::generate_permutations (num_permutations, num_samples, permutations);
             }
 
@@ -322,11 +322,13 @@ namespace MR
                            Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
                            std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg, std::vector<value_type>& tvalue_output)
           {
-            PermutationStack permutation_stack (num_permutations, stats_calculator.num_samples());
 
             if (do_nonstationary_adjustment) {
+              PermutationStack preprocessor_permutations (num_permutations,
+                                                          stats_calculator.num_samples(),
+                                                          "precomputing empirical statistic for non-stationarity adjustment");
               std::vector<size_t> global_enhanced_count (stats_calculator.num_samples(), 0.0);
-              PreProcessor<StatsType, EnhancementType> preprocessor (permutation_stack, stats_calculator, enhancer,
+              PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
                                                                      empirical_enhanced_statistic, global_enhanced_count);
               Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
               Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
@@ -339,7 +341,11 @@ namespace MR
               }
             }
 
-            Processor<StatsType, EnhancementType> processor (permutation_stack, stats_calculator, enhancer,
+            PermutationStack permutations (num_permutations,
+                                           stats_calculator.num_samples(),
+                                           "running " + str(num_permutations) + " permutations...");
+
+            Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
                                                              do_nonstationary_adjustment, empirical_enhanced_statistic,
                                                              perm_dist_pos, perm_dist_neg, enhanced_output_pos,
                                                              enhanced_output_neg, tvalue_output);
