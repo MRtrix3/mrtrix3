@@ -14,7 +14,10 @@ def compute_auc(effect, smooth, h, e, c, prefix):
     TPR = data[::-1,0]                                   
     i = 0
     while FPR[i] < 0.05:
-        i = i + 1                           
+        i = i + 1
+    if i == 0:
+        print 0.0
+        return 0.0
     FPR_05 = FPR[0:i+1]
     TPR_05 = TPR[0:i+1]                     
     if FPR[i] != 0.05:
@@ -28,13 +31,15 @@ def compute_auc(effect, smooth, h, e, c, prefix):
 
 # loop over all parameter combinations, compute AUC and average across ROIs
 
-effect = '0.3'
+effect = '0.5'
 smooth = '10'
 h = '2'
 e = '1'
-for c in ['0','0.05','0.1','0.15','0.2','0.25','0.3','0.35','0.4','0.45','0.5','0.55','0.6','0.65','0.7','0.75']:
-    uncinate = compute_auc (effect,smooth, h, e, c, '/data/dave/cfe/experiment_2_sims/invivo/connectivity/uncinate/roc');
-    write_file('/data/dave/cfe/experiment_2_sims/invivo/connectivity/uncinate/auc' + '_effect' + str(effect) + '_s' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), uncinate)
+#for c in ['0','0.05','0.1','0.15','0.2','0.25','0.3','0.35','0.4','0.45','0.5','0.55','0.6','0.65','0.7','0.75','0.8','0.85','0.9', '0.95','1']:
+for c in ['0.8','0.9','1']:
+#for c in ['0','0.1','0.2','0.3','0.4','0.5','0.6','0.7','0.8','0.9','1']:
+    auc = compute_auc (effect,smooth, h, e, c, '/data/dave/cfe/experiment_2_sims/invivo/connectivity/uncinate/roc');
+    write_file('/data/dave/cfe/experiment_2_sims/invivo/connectivity/uncinate/auc' + '_effect' + str(effect) + '_s' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), auc)
 
 
 

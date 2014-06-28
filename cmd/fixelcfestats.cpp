@@ -76,29 +76,31 @@ void usage ()
 
   + Option ("notest", "don't perform permutation testing and only output population statistics (effect size, stdev etc)")
 
-  + Option ("nperms", "the number of permutations (default = 5000).")
+  + Option ("nperms", "the number of permutations (default: 5000).")
   + Argument ("num").type_integer (1, 5000, 100000)
 
-  + Option ("dh", "the height increment used in the TFCE integration (default = 0.1)")
+  + Option ("cfe_dh", "the height increment used in the cfe integration (default: 0.1)")
   + Argument ("value").type_float (0.001, 0.1, 100000)
 
-  + Option ("tfce_e", "TFCE extent parameter (default = 2.0)")
+  + Option ("cfe_e", "cfe extent exponent (default: 2.0)")
   + Argument ("value").type_float (0.0, 2.0, 100000)
 
-  + Option ("tfce_h", "TFCE height parameter (default = 1.0)")
+  + Option ("cfe_h", "cfe height exponent (default: 1.0)")
   + Argument ("value").type_float (0.0, 1.0, 100000)
 
-  + Option ("tfce_c", "TFCE connectivity parameter (default = 0.5)")
-  + Argument ("value").type_float (0.0, 0.5, 100000)
+  + Option ("cfe_c", "cfe connectivity exponent (default: 0.1)")
+  + Argument ("value").type_float (0.0, 0.1, 100000)
 
-  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence")
+  + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
   + Argument ("value").type_float (0.0, 30, 90)
 
   + Option ("connectivity", "a threshold to define the required fraction of shared connections to be included in the neighbourhood (default: 1%)")
   + Argument ("threshold").type_float (0.001, 0.01, 1.0)
 
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)")
-  + Argument ("FWHM").type_float (0.0, 10.0, 200.0);
+  + Argument ("FWHM").type_float (0.0, 10.0, 200.0)
+
+  + Option ("nonstationary", "do not perform adjustment for non-stationarity");
 
 }
 
@@ -194,25 +196,25 @@ void write_fixel_output (const std::string& filename,
 
 void run() {
 
-  Options opt = get_options ("dh");
-  value_type dh = 0.1;
+  Options opt = get_options ("cfe_dh");
+  value_type cfe_dh = 0.1;
   if (opt.size())
-    dh = opt[0][0];
+    cfe_dh = opt[0][0];
 
-  opt = get_options ("tfce_h");
-  value_type tfce_H = 2.0;
+  opt = get_options ("cfe_h");
+  value_type cfe_h = 2.0;
   if (opt.size())
-    tfce_H = opt[0][0];
+    cfe_h = opt[0][0];
 
-  opt = get_options ("tfce_e");
-  value_type tfce_E = 1.0;
+  opt = get_options ("cfe_e");
+  value_type cfe_e = 1.0;
   if (opt.size())
-    tfce_E = opt[0][0];
+    cfe_e = opt[0][0];
 
-  opt = get_options ("tfce_c");
-  value_type tfce_C = 0.5;
+  opt = get_options ("cfe_c");
+  value_type cfe_c = 0.1;
   if (opt.size())
-    tfce_C = opt[0][0];
+    cfe_c = opt[0][0];
 
   opt = get_options ("nperms");
   int num_perms = 5000;
@@ -234,6 +236,8 @@ void run() {
   opt = get_options ("smooth");
   if (opt.size())
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;
+
+  bool do_nonstationary_adjustment = !get_options ("nonstationary").size();
 
   // Read filenames
   std::vector<std::string> filenames;
@@ -350,7 +354,7 @@ void run() {
               smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (it->first, smoothing_weight));
           }
           // Here we pre-exponentiate each connectivity value by C
-          it->second.value = Math::pow (connectivity, tfce_C);
+          it->second.value = Math::pow (connectivity, cfe_c);
           ++it;
         }
       }
@@ -437,31 +441,43 @@ void run() {
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-     Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
-     Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
-     std::vector<value_type> tfce_output_pos (num_fixels, 0.0);
-     std::vector<value_type> tfce_output_neg (num_fixels, 0.0);
-     std::vector<value_type> tvalue_output (num_fixels, 0.0);
-     std::vector<value_type> pvalue_output_pos (num_fixels, 0.0);
-     std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
 
-     Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-     {
-       Stats::TFCE::Connectivity tfce_integrator (connectivity_matrix, dh, tfce_E, tfce_H);
-       Stats::TFCE::run (glm_ttest, tfce_integrator, num_perms,
-                         perm_distribution_pos, perm_distribution_neg,
-                         tfce_output_pos, tfce_output_neg, tvalue_output);
-     }
-
-     perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
-     perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
-     Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
-     Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
-
-     write_fixel_output (output_prefix + "_tfce_pos.msf", tfce_output_pos, input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_tfce_neg.msf", tfce_output_neg, input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_pvalue_pos.msf", pvalue_output_pos, input_header, mask_vox, indexer_vox);
-     write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, input_header, mask_vox, indexer_vox);
+    Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
+    Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
+    std::vector<value_type> cfe_output_pos (num_fixels, 0.0);
+    std::vector<value_type> cfe_output_neg (num_fixels, 0.0);
+    std::vector<value_type> tvalue_output (num_fixels, 0.0);
+    std::vector<value_type> pvalue_output_pos (num_fixels, 0.0);
+    std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
+    std::vector<value_type> empirical_cfe_statistic (num_fixels, 0.0);
+    Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+    Stats::TFCE::Connectivity cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
+    {
+      Stats::TFCE::run (glm_ttest, cfe_integrator, num_perms, do_nonstationary_adjustment, empirical_cfe_statistic,
+                        perm_distribution_pos, perm_distribution_neg,
+                        cfe_output_pos, cfe_output_neg, tvalue_output);
+    }
+    perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
+    perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
+    Math::Stats::statistic2pvalue (perm_distribution_pos, cfe_output_pos, pvalue_output_pos);
+    Math::Stats::statistic2pvalue (perm_distribution_neg, cfe_output_neg, pvalue_output_neg);
+    Image::Header output_header (input_header);
+    output_header.comments().push_back("num permutations = " + str(num_perms));
+    output_header.comments().push_back("dh = " + str(cfe_dh));
+    output_header.comments().push_back("cfe_e = " + str(cfe_e));
+    output_header.comments().push_back("cfe_h = " + str(cfe_h));
+    output_header.comments().push_back("cfe_c = " + str(cfe_c));
+    output_header.comments().push_back("angular threshold = " + str(angular_threshold));
+    output_header.comments().push_back("connectivity threshold = " + str(connectivity_threshold));
+    output_header.comments().push_back("smoothing FWHM = " + str(smooth_std_dev));
+    output_header.comments().push_back("nonstationary adjustment = " + str(do_nonstationary_adjustment));
+    if (do_nonstationary_adjustment) {
+      write_fixel_output (output_prefix + "_cfe_empirical.msf", empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
+    }
+    write_fixel_output (output_prefix + "_cfe_pos.msf", cfe_output_pos, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "_cfe_neg.msf", cfe_output_neg, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "_pvalue_pos.msf", pvalue_output_pos, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
   }
 }
