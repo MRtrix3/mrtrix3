@@ -189,9 +189,9 @@ void run() {
 
   Image::Header output_header (header);
   output_header.comments().push_back("num permutations = " + str(num_perms));
-  output_header.comments().push_back("tfce_dh = " + str(dh));
-  output_header.comments().push_back("tfce_e = " + str(cfe_E));
-  output_header.comments().push_back("tfce_h = " + str(cfe_H));
+  output_header.comments().push_back("tfce_dh = " + str(tfce_dh));
+  output_header.comments().push_back("tfce_e = " + str(tfce_E));
+  output_header.comments().push_back("tfce_h = " + str(tfce_H));
   output_header.comments().push_back("26 connectivity = " + str(do_26_connectivity));
   output_header.comments().push_back("nonstationary adjustment = " + str(do_nonstationary_adjustment));
 
