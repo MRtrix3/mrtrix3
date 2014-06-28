@@ -115,9 +115,9 @@ void run() {
   if (opt.size())
     num_perms = opt[0][0];
 
-  bool do_nonstationary_correction = get_options ("stationary").size();
-
   bool do_26_connectivity = get_options("connectivity").size();
+
+  bool do_nonstationary_adjustment = !get_options ("nonstationary").size();
 
   // Read filenames
   std::vector<std::string> subjects;
@@ -187,11 +187,19 @@ void run() {
     cluster_neg.append ("_tfce_neg.mif");
   }
 
-  Image::Buffer<value_type> cluster_data_pos (cluster_pos, header);
-  Image::Buffer<value_type> cluster_data_neg (cluster_neg, header);
-  Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", header);
-  Image::Buffer<value_type> pvalue_data_pos (prefix + "_pvalue_pos.mif", header);
-  Image::Buffer<value_type> pvalue_data_neg (prefix + "_pvalue_neg.mif", header);
+  Image::Header output_header (header);
+  output_header.comments().push_back("num permutations = " + str(num_perms));
+  output_header.comments().push_back("tfce_dh = " + str(dh));
+  output_header.comments().push_back("tfce_e = " + str(cfe_E));
+  output_header.comments().push_back("tfce_h = " + str(cfe_H));
+  output_header.comments().push_back("26 connectivity = " + str(do_26_connectivity));
+  output_header.comments().push_back("nonstationary adjustment = " + str(do_nonstationary_adjustment));
+
+  Image::Buffer<value_type> cluster_data_pos (cluster_pos, output_header);
+  Image::Buffer<value_type> cluster_data_neg (cluster_neg, output_header);
+  Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", output_header);
+  Image::Buffer<value_type> pvalue_data_pos (prefix + "_pvalue_pos.mif", output_header);
+  Image::Buffer<value_type> pvalue_data_neg (prefix + "_pvalue_neg.mif", output_header);
 
   Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
   Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
@@ -207,17 +215,14 @@ void run() {
     Math::Stats::GLMTTest glm (data, design, contrast);
     if (std::isfinite (cluster_forming_threshold)) {
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
-      Stats::TFCE::run (glm, cluster_size_test, num_perms, do_nonstationary_correction, empirical_statistic,
+      Stats::TFCE::run (glm, cluster_size_test, num_perms, do_nonstationary_adjustment, empirical_statistic,
                         perm_distribution_pos, perm_distribution_neg,
                         cluster_output_pos, cluster_output_neg, tvalue_output);
     }
     else { // TFCE
 
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
-      if (do_nonstationary_correction)
-      Stats::TFCE::precompute_empirical_enhanced_statistic (glm, tfce_integrator, num_perms, empirical_statistic);
-
-      Stats::TFCE::run (glm, tfce_integrator, num_perms, do_nonstationary_correction, empirical_statistic,
+      Stats::TFCE::run (glm, tfce_integrator, num_perms, do_nonstationary_adjustment, empirical_statistic,
                         perm_distribution_pos, perm_distribution_neg,
                         cluster_output_pos, cluster_output_neg, tvalue_output);
     }
@@ -228,20 +233,21 @@ void run() {
   Math::Stats::statistic2pvalue (perm_distribution_pos, cluster_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, cluster_output_neg, pvalue_output_neg);
 
-  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (cluster_data_pos);
-  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (cluster_data_neg);
+  Image::Buffer<value_type>::voxel_type cluster_voxel_pos (cluster_data_pos);
+  Image::Buffer<value_type>::voxel_type cluster_voxel_neg (cluster_data_neg);
   Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
   Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
   Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
 
+
   {
     ProgressBar progress ("generating output...");
     for (size_t i = 0; i < num_vox; i++) {
-      for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
-        tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = pvalue_voxel_pos[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
+      for (size_t dim = 0; dim < cluster_voxel_pos.ndim(); dim++)
+        tvalue_voxel[dim] = cluster_voxel_pos[dim] = cluster_voxel_neg[dim] = pvalue_voxel_pos[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
       tvalue_voxel.value() = tvalue_output[i];
-      tfce_voxel_pos.value() = cluster_output_pos[i];
-      tfce_voxel_neg.value() = cluster_output_neg[i];
+      cluster_voxel_pos.value() = cluster_output_pos[i];
+      cluster_voxel_neg.value() = cluster_output_neg[i];
       pvalue_voxel_pos.value() = pvalue_output_pos[i];
       pvalue_voxel_neg.value() = pvalue_output_neg[i];
     }
