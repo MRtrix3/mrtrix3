@@ -47,7 +47,7 @@ void usage ()
   REFERENCES = "If not using the -threshold command-line option: \n"
                "Smith, S. M. & Nichols, T. E. "
                "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
-               "NeuroImage, 2009, 44, 83-98";
+               "NeuroImage, 2009, 44, 83-98 \n";
 
 
   ARGUMENTS
@@ -79,7 +79,9 @@ void usage ()
   + Option ("tfce_h", "TFCE extent parameter (default = 0.5)")
   +   Argument ("value").type_float (0.001, 0.5, 100000)
 
-  + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)");
+  + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)")
+
+  + Option ("stationary", "do not perform non-stationarity correction");
 }
 
 
@@ -112,6 +114,8 @@ void run() {
   int num_perms = 5000;
   if (opt.size())
     num_perms = opt[0][0];
+
+  bool do_nonstationary_correction = get_options ("stationary").size();
 
   bool do_26_connectivity = get_options("connectivity").size();
 
@@ -173,43 +177,59 @@ void run() {
   header.datatype() = DataType::Float32;
   std::string prefix (argument[4]);
 
-  Image::Buffer<value_type> tfce_data_pos (prefix + "_tfce_pos.mif", header);
-  Image::Buffer<value_type> tfce_data_neg (prefix + "_tfce_neg.mif", header);
+  std::string cluster_pos (prefix);
+  std::string cluster_neg (prefix);
+  if (std::isfinite (cluster_forming_threshold)) {
+     cluster_pos.append ("_clusters_pos.mif");
+     cluster_neg.append ("_clusters_neg.mif");
+  } else {
+    cluster_pos.append ("_tfce_pos.mif");
+    cluster_neg.append ("_tfce_neg.mif");
+  }
+
+  Image::Buffer<value_type> cluster_data_pos (cluster_pos, header);
+  Image::Buffer<value_type> cluster_data_neg (cluster_neg, header);
   Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", header);
   Image::Buffer<value_type> pvalue_data_pos (prefix + "_pvalue_pos.mif", header);
   Image::Buffer<value_type> pvalue_data_neg (prefix + "_pvalue_neg.mif", header);
 
   Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
   Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
-  std::vector<value_type> tfce_output_pos (num_vox, 0.0);
-  std::vector<value_type> tfce_output_neg (num_vox, 0.0);
+  std::vector<value_type> cluster_output_pos (num_vox, 0.0);
+  std::vector<value_type> cluster_output_neg (num_vox, 0.0);
   std::vector<value_type> pvalue_output_pos (num_vox, 0.0);
   std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
   std::vector<value_type> tvalue_output (num_vox, 0.0);
+
+  std::vector<value_type> empirical_statistic (num_vox, 0.0);
 
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
     if (std::isfinite (cluster_forming_threshold)) {
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
-      Stats::TFCE::run (glm, cluster_size_test, num_perms,
-          perm_distribution_pos, perm_distribution_neg,
-          tfce_output_pos, tfce_output_neg, tvalue_output);
+      Stats::TFCE::run (glm, cluster_size_test, num_perms, do_nonstationary_correction, empirical_statistic,
+                        perm_distribution_pos, perm_distribution_neg,
+                        cluster_output_pos, cluster_output_neg, tvalue_output);
     }
     else { // TFCE
+
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
-      Stats::TFCE::run (glm, tfce_integrator, num_perms,
-          perm_distribution_pos, perm_distribution_neg,
-          tfce_output_pos, tfce_output_neg, tvalue_output);
+      if (do_nonstationary_correction)
+      Stats::TFCE::precompute_empirical_enhanced_statistic (glm, tfce_integrator, num_perms, empirical_statistic);
+
+      Stats::TFCE::run (glm, tfce_integrator, num_perms, do_nonstationary_correction, empirical_statistic,
+                        perm_distribution_pos, perm_distribution_neg,
+                        cluster_output_pos, cluster_output_neg, tvalue_output);
     }
   }
 
   perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
   perm_distribution_neg.save (prefix + "_perm_dist_neg.txt");
-  Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
-  Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
+  Math::Stats::statistic2pvalue (perm_distribution_pos, cluster_output_pos, pvalue_output_pos);
+  Math::Stats::statistic2pvalue (perm_distribution_neg, cluster_output_neg, pvalue_output_neg);
 
-  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
-  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
+  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (cluster_data_pos);
+  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (cluster_data_neg);
   Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
   Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
   Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
@@ -220,8 +240,8 @@ void run() {
       for (size_t dim = 0; dim < tfce_voxel_pos.ndim(); dim++)
         tvalue_voxel[dim] = tfce_voxel_pos[dim] = tfce_voxel_neg[dim] = pvalue_voxel_pos[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
       tvalue_voxel.value() = tvalue_output[i];
-      tfce_voxel_pos.value() = tfce_output_pos[i];
-      tfce_voxel_neg.value() = tfce_output_neg[i];
+      tfce_voxel_pos.value() = cluster_output_pos[i];
+      tfce_voxel_neg.value() = cluster_output_neg[i];
       pvalue_voxel_pos.value() = pvalue_output_pos[i];
       pvalue_voxel_neg.value() = pvalue_output_neg[i];
     }
