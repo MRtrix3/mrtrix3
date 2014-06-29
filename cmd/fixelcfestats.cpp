@@ -422,20 +422,21 @@ void run() {
     }
   }
 
-  CONSOLE ("outputting beta coefficients, effect size and standard deviation");
-  Math::Matrix<float> temp;
+  {
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
+    Math::Matrix<float> temp;
 
-  Math::Stats::GLM::solve_betas (data, design, temp);
-  for (size_t i = 0; i < contrast.columns(); ++i)
-    write_fixel_output (output_prefix + "_beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
+    Math::Stats::GLM::solve_betas (data, design, temp);
+    for (size_t i = 0; i < contrast.columns(); ++i)
+      write_fixel_output (output_prefix + "_beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
 
-  Math::Stats::GLM::abs_effect_size (data, design, contrast, temp);
-  write_fixel_output (output_prefix + "_abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
-  Math::Stats::GLM::std_effect_size (data, design, contrast, temp);
-  write_fixel_output (output_prefix + "_std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
-  Math::Stats::GLM::stdev (data, design, temp);
-  write_fixel_output (output_prefix + "_std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
-
+    Math::Stats::GLM::abs_effect_size (data, design, contrast, temp);
+    write_fixel_output (output_prefix + "_abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    Math::Stats::GLM::std_effect_size (data, design, contrast, temp);
+    write_fixel_output (output_prefix + "_std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    Math::Stats::GLM::stdev (data, design, temp);
+    write_fixel_output (output_prefix + "_std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+  }
 
 
   // Perform permutation testing
@@ -457,6 +458,7 @@ void run() {
                         perm_distribution_pos, perm_distribution_neg,
                         cfe_output_pos, cfe_output_neg, tvalue_output);
     }
+    ProgressBar progress ("outputting final results");
     perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
     perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
     Math::Stats::statistic2pvalue (perm_distribution_pos, cfe_output_pos, pvalue_output_pos);
