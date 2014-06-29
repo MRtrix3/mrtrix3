@@ -150,11 +150,11 @@ namespace MR
 
       class PermutationStack {
         public:
-          PermutationStack (size_t num_permutations, size_t num_samples, std::string msg) :
+          PermutationStack (size_t num_permutations, size_t num_samples, std::string msg, bool include_default = true) :
             num_permutations (num_permutations),
             current_permutation (0),
             progress (msg, num_permutations) {
-              Math::Stats::generate_permutations (num_permutations, num_samples, permutations);
+              Math::Stats::generate_permutations (num_permutations, num_samples, permutations, include_default);
             }
 
           size_t next () {
@@ -189,7 +189,8 @@ namespace MR
                             perm_stack (permutation_stack), stats_calculator (stats_calculator),
                             enhancer (enhancer), global_enhanced_sum (global_enhanced_sum),
                             global_enhanced_count (global_enhanced_count), enhanced_sum (global_enhanced_sum.size(), 0.0),
-                            enhanced_count (global_enhanced_sum.size(), 0.0) {
+                            enhanced_count (global_enhanced_sum.size(), 0.0), stats (global_enhanced_sum.size()),
+                            enhanced_stats (global_enhanced_sum.size()) {
             }
 
             ~PreProcessor () {
@@ -209,11 +210,8 @@ namespace MR
 
             void process_permutation (size_t index) {
               value_type max_stat = 0.0, min_stat = 0.0;
-              std::vector<value_type> stats;
               stats_calculator (perm_stack.permutation (index), stats, max_stat, min_stat);
-              std::vector<value_type> enhanced_stats;
               enhancer (max_stat, stats, &enhanced_stats);
-
               for (size_t i = 0; i < enhanced_stats.size(); ++i) {
                 if (enhanced_stats[i] > 0.0) {
                   enhanced_sum[i] += enhanced_stats[i];
@@ -229,6 +227,8 @@ namespace MR
             std::vector<size_t>& global_enhanced_count;
             std::vector<value_type> enhanced_sum;
             std::vector<size_t> enhanced_count;
+            std::vector<value_type> stats;
+            std::vector<value_type> enhanced_stats;
         };
 
 
@@ -324,20 +324,24 @@ namespace MR
           {
 
             if (do_nonstationary_adjustment) {
+              std::vector<size_t> global_enhanced_count (empirical_enhanced_statistic.size(), 0);
+
               PermutationStack preprocessor_permutations (num_permutations,
                                                           stats_calculator.num_samples(),
-                                                          "precomputing empirical statistic for non-stationarity adjustment");
-              std::vector<size_t> global_enhanced_count (empirical_enhanced_statistic.size(), 0.0);
-              PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
-                                                                     empirical_enhanced_statistic, global_enhanced_count);
-              Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
-              Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
+                                                          "precomputing empirical statistic for non-stationarity adjustment...", false);
+              {
+                PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
+                                                                       empirical_enhanced_statistic, global_enhanced_count);
+                Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
+                Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
+              }
+
               for (size_t i = 0; i < empirical_enhanced_statistic.size(); ++i) {
-                empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
                 if (empirical_enhanced_statistic[i] < 0.0) {
                   empirical_enhanced_statistic[i] = 1.0;
                   WARN ("emprical enhanced statistic below 1.0"); //TODO check this
                 }
+                empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
               }
             }
 
