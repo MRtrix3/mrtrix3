@@ -327,16 +327,16 @@ namespace MR
               PermutationStack preprocessor_permutations (num_permutations,
                                                           stats_calculator.num_samples(),
                                                           "precomputing empirical statistic for non-stationarity adjustment");
-              std::vector<size_t> global_enhanced_count (stats_calculator.num_samples(), 0.0);
+              std::vector<size_t> global_enhanced_count (empirical_enhanced_statistic.size(), 0.0);
               PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
                                                                      empirical_enhanced_statistic, global_enhanced_count);
               Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
               Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
-              for (size_t i = 0; i < stats_calculator.num_samples(); ++i) {
+              for (size_t i = 0; i < empirical_enhanced_statistic.size(); ++i) {
                 empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
                 if (empirical_enhanced_statistic[i] < 0.0) {
                   empirical_enhanced_statistic[i] = 1.0;
-                  WARN ("emprical enhanced statistic below 1.0"); //TODO check this. It's unlikely any value is below 1
+                  WARN ("emprical enhanced statistic below 1.0"); //TODO check this
                 }
               }
             }
