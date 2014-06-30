@@ -142,7 +142,11 @@ void usage ()
 
   + Option ("eext",
             "filename of the resulting image of the residual external energy.")
-    + Argument ("eext").type_image_out();
+    + Argument ("eext").type_image_out()
+  
+  + Option ("etrend",
+            "internal and external energy trend and cooling statistics.")
+    + Argument ("stats").type_file();
 
 
 };
@@ -276,6 +280,10 @@ void run ()
   //Image::ConstInfo dwi_info (dwi_buffer);
 
   Stats stats (t0, t1, niter);
+  
+  opt = get_options("etrend");
+  if (opt.size())
+    stats.open_stream(opt[0][0]);
   
   ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi_buffer, properties);
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, EextShared);

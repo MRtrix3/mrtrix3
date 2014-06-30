@@ -77,14 +77,25 @@ namespace MR {
             alpha = Math::pow(T1/T0, double(ITER_BIGSTEP)/double(maxiter));
           }
           
+          ~Stats() {
+            out.close();
+          }
+          
+          
+          void open_stream(const std::string& file) {
+            out.close();
+            out.open(file, std::ofstream::out);
+          }
+          
           
           bool next() {
-            Thread::Mutex::Lock lock (mutex);            
+            Thread::Mutex::Lock lock (mutex);
             ++n_iter;
             if (n_iter % ITER_BIGSTEP == 0) {
               if (n_iter >= n_max/FRAC_BURNIN)
                 Tint *= alpha;
               progress++;
+              out << *this << std::endl;
             }
             return (n_iter < n_max);
           }
@@ -197,6 +208,7 @@ namespace MR {
           const unsigned int n_max;
           
           ProgressBar progress;
+          std::ofstream out;
           
         };
         
