@@ -26,6 +26,7 @@
 
 #define ITER_BIGSTEP 1000
 #define FRAC_BURNIN 10
+#define FRAC_PHASEOUT 10
 
 #include <iostream>
 #include <vector>
@@ -69,12 +70,12 @@ namespace MR {
         public:
           
           Stats(const double T0, const double T1, const int maxiter) 
-            : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter + maxiter/FRAC_BURNIN), 
+            : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter), 
               progress("running MH sampler", n_max/ITER_BIGSTEP)
           {
             for (int k = 0; k != 5; k++)
               n_gen[k] = n_acc[k] = 0;
-            alpha = Math::pow(T1/T0, double(ITER_BIGSTEP)/double(maxiter));
+            alpha = Math::pow(T1/T0, double(ITER_BIGSTEP)/double(n_max - n_max/FRAC_BURNIN - n_max/FRAC_PHASEOUT));
           }
           
           ~Stats() {
@@ -92,7 +93,7 @@ namespace MR {
             Thread::Mutex::Lock lock (mutex);
             ++n_iter;
             if (n_iter % ITER_BIGSTEP == 0) {
-              if (n_iter >= n_max/FRAC_BURNIN)
+              if ((n_iter >= n_max/FRAC_BURNIN) && (n_iter < n_max - n_max/FRAC_PHASEOUT))
                 Tint *= alpha;
               progress++;
               out << *this << std::endl;
