@@ -52,7 +52,7 @@ namespace MR
         {
           painting = true;
 
-          projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
+          projection.set_viewport (window, 0, 0, width(), height());
 
           gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
           if (!image()) {
