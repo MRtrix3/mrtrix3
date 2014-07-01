@@ -48,14 +48,14 @@ namespace MR
           GLint w = width()/2;
           GLint h = height()/2;
 
-          projections[0].set_viewport (w, h, w, h); 
+          projections[0].set_viewport (window, w, h, w, h); 
           draw_plane (0, slice_shader, projections[0]);
-          projections[1].set_viewport (0, h, w, h); 
+          projections[1].set_viewport (window, 0, h, w, h); 
           draw_plane (1, slice_shader, projections[1]);
-          projections[2].set_viewport (0, 0, w, h); 
+          projections[2].set_viewport (window, 0, 0, w, h); 
           draw_plane (2, slice_shader, projections[2]);
 
-          projection.set_viewport ();
+          projection.set_viewport (window);
 
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);

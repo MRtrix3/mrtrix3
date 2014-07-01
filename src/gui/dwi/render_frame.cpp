@@ -137,7 +137,7 @@ namespace MR
 
       void RenderFrame::resizeGL (int w, int h)
       {
-        projection.set_viewport (0, 0, w, h);
+        projection.set_viewport (*this, 0, 0, w, h);
       }
 
 

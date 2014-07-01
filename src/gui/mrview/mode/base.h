@@ -94,8 +94,8 @@ namespace MR
               return window.orientation(); 
             }
 
-            int width () const { return glarea()->width() * window.devicePixelRatio(); }
-            int height () const { return glarea()->height() * window.devicePixelRatio(); }
+            int width () const { return glarea()->width(); }
+            int height () const { return glarea()->height(); }
             bool snap_to_image () const { return window.snap_to_image(); }
 
             Image* image () { return window.image(); }
