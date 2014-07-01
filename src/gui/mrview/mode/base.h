@@ -162,7 +162,7 @@ namespace MR
 
             void draw_orientation_labels (const Projection& with_projection) const {
               if (window.show_orientation_labels())
-                with_projection.draw_orientation_labels();
+                with_projection.draw_orientation_labels (window);
             }
 
             int slice (int axis) const { return Math::round<int> (voxel_at (focus())[axis]); }

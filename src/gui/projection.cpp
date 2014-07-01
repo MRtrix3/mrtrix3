@@ -104,7 +104,7 @@ namespace MR
 
 
 
-    void Projection::draw_orientation_labels () const
+    void Projection::draw_orientation_labels (const QWidget& frame) const
     {
       std::vector<OrientationLabel> labels;
       labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
@@ -121,7 +121,7 @@ namespace MR
         float dist = std::min (width()/Math::abs (pos[0]), height()/Math::abs (pos[1])) / 2.0;
         int x = Math::round (width() /2.0 + pos[0]*dist);
         int y = Math::round (height() /2.0 + pos[1]*dist);
-        render_text_inset (x, y, std::string (labels[i].label));
+        render_text_inset (frame, x, y, std::string (labels[i].label));
       }
       done_render_text();
     }

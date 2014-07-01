@@ -227,7 +227,7 @@ namespace MR
         {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (window, transform);
           }
         }
 

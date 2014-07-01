@@ -177,7 +177,7 @@ namespace MR
 
 
 
-        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
+        void Renderer::render (const QWidget& frame, const Projection& projection, const Displayable& object, int position, bool inverted)
         {
           if (!position) return;
           if (maps[object.colourmap].special) return;
@@ -243,8 +243,8 @@ namespace MR
 
           projection.setup_render_text();
           int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-          projection.render_text_align (x, data[1], str(object.scaling_min()), halign, 0);
-          projection.render_text_align (x, data[4], str(object.scaling_max()), halign, 0);
+          projection.render_text_align (frame, x, data[1], str(object.scaling_min()), halign, 0);
+          projection.render_text_align (frame, x, data[4], str(object.scaling_max()), halign, 0);
           projection.done_render_text();
 
           gl::DepthMask (gl::TRUE_);

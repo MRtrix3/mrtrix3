@@ -38,10 +38,10 @@ namespace MR
 
 
 
-      void Font::initGL () 
+      void Font::initGL (int dpr) 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
-        INFO ("loading font into OpenGL texture...");
+        INFO ("loading font into OpenGL texture with device pixel ratio = " + str(dpr) + "...");
 
         font_height = metric.height() + 2;
         const float max_font_width = metric.width("MM") + 2;
@@ -125,9 +125,9 @@ namespace MR
           }
         }
 
-        tex.gen (gl::TEXTURE_2D);
-        tex.bind();
-        tex.set_interp_on (false);
+        tex[dpr-1].gen (gl::TEXTURE_2D);
+        tex[dpr-1].bind();
+        tex[dpr-1].set_interp_on (false);
         gl::TexImage2D (gl::TEXTURE_2D, 0, gl::RG, tex_width, font_height, 
             0, gl::RG, gl::FLOAT, tex_data);
 
@@ -160,9 +160,13 @@ namespace MR
 
 
 
-        void Font::render (const std::string& text, int x, int y) const
+        void Font::render (const QWidget& frame, const std::string& text, int x, int y)
         {
-          assert (tex);
+          int m = frame.windowHandle()->devicePixelRatio();
+          if (!tex[m-1]) 
+            initGL (m);
+
+          assert (tex[m-1]);
           assert (vertex_buffer[0]);
           assert (vertex_buffer[1]);
           assert (vertex_array_object);
@@ -185,11 +189,11 @@ namespace MR
             pos[4] = x+font_width[c]+2; pos[5] = y + font_height;
             pos[6] = x+font_width[c]+2; pos[7] = y;
 
-            GLfloat* tex = &tex_pos[8*n];
-            tex[0] = font_tex_pos[c]; tex[1] = 1.0;
-            tex[2] = font_tex_pos[c]; tex[3] = 0.0;
-            tex[4] = font_tex_pos[c]+font_tex_width[c]; tex[5] = 0.0;
-            tex[6] = font_tex_pos[c]+font_tex_width[c]; tex[7] = 1.0;
+            GLfloat* tex_data = &tex_pos[8*n];
+            tex_data[0] = font_tex_pos[c]; tex_data[1] = 1.0;
+            tex_data[2] = font_tex_pos[c]; tex_data[3] = 0.0;
+            tex_data[4] = font_tex_pos[c]+font_tex_width[c]; tex_data[5] = 0.0;
+            tex_data[6] = font_tex_pos[c]+font_tex_width[c]; tex_data[7] = 1.0;
 
             x += font_width[c];
           }
@@ -201,7 +205,7 @@ namespace MR
           vertex_buffer[1].bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, sizeof (tex_pos), tex_pos, gl::STREAM_DRAW);
 
-          tex.bind();
+          tex[m-1].bind();
           vertex_array_object.bind();
 
           gl::MultiDrawArrays (gl::TRIANGLE_FAN, starts, counts, text.size()); //4*text.size());

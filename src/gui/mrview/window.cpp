@@ -1161,8 +1161,6 @@ namespace MR
       {
         GL::init ();
 
-        font.initGL();
-
         gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
 

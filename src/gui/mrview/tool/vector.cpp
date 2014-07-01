@@ -253,7 +253,7 @@ namespace MR
         {
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<Fixel*>(fixel_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<Fixel*>(fixel_list_model->items[i])->renderColourBar (window, transform);
           }
         }
 

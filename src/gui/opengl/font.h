@@ -25,6 +25,8 @@
 
 #include "gui/opengl/shader.h"
 
+class QWidget;
+
 namespace MR
 {
   namespace GUI
@@ -37,8 +39,6 @@ namespace MR
           Font (const QFont& font) :
             metric (font),
             font (font) { } 
-
-          void initGL ();
 
           const QFontMetrics metric;
 
@@ -63,16 +63,18 @@ namespace MR
             gl::Disable (gl::BLEND);
           }
 
-          void render (const std::string& text, int x, int y) const;
+          void render (const QWidget& frame, const std::string& text, int x, int y);
 
         protected:
           const QFont& font;
-          GL::Texture tex;
+          GL::Texture tex[2];
           GL::VertexBuffer vertex_buffer[2];
           GL::VertexArrayObject vertex_array_object;
           GL::Shader::Program program;
           int font_width[256], font_height;
           float font_tex_pos[256], font_tex_width[256];
+
+          void initGL (int device_pixel_ratio);
       };
 
 

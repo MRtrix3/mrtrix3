@@ -22,7 +22,7 @@ namespace MR
     class Projection
     {
       public:
-        Projection (QGLWidget* parent, const GL::Font& font) : 
+        Projection (QGLWidget* parent, GL::Font& font) : 
           glarea (parent), 
           font (font) { } 
 
@@ -164,11 +164,12 @@ namespace MR
         }
         void done_render_text () const { font.stop(); }
 
-        void render_text (int x, int y, const std::string& text) const {
-          font.render (text, x, y);
+        void render_text (const QWidget& frame, int x, int y, const std::string& text) const {
+          font.render (frame, text, x, y);
         }
 
-        void render_text_align (int x, int y, const std::string& text, int halign = 0, int valign = 0) const {
+        void render_text_align (const QWidget& frame, int x, int y, 
+            const std::string& text, int halign = 0, int valign = 0) const {
           QString s (text.c_str());
           int w = font.metric.width (s);
           int h = font.metric.height();
@@ -176,10 +177,10 @@ namespace MR
           else if (halign > 0) x -= w;
           if (valign == 0) y -= h/2;
           else if (valign > 0) y -= h;
-          render_text (x, y, text);
+          render_text (frame, x, y, text);
         }
 
-        void render_text_inset (int x, int y, const std::string& text, int inset = -1) const {
+        void render_text_inset (const QWidget& frame, int x, int y, const std::string& text, int inset = -1) const {
           QString s (text.c_str());
           if (inset < 0) 
             inset = font.metric.height() / 2;
@@ -191,10 +192,10 @@ namespace MR
             y = inset;
           if (y + font.metric.height() + inset > height())
             y = height() - font.metric.height() - inset;
-          render_text (x, y, text);
+          render_text (frame, x, y, text);
         }
 
-        void render_text (const std::string& text, int position, int line = 0) const {
+        void render_text (const QWidget& frame, const std::string& text, int position, int line = 0) const {
           QString s (text.c_str());
           int x, y;
 
@@ -206,10 +207,10 @@ namespace MR
           else if (position & BottomEdge) y = font.metric.height() / 2 + line * font.metric.lineSpacing();
           else y = (height() - font.metric.height()) / 2 - line * font.metric.lineSpacing();
 
-          render_text (x, y, text);
+          render_text (frame, x, y, text);
         }
 
-        void draw_orientation_labels () const;
+        void draw_orientation_labels (const QWidget& frame) const;
 
 
         const GL::mat4& modelview_projection () const { return MVP; }
@@ -227,7 +228,7 @@ namespace MR
 
       protected:
         QGLWidget* glarea;
-        const GL::Font& font;
+        GL::Font& font;
         GL::mat4 MV, iMV, P, iP, MVP, iMVP;
         GLint viewport[4];
         mutable GL::VertexBuffer crosshairs_VB;

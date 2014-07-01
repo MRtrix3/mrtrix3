@@ -107,7 +107,7 @@ namespace MR
         class Renderer {
           public:
             Renderer();
-            void render (const Projection& projection, const Displayable& object, int position, bool inverted);
+            void render (const QWidget& frame, const Projection& projection, const Displayable& object, int position, bool inverted);
 
           protected:
             GL::VertexBuffer VB;

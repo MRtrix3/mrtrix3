@@ -63,9 +63,9 @@ namespace MR
 
               void render (const Projection& projection, int axis, int slice);
 
-              void renderColourBar (const Projection& transform) {
+              void renderColourBar (const QWidget& frame, const Projection& transform) {
                 if (color_type == Value && show_colour_bar)
-                  colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+                  colourbar_renderer.render (frame, transform, *this, colourbar_position_index, this->scale_inverted());
               }
 
               void load_image ();
