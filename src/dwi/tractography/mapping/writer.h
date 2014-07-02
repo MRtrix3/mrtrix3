@@ -286,7 +286,7 @@ class MapWriter : public MapWriterBase<Cont>
           (*MapWriterBase<Cont>::v_counts).value() += in.weight;
           break;
         default:
-          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator()");
         }
       }
       return true;
@@ -300,7 +300,6 @@ class MapWriter : public MapWriterBase<Cont>
 };
 
 
-template <> bool MapWriter<float, SetVoxelDir>::operator () (const SetVoxelDir& in);
 
 
 
@@ -366,7 +365,7 @@ class MapWriterColour : public MapWriterBase<Cont>
           break;
 
         default:
-          throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
+          throw Exception ("Unknown / unhandled voxel statistic in ~MapWriterColour()");
 
       }
 
@@ -414,7 +413,7 @@ class MapWriterColour : public MapWriterBase<Cont>
               set_value (scaled_colour);
             break;
           default:
-            throw Exception ("Unknown / unhandled voxel statistic in MapWriter::execute()");
+            throw Exception ("Unknown / unhandled voxel statistic in MapWriterColour::operator()");
         }
       }
       return true;
