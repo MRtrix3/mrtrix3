@@ -34,12 +34,17 @@
 
 #include "dwi/directions/set.h"
 
+#include "dwi/tractography/file.h"
+
 #include "dwi/tractography/ACT/tissues.h"
 
 #include "dwi/tractography/mapping/fixel_td_map.h"
+#include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
+#include "dwi/tractography/SIFT/types.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -162,6 +167,8 @@ namespace MR
           void perform_FOD_segmentation (BufferType&);
           void scale_FODs_by_GM ();
 
+          void map_streamlines (const std::string&);
+
           virtual bool operator() (const FMLS::FOD_lobes& in);
           virtual bool operator() (const Mapping::SetDixel& in);
 
@@ -251,6 +258,33 @@ namespace MR
             FOD_sum += i().get_weight() * i().get_FOD();
           }
         }
+      }
+
+
+
+
+      template <class Fixel>
+      void ModelBase<Fixel>::map_streamlines (const std::string& path)
+      {
+        Tractography::Properties properties;
+        Tractography::Reader<float> file (path, properties);
+
+        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+
+        // Determine appropriate upsampling ratio for mapping
+        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
+        const float upsample_ratio = determine_upsample_ratio (H, properties, 0.1);
+
+        Mapping::TrackLoader loader (file, count);
+        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
+        Thread::run_queue (
+            loader,
+            Thread::batch (Tractography::Streamline<float>()),
+            Thread::multi (mapper),
+            Thread::batch (Mapping::SetDixel()),
+            *this);
+
+        INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
       }
 
 

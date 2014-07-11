@@ -83,6 +83,7 @@ namespace MR
           virtual ~Model ();
 
 
+          // Over-rides the function defined in ModelBase; need to build contributions member also
           void map_streamlines (const std::string&);
 
           void remove_excluded_fixels ();
