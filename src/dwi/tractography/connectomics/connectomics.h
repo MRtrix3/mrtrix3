@@ -46,6 +46,7 @@ namespace Connectomics {
 
 
 typedef uint32_t node_t;
+typedef std::pair<node_t, node_t> NodePair;
 
 class Tck2nodes_base;
 class Metric_base;
