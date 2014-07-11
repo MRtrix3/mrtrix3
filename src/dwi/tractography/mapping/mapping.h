@@ -46,6 +46,12 @@ namespace MR {
 
 
 
+        // Convenience function to figure out an appropriate upsampling ratio for streamline mapping
+        size_t determine_upsample_ratio (const Image::Info&, const std::string&, const float);
+        size_t determine_upsample_ratio (const Image::Info&, const Tractography::Properties&, const float);
+
+
+
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
         void generate_header (Image::Header&, const std::string&, const std::vector<float>&);
 

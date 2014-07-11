@@ -271,8 +271,6 @@ namespace MR
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
 
-        // Determine appropriate upsampling ratio for mapping
-        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
         const float upsample_ratio = determine_upsample_ratio (H, properties, 0.1);
 
         Mapping::TrackLoader loader (file, count);

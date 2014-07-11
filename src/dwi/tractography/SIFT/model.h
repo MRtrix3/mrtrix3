@@ -184,16 +184,7 @@ namespace MR
 
         contributions.assign (count, NULL);
 
-        // Determine appropriate upsampling ratio for mapping
-        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
-        float step_size = 0.0;
-        if (properties.find ("output_step_size") != properties.end())
-          step_size = to<float> (properties["output_step_size"]);
-        else
-          step_size = to<float> (properties["step_size"]);
-        if (!step_size || !std::isfinite (step_size))
-          throw Exception ("Cannot perform appropriate streamline mapping without knowledge of track step size!");
-        const float upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (H.vox(0), H.vox(1), H.vox(2)) * 0.1));
+        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
