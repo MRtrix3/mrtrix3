@@ -84,7 +84,7 @@ class TrackMapperBase
     virtual ~TrackMapperBase() { }
 
 
-    bool operator() (Streamline<float>& in, Cont& out)
+    bool operator() (Streamline<float>& in, Cont& out) const
     {
       out.clear();
       out.index = in.index;
@@ -105,7 +105,7 @@ class TrackMapperBase
 
 
   protected:
-    const Image::Info& info;
+    const Image::Info info;
     Image::Transform transform;
     const bool map_zero;
 
@@ -113,7 +113,7 @@ class TrackMapperBase
     size_t get_upsample_factor() const { return upsampler.get_ratio(); }
 
     virtual void voxelise    (const std::vector< Point<float> >&, Cont&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise()"); }
-    virtual bool preprocess  (const std::vector< Point<float> >& tck, Cont& out) { out.factor = 1.0; return true; }
+    virtual bool preprocess  (const std::vector< Point<float> >& tck, Cont& out) const { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >&, Cont&) const { }
 
 };
@@ -166,26 +166,26 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
 
 
   protected:
-    virtual void load_factors (const std::vector< Point<float> >&);
+    virtual void load_factors (const std::vector< Point<float> >&) const;
     const contrast_t contrast;
     const tck_stat_t track_statistic;
 
     // Members for when the contribution of a track is not constant along its length (i.e. Gaussian smoothed along the track)
     const float gaussian_denominator;
-    std::vector<float> factors;
-    void gaussian_smooth_factors();
+    mutable std::vector<float> factors;
+    void gaussian_smooth_factors() const;
 
 
   private:
     const float step_size;
 
-    void set_factor (const std::vector< Point<float> >&, Cont&);
+    void set_factor (const std::vector< Point<float> >&, Cont&) const;
 
     // Call the inheited virtual function unless a specialisation for this class exists
     void voxelise (const std::vector< Point<float> >& tck, Cont& voxels) const { TrackMapperBase<Cont>::voxelise (tck, voxels); }
 
     // Overload virtual function
-    bool preprocess (const std::vector< Point<float> >& tck, Cont& out) { set_factor (tck, out); return out.factor; }
+    bool preprocess (const std::vector< Point<float> >& tck, Cont& out) const { set_factor (tck, out); return out.factor; }
 
 };
 
@@ -193,7 +193,7 @@ class TrackMapperTWI : public TrackMapperBase<Cont>
 
 
 template <class Cont>
-void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck)
+void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck) const
 {
 
   if (contrast != CURVATURE)
@@ -295,7 +295,7 @@ void TrackMapperTWI<Cont>::load_factors (const std::vector< Point<float> >& tck)
 
 
 template <class Cont>
-void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
+void TrackMapperTWI<Cont>::gaussian_smooth_factors () const
 {
 
   std::vector<float> unsmoothed (factors);
@@ -343,7 +343,7 @@ void TrackMapperTWI<Cont>::gaussian_smooth_factors ()
 
 
 template <class Cont>
-void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, Cont& out)
+void TrackMapperTWI<Cont>::set_factor (const std::vector< Point<float> >& tck, Cont& out) const
 {
 
   size_t count = 0;
@@ -525,16 +525,16 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
   private:
     input_voxel_type voxel;
-    Image::Interp::Linear< input_voxel_type > interp;
+    mutable Image::Interp::Linear< input_voxel_type > interp;
 
     size_t lmax;
     float* sh_coeffs;
     Math::SH::PrecomputedAL<float> precomputer;
 
-    void load_factors (const std::vector< Point<float> >&);
+    void load_factors (const std::vector< Point<float> >&) const;
 
     // New helper function; find the last point on the streamline from which valid image information can be read
-    const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool);
+    const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool) const;
 
 };
 
@@ -542,7 +542,7 @@ class TrackMapperTWIImage : public TrackMapperTWI<Cont>
 
 
 template <class Cont>
-void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >& tck)
+void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >& tck) const
 {
 
   switch (TrackMapperTWI<Cont>::contrast) {
@@ -597,7 +597,7 @@ void TrackMapperTWIImage<Cont>::load_factors (const std::vector< Point<float> >&
 
 
 template <class Cont>
-const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end)
+const Point<float> TrackMapperTWIImage<Cont>::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
 {
   size_t index = end ? tck.size() - 1 : 0;
   const int step = end ? -1 : 1;
