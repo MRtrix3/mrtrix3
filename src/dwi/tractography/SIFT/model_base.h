@@ -41,6 +41,7 @@
 #include "dwi/tractography/mapping/fixel_td_map.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
@@ -271,7 +272,7 @@ namespace MR
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
 
-        const float upsample_ratio = determine_upsample_ratio (H, properties, 0.1);
+        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);

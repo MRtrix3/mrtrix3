@@ -27,11 +27,6 @@
 #include "dwi/tractography/mapping/mapping.h"
 
 
-#include "image/info.h"
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/properties.h"
-
-
 namespace MR {
   namespace DWI {
     namespace Tractography {
