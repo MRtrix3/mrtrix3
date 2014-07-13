@@ -68,8 +68,8 @@ namespace MR
             void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
-            void line_length_slot ();
-            void on_line_length_by_value_slot (bool length_by_value);
+            void length_multiplier_slot ();
+            void length_type_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void show_colour_bar_slot ();
             void select_colourmap_slot ();
@@ -86,8 +86,8 @@ namespace MR
             AdjustButton *max_value, *min_value;
             AdjustButton *threshold_lower, *threshold_upper;
             AdjustButton *line_length;
-            QGroupBox *line_length_by_value;
-            QGroupBox* crop_to_slice;
+            QComboBox *length_combobox;
+            QGroupBox *crop_to_slice;
             QCheckBox *threshold_upper_box, *threshold_lower_box;
             QComboBox *colour_combobox;
             QAction *show_colour_bar;
@@ -96,8 +96,10 @@ namespace MR
             QAction **colourmap_actions;
             QActionGroup *colourmap_group;
             QToolButton *colourmap_button;
-            QSlider* opacity_slider;
-            QSlider* line_thickness_slider;
+            QSlider *opacity_slider;
+            QSlider *line_thickness_slider;
+
+            void enable_colour_by_value_features (const bool);
 
         };
       }
