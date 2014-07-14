@@ -83,23 +83,26 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            AdjustButton *max_value, *min_value;
-            AdjustButton *threshold_lower, *threshold_upper;
-            AdjustButton *line_length;
-            QComboBox *length_combobox;
-            QGroupBox *crop_to_slice;
-            QCheckBox *threshold_upper_box, *threshold_lower_box;
             QComboBox *colour_combobox;
-            QAction *show_colour_bar;
-            QAction *invert_scale;
-            QMenu *colourmap_menu;
-            QAction **colourmap_actions;
-            QActionGroup *colourmap_group;
-            QToolButton *colourmap_button;
-            QSlider *opacity_slider;
-            QSlider *line_thickness_slider;
 
-            void enable_colour_by_value_features (const bool);
+            QGroupBox *colourmap_option_group;
+            QMenu *colourmap_menu;
+            QActionGroup *colourmap_group;
+            QAction **colourmap_actions;
+            QAction *show_colour_bar, *invert_scale;
+            QToolButton *colourmap_button;
+
+            AdjustButton *min_value, *max_value;
+            AdjustButton *threshold_lower, *threshold_upper;
+            QCheckBox *threshold_upper_box, *threshold_lower_box;
+
+            QComboBox *length_combobox;
+            AdjustButton *length_multiplier;
+
+            QSlider *line_thickness_slider;
+            QSlider *opacity_slider;
+
+            QGroupBox *crop_to_slice;
 
         };
       }

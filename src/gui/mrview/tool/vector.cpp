@@ -119,14 +119,20 @@ namespace MR
             hlayout->setSpacing (0);
 
             colour_combobox = new QComboBox;
-            colour_combobox->addItem ("Colour By Value");
-            colour_combobox->addItem ("Colour By Direction");
-            colour_combobox->addItem ("Set Colour");
-            colour_combobox->addItem ("Randomise Colour");
+            hlayout->addWidget (new QLabel ("colour by "));
+            main_box->addLayout (hlayout);
+            colour_combobox->addItem ("Value");
+            colour_combobox->addItem ("Direction");
+            colour_combobox->addItem ("Manual Colour");
+            colour_combobox->addItem ("Random Colour");
             hlayout->addWidget (colour_combobox, 0);
             connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed_slot(int)));
 
-            // Colourmap menu:
+            colourmap_option_group = new QGroupBox ("Colour map and scaling");
+            main_box->addWidget (colourmap_option_group);
+            hlayout = new HBoxLayout;
+            colourmap_option_group->setLayout (hlayout);
+
             colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
             ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
@@ -147,20 +153,12 @@ namespace MR
             QAction* reset_intensity = colourmap_menu->addAction (tr ("Reset intensity"), this, SLOT (reset_intensity_slot()));
             addAction (reset_intensity);
 
-            // TODO It may make more sense for the colourmap button to appear alongside / with the intensity scaling,
-            //   as these GUI elements are only applicable if the 'colour by' combo box is set to 'value'
             colourmap_button = new QToolButton (this);
             colourmap_button->setToolTip (tr ("Colourmap menu"));
             colourmap_button->setIcon (QIcon (":/colourmap.svg"));
             colourmap_button->setPopupMode (QToolButton::InstantPopup);
             colourmap_button->setMenu (colourmap_menu);
             hlayout->addWidget (colourmap_button);
-            main_box->addLayout (hlayout);
-
-            QGroupBox* group_box = new QGroupBox ("Intensity scaling");
-            main_box->addWidget (group_box);
-            hlayout = new HBoxLayout;
-            group_box->setLayout (hlayout);
 
             min_value = new AdjustButton (this);
             connect (min_value, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
@@ -191,7 +189,7 @@ namespace MR
 
             hlayout = new HBoxLayout;
             main_box->addLayout (hlayout);
-            hlayout->addWidget (new QLabel ("scale by"));
+            hlayout->addWidget (new QLabel ("scale by "));
             length_combobox = new QComboBox;
             length_combobox->addItem ("Unity");
             length_combobox->addItem ("Fixel amplitude");
@@ -202,11 +200,11 @@ namespace MR
             hlayout = new HBoxLayout;
             main_box->addLayout (hlayout);
             hlayout->addWidget (new QLabel ("length multiplier"));
-            line_length = new AdjustButton (this, 0.01);
-            line_length->setMin (0.1);
-            line_length->setValue (1.0);
-            connect (line_length, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
-            hlayout->addWidget (line_length);
+            length_multiplier = new AdjustButton (this, 0.01);
+            length_multiplier->setMin (0.1);
+            length_multiplier->setValue (1.0);
+            connect (length_multiplier, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
+            hlayout->addWidget (length_multiplier);
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
@@ -320,7 +318,7 @@ namespace MR
           threshold_upper_box->setEnabled (indices.size());
           threshold_lower->setEnabled (indices.size());
           threshold_upper->setEnabled (indices.size());
-          line_length->setEnabled (indices.size());
+          length_multiplier->setEnabled (indices.size());
           length_combobox->setEnabled (indices.size());
 
           if (!indices.size()) {
@@ -328,7 +326,7 @@ namespace MR
             min_value->setValue (NAN);
             threshold_lower->setValue (NAN);
             threshold_upper->setValue (NAN);
-            line_length->setValue (NAN);
+            length_multiplier->setValue (NAN);
             return;
           }
 
@@ -388,7 +386,7 @@ namespace MR
           max_value->setRate (rate);
           min_value->setValue (min_val);
           max_value->setValue (max_val);
-          line_length->setValue (line_length_multiplier);
+          length_multiplier->setValue (line_length_multiplier);
 
           // Do a better job of setting colour / length with multiple inputs
           Fixel* first_fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[0]));
@@ -423,11 +421,11 @@ namespace MR
 
           if (consistent_colour) {
             colour_combobox->setCurrentIndex (colour_type);
-            enable_colour_by_value_features (colour_type == CValue);
+            colourmap_option_group->setEnabled (colour_type == CValue);
           } else {
             //colour_combobox->setEnabled (false);
             // Enable as long as there is at least one colour-by-value
-            enable_colour_by_value_features (colour_by_value_count);
+            colourmap_option_group->setEnabled (colour_by_value_count);
           }
 
           threshold_lower->setValue (lower_threshold_val);
@@ -466,7 +464,7 @@ namespace MR
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (line_length->value());
+            fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (length_multiplier->value());
           window.updateGL();
         }
 
@@ -537,19 +535,19 @@ namespace MR
 
           switch (selection) {
             case 0: {
-              enable_colour_by_value_features (true);
+              colourmap_option_group->setEnabled (true);
               for (int i = 0; i < indices.size(); ++i)
                 fixel_list_model->get_fixel_image (indices[i])->set_colour_type (CValue);
               break;
             }
             case 1: {
-              enable_colour_by_value_features (false);
+              colourmap_option_group->setEnabled (false);
               for (int i = 0; i < indices.size(); ++i)
                 fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Direction);
               break;
             }
             case 2: {
-              enable_colour_by_value_features (false);
+              colourmap_option_group->setEnabled (false);
               QColor color;
               color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
               float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
@@ -562,7 +560,7 @@ namespace MR
               break;
             }
             case 3: {
-              enable_colour_by_value_features (false);
+              colourmap_option_group->setEnabled (false);
               for (int i = 0; i < indices.size(); ++i) {
                 float colour[3];
                 Math::RNG rng;
@@ -664,35 +662,6 @@ namespace MR
             return true;
           }
           return false;
-        }
-
-
-
-        void Vector::enable_colour_by_value_features (const bool by_value)
-        {
-          if (by_value) {
-            colourmap_button->setEnabled (true);
-            min_value->setEnabled (true);
-            max_value->setEnabled (true);
-            // Determine appropriate values to display for min and max scaling values
-            QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-            if (indices.size()) {
-              float min = 0.0f, max = 0.0f;
-              for (int i = 0; i < indices.size(); ++i) {
-                Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
-                min += fixel->intensity_min();
-                max += fixel->intensity_max();
-              }
-              min_value->setValue (min / indices.size());
-              max_value->setValue (max / indices.size());
-            }
-          } else {
-            colourmap_button->setEnabled (false);
-            min_value->setValue (NAN);
-            min_value->setEnabled (false);
-            max_value->setValue (NAN);
-            max_value->setEnabled (false);
-          }
         }
 
 
