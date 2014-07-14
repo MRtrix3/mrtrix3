@@ -190,17 +190,18 @@ namespace MR
                             enhancer (enhancer), global_enhanced_sum (global_enhanced_sum),
                             global_enhanced_count (global_enhanced_count), enhanced_sum (global_enhanced_sum.size(), 0.0),
                             enhanced_count (global_enhanced_sum.size(), 0.0), stats (global_enhanced_sum.size()),
-                            enhanced_stats (global_enhanced_sum.size()) {
-            }
+                            enhanced_stats (global_enhanced_sum.size()) {}
 
-            ~PreProcessor () {
+            ~PreProcessor ()
+            {
               for (size_t i = 0; i < global_enhanced_sum.size(); ++i) {
                 global_enhanced_sum[i] += enhanced_sum[i];
                 global_enhanced_count[i] += enhanced_count[i];
               }
             }
 
-            void execute () {
+            void execute ()
+            {
               size_t index;
               while (( index = perm_stack.next() ) < perm_stack.num_permutations)
                 process_permutation (index);
@@ -208,7 +209,8 @@ namespace MR
 
           protected:
 
-            void process_permutation (size_t index) {
+            void process_permutation (size_t index)
+            {
               value_type max_stat = 0.0, min_stat = 0.0;
               stats_calculator (perm_stack.permutation (index), stats, max_stat, min_stat);
               enhancer (max_stat, stats, &enhanced_stats);
@@ -252,7 +254,9 @@ namespace MR
                     enhanced_statistic.resize (empirical_enhanced_statistic.size());
                 }
 
-              void execute () {
+
+              void execute ()
+              {
                 size_t index;
                 while (( index = perm_stack.next() ) < perm_stack.num_permutations)
                   process_permutation (index);
@@ -262,7 +266,8 @@ namespace MR
             protected:
               value_type nonstationarity_enhancement (const value_type max_stat,
                                                       const std::vector<value_type>& stats,
-                                                      std::vector<value_type>* get_enhanced_stats) {
+                                                      std::vector<value_type>* get_enhanced_stats)
+              {
                 enhancer (max_stat, stats, &enhanced_statistic);
                 value_type max_enhanced_statistic = 0.0;
                 for (size_t i = 0; i < stats.size(); ++i) {
@@ -275,7 +280,9 @@ namespace MR
                 return max_enhanced_statistic;
               }
 
-              void process_permutation (size_t index) {
+
+              void process_permutation (size_t index)
+              {
                 value_type max_stat = 0.0, min_stat = 0.0;
                 std::vector<value_type> stats;
                 stats_calculator (perm_stack.permutation (index), stats, max_stat, min_stat);
@@ -299,6 +306,7 @@ namespace MR
                 if (index)
                   perm_dist_neg[index-1] = max_enhanced_statistic;
               }
+
 
               PermutationStack& perm_stack;
               StatsType stats_calculator;
@@ -345,16 +353,18 @@ namespace MR
               }
             }
 
-            PermutationStack permutations (num_permutations,
+            {
+              PermutationStack permutations (num_permutations,
                                            stats_calculator.num_samples(),
                                            "running " + str(num_permutations) + " permutations...");
 
-            Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
-                                                             do_nonstationary_adjustment, empirical_enhanced_statistic,
-                                                             perm_dist_pos, perm_dist_neg, enhanced_output_pos,
-                                                             enhanced_output_neg, tvalue_output);
-            Thread::Array< Processor<StatsType, EnhancementType> > thread_list (processor);
-            Thread::Exec threads (thread_list, "permutation threads");
+              Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
+                                                               do_nonstationary_adjustment, empirical_enhanced_statistic,
+                                                               perm_dist_pos, perm_dist_neg, enhanced_output_pos,
+                                                               enhanced_output_neg, tvalue_output);
+              Thread::Array< Processor<StatsType, EnhancementType> > thread_list (processor);
+              Thread::Exec threads (thread_list, "permutation threads");
+            }
           }
           //! @}
 
