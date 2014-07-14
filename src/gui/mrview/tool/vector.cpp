@@ -118,7 +118,8 @@ namespace MR
             hlayout->setContentsMargins (0, 0, 0, 0);
             hlayout->setSpacing (0);
 
-            colour_combobox = new QComboBox;
+            //colour_combobox = new QComboBox;
+            colour_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             hlayout->addWidget (new QLabel ("colour by "));
             main_box->addLayout (hlayout);
             colour_combobox->addItem ("Value");
@@ -190,7 +191,8 @@ namespace MR
             hlayout = new HBoxLayout;
             main_box->addLayout (hlayout);
             hlayout->addWidget (new QLabel ("scale by "));
-            length_combobox = new QComboBox;
+            //length_combobox = new QComboBox;
+            length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             length_combobox->addItem ("Unity");
             length_combobox->addItem ("Fixel amplitude");
             length_combobox->addItem ("Associated value");
@@ -404,26 +406,17 @@ namespace MR
               ++colour_by_value_count;
           }
 
-          // TODO For both length and colour comboboxes, would like to indicate when
-          //   the current set of selected files have different values for that
-          //   particular parameter.
-          // Only way I see of doing this is to add an extra element to the combobox,
-          //   e.g. 'mixed', and change the combobox index to this item. The item
-          //   is then erased from the combobox once the selection
-          //   becomes consistent once again, and has no effect on the selected files
-          //   if it is re-selected.
-
           if (consistent_length) {
             length_combobox->setCurrentIndex (length_type);
           } else {
-            //length_combobox->setEnabled (false);
+            length_combobox->setError();
           }
 
           if (consistent_colour) {
             colour_combobox->setCurrentIndex (colour_type);
             colourmap_option_group->setEnabled (colour_type == CValue);
           } else {
-            //colour_combobox->setEnabled (false);
+            colour_combobox->setError();
             // Enable as long as there is at least one colour-by-value
             colourmap_option_group->setEnabled (colour_by_value_count);
           }

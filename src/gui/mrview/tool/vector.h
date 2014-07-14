@@ -26,6 +26,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/combo_box_error.h"
 
 namespace MR
 {
@@ -83,7 +84,7 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            QComboBox *colour_combobox;
+            ComboBoxWithErrorMsg *colour_combobox;
 
             QGroupBox *colourmap_option_group;
             QMenu *colourmap_menu;
@@ -96,7 +97,7 @@ namespace MR
             AdjustButton *threshold_lower, *threshold_upper;
             QCheckBox *threshold_upper_box, *threshold_lower_box;
 
-            QComboBox *length_combobox;
+            ComboBoxWithErrorMsg *length_combobox;
             AdjustButton *length_multiplier;
 
             QSlider *line_thickness_slider;
