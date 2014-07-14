@@ -422,19 +422,39 @@ namespace MR
           }
 
           threshold_lower->setValue (lower_threshold_val);
-          threshold_lower_box->setCheckState (num_lower_threshold ?
-              ( num_lower_threshold == indices.size() ?
-                Qt::Checked :
-                Qt::PartiallyChecked ) :
-                Qt::Unchecked);
+          if (num_lower_threshold) {
+            if (num_lower_threshold == indices.size()) {
+              threshold_lower_box->setTristate (false);
+              threshold_lower_box->setCheckState (Qt::Checked);
+              threshold_lower->setEnabled (true);
+            } else {
+              threshold_lower_box->setTristate (true);
+              threshold_lower_box->setCheckState (Qt::PartiallyChecked);
+              threshold_lower->setEnabled (true);
+            }
+          } else {
+            threshold_lower_box->setTristate (false);
+            threshold_lower_box->setCheckState (Qt::Unchecked);
+            threshold_lower->setEnabled (false);
+          }
           threshold_lower->setRate (rate);
 
           threshold_upper->setValue (upper_threshold_val);
-          threshold_upper_box->setCheckState (num_upper_threshold ?
-              ( num_upper_threshold == indices.size() ?
-                Qt::Checked :
-                Qt::PartiallyChecked ) :
-                Qt::Unchecked);
+          if (num_upper_threshold) {
+            if (num_upper_threshold == indices.size()) {
+              threshold_upper_box->setTristate (false);
+              threshold_upper_box->setCheckState (Qt::Checked);
+              threshold_upper->setEnabled (true);
+            } else {
+              threshold_upper_box->setTristate (true);
+              threshold_upper_box->setCheckState (Qt::PartiallyChecked);
+              threshold_upper->setEnabled (true);
+            }
+          } else {
+            threshold_upper_box->setTristate (false);
+            threshold_upper_box->setCheckState (Qt::Unchecked);
+            threshold_upper->setEnabled (false);
+          }
           threshold_upper->setRate (rate);
         }
 
@@ -605,6 +625,7 @@ namespace MR
 
         void Vector::threshold_lower_changed (int unused)
         {
+          if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -615,6 +636,7 @@ namespace MR
 
         void Vector::threshold_upper_changed (int unused)
         {
+          if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -625,6 +647,7 @@ namespace MR
 
         void Vector::threshold_lower_value_changed ()
         {
+          if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_lower_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
@@ -636,6 +659,7 @@ namespace MR
 
         void Vector::threshold_upper_value_changed ()
         {
+          if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_upper_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
