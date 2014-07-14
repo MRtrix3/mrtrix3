@@ -419,20 +419,6 @@ class Processor {
 
 
 
-
-
-bool file_exists (const std::string& filename)
-{
-    struct stat buf;
-    if (stat(filename.c_str(), &buf) != -1)
-      return true;
-    return false;
-}
-
-
-
-
-
 void run ()
 {
   const value_type angular_threshold_dp = cos (ANGULAR_THRESHOLD * (M_PI/180.0));
@@ -721,7 +707,7 @@ void run ()
                              "_h" + str(H[h]) + "_e" + str(E[e]) +
                              "_c" + str (C[c]));
 
-            if (file_exists (filename)) {
+            if (MR::File::exists(filename)) {
               CONSOLE ("Already done!");
             } else {
 
