@@ -177,13 +177,6 @@ namespace MR
         throw Exception ("error deleting folder \"" + folder + "\": " + strerror (errno));
     }
 
-    inline bool exists (const std::string& filename)
-    {
-        struct stat buf;
-        if (stat(filename.c_str(), &buf) != -1)
-          return true;
-        return false;
-    }
 
 
   }
