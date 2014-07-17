@@ -185,7 +185,7 @@ report ('\n\n')
 global cpp, cpp_cmd, ld, ld_cmd
 
 cxx = 'g++'
-cxx_args = '-c CFLAGS SRC -o OBJECT'
+cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = []
 
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
