@@ -84,12 +84,13 @@ class Modifier
 
     Modifier (const Modifier& that) :
         v_in  (that.v_in),
-        v_out (that.v_out),
-        buffers (that.buffers)
+        v_out (that.v_out)
     {
       for (size_t index = 0; index != 6; ++index) {
-        if (buffers[index])
-          voxels[index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
+        if (that.buffers[index]) {
+          buffers[index] = that.buffers[index];
+          voxels [index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
+        }
       }
     }
 
