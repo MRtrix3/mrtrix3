@@ -23,6 +23,8 @@
 
 #include "dwi/tractography/mapping/mapper.h"
 
+#include "math/matrix.h"
+
 
 namespace MR {
 namespace DWI {
@@ -280,8 +282,14 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
     case TDI:         out.factor = 1.0; break;
     case PRECISE_TDI: out.factor = 1.0; break;
     case ENDPOINT:    out.factor = 1.0; break;
-    case LENGTH:      out.factor = (step_size * (tck.size() - 1)); break;
-    case INVLENGTH:   out.factor = (step_size / (tck.size() - 1)); break;
+    case LENGTH:
+    case INVLENGTH:
+      out.factor = 0.0;
+      for (size_t i = 1; i != tck.size(); ++i)
+        out.factor += dist(tck[i], tck[i-1]);
+      if (contrast == INVLENGTH)
+        out.factor = 1.0f / out.factor;
+      break;
 
     case SCALAR_MAP:
     case SCALAR_MAP_COUNT:
@@ -350,7 +358,7 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
           break;
 
         case GAUSSIAN:
-          gaussian_smooth_factors();
+          gaussian_smooth_factors (tck);
           out.factor = 0.0;
           for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
             if (*i) {
@@ -569,6 +577,11 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
   // But how to define azimuth & make it consistent between points?
   // Average principal normal vectors using a gaussian kernel, re-determine the curvature
 
+  // Need to know the distance along the spline between every point and every other point
+  // Start by logging the length of each step
+  std::vector<float> step_sizes;
+  step_sizes.reserve (tck.size());
+
   for (size_t i = 0; i != tck.size(); ++i) {
     Point<float> this_tangent;
     if (i == 0)
@@ -581,9 +594,11 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
       tangents.push_back (this_tangent);
     else
       tangents.push_back (Point<float> (0.0, 0.0, 0.0));
+    if (i)
+      step_sizes.push_back (dist(tck[i], tck[i-1]));
   }
 
-  // For those tangents which are invalid, fill with valid factors from neighbours
+  // For those tangents that are invalid, fill with valid factors from neighbours
   for (size_t i = 0; i != tangents.size(); ++i) {
     if (tangents[i] == Point<float> (0.0, 0.0, 0.0)) {
 
@@ -605,6 +620,18 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
     }
   }
 
+  // Produce a matrix of spline distances between points
+  Math::Matrix<float> spline_distances (tck.size(), tck.size());
+  spline_distances = 0.0f;
+  for (size_t i = 0; i != tck.size(); ++i) {
+    for (size_t j = 0; j <= i; ++j) {
+      for (size_t k = i+1; k != tck.size(); ++k) {
+        spline_distances (j, k) += step_sizes[i];
+        spline_distances (k, j) += step_sizes[i];
+      }
+    }
+  }
+
   // Smooth both the tangent vectors and the principal normal vectors according to a Gaussuan kernel
   // Remember: tangent vectors are unit length, but for principal normal vectors length must be preserved!
 
@@ -620,7 +647,7 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
     std::pair<float, Point<float> > this_normal (std::make_pair (0.0, Point<float>(0.0, 0.0, 0.0)));
 
     for (size_t j = 0; j != tck.size(); ++j) {
-      const float distance = step_size * Math::abs ((int)i - (int)j);
+      const float distance = spline_distances (i, j);
       const float this_weight = exp (-distance * distance / gaussian_denominator);
       this_tangent += (tangents[j] * this_weight);
     }
@@ -631,19 +658,22 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
 
   for (size_t i = 0; i != tck.size(); ++i) {
 
-    // Risk of acos() returning NAN if the dot product is greater than 1.0
-    float this_value;
-    if (i == 0)
-      this_value = acos (smoothed_tangents[ 1 ].dot (smoothed_tangents[ 0 ]))       / step_size;
-    else if (i == tck.size() - 1)
-      this_value = acos (smoothed_tangents[ i ].dot (smoothed_tangents[i-1]))       / step_size;
-    else
-      this_value = acos (smoothed_tangents[i+1].dot (smoothed_tangents[i-1])) * 0.5 / step_size;
+    float tangent_dot_product, length;
+    if (i == 0) {
+      tangent_dot_product = smoothed_tangents[ 1 ].dot (smoothed_tangents[ 0 ]);
+      length = spline_distances (0, 1);
+    } else if (i == tck.size() - 1) {
+      tangent_dot_product = smoothed_tangents[ i ].dot (smoothed_tangents[i-1]);
+      length = spline_distances (i, i-1);
+    } else {
+      tangent_dot_product = smoothed_tangents[i+1].dot (smoothed_tangents[i-1]);
+      length = spline_distances (i+1, i-1);
+    }
 
-    if (isnan (this_value))
+    if (tangent_dot_product >= 1.0f)
       factors.push_back (0.0);
     else
-      factors.push_back (this_value);
+      factors.push_back (Math::acos (tangent_dot_product) / length);
 
   }
 
@@ -651,8 +681,7 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
 
 
 
-
-void TrackMapperTWI::gaussian_smooth_factors () const
+void TrackMapperTWI::gaussian_smooth_factors (const std::vector< Point<float> >& tck) const
 {
 
   std::vector<float> unsmoothed (factors);
@@ -667,8 +696,8 @@ void TrackMapperTWI::gaussian_smooth_factors () const
     }
 
     float distance = 0.0;
-    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop_ runs with j = 0
-      distance += step_size;
+    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop runs with j = 0
+      distance += dist(tck[j], tck[j+1]);
       if (std::isfinite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;
@@ -677,7 +706,7 @@ void TrackMapperTWI::gaussian_smooth_factors () const
     }
     distance = 0.0;
     for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
-      distance += step_size;
+      distance += dist(tck[j], tck[j-1]);
       if (std::isfinite (unsmoothed[j])) {
         const float this_weight = exp (-distance * distance / gaussian_denominator);
         norm += this_weight;

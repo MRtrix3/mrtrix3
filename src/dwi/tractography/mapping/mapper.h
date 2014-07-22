@@ -156,19 +156,17 @@ class TrackMapperDixel : public TrackMapperBase
 class TrackMapperTWI : public TrackMapperBase
 {
   public:
-    TrackMapperTWI (const Image::Header& template_image, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
+    TrackMapperTWI (const Image::Header& template_image, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
         TrackMapperBase       (template_image),
         contrast              (c),
         track_statistic       (s),
-        gaussian_denominator  (denom),
-        step_size             (step) { }
+        gaussian_denominator  (denom) { }
 
     TrackMapperTWI (const TrackMapperTWI& that) :
         TrackMapperBase       (that),
         contrast              (that.contrast),
         track_statistic       (that.track_statistic),
-        gaussian_denominator  (that.gaussian_denominator),
-        step_size             (that.step_size) { }
+        gaussian_denominator  (that.gaussian_denominator) { }
 
     virtual ~TrackMapperTWI() { }
 
@@ -181,12 +179,10 @@ class TrackMapperTWI : public TrackMapperBase
     // Members for when the contribution of a track is not constant along its length (i.e. Gaussian smoothed along the track)
     const float gaussian_denominator;
     mutable std::vector<float> factors;
-    void gaussian_smooth_factors() const;
+    void gaussian_smooth_factors (const std::vector< Point<float> >&) const;
 
 
   private:
-    const float step_size;
-
 
     void set_factor (const std::vector< Point<float> >&, SetVoxelExtras&) const;
 
@@ -213,8 +209,8 @@ class TrackMapperTWIImage : public TrackMapperTWI
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& template_image, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
-        TrackMapperTWI       (template_image, step, c, s, denom),
+    TrackMapperTWIImage (const Image::Header& template_image, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
+        TrackMapperTWI       (template_image, c, s, denom),
         voxel                (input_image),
         interp               (voxel),
         lmax                 (0),
