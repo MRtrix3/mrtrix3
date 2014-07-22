@@ -68,19 +68,23 @@ class TrackMapperBase
 {
 
   public:
-    TrackMapperBase (const Image::Info& template_image, const size_t upsample_ratio = 1, const bool mapzero = false) :
-        upsampler (upsample_ratio),
+    TrackMapperBase (const Image::Info& template_image) :
+        upsampler (1),
         info      (template_image),
         transform (info),
-        map_zero  (mapzero) { }
+        map_zero  (false) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
-        upsampler (that.upsampler),
+        upsampler (1),
         info      (that.info),
         transform (info),
         map_zero  (that.map_zero) { }
 
     virtual ~TrackMapperBase() { }
+
+
+    void set_upsample_ratio (const size_t i) { upsampler.set_ratio (i); }
+    void set_map_zero (const bool i) { map_zero = i; }
 
 
     template <class Cont>
@@ -107,7 +111,7 @@ class TrackMapperBase
   protected:
     const Image::Info info;
     Image::Transform transform;
-    const bool map_zero;
+    bool map_zero;
 
 
     size_t get_upsample_factor() const { return upsampler.get_ratio(); }
@@ -134,8 +138,8 @@ class TrackMapperBase
 class TrackMapperDixel : public TrackMapperBase
 {
   public:
-    TrackMapperDixel (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const DWI::Directions::FastLookupSet& directions) :
-        TrackMapperBase (template_image, upsample_ratio, map_zero),
+    TrackMapperDixel (const Image::Header& template_image, const DWI::Directions::FastLookupSet& directions) :
+        TrackMapperBase (template_image),
         dirs (directions) { }
 
   protected:
@@ -152,8 +156,8 @@ class TrackMapperDixel : public TrackMapperBase
 class TrackMapperTWI : public TrackMapperBase
 {
   public:
-    TrackMapperTWI (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
-        TrackMapperBase       (template_image, upsample_ratio, map_zero),
+    TrackMapperTWI (const Image::Header& template_image, const float step, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
+        TrackMapperBase       (template_image),
         contrast              (c),
         track_statistic       (s),
         gaussian_denominator  (denom),
@@ -209,8 +213,8 @@ class TrackMapperTWIImage : public TrackMapperTWI
   typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    TrackMapperTWIImage (const Image::Header& template_image, const size_t upsample_ratio, const bool map_zero, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
-        TrackMapperTWI       (template_image, upsample_ratio, map_zero, step, c, s, denom),
+    TrackMapperTWIImage (const Image::Header& template_image, const float step, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
+        TrackMapperTWI       (template_image, step, c, s, denom),
         voxel                (input_image),
         interp               (voxel),
         lmax                 (0),
