@@ -120,7 +120,7 @@ void run ()
   }
 
   // Get the metric & assignment mechanism for connectome construction
-  Ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data, argument[0]));
+  Ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
   Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
 
   // Prepare for reading the track data

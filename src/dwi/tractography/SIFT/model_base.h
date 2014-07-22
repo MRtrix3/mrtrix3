@@ -143,8 +143,9 @@ namespace MR
       class ModelBase : public Mapping::Fixel_TD_map<Fixel>
       {
 
-        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+        protected:
+          typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
+          typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
         public:
           template <class BufferType>

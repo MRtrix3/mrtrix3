@@ -46,7 +46,8 @@ namespace MR {
 
 
 
-        // Convenience function to figure out an appropriate upsampling ratio for streamline mapping
+        // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
+        size_t determine_upsample_ratio (const Image::Info&, const float, const float);
         size_t determine_upsample_ratio (const Image::Info&, const std::string&, const float);
         size_t determine_upsample_ratio (const Image::Info&, const Tractography::Properties&, const float);
 

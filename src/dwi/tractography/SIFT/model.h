@@ -186,15 +186,17 @@ namespace MR
 
         const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
-        Mapping::TrackLoader loader (file, count);
-        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
-        MappedTrackReceiver receiver (*this);
-        Thread::run_queue (
-            loader, 
-            Thread::batch (Tractography::Streamline<float>()), 
-            Thread::multi (mapper), 
-            Thread::batch (Mapping::SetDixel()), 
-            Thread::multi (receiver));
+        {
+          Mapping::TrackLoader loader (file, count);
+          Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
+          MappedTrackReceiver receiver (*this);
+          Thread::run_queue (
+              loader,
+              Thread::batch (Tractography::Streamline<float>()),
+              Thread::multi (mapper),
+              Thread::batch (Mapping::SetDixel()),
+              Thread::multi (receiver));
+        }
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;

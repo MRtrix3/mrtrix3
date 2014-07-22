@@ -21,11 +21,13 @@
 */
 
 #include "command.h"
+#include "ptr.h"
+#include "dwi/fmls.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
-#include "dwi/fmls.h"
-#include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/SIFT/model_base.h"
 
 
 using namespace MR;
@@ -34,23 +36,32 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (robert.smith@florey.edu.au)";
 
   DESCRIPTION
-  + "sum the Apparent Fibre Density (AFD) for all fixels belonging to a fibre bundle, "
-    "and normalise by the mean track length."
+  + "obtain an estimate of fibre connectivity between two regions using AFD and streamlines tractography"
 
-  + "Use -quiet to suppress progress messages and output AFD value only."
+  + "This estimate is obtained by determining a fibre volume (AFD) occupied by the pathway "
+    "of interest, and dividing by the streamline length."
+
+  + "If only the streamlines belonging to the pathway of interest are provided, then "
+    "ALL of the fibre volume within each fixel selected will contribute to the result. "
+    "If the -wbft option is used to provide whole-brain fibre-tracking (of which the pathway of "
+    "interest should contain a subset), only the fraction of the fibre volume in each fixel "
+    "estiamted to belong to the pathway of interest will contribute to the result."
+
+  + "Use -quiet to suppress progress messages and output fibre connectivity value only."
 
   + "For valid comparisons of AFD connectivity across scans, images MUST be intensity "
-    "normalised and bias field corrected."
+    "normalised and bias field corrected, and a common response function for all subjects "
+    "must be used."
 
-  + "Note that the sum of the AFD is normalised by the mean track length to "
+  + "Note that the sum of the AFD is normalised by streamline length to "
     "account for subject differences in fibre bundle length. This normalisation results in a measure "
     "that is more related to the cross-sectional volume of the tract (and therefore 'connectivity'). "
     "Note that SIFT-ed tract count is a superior measure because it is unaffected by tangential yet unrelated "
-    "fibres. However, AFD connectivity can be used as a substitute when Anatomically Constrained Tractography and SIFT is not"
-    "possible due to uncorrectable EPI distortions.";
+    "fibres. However, AFD connectivity may be used as a substitute when Anatomically Constrained Tractography "
+    "is not possible due to uncorrectable EPI distortions, and SIFT may therefore not be as effective.";
 
 
 
@@ -60,170 +71,251 @@ void usage ()
   + Argument ("tracks", "the input track file defining the bundle of interest.").type_file();
 
   OPTIONS
-  + Option ("afd", "output a 3D image containing the AFD estimated for each voxel. "
-                   "If the input tracks are tangent to multiple fibres in a voxel (fixels), "
-                   "then the output AFD is the sum of the AFD for each fixel")
-  + Argument ("image").type_image_out();
+  + Option ("wbft", "provide a whole-brain fibre-tracking data set (of which the input track file "
+                    "should be a subset), to improve the estimate of fibre bundle volume in the "
+                    "presence of partial volume")
+    + Argument ("tracks").type_file()
+
+  + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
+    + Argument ("image").type_image_out()
+
+  + Option ("all_fixels", "if whole-brain fibre-tracking is NOT provided, then if multiple fixels within "
+                          "a voxel are traversed by the pathway of interest, by default the fixel with the "
+                          "greatest streamlines density is selected to contribute to the AFD in that voxel. "
+                          "If this option is provided, then ALL fixels with non-zero streamlines density "
+                          "will contribute to the result, even if multiple fixels per voxel are selected.");
 
 }
 
 
 typedef float value_type;
-typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
+typedef DWI::Tractography::Mapping::SetDixel SetDixel;
+typedef DWI::Tractography::SIFT::FixelBase FixelBase;
+
+
+
+class Fixel : public FixelBase
+{
+  public:
+    Fixel () : FixelBase (), length (0.0) { }
+    Fixel (const FMLS::FOD_lobe& lobe) : FixelBase (lobe), length (0.0) { }
+    Fixel (const Fixel& that) : FixelBase (that), length (that.length) { }
+
+    void       add_to_selection (const value_type l) { length += l; }
+    value_type get_selected_volume (const value_type l) const { return get_TD() ? (get_FOD() * (l / get_TD())) : 0.0; }
+    value_type get_selected_volume ()                   const { return get_TD() ? (get_FOD() * (length / get_TD())) : 0.0; }
+    value_type get_selected_length() const { return length; }
+    bool       is_selected()         const { return length; }
+
+  private:
+    value_type length;
+
+};
+
+
+
+
+class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
+{
+  public:
+    AFDConnectivity (Image::Buffer<value_type>& fod_buffer, const DWI::Directions::FastLookupSet& dirs, const std::string& tck_path, const std::string& wbft_path) :
+        DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
+        have_wbft (wbft_path.size()),
+        all_fixels (false),
+        mapper (fod_buffer, DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1), false, dirs),
+        v_fod (fod_buffer)
+    {
+      if (have_wbft) {
+        perform_FOD_segmentation (fod_buffer);
+        map_streamlines (wbft_path);
+      } else {
+        fmls = new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.dim(3)));
+      }
+    }
+
+
+    void set_all_fixels (const bool i) { all_fixels = i; }
+
+
+    value_type get  (const std::string& path);
+    void       save (const std::string& path);
+
+
+  private:
+    const bool have_wbft;
+    bool all_fixels;
+    DWI::Tractography::Mapping::TrackMapperDixel mapper;
+    Image::Buffer<value_type>::voxel_type v_fod;
+    Ptr<DWI::FMLS::Segmenter> fmls;
+
+    using Fixel_map<Fixel>::accessor;
+
+};
+
+
+
+value_type AFDConnectivity::get (const std::string& path)
+{
+
+  Tractography::Properties properties;
+  Tractography::Reader<value_type> reader (path, properties);
+  const size_t track_count = (properties.find ("count") == properties.end() ? 0 : to<size_t>(properties["count"]));
+  DWI::Tractography::Mapping::TrackLoader loader (reader, track_count, "summing apparent fibre density within track... ");
+
+  // If WBFT is provided, this is the sum of (volume/length) across streamlines
+  // Otherwise, it's a sum of lengths of all streamlines (for later scaling by mean streamline length)
+  double sum_contributions = 0.0;
+
+  size_t count = 0;
+
+  Tractography::Streamline<value_type> tck;
+  while (loader (tck)) {
+    ++count;
+
+    SetDixel dixels;
+    mapper (tck, dixels);
+    double this_length = 0.0, this_volume = 0.0;
+
+    for (SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
+      this_length += i->get_value();
+
+      // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
+      //   check to see if any data have been provided for this voxel; and if not yet,
+      //   run the segmenter
+      if (!have_wbft) {
+
+        VoxelAccessor v (accessor);
+        Image::Nav::set_pos (v, *i, 0, 3);
+        if (!v.value()) {
+
+          Image::Nav::set_pos (v_fod, *i, 0, 3);
+          DWI::FMLS::SH_coefs fod_data;
+          DWI::FMLS::FOD_lobes fod_lobes;
+
+          fod_data.vox[0] = v_fod[0]; fod_data.vox[1] = v_fod[1]; fod_data.vox[2] = v_fod[2];
+          fod_data.allocate (v_fod.dim (3));
+          for (v_fod[3] = 0; v_fod[3] < v_fod.dim (3); ++v_fod[3])
+            fod_data[v_fod[3]] = v_fod.value();
+
+          (*fmls) (fod_data, fod_lobes);
+          (*this) (fod_lobes);
+
+        }
+      }
+
+      const size_t fixel_index = dixel2fixel (*i);
+      Fixel& fixel = fixels[fixel_index];
+      fixel.add_to_selection (i->get_value());
+      if (have_wbft)
+        this_volume += fixel.get_selected_volume (i->get_value());
+
+    }
+
+    if (have_wbft)
+      sum_contributions += (this_volume / this_length);
+    else
+      sum_contributions += this_length;
+
+  }
+
+  if (!have_wbft) {
+
+    // Streamlines define a fixel mask; go through and get all the fibre volumes
+    double sum_volumes = 0.0;
+
+    if (all_fixels) {
+
+      // All fixels contribute to the result
+      for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i) {
+        if (i->is_selected())
+          sum_volumes += i->get_FOD();
+      }
+
+    } else {
+
+      // Only allow one fixel per voxel to contribute to the result
+      VoxelAccessor v (accessor);
+      Image::LoopInOrder loop (v);
+      for (loop.start (v); loop.ok(); loop.next (v)) {
+        if (v.value()) {
+          value_type voxel_afd = 0.0, max_td = 0.0;
+          for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+            if (i().get_selected_length() > max_td) {
+              max_td = i().get_selected_length();
+              voxel_afd = i().get_FOD();
+            }
+          }
+          sum_volumes += voxel_afd;
+        }
+      }
+
+    }
+
+    // sum_contributions currently stores sum of streamline lengths;
+    //   turn into a mean length, then combine with volume to get a connectivity value
+    const double mean_length = sum_contributions / double(count);
+    sum_contributions = sum_volumes / mean_length;
+
+  }
+
+  return sum_contributions;
+
+}
+
+
+
+void AFDConnectivity::save (const std::string& path)
+{
+  Image::Header H;
+  H.info() = info();
+  Image::Buffer<value_type> out_buffer (path, H);
+  Image::Buffer<value_type>::voxel_type out (out_buffer);
+  VoxelAccessor v (accessor);
+  Image::LoopInOrder loop (v);
+  for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
+    value_type value = 0.0;
+    if (have_wbft) {
+      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+        value += i().get_selected_volume();
+    } else if (all_fixels) {
+      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+        value += (i().is_selected() ? i().get_FOD() : 0.0);
+    } else {
+      value_type max_td = 0.0;
+      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+        if (i().get_selected_length() > max_td) {
+          max_td = i().get_selected_length();
+          value = i().get_FOD();
+        }
+      }
+    }
+    out.value() = value;
+  }
+}
+
 
 
 void run ()
 {
 
-  Tractography::Properties properties;
-  Tractography::Reader<value_type> track_file (argument[1], properties);
+  Options opt = get_options ("wbft");
+  const std::string wbft_path = opt.size() ? str(opt[0][0]) : "";
 
-  const size_t track_count = properties["count"].empty() ? 0 : to<int> (properties["count"]);
-  if (track_count == 0)
-    throw Exception ("no tracks found in the input track file");
+  DWI::Directions::FastLookupSet dirs (1281);
+  Image::Buffer<value_type> fod (argument[0]);
+  AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 
-  const float step_size = properties["step_size"].empty() ? 0 : to<float> (properties["step_size"]);
-  if (step_size == 0.0)
-    throw Exception ("track file step size is equal to zero");
+  opt = get_options ("all_fixels");
+  model.set_all_fixels (opt.size());
 
-  std::vector<Point<value_type> > fixel_directions;
-  std::vector<value_type> fixel_AFD;
-  DWI::Directions::Set dirs (1281);
-  Image::Header index_header (argument[0]);
-  index_header.dim(3) = 2;
-  Image::BufferScratch<int32_t> fixel_indexer (index_header);
-  Image::BufferScratch<int32_t>::voxel_type fixel_indexer_vox (fixel_indexer);
-  Image::LoopInOrder loop4D (fixel_indexer_vox);
-  for (loop4D.start (fixel_indexer_vox); loop4D.ok(); loop4D.next (fixel_indexer_vox))
-    fixel_indexer_vox.value() = -1;
-
-  DWI::Tractography::Mapping::TrackLoader loader (track_file, track_count, "summing apparent fibre density within track...");
-  Image::Header header (argument[0]);
-  DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (header);
-  std::vector<int> fixel_TDI;
-  Image::Buffer<value_type> fod_buffer (argument[0]);
-  Image::Buffer<value_type>::voxel_type fod_vox (fod_buffer);
-  DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (fod_buffer.dim(3)));
-
-  Tractography::Streamline<float> tck;
-  SetVoxelDir dixels;
-
-  int track_counter = 0;
-
-  // Map each track to dixels
-  while (loader(tck)) {
-    track_counter++;
-    mapper (tck, dixels);
-
-    // For each dixel in the track
-    for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
-
-      Image::Nav::set_pos (fixel_indexer_vox, *d);
-      fixel_indexer_vox[3] = 0;
-      int32_t first_index = fixel_indexer_vox.value();
-
-      // We have not yet visited this voxel so segment the FOD and store fixel details
-      if (first_index < 0) {
-        Image::Nav::set_pos (fod_vox, *d);
-        DWI::FMLS::SH_coefs fod;
-        DWI::FMLS::FOD_lobes lobes;
-        fod.vox[0] = fod_vox[0]; fod.vox[1] = fod_vox[1]; fod.vox[2] = fod_vox[2];
-        fod.allocate (fod_vox.dim (3));
-        for (fod_vox[3] = 0; fod_vox[3] < fod_vox.dim (3); ++fod_vox[3])
-          fod[fod_vox[3]] = fod_vox.value();
-        fmls (fod, lobes);
-        if (lobes.size() == 0)
-          continue;
-        fixel_indexer_vox.value() = fixel_directions.size();
-        first_index = fixel_directions.size();
-        int32_t fixel_count = 0;
-        for (DWI::FMLS::FOD_lobes::const_iterator l = lobes.begin(); l != lobes.end(); ++l, ++fixel_count) {
-          fixel_directions.push_back (l->get_peak_dir());
-          fixel_AFD.push_back (l->get_integral());
-          fixel_TDI.push_back (0);
-        }
-        fixel_indexer_vox[3] = 1;
-        fixel_indexer_vox.value() = fixel_count;
-      }
-
-      fixel_indexer_vox[3] = 1;
-      int32_t last_index = first_index + fixel_indexer_vox.value();
-      int32_t closest_fixel_index = -1;
-      value_type largest_dp = -1.0;
-      Point<value_type> dir (d->get_dir());
-      dir.normalise();
-
-      // find the fixel with the closest direction to track tangent
-      for (int32_t j = first_index; j < last_index; ++j) {
-        value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-        if (dp >= largest_dp) {
-          largest_dp = dp;
-          closest_fixel_index = j;
-        }
-      }
-      fixel_TDI[closest_fixel_index]++;
-    }
-  }
-
-
-  double total_AFD = 0.0;
-  Image::Loop loop (0, 3);
-
-  for (loop.start (fixel_indexer_vox); loop.ok(); loop.next (fixel_indexer_vox)) {
-    fixel_indexer_vox[3] = 0;
-    int32_t fixel_index = fixel_indexer_vox.value();
-    if (fixel_index >= 0) {
-      fixel_indexer_vox[3] = 1;
-      int32_t last_index = fixel_index + fixel_indexer_vox.value();
-      int32_t largest_TDI_index = std::numeric_limits<int32_t>::max();
-      int largest_TDI = 0;
-      for (;fixel_index < last_index; ++fixel_index) {
-        if (fixel_TDI[fixel_index] > largest_TDI) {
-          largest_TDI = fixel_TDI[fixel_index];
-          largest_TDI_index = fixel_index;
-        }
-      }
-      if (largest_TDI_index != std::numeric_limits<int32_t>::max())
-        total_AFD += fixel_AFD [largest_TDI_index];
-    }
-  }
-
-  Tractography::Reader<value_type> tck_file (argument[1], properties);
-  double total_track_length = 0.0;
-  {
-    ProgressBar progress ("normalising apparent fibre density by mean track length...", track_count);
-    while (tck_file (tck)) {
-      total_track_length += static_cast<value_type>(tck.size() - 1) * step_size;
-      progress++;
-    }
-  }
+  const value_type connectivity_value = model.get (argument[1]);
 
   // output the AFD sum using std::cout. This enables output to be redirected to a file without the console output.
-  std::cout << total_AFD / (total_track_length / static_cast<value_type>(track_count)) << std::endl;
+  std::cout << connectivity_value << std::endl;
 
-  header.set_ndim(3);
+  opt = get_options ("afd_map");
+  if (opt.size())
+    model.save (opt[0][0]);
 
-  Options opt = get_options ("afd");
-  if (opt.size()) {
-    Image::Buffer<value_type> AFD_buf (opt[0][0], header);
-    Image::Buffer<value_type>::voxel_type AFD_vox (AFD_buf);
-    for (loop.start (fixel_indexer_vox, AFD_vox); loop.ok(); loop.next (fixel_indexer_vox, AFD_vox)) {
-        fixel_indexer_vox[3] = 0;
-        int32_t fixel_index = fixel_indexer_vox.value();
-        if (fixel_index >= 0) {
-          fixel_indexer_vox[3] = 1;
-          int32_t last_index = fixel_index + fixel_indexer_vox.value();
-          int32_t largest_TDI_index = std::numeric_limits<int32_t>::max();
-          int largest_TDI = 0;
-          for (;fixel_index < last_index; ++fixel_index) {
-            if (fixel_TDI[fixel_index] > largest_TDI) {
-              largest_TDI = fixel_TDI[fixel_index];
-              largest_TDI_index = fixel_index;
-            }
-          }
-          if (largest_TDI_index != std::numeric_limits<int32_t>::max())
-            AFD_vox.value() += fixel_AFD [largest_TDI_index];
-        }
-      }
-  }
 }
+

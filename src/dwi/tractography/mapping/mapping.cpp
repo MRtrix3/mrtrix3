@@ -35,6 +35,13 @@ namespace MR {
 
 
 
+        size_t determine_upsample_ratio (const Image::Info& info, const float step_size, const float ratio)
+        {
+          size_t upsample_ratio = 1;
+          if (step_size && std::isfinite (step_size))
+            upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
+          return upsample_ratio;
+        }
 
         size_t determine_upsample_ratio (const Image::Info& info, const std::string& tck_path, const float ratio)
         {
@@ -57,11 +64,7 @@ namespace MR {
           }
           const float step_size = to<float> (i->second);
 
-          size_t upsample_ratio = 1;
-          if (step_size && std::isfinite (step_size))
-            upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
-
-          return upsample_ratio;
+          return determine_upsample_ratio (info, step_size, ratio);
         }
 
 
