@@ -215,6 +215,20 @@ MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, con
 
 
 
+DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt)
+{
+  if (current_dt == DataType::Undefined) {
+    return default_dt;
+  } else if (default_dt.is_floating_point() && current_dt.is_floating_point()) {
+    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast; defaulting to " + str(default_dt.specifier()));
+    return default_dt;
+  } else {
+    return current_dt;
+  }
+}
+
+
+
 void run () {
 
   Tractography::Properties properties;
@@ -349,31 +363,30 @@ void run () {
   }
 
 
+  // Get header datatype based on user input, or select an appropriate datatype automatically
   opt = get_options ("datatype");
-  bool manual_datatype = false;
+  header.datatype() = DataType::Undefined;
 
-  if (colour) {
+  if (colour)
     header.datatype() = DataType::Float32;
-    manual_datatype = true;
-  }
 
   if (opt.size()) {
     if (colour) {
       INFO ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
     } else {
       header.datatype() = DataType::parse (opt[0][0]);
-      manual_datatype = true;
     }
   }
 
-  if (get_options ("tck_weights_in").size() || (manual_datatype && header.datatype().is_integer())) {
-    if ((manual_datatype && header.datatype().is_integer()))
-      INFO ("Can't use an integer type if streamline weights are provided; overriding to Float32");
+  if (get_options ("tck_weights_in").size() || header.datatype().is_integer()) {
+    WARN ("Can't use an integer type if streamline weights are provided; overriding to Float32");
     header.datatype() = DataType::Float32;
-    manual_datatype = true;
   }
 
+  const DataType default_datatype = (contrast == TDI || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT) ? DataType::UInt32 : DataType::Float32;
+  header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype);
   header.datatype().set_byte_order_native();
+
 
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
     header.comments().push_back (i->first + ": " + i->second);
@@ -476,8 +489,6 @@ void run () {
     }
     const std::string assoc_image (opt[0][0]);
     const Image::Header H_assoc_image (assoc_image);
-    if (!manual_datatype && (H_assoc_image.datatype() != DataType::Bit))
-      header.datatype() = H_assoc_image.datatype();
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
       mapper.add_scalar_image (assoc_image);
     else
@@ -486,11 +497,6 @@ void run () {
 
   // Use a branching IF instead of a switch statement to permit scope
   if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || (contrast == CURVATURE && stat_tck != GAUSSIAN)) {
-
-    if (!manual_datatype) {
-      header.datatype() = (contrast == TDI || contrast == ENDPOINT) ? DataType::UInt32 : DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
 
     if (colour) {
       MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
@@ -502,11 +508,6 @@ void run () {
 
   } else if (contrast == PRECISE_TDI) {
 
-    if (!manual_datatype) {
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
-
     if (colour) {
       MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
@@ -516,11 +517,6 @@ void run () {
     }
 
   } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
-
-    if (!manual_datatype) {
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
 
     if (colour) {
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
