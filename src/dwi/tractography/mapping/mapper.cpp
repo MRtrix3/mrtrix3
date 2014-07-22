@@ -23,8 +23,6 @@
 
 #include "dwi/tractography/mapping/mapper.h"
 
-#include "math/matrix.h"
-
 
 namespace MR {
 namespace DWI {
@@ -560,11 +558,44 @@ void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxelD
 
 
 
+
+void TrackMapperTWI::add_scalar_image (const std::string& path)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != SCALAR_MAP && contrast != SCALAR_MAP_COUNT)
+    throw Exception ("Cannot add a scalar image to TWI unless the contrast depends on it");
+  image_plugin = new TWIScalarImagePlugin (path, track_statistic);
+}
+
+void TrackMapperTWI::add_fod_image (const std::string& path)
+{
+  if (image_plugin)
+    throw Exception ("Cannot add more than one associated image to TWI");
+  if (contrast != FOD_AMP)
+    throw Exception ("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
+  image_plugin = new TWIFODImagePlugin (path);
+}
+
+
+
+
+
 void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
 {
 
+  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
+    assert (image_plugin);
+    image_plugin->load_factors (tck, factors);
+    return;
+  }
+  if (contrast == FOD_AMP) {
+    assert (image_plugin);
+    image_plugin->load_factors (tck, factors);
+    return;
+  }
   if (contrast != CURVATURE)
-    throw Exception ("Function TrackMapperTWI::load_factors() only works with curvature contrast");
+    throw Exception ("Unsupported contrast in function TrackMapperTWI::load_factors()");
 
   std::vector< Point<float> > tangents;
   tangents.reserve (tck.size());
@@ -721,77 +752,6 @@ void TrackMapperTWI::gaussian_smooth_factors (const std::vector< Point<float> >&
 
   }
 
-}
-
-
-
-
-// TODO May be able to remove scope qualifiers
-void TrackMapperTWIImage::load_factors (const std::vector< Point<float> >& tck) const
-{
-
-  switch (TrackMapperTWI::contrast) {
-
-    case SCALAR_MAP:
-    case SCALAR_MAP_COUNT:
-
-      if (TrackMapperTWI::track_statistic == ENDS_MIN || TrackMapperTWI::track_statistic == ENDS_MEAN || TrackMapperTWI::track_statistic == ENDS_MAX || TrackMapperTWI::track_statistic == ENDS_PROD) { // Only the track endpoints contribute
-
-        for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
-          const Point<float> endpoint = get_last_point_in_fov (tck, tck_end_index);
-          if (endpoint.valid())
-            TrackMapperTWI::factors.push_back (interp.value());
-          else
-            TrackMapperTWI::factors.push_back (NAN);
-        }
-
-      } else { // The entire length of the track contributes
-
-        for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-          if (!interp.scanner (*i))
-            TrackMapperTWI::factors.push_back (interp.value());
-          else
-            TrackMapperTWI::factors.push_back (NAN);
-        }
-
-      }
-      break;
-
-    case FOD_AMP:
-      for (size_t i = 0; i != tck.size(); ++i) {
-        const Point<float>& p = tck[i];
-        if (!interp.scanner (p)) {
-          // Get the interpolated spherical harmonics at this point
-          for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
-            sh_coeffs[interp[3]] = interp.value();
-          const Point<float> dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalise();
-          TrackMapperTWI::factors.push_back (precomputer.value (sh_coeffs, dir));
-        } else {
-          TrackMapperTWI::factors.push_back (NAN);
-        }
-      }
-      break;
-
-    default:
-      throw Exception ("FIXME: Undefined / unsupported contrast mechanism in TrackMapperTWIImage::load_factors()");
-
-  }
-
-}
-
-
-
-
-const Point<float> TrackMapperTWIImage::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
-{
-  size_t index = end ? tck.size() - 1 : 0;
-  const int step = end ? -1 : 1;
-  while (interp.scanner (tck[index])) {
-    index += step;
-    if (index == tck.size())
-      return Point<float>();
-  }
-  return tck[index];
 }
 
 

@@ -261,7 +261,7 @@ void run () {
   opt = get_options ("stat_tck");
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
-  float gaussian_fwhm_tck = 0.0, gaussian_denominator_tck = 0.0;
+  float gaussian_fwhm_tck = 0.0;
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
     if (stat_tck != GAUSSIAN) {
@@ -269,8 +269,6 @@ void run () {
       stat_tck = GAUSSIAN;
     }
     gaussian_fwhm_tck = opt[0][0];
-    const float gaussian_theta_tck = gaussian_fwhm_tck / (2.0 * sqrt (2.0 * log (2.0)));
-    gaussian_denominator_tck = 2.0 * gaussian_theta_tck * gaussian_theta_tck;
   } else if (stat_tck == GAUSSIAN) {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
@@ -511,15 +509,17 @@ void run () {
     }
 
     if (colour) {
-      TrackMapperTWI                     mapper (header, contrast, stat_tck, gaussian_denominator_tck);
+      TrackMapperTWI                     mapper (header, contrast, stat_tck);
       mapper.set_upsample_ratio (upsample_ratio);
       mapper.set_map_zero       (map_zero);
+      mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
     } else {
-      TrackMapperTWI                       mapper (header, contrast, stat_tck, gaussian_denominator_tck);
+      TrackMapperTWI                       mapper (header, contrast, stat_tck);
       mapper.set_upsample_ratio (upsample_ratio);
       mapper.set_map_zero       (map_zero);
+      mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
     }
@@ -534,30 +534,33 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
 
-    Image::BufferPreload<float> input_image (opt[0][0]);
-    if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)) {
-      if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
-        throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
-    }
+    const std::string input_image (opt[0][0]);
+    const Image::Header H_image (input_image);
 
-    if (contrast == FOD_AMP && input_image.ndim() != 4)
-      throw Exception ("Use of 'fod_amp' contrast option requires a 4-dimensional image; your image is " + str(input_image.ndim()) + "D");
-
-    if (!manual_datatype && (input_image.datatype() != DataType::Bit))
-      header.datatype() = input_image.datatype();
+    if (!manual_datatype && (H_image.datatype() != DataType::Bit))
+      header.datatype() = H_image.datatype();
 
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage                     mapper (header, contrast, stat_tck, gaussian_denominator_tck, input_image);
+        TrackMapperTWI                     mapper (header, contrast, stat_tck);
         mapper.set_upsample_ratio (upsample_ratio);
         mapper.set_map_zero       (map_zero);
+        mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
+        if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+          mapper.add_scalar_image (input_image);
+        else
+          mapper.add_fod_image (input_image);
         MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
       } else {
-        TrackMapperTWIImage               mapper (header, contrast, stat_tck, 0.0, input_image);
+        TrackMapperTWI               mapper (header, contrast, stat_tck);
         mapper.set_upsample_ratio (upsample_ratio);
         mapper.set_map_zero       (map_zero);
+        if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+          mapper.add_scalar_image (input_image);
+        else
+          mapper.add_fod_image (input_image);
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
       }
@@ -565,15 +568,24 @@ void run () {
     } else {
 
       if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage                    mapper (header, contrast, stat_tck, gaussian_denominator_tck, input_image);
+        TrackMapperTWI                    mapper (header, contrast, stat_tck);
         mapper.set_upsample_ratio (upsample_ratio);
         mapper.set_map_zero       (map_zero);
+        mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
+        if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+          mapper.add_scalar_image (input_image);
+        else
+          mapper.add_fod_image (input_image);
         Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
       } else {
-        TrackMapperTWIImage              mapper (header, contrast, stat_tck, 0.0, input_image);
+        TrackMapperTWI              mapper (header, contrast, stat_tck);
         mapper.set_upsample_ratio (upsample_ratio);
         mapper.set_map_zero       (map_zero);
+        if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+          mapper.add_scalar_image (input_image);
+        else
+          mapper.add_fod_image (input_image);
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
       }

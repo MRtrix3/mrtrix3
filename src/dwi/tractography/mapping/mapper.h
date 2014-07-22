@@ -33,16 +33,14 @@
 #include "image/info.h"
 #include "image/transform.h"
 #include "math/matrix.h"
-#include "math/SH.h"
 #include "thread/queue.h"
 
 #include "dwi/directions/set.h"
 
-#include "image/interp/linear.h"
-
 #include "dwi/tractography/resample.h"
 #include "dwi/tractography/streamline.h"
 
+#include "dwi/tractography/mapping/mapper_plugins.h"
 #include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
@@ -156,19 +154,50 @@ class TrackMapperDixel : public TrackMapperBase
 class TrackMapperTWI : public TrackMapperBase
 {
   public:
-    TrackMapperTWI (const Image::Header& template_image, const contrast_t c, const tck_stat_t s, const float denom = 0.0) :
+    TrackMapperTWI (const Image::Header& template_image, const contrast_t c, const tck_stat_t s) :
         TrackMapperBase       (template_image),
         contrast              (c),
         track_statistic       (s),
-        gaussian_denominator  (denom) { }
+        gaussian_denominator  (0.0),
+        image_plugin          (NULL) { }
 
     TrackMapperTWI (const TrackMapperTWI& that) :
         TrackMapperBase       (that),
         contrast              (that.contrast),
         track_statistic       (that.track_statistic),
-        gaussian_denominator  (that.gaussian_denominator) { }
+        gaussian_denominator  (that.gaussian_denominator),
+        image_plugin          (NULL)
+    {
+      if (that.image_plugin) {
+        if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+          image_plugin = new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin));
+        else if (contrast == FOD_AMP)
+          image_plugin = new TWIFODImagePlugin    (*dynamic_cast<TWIFODImagePlugin*>    (that.image_plugin));
+        else
+          throw Exception ("Copy-constructing TrackMapperTWI with unknown image plugin");
+      }
+    }
 
-    virtual ~TrackMapperTWI() { }
+    virtual ~TrackMapperTWI()
+    {
+      if (image_plugin) {
+        delete image_plugin;
+        image_plugin = NULL;
+      }
+    }
+
+
+    void set_gaussian_FWHM   (const float FWHM)
+    {
+      if (track_statistic != GAUSSIAN)
+        throw Exception ("Cannot set Gaussian FWHM unless the track statistic is Gaussian");
+      const float theta = FWHM / (2.0 * sqrt (2.0 * log (2.0)));
+      gaussian_denominator = 2.0 * Math::pow2 (theta);
+    }
+
+    void add_scalar_image (const std::string&);
+    void add_fod_image    (const std::string&);
+
 
 
   protected:
@@ -176,10 +205,15 @@ class TrackMapperTWI : public TrackMapperBase
     const contrast_t contrast;
     const tck_stat_t track_statistic;
 
-    // Members for when the contribution of a track is not constant along its length (i.e. Gaussian smoothed along the track)
-    const float gaussian_denominator;
-    mutable std::vector<float> factors;
+    // Members required for when Gaussian smoothing is performed along the track
+    float gaussian_denominator; // Only for Gaussian-smoothed
     void gaussian_smooth_factors (const std::vector< Point<float> >&) const;
+
+    // Member for when the contribution of a track is not constant along its length
+    mutable std::vector<float> factors;
+
+    // Member for incorporating additional information from an external image into the TWI process
+    TWIImagePluginBase* image_plugin;
 
 
   private:
@@ -197,69 +231,9 @@ class TrackMapperTWI : public TrackMapperBase
     // Overload virtual function
     bool preprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { set_factor (tck, out); return out.factor; }
 
-};
 
-
-
-
-
-class TrackMapperTWIImage : public TrackMapperTWI
-{
-
-  typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
-
-  public:
-    TrackMapperTWIImage (const Image::Header& template_image, const contrast_t c, const tck_stat_t s, const float denom, Image::BufferPreload<float>& input_image) :
-        TrackMapperTWI       (template_image, c, s, denom),
-        voxel                (input_image),
-        interp               (voxel),
-        lmax                 (0),
-        sh_coeffs            (NULL)
-    {
-      if (c == FOD_AMP) {
-        lmax = Math::SH::LforN (voxel.dim(3));
-        sh_coeffs = new float[voxel.dim(3)];
-        precomputer.init (lmax);
-      }
-    }
-
-    TrackMapperTWIImage (const TrackMapperTWIImage& that) :
-        TrackMapperTWI       (that),
-        voxel                (that.voxel),
-        interp               (voxel),
-        lmax                 (that.lmax),
-        sh_coeffs            (NULL)
-    {
-      if (that.sh_coeffs) {
-        sh_coeffs = new float[voxel.dim(3)];
-        precomputer.init (lmax);
-      }
-    }
-
-    ~TrackMapperTWIImage()
-    {
-      if (sh_coeffs) {
-        delete[] sh_coeffs;
-        sh_coeffs = NULL;
-      }
-    }
-
-
-  private:
-    input_voxel_type voxel;
-    mutable Image::Interp::Linear< input_voxel_type > interp;
-
-    size_t lmax;
-    float* sh_coeffs;
-    Math::SH::PrecomputedAL<float> precomputer;
-
-    void load_factors (const std::vector< Point<float> >&) const;
-
-    // New helper function; find the last point on the streamline from which valid image information can be read
-    const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool) const;
 
 };
-
 
 
 
