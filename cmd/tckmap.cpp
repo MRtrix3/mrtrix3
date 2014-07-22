@@ -475,11 +475,11 @@ void run () {
     }
 
     if (colour) {
-      TrackMapperTWI <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
+      TrackMapperTWI               mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
     } else {
-      TrackMapperTWI    <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
+      TrackMapperTWI                 mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
     }
@@ -492,11 +492,11 @@ void run () {
     }
 
     if (colour) {
-      TrackMapperTWI <SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
+      TrackMapperTWI               mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
     } else {
-      TrackMapperTWI <       SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
+      TrackMapperTWI                      mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
       MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
     }
@@ -509,11 +509,11 @@ void run () {
     }
 
     if (colour) {
-      TrackMapperTWI <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
+      TrackMapperTWI                     mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
     } else {
-      TrackMapperTWI    <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
+      TrackMapperTWI                       mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
       Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
     }
@@ -543,11 +543,11 @@ void run () {
     if (colour) {
 
       if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
+        TrackMapperTWIImage                     mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
       } else {
-        TrackMapperTWIImage <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
+        TrackMapperTWIImage               mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
       }
@@ -555,11 +555,11 @@ void run () {
     } else {
 
       if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
+        TrackMapperTWIImage                    mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
         Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
       } else {
-        TrackMapperTWIImage <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
+        TrackMapperTWIImage              mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
       }
