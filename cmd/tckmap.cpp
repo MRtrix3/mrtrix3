@@ -83,7 +83,13 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
 const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
 
     + Option ("colour",
-        "perform track mapping in directionally-encoded colour space");
+        "perform track mapping in directionally-encoded colour space")
+
+    + Option ("dixel",
+        "map streamlines to dixels within each voxel; requires either a number of dixels "
+        "(references an internal direction set), or a path to a text file containing a "
+        "set of directions stored as aximuth/elevation pairs")
+      + Argument ("path").type_text();
 
 
 
@@ -216,6 +222,43 @@ MapWriterBase* make_greyscale_writer (Image::Header& H, const std::string& name,
 }
 
 
+MapWriterBase* make_dixel_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
+{
+  MapWriterBase* writer = NULL;
+  const uint8_t dt = H.datatype() ();
+  if (dt & DataType::Signed) {
+    if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriterDixel<int8_t>   (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriterDixel<int16_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriterDixel<int32_t>  (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  } else {
+    if ((dt & DataType::Type) == DataType::Bit)
+      writer = new MapWriterDixel<bool>     (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriterDixel<uint8_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriterDixel<uint16_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriterDixel<uint32_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float32)
+      writer = new MapWriterDixel<float>    (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float64)
+      writer = new MapWriterDixel<double>   (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  }
+  return writer;
+}
+
+
+
+
+
+
 
 DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt)
 {
@@ -295,14 +338,35 @@ void run () {
   opt = get_options ("colour");
   const bool colour = opt.size();
 
-  opt = get_options ("map_zero");
-  const bool map_zero = opt.size();
-
   if (colour) {
     header.set_ndim (4);
     header.dim(3) = 3;
     //header.set_description (3, "directionally-encoded colour");
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+  }
+
+  opt = get_options ("dixel");
+  const bool dixel = opt.size();
+  Ptr<DWI::Directions::FastLookupSet> dirs;
+  if (dixel) {
+    if (colour)
+      throw Exception ("Options -colour and -dixel are mutually exclusive");
+    if (Path::exists (opt[0][0]))
+      dirs = new DWI::Directions::FastLookupSet (str(opt[0][0]));
+    else
+      dirs = new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0]));
+    header.set_ndim (4);
+    header.dim(3) = dirs->size();
+    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+    // Write directions to image header as diffusion encoding
+    Math::Matrix<float> grad (dirs->size(), 4);
+    for (size_t row = 0; row != dirs->size(); ++row) {
+      grad (row, 0) = ((*dirs)[row])[0];
+      grad (row, 1) = ((*dirs)[row])[1];
+      grad (row, 2) = ((*dirs)[row])[2];
+      grad (row, 3) = 1.0f;
+    }
+    header.DW_scheme() = grad;
   }
 
   // Deal with erroneous statistics & provide appropriate messages
@@ -390,6 +454,8 @@ void run () {
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments().push_back ("comment: " + *i);
 
+
+  // Figure out how the streamlines will be mapped
   const bool precise = get_options ("precise").size();
   if (precise && contrast == ENDPOINT)
     throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
@@ -473,8 +539,10 @@ void run () {
 
   TrackMapperTWI mapper (header, contrast, stat_tck);
   mapper.set_upsample_ratio      (upsample_ratio);
-  mapper.set_map_zero            (map_zero);
+  mapper.set_map_zero            (get_options ("map_zero").size());
   mapper.set_use_precise_mapping (precise);
+  if (dixel)
+    mapper.create_dixel_plugin (*dirs);
 /*
   if (stat_tck == GAUSSIAN)
     mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
@@ -499,6 +567,8 @@ void run () {
   Ptr<MapWriterBase> writer;
   if (colour)
     writer = new MapWriterDEC (header, argument[1], stat_vox);
+  else if (dixel)
+    writer = make_dixel_writer (header, argument[1], stat_vox);
   else
     writer = make_greyscale_writer (header, argument[1], stat_vox);
 
@@ -506,6 +576,8 @@ void run () {
 
   if (colour)
     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer);
+  else if (dixel)
+    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetDixel(),    *writer);
   else
     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer);
 

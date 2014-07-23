@@ -96,6 +96,12 @@ class TrackMapperBase
     void set_map_zero (const bool i) { map_zero = i; }
     void set_use_precise_mapping (const bool i) { precise = i; }
 
+    void create_dixel_plugin (const DWI::Directions::FastLookupSet& dirs)
+    {
+      assert (!dixel_plugin);
+      dixel_plugin = new DixelMappingPlugin (dirs);
+    }
+
 
     template <class Cont>
     bool operator() (Streamline<>& in, Cont& out) const
