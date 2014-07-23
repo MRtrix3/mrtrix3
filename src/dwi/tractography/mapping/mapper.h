@@ -70,23 +70,26 @@ class TrackMapperBase
         upsampler (1),
         info      (template_image),
         transform (info),
-        map_zero  (false) { }
+        map_zero  (false),
+        precise   (false) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
         upsampler (1),
         info      (that.info),
         transform (info),
-        map_zero  (that.map_zero) { }
+        map_zero  (that.map_zero),
+        precise   (that.precise) { }
 
     virtual ~TrackMapperBase() { }
 
 
     void set_upsample_ratio (const size_t i) { upsampler.set_ratio (i); }
     void set_map_zero (const bool i) { map_zero = i; }
+    void set_use_precise_mapping (const bool i) { precise = i; }
 
 
     template <class Cont>
-    bool operator() (Streamline<float>& in, Cont& out) const
+    bool operator() (Streamline<>& in, Cont& out) const
     {
       out.clear();
       out.index = in.index;
@@ -95,7 +98,10 @@ class TrackMapperBase
         return true;
       if (preprocess (in, out) || map_zero) {
         upsampler (in);
-        voxelise (in, out);
+        if (precise)
+          voxelise_precise (in, out);
+        else
+          voxelise (in, out);
         postprocess (in, out);
       }
       return true;
@@ -105,27 +111,120 @@ class TrackMapperBase
   private:
     Upsampler<float> upsampler;
 
+    template <class Cont>
+    void voxelise_precise (const Streamline<>&, Cont&) const;
+
 
   protected:
     const Image::Info info;
     Image::Transform transform;
     bool map_zero;
+    bool precise;
 
 
     size_t get_upsample_factor() const { return upsampler.get_ratio(); }
 
 
-    void voxelise (const std::vector< Point<float> >&, SetVoxel&)    const;
-    void voxelise (const std::vector< Point<float> >&, SetVoxelDEC&) const;
-    void voxelise (const std::vector< Point<float> >&, SetVoxelDir&) const;
-    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelFactor&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelFactor)"); }
-    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDECFactor&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelDECFactor)"); }
+    virtual void voxelise (const std::vector< Point<float> >&, SetVoxel&)    const;
+    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDEC&) const;
+    //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelFactor&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelFactor)"); }
+    //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDECFactor&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelDECFactor)"); }
     virtual void voxelise (const std::vector< Point<float> >&, SetDixel&)          const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetDixel)"); }
 
     virtual bool preprocess  (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
 
+    // Used by voxelise_precise to increment the relevant set
+    void add_to_set (SetVoxel&    out, const Voxel& v, const Point<float>& d, const float l) const { out.insert (v, l); }
+    void add_to_set (SetVoxelDEC& out, const Voxel& v, const Point<float>& d, const float l) const { out.insert (v, d, l); }
+    virtual void add_to_set (SetDixel&, const Voxel&, const Point<float>&, const float) const { }; // TODO Eventually disallow
+
 };
+
+
+
+
+
+
+
+template <class Cont>
+void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) const
+{
+  typedef Point<float> PointF;
+
+  static const float accuracy = Math::pow2 (0.005 * minvalue (info.vox (0), info.vox (1), info.vox (2)));
+
+  if (tck.size() < 2)
+    return;
+
+  Math::Hermite<float> hermite (0.1);
+
+  const PointF tck_proj_front = (tck[      0     ] * 2.0) - tck[     1      ];
+  const PointF tck_proj_back  = (tck[tck.size()-1] * 2.0) - tck[tck.size()-2];
+
+  unsigned int p = 0;
+  PointF p_voxel_exit = tck.front();
+  float mu = 0.0;
+  bool end_track = false;
+  Voxel next_voxel (round (transform.scanner2voxel (tck.front())));
+
+  do {
+
+    const PointF p_voxel_entry (p_voxel_exit);
+    PointF p_prev (p_voxel_entry);
+    float length = 0.0;
+    const Voxel this_voxel = next_voxel;
+
+    while ((p != tck.size()) && ((next_voxel = round (transform.scanner2voxel (tck[p]))) == this_voxel)) {
+      length += dist (p_prev, tck[p]);
+      p_prev = tck[p];
+      ++p;
+      mu = 0.0;
+    }
+
+    if (p == tck.size()) {
+      p_voxel_exit = tck.back();
+      end_track = true;
+    } else {
+
+      float mu_min = mu;
+      float mu_max = 1.0;
+
+      const PointF* p_one  = (p == 1)              ? &tck_proj_front : &tck[p - 2];
+      const PointF* p_four = (p == tck.size() - 1) ? &tck_proj_back  : &tck[p + 1];
+
+      PointF p_min = p_prev;
+      PointF p_max = tck[p];
+
+      while (dist2 (p_min, p_max) > accuracy) {
+
+        mu = 0.5 * (mu_min + mu_max);
+        hermite.set (mu);
+        const PointF p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
+        const Voxel mu_voxel = round (transform.scanner2voxel (p_mu));
+
+        if (mu_voxel == this_voxel) {
+          mu_min = mu;
+          p_min = p_mu;
+        } else {
+          mu_max = mu;
+          p_max = p_mu;
+          next_voxel = mu_voxel;
+        }
+
+      }
+      p_voxel_exit = p_max;
+
+    }
+
+    length += dist (p_prev, p_voxel_exit);
+    PointF traversal_vector ((p_voxel_exit - p_voxel_entry).normalise());
+    if (traversal_vector.valid() && check (this_voxel, info))
+      add_to_set (out, this_voxel, traversal_vector, length);
+
+  } while (!end_track);
+
+}
 
 
 
@@ -144,7 +243,7 @@ class TrackMapperDixel : public TrackMapperBase
     const DWI::Directions::FastLookupSet& dirs;
 
   private:
-    void voxelise (const std::vector< Point<float> >&, SetDixel&) const;
+    void add_to_set (SetDixel&, const Voxel&, const Point<float>&, const float) const;
 
 };
 
@@ -158,14 +257,14 @@ class TrackMapperTWI : public TrackMapperBase
         TrackMapperBase       (template_image),
         contrast              (c),
         track_statistic       (s),
-        gaussian_denominator  (0.0),
+        //gaussian_denominator  (0.0),
         image_plugin          (NULL) { }
 
     TrackMapperTWI (const TrackMapperTWI& that) :
         TrackMapperBase       (that),
         contrast              (that.contrast),
         track_statistic       (that.track_statistic),
-        gaussian_denominator  (that.gaussian_denominator),
+        //gaussian_denominator  (that.gaussian_denominator),
         image_plugin          (NULL)
     {
       if (that.image_plugin) {
@@ -186,7 +285,7 @@ class TrackMapperTWI : public TrackMapperBase
       }
     }
 
-
+/*
     void set_gaussian_FWHM   (const float FWHM)
     {
       if (track_statistic != GAUSSIAN)
@@ -194,6 +293,7 @@ class TrackMapperTWI : public TrackMapperBase
       const float theta = FWHM / (2.0 * sqrt (2.0 * log (2.0)));
       gaussian_denominator = 2.0 * Math::pow2 (theta);
     }
+*/
 
     void add_scalar_image (const std::string&);
     void add_fod_image    (const std::string&);
@@ -206,8 +306,8 @@ class TrackMapperTWI : public TrackMapperBase
     const tck_stat_t track_statistic;
 
     // Members required for when Gaussian smoothing is performed along the track
-    float gaussian_denominator; // Only for Gaussian-smoothed
-    void gaussian_smooth_factors (const std::vector< Point<float> >&) const;
+    //float gaussian_denominator;
+    //void gaussian_smooth_factors (const std::vector< Point<float> >&) const;
 
     // Member for when the contribution of a track is not constant along its length
     mutable std::vector<float> factors;
@@ -223,9 +323,8 @@ class TrackMapperTWI : public TrackMapperBase
 
     void voxelise (const std::vector< Point<float> >& tck, SetVoxel&          voxels) const;
     void voxelise (const std::vector< Point<float> >& tck, SetVoxelDEC&       voxels) const;
-    void voxelise (const std::vector< Point<float> >& tck, SetVoxelDir&       voxels) const { throw Exception ("Running empty virtual function TrackMapperTWI::voxelise() (SetVoxelDir)"); }
-    void voxelise (const std::vector< Point<float> >& tck, SetVoxelFactor&    voxels) const;
-    void voxelise (const std::vector< Point<float> >& tck, SetVoxelDECFactor& voxels) const;
+    //void voxelise (const std::vector< Point<float> >& tck, SetVoxelFactor&    voxels) const;
+    //void voxelise (const std::vector< Point<float> >& tck, SetVoxelDECFactor& voxels) const;
     void voxelise (const std::vector< Point<float> >& tck, SetDixel&          voxels) const { throw Exception ("Running empty virtual function TrackMapperTWI::voxelise() (SetDixel)"); }
 
     // Overload virtual function

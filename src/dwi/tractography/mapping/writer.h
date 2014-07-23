@@ -105,9 +105,8 @@ class MapWriterBase
 template <typename Cont> float get_factor (const Cont&, const typename Cont::const_iterator) { assert (0); return 0; }
 template <> float get_factor<SetVoxel>          (const SetVoxel&         , const SetVoxel         ::const_iterator);
 template <> float get_factor<SetVoxelDEC>       (const SetVoxelDEC&      , const SetVoxelDEC      ::const_iterator);
-template <> float get_factor<SetVoxelDir>       (const SetVoxelDir&      , const SetVoxelDir      ::const_iterator);
-template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&   , const SetVoxelFactor   ::const_iterator);
-template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor&, const SetVoxelDECFactor::const_iterator);
+//template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&   , const SetVoxelFactor   ::const_iterator);
+//template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor&, const SetVoxelDECFactor::const_iterator);
 
 
 
@@ -370,10 +369,6 @@ class MapWriterColour : public MapWriterBase<Cont>
 
 };
 
-
-// If using precise mapping, need to explicitly map to positive octant
-// Only sum is supported, no factor provided
-template <> bool MapWriterColour<SetVoxelDir>::operator () (const SetVoxelDir&);
 
 
 

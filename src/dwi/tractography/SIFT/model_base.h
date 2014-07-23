@@ -318,8 +318,8 @@ namespace MR
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
           if (fixel_index) {
-            fixels[fixel_index] += i->get_value();
-            total_contribution += fixels[fixel_index].get_weight() * i->get_value();
+            fixels[fixel_index] += i->get_length();
+            total_contribution += fixels[fixel_index].get_weight() * i->get_length();
           }
         }
         TD_sum += total_contribution;

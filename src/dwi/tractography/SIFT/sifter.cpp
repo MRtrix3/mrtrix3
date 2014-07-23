@@ -194,7 +194,7 @@ namespace MR
 
               for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
                 const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
-                const float length = fixel_cont.get_value();
+                const float length = fixel_cont.get_length();
                 Fixel& this_fixel = fixels[fixel_cont.get_fixel_index()];
                 quantisation += this_fixel.calc_quantisation (old_mu, length);
                 const double undo_change_mu_only = this_fixel.get_d_cost_d_mu (old_mu) * mu_change;
@@ -210,7 +210,7 @@ namespace MR
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
                   const Track_fixel_contribution& fixel_cont = candidate_contribution[f];
-                  fixels[fixel_cont.get_fixel_index()] -= fixel_cont.get_value();
+                  fixels[fixel_cont.get_fixel_index()] -= fixel_cont.get_length();
                 }
                 TD_sum -= candidate_contribution.get_total_contribution();
                 contributing_length_removed += candidate_contribution.get_total_length();
@@ -431,7 +431,7 @@ namespace MR
         for (size_t f = 0; f != tck_cont.dim(); ++f) {
           const Fixel& fixel = fixels[tck_cont[f].get_fixel_index()];
           const double undo_gradient_mu_only = fixel.get_d_cost_d_mu (current_mu) * mu_change_if_removed;
-          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[f].get_value()) - fixel.get_cost (current_mu);
+          const double gradient_remove_tck = fixel.get_cost_wo_track (mu_if_removed, tck_cont[f].get_length()) - fixel.get_cost (current_mu);
           gradient = gradient - undo_gradient_mu_only + gradient_remove_tck;
         }
         return gradient;

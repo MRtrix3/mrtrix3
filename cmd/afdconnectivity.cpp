@@ -179,7 +179,7 @@ value_type AFDConnectivity::get (const std::string& path)
     double this_length = 0.0, this_volume = 0.0;
 
     for (SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
-      this_length += i->get_value();
+      this_length += i->get_length();
 
       // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
       //   check to see if any data have been provided for this voxel; and if not yet,
@@ -207,9 +207,9 @@ value_type AFDConnectivity::get (const std::string& path)
 
       const size_t fixel_index = dixel2fixel (*i);
       Fixel& fixel = fixels[fixel_index];
-      fixel.add_to_selection (i->get_value());
+      fixel.add_to_selection (i->get_length());
       if (have_wbft)
-        this_volume += fixel.get_selected_volume (i->get_value());
+        this_volume += fixel.get_selected_volume (i->get_length());
 
     }
 

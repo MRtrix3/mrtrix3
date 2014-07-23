@@ -93,7 +93,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, precise_tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
@@ -132,6 +132,9 @@ const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
       "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
       "(If omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
+
+  + Option ("precise",
+      "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel")
 
   + Option ("dump",
       "dump the scratch buffer contents directly to a .mih / .dat file pair, "
@@ -275,6 +278,9 @@ void run () {
   opt = get_options ("stat_tck");
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
+  if (stat_tck == GAUSSIAN)
+    throw Exception ("Gaussian track-wise statistic temporarily disabled");
+/*
   float gaussian_fwhm_tck = 0.0;
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
@@ -286,7 +292,7 @@ void run () {
   } else if (stat_tck == GAUSSIAN) {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
-
+*/
   opt = get_options ("colour");
   const bool colour = opt.size();
 
@@ -310,16 +316,6 @@ void run () {
       }
       if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for TDI generation - ignoring");
-      stat_tck = T_MEAN;
-      break;
-
-    case PRECISE_TDI:
-      if (stat_vox != V_SUM) {
-        INFO ("Cannot use voxel statistic other than 'sum' for precise TDI generation - ignoring");
-        stat_vox = V_SUM;
-      }
-      if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for precise TDI generation - ignoring");
       stat_tck = T_MEAN;
       break;
 
@@ -395,6 +391,10 @@ void run () {
   for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
     header.comments().push_back ("comment: " + *i);
 
+  const bool precise = get_options ("precise").size();
+  if (precise && contrast == ENDPOINT)
+    throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
+
   size_t upsample_ratio = 1;
   opt = get_options ("upsample");
   if (opt.size()) {
@@ -404,7 +404,7 @@ void run () {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    upsample_ratio = determine_upsample_ratio (header, properties, ((contrast == PRECISE_TDI) ? 0.1 : 0.333));
+    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
   }
 
   const bool dump = get_options ("dump").size();
@@ -414,7 +414,6 @@ void run () {
   std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
-    case PRECISE_TDI:      msg += "density (precise)";          break;
     case ENDPOINT:         msg += "endpoint density";           break;
     case LENGTH:           msg += "length";                     break;
     case INVLENGTH:        msg += "inverse length";             break;
@@ -446,7 +445,8 @@ void run () {
       case T_MAX:          msg += "maximum"; break;
       case T_MEDIAN:       msg += "median";  break;
       case T_MEAN_NONZERO: msg += "mean (nonzero)"; break;
-      case GAUSSIAN:       msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
+      //case GAUSSIAN:       msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
+      case GAUSSIAN:       throw Exception ("Gaussian track-wise statistic temporarily disabled");
       case ENDS_MIN:       msg += "endpoints (minimum)"; break;
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
@@ -459,7 +459,6 @@ void run () {
 
   switch (contrast) {
     case TDI:              header.comments().push_back ("track density image"); break;
-    case PRECISE_TDI:      header.comments().push_back ("track density image (precise calculation)"); break;
     case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
     case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
     case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
@@ -473,12 +472,13 @@ void run () {
   TrackLoader loader (file, num_tracks);
 
   TrackMapperTWI mapper (header, contrast, stat_tck);
-  mapper.set_upsample_ratio (upsample_ratio);
-  mapper.set_map_zero       (map_zero);
-
+  mapper.set_upsample_ratio      (upsample_ratio);
+  mapper.set_map_zero            (map_zero);
+  mapper.set_use_precise_mapping (precise);
+/*
   if (stat_tck == GAUSSIAN)
     mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
-
+*/
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options ("image");
     if (!opt.size()) {
@@ -508,55 +508,31 @@ void run () {
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
     }
 
-  } else if (contrast == PRECISE_TDI) {
-
-    if (colour) {
-      MapWriterColour<SetVoxelDir> writer (header, argument[1], stat_vox);
-      writer.set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
-    } else {
-      MapWriter      <float, SetVoxelDir> writer (header, argument[1], stat_vox);
-      writer.set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
-    }
-
-  } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
-
-    if (colour) {
-      MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], stat_vox);
-      writer.set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
-    } else {
-      Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], stat_vox));
-      writer->set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
-    }
-
   } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
 
     if (colour) {
 
-      if (stat_tck == GAUSSIAN) {
-        MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], stat_vox);
-        writer.set_direct_dump (dump);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
-      } else {
+      //if (stat_tck == GAUSSIAN) {
+      //  MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], stat_vox);
+      //  writer.set_direct_dump (dump);
+      //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
+      //} else {
         MapWriterColour     <SetVoxelDEC> writer (header, argument[1], stat_vox);
         writer.set_direct_dump (dump);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
-      }
+      //}
 
     } else {
 
-      if (stat_tck == GAUSSIAN) {
-        Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], stat_vox));
-        writer->set_direct_dump (dump);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
-      } else {
+      //if (stat_tck == GAUSSIAN) {
+      //  Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], stat_vox));
+      //  writer->set_direct_dump (dump);
+      //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
+      //} else {
         Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
         writer->set_direct_dump (dump);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
-      }
+      //}
 
     }
 

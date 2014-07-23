@@ -42,11 +42,22 @@ namespace Mapping {
 class Voxel : public Point<int>
 {
   public:
-    Voxel (const int x, const int y, const int z) { p[0] = x; p[1] = y; p[2] = z; }
-    Voxel (const Point<int>& that) : Point<int> (that) { }
-    Voxel () { memset (p, 0x00, 3 * sizeof(int)); }
+    Voxel (const int x, const int y, const int z) : length (1.0f) { p[0] = x; p[1] = y; p[2] = z; }
+    Voxel (const Point<int>& that) : Point<int> (that), length (1.0f) { }
+    Voxel (const Point<int>& v, const float l) : Point<int> (v), length (l) { }
+    Voxel () : length (0.0f) { memset (p, 0x00, 3 * sizeof(int)); }
     bool operator< (const Voxel& V) const { return ((p[2] == V.p[2]) ? ((p[1] == V.p[1]) ? (p[0] < V.p[0]) : (p[1] < V.p[1])) : (p[2] < V.p[2])); }
+    Voxel& operator= (const Voxel& V) { Point<int>::operator= (V); length = V.length; return *this; }
+    void operator+= (const float l) const { length += l; }
+    void normalise() const { length = 1.0f; }
+    float get_length() const { return length; }
+  private:
+    mutable float length;
 };
+
+
+
+
 
 
 inline Voxel round (const Point<float>& p)
@@ -60,31 +71,46 @@ inline bool check (const Voxel& V, const Image::Info& H)
   return (V[0] >= 0 && V[0] < H.dim(0) && V[1] >= 0 && V[1] < H.dim(1) && V[2] >= 0 && V[2] < H.dim(2));
 }
 
-inline Point<float> abs (const Point<float>& d)
+inline Point<float> vec2DEC (const Point<float>& d)
 {
   return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
 }
+
+
+
+
 
 class VoxelDEC : public Voxel 
 {
 
   public:
     VoxelDEC () :
-        colour (Point<float> (0.0, 0.0, 0.0))
-    {
-      memset (p, 0x00, 3 * sizeof(int));
-    }
+        Voxel (),
+        colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
+
     VoxelDEC (const Voxel& V) :
         Voxel (V),
-        colour (Point<float> (0.0, 0.0, 0.0)) { }
+        colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
 
-    VoxelDEC& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
-    bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
+    VoxelDEC (const Voxel& V, const Point<float>& d) :
+        Voxel (V),
+        colour (vec2DEC (d)) { }
+
+    VoxelDEC (const Voxel& V, const Point<float>& d, const float l) :
+        Voxel (V, l),
+        colour (vec2DEC (d)) { }
+
+    VoxelDEC& operator=  (const VoxelDEC& V)       { Voxel::operator= (V); colour = V.colour; return (*this); }
+    VoxelDEC& operator=  (const Voxel& V)          { Voxel::operator= (V); colour = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
+
+    // For sorting / inserting, want to identify the same voxel, even if the colour is different
+    bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
     bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
-    void norm_dir() const { colour.normalise(); }
-    void set_dir (const Point<float>& i)       { colour[0] =  Math::abs (i[0]); colour[1] =  Math::abs (i[1]); colour[2] =  Math::abs (i[2]); }
-    void add_dir (const Point<float>& i) const { colour[0] += Math::abs (i[0]); colour[1] += Math::abs (i[1]); colour[2] += Math::abs (i[2]); }
+    void normalise() const { Voxel::normalise(); colour.normalise(); }
+    void set_dir (const Point<float>& i) { colour =  vec2DEC (i); }
+    void add (const Point<float>& i, const float l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
+    void operator+= (const Point<float>& i) const { Voxel::operator+= (1.0f); colour += vec2DEC (i); }
     const Point<float>& get_colour() const { return colour; }
 
   private:
@@ -93,12 +119,18 @@ class VoxelDEC : public Voxel
 };
 
 
+
+// TODO Better handling of Gaussian smoothing case, where a factor is required per voxel for every streamline
+// Perhaps even branch the MapWriter: Have the base classes jsut load the factor from SetVoxelExtras, and a
+//   derived Gaussian version that loads from the set
+/*
 class VoxelFactor : public Voxel
 {
 
   public:
     VoxelFactor () :
-        sum (0.0),
+        Voxel (),
+        sum (0.0f),
         contributions (0) { }
 
     VoxelFactor (const int x, const int y, const int z, const float factor) :
@@ -108,7 +140,7 @@ class VoxelFactor : public Voxel
 
     VoxelFactor (const Voxel& v) :
         Voxel (v),
-        sum (0.0),
+        sum (0.0f),
         contributions (0) { }
 
     template <class Init>
@@ -131,8 +163,9 @@ class VoxelFactor : public Voxel
     float get_factor() const { return (sum / float(contributions)); }
     size_t get_contribution_count() const { return contributions; }
 
-    VoxelFactor& operator=  (const Voxel& V)             { Voxel::operator= (V); return (*this); }
-    bool         operator== (const Voxel& V)       const { return Voxel::operator== (V); }
+    VoxelFactor& operator=  (const Voxel& V)             { Voxel::operator= (V); sum = 0.0f; contributions = 0; return (*this); }
+    VoxelFactor& operator=  (const VoxelFactor& V)       { Voxel::operator= (V); sum = V.sum; contributions = V.contributions; return (*this); }
+    bool         operator== (const VoxelFactor& V) const { return Voxel::operator== (V); }
     bool         operator<  (const VoxelFactor& V) const { return Voxel::operator< (V); }
 
 
@@ -148,110 +181,82 @@ class VoxelDECFactor : public VoxelFactor
 
   public:
     VoxelDECFactor () :
-        colour (Point<float> (0.0, 0.0, 0.0))
-    {
-      memset (p, 0x00, 3 * sizeof(int));
-    }
+        VoxelFactor (),
+        colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
+
     VoxelDECFactor (const Voxel& V) :
         VoxelFactor (V),
         colour (Point<float> (0.0, 0.0, 0.0)) { }
 
-    VoxelDECFactor& operator=  (const Voxel& V)                { Voxel::operator= (V); return (*this); }
+    VoxelDECFactor (const VoxelDECFactor& that) :
+        VoxelFactor (that),
+        colour (that.colour) { }
+
+    VoxelDECFactor& operator=  (const Voxel& V)                { VoxelFactor::operator= (V); colour = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
+    VoxelDECFactor& operator=  (const VoxelDECFactor& V)       { VoxelFactor::operator= (V); colour = that.colour; return (*this); }
     bool            operator== (const Voxel& V)          const { return Voxel::operator== (V); }
     bool            operator<  (const VoxelDECFactor& V) const { return Voxel::operator< (V); }
 
-    void norm_dir() const { colour.normalise(); }
-    void set_dir (const Point<float>& i)       { colour[0] =  Math::abs (i[0]); colour[1] =  Math::abs (i[1]); colour[2] =  Math::abs (i[2]); }
-    void add_dir (const Point<float>& i) const { colour[0] += Math::abs (i[0]); colour[1] += Math::abs (i[1]); colour[2] += Math::abs (i[2]); }
+    void normalise() const { colour.normalise(); }
+    void set_dir (const Point<float>& i)       { colour =  vec2DEC (i); }
+    void add_dir (const Point<float>& i) const { colour += vec2DEC (i); }
     const Point<float>& get_colour() const { return colour; }
 
   private:
     mutable Point<float> colour;
 
 };
-
-
-// Unlike VoxelDEC, here the direction through the voxel is NOT constrained to the 3-axis positive octant
-// Reworked VoxelDir:
-//   * Direction should be set to a unit vector
-//   * VoxelDirs should NOT be added
-//   * Separate member variable for length
-class VoxelDir : public Voxel
-{
-
-  public:
-    VoxelDir () :
-        dir (0.0, 0.0, 0.0),
-        length (0.0) { }
-
-    VoxelDir (const Voxel& V) :
-        Voxel (V),
-        dir (0.0, 0.0, 0.0),
-        length (0.0) { }
-
-    VoxelDir (const Voxel& V, const Point<float>& d, const float l) :
-        Voxel (V),
-        dir (d),
-        length (l) { }
-
-    const Point<float>& get_dir() const { return dir; }
-    float get_length() const { return length; }
-
-    VoxelDir& operator=  (const Voxel& V)          { Voxel::operator= (V); return (*this); }
-    bool      operator== (const Voxel& V)    const { return Voxel::operator== (V); }
-    bool      operator<  (const VoxelDir& V) const { return Voxel::operator== (V) ? true : Voxel::operator< (V); }
-    bool      operator== (const VoxelDir& V) const { return false; }
-
-
-  private:
-    Point<float> dir;
-    float length;
-
-};
+*/
 
 
 
-// New Voxel-derived class; assumes tangent has been mapped to a hemisphere basis direction set
+// Assumes tangent has been mapped to a hemisphere basis direction set
 class Dixel : public Voxel
 {
 
   public:
     Dixel () :
-        dir (invalid),
-        value (0.0) { }
+        Voxel (),
+        dir (invalid) { }
 
     Dixel (const Voxel& V) :
         Voxel (V),
-        dir (invalid),
-        value (0.0) { }
+        dir (invalid) { }
 
     Dixel (const Voxel& V, const size_t b) :
         Voxel (V),
-        dir (b),
-        value (0.0) { }
+        dir (b) { }
 
-    Dixel (const Voxel& V, const size_t b, const float v) :
-        Voxel (V),
-        dir (b),
-        value (v) { }
+    Dixel (const Voxel& V, const size_t b, const float l) :
+        Voxel (V, l),
+        dir (b) { }
 
     void set_dir   (const size_t b) { dir = b; }
-    void set_value (const float v) const { value = v; }
 
     bool   valid()     const { return (dir != invalid); }
     size_t get_dir()   const { return dir; }
-    float  get_value() const { return value; }
 
-    bool operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
-    bool operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
+    Dixel& operator=  (const Dixel& V)       { Voxel::operator= (V); dir = V.dir; return *this; }
+    Dixel& operator=  (const Voxel& V)       { Voxel::operator= (V); dir = invalid; return *this; }
+    bool   operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
+    bool   operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
+    void   operator+= (const float l)  const { Voxel::operator+= (l); }
 
   private:
     size_t dir;
-    mutable float value;
 
     static const size_t invalid;
 
 };
+
+
+
+// TODO TOD class: Would prefer the aPSF generation to be multi-threaded, so store the
+//   SH coefficients in the voxel class
+// Provide a normalise() function to remove any length dependence, and have unary contribution per streamline
+
+
+
 
 
 
@@ -264,12 +269,85 @@ class SetVoxelExtras
 };
 
 
-class SetVoxel          : public std::set<Voxel>         , public SetVoxelExtras { };
-class SetVoxelDEC       : public std::set<VoxelDEC>      , public SetVoxelExtras { };
-class SetVoxelDir       : public std::set<VoxelDir>      , public SetVoxelExtras { };
-class SetVoxelFactor    : public std::set<VoxelFactor>   , public SetVoxelExtras { };
-class SetVoxelDECFactor : public std::set<VoxelDECFactor>, public SetVoxelExtras { };
-class SetDixel          : public std::set<Dixel>         , public SetVoxelExtras { };
+
+
+
+
+// New classes that give sensible behaviour to the insert() function depending on the base class
+
+class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
+{
+  public:
+    void insert (const Voxel& v)
+    {
+      std::set<Voxel>::insert (v);
+    }
+    void insert (const Voxel& v, const float l)
+    {
+      iterator existing = std::set<Voxel>::find (v);
+      if (existing == std::set<Voxel>::end())
+        std::set<Voxel>::insert (v);
+      else
+        (*existing) += l;
+    }
+};
+class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
+{
+  public:
+    void insert (const VoxelDEC& v)
+    {
+      std::set<VoxelDEC>::insert (v);
+    }
+    void insert (const Voxel& v, const Point<float>& d)
+    {
+      iterator existing = std::set<VoxelDEC>::find (v);
+      if (existing == std::set<VoxelDEC>::end()) {
+        VoxelDEC temp (v, d);
+        std::set<VoxelDEC>::insert (temp);
+      } else {
+        (*existing) += d;
+      }
+    }
+    void insert (const Voxel& v, const Point<float>& d, const float l)
+    {
+      iterator existing = std::set<VoxelDEC>::find (v);
+      if (existing == std::set<VoxelDEC>::end()) {
+        VoxelDEC temp (v, d, l);
+        std::set<VoxelDEC>::insert (temp);
+      } else {
+        existing->add (d, l);
+      }
+    }
+};
+class SetDixel : public std::set<Dixel>, public SetVoxelExtras
+{
+  public:
+    void insert (const Dixel& v)
+    {
+      iterator existing = std::set<Dixel>::find (v);
+      if (existing == std::set<Dixel>::end()) {
+        std::set<Dixel>::insert (v);
+      } else {
+        (*existing) += 1.0f;
+      }
+    }
+    void insert (const Voxel& v, const size_t d)
+    {
+      const Dixel temp (v, d);
+      insert (temp);
+    }
+    void insert (const Voxel& v, const size_t d, const float l)
+    {
+      const Dixel temp (v, d, l);
+      iterator existing = std::set<Dixel>::find (temp);
+      if (existing == std::set<Dixel>::end()) {
+        std::set<Dixel>::insert (temp);
+      } else {
+        (*existing) += l;
+      }
+    }
+};
+
 
 
 

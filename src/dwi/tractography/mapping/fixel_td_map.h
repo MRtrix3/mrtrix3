@@ -91,7 +91,7 @@ namespace MR
         for (SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           const size_t fixel_index = dixel2fixel (*i);
           if (fixel_index)
-            fixels[fixel_index] += i->get_value();
+            fixels[fixel_index] += i->get_length();
         }
         return true;
       }
