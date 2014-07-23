@@ -183,37 +183,36 @@ OPTIONS
 
 
 
-template <class Cont>
-MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
+MapWriterBase* make_greyscale_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
 {
-    MapWriterBase<Cont>* writer = NULL;
-    const uint8_t dt = H.datatype() ();
-    if (dt & DataType::Signed) {
-      if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<int8_t,   Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<int16_t,  Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<int32_t,  Cont> (H, name, stat_vox);
-      else
-        throw Exception ("Unsupported data type in image header");
-    } else {
-      if ((dt & DataType::Type) == DataType::Bit)
-        writer = new MapWriter<bool,     Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<uint8_t,  Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<uint16_t, Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<uint32_t, Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::Float32)
-        writer = new MapWriter<float,    Cont> (H, name, stat_vox);
-      else if ((dt & DataType::Type) == DataType::Float64)
-        writer = new MapWriter<double,   Cont> (H, name, stat_vox);
-      else
-        throw Exception ("Unsupported data type in image header");
-    }
-    return writer;
+  MapWriterBase* writer = NULL;
+  const uint8_t dt = H.datatype() ();
+  if (dt & DataType::Signed) {
+    if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriterGreyscale<int8_t>   (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriterGreyscale<int16_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriterGreyscale<int32_t>  (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  } else {
+    if ((dt & DataType::Type) == DataType::Bit)
+      writer = new MapWriterGreyscale<bool>     (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriterGreyscale<uint8_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriterGreyscale<uint16_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriterGreyscale<uint32_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float32)
+      writer = new MapWriterGreyscale<float>    (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float64)
+      writer = new MapWriterGreyscale<double>   (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  }
+  return writer;
 }
 
 
@@ -468,6 +467,7 @@ void run () {
     case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
   }
 
+
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
@@ -495,15 +495,16 @@ void run () {
       mapper.add_fod_image (assoc_image);
   }
 
+
   // Use a branching IF instead of a switch statement to permit scope
   if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || (contrast == CURVATURE && stat_tck != GAUSSIAN)) {
 
     if (colour) {
-      MapWriterColour<SetVoxelDEC> writer (header, argument[1], stat_vox);
+      MapWriterDEC writer (header, argument[1], stat_vox);
       writer.set_direct_dump (dump);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
     } else {
-      Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
+      Ptr<MapWriterBase> writer (make_greyscale_writer (header, argument[1], stat_vox));
       writer->set_direct_dump (dump);
       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
     }
@@ -517,7 +518,7 @@ void run () {
       //  writer.set_direct_dump (dump);
       //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
       //} else {
-        MapWriterColour     <SetVoxelDEC> writer (header, argument[1], stat_vox);
+        MapWriterDEC writer (header, argument[1], stat_vox);
         writer.set_direct_dump (dump);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
       //}
@@ -529,7 +530,7 @@ void run () {
       //  writer->set_direct_dump (dump);
       //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
       //} else {
-        Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], stat_vox));
+        Ptr<MapWriterBase> writer (make_greyscale_writer (header, argument[1], stat_vox));
         writer->set_direct_dump (dump);
         Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
       //}

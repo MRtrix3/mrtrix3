@@ -49,22 +49,20 @@ namespace Mapping {
 
 
 
-
-template <typename Cont>
 class MapWriterBase
 {
 
-  // counts needs to be floating-point to cover possibility of weighted streamlines
-  typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
+  protected:
+    // counts needs to be floating-point to cover possibility of weighted streamlines
+    typedef Image::BufferScratch<float> counts_buffer_type;
+    typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
 
   public:
     MapWriterBase (Image::Header& header, const std::string& name, const vox_stat_t s = V_SUM) :
         H (header),
         output_image_name (name),
         direct_dump (false),
-        voxel_statistic (s),
-        counts ((s == V_MEAN) ? (new Image::BufferScratch<float>(header, "counts")) : NULL),
-        v_counts (counts ? new counts_voxel_type (*counts) : NULL) { }
+        voxel_statistic (s) { }
 
     MapWriterBase (const MapWriterBase& that) :
         H (that.H),
@@ -74,7 +72,6 @@ class MapWriterBase
     {
       throw Exception ("Do not instantiate copy constructor for MapWriterBase");
     }
-
 
     virtual ~MapWriterBase() { }
 
@@ -87,7 +84,9 @@ class MapWriterBase
     }
 
 
-    virtual bool operator() (const Cont&) { return false; }
+    virtual bool operator() (const SetVoxel&)    { return false; }
+    virtual bool operator() (const SetVoxelDEC&) { return false; }
+    virtual bool operator() (const SetDixel&)    { return false; }
 
 
   protected:
@@ -95,34 +94,30 @@ class MapWriterBase
     const std::string output_image_name;
     bool direct_dump;
     const vox_stat_t voxel_statistic;
-    Ptr< Image::BufferScratch<float> > counts;
-    Ptr< counts_voxel_type > v_counts;
+
+    // This gets used with mean voxel statistic for some (but not all) writers
+    Ptr<counts_buffer_type> counts;
+    Ptr<counts_voxel_type > v_counts;
 
 };
 
 
 
-template <typename Cont> float get_factor (const Cont&, const typename Cont::const_iterator) { assert (0); return 0; }
-template <> float get_factor<SetVoxel>          (const SetVoxel&         , const SetVoxel         ::const_iterator);
-template <> float get_factor<SetVoxelDEC>       (const SetVoxelDEC&      , const SetVoxelDEC      ::const_iterator);
-//template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&   , const SetVoxelFactor   ::const_iterator);
-//template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor&, const SetVoxelDECFactor::const_iterator);
 
 
-
-template <class value_type, typename Cont>
-class MapWriter : public MapWriterBase<Cont>
+template <typename value_type>
+class MapWriterGreyscale : public MapWriterBase
 {
 
   typedef typename Image::Buffer<value_type> image_type;
   typedef typename Image::Buffer<value_type>::voxel_type image_voxel_type;
-  typedef typename Image::BufferScratch<value_type> buffer_type;
-  typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
+  typedef typename Mapping::BufferScratchDump<value_type> buffer_type;
+  typedef typename Mapping::BufferScratchDump<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM) :
-      MapWriterBase<Cont> (header, name, voxel_statistic),
-      buffer (header, "buffer"),
+    MapWriterGreyscale (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM) :
+      MapWriterBase (header, name, voxel_statistic),
+      buffer (header, "TWI greyscale buffer"),
       v_buffer (buffer)
     {
       Image::Loop loop;
@@ -133,43 +128,47 @@ class MapWriter : public MapWriterBase<Cont>
         for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
           v_buffer.value() = -std::numeric_limits<value_type>::max();
       } else {
-        for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-          v_buffer.value() = value_type (0);
+        buffer.zero();
+      }
+      if (voxel_statistic == V_MEAN) {
+        counts = new counts_buffer_type (header, "TWI streamline count buffer");
+        counts->zero();
+        v_counts = new counts_voxel_type (*counts);
       }
     }
 
-    MapWriter (const MapWriter& that) :
-      MapWriterBase<Cont> (that),
-      buffer (MapWriterBase<Cont>::H, ""),
+    MapWriterGreyscale (const MapWriterGreyscale& that) :
+      MapWriterBase (that),
+      buffer (H, ""),
       v_buffer (buffer)
     {
-      throw Exception ("Do not instantiate copy constructor for MapWriter");
+      throw Exception ("Do not instantiate copy constructor for MapWriterGreyscale");
     }
 
-    ~MapWriter ()
+    ~MapWriterGreyscale ()
     {
 
-      Image::Loop loop;
-      switch (MapWriterBase<Cont>::voxel_statistic) {
+      Image::LoopInOrder loop_buffer (v_buffer);
+      switch (voxel_statistic) {
 
         case V_SUM: break;
 
         case V_MIN:
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
+          for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
             if (v_buffer.value() == std::numeric_limits<value_type>::max())
               v_buffer.value() = value_type(0);
           }
           break;
 
         case V_MEAN:
-          for (loop.start (v_buffer, *MapWriterBase<Cont>::v_counts); loop.ok(); loop.next (v_buffer, *MapWriterBase<Cont>::v_counts)) {
-            if ((*MapWriterBase<Cont>::v_counts).value())
-              v_buffer.value() /= float(MapWriterBase<Cont>::v_counts->value());
+          for (loop_buffer.start (v_buffer, *v_counts); loop_buffer.ok(); loop_buffer.next (v_buffer, *v_counts)) {
+            if ((*v_counts).value())
+              v_buffer.value() /= float(v_counts->value());
           }
           break;
 
         case V_MAX:
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
+          for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
             if (v_buffer.value() == -std::numeric_limits<value_type>::max())
               v_buffer.value() = value_type(0);
           }
@@ -180,55 +179,63 @@ class MapWriter : public MapWriterBase<Cont>
 
       }
 
-      if (MapWriterBase<Cont>::direct_dump) {
-        fprintf (stderr, "%s: writing image to file... ", App::NAME.c_str());
-        buffer.dump_to_file (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
-        fprintf (stderr, "done.\n");
+      if (direct_dump) {
+        if (App::log_level)
+          std::cerr << App::NAME << ": writing image to file... ";
+        buffer.dump_to_file (output_image_name, H);
+        if (App::log_level)
+          std::cerr << "done.\n";
       } else {
-        image_type out (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
+        image_type out (output_image_name, H);
         image_voxel_type v_out (out);
-        Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
-        for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer))
+        Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
+        for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer))
           v_out.value() = v_buffer.value();
       }
     }
 
 
-    bool operator() (const Cont& in)
-    {
-      for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (v_buffer, *i);
-        const value_type factor = get_factor (in, i);
-        switch (MapWriterBase<Cont>::voxel_statistic) {
-        case V_SUM:  v_buffer.value() += in.weight * factor;           break;
-        case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
-        case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
-        case V_MEAN:
-          // Only increment counts[] if it is necessary to do so given the chosen statistic
-          v_buffer.value() += in.weight * factor;
-          Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
-          (*MapWriterBase<Cont>::v_counts).value() += in.weight;
-          break;
-        default:
-          throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator()");
-        }
-      }
-      return true;
-    }
+    bool operator() (const SetVoxel& in);
 
 
   private:
     BufferScratchDump<value_type> buffer;
     buffer_voxel_type v_buffer;
 
+
 };
 
 
 
+template <typename value_type>
+bool MapWriterGreyscale<value_type>::operator() (const SetVoxel& in)
+{
+  for (SetVoxel::const_iterator i = in.begin(); i != in.end(); ++i) {
+    Image::Nav::set_pos (v_buffer, *i);
+    const float factor = in.factor;
+    const float weight = in.weight * i->get_length();
+    switch (voxel_statistic) {
+      case V_SUM:  v_buffer.value() += weight * factor;           break;
+      case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
+      case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
+      case V_MEAN:
+        // Only increment counts[] if it is necessary to do so given the chosen statistic
+        v_buffer.value() += weight * factor;
+        Image::Nav::set_pos (*v_counts, *i);
+        (*v_counts).value() += weight;
+        break;
+      default:
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriterGreyscale::operator()");
+    }
+  }
+  return true;
+}
 
 
-template <typename Cont>
-class MapWriterColour : public MapWriterBase<Cont>
+
+
+
+class MapWriterDEC : public MapWriterBase
 {
 
   typedef typename Image::Buffer<float> image_type;
@@ -237,137 +244,27 @@ class MapWriterColour : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<float>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriterColour (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM) :
-      MapWriterBase<Cont> (header, name, voxel_statistic),
-      buffer (header, "buffer"),
-      v_buffer (buffer)
-    {
-      Image::Loop loop;
-      if (voxel_statistic == V_MIN) {
-        for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-          v_buffer.value() = std::numeric_limits<float>::max();
-      } else {
-        for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-          v_buffer.value() = 0.0;
-      }
-    }
-
-    MapWriterColour (const MapWriterColour& that) :
-      MapWriterBase<Cont> (that),
-      buffer (MapWriterBase<Cont>::H, "buffer"),
-      v_buffer (buffer)
-      {
-        throw Exception ("Do not instantiate copy constructor for MapWriterColour");
-      }
-
-    ~MapWriterColour ()
-    {
-      Image::Loop loop (0, 3);
-      switch (MapWriterBase<Cont>::voxel_statistic) {
-
-        case V_SUM: break;
-
-        case V_MIN:
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
-            const Point<float> value (get_value());
-            if (value == Point<float> (std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max()))
-              set_value (Point<float> (0.0, 0.0, 0.0));
-          }
-          break;
-
-        case V_MEAN:
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer)) {
-            Point<float> value (get_value());
-            if (value.norm2()) {
-              value.normalise();
-              set_value (value);
-            }
-          }
-          break;
-
-        case V_MAX:
-          break;
-
-        default:
-          throw Exception ("Unknown / unhandled voxel statistic in ~MapWriterColour()");
-
-      }
-
-      if (MapWriterBase<Cont>::direct_dump) {
-        fprintf (stderr, "%s: writing image to file... ", App::NAME.c_str());
-        buffer.dump_to_file (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
-        fprintf (stderr, "done.\n");
-      } else {
-        image_type out (MapWriterBase<Cont>::output_image_name, MapWriterBase<Cont>::H);
-        image_voxel_type v_out (out);
-        Image::LoopInOrder loopinorder (v_out, "writing image to file...", 0, 3);
-        for (loopinorder.start (v_out, v_buffer); loopinorder.ok(); loopinorder.next (v_out, v_buffer)) {
-          Point<float> value (get_value());
-          v_out[3] = 0; v_out.value() = value[0];
-          v_out[3] = 1; v_out.value() = value[1];
-          v_out[3] = 2; v_out.value() = value[2];
-        }
-      }
-    }
+    MapWriterDEC (Image::Header&, const std::string&, const vox_stat_t);
+    MapWriterDEC (const MapWriterDEC&);
+    ~MapWriterDEC();
 
 
-    bool operator() (const Cont& in)
-    {
-      for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (v_buffer, *i);
-        const float factor = get_factor (in, i);
-        Point<float> scaled_colour (i->get_colour());
-        scaled_colour *= factor;
-        const Point<float> current_value = get_value();
-        switch (MapWriterBase<Cont>::voxel_statistic) {
-          case V_SUM:
-            set_value (current_value + (scaled_colour * in.weight));
-            break;
-          case V_MIN:
-            if (scaled_colour.norm2() < current_value.norm2())
-              set_value (scaled_colour);
-            break;
-          case V_MEAN:
-            set_value (current_value + (scaled_colour * in.weight));
-            Image::Nav::set_pos (*MapWriterBase<Cont>::v_counts, *i);
-            (*MapWriterBase<Cont>::v_counts).value() += in.weight;
-            break;
-          case V_MAX:
-            if (scaled_colour.norm2() > current_value.norm2())
-              set_value (scaled_colour);
-            break;
-          default:
-            throw Exception ("Unknown / unhandled voxel statistic in MapWriterColour::operator()");
-        }
-      }
-      return true;
-    }
+    bool operator() (const SetVoxelDEC& in);
 
 
   private:
     BufferScratchDump<float> buffer;
     buffer_voxel_type v_buffer;
 
-
-    Point<float> get_value ()
-    {
-      Point<float> value;
-      v_buffer[3] = 0; value[0] = v_buffer.value();
-      v_buffer[3] = 1; value[1] = v_buffer.value();
-      v_buffer[3] = 2; value[2] = v_buffer.value();
-      return value;
-    }
-
-    void set_value (const Point<float>& value)
-    {
-      v_buffer[3] = 0; v_buffer.value() = value[0];
-      v_buffer[3] = 1; v_buffer.value() = value[1];
-      v_buffer[3] = 2; v_buffer.value() = value[2];
-    }
-
-
+    // Internal convenience functions
+    Point<float> get_value();
+    void         set_value (const Point<float>& value);
 
 };
+
+
+
+
 
 
 
