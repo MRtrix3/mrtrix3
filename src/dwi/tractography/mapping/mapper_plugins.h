@@ -33,6 +33,8 @@
 #include "image/interp/linear.h"
 #include "math/SH.h"
 
+#include "dwi/directions/set.h"
+
 #include "dwi/tractography/mapping/twi_stats.h"
 
 
@@ -40,6 +42,21 @@ namespace MR {
 namespace DWI {
 namespace Tractography {
 namespace Mapping {
+
+
+
+
+
+class DixelMappingPlugin
+{
+  public:
+    DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
+        dirs (directions) { }
+    size_t operator() (const Point<float>& d) const { return dirs.select_direction (d); }
+  private:
+    const DWI::Directions::FastLookupSet& dirs;
+};
+
 
 
 

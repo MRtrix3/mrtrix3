@@ -188,7 +188,7 @@ namespace MR
 
         {
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperDixel mapper (H, dirs);
+          Mapping::TrackMapperBase mapper (H, dirs);
           mapper.set_upsample_ratio (upsample_ratio);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (

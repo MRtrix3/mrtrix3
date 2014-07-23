@@ -73,12 +73,21 @@ class TrackMapperBase
         map_zero  (false),
         precise   (false) { }
 
+    TrackMapperBase (const Image::Info& template_image, const DWI::Directions::FastLookupSet& dirs) :
+        upsampler    (1),
+        dixel_plugin (new DixelMappingPlugin (dirs)),
+        info         (template_image),
+        transform    (info),
+        map_zero     (false),
+        precise      (false) { }
+
     TrackMapperBase (const TrackMapperBase& that) :
-        upsampler (1),
-        info      (that.info),
-        transform (info),
-        map_zero  (that.map_zero),
-        precise   (that.precise) { }
+        upsampler    (1),
+        dixel_plugin (that.dixel_plugin),
+        info         (that.info),
+        transform    (info),
+        map_zero     (that.map_zero),
+        precise      (that.precise) { }
 
     virtual ~TrackMapperBase() { }
 
@@ -111,6 +120,8 @@ class TrackMapperBase
   private:
     Upsampler<float> upsampler;
 
+    RefPtr<DixelMappingPlugin> dixel_plugin;
+
     template <class Cont>
     void voxelise_precise (const Streamline<>&, Cont&) const;
 
@@ -135,9 +146,9 @@ class TrackMapperBase
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
 
     // Used by voxelise_precise to increment the relevant set
-    void add_to_set (SetVoxel&    out, const Voxel& v, const Point<float>& d, const float l) const { out.insert (v, l); }
-    void add_to_set (SetVoxelDEC& out, const Voxel& v, const Point<float>& d, const float l) const { out.insert (v, d, l); }
-    virtual void add_to_set (SetDixel&, const Voxel&, const Point<float>&, const float) const { }; // TODO Eventually disallow
+    void add_to_set (SetVoxel&   , const Voxel&, const Point<float>&, const float) const;
+    void add_to_set (SetVoxelDEC&, const Voxel&, const Point<float>&, const float) const;
+    void add_to_set (SetDixel&   , const Voxel&, const Point<float>&, const float) const;
 
 };
 
@@ -225,27 +236,6 @@ void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) cons
   } while (!end_track);
 
 }
-
-
-
-
-
-
-
-class TrackMapperDixel : public TrackMapperBase
-{
-  public:
-    TrackMapperDixel (const Image::Header& template_image, const DWI::Directions::FastLookupSet& directions) :
-        TrackMapperBase (template_image),
-        dirs (directions) { }
-
-  protected:
-    const DWI::Directions::FastLookupSet& dirs;
-
-  private:
-    void add_to_set (SetDixel&, const Voxel&, const Point<float>&, const float) const;
-
-};
 
 
 

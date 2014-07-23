@@ -78,7 +78,7 @@ namespace MR
                 const std::string& fod_path (properties["seed_dynamic"]);
 
                 typedef Mapping::SetDixel SetDixel;
-                typedef Mapping::TrackMapperDixel TckMapper;
+                typedef Mapping::TrackMapperBase TckMapper;
                 typedef Seeding::WriteKernelDynamic Writer;
 
                 DWI::Directions::FastLookupSet dirs (1281);

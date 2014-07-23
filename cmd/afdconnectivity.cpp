@@ -146,7 +146,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
   private:
     const bool have_wbft;
     bool all_fixels;
-    DWI::Tractography::Mapping::TrackMapperDixel mapper;
+    DWI::Tractography::Mapping::TrackMapperBase mapper;
     Image::Buffer<value_type>::voxel_type v_fod;
     Ptr<DWI::FMLS::Segmenter> fmls;
 

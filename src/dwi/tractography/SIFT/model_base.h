@@ -276,7 +276,7 @@ namespace MR
         const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
         Mapping::TrackLoader loader (file, count);
-        Mapping::TrackMapperDixel mapper (H, dirs);
+        Mapping::TrackMapperBase mapper (H, dirs);
         mapper.set_upsample_ratio (upsample_ratio);
         Thread::run_queue (
             loader,

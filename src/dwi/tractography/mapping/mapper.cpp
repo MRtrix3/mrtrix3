@@ -84,11 +84,18 @@ void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, SetVoxel
 }
 
 
-
-
-void TrackMapperDixel::add_to_set (SetDixel& out, const Voxel& v, const Point<float>& d, const float l) const
+void TrackMapperBase::add_to_set (SetVoxel& out, const Voxel& v, const Point<float>& d, const float l) const
 {
-  const size_t bin = dirs.select_direction (d);
+  out.insert (v, l);
+}
+void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Voxel& v, const Point<float>& d, const float l) const
+{
+  out.insert (v, d, l);
+}
+void TrackMapperBase::add_to_set (SetDixel& out, const Voxel& v, const Point<float>& d, const float l) const
+{
+  assert (dixel_plugin);
+  const size_t bin = (*dixel_plugin) (d);
   out.insert (v, bin, l);
 }
 
