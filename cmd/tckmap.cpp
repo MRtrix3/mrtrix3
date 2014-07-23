@@ -482,7 +482,9 @@ void run () {
     header.datatype() = DataType::Float32;
   }
 
-  const DataType default_datatype = ((!precise && contrast == TDI) || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT) ? DataType::UInt32 : DataType::Float32;
+  DataType default_datatype = DataType::Float32;
+  if ((writer_type == GREYSCALE || writer_type == DIXEL) && ((!precise && contrast == TDI) || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT))
+    default_datatype = DataType::UInt32;
   header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
   header.datatype().set_byte_order_native();
 
