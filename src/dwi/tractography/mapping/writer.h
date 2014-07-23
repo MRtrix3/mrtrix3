@@ -142,20 +142,19 @@ class MapWriterBase
   typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
 
   public:
-    MapWriterBase (Image::Header& header, const std::string& name, const bool dump, const vox_stat_t s) :
-      H (header),
-      output_image_name (name),
-      direct_dump (dump),
-      voxel_statistic (s),
-      counts ((s == V_MEAN) ? (new Image::BufferScratch<float>(header, "counts")) : NULL),
-      v_counts (counts ? new counts_voxel_type (*counts) : NULL)
-    { }
+    MapWriterBase (Image::Header& header, const std::string& name, const vox_stat_t s = V_SUM) :
+        H (header),
+        output_image_name (name),
+        direct_dump (false),
+        voxel_statistic (s),
+        counts ((s == V_MEAN) ? (new Image::BufferScratch<float>(header, "counts")) : NULL),
+        v_counts (counts ? new counts_voxel_type (*counts) : NULL) { }
 
     MapWriterBase (const MapWriterBase& that) :
-      H (that.H),
-      output_image_name (that.output_image_name),
-      direct_dump (that.direct_dump),
-      voxel_statistic (that.voxel_statistic)
+        H (that.H),
+        output_image_name (that.output_image_name),
+        direct_dump (that.direct_dump),
+        voxel_statistic (that.voxel_statistic)
     {
       throw Exception ("Do not instantiate copy constructor for MapWriterBase");
     }
@@ -163,12 +162,22 @@ class MapWriterBase
 
     virtual ~MapWriterBase() { }
 
+
+    virtual void set_direct_dump (const bool i)
+    {
+      direct_dump = i;
+      if (i && !Path::has_suffix (output_image_name, ".mih"))
+        throw Exception ("Can only perform direct dump to file for .mih image format");
+    }
+
+
     virtual bool operator() (const Cont&) { return false; }
+
 
   protected:
     Image::Header& H;
     const std::string output_image_name;
-    const bool direct_dump;
+    bool direct_dump;
     const vox_stat_t voxel_statistic;
     Ptr< Image::BufferScratch<float> > counts;
     Ptr< counts_voxel_type > v_counts;
@@ -196,8 +205,8 @@ class MapWriter : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const bool direct_dump = false, const vox_stat_t voxel_statistic = V_SUM) :
-      MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
+    MapWriter (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM) :
+      MapWriterBase<Cont> (header, name, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
@@ -313,8 +322,8 @@ class MapWriterColour : public MapWriterBase<Cont>
   typedef typename Image::BufferScratch<float>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriterColour (Image::Header& header, const std::string& name, const bool direct_dump = false, const vox_stat_t voxel_statistic = V_SUM) :
-      MapWriterBase<Cont> (header, name, direct_dump, voxel_statistic),
+    MapWriterColour (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM) :
+      MapWriterBase<Cont> (header, name, voxel_statistic),
       buffer (header, "buffer"),
       v_buffer (buffer)
     {
