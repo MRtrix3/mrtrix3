@@ -195,26 +195,26 @@ MapWriterBase* make_greyscale_writer (Image::Header& H, const std::string& name,
   const uint8_t dt = H.datatype() ();
   if (dt & DataType::Signed) {
     if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriterGreyscale<int8_t>   (H, name, stat_vox);
+      writer = new MapWriter<int8_t>   (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriterGreyscale<int16_t>  (H, name, stat_vox);
+      writer = new MapWriter<int16_t>  (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriterGreyscale<int32_t>  (H, name, stat_vox);
+      writer = new MapWriter<int32_t>  (H, name, stat_vox, GREYSCALE);
     else
       throw Exception ("Unsupported data type in image header");
   } else {
     if ((dt & DataType::Type) == DataType::Bit)
-      writer = new MapWriterGreyscale<bool>     (H, name, stat_vox);
+      writer = new MapWriter<bool>     (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriterGreyscale<uint8_t>  (H, name, stat_vox);
+      writer = new MapWriter<uint8_t>  (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriterGreyscale<uint16_t> (H, name, stat_vox);
+      writer = new MapWriter<uint16_t> (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriterGreyscale<uint32_t> (H, name, stat_vox);
+      writer = new MapWriter<uint32_t> (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::Float32)
-      writer = new MapWriterGreyscale<float>    (H, name, stat_vox);
+      writer = new MapWriter<float>    (H, name, stat_vox, GREYSCALE);
     else if ((dt & DataType::Type) == DataType::Float64)
-      writer = new MapWriterGreyscale<double>   (H, name, stat_vox);
+      writer = new MapWriter<double>   (H, name, stat_vox, GREYSCALE);
     else
       throw Exception ("Unsupported data type in image header");
   }
@@ -228,26 +228,26 @@ MapWriterBase* make_dixel_writer (Image::Header& H, const std::string& name, con
   const uint8_t dt = H.datatype() ();
   if (dt & DataType::Signed) {
     if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriterDixel<int8_t>   (H, name, stat_vox);
+      writer = new MapWriter<int8_t>   (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriterDixel<int16_t>  (H, name, stat_vox);
+      writer = new MapWriter<int16_t>  (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriterDixel<int32_t>  (H, name, stat_vox);
+      writer = new MapWriter<int32_t>  (H, name, stat_vox);
     else
       throw Exception ("Unsupported data type in image header");
   } else {
     if ((dt & DataType::Type) == DataType::Bit)
-      writer = new MapWriterDixel<bool>     (H, name, stat_vox);
+      writer = new MapWriter<bool>     (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriterDixel<uint8_t>  (H, name, stat_vox);
+      writer = new MapWriter<uint8_t>  (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriterDixel<uint16_t> (H, name, stat_vox);
+      writer = new MapWriter<uint16_t> (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriterDixel<uint32_t> (H, name, stat_vox);
+      writer = new MapWriter<uint32_t> (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::Float32)
-      writer = new MapWriterDixel<float>    (H, name, stat_vox);
+      writer = new MapWriter<float>    (H, name, stat_vox);
     else if ((dt & DataType::Type) == DataType::Float64)
-      writer = new MapWriterDixel<double>   (H, name, stat_vox);
+      writer = new MapWriter<double>   (H, name, stat_vox);
     else
       throw Exception ("Unsupported data type in image header");
   }
@@ -335,22 +335,25 @@ void run () {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
 */
-  opt = get_options ("colour");
-  const bool colour = opt.size();
 
-  if (colour) {
+
+  // Determine the dimensionality of the output image
+  writer_dim writer_type = GREYSCALE;
+  opt = get_options ("colour");
+  if (opt.size()) {
+    writer_type = DEC;
     header.set_ndim (4);
     header.dim(3) = 3;
     //header.set_description (3, "directionally-encoded colour");
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
-  opt = get_options ("dixel");
-  const bool dixel = opt.size();
   Ptr<DWI::Directions::FastLookupSet> dirs;
-  if (dixel) {
-    if (colour)
-      throw Exception ("Options -colour and -dixel are mutually exclusive");
+  opt = get_options ("dixel");
+  if (opt.size()) {
+    if (writer_type != GREYSCALE)
+      throw Exception ("Options for setting output image dimensionality are mutually exclusive");
+    writer_type = DIXEL;
     if (Path::exists (opt[0][0]))
       dirs = new DWI::Directions::FastLookupSet (str(opt[0][0]));
     else
@@ -368,6 +371,7 @@ void run () {
     }
     header.DW_scheme() = grad;
   }
+
 
   // Deal with erroneous statistics & provide appropriate messages
   switch (contrast) {
@@ -423,15 +427,14 @@ void run () {
 
 
   // Get header datatype based on user input, or select an appropriate datatype automatically
-  opt = get_options ("datatype");
   header.datatype() = DataType::Undefined;
-
-  if (colour)
+  if (writer_type == DEC)
     header.datatype() = DataType::Float32;
 
+  opt = get_options ("datatype");
   if (opt.size()) {
-    if (colour) {
-      INFO ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
+    if (writer_type == DEC) {
+      WARN ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
     } else {
       header.datatype() = DataType::parse (opt[0][0]);
     }
@@ -476,7 +479,7 @@ void run () {
   if (dump && Path::has_suffix (argument[1], "mih"))
     throw Exception ("Option -dump only works when outputting to .mih image format");
 
-  std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
+  std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
     case ENDPOINT:         msg += "endpoint density";           break;
@@ -541,7 +544,7 @@ void run () {
   mapper.set_upsample_ratio      (upsample_ratio);
   mapper.set_map_zero            (get_options ("map_zero").size());
   mapper.set_use_precise_mapping (precise);
-  if (dixel)
+  if (writer_type == DIXEL)
     mapper.create_dixel_plugin (*dirs);
 /*
   if (stat_tck == GAUSSIAN)
@@ -565,21 +568,22 @@ void run () {
 
 
   Ptr<MapWriterBase> writer;
-  if (colour)
-    writer = new MapWriterDEC (header, argument[1], stat_vox);
-  else if (dixel)
-    writer = make_dixel_writer (header, argument[1], stat_vox);
-  else
-    writer = make_greyscale_writer (header, argument[1], stat_vox);
+  switch (writer_type) {
+    case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+    case GREYSCALE: writer = make_greyscale_writer (header, argument[1], stat_vox);      break;
+    case DEC:       writer = new MapWriter<float>  (header, argument[1], stat_vox, DEC); break;
+    case DIXEL:     writer = make_dixel_writer     (header, argument[1], stat_vox);      break;
+  }
 
   writer->set_direct_dump (dump);
 
-  if (colour)
-    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer);
-  else if (dixel)
-    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetDixel(),    *writer);
-  else
-    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer);
+  // Finally get to do some number crunching!
+  switch (writer_type) {
+    case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+    case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer); break;
+    case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer); break;
+    case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetDixel(),    *writer); break;
+  }
 
 }
 
