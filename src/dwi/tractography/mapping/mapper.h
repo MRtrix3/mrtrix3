@@ -156,10 +156,10 @@ class TrackMapperBase
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
 
     // Used by voxelise() and voxelise_precise() to increment the relevant set
-    inline void add_to_set (SetVoxel&   , const Voxel&, const Point<float>&, const float) const;
-    inline void add_to_set (SetVoxelDEC&, const Voxel&, const Point<float>&, const float) const;
-    inline void add_to_set (SetDixel&   , const Voxel&, const Point<float>&, const float) const;
-    inline void add_to_set (SetVoxelTOD&, const Voxel&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxel&   , const Point<int>&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelDEC&, const Point<int>&, const Point<float>&, const float) const;
+    inline void add_to_set (SetDixel&   , const Point<int>&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelTOD&, const Point<int>&, const Point<float>&, const float) const;
 
 
   private:
@@ -176,7 +176,7 @@ void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, Cont& ou
   std::vector< Point<float> >::const_iterator prev = tck.begin();
   const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
 
-  Voxel vox;
+  Point<int> vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (transform.scanner2voxel (*i));
     if (check (vox, info)) {
@@ -221,14 +221,14 @@ void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) cons
   PointF p_voxel_exit = tck.front();
   float mu = 0.0;
   bool end_track = false;
-  Voxel next_voxel (round (transform.scanner2voxel (tck.front())));
+  Point<int> next_voxel (round (transform.scanner2voxel (tck.front())));
 
   do {
 
     const PointF p_voxel_entry (p_voxel_exit);
     PointF p_prev (p_voxel_entry);
     float length = 0.0;
-    const Voxel this_voxel = next_voxel;
+    const Point<int> this_voxel = next_voxel;
 
     while ((p != tck.size()) && ((next_voxel = round (transform.scanner2voxel (tck[p]))) == this_voxel)) {
       length += dist (p_prev, tck[p]);
@@ -256,7 +256,7 @@ void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) cons
         mu = 0.5 * (mu_min + mu_max);
         hermite.set (mu);
         const PointF p_mu = hermite.value (*p_one, tck[p - 1], tck[p], *p_four);
-        const Voxel mu_voxel = round (transform.scanner2voxel (p_mu));
+        const Point<int> mu_voxel = round (transform.scanner2voxel (p_mu));
 
         if (mu_voxel == this_voxel) {
           mu_min = mu;
@@ -285,21 +285,21 @@ void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) cons
 
 
 // These are inlined to make as fast as possible
-inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   out.insert (v, l);
 }
-inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   out.insert (v, d, l);
 }
-inline void TrackMapperBase::add_to_set (SetDixel&    out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+inline void TrackMapperBase::add_to_set (SetDixel&    out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   assert (dixel_plugin);
   const size_t bin = (*dixel_plugin) (d);
   out.insert (v, bin, l);
 }
-inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   assert (tod_plugin);
   Math::Vector<float> sh;

@@ -82,8 +82,8 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
 
 const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
 
-    + Option ("colour",
-        "perform track mapping in directionally-encoded colour space")
+    + Option ("dec",
+        "perform track mapping in directionally-encoded colour (DEC) space")
 
     + Option ("dixel",
         "map streamlines to dixels within each voxel; requires either a number of dixels "
@@ -92,7 +92,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
       + Argument ("path").type_text()
 
     + Option ("tod",
-        "generate a Track Orientation Distribution in each voxel; need to specify the maximum "
+        "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
         "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
       + Argument ("lmax").type_integer (2, 20, 16);
 
@@ -344,7 +344,7 @@ void run () {
 
   // Determine the dimensionality of the output image
   writer_dim writer_type = GREYSCALE;
-  opt = get_options ("colour");
+  opt = get_options ("dec");
   if (opt.size()) {
     writer_type = DEC;
     header.set_ndim (4);
@@ -443,6 +443,26 @@ void run () {
   }
 
 
+  // Figure out how the streamlines will be mapped
+  const bool precise = get_options ("precise").size();
+  if (precise && contrast == ENDPOINT)
+    throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
+  if (precise && contrast == SCALAR_MAP_COUNT)
+    throw Exception ("Cannot use precise streamline mapping if using the scalar_map_count contrast");
+
+  size_t upsample_ratio = 1;
+  opt = get_options ("upsample");
+  if (opt.size()) {
+    upsample_ratio = opt[0][0];
+    INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
+  } else {
+    // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
+    //   (1/10th of the voxel size was found to give a good quantification of chordal length)
+    // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
+    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
+  }
+
+
   // Get header datatype based on user input, or select an appropriate datatype automatically
   header.datatype() = DataType::Undefined;
   if (writer_type == DEC)
@@ -462,11 +482,12 @@ void run () {
     header.datatype() = DataType::Float32;
   }
 
-  const DataType default_datatype = (contrast == TDI || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT) ? DataType::UInt32 : DataType::Float32;
+  const DataType default_datatype = ((!precise && contrast == TDI) || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT) ? DataType::UInt32 : DataType::Float32;
   header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype);
   header.datatype().set_byte_order_native();
 
 
+  // Get properties from the tracking, and put them into the image header
   for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
     header.comments().push_back (i->first + ": " + i->second);
   for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
@@ -475,23 +496,7 @@ void run () {
     header.comments().push_back ("comment: " + *i);
 
 
-  // Figure out how the streamlines will be mapped
-  const bool precise = get_options ("precise").size();
-  if (precise && contrast == ENDPOINT)
-    throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
-
-  size_t upsample_ratio = 1;
-  opt = get_options ("upsample");
-  if (opt.size()) {
-    upsample_ratio = opt[0][0];
-    INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
-  } else {
-    // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
-    //   (1/10th of the voxel size was found to give a good quantification of chordal length)
-    // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
-  }
-
+  // Raw std::ofstream dump of image data from the internal RAM buffer to file
   const bool dump = get_options ("dump").size();
   if (dump && Path::has_suffix (argument[1], "mih"))
     throw Exception ("Option -dump only works when outputting to .mih image format");

@@ -88,20 +88,20 @@ class VoxelDEC : public Voxel
         Voxel (),
         colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
 
-    VoxelDEC (const Voxel& V) :
+    VoxelDEC (const Point<int>& V) :
         Voxel (V),
         colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
 
-    VoxelDEC (const Voxel& V, const Point<float>& d) :
+    VoxelDEC (const Point<int>& V, const Point<float>& d) :
         Voxel (V),
         colour (vec2DEC (d)) { }
 
-    VoxelDEC (const Voxel& V, const Point<float>& d, const float l) :
+    VoxelDEC (const Point<int>& V, const Point<float>& d, const float l) :
         Voxel (V, l),
         colour (vec2DEC (d)) { }
 
-    VoxelDEC& operator=  (const VoxelDEC& V)       { Voxel::operator= (V); colour = V.colour; return (*this); }
-    VoxelDEC& operator=  (const Voxel& V)          { Voxel::operator= (V); colour = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
+    VoxelDEC& operator=  (const VoxelDEC& V)   { Voxel::operator= (V); colour = V.colour; return (*this); }
+    VoxelDEC& operator=  (const Point<int>& V) { Voxel::operator= (V); colour = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
 
     // For sorting / inserting, want to identify the same voxel, even if the colour is different
     bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
@@ -219,15 +219,15 @@ class Dixel : public Voxel
         Voxel (),
         dir (invalid) { }
 
-    Dixel (const Voxel& V) :
+    Dixel (const Point<int>& V) :
         Voxel (V),
         dir (invalid) { }
 
-    Dixel (const Voxel& V, const size_t b) :
+    Dixel (const Point<int>& V, const size_t b) :
         Voxel (V),
         dir (b) { }
 
-    Dixel (const Voxel& V, const size_t b, const float l) :
+    Dixel (const Point<int>& V, const size_t b, const float l) :
         Voxel (V, l),
         dir (b) { }
 
@@ -237,7 +237,7 @@ class Dixel : public Voxel
     size_t get_dir()   const { return dir; }
 
     Dixel& operator=  (const Dixel& V)       { Voxel::operator= (V); dir = V.dir; return *this; }
-    Dixel& operator=  (const Voxel& V)       { Voxel::operator= (V); dir = invalid; return *this; }
+    Dixel& operator=  (const Point<int>& V)  { Voxel::operator= (V); dir = invalid; return *this; }
     bool   operator== (const Dixel& V) const { return (Voxel::operator== (V) ? (dir == V.dir) : false); }
     bool   operator<  (const Dixel& V) const { return (Voxel::operator== (V) ? (dir <  V.dir) : Voxel::operator< (V)); }
     void   operator+= (const float l)  const { Voxel::operator+= (l); }
@@ -262,20 +262,20 @@ class VoxelTOD : public Voxel
       Voxel (),
       sh_coefs () { }
 
-    VoxelTOD (const Voxel& V) :
+    VoxelTOD (const Point<int>& V) :
       Voxel (V),
       sh_coefs () { }
 
-    VoxelTOD (const Voxel& V, const Math::Vector<float>& t) :
+    VoxelTOD (const Point<int>& V, const Math::Vector<float>& t) :
       Voxel (V),
       sh_coefs (t) { }
 
-    VoxelTOD (const Voxel& V, const Math::Vector<float>& t, const float l) :
+    VoxelTOD (const Point<int>& V, const Math::Vector<float>& t, const float l) :
       Voxel (V, l),
       sh_coefs (t) { }
 
-    VoxelTOD& operator=  (const VoxelTOD& V)       { Voxel::operator= (V); sh_coefs = V.sh_coefs; return (*this); }
-    VoxelTOD& operator=  (const Voxel& V)          { Voxel::operator= (V); sh_coefs.clear(); return (*this); }
+    VoxelTOD& operator=  (const VoxelTOD& V)   { Voxel::operator= (V); sh_coefs = V.sh_coefs; return (*this); }
+    VoxelTOD& operator=  (const Point<int>& V) { Voxel::operator= (V); sh_coefs.clear(); return (*this); }
 
     // For sorting / inserting, want to identify the same voxel, even if the TOD is different
     bool      operator== (const VoxelTOD& V) const { return Voxel::operator== (V); }
@@ -327,110 +327,93 @@ class SetVoxelExtras
 
 
 
-// New classes that give sensible behaviour to the insert() function depending on the base class
+// Set classes that give sensible behaviour to the insert() function depending on the base voxel class
 
 class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
 {
   public:
     typedef Voxel VoxType;
-    void insert (const Voxel& v)
-    {
-      std::set<Voxel>::insert (v);
-    }
-    void insert (const Voxel& v, const float l)
+    inline void insert (const Voxel& v)
     {
       iterator existing = std::set<Voxel>::find (v);
       if (existing == std::set<Voxel>::end())
         std::set<Voxel>::insert (v);
       else
-        (*existing) += l;
+        (*existing) += v.get_length();
+    }
+    inline void insert (const Point<int>& v, const float l)
+    {
+      const Voxel temp (v, l);
+      insert (temp);
     }
 };
 class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
 {
   public:
     typedef VoxelDEC VoxType;
-    void insert (const VoxelDEC& v)
-    {
-      std::set<VoxelDEC>::insert (v);
-    }
-    void insert (const Voxel& v, const Point<float>& d)
+    inline void insert (const VoxelDEC& v)
     {
       iterator existing = std::set<VoxelDEC>::find (v);
-      if (existing == std::set<VoxelDEC>::end()) {
-        VoxelDEC temp (v, d);
-        std::set<VoxelDEC>::insert (temp);
-      } else {
-        (*existing) += d;
-      }
+      if (existing == std::set<VoxelDEC>::end())
+        std::set<VoxelDEC>::insert (v);
+      else
+        (*existing).add (v.get_colour(), v.get_length());
     }
-    void insert (const Voxel& v, const Point<float>& d, const float l)
+    inline void insert (const Point<int>& v, const Point<float>& d)
     {
-      iterator existing = std::set<VoxelDEC>::find (v);
-      if (existing == std::set<VoxelDEC>::end()) {
-        VoxelDEC temp (v, d, l);
-        std::set<VoxelDEC>::insert (temp);
-      } else {
-        existing->add (d, l);
-      }
+      const VoxelDEC temp (v, d);
+      insert (temp);
+    }
+    inline void insert (const Point<int>& v, const Point<float>& d, const float l)
+    {
+      const VoxelDEC temp (v, d, l);
+      insert (temp);
     }
 };
 class SetDixel : public std::set<Dixel>, public SetVoxelExtras
 {
   public:
     typedef Dixel VoxType;
-    void insert (const Dixel& v)
+    inline void insert (const Dixel& v)
     {
       iterator existing = std::set<Dixel>::find (v);
-      if (existing == std::set<Dixel>::end()) {
+      if (existing == std::set<Dixel>::end())
         std::set<Dixel>::insert (v);
-      } else {
+      else
         (*existing) += 1.0f;
-      }
     }
-    void insert (const Voxel& v, const size_t d)
+    inline void insert (const Voxel& v, const size_t d)
     {
       const Dixel temp (v, d);
       insert (temp);
     }
-    void insert (const Voxel& v, const size_t d, const float l)
+    inline void insert (const Voxel& v, const size_t d, const float l)
     {
       const Dixel temp (v, d, l);
-      iterator existing = std::set<Dixel>::find (temp);
-      if (existing == std::set<Dixel>::end()) {
-        std::set<Dixel>::insert (temp);
-      } else {
-        (*existing) += l;
-      }
+      insert (temp);
     }
 };
 class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
 {
   public:
     typedef VoxelTOD VoxType;
-    void insert (const VoxelTOD& v)
-    {
-      std::set<VoxelTOD>::insert (v);
-    }
-    void insert (const Voxel& v, const Math::Vector<float>& t)
+    inline void insert (const VoxelTOD& v)
     {
       iterator existing = std::set<VoxelTOD>::find (v);
-      if (existing == std::set<VoxelTOD>::end()) {
-        VoxelTOD temp (v, t);
-        std::set<VoxelTOD>::insert (temp);
-      } else {
-        (*existing) += t;
-      }
+      if (existing == std::set<VoxelTOD>::end())
+        std::set<VoxelTOD>::insert (v);
+      else
+        (*existing) += v.get_tod();
     }
-    void insert (const Voxel& v, const Math::Vector<float>& t, const float l)
+    inline void insert (const Voxel& v, const Math::Vector<float>& t)
     {
-      iterator existing = std::set<VoxelTOD>::find (v);
-      if (existing == std::set<VoxelTOD>::end()) {
-        VoxelTOD temp (v, t, l);
-        std::set<VoxelTOD>::insert (temp);
-      } else {
-        existing->add (t, l);
-      }
+      const VoxelTOD temp (v, t);
+      insert (temp);
+    }
+    inline void insert (const Voxel& v, const Math::Vector<float>& t, const float l)
+    {
+      const VoxelTOD temp (v, t, l);
+      insert (temp);
     }
 };
 
