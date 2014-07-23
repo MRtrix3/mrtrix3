@@ -31,6 +31,7 @@
 #include "image/loop.h"
 #include "image/nav.h"
 #include "image/header.h"
+#include "math/vector.h"
 #include "thread/queue.h"
 
 #include "dwi/tractography/mapping/buffer_scratch_dump.h"
@@ -49,7 +50,7 @@ namespace Mapping {
 
 
 
-enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL };
+enum writer_dim { UNDEFINED, GREYSCALE, DEC, DIXEL, TOD };
 extern const char* writer_dims[];
 
 
@@ -97,6 +98,7 @@ class MapWriterBase
     virtual bool operator() (const SetVoxel&)    { return false; }
     virtual bool operator() (const SetVoxelDEC&) { return false; }
     virtual bool operator() (const SetDixel&)    { return false; }
+    virtual bool operator() (const SetVoxelTOD&) { return false; }
 
 
   protected:
@@ -133,11 +135,11 @@ class MapWriter : public MapWriterBase
         v_buffer (buffer)
     {
       Image::LoopInOrder loop (v_buffer);
-      if (type == DEC) {
+      if (type == DEC || type == TOD) {
 
         if (voxel_statistic == V_MIN) {
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-            v_buffer.value() = std::numeric_limits<float>::max();
+            v_buffer.value() = std::numeric_limits<value_type>::max();
         } else {
           buffer.zero();
         }
@@ -156,9 +158,10 @@ class MapWriter : public MapWriterBase
 
       }
 
-      if (voxel_statistic == V_MEAN) {
+      // With TOD, hijack the counts buffer in voxel statistic min/max mode
+      if (voxel_statistic == V_MEAN || (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX))) {
         Image::Header H_counts;
-        if (type == DEC)
+        if (type == DEC || type == TOD)
           H_counts.set_ndim (3);
         counts = new counts_buffer_type (H_counts, "TWI streamline count buffer");
         counts->zero();
@@ -194,12 +197,22 @@ class MapWriter : public MapWriterBase
             Image::LoopInOrder loop_dec (v_buffer, 0, 3);
             for (loop_dec.start (v_buffer, *v_counts); loop_dec.ok(); loop_dec.next (v_buffer, *v_counts)) {
               if (v_counts->value()) {
-                Point<float> value (get_dec());
+                Point<value_type> value (get_dec());
                 value *= (1.0 / v_counts->value());
                 set_dec (value);
               }
             }
-          } else {
+          } else if (type == TOD) {
+            Image::LoopInOrder loop_dec (v_buffer, 0, 3);
+            for (loop_dec.start (v_buffer, *v_counts); loop_dec.ok(); loop_dec.next (v_buffer, *v_counts)) {
+              if (v_counts->value()) {
+                Math::Vector<float> value;
+                get_tod (value);
+                value *= (1.0 / v_counts->value());
+                set_tod (value);
+              }
+            }
+          } else { // Greyscale and dixel
             for (loop_buffer.start (v_buffer, *v_counts); loop_buffer.ok(); loop_buffer.next (v_buffer, *v_counts)) {
               if ((*v_counts).value())
                 v_buffer.value() /= float(v_counts->value());
@@ -208,7 +221,7 @@ class MapWriter : public MapWriterBase
           break;
 
         case V_MAX:
-          if (type == DEC)
+          if (type == DEC || type == TOD)
             break;
           for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
             if (v_buffer.value() == -std::numeric_limits<value_type>::max())
@@ -236,10 +249,18 @@ class MapWriter : public MapWriterBase
         if (type == DEC) {
           Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
           for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer)) {
-            Point<float> value (get_dec());
+            Point<value_type> value (get_dec());
             v_out[3] = 0; v_out.value() = value[0];
             v_out[3] = 1; v_out.value() = value[1];
             v_out[3] = 2; v_out.value() = value[2];
+          }
+        } else if (type == TOD) {
+          Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
+          for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer)) {
+            Math::Vector<float> value;
+            get_tod (value);
+            for (v_out[3] = 0; v_out[3] != v_out.dim(3); ++v_out[3])
+              v_out.value() = value[size_t(v_out[3])];
           }
         } else { // Greyscale and Dixel
           Image::LoopInOrder loop_out (v_out, "writing image to file...");
@@ -254,15 +275,20 @@ class MapWriter : public MapWriterBase
     bool operator() (const SetVoxel&);
     bool operator() (const SetVoxelDEC&);
     bool operator() (const SetDixel&);
+    bool operator() (const SetVoxelTOD&);
 
 
   private:
     BufferScratchDump<value_type> buffer;
     buffer_voxel_type v_buffer;
 
-    // Convenience functions for directionally-encoded colour processing
-    Point<float> get_dec ();
-    void         set_dec (const Point<float>&);
+    // Convenience functions for Directionally-Encoded Colour processing
+    Point<value_type> get_dec ();
+    void              set_dec (const Point<value_type>&);
+
+    // Convenience functions for Track Orientation Distribution processing
+    void get_tod (      Math::Vector<float>&);
+    void set_tod (const Math::Vector<float>&);
 
 };
 
@@ -306,9 +332,9 @@ bool MapWriter<value_type>::operator() (const SetVoxelDEC& in)
     Image::Nav::set_pos (v_buffer, *i);
     const float factor = in.factor;
     const float weight = in.weight * i->get_length();
-    Point<float> scaled_colour (i->get_colour());
+    Point<value_type> scaled_colour (i->get_colour());
     scaled_colour *= factor;
-    const Point<float> current_value = get_dec();
+    const Point<value_type> current_value = get_dec();
     switch (voxel_statistic) {
       case V_SUM:
         set_dec (current_value + (scaled_colour * weight));
@@ -363,11 +389,58 @@ bool MapWriter<value_type>::operator() (const SetDixel& in)
 
 
 
+template <typename value_type>
+bool MapWriter<value_type>::operator() (const SetVoxelTOD& in)
+{
+  assert (type == TOD);
+  for (SetVoxelTOD::const_iterator i = in.begin(); i != in.end(); ++i) {
+    Image::Nav::set_pos (v_buffer, *i, 0, 3);
+    const float factor = in.factor;
+    const float weight = in.weight * i->get_length();
+    Math::Vector<float> sh_coefs;
+    get_tod (sh_coefs);
+    if (v_counts)
+      Image::Nav::set_pos (*v_counts, *i, 0, 3);
+    switch (voxel_statistic) {
+      case V_SUM:
+        for (size_t index = 0; index != sh_coefs.size(); ++index)
+          sh_coefs[index] += (i->get_tod()[index] * weight * factor);
+        set_tod (sh_coefs);
+        break;
+      // For TOD, need to store min/max factors - counts buffer is hijacked to do this
+      case V_MIN:
+        if (factor < (*v_counts).value()) {
+          (*v_counts).value() = factor;
+          set_tod (i->get_tod());
+        }
+        break;
+      case V_MAX:
+        if (factor > (*v_counts).value()) {
+          (*v_counts).value() = factor;
+          set_tod (i->get_tod());
+        }
+        break;
+      case V_MEAN:
+        for (size_t index = 0; index != sh_coefs.size(); ++index)
+          sh_coefs[index] += (i->get_tod()[index] * weight * factor);
+        set_tod (sh_coefs);
+        (*v_counts).value() += weight;
+        break;
+      default:
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxelTOD)");
+    }
+  }
+  return true;
+}
+
+
+
 
 
 template <typename value_type>
-Point<float> MapWriter<value_type>::get_dec ()
+Point<value_type> MapWriter<value_type>::get_dec ()
 {
+  assert (type == DEC);
   Point<float> value;
   v_buffer[3] = 0; value[0] = v_buffer.value();
   v_buffer[3] = 1; value[1] = v_buffer.value();
@@ -376,11 +449,34 @@ Point<float> MapWriter<value_type>::get_dec ()
 }
 
 template <typename value_type>
-void MapWriter<value_type>::set_dec (const Point<float>& value)
+void MapWriter<value_type>::set_dec (const Point<value_type>& value)
 {
+  assert (type == DEC);
   v_buffer[3] = 0; v_buffer.value() = value[0];
   v_buffer[3] = 1; v_buffer.value() = value[1];
   v_buffer[3] = 2; v_buffer.value() = value[2];
+}
+
+
+
+
+
+template <typename value_type>
+void MapWriter<value_type>::get_tod (Math::Vector<float>& sh_coefs)
+{
+  assert (type == TOD);
+  sh_coefs.allocate (v_buffer.dim(3));
+  for (v_buffer[3] = 0; v_buffer[3] != v_buffer.dim(3); ++v_buffer[3])
+    sh_coefs[size_t(v_buffer[3])] = v_buffer.value();
+}
+
+template <typename value_type>
+void MapWriter<value_type>::set_tod (const Math::Vector<float>& sh_coefs)
+{
+  assert (type == TOD);
+  assert (sh_coefs.size() == v_buffer.dim(3));
+  for (v_buffer[3] = 0; v_buffer[3] != v_buffer.dim(3); ++v_buffer[3])
+    v_buffer.value() = sh_coefs[size_t(v_buffer[3])];
 }
 
 

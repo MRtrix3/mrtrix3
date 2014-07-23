@@ -98,8 +98,14 @@ class TrackMapperBase
 
     void create_dixel_plugin (const DWI::Directions::FastLookupSet& dirs)
     {
-      assert (!dixel_plugin);
+      assert (!dixel_plugin && !tod_plugin);
       dixel_plugin = new DixelMappingPlugin (dirs);
+    }
+
+    void create_tod_plugin (const size_t N)
+    {
+      assert (!dixel_plugin && !tod_plugin);
+      tod_plugin = new TODMappingPlugin (N);
     }
 
 
@@ -127,6 +133,7 @@ class TrackMapperBase
     Upsampler<float> upsampler;
 
     RefPtr<DixelMappingPlugin> dixel_plugin;
+    RefPtr<TODMappingPlugin>   tod_plugin;
 
     template <class Cont>
     void voxelise_precise (const Streamline<>&, Cont&) const;
@@ -146,15 +153,20 @@ class TrackMapperBase
     virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDEC&) const;
     //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelFactor&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelFactor)"); }
     //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDECFactor&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelDECFactor)"); }
-    virtual void voxelise (const std::vector< Point<float> >&, SetDixel&)          const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetDixel)"); }
+    // TODO Need to implement these two
+    // Alternatively, call add_to_set() from the standard voxelise() function
+    //   (need two: one for standard TDI and one for everything else)
+    virtual void voxelise (const std::vector< Point<float> >&, SetDixel&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetDixel)"); }
+    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelTOD&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelTOD)"); }
 
     virtual bool preprocess  (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
 
-    // Used by voxelise_precise to increment the relevant set
+    // Used by voxelise_precise() to increment the relevant set
     void add_to_set (SetVoxel&   , const Voxel&, const Point<float>&, const float) const;
     void add_to_set (SetVoxelDEC&, const Voxel&, const Point<float>&, const float) const;
     void add_to_set (SetDixel&   , const Voxel&, const Point<float>&, const float) const;
+    void add_to_set (SetVoxelTOD&, const Voxel&, const Point<float>&, const float) const;
 
 };
 

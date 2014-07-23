@@ -32,6 +32,7 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 #include "math/SH.h"
+#include "math/vector.h"
 
 #include "dwi/directions/set.h"
 
@@ -52,9 +53,25 @@ class DixelMappingPlugin
   public:
     DixelMappingPlugin (const DWI::Directions::FastLookupSet& directions) :
         dirs (directions) { }
+    DixelMappingPlugin (const DixelMappingPlugin& that) :
+        dirs (that.dirs) { }
     size_t operator() (const Point<float>& d) const { return dirs.select_direction (d); }
   private:
     const DWI::Directions::FastLookupSet& dirs;
+};
+
+
+
+class TODMappingPlugin
+{
+  public:
+    TODMappingPlugin (const size_t N) :
+        generator (new Math::SH::aPSF<float> (Math::SH::LforN (N))) { }
+    TODMappingPlugin (const TODMappingPlugin& that) :
+        generator (that.generator) { }
+    void operator() (Math::Vector<float>& sh, const Point<float>& d) const { (*generator) (sh, d); }
+  private:
+    RefPtr< Math::SH::aPSF<float> > generator;
 };
 
 

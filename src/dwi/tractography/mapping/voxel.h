@@ -254,6 +254,60 @@ class Dixel : public Voxel
 // TODO TOD class: Would prefer the aPSF generation to be multi-threaded, so store the
 //   SH coefficients in the voxel class
 // Provide a normalise() function to remove any length dependence, and have unary contribution per streamline
+class VoxelTOD : public Voxel
+{
+
+  public:
+    VoxelTOD () :
+      Voxel (),
+      sh_coefs () { }
+
+    VoxelTOD (const Voxel& V) :
+      Voxel (V),
+      sh_coefs () { }
+
+    VoxelTOD (const Voxel& V, const Math::Vector<float>& t) :
+      Voxel (V),
+      sh_coefs (t) { }
+
+    VoxelTOD (const Voxel& V, const Math::Vector<float>& t, const float l) :
+      Voxel (V, l),
+      sh_coefs (t) { }
+
+    VoxelTOD& operator=  (const VoxelTOD& V)       { Voxel::operator= (V); sh_coefs = V.sh_coefs; return (*this); }
+    VoxelTOD& operator=  (const Voxel& V)          { Voxel::operator= (V); sh_coefs.clear(); return (*this); }
+
+    // For sorting / inserting, want to identify the same voxel, even if the TOD is different
+    bool      operator== (const VoxelTOD& V) const { return Voxel::operator== (V); }
+    bool      operator<  (const VoxelTOD& V) const { return Voxel::operator< (V); }
+
+    void normalise() const
+    {
+      const float multiplier = 1.0f / get_length();
+      sh_coefs *= multiplier;
+      Voxel::normalise();
+    }
+    void set_tod (const Math::Vector<float>& i) { sh_coefs = i; }
+    void add (const Math::Vector<float>& i, const float l) const
+    {
+      assert (i.size() == sh_coefs.size());
+      for (size_t index = 0; index != sh_coefs.size(); ++index)
+        sh_coefs[index] += l * i[index];
+      Voxel::operator+= (l);
+    }
+    void operator+= (const Math::Vector<float>& i) const
+    {
+      assert (i.size() == sh_coefs.size());
+      sh_coefs += i;
+      Voxel::operator+= (1.0f);
+    }
+    const Math::Vector<float>& get_tod() const { return sh_coefs; }
+
+  private:
+    mutable Math::Vector<float> sh_coefs;
+
+};
+
 
 
 
@@ -347,7 +401,34 @@ class SetDixel : public std::set<Dixel>, public SetVoxelExtras
       }
     }
 };
-
+class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
+{
+  public:
+    void insert (const VoxelTOD& v)
+    {
+      std::set<VoxelTOD>::insert (v);
+    }
+    void insert (const Voxel& v, const Math::Vector<float>& t)
+    {
+      iterator existing = std::set<VoxelTOD>::find (v);
+      if (existing == std::set<VoxelTOD>::end()) {
+        VoxelTOD temp (v, t);
+        std::set<VoxelTOD>::insert (temp);
+      } else {
+        (*existing) += t;
+      }
+    }
+    void insert (const Voxel& v, const Math::Vector<float>& t, const float l)
+    {
+      iterator existing = std::set<VoxelTOD>::find (v);
+      if (existing == std::set<VoxelTOD>::end()) {
+        VoxelTOD temp (v, t, l);
+        std::set<VoxelTOD>::insert (temp);
+      } else {
+        existing->add (t, l);
+      }
+    }
+};
 
 
 

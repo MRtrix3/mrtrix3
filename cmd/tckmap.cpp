@@ -89,7 +89,12 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
         "map streamlines to dixels within each voxel; requires either a number of dixels "
         "(references an internal direction set), or a path to a text file containing a "
         "set of directions stored as aximuth/elevation pairs")
-      + Argument ("path").type_text();
+      + Argument ("path").type_text()
+
+    + Option ("tod",
+        "generate a Track Orientation Distribution in each voxel; need to specify the maximum "
+        "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
+      + Argument ("lmax").type_integer (2, 20, 16);
 
 
 
@@ -372,6 +377,18 @@ void run () {
     header.DW_scheme() = grad;
   }
 
+  opt = get_options ("tod");
+  if (opt.size()) {
+    if (writer_type != GREYSCALE)
+      throw Exception ("Options for setting output image dimensionality are mutually exclusive");
+    writer_type = TOD;
+    const size_t lmax = opt[0][0];
+    if (lmax % 2)
+      throw Exception ("lmax for TODI must be an even number");
+    header.set_ndim (4);
+    header.dim(3) = Math::SH::NforL (lmax);
+  }
+
 
   // Deal with erroneous statistics & provide appropriate messages
   switch (contrast) {
@@ -433,8 +450,8 @@ void run () {
 
   opt = get_options ("datatype");
   if (opt.size()) {
-    if (writer_type == DEC) {
-      WARN ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
+    if (writer_type == DEC || writer_type == TOD) {
+      WARN ("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing - overriding to Float32");
     } else {
       header.datatype() = DataType::parse (opt[0][0]);
     }
@@ -546,6 +563,8 @@ void run () {
   mapper.set_use_precise_mapping (precise);
   if (writer_type == DIXEL)
     mapper.create_dixel_plugin (*dirs);
+  if (writer_type == TOD)
+    mapper.create_tod_plugin (header.dim(3));
 /*
   if (stat_tck == GAUSSIAN)
     mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
@@ -573,6 +592,7 @@ void run () {
     case GREYSCALE: writer = make_greyscale_writer (header, argument[1], stat_vox);      break;
     case DEC:       writer = new MapWriter<float>  (header, argument[1], stat_vox, DEC); break;
     case DIXEL:     writer = make_dixel_writer     (header, argument[1], stat_vox);      break;
+    case TOD:       writer = new MapWriter<float>  (header, argument[1], stat_vox, TOD); break;
   }
 
   writer->set_direct_dump (dump);
@@ -583,6 +603,7 @@ void run () {
     case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer); break;
     case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer); break;
     case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetDixel(),    *writer); break;
+    case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelTOD(), *writer); break;
   }
 
 }
