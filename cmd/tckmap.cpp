@@ -265,12 +265,12 @@ MapWriterBase* make_dixel_writer (Image::Header& H, const std::string& name, con
 
 
 
-DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt)
+DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt, const bool precise)
 {
   if (current_dt == DataType::Undefined) {
     return default_dt;
-  } else if (default_dt.is_floating_point() && current_dt.is_floating_point()) {
-    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast; defaulting to " + str(default_dt.specifier()));
+  } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
+    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
     return default_dt;
   } else {
     return current_dt;
@@ -483,7 +483,7 @@ void run () {
   }
 
   const DataType default_datatype = ((!precise && contrast == TDI) || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT) ? DataType::UInt32 : DataType::Float32;
-  header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype);
+  header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
   header.datatype().set_byte_order_native();
 
 
