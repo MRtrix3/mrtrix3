@@ -332,6 +332,7 @@ class SetVoxelExtras
 class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
 {
   public:
+    typedef Voxel VoxType;
     void insert (const Voxel& v)
     {
       std::set<Voxel>::insert (v);
@@ -348,6 +349,7 @@ class SetVoxel : public std::set<Voxel>, public SetVoxelExtras
 class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
 {
   public:
+    typedef VoxelDEC VoxType;
     void insert (const VoxelDEC& v)
     {
       std::set<VoxelDEC>::insert (v);
@@ -376,6 +378,7 @@ class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
 class SetDixel : public std::set<Dixel>, public SetVoxelExtras
 {
   public:
+    typedef Dixel VoxType;
     void insert (const Dixel& v)
     {
       iterator existing = std::set<Dixel>::find (v);
@@ -404,6 +407,7 @@ class SetDixel : public std::set<Dixel>, public SetVoxelExtras
 class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
 {
   public:
+    typedef VoxelTOD VoxType;
     void insert (const VoxelTOD& v)
     {
       std::set<VoxelTOD>::insert (v);

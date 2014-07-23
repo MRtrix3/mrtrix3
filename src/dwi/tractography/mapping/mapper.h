@@ -67,27 +67,28 @@ class TrackMapperBase
 
   public:
     TrackMapperBase (const Image::Info& template_image) :
-        upsampler (1),
         info      (template_image),
         transform (info),
         map_zero  (false),
-        precise   (false) { }
+        precise   (false),
+        upsampler (1) { }
 
     TrackMapperBase (const Image::Info& template_image, const DWI::Directions::FastLookupSet& dirs) :
-        upsampler    (1),
-        dixel_plugin (new DixelMappingPlugin (dirs)),
         info         (template_image),
         transform    (info),
         map_zero     (false),
-        precise      (false) { }
+        precise      (false),
+        dixel_plugin (new DixelMappingPlugin (dirs)),
+        upsampler    (1) { }
 
     TrackMapperBase (const TrackMapperBase& that) :
-        upsampler    (1),
-        dixel_plugin (that.dixel_plugin),
         info         (that.info),
         transform    (info),
         map_zero     (that.map_zero),
-        precise      (that.precise) { }
+        precise      (that.precise),
+        dixel_plugin (that.dixel_plugin),
+        tod_plugin   (that.tod_plugin),
+        upsampler    (1) { }
 
     virtual ~TrackMapperBase() { }
 
@@ -129,15 +130,6 @@ class TrackMapperBase
     }
 
 
-  private:
-    Upsampler<float> upsampler;
-
-    RefPtr<DixelMappingPlugin> dixel_plugin;
-    RefPtr<TODMappingPlugin>   tod_plugin;
-
-    template <class Cont>
-    void voxelise_precise (const Streamline<>&, Cont&) const;
-
 
   protected:
     const Image::Info info;
@@ -145,31 +137,65 @@ class TrackMapperBase
     bool map_zero;
     bool precise;
 
+    RefPtr<DixelMappingPlugin> dixel_plugin;
+    RefPtr<TODMappingPlugin>   tod_plugin;
 
-    size_t get_upsample_factor() const { return upsampler.get_ratio(); }
 
-
-    virtual void voxelise (const std::vector< Point<float> >&, SetVoxel&)    const;
-    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDEC&) const;
-    //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelFactor&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelFactor)"); }
-    //virtual void voxelise (const std::vector< Point<float> >&, SetVoxelDECFactor&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelDECFactor)"); }
-    // TODO Need to implement these two
-    // Alternatively, call add_to_set() from the standard voxelise() function
-    //   (need two: one for standard TDI and one for everything else)
-    virtual void voxelise (const std::vector< Point<float> >&, SetDixel&)    const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetDixel)"); }
-    virtual void voxelise (const std::vector< Point<float> >&, SetVoxelTOD&) const { throw Exception ("Running empty virtual function TrackMapperBase::voxelise() (SetVoxelTOD)"); }
+    // Specialist version of voxelise() is provided for the SetVoxel container:
+    //   this is the simplest form of track mapping, and don't want to slow it down
+    //   by unnecessarily computing tangents
+    // Second version does nothing fancy, but includes computation of the
+    //   streamline tangent, and forces normalisation of the contribution from
+    //   each streamline to each voxel it traverses
+    // Third version is the 'precise' mapping as described in the SIFT paper.
+    void voxelise (const std::vector< Point<float> >&, SetVoxel&) const;
+    template <class Cont> void voxelise (const std::vector< Point<float> >&, Cont&) const;
+    template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
 
     virtual bool preprocess  (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
 
-    // Used by voxelise_precise() to increment the relevant set
-    void add_to_set (SetVoxel&   , const Voxel&, const Point<float>&, const float) const;
-    void add_to_set (SetVoxelDEC&, const Voxel&, const Point<float>&, const float) const;
-    void add_to_set (SetDixel&   , const Voxel&, const Point<float>&, const float) const;
-    void add_to_set (SetVoxelTOD&, const Voxel&, const Point<float>&, const float) const;
+    // Used by voxelise() and voxelise_precise() to increment the relevant set
+    inline void add_to_set (SetVoxel&   , const Voxel&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelDEC&, const Voxel&, const Point<float>&, const float) const;
+    inline void add_to_set (SetDixel&   , const Voxel&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelTOD&, const Voxel&, const Point<float>&, const float) const;
+
+
+  private:
+    Upsampler<float> upsampler;
 
 };
 
+
+
+template <class Cont>
+void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, Cont& output) const
+{
+
+  std::vector< Point<float> >::const_iterator prev = tck.begin();
+  const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
+
+  Voxel vox;
+  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
+    vox = round (transform.scanner2voxel (*i));
+    if (check (vox, info)) {
+      const Point<float> dir ((*(i+1) - *prev).normalise());
+      add_to_set (output, vox, dir, 1.0f);
+    }
+    prev = i;
+  }
+
+  vox = round (transform.scanner2voxel (*last));
+  if (check (vox, info)) {
+    const Point<float> dir ((*last - *prev).normalise());
+    add_to_set (output, vox, dir, 1.0f);
+  }
+
+  for (typename Cont::iterator i = output.begin(); i != output.end(); ++i)
+    i->normalise();
+
+}
 
 
 
@@ -254,6 +280,40 @@ void TrackMapperBase::voxelise_precise (const Streamline<>& tck, Cont& out) cons
   } while (!end_track);
 
 }
+
+
+
+
+// These are inlined to make as fast as possible
+inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+{
+  out.insert (v, l);
+}
+inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+{
+  out.insert (v, d, l);
+}
+inline void TrackMapperBase::add_to_set (SetDixel&    out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+{
+  assert (dixel_plugin);
+  const size_t bin = (*dixel_plugin) (d);
+  out.insert (v, bin, l);
+}
+inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Voxel& v, const Point<float>& d, const float l = 1.0) const
+{
+  assert (tod_plugin);
+  Math::Vector<float> sh;
+  (*tod_plugin) (sh, d);
+  out.insert (v, sh, l);
+}
+
+
+
+
+
+
+
+
 
 
 
