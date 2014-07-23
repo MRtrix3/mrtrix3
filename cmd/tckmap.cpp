@@ -145,7 +145,8 @@ const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
 
   + Option ("precise",
-      "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel")
+      "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "
+      "(these lengths are then taken into account during TWI calculation)")
 
   + Option ("dump",
       "dump the scratch buffer contents directly to a .mih / .dat file pair, "
@@ -171,6 +172,18 @@ REFERENCES = "For TDI or DEC TDI:\n"
              "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
              "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
              "NeuroImage, 2011, 55, 133-141\n\n"
+             "If using -dixel option with TDI contrast only:\n"
+             "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
+             "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
+             "In proc. ISMRM, 2011, 19, 673\n\n"
+             "If using -dixel option with any other contrast:\n"
+             "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
+             "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
+             "In Proc. ISMRM, 2012, 20, 1912\n\n"
+             "If using -tod option:\n"
+             "Dhollander, T., Emsell, L., Van Hecke, V., Maes, F., Sunaaert, S., Suetens, P. "
+             "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
+             "NeuroImage, 2014, 94, 312-336\n\n"
              "If using other contrasts / statistics:\n"
              "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
              "A generalised framework for super-resolution track-weighted imaging. "
