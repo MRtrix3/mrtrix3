@@ -496,50 +496,18 @@ void run () {
   }
 
 
-  // Use a branching IF instead of a switch statement to permit scope
-  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || (contrast == CURVATURE && stat_tck != GAUSSIAN)) {
+  Ptr<MapWriterBase> writer;
+  if (colour)
+    writer = new MapWriterDEC (header, argument[1], stat_vox);
+  else
+    writer = make_greyscale_writer (header, argument[1], stat_vox);
 
-    if (colour) {
-      MapWriterDEC writer (header, argument[1], stat_vox);
-      writer.set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
-    } else {
-      Ptr<MapWriterBase> writer (make_greyscale_writer (header, argument[1], stat_vox));
-      writer->set_direct_dump (dump);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
-    }
+  writer->set_direct_dump (dump);
 
-  } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
-
-    if (colour) {
-
-      //if (stat_tck == GAUSSIAN) {
-      //  MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], stat_vox);
-      //  writer.set_direct_dump (dump);
-      //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
-      //} else {
-        MapWriterDEC writer (header, argument[1], stat_vox);
-        writer.set_direct_dump (dump);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
-      //}
-
-    } else {
-
-      //if (stat_tck == GAUSSIAN) {
-      //  Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], stat_vox));
-      //  writer->set_direct_dump (dump);
-      //  Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
-      //} else {
-        Ptr<MapWriterBase> writer (make_greyscale_writer (header, argument[1], stat_vox));
-        writer->set_direct_dump (dump);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
-      //}
-
-    }
-
-  } else {
-    throw Exception ("Undefined contrast mechanism for output image");
-  }
+  if (colour)
+    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer);
+  else
+    Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer);
 
 }
 
