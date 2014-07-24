@@ -159,8 +159,9 @@ class MapWriter : public MapWriterBase
       }
 
       // With TOD, hijack the counts buffer in voxel statistic min/max mode
+      //   (use to store maximum / minimum factors and hence decide when to update the TOD)
       if (voxel_statistic == V_MEAN || (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX))) {
-        Image::Header H_counts;
+        Image::Header H_counts (header);
         if (type == DEC || type == TOD)
           H_counts.set_ndim (3);
         counts = new counts_buffer_type (H_counts, "TWI streamline count buffer");
