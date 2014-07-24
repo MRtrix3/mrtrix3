@@ -39,6 +39,26 @@ namespace Mapping {
 
 
 
+// Helper functions; note that Point<int> rather than Voxel is always used during the mapping itself
+inline Point<int> round (const Point<float>& p)
+{ 
+  assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
+  return (Point<int> (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
+}
+
+inline bool check (const Point<int>& V, const Image::Info& H)
+{
+  return (V[0] >= 0 && V[0] < H.dim(0) && V[1] >= 0 && V[1] < H.dim(1) && V[2] >= 0 && V[2] < H.dim(2));
+}
+
+inline Point<float> vec2DEC (const Point<float>& d)
+{
+  return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
+}
+
+
+
+
 class Voxel : public Point<int>
 {
   public:
@@ -54,30 +74,6 @@ class Voxel : public Point<int>
   private:
     mutable float length;
 };
-
-
-
-
-
-
-inline Voxel round (const Point<float>& p)
-{ 
-  assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
-  return (Voxel (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
-}
-
-inline bool check (const Voxel& V, const Image::Info& H)
-{
-  return (V[0] >= 0 && V[0] < H.dim(0) && V[1] >= 0 && V[1] < H.dim(1) && V[2] >= 0 && V[2] < H.dim(2));
-}
-
-inline Point<float> vec2DEC (const Point<float>& d)
-{
-  return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
-}
-
-
-
 
 
 class VoxelDEC : public Voxel 

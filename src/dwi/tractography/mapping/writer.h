@@ -301,7 +301,7 @@ class MapWriter : public MapWriterBase
 template <typename value_type>
 bool MapWriter<value_type>::operator() (const SetVoxel& in)
 {
-  assert (type == Greyscale);
+  assert (MapWriterBase::type == GREYSCALE);
   for (SetVoxel::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i);
     const float factor = in.factor;
@@ -474,7 +474,7 @@ template <typename value_type>
 void MapWriter<value_type>::set_tod (const Math::Vector<float>& sh_coefs)
 {
   assert (type == TOD);
-  assert (sh_coefs.size() == v_buffer.dim(3));
+  assert (int(sh_coefs.size()) == v_buffer.dim(3));
   for (v_buffer[3] = 0; v_buffer[3] != v_buffer.dim(3); ++v_buffer[3])
     v_buffer.value() = sh_coefs[size_t(v_buffer[3])];
 }
