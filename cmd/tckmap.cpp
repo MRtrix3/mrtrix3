@@ -323,7 +323,7 @@ void run () {
   }
   else {
     if (voxel_size.empty())
-      throw Exception ("please specify either a template image or the desired voxel size");
+      throw Exception ("please specify a template image and/or the desired voxel size");
     generate_header (header, argument[0], voxel_size);
   }
 
