@@ -447,7 +447,12 @@ namespace MR
             depth_texture.bind();
 
           gl::ReadBuffer (gl::BACK);
+#if QT_VERSION >= 0x050100
+          int m = window.windowHandle()->devicePixelRatio();
+          gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m*projection.width(), m*projection.height(), 0);
+#else
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
+#endif
 
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
