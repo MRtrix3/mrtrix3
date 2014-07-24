@@ -327,7 +327,10 @@ void run () {
     generate_header (header, argument[0], voxel_size);
   }
 
-  header.set_ndim (3);
+  if (header.ndim() > 3) {
+    header.set_ndim (3);
+    header.sanitise();
+  }
 
   opt = get_options ("contrast");
   contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
@@ -513,7 +516,7 @@ void run () {
 
   // Raw std::ofstream dump of image data from the internal RAM buffer to file
   const bool dump = get_options ("dump").size();
-  if (dump && Path::has_suffix (argument[1], "mih"))
+  if (dump && !Path::has_suffix (argument[1], "mih"))
     throw Exception ("Option -dump only works when outputting to .mih image format");
 
   std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";

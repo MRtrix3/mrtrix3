@@ -238,7 +238,7 @@ class MapWriter : public MapWriterBase
       if (direct_dump) {
 
         if (App::log_level)
-          std::cerr << App::NAME << ": writing image to file... ";
+          std::cerr << App::NAME << ": dumping image contents to file... ";
         buffer.dump_to_file (output_image_name, H);
         if (App::log_level)
           std::cerr << "done.\n";

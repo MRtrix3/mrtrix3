@@ -30,6 +30,7 @@
 
 #include "image/buffer_scratch.h"
 #include "image/header.h"
+#include "image/stride.h"
 
 
 namespace MR {
@@ -65,6 +66,7 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
   if (!Path::has_suffix (path, ".mih"))
     throw Exception ("Can only perform direct dump to file for .mih files");
 
+  // TODO Should be possible to do this also for .mif files
   const std::string dat_path = Path::basename (path.substr (0, path.size()-4) + ".dat");
   const int64_t dat_size = Image::footprint (*this);
 
@@ -81,9 +83,12 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
   for (size_t n = 1; n < H.ndim(); ++n)
     out_mih << "," << H.vox (n);
 
-  out_mih << "\nlayout: " << ((H.stride (0) > 0) ? "+" : "-") << Math::abs (H.stride (0))-1;
+  Image::Stride::List stride = Image::Stride::get (H);
+  Image::Stride::symbolise (stride);
+
+  out_mih << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_mih << "," << ((H.stride (n) > 0) ? "+" : "-") << Math::abs (H.stride (n))-1;
+    out_mih << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
 
   out_mih << "\ndatatype: " << H.datatype().specifier();
 
