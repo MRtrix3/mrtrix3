@@ -318,6 +318,8 @@ void run () {
     Image::Header template_header (opt[0][0]);
     header = template_header;
     header.comments().clear();
+    header.clear();
+    header["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
   }
@@ -332,14 +334,18 @@ void run () {
     header.sanitise();
   }
 
+  header.comments().push_back ("track-weighted image");
+  header["tck_source"] = str(argument[0]);
+
   opt = get_options ("contrast");
-  contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
+  const contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
 
   opt = get_options ("stat_vox");
   vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_SUM;
 
   opt = get_options ("stat_tck");
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
+
 
   if (stat_tck == GAUSSIAN)
     throw Exception ("Gaussian track-wise statistic temporarily disabled");
@@ -360,12 +366,12 @@ void run () {
 
   // Determine the dimensionality of the output image
   writer_dim writer_type = GREYSCALE;
+
   opt = get_options ("dec");
   if (opt.size()) {
     writer_type = DEC;
     header.set_ndim (4);
     header.dim(3) = 3;
-    //header.set_description (3, "directionally-encoded colour");
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
@@ -403,7 +409,10 @@ void run () {
       throw Exception ("lmax for TODI must be an even number");
     header.set_ndim (4);
     header.dim(3) = Math::SH::NforL (lmax);
+    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
+
+  header["twi_dimensionality"] = writer_dims[writer_type];
 
 
   // Deal with erroneous statistics & provide appropriate messages
@@ -458,6 +467,10 @@ void run () {
 
   }
 
+  header["twi_contrast"] = contrasts[contrast];
+  header["twi_vox_stat"] = voxel_statistics[stat_vox];
+  header["twi_tck_stat"] = track_statistics[stat_tck];
+
 
   // Figure out how the streamlines will be mapped
   const bool precise = get_options ("precise").size();
@@ -465,6 +478,7 @@ void run () {
     throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
   if (precise && contrast == SCALAR_MAP_COUNT)
     throw Exception ("Cannot use precise streamline mapping if using the scalar_map_count contrast");
+  header["precise_mapping"] = precise ? "1" : "0";
 
   size_t upsample_ratio = 1;
   opt = get_options ("upsample");
@@ -505,13 +519,11 @@ void run () {
   header.datatype().set_byte_order_native();
 
 
-  // Get properties from the tracking, and put them into the image header
-  for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
-    header.comments().push_back (i->first + ": " + i->second);
-  for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-    header.comments().push_back ("ROI: " + i->first + " " + i->second);
-  for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-    header.comments().push_back ("comment: " + *i);
+  // Whether or not to still ,ap streamlines even if the factor is zero
+  //   (can still affect output image if voxel-wise statistic is mean)
+  const bool map_zero = get_options ("map_zero").size();
+  if (map_zero)
+    header["map_zero"] = "1";
 
 
   // Raw std::ofstream dump of image data from the internal RAM buffer to file
@@ -519,6 +531,8 @@ void run () {
   if (dump && !Path::has_suffix (argument[1], "mih"))
     throw Exception ("Option -dump only works when outputting to .mih image format");
 
+
+  // Produce a useful INFO message
   std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
@@ -565,24 +579,13 @@ void run () {
   }
   INFO (msg);
 
-  switch (contrast) {
-    case TDI:              header.comments().push_back ("track density image"); break;
-    case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
-    case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
-    case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
-    case SCALAR_MAP:       header.comments().push_back ("track-weighted image (using scalar image)"); break;
-    case SCALAR_MAP_COUNT: header.comments().push_back ("track density image (using scalar image thresholding)"); break;
-    case FOD_AMP:          header.comments().push_back ("track-weighted image (using FOD amplitude)"); break;
-    case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
-  }
-
 
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
   TrackMapperTWI mapper (header, contrast, stat_tck);
   mapper.set_upsample_ratio      (upsample_ratio);
-  mapper.set_map_zero            (get_options ("map_zero").size());
+  mapper.set_map_zero            (map_zero);
   mapper.set_use_precise_mapping (precise);
   if (writer_type == DIXEL)
     mapper.create_dixel_plugin (*dirs);
@@ -606,8 +609,8 @@ void run () {
       mapper.add_scalar_image (assoc_image);
     else
       mapper.add_fod_image (assoc_image);
+    header["twi_assoc_image"] = str(opt[0][0]);
   }
-
 
   Ptr<MapWriterBase> writer;
   switch (writer_type) {
