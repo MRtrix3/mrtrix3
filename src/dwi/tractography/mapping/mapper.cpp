@@ -34,7 +34,7 @@ namespace Mapping {
 
 void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, SetVoxel& voxels) const
 {
-  Voxel vox;
+  Point<int> vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
     vox = round (transform.scanner2voxel (*i));
     if (check (vox, info))
@@ -240,100 +240,6 @@ void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxelD
 
 
 
-/*
-void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxelFactor& voxels) const
-{
-
-  VoxelFactor vox;
-  for (size_t i = 0; i != tck.size(); ++i) {
-    vox = round (transform.scanner2voxel (tck[i]));
-    if (check (vox, info)) {
-
-      // Get a linearly-interpolated value from factors[] based upon factors[] being
-      //   generated with non-interpolated data, and index 'i' here representing interpolated data
-      const float ideal_index = float(i) / float(get_upsample_factor());
-      const size_t lower_index = MAX(floor (ideal_index), 0);
-      const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
-      const float mu = ideal_index - lower_index;
-      const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
-
-      // Change here from base classes: need to explicitly check whether this voxel has been visited
-      SetVoxelFactor::iterator v = voxels.find (vox);
-      if (v == voxels.end()) {
-        vox.set_factor (factor);
-        voxels.insert (vox);
-      } else {
-        vox = *v;
-        vox.add_contribution (factor);
-        voxels.erase (v);
-        voxels.insert (vox);
-      }
-
-    }
-  }
-
-}
-
-
-
-void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxelDECFactor& voxels) const
-{
-
-  Point<float> prev = tck.front();
-  const Point<float>& last = tck[tck.size() - 1];
-
-  VoxelDECFactor vox;
-  for (unsigned int i = 0; i != tck.size() - 1; ++i) {
-    vox = round (transform.scanner2voxel (tck[i]));
-    if (check (vox, info)) {
-
-      const float ideal_index = float(i) / float(get_upsample_factor());
-      const size_t lower_index = MAX(floor (ideal_index), 0);
-      const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
-      const float mu = ideal_index - lower_index;
-      const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
-
-      SetVoxelDECFactor::iterator existing_vox = voxels.find (vox);
-      if (existing_vox == voxels.end()) {
-        vox.set_factor (factor);
-        vox.set_dir (tck[i+1] - prev);
-        voxels.insert (vox);
-      } else {
-        existing_vox->add_dir (tck[i+1] - prev);
-        existing_vox->add_contribution (factor);
-      }
-    }
-    prev = tck[i];
-  }
-
-  vox = round (transform.scanner2voxel (last));
-  if (check (vox, info)) {
-
-    const float ideal_index = float(tck.size() - 1) / float(get_upsample_factor());
-    const size_t lower_index = MAX(floor (ideal_index), 0);
-    const size_t upper_index = MIN(ceil  (ideal_index), tck.size() - 1);
-    const float mu = ideal_index - lower_index;
-    const float factor = (mu * factors[upper_index]) + ((1.0 - mu) * factors[lower_index]);
-
-    SetVoxelDECFactor::iterator existing_vox = voxels.find (vox);
-    if (existing_vox == voxels.end()) {
-      vox.set_dir (last - prev);
-      vox.set_factor (factor);
-      voxels.insert (vox);
-    } else {
-      existing_vox->add_dir (last - prev);
-      existing_vox->add_contribution (factor);
-    }
-  }
-
-  for (SetVoxelDECFactor::iterator i = voxels.begin(); i != voxels.end(); ++i)
-    i->norm_dir();
-
-}
-*/
-
-
-
 
 
 void TrackMapperTWI::add_scalar_image (const std::string& path)
@@ -486,53 +392,6 @@ void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
   }
 
 }
-
-
-/*
-void TrackMapperTWI::gaussian_smooth_factors (const std::vector< Point<float> >& tck) const
-{
-
-  std::vector<float> unsmoothed (factors);
-
-  for (size_t i = 0; i != unsmoothed.size(); ++i) {
-
-    double sum = 0.0, norm = 0.0;
-
-    if (std::isfinite (unsmoothed[i])) {
-      sum  = unsmoothed[i];
-      norm = 1.0; // Gaussian is unnormalised -> e^0 = 1
-    }
-
-    float distance = 0.0;
-    for (size_t j = i; j--; ) { // Decrement AFTER null test, so loop runs with j = 0
-      distance += dist(tck[j], tck[j+1]);
-      if (std::isfinite (unsmoothed[j])) {
-        const float this_weight = exp (-distance * distance / gaussian_denominator);
-        norm += this_weight;
-        sum  += this_weight * unsmoothed[j];
-      }
-    }
-    distance = 0.0;
-    for (size_t j = i + 1; j < unsmoothed.size(); ++j) {
-      distance += dist(tck[j], tck[j-1]);
-      if (std::isfinite (unsmoothed[j])) {
-        const float this_weight = exp (-distance * distance / gaussian_denominator);
-        norm += this_weight;
-        sum  += this_weight * unsmoothed[j];
-      }
-    }
-
-    if (norm)
-      factors[i] = (sum / norm);
-    else
-      factors[i] = 0.0;
-
-  }
-
-}
-*/
-
-
 
 
 

@@ -116,96 +116,6 @@ class VoxelDEC : public Voxel
 
 
 
-// TODO Better handling of Gaussian smoothing case, where a factor is required per voxel for every streamline
-// Perhaps even branch the MapWriter: Have the base classes jsut load the factor from SetVoxelExtras, and a
-//   derived Gaussian version that loads from the set
-/*
-class VoxelFactor : public Voxel
-{
-
-  public:
-    VoxelFactor () :
-        Voxel (),
-        sum (0.0f),
-        contributions (0) { }
-
-    VoxelFactor (const int x, const int y, const int z, const float factor) :
-        Voxel (x, y, z),
-        sum (factor),
-        contributions (1) { }
-
-    VoxelFactor (const Voxel& v) :
-        Voxel (v),
-        sum (0.0f),
-        contributions (0) { }
-
-    template <class Init>
-    VoxelFactor (const Init& v, const float f) :
-        Voxel (v),
-        sum (f),
-        contributions (1) { }
-
-    VoxelFactor (const VoxelFactor& v) :
-        Voxel (v),
-        sum (v.sum),
-        contributions (v.contributions) { }
-
-    void add_contribution (const float factor) const {
-        sum += factor;
-        ++contributions;
-    }
-
-    void set_factor (const float i) const { sum = i; contributions = 1; }
-    float get_factor() const { return (sum / float(contributions)); }
-    size_t get_contribution_count() const { return contributions; }
-
-    VoxelFactor& operator=  (const Voxel& V)             { Voxel::operator= (V); sum = 0.0f; contributions = 0; return (*this); }
-    VoxelFactor& operator=  (const VoxelFactor& V)       { Voxel::operator= (V); sum = V.sum; contributions = V.contributions; return (*this); }
-    bool         operator== (const VoxelFactor& V) const { return Voxel::operator== (V); }
-    bool         operator<  (const VoxelFactor& V) const { return Voxel::operator< (V); }
-
-
-  protected:
-    mutable float sum;
-    mutable size_t contributions;
-
-};
-
-
-class VoxelDECFactor : public VoxelFactor
-{
-
-  public:
-    VoxelDECFactor () :
-        VoxelFactor (),
-        colour (Point<float> (0.0f, 0.0f, 0.0f)) { }
-
-    VoxelDECFactor (const Voxel& V) :
-        VoxelFactor (V),
-        colour (Point<float> (0.0, 0.0, 0.0)) { }
-
-    VoxelDECFactor (const VoxelDECFactor& that) :
-        VoxelFactor (that),
-        colour (that.colour) { }
-
-    VoxelDECFactor& operator=  (const Voxel& V)                { VoxelFactor::operator= (V); colour = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
-    VoxelDECFactor& operator=  (const VoxelDECFactor& V)       { VoxelFactor::operator= (V); colour = that.colour; return (*this); }
-    bool            operator== (const Voxel& V)          const { return Voxel::operator== (V); }
-    bool            operator<  (const VoxelDECFactor& V) const { return Voxel::operator< (V); }
-
-    void normalise() const { colour.normalise(); }
-    void set_dir (const Point<float>& i)       { colour =  vec2DEC (i); }
-    void add_dir (const Point<float>& i) const { colour += vec2DEC (i); }
-    const Point<float>& get_colour() const { return colour; }
-
-  private:
-    mutable Point<float> colour;
-
-};
-*/
-
-
-
 // Assumes tangent has been mapped to a hemisphere basis direction set
 class Dixel : public Voxel
 {
@@ -247,8 +157,7 @@ class Dixel : public Voxel
 
 
 
-// TODO TOD class: Would prefer the aPSF generation to be multi-threaded, so store the
-//   SH coefficients in the voxel class
+// TOD class: tore the SH coefficients in the voxel class so that aPSF generation can be multi-threaded
 // Provide a normalise() function to remove any length dependence, and have unary contribution per streamline
 class VoxelTOD : public Voxel
 {
@@ -378,12 +287,12 @@ class SetDixel : public std::set<Dixel>, public SetVoxelExtras
       else
         (*existing) += 1.0f;
     }
-    inline void insert (const Voxel& v, const size_t d)
+    inline void insert (const Point<int>& v, const size_t d)
     {
       const Dixel temp (v, d);
       insert (temp);
     }
-    inline void insert (const Voxel& v, const size_t d, const float l)
+    inline void insert (const Point<int>& v, const size_t d, const float l)
     {
       const Dixel temp (v, d, l);
       insert (temp);
@@ -401,12 +310,12 @@ class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
       else
         (*existing) += v.get_tod();
     }
-    inline void insert (const Voxel& v, const Math::Vector<float>& t)
+    inline void insert (const Point<int>& v, const Math::Vector<float>& t)
     {
       const VoxelTOD temp (v, t);
       insert (temp);
     }
-    inline void insert (const Voxel& v, const Math::Vector<float>& t, const float l)
+    inline void insert (const Point<int>& v, const Math::Vector<float>& t, const float l)
     {
       const VoxelTOD temp (v, t, l);
       insert (temp);

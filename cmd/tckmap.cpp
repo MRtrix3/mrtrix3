@@ -137,7 +137,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
 
 
-const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
+const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-voxel mapping mechanism")
 
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
@@ -147,6 +147,13 @@ const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
   + Option ("precise",
       "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "
       "(these lengths are then taken into account during TWI calculation)")
+
+  + Option ("ends_only",
+      "only map the streamline endpoints to the image");
+
+
+
+const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
 
   + Option ("dump",
       "dump the scratch buffer contents directly to a .mih / .dat file pair, "
@@ -197,6 +204,7 @@ OPTIONS
   + OutputHeaderOption
   + OutputDimOption
   + TWIOption
+  + MappingOption
   + ExtraOption
   + Tractography::TrackWeightsInOption;
 
@@ -474,22 +482,28 @@ void run () {
 
   // Figure out how the streamlines will be mapped
   const bool precise = get_options ("precise").size();
-  if (precise && contrast == ENDPOINT)
-    throw Exception ("Cannot use precise streamline mapping if only streamline endpoints are being mapped");
-  if (precise && contrast == SCALAR_MAP_COUNT)
-    throw Exception ("Cannot use precise streamline mapping if using the scalar_map_count contrast");
   header["precise_mapping"] = precise ? "1" : "0";
+  const bool ends_only = get_options ("ends_only").size();
+  if (ends_only) {
+    if (precise)
+      throw Exception ("Options -precise and -ends_only are mutually exclusive");
+    header["endpoints_only"] = "1";
+  }
 
   size_t upsample_ratio = 1;
   opt = get_options ("upsample");
   if (opt.size()) {
-    upsample_ratio = opt[0][0];
-    INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
-  } else {
+    if (ends_only) {
+      WARN ("cannot use upsampling if only streamline endpoints are to be mapped");
+    } else {
+      upsample_ratio = opt[0][0];
+      INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
+    }
+  } else if (!ends_only) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
+    determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
   }
 
 
@@ -536,7 +550,6 @@ void run () {
   std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
-    case ENDPOINT:         msg += "endpoint density";           break;
     case LENGTH:           msg += "length";                     break;
     case INVLENGTH:        msg += "inverse length";             break;
     case SCALAR_MAP:       msg += "scalar map";                 break;
@@ -587,6 +600,7 @@ void run () {
   mapper.set_upsample_ratio      (upsample_ratio);
   mapper.set_map_zero            (map_zero);
   mapper.set_use_precise_mapping (precise);
+  mapper.set_map_ends_only       (ends_only);
   if (writer_type == DIXEL)
     mapper.create_dixel_plugin (*dirs);
   if (writer_type == TOD)
