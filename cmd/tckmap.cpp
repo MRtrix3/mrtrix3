@@ -45,6 +45,8 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
+#include "dwi/tractography/mapping/gaussian/mapper.h"
+#include "dwi/tractography/mapping/gaussian/voxel.h"
 
 
 
@@ -355,21 +357,17 @@ void run () {
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
 
-  if (stat_tck == GAUSSIAN)
-    throw Exception ("Gaussian track-wise statistic temporarily disabled");
-/*
   float gaussian_fwhm_tck = 0.0;
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
     if (stat_tck != GAUSSIAN) {
-      INFO ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
+      WARN ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
       stat_tck = GAUSSIAN;
     }
     gaussian_fwhm_tck = opt[0][0];
   } else if (stat_tck == GAUSSIAN) {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
-*/
 
 
   // Determine the dimensionality of the output image
@@ -570,8 +568,7 @@ void run () {
       case T_MAX:          msg += "maximum"; break;
       case T_MEDIAN:       msg += "median";  break;
       case T_MEAN_NONZERO: msg += "mean (nonzero)"; break;
-      //case GAUSSIAN:       msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
-      case GAUSSIAN:       throw Exception ("Gaussian track-wise statistic temporarily disabled");
+      case GAUSSIAN:       msg += "gaussian (FWHM " + str (gaussian_fwhm_tck) + "mm)"; break;
       case ENDS_MIN:       msg += "endpoints (minimum)"; break;
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
@@ -586,19 +583,15 @@ void run () {
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
-  TrackMapperTWI mapper (header, contrast, stat_tck);
-  mapper.set_upsample_ratio      (upsample_ratio);
-  mapper.set_map_zero            (map_zero);
-  mapper.set_use_precise_mapping (precise);
-  mapper.set_map_ends_only       (ends_only);
+  Ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (header, contrast)) : (new TrackMapperTWI (header, contrast, stat_tck)));
+  mapper->set_upsample_ratio      (upsample_ratio);
+  mapper->set_map_zero            (map_zero);
+  mapper->set_use_precise_mapping (precise);
+  mapper->set_map_ends_only       (ends_only);
   if (writer_type == DIXEL)
-    mapper.create_dixel_plugin (*dirs);
+    mapper->create_dixel_plugin (*dirs);
   if (writer_type == TOD)
-    mapper.create_tod_plugin (header.dim(3));
-/*
-  if (stat_tck == GAUSSIAN)
-    mapper.set_gaussian_FWHM (gaussian_fwhm_tck);
-*/
+    mapper->create_tod_plugin (header.dim(3));
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options ("image");
     if (!opt.size()) {
@@ -610,9 +603,9 @@ void run () {
     const std::string assoc_image (opt[0][0]);
     const Image::Header H_assoc_image (assoc_image);
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
-      mapper.add_scalar_image (assoc_image);
+      mapper->add_scalar_image (assoc_image);
     else
-      mapper.add_fod_image (assoc_image);
+      mapper->add_fod_image (assoc_image);
     header["twi_assoc_image"] = str(opt[0][0]);
   }
 
@@ -628,12 +621,26 @@ void run () {
   writer->set_direct_dump (dump);
 
   // Finally get to do some number crunching!
-  switch (writer_type) {
-    case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-    case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(),    *writer); break;
-    case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), *writer); break;
-    case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetDixel(),    *writer); break;
-    case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelTOD(), *writer); break;
+  // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
+  //   keeping the code as separate as possible
+  if (stat_tck == GAUSSIAN) {
+    Gaussian::TrackMapper* const mapper_ptr = dynamic_cast<Gaussian::TrackMapper*>((TrackMapperTWI*)mapper);
+    mapper_ptr->set_gaussian_FWHM (gaussian_fwhm_tck);
+    switch (writer_type) {
+      case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+      case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxel(),    *writer); break;
+      case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxelDEC(), *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetDixel(),    *writer); break;
+      case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxelTOD(), *writer); break;
+    }
+  } else {
+    switch (writer_type) {
+      case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+      case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxel(),    *writer); break;
+      case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxelDEC(), *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetDixel(),    *writer); break;
+      case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxelTOD(), *writer); break;
+    }
   }
 
 }

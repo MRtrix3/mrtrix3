@@ -390,7 +390,7 @@ class TrackMapperTWI : public TrackMapperBase
 
     // Members for when the contribution of a track is not constant along its length
     mutable std::vector<float> factors;
-    void load_factors (const std::vector< Point<float> >&) const;
+    void load_factors (const Streamline<>&) const;
 
     // Member for incorporating additional information from an external image into the TWI process
     TWIImagePluginBase* image_plugin;
@@ -398,10 +398,10 @@ class TrackMapperTWI : public TrackMapperBase
 
   private:
 
-    void set_factor (const std::vector< Point<float> >&, SetVoxelExtras&) const;
+    virtual void set_factor (const Streamline<>&, SetVoxelExtras&) const;
 
     // Overload virtual function
-    bool preprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { set_factor (tck, out); return out.factor; }
+    virtual bool preprocess (const Streamline<>& tck, SetVoxelExtras& out) const { set_factor (tck, out); return out.factor; }
 
 
 

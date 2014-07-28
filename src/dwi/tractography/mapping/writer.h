@@ -37,6 +37,7 @@
 #include "dwi/tractography/mapping/buffer_scratch_dump.h"
 #include "dwi/tractography/mapping/twi_stats.h"
 #include "dwi/tractography/mapping/voxel.h"
+#include "dwi/tractography/mapping/gaussian/voxel.h"
 
 
 
@@ -99,6 +100,11 @@ class MapWriterBase
     virtual bool operator() (const SetVoxelDEC&) { return false; }
     virtual bool operator() (const SetDixel&)    { return false; }
     virtual bool operator() (const SetVoxelTOD&) { return false; }
+
+    virtual bool operator() (const Gaussian::SetVoxel&)    { return false; }
+    virtual bool operator() (const Gaussian::SetVoxelDEC&) { return false; }
+    virtual bool operator() (const Gaussian::SetDixel&)    { return false; }
+    virtual bool operator() (const Gaussian::SetVoxelTOD&) { return false; }
 
 
   protected:
@@ -273,15 +279,41 @@ class MapWriter : public MapWriterBase
     }
 
 
-    bool operator() (const SetVoxel&);
-    bool operator() (const SetVoxelDEC&);
-    bool operator() (const SetDixel&);
-    bool operator() (const SetVoxelTOD&);
+    bool operator() (const SetVoxel& in)    { receive_greyscale (in); return true; }
+    bool operator() (const SetVoxelDEC& in) { receive_dec       (in); return true; }
+    bool operator() (const SetDixel& in)    { receive_dixel     (in); return true; }
+    bool operator() (const SetVoxelTOD& in) { receive_tod       (in); return true; }
+
+    bool operator() (const Gaussian::SetVoxel& in)    { receive_greyscale (in); return true; }
+    bool operator() (const Gaussian::SetVoxelDEC& in) { receive_dec       (in); return true; }
+    bool operator() (const Gaussian::SetDixel& in)    { receive_dixel     (in); return true; }
+    bool operator() (const Gaussian::SetVoxelTOD& in) { receive_tod       (in); return true; }
 
 
   private:
     BufferScratchDump<value_type> buffer;
     buffer_voxel_type v_buffer;
+
+    // Template functions used so that the functors don't have to be written twice
+    //   (once for standard TWI and one for Gaussian track-wise statistic)
+    template <class Cont> void receive_greyscale (const Cont&);
+    template <class Cont> void receive_dec       (const Cont&);
+    template <class Cont> void receive_dixel     (const Cont&);
+    template <class Cont> void receive_tod       (const Cont&);
+
+    // These acquire the TWI factor at any point along the streamline;
+    //   For the standard SetVoxel classes, this is a single value 'factor' for the set as
+    //     stored in SetVoxelExtras
+    //   For the Gaussian SetVoxel classes, there is a factor per mapped element
+    float get_factor (const Voxel&    element, const SetVoxel&    set) const { return set.factor; }
+    float get_factor (const VoxelDEC& element, const SetVoxelDEC& set) const { return set.factor; }
+    float get_factor (const Dixel&    element, const SetDixel&    set) const { return set.factor; }
+    float get_factor (const VoxelTOD& element, const SetVoxelTOD& set) const { return set.factor; }
+    float get_factor (const Gaussian::Voxel&    element, const Gaussian::SetVoxel&    set) const { return element.get_factor(); }
+    float get_factor (const Gaussian::VoxelDEC& element, const Gaussian::SetVoxelDEC& set) const { return element.get_factor(); }
+    float get_factor (const Gaussian::Dixel&    element, const Gaussian::SetDixel&    set) const { return element.get_factor(); }
+    float get_factor (const Gaussian::VoxelTOD& element, const Gaussian::SetVoxelTOD& set) const { return element.get_factor(); }
+
 
     // Convenience functions for Directionally-Encoded Colour processing
     Point<value_type> get_dec ();
@@ -300,15 +332,16 @@ class MapWriter : public MapWriterBase
 
 
 template <typename value_type>
-bool MapWriter<value_type>::operator() (const SetVoxel& in)
+template <class Cont>
+void MapWriter<value_type>::receive_greyscale (const Cont& in)
 {
   assert (MapWriterBase::type == GREYSCALE);
-  for (SetVoxel::const_iterator i = in.begin(); i != in.end(); ++i) {
+  for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i);
-    const float factor = in.factor;
+    const float factor = get_factor (*i, in);
     const float weight = in.weight * i->get_length();
     switch (voxel_statistic) {
-      case V_SUM:  v_buffer.value() += weight * factor;           break;
+      case V_SUM:  v_buffer.value() += weight * factor;              break;
       case V_MIN:  v_buffer.value() = MIN(v_buffer.value(), factor); break;
       case V_MAX:  v_buffer.value() = MAX(v_buffer.value(), factor); break;
       case V_MEAN:
@@ -320,18 +353,18 @@ bool MapWriter<value_type>::operator() (const SetVoxel& in)
         throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxel)");
     }
   }
-  return true;
 }
 
 
 
 template <typename value_type>
-bool MapWriter<value_type>::operator() (const SetVoxelDEC& in)
+template <class Cont>
+void MapWriter<value_type>::receive_dec (const Cont& in)
 {
   assert (type == DEC);
-  for (SetVoxelDEC::const_iterator i = in.begin(); i != in.end(); ++i) {
+  for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i);
-    const float factor = in.factor;
+    const float factor = get_factor (*i, in);
     const float weight = in.weight * i->get_length();
     Point<value_type> scaled_colour (i->get_colour());
     scaled_colour *= factor;
@@ -357,19 +390,19 @@ bool MapWriter<value_type>::operator() (const SetVoxelDEC& in)
         throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxelDEC)");
     }
   }
-  return true;
 }
 
 
 
 template <typename value_type>
-bool MapWriter<value_type>::operator() (const SetDixel& in)
+template <class Cont>
+void MapWriter<value_type>::receive_dixel (const Cont& in)
 {
   assert (type == DIXEL);
-  for (SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
+  for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i, 0, 3);
     v_buffer[3] = i->get_dir();
-    const float factor = in.factor;
+    const float factor = get_factor (*i, in);
     const float weight = in.weight * i->get_length();
     switch (voxel_statistic) {
       case V_SUM:  v_buffer.value() += weight * factor;              break;
@@ -385,18 +418,18 @@ bool MapWriter<value_type>::operator() (const SetDixel& in)
         throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetDixel)");
     }
   }
-  return true;
 }
 
 
 
 template <typename value_type>
-bool MapWriter<value_type>::operator() (const SetVoxelTOD& in)
+template <class Cont>
+void MapWriter<value_type>::receive_tod (const Cont& in)
 {
   assert (type == TOD);
-  for (SetVoxelTOD::const_iterator i = in.begin(); i != in.end(); ++i) {
+  for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i, 0, 3);
-    const float factor = in.factor;
+    const float factor = get_factor (*i, in);
     const float weight = in.weight * i->get_length();
     Math::Vector<float> sh_coefs;
     get_tod (sh_coefs);
@@ -431,7 +464,6 @@ bool MapWriter<value_type>::operator() (const SetVoxelTOD& in)
         throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxelTOD)");
     }
   }
-  return true;
 }
 
 

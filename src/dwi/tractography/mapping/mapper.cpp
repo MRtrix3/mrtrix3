@@ -46,7 +46,7 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, SetVoxel& voxels) const
 
 
 
-void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const
+void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) const
 {
 
   size_t count = 0;
@@ -130,18 +130,8 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
           break;
 
         case GAUSSIAN:
-          throw Exception ("Gaussian track-wise statistic temporarily disabled");
-/*
-          gaussian_smooth_factors (tck);
-          out.factor = 0.0;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (*i) {
-              out.factor = 1.0;
-              break;
-            }
-          }
-          break;
-*/
+          throw Exception ("Gaussian track-wise statistic should not be used in TrackMapperTWI class; use Mapping::Gaussian::TrackMapper instead");
+
         case ENDS_MIN:
           assert (factors.size() == 2);
           out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
@@ -209,7 +199,7 @@ void TrackMapperTWI::add_fod_image (const std::string& path)
 
 
 
-void TrackMapperTWI::load_factors (const std::vector< Point<float> >& tck) const
+void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 {
 
   if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
