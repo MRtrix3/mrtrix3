@@ -44,7 +44,7 @@ namespace MR
       namespace Tool
       {
 
-        enum ColourType { Direction, Ends, Colour, ScalarFile };
+        enum TrackColourType { Direction, Ends, Manual, ScalarFile };
 
         class Tractogram : public Displayable
         {
@@ -77,7 +77,7 @@ namespace MR
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
-            ColourType color_type;
+            TrackColourType color_type;
             float colour[3];
             std::string scalar_filename;
 
@@ -90,7 +90,7 @@ namespace MR
                 virtual void update (const Displayable& object);
               protected:
                 bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
-                ColourType color_type;
+                TrackColourType color_type;
 
             } track_shader;
 
