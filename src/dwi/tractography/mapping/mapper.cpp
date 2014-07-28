@@ -53,7 +53,8 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
   switch (contrast) {
 
-    case TDI:         out.factor = 1.0; break;
+    case TDI: out.factor = 1.0; break;
+
     case LENGTH:
     case INVLENGTH:
       out.factor = 0.0;

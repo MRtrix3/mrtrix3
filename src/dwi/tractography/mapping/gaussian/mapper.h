@@ -102,7 +102,7 @@ class TrackMapper : public Mapping::TrackMapperTWI
     void  gaussian_smooth_factors (const Streamline<>&) const;
 
     // Overload corresponding functions in TrackMapperTWI
-    void set_factor (const Streamline<>&, SetVoxelExtras&) const;
+    void set_factor (const Streamline<>& tck, SetVoxelExtras& out) const;
     bool preprocess (const Streamline<>& tck, SetVoxelExtras& out) const { set_factor (tck, out); return true; }
 
     // Three versions of voxelise() function, just as in base class: difference is that here the

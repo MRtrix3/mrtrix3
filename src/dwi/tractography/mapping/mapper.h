@@ -91,7 +91,7 @@ class TrackMapperBase
         ends_only    (that.ends_only),
         dixel_plugin (that.dixel_plugin),
         tod_plugin   (that.tod_plugin),
-        upsampler    (1) { }
+        upsampler    (that.upsampler) { }
 
     virtual ~TrackMapperBase() { }
 
@@ -167,8 +167,8 @@ class TrackMapperBase
     template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
     template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;
 
-    virtual bool preprocess  (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
-    virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
+    virtual bool preprocess  (const Streamline<>& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
+    virtual void postprocess (const Streamline<>& tck, SetVoxelExtras& out) const { }
 
     // Used by voxelise() and voxelise_precise() to increment the relevant set
     inline void add_to_set (SetVoxel&   , const Point<int>&, const Point<float>&, const float) const;

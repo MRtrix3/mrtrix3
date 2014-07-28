@@ -168,8 +168,10 @@ class MapWriter : public MapWriterBase
       //   (use to store maximum / minimum factors and hence decide when to update the TOD)
       if (voxel_statistic == V_MEAN || (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX))) {
         Image::Header H_counts (header);
-        if (type == DEC || type == TOD)
+        if (type == DEC || type == TOD) {
           H_counts.set_ndim (3);
+          H_counts.sanitise();
+        }
         counts = new counts_buffer_type (H_counts, "TWI streamline count buffer");
         counts->zero();
         v_counts = new counts_voxel_type (*counts);
@@ -350,7 +352,7 @@ void MapWriter<value_type>::receive_greyscale (const Cont& in)
         (*v_counts).value() += weight;
         break;
       default:
-        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxel)");
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_greyscale()");
     }
   }
 }
@@ -387,7 +389,7 @@ void MapWriter<value_type>::receive_dec (const Cont& in)
           set_dec (scaled_colour);
         break;
       default:
-        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxelDEC)");
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_dec()");
     }
   }
 }
@@ -415,7 +417,7 @@ void MapWriter<value_type>::receive_dixel (const Cont& in)
         (*v_counts).value() += weight;
         break;
       default:
-        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetDixel)");
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_dixel()");
     }
   }
 }
@@ -461,7 +463,7 @@ void MapWriter<value_type>::receive_tod (const Cont& in)
         (*v_counts).value() += weight;
         break;
       default:
-        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::operator() (SetVoxelTOD)");
+        throw Exception ("Unknown / unhandled voxel statistic in MapWriter::receive_tod()");
     }
   }
 }
