@@ -32,7 +32,7 @@ namespace Mapping {
 
 
 
-void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, SetVoxel& voxels) const
+void TrackMapperBase::voxelise (const Streamline<>& tck, SetVoxel& voxels) const
 {
   Point<int> vox;
   for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
@@ -54,7 +54,6 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
   switch (contrast) {
 
     case TDI:         out.factor = 1.0; break;
-    case ENDPOINT:    out.factor = 1.0; break;
     case LENGTH:
     case INVLENGTH:
       out.factor = 0.0;
@@ -71,7 +70,7 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
 
       factors.clear();
       factors.reserve (tck.size());
-      load_factors (tck); // This should call the overloaded virtual function for TrackMapperImage
+      load_factors (tck);
 
       switch (track_statistic) {
 
@@ -184,60 +183,6 @@ void TrackMapperTWI::set_factor (const std::vector< Point<float> >& tck, SetVoxe
     out.factor = 0.0;
 
 }
-
-
-
-
-
-
-void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxel& voxels) const
-{
-
-  if (contrast == ENDPOINT) {
-
-    Voxel vox = round (transform.scanner2voxel (tck.front()));
-    if (check (vox, info))
-      voxels.insert (vox);
-
-    vox = round (transform.scanner2voxel (tck.back()));
-    if (check (vox, info))
-      voxels.insert (vox);
-
-  } else {
-
-    TrackMapperBase::voxelise (tck, voxels);
-
-  }
-
-}
-
-
-
-void TrackMapperTWI::voxelise (const std::vector< Point<float> >& tck, SetVoxelDEC& voxels) const
-{
-
-  if (contrast == ENDPOINT) {
-
-    VoxelDEC vox = round (transform.scanner2voxel (tck.front()));
-    if (check (vox, info)) {
-      vox.set_dir (tck[0] - tck[1]);
-      voxels.insert (vox);
-    }
-
-    vox = round (transform.scanner2voxel (tck.back()));
-    if (check (vox, info)) {
-      vox.set_dir (tck[tck.size() - 1] - tck[tck.size() - 2]);
-      voxels.insert (vox);
-    }
-
-  } else {
-
-    TrackMapperBase::voxelise (tck, voxels);
-
-  }
-
-}
-
 
 
 

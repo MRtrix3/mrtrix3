@@ -99,7 +99,7 @@ class TrackMapperBase
     void set_upsample_ratio (const size_t i) { upsampler.set_ratio (i); }
     void set_map_zero (const bool i) { map_zero = i; }
     void set_use_precise_mapping (const bool i) {
-      if (i && ends_ony) throw Exception ("Cannot do precise mapping and endpoint mapping together");
+      if (i && ends_only) throw Exception ("Cannot do precise mapping and endpoint mapping together");
       precise = i;
     }
     void set_map_ends_only (const bool i) {
@@ -162,10 +162,10 @@ class TrackMapperBase
     //   each streamline to each voxel it traverses
     // Third version is the 'precise' mapping as described in the SIFT paper
     // Fourth method only maps the streamline endpoints
-    void voxelise (const std::vector< Point<float> >&, SetVoxel&) const;
-    template <class Cont> void voxelise (const std::vector< Point<float> >&, Cont&) const;
+                          void voxelise         (const Streamline<>&, SetVoxel&) const;
+    template <class Cont> void voxelise         (const Streamline<>&, Cont&) const;
     template <class Cont> void voxelise_precise (const Streamline<>&, Cont&) const;
-    template <class Cont> void voxelise_ends (const Streamline<>&, Cont&) const;
+    template <class Cont> void voxelise_ends    (const Streamline<>&, Cont&) const;
 
     virtual bool preprocess  (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { out.factor = 1.0; return true; }
     virtual void postprocess (const std::vector< Point<float> >& tck, SetVoxelExtras& out) const { }
@@ -183,14 +183,14 @@ class TrackMapperBase
 
 
 template <class Cont>
-void TrackMapperBase::voxelise (const std::vector< Point<float> >& tck, Cont& output) const
+void TrackMapperBase::voxelise (const Streamline<>& tck, Cont& output) const
 {
 
-  std::vector< Point<float> >::const_iterator prev = tck.begin();
-  const std::vector< Point<float> >::const_iterator last = tck.end() - 1;
+  Streamline<>::const_iterator prev = tck.begin();
+  const Streamline<>::const_iterator last = tck.end() - 1;
 
   Point<int> vox;
-  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != last; ++i) {
+  for (Streamline<>::const_iterator i = tck.begin(); i != last; ++i) {
     vox = round (transform.scanner2voxel (*i));
     if (check (vox, info)) {
       const Point<float> dir ((*(i+1) - *prev).normalise());
@@ -300,7 +300,7 @@ template <class Cont>
 void TrackMapperBase::voxelise_ends (const Streamline<>& tck, Cont& out) const
 {
   for (size_t end = 0; end != 2; ++end) {
-    const Point<int> vox = round (scanner2voxel (end ? tck.back() : tck.front()));
+    const Point<int> vox = round (transform.scanner2voxel (end ? tck.back() : tck.front()));
     if (check (vox, info)) {
       const Point<float> dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalise();
       add_to_set (out, vox, dir, 1.0f);
@@ -348,7 +348,7 @@ inline void TrackMapperBase::add_to_set (SetVoxelTOD& out, const Point<int>& v, 
 class TrackMapperTWI : public TrackMapperBase
 {
   public:
-    TrackMapperTWI (const Image::Header& template_image, const contrast_t c, const tck_stat_t s) :
+    TrackMapperTWI (const Image::Info& template_image, const contrast_t c, const tck_stat_t s) :
         TrackMapperBase       (template_image),
         contrast              (c),
         track_statistic       (s),
@@ -385,12 +385,12 @@ class TrackMapperTWI : public TrackMapperBase
 
 
   protected:
-    virtual void load_factors (const std::vector< Point<float> >&) const;
     const contrast_t contrast;
     const tck_stat_t track_statistic;
 
-    // Member for when the contribution of a track is not constant along its length
+    // Members for when the contribution of a track is not constant along its length
     mutable std::vector<float> factors;
+    void load_factors (const std::vector< Point<float> >&) const;
 
     // Member for incorporating additional information from an external image into the TWI process
     TWIImagePluginBase* image_plugin;

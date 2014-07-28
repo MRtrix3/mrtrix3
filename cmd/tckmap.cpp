@@ -436,16 +436,6 @@ void run () {
       stat_tck = T_MEAN;
       break;
 
-    case ENDPOINT:
-      if (stat_vox != V_SUM && stat_vox != V_MEAN) {
-        INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
-        stat_vox = V_SUM;
-      }
-      if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for endpoint map generation - ignoring");
-      stat_tck = T_MEAN;
-      break;
-
     case LENGTH:
       if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for length-weighted TDI generation - ignoring");
@@ -527,7 +517,7 @@ void run () {
   }
 
   DataType default_datatype = DataType::Float32;
-  if ((writer_type == GREYSCALE || writer_type == DIXEL) && ((!precise && contrast == TDI) || contrast == ENDPOINT || contrast == SCALAR_MAP_COUNT))
+  if ((writer_type == GREYSCALE || writer_type == DIXEL) && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
     default_datatype = DataType::UInt32;
   header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
   header.datatype().set_byte_order_native();
