@@ -158,8 +158,10 @@ const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-vo
 const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
 
   + Option ("dump",
-      "dump the scratch buffer contents directly to a .mih / .dat file pair, "
-      "rather than memory-mapping the output file");
+      "dump the scratch buffer contents directly to a .mih / .dat file pair or .mif file, "
+      "rather than memory-mapping the output file (this is useful if either the image is "
+      "larger than half the available RAM, or a network file system is in use where writing"
+      "to a memory-mapped output file performs very poorly)");
 
 
 
