@@ -34,7 +34,8 @@ namespace Gaussian {
 
 
 
-// TODO Base class to handle case where the factor contributed by the streamline varies along its length
+// Base class to handle case where the factor contributed by the streamline varies along its length
+//   (currently only occurs when the track-wise statistic is Gaussian)
 class VoxelAddon
 {
   public:

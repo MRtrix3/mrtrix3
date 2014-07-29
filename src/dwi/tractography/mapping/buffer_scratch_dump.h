@@ -63,67 +63,87 @@ template <typename value_type>
 void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const Image::Header& H) const
 {
 
-  if (!Path::has_suffix (path, ".mih"))
-    throw Exception ("Can only perform direct dump to file for .mih files");
+  if (!Path::has_suffix (path, ".mih") && !Path::has_suffix (path, ".mif"))
+    throw Exception ("Can only perform direct dump to file for .mih / .mif files");
 
-  // TODO Should be possible to do this also for .mif files
-  const std::string dat_path = Path::basename (path.substr (0, path.size()-4) + ".dat");
+  const bool single_file = Path::has_suffix (path, ".mif");
+
+  std::string dat_path;
+  if (!single_file)
+    dat_path = Path::basename (path.substr (0, path.size()-4) + ".dat");
   const int64_t dat_size = Image::footprint (*this);
 
-  std::ofstream out_mih (path.c_str(), std::ios::out | std::ios::binary);
-  if (!out_mih)
+  std::ofstream out_header (path.c_str(), std::ios::out | std::ios::binary);
+  if (!out_header)
     throw Exception ("error creating file \"" + H.name() + "\":" + strerror (errno));
 
-  out_mih << "mrtrix image\n";
-  out_mih << "dim: " << H.dim (0);
+  out_header << "mrtrix image\n";
+  out_header << "dim: " << H.dim (0);
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_mih << "," << H.dim (n);
+    out_header << "," << H.dim (n);
 
-  out_mih << "\nvox: " << H.vox (0);
+  out_header << "\nvox: " << H.vox (0);
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_mih << "," << H.vox (n);
+    out_header << "," << H.vox (n);
 
   Image::Stride::List stride = Image::Stride::get (H);
   Image::Stride::symbolise (stride);
 
-  out_mih << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
+  out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_mih << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
+    out_header << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
 
-  out_mih << "\ndatatype: " << H.datatype().specifier();
+  out_header << "\ndatatype: " << H.datatype().specifier();
 
   for (std::map<std::string, std::string>::const_iterator i = H.begin(); i != H.end(); ++i)
-    out_mih << "\n" << i->first << ": " << i->second;
+    out_header << "\n" << i->first << ": " << i->second;
 
   for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); i++)
-    out_mih << "\ncomments: " << *i;
+    out_header << "\ncomments: " << *i;
 
 
   if (H.transform().is_set()) {
-    out_mih << "\ntransform: " << H.transform() (0,0) << "," <<  H.transform() (0,1) << "," << H.transform() (0,2) << "," << H.transform() (0,3);
-    out_mih << "\ntransform: " << H.transform() (1,0) << "," <<  H.transform() (1,1) << "," << H.transform() (1,2) << "," << H.transform() (1,3);
-    out_mih << "\ntransform: " << H.transform() (2,0) << "," <<  H.transform() (2,1) << "," << H.transform() (2,2) << "," << H.transform() (2,3);
+    out_header << "\ntransform: " << H.transform() (0,0) << "," <<  H.transform() (0,1) << "," << H.transform() (0,2) << "," << H.transform() (0,3);
+    out_header << "\ntransform: " << H.transform() (1,0) << "," <<  H.transform() (1,1) << "," << H.transform() (1,2) << "," << H.transform() (1,3);
+    out_header << "\ntransform: " << H.transform() (2,0) << "," <<  H.transform() (2,1) << "," << H.transform() (2,2) << "," << H.transform() (2,3);
   }
 
   if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
-    out_mih << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
+    out_header << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();
 
   if (H.DW_scheme().is_set()) {
     for (size_t i = 0; i < H.DW_scheme().rows(); i++)
-      out_mih << "\ndw_scheme: " << H.DW_scheme() (i,0) << "," << H.DW_scheme() (i,1) << "," << H.DW_scheme() (i,2) << "," << H.DW_scheme() (i,3);
+      out_header << "\ndw_scheme: " << H.DW_scheme() (i,0) << "," << H.DW_scheme() (i,1) << "," << H.DW_scheme() (i,2) << "," << H.DW_scheme() (i,3);
   }
 
-  out_mih << "\nfile: " << dat_path << "\n";
-  out_mih.close();
+  out_header << "\nfile: ";
+  int64_t offset = 0;
+  if (single_file) {
+    offset = out_header.tellp() + int64_t(18);
+    offset += ((4 - (offset % 4)) % 4);
+    out_header << ". " << offset << "\nEND\n";
+  } else {
+    out_header << dat_path << "\n";
+  }
+  out_header.close();
 
   std::ofstream out_dat;
-  out_dat.open (dat_path.c_str(), std::ios_base::out | std::ios_base::binary);
+  if (single_file) {
+    File::resize (path, offset);
+    out_dat.open (path.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::app);
+  } else {
+    out_dat.open (dat_path.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+  }
+
   const value_type* data_ptr = Image::BufferScratch<value_type>::data_;
   out_dat.write (reinterpret_cast<const char*>(data_ptr), dat_size);
   out_dat.close();
 
   // If dat_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
-  File::resize (dat_path, dat_size);
+  if (single_file)
+    File::resize (path, offset + dat_size);
+  else
+    File::resize (dat_path, dat_size);
 
 }
 

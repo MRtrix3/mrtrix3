@@ -531,8 +531,8 @@ void run () {
 
   // Raw std::ofstream dump of image data from the internal RAM buffer to file
   const bool dump = get_options ("dump").size();
-  if (dump && !Path::has_suffix (argument[1], "mih"))
-    throw Exception ("Option -dump only works when outputting to .mih image format");
+  if (dump && !Path::has_suffix (argument[1], ".mih") && !Path::has_suffix (argument[1], ".mif"))
+    throw Exception ("Option -dump only works when outputting to .mih / .mif image formats");
 
 
   // Produce a useful INFO message

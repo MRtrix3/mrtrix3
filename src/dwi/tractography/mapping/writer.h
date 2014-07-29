@@ -91,8 +91,8 @@ class MapWriterBase
     virtual void set_direct_dump (const bool i)
     {
       direct_dump = i;
-      if (i && !Path::has_suffix (output_image_name, ".mih"))
-        throw Exception ("Can only perform direct dump to file for .mih image format");
+      if (i && !Path::has_suffix (output_image_name, ".mih") && !Path::has_suffix (output_image_name, ".mif"))
+        throw Exception ("Can only perform direct dump to file for .mih / .mif image format");
     }
 
 
