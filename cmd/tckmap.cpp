@@ -110,7 +110,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
-      "provide the scalar image map for generating images with 'scalar_map' contrast, or the spherical harmonics image for 'fod_amp' contrast")
+      "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or the spherical harmonics image for 'fod_amp' contrast")
     + Argument ("image").type_image_in()
 
   + Option ("stat_vox",
@@ -160,7 +160,7 @@ const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
   + Option ("dump",
       "dump the scratch buffer contents directly to a .mih / .dat file pair or .mif file, "
       "rather than memory-mapping the output file (this is useful if either the image is "
-      "larger than half the available RAM, or a network file system is in use where writing"
+      "larger than half the available RAM, or a network file system is in use where writing "
       "to a memory-mapped output file performs very poorly)");
 
 
