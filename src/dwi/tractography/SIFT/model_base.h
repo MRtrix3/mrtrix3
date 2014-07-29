@@ -34,12 +34,18 @@
 
 #include "dwi/directions/set.h"
 
+#include "dwi/tractography/file.h"
+
 #include "dwi/tractography/ACT/tissues.h"
 
 #include "dwi/tractography/mapping/fixel_td_map.h"
+#include "dwi/tractography/mapping/loader.h"
+#include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/mapping/voxel.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
+#include "dwi/tractography/SIFT/types.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -137,8 +143,9 @@ namespace MR
       class ModelBase : public Mapping::Fixel_TD_map<Fixel>
       {
 
-        typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+        protected:
+          typedef typename Fixel_map<Fixel>::MapVoxel MapVoxel;
+          typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
         public:
           template <class BufferType>
@@ -161,6 +168,8 @@ namespace MR
           template <class BufferType>
           void perform_FOD_segmentation (BufferType&);
           void scale_FODs_by_GM ();
+
+          void map_streamlines (const std::string&);
 
           virtual bool operator() (const FMLS::FOD_lobes& in);
           virtual bool operator() (const Mapping::SetDixel& in);
@@ -251,6 +260,31 @@ namespace MR
             FOD_sum += i().get_weight() * i().get_FOD();
           }
         }
+      }
+
+
+
+
+      template <class Fixel>
+      void ModelBase<Fixel>::map_streamlines (const std::string& path)
+      {
+        Tractography::Properties properties;
+        Tractography::Reader<float> file (path, properties);
+
+        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+
+        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
+
+        Mapping::TrackLoader loader (file, count);
+        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
+        Thread::run_queue (
+            loader,
+            Thread::batch (Tractography::Streamline<float>()),
+            Thread::multi (mapper),
+            Thread::batch (Mapping::SetDixel()),
+            *this);
+
+        INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
       }
 
 

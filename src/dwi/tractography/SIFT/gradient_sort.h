@@ -112,7 +112,6 @@ namespace MR
 
 
         private:
-          VecType& data;
           SetType candidates;
 
 

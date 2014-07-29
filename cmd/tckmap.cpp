@@ -395,18 +395,11 @@ void run () {
   if (opt.size()) {
     upsample_ratio = opt[0][0];
     INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
-  }
-  else if (step_size && std::isfinite (step_size)) {
+  } else {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    const float voxel_step_ratio = (contrast == PRECISE_TDI) ? 0.1 : 0.333;
-    upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * voxel_step_ratio));
-    INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
-  }
-  else {
-    if (contrast != PRECISE_TDI)
-      WARN ("track upsampling off; track step size information in header is absent or malformed");
+    upsample_ratio = determine_upsample_ratio (header, properties, ((contrast == PRECISE_TDI) ? 0.1 : 0.333));
   }
 
   const bool dump = get_options ("dump").size();

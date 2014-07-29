@@ -750,6 +750,10 @@ namespace MR
 
       void Window::select_mouse_mode_slot (QAction* action)
       {
+        bool rotate_button_checked = mode_action_group->actions().indexOf (action) == 2;
+        if (rotate_button_checked) 
+          set_snap_to_image (false);
+        snap_to_image_action->setEnabled (!rotate_button_checked);
         set_cursor();
       }
 
@@ -817,6 +821,8 @@ namespace MR
       {
         if (image()) {
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
+          if (snap_to_image_axes_and_voxel) 
+            mode->reset_orientation();
           glarea->updateGL();
         }
       }

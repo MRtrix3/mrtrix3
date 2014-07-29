@@ -41,8 +41,7 @@ namespace MR
 
 
 
-      MT_gradient_vector_sorter::MT_gradient_vector_sorter (MT_gradient_vector_sorter::VecType& in, const track_t block_size) :
-        data (in)
+      MT_gradient_vector_sorter::MT_gradient_vector_sorter (MT_gradient_vector_sorter::VecType& in, const track_t block_size)
       {
         BlockSender source (in.size(), block_size);
         Sorter      pipe   (in);

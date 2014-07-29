@@ -152,10 +152,10 @@ else:
     printMessage('Detected diffusion gradient encoding in input file; running eddy')
     
   # Create the diffusion gradient table in FSL format
-  runCommand('mrinfo series.mif -export_grad_fsl bvecs' + quiet, verbose)
+  runCommand('mrinfo series.mif -export_grad_fsl bvecs bvals' + quiet, verbose)
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' -grad bvecs  -' + quiet + ' | dwi2mask - -' + quiet + ' | maskfilter - dilate -' + quiet + ' | mrconvert - mask.nii -datatype float32' + quiet, verbose)
+  runCommand('mrconvert series_topup.' + fsl_suffix + ' -fslgrad bvecs bvals -' + quiet + ' | dwi2mask - -' + quiet + ' | maskfilter - dilate -' + quiet + ' | mrconvert - mask.nii -datatype float32' + quiet, verbose)
   
   # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
   # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
@@ -183,8 +183,8 @@ else:
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
-  # text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + result_path + stride_option + ' -grad bvecs' + quiet, verbose) 
+  #   text file output and modify them manually, or FMRIB may update eddy itself.
+  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals' + quiet, verbose) 
   
 
 # Move back to original directory

@@ -59,7 +59,8 @@ const OptionGroup GradExportOption = OptionGroup ("Options to export the diffusi
       + Argument ("path").type_text()
 
     + Option ("export_grad_fsl", "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-      + Argument ("path").type_text();
+      + Argument ("bvecs_path").type_text()
+      + Argument ("bvals_path").type_text();
 
 
 
@@ -181,14 +182,18 @@ void run ()
   Options opt = get_options ("export_grad_mrtrix");
   const std::string dw_out_mrtrix = opt.size() ? opt[0][0] : std::string();
   opt = get_options ("export_grad_fsl");
-  const std::string dw_out_fsl    = opt.size() ? opt[0][0] : std::string();
+  std::string dw_out_fsl_bvecs, dw_out_fsl_bvals;
+  if (opt.size()) {
+    dw_out_fsl_bvecs = str(opt[0][0]);
+    dw_out_fsl_bvals = str(opt[0][1]);
+  }
 
-  if ((dw_out_mrtrix.size() || dw_out_fsl.size()) && (argument.size() > 1))
+  if ((dw_out_mrtrix.size() || dw_out_fsl_bvecs.size()) && (argument.size() > 1))
     throw Exception ("Can only export gradient table information to file if a single input image is provided");
 
   const bool print_full_header = (!(format || ndim || dimensions || vox || dt_long || dt_short || stride
                                   || offset || multiplier || comments || properties || transform || dwgrad)
-                                  && dw_out_mrtrix.empty() && dw_out_fsl.empty());
+                                  && dw_out_mrtrix.empty() && dw_out_fsl_bvecs.empty());
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -214,10 +219,10 @@ void run ()
       header.DW_scheme().save (dw_out_mrtrix);
     }
 
-    if (dw_out_fsl.size()) {
+    if (dw_out_fsl_bvecs.size()) {
       if (!header.DW_scheme().is_set())
         throw Exception ("no gradient information found within image \"" + header.name() + "\"");
-      DWI::save_bvecs_bvals (header, dw_out_fsl);
+      DWI::save_bvecs_bvals (header, dw_out_fsl_bvecs, dw_out_fsl_bvals);
     }
 
     if (print_full_header)

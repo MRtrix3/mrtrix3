@@ -29,7 +29,7 @@
 #include "math/SH.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 
 
 using namespace MR;
@@ -87,22 +87,84 @@ void usage ()
 
 
 
+
+
+typedef float value_type;
+
+class Amp2SHCommon {
+  public:
+    Amp2SHCommon (const Math::Matrix<value_type>& dirs, size_t lmax, 
+        const std::vector<size_t>& bzeros, const std::vector<size_t>& dwis, bool normalise_to_bzero) :
+      SHT (dirs, lmax),
+      bzeros (bzeros),
+      dwis (dwis),
+      normalise (normalise_to_bzero) { }
+
+  Math::SH::Transform<value_type> SHT;
+  const std::vector<size_t>& bzeros;
+  const std::vector<size_t>& dwis;
+  bool normalise;
+};
+
+
+
+
+class Amp2SH {
+  public:
+    Amp2SH (const Amp2SHCommon& common) : 
+      C (common), 
+      a (C.SHT.n_amp()), 
+      c (C.SHT.n_SH())
+  { }
+
+    template <class SHVoxelType, class AmpVoxelType>
+      void operator() (SHVoxelType& SH, AmpVoxelType& amp) 
+      {
+        double norm = 1.0;
+        if (C.normalise) {
+          for (size_t n = 0; n < C.bzeros.size(); n++) {
+            amp[3] = C.bzeros[n];
+            norm += amp.value ();
+          }
+          norm = C.bzeros.size() / norm;
+        }
+
+        for (size_t n = 0; n < C.SHT.n_amp(); n++) {
+          amp[3] = C.dwis.size() ? C.dwis[n] : n;
+          a[n] = amp.value() * norm;
+        }
+
+        C.SHT.A2SH (c, a);
+
+        for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
+          SH.value() = c[SH[3]];
+      }
+
+  protected:
+    const Amp2SHCommon& C;
+    Math::Vector<value_type> a, c;
+};
+
+
+
+
+
 void run ()
 {
-  Image::BufferPreload<float> amp_data (argument[0], Image::Stride::contiguous_along_axis (3));
+  Image::BufferPreload<value_type> amp_data (argument[0], Image::Stride::contiguous_along_axis (3));
   Image::Header header (amp_data);
 
   std::vector<size_t> bzeros, dwis;
-  Math::Matrix<float> dirs;
+  Math::Matrix<value_type> dirs;
   Options opt = get_options ("directions");
   if (opt.size()) {
     dirs.load(opt[0][0]);
   } else {
     if (header["directions"].size()) {
-      std::vector<float> dir_vector;
+      std::vector<value_type> dir_vector;
       std::vector<std::string > lines = split (header["directions"], "\n", true);
       for (size_t l = 0; l < lines.size(); l++) {
-        std::vector<float> v (parse_floats(lines[l]));
+        std::vector<value_type> v (parse_floats (lines[l]));
         dir_vector.insert (dir_vector.end(), v.begin(), v.end());
       }
       dirs.resize(dir_vector.size() / 2, 2);
@@ -111,7 +173,7 @@ void run ()
         dirs(i / 2, 1) = dir_vector[i + 1];
       }
     } else {
-      Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (amp_data);
+      Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (amp_data);
       DWI::Shells shells (grad);
       shells.select_shells (true, true);
       if (shells.smallest().is_bzero())
@@ -130,7 +192,6 @@ void run ()
   }
   INFO ("calculating even spherical harmonic components up to order " + str (lmax));
 
-  Math::SH::Transform<float> SHT (dirs, lmax);
 
   bool normalise = get_options ("normalise").size();
   if (normalise && !bzeros.size())
@@ -139,38 +200,12 @@ void run ()
   header.dim (3) = Math::SH::NforL (lmax);
   header.datatype() = DataType::Float32;
   Image::Stride::set_from_command_line (header);
-  Image::Buffer<float> SH_data (argument[1], header);
+  Image::Buffer<value_type> SH_data (argument[1], header);
 
-  Image::BufferPreload<float>::voxel_type amp_vox (amp_data);
-  Image::Buffer<float>::voxel_type SH_vox (SH_data);
+  Image::BufferPreload<value_type>::voxel_type amp_vox (amp_data);
+  Image::Buffer<value_type>::voxel_type SH_vox (SH_data);
 
-  Math::Vector<float> res (lmax);
-  Math::Vector<float> sigs (dirs.rows());
-
-  Image::LoopInOrder loop (SH_vox, "mapping amplitudes to SH coefficients...", 0, 3);
-  for (loop.start (SH_vox, amp_vox); loop.ok(); loop.next (SH_vox, amp_vox)) {
-
-    double norm = 1.0;
-    if (normalise) {
-      for (size_t n = 0; n < bzeros.size(); n++) {
-        amp_vox[3] = bzeros[n];
-        norm += amp_vox.value ();
-      }
-      norm = bzeros.size() / norm;
-    }
-
-    for (size_t n = 0; n < dirs.rows(); n++) {
-      if (dwis.size())
-        amp_vox[3] = dwis[n];
-      else
-        amp_vox[3] = n;
-      sigs[n] = amp_vox.value() * norm;
-    }
-
-    SHT.A2SH (res, sigs);
-
-    for (SH_vox[3] = 0; SH_vox[3] < SH_vox.dim (3); ++SH_vox[3])
-      SH_vox.value() = res[SH_vox[3]];
-  }
-
+  Amp2SHCommon common (dirs, lmax, bzeros, dwis, normalise);
+  Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox)
+    .run (Amp2SH (common), SH_vox, amp_vox);
 }

@@ -51,17 +51,6 @@ namespace MR
             return true;
           }
 
-          bool WriteKernel::operator() (const GeneratedTrack& in, Tractography::Streamline<>& out)
-          {
-            out.index = writer.count;
-            out.weight = 1.0;
-            if (!operator() (in))
-              return false;
-            out = in;
-            return true;
-          }
-
-
 
 
       }

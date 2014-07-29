@@ -33,20 +33,8 @@ namespace MR
 
 
 
-    void save_bvecs_bvals (const Image::Header& header, const std::string& path)
+    void save_bvecs_bvals (const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
-
-      std::string bvecs_path, bvals_path;
-      if (path.size() >= 5 && path.substr (path.size() - 5, path.size()) == "bvecs") {
-        bvecs_path = path;
-        bvals_path = path.substr (0, path.size() - 5) + "bvals";
-      } else if (path.size() >= 5 && path.substr (path.size() - 5, path.size()) == "bvals") {
-        bvecs_path = path.substr (0, path.size() - 5) + "bvecs";
-        bvals_path = path;
-      } else {
-        bvecs_path = path + "bvecs";
-        bvals_path = path + "bvals";
-      }
 
       const Math::Matrix<float>& grad (header.DW_scheme());
       Math::Matrix<float> G (grad.rows(), 3);

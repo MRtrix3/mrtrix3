@@ -80,8 +80,10 @@ the compiler, use:
 
 The following environment variables can be set:
 
-CXX             The compiler command-line to use. The default is:
-                "g++ -c CFLAGS SRC -o OBJECT"
+CXX             The compiler command-line to use. The default is "g++"
+
+CXX_ARGS        The arguments expected by the compiler. The default is:
+                "-c CFLAGS SRC -o OBJECT"
 
 LD              The linker command-line to use. The default is:
                 "g++ LDFLAGS OBJECTS -o EXECUTABLE"
@@ -182,7 +184,8 @@ report ('\n\n')
 
 global cpp, cpp_cmd, ld, ld_cmd
 
-cpp = 'g++ -c CFLAGS SRC -o OBJECT'.split()
+cxx = [ 'g++' ]
+cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = []
 
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
@@ -338,9 +341,13 @@ def compile (source, compiler_flags = [], linker_flags = []):
 
 # set CPP compiler:
 
-if 'CXX' in os.environ.keys(): cpp = shlex.split (os.environ['CXX'])
+if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
+if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
 if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
 if 'LDLIB' in os.environ.keys(): ld_lib = shlex.split (os.environ['LDLIB'])
+
+
+cpp = cxx + cxx_args
 
 report ('Checking C++ compiler [' + cpp[0] + ']: ')
 try: 
@@ -351,21 +358,26 @@ except:
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure.py''')
+     CXX=/usr/bin/g++-4.2 ./configure''')
 
 try:
   compile ('int main() { return (0); }', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
-  error ('''compiler error!
+  error ('''compiler test failed!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure.py''')
+     CXX=/usr/bin/g++-4.2 ./configure
+
+You can also use the CXX_ARGS to set the arguments expected by the 
+compiler, in case this differs from gcc, as follows:
+
+     CXX_ARGS="-c CFLAGS SRC -o OBJECT" ./configure''')
 except (LinkError, RuntimeError):
   error ('''linking error!
 
 Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.2 ./configure.py''')
+     LD=/usr/bin/g++-4.2 ./configure''')
 
 
 
@@ -562,14 +574,14 @@ except CompileError:
 Use the ZLIB_CFLAGS environment variable to set the path to
 the zlib include files and to set any required flags
 For example:
-     ZLIB_CFLAGS="-I/usr/local/include" ./configure.py''')
+     ZLIB_CFLAGS="-I/usr/local/include" ./configure''')
 except LinkError:
   error ('''linker error!
 
 Use the ZLIB_LDFLAGS environment variable to set the path to
 the zlib libraries and to set the library to use
 For example:
-     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure.py''')
+     ZLIB_LDFLAGS="-L/usr/local/lib -lz" ./configure''')
 except RuntimeError:
   error ('''runtime error!
 
@@ -612,14 +624,14 @@ except CompileError:
 Use the PTHREAD_CFLAGS environment variable to set the path to
 the pthread include files and to set any required flags
 For example:
-     PTHREAD_CFLAGS="-I/usr/local/include" ./configure.py''')
+     PTHREAD_CFLAGS="-I/usr/local/include" ./configure''')
 except LinkError:
   error ('''linker error!
 
 Use the PTHREAD_LDFLAGS environment variable to set the path to
 the pthread libraries and to set the library to use
 For example:
-     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure.py''')
+     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure''')
 except RuntimeError:
   error ('''runtime error!
 
@@ -668,14 +680,14 @@ except CompileError:
 
 Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
 For example:'
-     GSL_CFLAGS=-I/usr/local/include ./configure.py''')
+     GSL_CFLAGS=-I/usr/local/include ./configure''')
 except LinkError:
   error ('''linker error!'
 
 Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
 and include any required libraries'
 For example:'
-     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure.py''')
+     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure''')
 
 ld_lib_flags += gsl_ldflags
 
@@ -1098,14 +1110,14 @@ if R_module:
   
   Use the R_CFLAGS environment variable to set the path to the R include files'
   For example:'
-       R_CFLAGS=-I/usr/local/include/R ./configure.py''')
+       R_CFLAGS=-I/usr/local/include/R ./configure''')
   except LinkError:
     error ('''linker error!'
   
   Use the R_LDFLAGS environment variable to set the path to the R library'
   and include any required libraries'
   For example:'
-       R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure.py''')
+       R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure''')
   except RuntimeError:
     error ('''error running command - check configure.log for details''')
   

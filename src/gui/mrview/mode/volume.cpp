@@ -304,7 +304,7 @@ namespace MR
         void Volume::paint (Projection& projection)
         {
           // info for projection:
-          int w = glarea()->width(), h = glarea()->height();
+          int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
 
           float depth = std::max (image()->interp.dim(0)*image()->interp.vox(0),

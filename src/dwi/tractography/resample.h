@@ -62,17 +62,18 @@ class Upsampler
 
 
     void set_ratio (const size_t);
-    bool operator() (std::vector< Point<T> >&);
+    bool operator() (std::vector< Point<T> >&) const;
 
     size_t get_ratio() const { return (M.rows() + 1); }
     bool   valid ()    const { return (M.is_set()); }
 
 
   private:
-    Math::Matrix<T> M, temp, data;
+    Math::Matrix<T> M;
+    mutable Math::Matrix<T> temp, data;
 
-    bool interp_prepare (std::vector< Point<T> >&);
-    void increment (const Point<T>&);
+    bool interp_prepare (std::vector< Point<T> >&) const;
+    void increment (const Point<T>&) const;
 
 };
 
@@ -82,7 +83,7 @@ class Upsampler
 
 
 template <typename T>
-bool Upsampler<T>::operator() (std::vector< Point<T> >& in)
+bool Upsampler<T>::operator() (std::vector< Point<T> >& in) const
 {
   if (!interp_prepare (in))
     return false;
@@ -125,7 +126,7 @@ void Upsampler<T>::set_ratio (const size_t upsample_ratio)
 
 
 template <typename T>
-bool Upsampler<T>::interp_prepare (std::vector< Point<T> >& in)
+bool Upsampler<T>::interp_prepare (std::vector< Point<T> >& in) const
 {
   if (!M.is_set() || in.size() < 2)
     return false;
@@ -146,7 +147,7 @@ bool Upsampler<T>::interp_prepare (std::vector< Point<T> >& in)
 
 
 template <typename T>
-void Upsampler<T>::increment (const Point<T>& a)
+void Upsampler<T>::increment (const Point<T>& a) const
 {
   for (size_t i = 0; i != 3; ++i) {
     data(0,i) = data(1,i);

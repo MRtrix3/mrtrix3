@@ -80,12 +80,11 @@ namespace MR
 
 
           bool operator() (const GeneratedTrack&);
-          bool operator() (const GeneratedTrack&, Tractography::Streamline<>&);
 
           bool complete() const { return (writer.count >= S.max_num_tracks || writer.total_count >= S.max_num_attempts); }
 
 
-        private:
+        protected:
           const SharedBase& S;
           Writer<value_type> writer;
           Ptr<std::ofstream> seeds;

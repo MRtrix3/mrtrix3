@@ -52,7 +52,7 @@ namespace MR
         {
           painting = true;
 
-          projection.set_viewport (0, 0, glarea()->width(), glarea()->height());
+          projection.set_viewport (window, 0, 0, width(), height());
 
           gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
           if (!image()) {
@@ -252,6 +252,9 @@ done_painting:
 
         void Base::tilt_event ()
         {
+          if (snap_to_image()) 
+            window.set_snap_to_image (false);
+
           Math::Versor<float> rot = get_tilt_rotation();
           if (!rot) 
             return;
@@ -267,6 +270,9 @@ done_painting:
 
         void Base::rotate_event ()
         {
+          if (snap_to_image()) 
+            window.set_snap_to_image (false);
+
           Math::Versor<float> rot = get_rotate_rotation();
           if (!rot) 
             return;
@@ -310,9 +316,7 @@ done_painting:
           Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
           set_focus (image()->interp.voxel2scanner (p));
           set_target (focus());
-          Math::Versor<float> orient;
-          orient.from_matrix (image()->header().transform());
-          set_orientation (orient);
+          reset_orientation();
 
           int x, y;
           image()->get_axes (plane(), x, y);

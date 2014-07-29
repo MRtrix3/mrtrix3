@@ -48,7 +48,8 @@ void usage ()
   + "manually set the partial volume fractions in an ACT five-tissue-type (5TT) image using mask images";
 
   ARGUMENTS
-  + Argument ("input",  "the 5TT image to be modified in-place");
+  + Argument ("input",  "the 5TT image to be modified").type_image_in()
+  + Argument ("output", "the output modified 5TT image").type_image_out();
 
   OPTIONS
   + Option ("cgm",  "provide a mask of voxels that should be set to cortical grey matter")
@@ -77,8 +78,21 @@ void usage ()
 class Modifier
 {
   public:
-    Modifier (Image::Buffer<float>& image) :
-      v (image) { }
+    Modifier (Image::Buffer<float>& input_image, Image::Buffer<float>& output_image) :
+        v_in  (input_image),
+        v_out (output_image) { }
+
+    Modifier (const Modifier& that) :
+        v_in  (that.v_in),
+        v_out (that.v_out)
+    {
+      for (size_t index = 0; index != 6; ++index) {
+        if (that.buffers[index]) {
+          buffers[index] = that.buffers[index];
+          voxels [index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
+        }
+      }
+    }
 
     void set_cgm_mask  (const std::string& path) { load (path, 0); }
     void set_sgm_mask  (const std::string& path) { load (path, 1); }
@@ -88,54 +102,53 @@ class Modifier
     void set_none_mask (const std::string& path) { load (path, 5); }
 
 
-    void set_values()
+    bool operator() (const Image::Iterator& pos)
     {
+      Image::Nav::set_pos (v_out, pos, 0, 3);
       bool voxel_nulled = false;
-      if (voxels[5]) {
-        Image::Nav::set_pos (*voxels[5], *this, 0, 3);
+
+      if (buffers[5]) {
+        Image::Nav::set_pos (*voxels[5], pos, 0, 3);
         if (voxels[5]->value()) {
-          for (v[3] = 0; v[3] != 5; ++v[3])
-            v.value() = 0.0;
+          for (v_out[3] = 0; v_out[3] != 5; ++v_out[3])
+            v_out.value() = 0.0;
           voxel_nulled = true;
         }
       }
       if (!voxel_nulled) {
-        unsigned int sum = 0;
-        memset (values, 0, 5 * sizeof (float));
+        unsigned int count = 0;
+        memset (values, 0x00, 5 * sizeof (float));
         for (size_t tissue = 0; tissue != 5; ++tissue) {
-          if (voxels[tissue]) {
-            Image::Nav::set_pos (*voxels[tissue], v, 0, 3);
+          if (buffers[tissue]) {
+            Image::Nav::set_pos (*voxels[tissue], pos, 0, 3);
             if (voxels[tissue]->value()) {
-              ++sum;
+              ++count;
               values[tissue] = 1.0;
             }
           }
         }
-        if (sum) {
-          if (sum > 1) {
-            const float multiplier = 1.0 / float(sum);
+        if (count) {
+          if (count > 1) {
+            const float multiplier = 1.0 / float(count);
             for (size_t tissue = 0; tissue != 5; ++tissue)
               values[tissue] *= multiplier;
           }
-          for (v[3] = 0; v[3] != 5; ++v[3])
-            v.value() = values[v[3]];
+          for (v_out[3] = 0; v_out[3] != 5; ++v_out[3])
+            v_out.value() = values[v_out[3]];
+        } else {
+          Image::Nav::set_pos (v_in, pos, 0, 3);
+          for (v_in[3] = v_out[3] = 0; v_out[3] != 5; ++v_in[3], ++v_out[3])
+            v_out.value() = v_in.value();
         }
       }
+
+      return true;
     }
 
 
-    // Give transparency to the necessary members of v, such that this class can be used in Image::Loop
-    ssize_t operator[] (size_t axis) const { return v[axis]; }
-    Image::Position< Image::Buffer<float>::voxel_type > operator[] (size_t axis) { return Image::Position< Image::Buffer<float>::voxel_type > (v, axis); }
-    size_t  ndim            ()            const { return v.ndim(); }
-    ssize_t dim             (size_t axis) const { return v.dim (axis); }
-    ssize_t stride          (size_t axis) const { return v.stride (axis); }
-    const Image::Info& info ()            const { return v.info(); }
-
-
   private:
-    Image::Buffer<float>::voxel_type v;
-    Ptr< Image::Buffer<bool> > buffers[6];
+    Image::Buffer<float>::voxel_type v_in, v_out;
+    RefPtr< Image::Buffer<bool> > buffers[6];
     Ptr< Image::Buffer<bool>::voxel_type > voxels[6];
     float values[5];
 
@@ -143,7 +156,7 @@ class Modifier
     {
       assert (index <= 5);
       buffers[index] = new Image::Buffer<bool> (path);
-      if (!Image::dimensions_match (v, *buffers[index], 0, 3))
+      if (!Image::dimensions_match (v_in, *buffers[index], 0, 3))
         throw Exception ("Image " + str(path) + " does not match 5TT image dimensions");
       voxels[index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
     }
@@ -158,9 +171,10 @@ void run ()
 
   Image::Header H (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (H);
-  Image::Buffer<float> in (H, true); // Open as read-write
+  Image::Buffer<float> in (H);
+  Image::Buffer<float> out (argument[1], H);
 
-  Modifier modifier (in);
+  Modifier modifier (in, out);
 
   Options
   opt = get_options ("cgm");  if (opt.size()) modifier.set_cgm_mask  (opt[0][0]);
@@ -170,9 +184,8 @@ void run ()
   opt = get_options ("path"); if (opt.size()) modifier.set_path_mask (opt[0][0]);
   opt = get_options ("none"); if (opt.size()) modifier.set_none_mask (opt[0][0]);
 
-  Image::LoopInOrder loop (modifier, 0, 3);
-  for (loop.start (modifier); loop.ok(); loop.next (modifier))
-    modifier.set_values();
+  Image::ThreadedLoop loop ("Modifying ACT 5TT image... ", H, 2, 0, 3);
+  loop.run (modifier);
 
 }
 
