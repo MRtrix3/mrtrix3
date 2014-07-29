@@ -96,7 +96,7 @@ const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality
     + Option ("tod",
         "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
         "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
-      + Argument ("lmax").type_integer (2, 20, 16);
+      + Argument ("lmax").type_integer (2, 16, 20);
 
 
 
@@ -106,7 +106,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
