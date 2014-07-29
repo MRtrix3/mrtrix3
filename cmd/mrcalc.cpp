@@ -40,7 +40,7 @@ DESCRIPTION
   + "apply generic voxel-wise mathematical operations to images."
 
   + "This command will only compute per-voxel operations. "
-  "Use 'mrmath' to compute summary statistics across images or "
+  "Use 'mrcalc' to compute summary statistics across images or "
   "along image axes."
   
   + "This command uses a stack-based syntax, with operators "
@@ -52,16 +52,16 @@ DESCRIPTION
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
   
-  + "$ mrmath a.mif 2 -mult r.mif"
+  + "$ mrcalc a.mif 2 -mult r.mif"
   
   + "performs the operation r = a x 2 for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
   
-  + "$ mrmath a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
+  + "$ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
   
   + "performs the operation r = 9.3*exp(-a/b), and:"
   
-  + "$ mrmath a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
+  + "$ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
   
   + "performs r = (a+b)/(c*d+4.2)."
   
