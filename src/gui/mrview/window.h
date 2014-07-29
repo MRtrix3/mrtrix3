@@ -114,7 +114,7 @@ namespace MR
 
         public slots:
           void on_scaling_changed ();
-          void updateGL () { glarea->updateGL(); }
+          void updateGL ();
 
         private slots:
           void image_open_slot ();
@@ -196,6 +196,7 @@ namespace MR
           };
 
           GLArea* glarea;
+          QTimer* glrefresh_timer;
           Ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
