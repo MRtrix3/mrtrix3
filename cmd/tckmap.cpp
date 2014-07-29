@@ -198,7 +198,11 @@ REFERENCES = "For TDI or DEC TDI:\n"
              "If using other contrasts / statistics:\n"
              "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
              "A generalised framework for super-resolution track-weighted imaging. "
-             "NeuroImage, 2012, 59, 2494-2503";
+             "NeuroImage, 2012, 59, 2494-2503\n\n"
+             "If using -precise mapping option:\n"
+             "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+             "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+             "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file ()
