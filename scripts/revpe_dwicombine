@@ -245,7 +245,7 @@ runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbos
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option + quiet, verbose)
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option + quiet, verbose)
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max' + result_path + quiet, verbose)
+runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max -' + quiet + ' | mrconvert - ' + result_path + ' -grad grad1.b' + quiet, verbose)
 
 
 # Move back to original directory
