@@ -78,7 +78,7 @@ namespace MR
                 const std::string& fod_path (properties["seed_dynamic"]);
 
                 typedef Mapping::SetDixel SetDixel;
-                typedef Mapping::TrackMapperDixel TckMapper;
+                typedef Mapping::TrackMapperBase TckMapper;
                 typedef Seeding::WriteKernelDynamic Writer;
 
                 DWI::Directions::FastLookupSet dirs (1281);
@@ -105,7 +105,8 @@ namespace MR
                 if (std::isfinite(step_size) && !step_size)
                   upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
 
-                TckMapper mapper (H, upsample_ratio, true, dirs);
+                TckMapper mapper (H, dirs);
+                mapper.set_upsample_ratio (upsample_ratio);
 
                 Thread::Queue<GeneratedTrack>           tracking_output_queue;
                 Thread::Queue< Streamline<value_type> > writer_output_queue;

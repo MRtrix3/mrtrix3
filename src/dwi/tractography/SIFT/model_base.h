@@ -276,7 +276,8 @@ namespace MR
         const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
         Mapping::TrackLoader loader (file, count);
-        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
+        Mapping::TrackMapperBase mapper (H, dirs);
+        mapper.set_upsample_ratio (upsample_ratio);
         Thread::run_queue (
             loader,
             Thread::batch (Tractography::Streamline<float>()),
@@ -317,8 +318,8 @@ namespace MR
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
           if (fixel_index) {
-            fixels[fixel_index] += i->get_value();
-            total_contribution += fixels[fixel_index].get_weight() * i->get_value();
+            fixels[fixel_index] += i->get_length();
+            total_contribution += fixels[fixel_index].get_weight() * i->get_length();
           }
         }
         TD_sum += total_contribution;
