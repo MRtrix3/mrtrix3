@@ -229,12 +229,12 @@ transform = getHeaderInfo('dwi1.mif', 'transform', verbose)
 with open( 'dwi1_transform.txt', 'w' ) as f:
   for line in transform:
     f.write (line)
-runCommand('mrtransform field_map.nii - -flip 0' + quiet + ' | mrtransform - - -replace dwi1_transform.txt' + quiet + ' | mrconvert - field_map_flip.mif' + stride_option + quiet, verbose)
+runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace' + quiet + ' | mrconvert - field_map_flip.mif' + stride_option + quiet, verbose)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
 #   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
 # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
-runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 ' + str(PEAxis) + '-axes 0,1,2'+ quiet, verbose)
+runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 ' + str(PEAxis) + ' -axes 0,1,2' + quiet, verbose)
 runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif' + quiet, verbose)
 runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif' + quiet, verbose)
 runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif' + quiet, verbose)
@@ -245,7 +245,7 @@ runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbos
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option + quiet, verbose)
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option + quiet, verbose)
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide ' + result_path + quiet, verbose)
+runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max' + result_path + quiet, verbose)
 
 
 # Move back to original directory
