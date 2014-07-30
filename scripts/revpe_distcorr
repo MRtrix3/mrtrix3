@@ -130,12 +130,17 @@ config_file = open('config.txt', 'w')
 config_file.write('0  1 0 0.1\n0 -1 0 0.1\n')
 config_file.close()
 
+# Should verbosity be turned on for FSL commands?
+fsl_verbose = ''
+if verbose:
+  fsl_verbose = ' --verbose'
+
 # Perform the field estimation
-runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --config=' + topup_config_path, verbose)
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --config=' + topup_config_path + fsl_verbose, verbose)
 
 # Apply the warp field to the image series
 # Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
-runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac', verbose)
+runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
 
 # Need to split depending on whether DW information is available
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
@@ -175,9 +180,6 @@ else:
     index_file.write(indices);
   
   # Run eddy
-  fsl_verbose = ''
-  if verbose:
-    fsl_verbose = ' --verbose'
   runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after' + fsl_verbose, verbose)
   
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding

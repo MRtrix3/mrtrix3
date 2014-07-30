@@ -111,7 +111,7 @@ runCommand('mrinfo dwi2.mif -export_grad_mrtrix grad2.b' + quiet, verbose)
 runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3' + quiet, verbose)
 runCommand('dwiextract dwi1.mif -bzero dwi1b0.mif' + quiet, verbose)
 runCommand('dwiextract dwi2.mif -bzero dwi2b0.mif' + quiet, verbose)
-runCommand('mrcat dwi1b0.mif dwi2b0.mif b0all.nii -axis 3' + quiet, verbose)
+runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4' + quiet, verbose)
 
 # Find out how many b=0 volumes there are
 DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions', verbose)
@@ -158,8 +158,13 @@ for line_count in xrange(0,DWI2_b0_count):
 config_file.write('\n')
 config_file.close()
 
+# See if the verbose field should be sent to FSL commands
+fsl_verbose = ''
+if verbose:
+  fsl_verbose = ' --verbose'
+
 # Perform the field estimation
-runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map.nii --config=' + topup_config_path, verbose)
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map.nii --iout=b0_topup.nii --config=' + topup_config_path + fsl_verbose, verbose)
 
 # Concatenate the diffusion gradient tables
 filenames = [ 'grad1.b', 'grad2.b' ]
@@ -169,8 +174,8 @@ with open('grad_combined.b', 'w') as outfile:
         outfile.write (infile.read())
 
 # Generate an initial distortion-corrected volume
-runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac', verbose)
-runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac', verbose)
+runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
+runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
 runCommand('mrcat dwi1_topup.' + fsl_suffix + ' dwi2_topup.' + fsl_suffix + ' - -axis 3' + quiet + ' | mrconvert - topup_combined.mif -grad grad_combined.b' + quiet, verbose)
 
 # Produce a brain mask based on this initial correction
@@ -193,33 +198,10 @@ for volume in xrange(0,int(num_volumes)):
 with open('indices.txt', 'w') as index_file:
   index_file.write(indices);
 
+
+
 # Run eddy
-fsl_verbose = ''
-if verbose:
-  fsl_verbose = ' --verbose'
-runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac' + fsl_verbose, verbose)
-
-# Looks like least-squares reconstruction is not supported in publicly-available eddy code
-# Instead, generate a Jacobian-modulated output image for each volume, get the field image from topup, and
-#   do a manual combination using the equation from Skare and Bammer 2010
-
-# First, derive the weight images
-# To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
-# TODO Need to run tests to make sure that this scaling is correct!!!
-#   Use own old epi correction commands, compare to applytopup, see if there's a voxel size scaling in there
-# Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the gradient
-runCommand('mrcalc field_map.nii 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_disp_pe.mif -coord 3 ' + str(PEAxis) + quiet, verbose)
-runCommand('mrcalc 1.0 field_disp_pe.mif -add 0.0 -max jacobian1.mif' + quiet, verbose)
-runCommand('mrcalc 1.0 field_disp_pe.mif -sub 0.0 -max jacobian2.mif' + quiet, verbose)
-runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif' + quiet, verbose)
-runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif' + quiet, verbose)
-runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbose)
-
-# Manually combine corresponding volumes from EDDY output
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + quiet, verbose)
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + quiet, verbose)
-result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-runCommand('mrcalc ' + prefix + '_1.mif weight1.mif -mult ' + prefix + '_2.mif weight2.mif -mult -add sum_weights.mif -divide ' + result_path + quiet, verbose)
+#runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=lsr' + fsl_verbose, verbose)
 
 # Convert the resulting LSR-reconstructed volume to the output image, and re-insert the diffusion encoding
 # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
@@ -227,6 +209,43 @@ runCommand('mrcalc ' + prefix + '_1.mif weight1.mif -mult ' + prefix + '_2.mif w
 #   text file output and modify them manually, or FMRIB may update eddy itself.
 #result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 #runCommand('mrconvert eddy_output.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals' + quiet, verbose)
+
+
+
+# Looks like least-squares reconstruction is not supported in the publicly-available eddy code
+# Instead, generate a Jacobian-modulated output image for each volume, get the field image from topup, and
+#   do a manual combination using the equation from Skare and Bammer ISMRM 2010
+
+runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac' + fsl_verbose, verbose)
+
+# Derive the weight images
+# To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
+# Scaling appears to be correct; however FSL is a bit ambiguous when it comes to image transforms & strides
+# Looks like topup flips the x-axis on output (both corrected images and field), and erases image transform
+# Eddy seems to expect this and operates accordingly; but since we're doing things external to FSL and
+#   voxel-by-voxel, need to do the flip explicitly; also import the transform from the first input image
+#   for the sake of visualisation
+transform = getHeaderInfo('dwi1.mif', 'transform', verbose)
+with open( 'dwi1_transform.txt', 'w' ) as f:
+  for line in transform:
+    f.write (line)
+runCommand('mrtransform field_map.nii - -flip 0' + quiet + ' | mrtransform - - -replace dwi1_transform.txt' + quiet + ' | mrconvert - field_map_flip.mif' + stride_option + quiet, verbose)
+
+# Scaling term for field map is identical to the bandwidth provided in the topup config file
+#   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
+# Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
+runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 ' + str(PEAxis) + '-axes 0,1,2'+ quiet, verbose)
+runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif' + quiet, verbose)
+runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif' + quiet, verbose)
+runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif' + quiet, verbose)
+runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif' + quiet, verbose)
+runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbose)
+
+# Manually combine corresponding volumes from EDDY output
+runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option + quiet, verbose)
+runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option + quiet, verbose)
+result_path = 'result' + os.path.splitext(sys.argv[4])[1]
+runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide ' + result_path + quiet, verbose)
 
 
 # Move back to original directory
