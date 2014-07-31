@@ -85,7 +85,7 @@ namespace MR {
           
           void open_stream(const std::string& file) {
             out.close();
-            out.open(file, std::ofstream::out);
+            out.open(file.c_str(), std::ofstream::out);
           }
           
           
