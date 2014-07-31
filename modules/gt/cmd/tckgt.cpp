@@ -224,10 +224,11 @@ void run ()
     properties.resp_ISO.push_back(riso);
   }
 
+  double lam = 0.0;
   opt = get_options("balance");
   if (opt.size())
   {
-    double lam = opt[0][0];
+    lam = opt[0][0];
     double b = 1.0 / (1.0 + exp(-lam));
     properties.lam_ext = 2*b;
     properties.lam_int = 2*(1-b);
@@ -313,6 +314,19 @@ void run ()
   INFO("Saving tracks to file");
   MR::DWI::Tractography::Properties ftfileprops;
   ftfileprops.comments.push_back("global tractography");
+  ftfileprops.comments.push_back(MRTRIX_PROJECT_VERSION);
+  ftfileprops.comments.push_back("");
+  ftfileprops.comments.push_back("segment length = " + std::to_string((long double) Particle::L));
+  ftfileprops.comments.push_back("segment density = " + std::to_string((long double) properties.density));
+  ftfileprops.comments.push_back("segment weight = " + std::to_string((long double) properties.weight));
+  ftfileprops.comments.push_back("");
+  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) ChemPot));
+  ftfileprops.comments.push_back("balance = " + std::to_string((long double) lam));
+  ftfileprops.comments.push_back("");
+  ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int) niter));
+  ftfileprops.comments.push_back("T0 = " + std::to_string((long double) t0));
+  ftfileprops.comments.push_back("T1 = " + std::to_string((long double) t1));
+  
   MR::DWI::Tractography::Writer<float> writer (argument[1], ftfileprops);
   pgrid.exportTracks(writer);
   
