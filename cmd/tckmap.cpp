@@ -334,7 +334,7 @@ void run () {
     Image::Header template_header (opt[0][0]);
     header = template_header;
     header.comments().clear();
-    header.clear();
+    header.std::map<std::string, std::string>::clear();
     header["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
