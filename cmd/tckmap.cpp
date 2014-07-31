@@ -516,13 +516,14 @@ void run () {
     }
   }
 
-  if (get_options ("tck_weights_in").size() || header.datatype().is_integer()) {
+  const bool have_weights = get_options ("tck_weights_in").size();
+  if (have_weights && header.datatype().is_integer()) {
     WARN ("Can't use an integer type if streamline weights are provided; overriding to Float32");
     header.datatype() = DataType::Float32;
   }
 
   DataType default_datatype = DataType::Float32;
-  if ((writer_type == GREYSCALE || writer_type == DIXEL) && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
+  if ((writer_type == GREYSCALE || writer_type == DIXEL) && !have_weights && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
     default_datatype = DataType::UInt32;
   header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
   header.datatype().set_byte_order_native();
