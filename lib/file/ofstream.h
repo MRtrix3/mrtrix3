@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 23/07/09.
+    Written by Robert E. Smith, 04/08/14.
 
     This file is part of MRtrix.
 
@@ -27,7 +27,6 @@
 #include <fstream>
 #include <string>
 
-#include "file/utils.h"
 
 
 namespace MR
@@ -54,19 +53,8 @@ namespace MR
           open (path, mode);
         };
 
-        void open (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out)
-        {
-          if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in))
-            output_file_check (path);
-          std::ofstream::open (path.c_str(), mode);
-          if (!*this)
-            throw Exception ("error opening output file \"" + path + "\": " + strerror (errno));
-        }
-
-        void open (const char* path, const std::ios_base::openmode mode = std::ios_base::out) {
-          const std::string temp (path);
-          open (path, mode);
-        }
+        void open (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out);
+        void open (const char* path, const std::ios_base::openmode mode = std::ios_base::out);
 
     };
 
