@@ -78,7 +78,7 @@ void usage ()
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD. "
                           "By default this option is not required providing the direction set is supplied "
                           "in the amplitude image.")
-  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
+  + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
 
   + DWI::GradOption
   + DWI::ShellOption

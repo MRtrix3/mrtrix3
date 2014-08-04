@@ -52,14 +52,14 @@ void usage ()
   + "calculate statistics on streamlines length.";
 
   ARGUMENTS
-  + Argument ("tracks_in", "the input track file").type_file();
+  + Argument ("tracks_in", "the input track file").type_file_in();
 
   OPTIONS
   + Option ("histogram", "output a histogram of streamline lengths")
-    + Argument ("path").type_file()
+    + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
-    + Argument ("path").type_file()
+    + Argument ("path").type_file_out()
 
   + Tractography::TrackWeightsInOption;
 

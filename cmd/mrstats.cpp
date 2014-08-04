@@ -63,7 +63,7 @@ OPTIONS
   + Option ("histogram",
   "generate histogram of intensities and store in specified text file. Note "
   "that the first line of the histogram gives the centre of the bins.")
-  + Argument ("file").type_file ()
+  + Argument ("file").type_file_out ()
 
   + Option ("bins",
   "the number of bins to use to generate the histogram (default = 100).")
@@ -71,11 +71,11 @@ OPTIONS
 
   + Option ("dump",
   "dump the voxel intensities to a text file.")
-  + Argument ("file").type_file ()
+  + Argument ("file").type_file_out ()
 
   + Option ("position",
   "dump the position of the voxels in the mask to a text file.")
-  + Argument ("file").type_file ();
+  + Argument ("file").type_file_out ();
 
 }
 

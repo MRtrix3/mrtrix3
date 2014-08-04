@@ -23,14 +23,14 @@ namespace MR
                 "specify the directions over which to apply the non-negativity constraint "
                 "(by default, the built-in 300 direction set is used). These should be "
                 "supplied as a text file containing the [ az el ] pairs for the directions.")
-      + Argument ("file").type_file()
+      + Argument ("file").type_file_in()
 
       + Option ("filter",
                 "the linear frequency filtering parameters used for the initial linear "
                 "spherical deconvolution step (default = [ 1 1 1 0 0 ]). These should be "
                 " supplied as a text file containing the filtering coefficients for each "
                 "even harmonic order.")
-      + Argument ("spec").type_file()
+      + Argument ("spec").type_file_in()
 
       + Option ("neg_lambda",
                 "the regularisation parameter lambda that controls the strength of the "

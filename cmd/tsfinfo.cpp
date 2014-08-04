@@ -40,7 +40,7 @@ void usage ()
   ARGUMENTS
   + Argument ("tracks", "the input track scalar file.")
   .allow_multiple()
-  .type_file ();
+  .type_file_in();
 
   OPTIONS
   + Option ("count",

@@ -45,7 +45,7 @@ void usage ()
     + Argument ("response",
         "the diffusion-weighted signal response function for a single fibre population, "
         "either as a comma-separated vector of floating-point values, or a text file "
-        "containing the coefficients.")
+        "containing the coefficients.").type_file_in()
     + Argument ("SH",
         "the output spherical harmonics coefficients image.").type_image_out();
 

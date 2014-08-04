@@ -51,11 +51,11 @@ void usage ()
 
 
   ARGUMENTS
-  + Argument ("input", "a text file containing the file names of the input images, one file per line").type_file()
+  + Argument ("input", "a text file containing the file names of the input images, one file per line").type_file_in()
 
-  + Argument ("design", "the design matrix, rows should correspond with images in the input image text file").type_file()
+  + Argument ("design", "the design matrix, rows should correspond with images in the input image text file").type_file_in()
 
-  + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file()
+  + Argument ("contrast", "the contrast matrix, only specify one contrast as it will automatically compute the opposite contrast.").type_file_in()
 
   + Argument ("mask", "a mask used to define voxels included in the analysis.").type_image_in()
 

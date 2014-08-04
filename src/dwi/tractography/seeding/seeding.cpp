@@ -68,12 +68,12 @@ namespace MR
 
 
       + Option ("max_seed_attempts", "set the maximum number of times that the tracking algorithm should "
-                                 "attempt to find an appropriate tracking direction from a given seed point")
+                                     "attempt to find an appropriate tracking direction from a given seed point")
         + Argument ("count").type_integer (1, 1, 1e6)
 
 
       + Option ("output_seeds", "output the seed location of all successful streamlines to a file")
-        + Argument ("path").type_text();
+        + Argument ("path").type_file_out();
 
 
 

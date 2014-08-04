@@ -18,7 +18,7 @@ namespace MR
       + Option ("grad",
             "specify the diffusion encoding scheme (may be required for Tensor_Det "
             "and Tensor_Prob, ignored otherwise)")
-          + Argument ("file")
+          + Argument ("file").type_file_in()
 
       + Option ("step",
             "set the step size of the algorithm in mm (default is 0.1 x voxelsize; for iFOD2: 0.5 x voxelsize).")

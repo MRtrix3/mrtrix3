@@ -42,9 +42,9 @@ void usage ()
   + "apply a normalisation map to a tracks file.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("tracks", "the input track file.").type_file_in()
   + Argument ("transform", "the image containing the transform.").type_image_in()
-  + Argument ("output", "the output fraction image").type_image_out();
+  + Argument ("output", "the output track file").type_file_out();
 }
 
 
@@ -109,7 +109,6 @@ class Writer
 
     bool operator() (const TrackType& item) {
       writer (item);
-      writer.total_count++;
       ++progress;
       return true;
     }

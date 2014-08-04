@@ -44,7 +44,7 @@ void usage ()
 
 
   ARGUMENTS
-  + Argument ("file", "the DICOM file to be edited.").type_file ();
+  + Argument ("file", "the DICOM file to be edited.").type_file_in();
 
   OPTIONS
   + Option ("anonymise", "remove any identifiable information, by replacing the following tags:\n"
@@ -57,7 +57,7 @@ void usage ()
 
   + Option ("id", "replace all ID tags with string supplied. This consists of tags "
       "(0010, 0020) PatientID and (0010, 1000) OtherPatientIDs")
-  +   Argument ("text")
+  +   Argument ("text").type_text()
 
   + Option ("tag", "replace specific tag.").allow_multiple()
   +   Argument ("group")
