@@ -81,7 +81,7 @@ namespace MR
       }
       else {
 
-        if ( (fd = open (Entry::name.c_str(), O_RDONLY, 0644)) < 0)
+        if ( (fd = open (Entry::name.c_str(), O_RDONLY, 0666)) < 0)
           throw Exception ("error opening file \"" + Entry::name + "\": " + strerror (errno));
 
         try {

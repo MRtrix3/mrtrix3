@@ -69,7 +69,7 @@ namespace MR
 
     inline void create (const std::string& filename, int64_t size = 0)
     { 
-      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0644);
+      int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0666);
       if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
         if (errno == EEXIST) 
@@ -90,7 +90,7 @@ namespace MR
     {
       DEBUG ("resizing file \"" + filename + "\" to " + str (size) + "...");
 
-      int fd = open (filename.c_str(), O_RDWR, 0644);
+      int fd = open (filename.c_str(), O_RDWR, 0666);
       if (fd < 0)
         throw Exception ("error opening file \"" + filename + "\" for resizing: " + strerror (errno));
       int status = ftruncate (fd, size);
@@ -127,7 +127,7 @@ namespace MR
       do {
         for (int n = 0; n < 6; n++)
           filename[rand_index+n] = random_char();
-        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0644);
+        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_EXCL, 0666);
       } while (fid < 0 && errno == EEXIST);
 
       if (fid < 0)
@@ -147,7 +147,7 @@ namespace MR
     {
       if (::mkdir (folder.c_str()
 #ifndef MRTRIX_WINDOWS
-            , 0755
+            , 0777
 #endif
             ))
         throw Exception ("error creating folder \"" + folder + "\": " + strerror (errno));
