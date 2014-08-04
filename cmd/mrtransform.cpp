@@ -62,7 +62,10 @@ void usage ()
     "the number of directions matches the number of volumes in the images, any "
     "transformation applied using the -linear option will be also be applied to the directions.";
 
-
+  REFERENCES = "If FOD reorientation is being performed:\n"
+               "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
+               "Reorientation of fiber orientation distributions using apodized point spread functions. "
+               "Magnetic Resonance in Medicine, 2012, 67, 844-855";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()

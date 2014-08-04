@@ -38,10 +38,14 @@ void usage ()
 {
   DESCRIPTION
   + "create bitwise image by thresholding image intensity. By default, an "
-    "optimal threshold is determined using the parameter free method "
-    "described in Ridgway G et al. (2009) NeuroImage.44(1):99-111. "
+    "optimal threshold is determined using a parameter-free method. "
     "Alternatively the threshold can be defined manually by the user "
     "or using a histogram-based analysis to cut out the background.";
+
+  REFERENCES = "If not using the -abs option:\n"
+               "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
+               "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
+               "NeuroImage, 2009, 44, 99-111";
 
   ARGUMENTS
   + Argument ("input", "the input image to be thresholded.").type_image_in ()
