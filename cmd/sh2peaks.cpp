@@ -37,7 +37,7 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-   + "compute the amplitudes of a spherical harmonic function at each voxel, along the specified directions";
+    + "extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
