@@ -56,7 +56,8 @@ namespace MR
 
         void open (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out)
         {
-          Utils::output_file_check (path);
+          if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate))
+            Utils::output_file_check (path);
           std::ofstream::open (path.c_str(), mode);
         }
 
