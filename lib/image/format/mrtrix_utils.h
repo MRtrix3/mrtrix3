@@ -21,11 +21,11 @@
 */
 
 
-#include <fstream>
 #include <vector>
 
 #include "file/gz.h"
 #include "file/key_value.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "image/header.h"
 #include "image/stride.h"

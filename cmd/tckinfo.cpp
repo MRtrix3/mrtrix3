@@ -20,10 +20,9 @@
 
 */
 
-#include <fstream>
-
 #include "command.h"
 #include "progressbar.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -107,12 +106,9 @@ void run ()
         std::string num (str (count));
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
-        std::ofstream out (filename.c_str());
-        if (!out) throw Exception ("error opening ascii file \"" + filename + "\": " + strerror (errno));
-
+        File::OFStream out (filename);
         for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
-
         out.close();
 
         count++;

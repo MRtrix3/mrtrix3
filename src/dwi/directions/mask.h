@@ -25,6 +25,8 @@
 #define __dwi_directions_mask_h__
 
 
+#include <fstream>
+
 
 #include "dwi/directions/set.h"
 
@@ -125,7 +127,7 @@ namespace MR {
 
           Mask  operator~  () const;
 
-          friend std::ofstream& operator<< (std::ofstream& stream, Mask& d);
+          friend std::ostream& operator<< (std::ostream& stream, Mask& d);
 
           size_t size() const { return dirs.size(); }
 

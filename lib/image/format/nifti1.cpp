@@ -20,6 +20,7 @@
 
 */
 
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/nifti1_utils.h"
@@ -81,9 +82,7 @@ namespace MR
 
         File::create (H.name());
 
-        std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
-
-        if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
+        File::OFStream out (H.name(), std::ios::out | std::ios::binary);
         out.write ( (char*) &NH, 348);
         out.write (extender.extension, 4);
         out.close();

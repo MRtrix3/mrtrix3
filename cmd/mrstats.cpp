@@ -21,9 +21,12 @@
 */
 
 #include <iomanip>
+#include <vector>
 
 #include "command.h"
 #include "point.h"
+#include "ptr.h"
+#include "file/ofstream.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/loop.h"
@@ -250,15 +253,13 @@ void run () {
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
 
-  Ptr<std::ostream> dumpstream, hist_stream, position_stream;
+  Ptr<File::OFStream> dumpstream, hist_stream, position_stream;
 
   Options opt = get_options ("histogram");
   if (opt.size()) {
     if (data.datatype().is_complex())
       throw Exception ("histogram generation not supported for complex data types");
-    hist_stream = new std::ofstream (opt[0][0].c_str());
-    if (!*hist_stream)
-      throw Exception ("error opening histogram file \"" + opt[0][0] + "\": " + strerror (errno));
+    hist_stream = new File::OFStream (opt[0][0]);
   }
 
   int nbins = 100;
@@ -269,18 +270,12 @@ void run () {
 
 
   opt = get_options ("dump");
-  if (opt.size()) {
-    dumpstream = new std::ofstream (opt[0][0].c_str());
-    if (!*dumpstream)
-      throw Exception ("error opening dump file \"" + opt[0][0] + "\": " + strerror (errno));
-  }
+  if (opt.size())
+    dumpstream = new File::OFStream (opt[0][0]);
 
   opt = get_options ("position");
-  if (opt.size()) {
-    position_stream = new std::ofstream (opt[0][0].c_str());
-    if (!*position_stream)
-      throw Exception ("error opening positions file \"" + opt[0][0] + "\": " + strerror (errno));
-  }
+  if (opt.size())
+    position_stream = new File::OFStream (opt[0][0]);
 
   std::vector<std::string> fields;
   opt = get_options ("output");

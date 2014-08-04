@@ -20,8 +20,7 @@
 
 */
 
-#include <fstream>
-
+#include "file/ofstream.h"
 #include "file/utils.h"
 #include "file/path.h"
 #include "file/entry.h"
@@ -139,10 +138,7 @@ namespace MR
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
 
-        std::ofstream out (header_name.c_str());
-        if (!out)
-          throw Exception ("error writing header file \"" + header_name + "\": " + strerror (errno));
-
+        File::OFStream out (header_name);
         out << H.dim (1) << " " << H.dim (0) << " " << H.dim (3)
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
