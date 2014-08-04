@@ -48,13 +48,8 @@ namespace MR
         OFStream (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out) {
           open (path, mode);
         }
-        OFStream (const char* path, const std::ios_base::openmode mode = std::ios_base::out) {
-          const std::string temp (path);
-          open (path, mode);
-        };
 
         void open (const std::string& path, const std::ios_base::openmode mode = std::ios_base::out);
-        void open (const char* path, const std::ios_base::openmode mode = std::ios_base::out);
 
     };
 

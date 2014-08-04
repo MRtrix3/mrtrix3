@@ -40,11 +40,6 @@ namespace MR
       throw Exception ("error opening output file \"" + path + "\": " + std::strerror (errno));
   }
 
-  void OFStream::open (const char* path, const std::ios_base::openmode mode) {
-    const std::string temp (path);
-    open (path, mode);
-  }
-
 
   }
 }
