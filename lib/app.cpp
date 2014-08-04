@@ -367,9 +367,9 @@ namespace MR
           const Argument& arg = i->opt->operator [](j);
           const char* const name = i->args[j];
           if ((arg.flags & IsInputFile) && !Path::exists (name))
-            throw Exception ("optional input file \"" + str(name) + "\" not found");
+            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
           if (!overwrite_files && (arg.flags & IsOutputFile) && Path::exists (name))
-            throw Exception ("optional output file \"" + str(name) + "\" already exists (use -force option to force overwrite)");
+            throw Exception ("output file \"" + str(name) + "\" already exists (required for option \"-" + std::string(i->opt->id) + "\" - use -force option to force overwrite)");
         }
       }
     }
