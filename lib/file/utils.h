@@ -177,6 +177,12 @@ namespace MR
         throw Exception ("error deleting folder \"" + folder + "\": " + strerror (errno));
     }
 
+    inline void output_file_check (const std::string& file)
+    {
+      if (!App::overwrite_files && Path::exists (file))
+        throw Exception ("cannot write to file \"" + filename + "\": file exists (use -force option to force overwrite)");
+    }
+
 
   }
 }
