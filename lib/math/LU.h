@@ -87,6 +87,18 @@ namespace MR
         return x;
       }
 
+      //! get determinant of A given its %LU decomposition D, signum.
+      template <typename T> inline T det (Matrix<T>& D, int signum)
+      {
+        return gsl_linalg_LU_det (D.gsl(), signum);
+      }
+
+      //! get sign of determinant of A given its %LU decomposition D, signum.
+      template <typename T> inline int sgndet (Matrix<T>& D, int signum)
+      {
+        return gsl_linalg_LU_sgndet (D.gsl(), signum);
+      }
+
       //! inverse of A by %LU decomposition
       template <typename T> inline Matrix<T>& inv (Matrix<T>& I, const Matrix<T>& A)
       {
@@ -110,6 +122,25 @@ namespace MR
         return I;
       }
 
+      //! get determinant of A by LU decomposition
+      template <typename T> inline T det (const Matrix<T>& A)
+      {
+        Permutation p (A.rows());
+        int signum;
+        Matrix<T> D (A);
+        decomp (D, p, signum);
+        return det (D, signum);
+      }
+
+      //! get sign of determinant of A by LU decomposition
+      template <typename T> inline int sgndet (const Matrix<T>& A)
+      {
+        Permutation p (A.rows());
+        int signum;
+        Matrix<T> D (A);
+        decomp (D, p, signum);
+        return sgndet (D, signum);
+      }
 
       /** @} */
       /** @} */

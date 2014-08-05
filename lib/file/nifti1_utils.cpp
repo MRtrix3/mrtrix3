@@ -24,7 +24,7 @@
 #include "get_set.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
-#include "math/math.h"
+#include "math/LU.h"
 #include "math/permutation.h"
 #include "math/versor.h"
 #include "image/header.h"
@@ -199,9 +199,9 @@ namespace MR
             M (3,3) = 1.0;
 
             // get voxel sizes:
-            H.vox(0) = Math::sqrt (Math::pow2 (M (0,0)) + Math::pow2 (M (1,0)) + Math::pow2 (M (2,0)));
-            H.vox(1) = Math::sqrt (Math::pow2 (M (0,1)) + Math::pow2 (M (1,1)) + Math::pow2 (M (2,1)));
-            H.vox(2) = Math::sqrt (Math::pow2 (M (0,2)) + Math::pow2 (M (1,2)) + Math::pow2 (M (2,2)));
+            H.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
             M (0,0) /= H.vox (0);
@@ -217,10 +217,14 @@ namespace MR
             M (2,2) /= H.vox (2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
-            Math::Versor<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
             H.transform().allocate(4,4);
-            Q.to_matrix (H.transform());
 
+            {
+              Math::Versor<double> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
+              Math::Matrix<double> R (3,3);
+              Q.to_matrix (R);
+              H.transform().sub (0,3,0,3) = R;
+            }
 
             H.transform()(0,3) = get<float32> (&NH.qoffset_x, is_BE);
             H.transform()(1,3) = get<float32> (&NH.qoffset_y, is_BE);
@@ -230,8 +234,8 @@ namespace MR
             H.transform()(3,3) = 1.0;
 
             // qfac:
-            float qfac = get<float32> (&NH.pixdim[0], is_BE);
-            if (qfac != 0.0) {
+            float qfac = get<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+            if (qfac < 0.0) {
               H.transform()(0,2) *= qfac;
               H.transform()(1,2) *= qfac;
               H.transform()(2,2) *= qfac;
@@ -447,29 +451,37 @@ namespace MR
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        const Math::Versor<float> Q (M);
+        Math::Matrix<double> R = M.sub(0,3,0,3);
+        if (Math::LU::sgndet (R) < 0.0) {
+          R.column (2) *= -1.0;
+          NH.pixdim[0] = -1.0;
+        }
+        const Math::Versor<double> Q (R);
 
         put<float32> (Q[1], &NH.quatern_b, is_BE);
         put<float32> (Q[2], &NH.quatern_c, is_BE);
         put<float32> (Q[3], &NH.quatern_d, is_BE);
 
+
+        // sform:
+
         put<float32> (M(0,3), &NH.qoffset_x, is_BE);
         put<float32> (M(1,3), &NH.qoffset_y, is_BE);
         put<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.vox (perm[0]) * M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.vox (perm[1]) * M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.vox (perm[2]) * M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M (0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.vox (perm[0]) * M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.vox (perm[1]) * M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.vox (perm[2]) * M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M (1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.vox (perm[0]) * M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.vox (perm[1]) * M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.vox (perm[2]) * M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);
