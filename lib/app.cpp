@@ -357,18 +357,18 @@ namespace MR
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
       for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i < argument.end(); i++) {
-        if ((i->arg->flags & IsInputFile) && !Path::exists (std::string(*i)))
+        if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
           throw Exception ("required input file \"" + str(*i) + "\" not found");
-        if (!overwrite_files && (i->arg->flags & IsOutputFile) && Path::exists (std::string(*i)))
+        if (!overwrite_files && (i->arg->type == ArgFileOut) && Path::exists (std::string(*i)))
           throw Exception ("required output file \"" + std::string(*i) + "\" already exists (use -force option to force overwrite)");
       }
       for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
         for (size_t j = 0; j != i->opt->size(); ++j) {
           const Argument& arg = i->opt->operator [](j);
           const char* const name = i->args[j];
-          if ((arg.flags & IsInputFile) && !Path::exists (name))
+          if ((arg.type == ArgFileIn) && !Path::exists (name))
             throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
-          if (!overwrite_files && (arg.flags & IsOutputFile) && Path::exists (name))
+          if (!overwrite_files && (arg.type == ArgFileOut) && Path::exists (name))
             throw Exception ("output file \"" + str(name) + "\" already exists (required for option \"-" + std::string(i->opt->id) + "\" - use -force option to force overwrite)");
         }
       }

@@ -70,8 +70,6 @@ namespace MR
     const ArgFlags None = 0;
     const ArgFlags Optional = 0x1;
     const ArgFlags AllowMultiple = 0x2;
-    const ArgFlags IsInputFile = 0x4;
-    const ArgFlags IsOutputFile = 0x8;
     //! \endcond
 
 
@@ -137,7 +135,7 @@ namespace MR
         std::string desc;
         //! the argument type
         ArgType  type;
-        //! the argument flags (AllowMultiple, Optional, IsInputFile, IsOutputFile)
+        //! the argument flags (AllowMultiple & Optional)
         ArgFlags flags;
 
         //! a structure to store the various parameters of the Argument
@@ -196,7 +194,6 @@ namespace MR
         Argument& type_image_in () {
           type = ImageIn;
           defaults.text = NULL;
-          flags |= IsInputFile;
           return *this;
         }
 
@@ -204,7 +201,6 @@ namespace MR
         Argument& type_image_out () {
           type = ImageOut;
           defaults.text = NULL;
-          flags |= IsOutputFile;
           return *this;
         }
 
@@ -262,7 +258,6 @@ namespace MR
         Argument& type_file_in () {
           type = ArgFileIn;
           defaults.text = NULL;
-          flags |= IsInputFile;
           return *this;
         }
 
@@ -270,7 +265,6 @@ namespace MR
         Argument& type_file_out () {
           type = ArgFileOut;
           defaults.text = NULL;
-          flags |= IsOutputFile;
           return *this;
         }
 
