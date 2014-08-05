@@ -183,8 +183,8 @@ class Stats
           if (fields[n] == "mean") std::cout << str(mean) << " ";
           else if (fields[n] == "median") std::cout << Math::median (values) << " ";
           else if (fields[n] == "std") std::cout << str(std) << " ";
-          else if (fields[n] == "min") std::cout << str(max) << " ";
-          else if (fields[n] == "max") std::cout << str(min) << " ";
+          else if (fields[n] == "min") std::cout << str(min) << " ";
+          else if (fields[n] == "max") std::cout << str(max) << " ";
           else if (fields[n] == "count") std::cout << count << " ";
         }
         std::cout << "\n";
