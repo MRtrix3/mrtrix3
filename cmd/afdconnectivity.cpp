@@ -241,7 +241,7 @@ value_type AFDConnectivity::get (const std::string& path)
       for (loop.start (v); loop.ok(); loop.next (v)) {
         if (v.value()) {
           value_type voxel_afd = 0.0, max_td = 0.0;
-          for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+          for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
             if (i().get_selected_length() > max_td) {
               max_td = i().get_selected_length();
               voxel_afd = i().get_FOD();
@@ -277,14 +277,14 @@ void AFDConnectivity::save (const std::string& path)
   for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
     value_type value = 0.0;
     if (have_wbft) {
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
         value += i().get_selected_volume();
     } else if (all_fixels) {
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
         value += (i().is_selected() ? i().get_FOD() : 0.0);
     } else {
       value_type max_td = 0.0;
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
         if (i().get_selected_length() > max_td) {
           max_td = i().get_selected_length();
           value = i().get_FOD();
