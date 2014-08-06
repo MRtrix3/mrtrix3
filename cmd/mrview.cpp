@@ -59,10 +59,10 @@ void usage ()
 
   OPTIONS
     + Option ("run", "run command specified in string at start time").allow_multiple()
-    +   Argument("command")
+    +   Argument("command").type_text()
 
     + Option ("batch", "run commands in batch script at start time").allow_multiple()
-    +   Argument("file").type_file();
+    +   Argument("file").type_file_in();
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 

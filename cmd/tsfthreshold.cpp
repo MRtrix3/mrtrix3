@@ -36,9 +36,9 @@ void usage ()
   + "an application to threshold and invert track scalar files";
 
   ARGUMENTS
-  + Argument ("input",  "the input track scalar file.").type_file ()
+  + Argument ("input",  "the input track scalar file.").type_file_in()
   + Argument ("N",      "the desired threshold").type_float ()
-  + Argument ("output", "the binary output track scalar file");
+  + Argument ("output", "the binary output track scalar file").type_file_out();
 
 
   OPTIONS

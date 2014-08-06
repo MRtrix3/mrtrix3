@@ -22,6 +22,7 @@
 
 
 #include "file/config.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/mmap.h"
@@ -273,10 +274,7 @@ namespace MR
 
       RefPtr<Handler::Base> MRI::create (Header& H) const
       {
-        File::create (H.name());
-        std::ofstream out (H.name().c_str());
-        if (!out)
-          throw Exception ("error creating file \"" + H.name() + "\": " + strerror (errno));
+        File::OFStream out (H.name());
 
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
         bool is_BE = true;

@@ -24,9 +24,10 @@
 #define __dwi_tractography_mapping_buffer_scratch_dump_h__
 
 
-#include <fstream>
 #include <map>
 #include <vector>
+
+#include "file/ofstream.h"
 
 #include "image/buffer_scratch.h"
 #include "image/header.h"
@@ -73,9 +74,7 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
     dat_path = Path::basename (path.substr (0, path.size()-4) + ".dat");
   const int64_t dat_size = Image::footprint (*this);
 
-  std::ofstream out_header (path.c_str(), std::ios::out | std::ios::binary);
-  if (!out_header)
-    throw Exception ("error creating file \"" + H.name() + "\":" + strerror (errno));
+  File::OFStream out_header (path, std::ios::out | std::ios::binary);
 
   out_header << "mrtrix image\n";
   out_header << "dim: " << H.dim (0);
@@ -127,12 +126,12 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
   }
   out_header.close();
 
-  std::ofstream out_dat;
+  File::OFStream out_dat;
   if (single_file) {
     File::resize (path, offset);
-    out_dat.open (path.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::app);
+    out_dat.open (path, std::ios_base::out | std::ios_base::binary | std::ios_base::app);
   } else {
-    out_dat.open (dat_path.c_str(), std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+    out_dat.open (dat_path, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
   }
 
   const value_type* data_ptr = Image::BufferScratch<value_type>::data_;

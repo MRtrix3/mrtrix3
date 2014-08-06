@@ -76,7 +76,7 @@ void usage ()
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
         "to the moving image.")
-    +   Argument ("transform").type_file ()
+    +   Argument ("transform").type_file_in ()
 
     + Option ("flip",
         "flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).")
@@ -119,7 +119,7 @@ void usage ()
     + Option ("directions", 
         "the directions used for FOD reorientation using apodised point spread functions "
         "(Default: 60 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
+    + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
 
     + Option ("noreorientation", 
         "turn off FOD reorientation. Reorientation is on by default if the number "

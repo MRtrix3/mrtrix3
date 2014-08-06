@@ -20,7 +20,6 @@
 
 */
 
-#include <fstream>
 #include <vector>
 #include <set>
 
@@ -205,7 +204,7 @@ REFERENCES = "For TDI or DEC TDI:\n"
              "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
 ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("tracks", "the input track file.").type_file_in()
   + Argument ("output", "the output track-weighted image").type_image_out();
 
 OPTIONS

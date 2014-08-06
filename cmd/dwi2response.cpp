@@ -112,7 +112,7 @@ void usage () {
 
   ARGUMENTS
     + Argument ("dwi_in",       "the input diffusion-weighted images").type_image_in()
-    + Argument ("response_out", "the output rotational harmonic coefficients").type_file();
+    + Argument ("response_out", "the output rotational harmonic coefficients").type_file_out();
 
   OPTIONS
 

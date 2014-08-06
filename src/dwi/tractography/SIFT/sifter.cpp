@@ -1,8 +1,6 @@
 
 #include "dwi/tractography/SIFT/sifter.h"
 
-#include <fstream>
-
 #include "point.h"
 #include "progressbar.h"
 #include "ptr.h"
@@ -22,6 +20,8 @@
 #include "image/buffer.h"
 #include "image/buffer_sparse.h"
 #include "image/loop.h"
+
+#include "file/ofstream.h"
 
 
 
@@ -44,13 +44,6 @@ namespace MR
       {
 
         enum recalc_reason { UNDEFINED, NONLINEARITY, QUANTISATION, TERM_COUNT, TERM_RATIO, TERM_MU, POS_GRADIENT };
-
-        Ptr<std::ofstream> csv_out;
-        if (!csv_path.empty()) {
-          csv_out = new std::ofstream();
-          csv_out->open (csv_path.c_str(), std::ios_base::trunc);
-          (*csv_out) << "Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
-        }
 
         // For streamlines that do not contribute to the map, remove an equivalent proportion of length to those that do contribute
         double sum_contributing_length = 0.0, sum_noncontributing_length = 0.0;
@@ -79,8 +72,11 @@ namespace MR
         const double init_cf = calc_cost_function();
         unsigned int iteration = 0;
 
-        if (csv_out)
-          (*csv_out) << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
+        if (!csv_path.empty()) {
+          File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::trunc);
+          csv_out << "Iteration,Removed this iteration,Total removed,Remaining,Cost,TD,Mu,Recalculation,\n";
+          csv_out << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
+        }
 
         if (App::log_level) {
           fprintf (stderr, "%s:   Iteration    Tracks removed     Tracks remaining     Cost function %%\n", App::NAME.c_str());
@@ -259,25 +255,22 @@ namespace MR
           if (App::log_level)
             fprintf (stderr, "\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
 
-          if (csv_out) {
-            (*csv_out) << str (iteration) << "," << str (removed_this_iteration) << "," << str (num_tracks() - tracks_remaining) << "," << str (tracks_remaining) << "," << str (cf_end_iteration) << "," << str (TD_sum) << "," << str (mu()) << ",";
+          if (!csv_path.empty()) {
+            File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::app | std::ios_base::ate);
+            csv_out << str (iteration) << "," << str (removed_this_iteration) << "," << str (num_tracks() - tracks_remaining) << "," << str (tracks_remaining) << "," << str (cf_end_iteration) << "," << str (TD_sum) << "," << str (mu()) << ",";
             switch (recalculate) {
               case UNDEFINED:    throw Exception ("Encountered undefined recalculation at end of iteration!");
-              case NONLINEARITY: (*csv_out) << "Non-linearity"; break;
-              case QUANTISATION: (*csv_out) << "Quantisation"; break;
-              case TERM_COUNT:   (*csv_out) << "Target streamline count"; break;
-              case TERM_RATIO:   (*csv_out) << "Termination ratio"; break;
-              case TERM_MU:      (*csv_out) << "Target proportionality coefficient"; break;
-              case POS_GRADIENT: (*csv_out) << "Positive gradient"; break;
+              case NONLINEARITY: csv_out << "Non-linearity"; break;
+              case QUANTISATION: csv_out << "Quantisation"; break;
+              case TERM_COUNT:   csv_out << "Target streamline count"; break;
+              case TERM_RATIO:   csv_out << "Termination ratio"; break;
+              case TERM_MU:      csv_out << "Target proportionality coefficient"; break;
+              case POS_GRADIENT: csv_out << "Positive gradient"; break;
             }
-            (*csv_out) << ",\n";
-            csv_out->flush();
+            csv_out << ",\n";
           }
 
         } while (another_iteration);
-
-        if (csv_out)
-          csv_out->close();
 
         if (App::log_level)
           fprintf (stderr, "\n");
@@ -331,7 +324,7 @@ namespace MR
 
       void SIFTer::output_selection (const std::string& path) const
       {
-        std::ofstream out (path.c_str(), std::ios_base::out | std::ios_base::trunc);
+        File::OFStream out (path, std::ios_base::out | std::ios_base::trunc);
         for (track_t i = 0; i != contributions.size(); ++i) {
           if (contributions[i])
             out << "1\n";

@@ -20,11 +20,9 @@
 
 */
 
-#include <fstream>
-
-
 #include "command.h"
 #include "progressbar.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/properties.h"
 
@@ -40,7 +38,7 @@ void usage ()
   ARGUMENTS
   + Argument ("tracks", "the input track scalar file.")
   .allow_multiple()
-  .type_file ();
+  .type_file_in();
 
   OPTIONS
   + Option ("count",
@@ -49,7 +47,7 @@ void usage ()
   + Option ("ascii",
             "save values of each track scalar file in individual ascii files, with the "
             "specified prefix.")
-  + Argument ("prefix");
+  + Argument ("prefix").type_text();
 }
 
 
@@ -108,12 +106,9 @@ void run ()
         std::string num (str (count));
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
-        std::ofstream out (filename.c_str());
-        if (!out) throw Exception ("error opening ascii file \"" + filename + "\": " + strerror (errno));
-
+        File::OFStream out (filename);
         for (std::vector<float>::iterator i = tck.begin(); i != tck.end(); ++i)
           out << (*i) << "\n";
-
         out.close();
 
         count++;

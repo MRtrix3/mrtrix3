@@ -68,8 +68,8 @@ void usage ()
 
 
 	ARGUMENTS
-	+ Argument ("path_in",   "the input image").type_text()
-	+ Argument ("config_in", "the MRtrix connectome configuration file specifying desired nodes & indices").type_file()
+	+ Argument ("path_in",   "the input image").type_image_in()
+	+ Argument ("config_in", "the MRtrix connectome configuration file specifying desired nodes & indices").type_file_in()
 	+ Argument ("image_out", "the output image").type_image_out();
 
 

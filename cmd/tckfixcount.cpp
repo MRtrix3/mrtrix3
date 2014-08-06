@@ -45,7 +45,7 @@ void usage ()
   + "fix a streamlines .tck file where the 'count' field has not been set correctly.";
 
   ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file ();
+  + Argument ("tracks", "the input track file.").type_file_in();
 
 }
 

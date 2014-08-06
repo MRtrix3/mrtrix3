@@ -81,7 +81,7 @@ DESCRIPTION
 ARGUMENTS
   + Argument ("operand", "an input image, intensity value, or the special keywords "
       "'rand' (random number between 0 and 1) or 'randn' (random number from unit "
-      "std.dev. normal distribution).").allow_multiple();
+      "std.dev. normal distribution).").type_text().allow_multiple();
 
 OPTIONS
   + OptionGroup ("Unary operators")

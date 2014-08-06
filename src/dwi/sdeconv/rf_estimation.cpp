@@ -66,8 +66,8 @@ void SFThresholds::update (const std::vector<FODSegResult>& data, const float di
 
 /*
   // Output dispersion & integral values to text file
-  std::ofstream out_integrals   (std::string("iter_" + str(iter) + "_integrals.txt")  .c_str(), std::ios_base::trunc);
-  std::ofstream out_dispersions (std::string("iter_" + str(iter) + "_dispersions.txt").c_str(), std::ios_base::trunc);
+  File::OFStream out_integrals   (std::string("iter_" + str(iter) + "_integrals.txt")  , std::ios_base::out | std::ios_base::trunc);
+  File::OFStream out_dispersions (std::string("iter_" + str(iter) + "_dispersions.txt"), std::ios_base::out | std::ios_base::trunc);
   for (std::vector<FODSegResult>::const_iterator i = data.begin(); i != data.end(); ++i) {
     if (i->get_volume_ratio() < get_volume_ratio()) {
       out_integrals   << str(i->get_integral())   << " ";

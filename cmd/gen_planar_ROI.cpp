@@ -58,7 +58,7 @@ void usage () {
 
     + Argument ("template",
         "a template image used to compute the required extent of the ROI.")
-    .type_file()
+    .type_image_in()
 
     + Argument ("ROI", "the output ROI image.").type_image_out();
 

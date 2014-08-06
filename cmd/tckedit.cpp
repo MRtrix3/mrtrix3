@@ -60,8 +60,8 @@ void usage ()
   + "perform various editing operations on track files.";
 
   ARGUMENTS
-  + Argument ("tracks_in",  "the input track file(s)").type_file().allow_multiple()
-  + Argument ("tracks_out", "the output track file").type_file();
+  + Argument ("tracks_in",  "the input track file(s)").type_file_in().allow_multiple()
+  + Argument ("tracks_out", "the output track file").type_file_out();
 
   OPTIONS
   + ROIOption

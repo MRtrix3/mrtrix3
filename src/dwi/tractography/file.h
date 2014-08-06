@@ -23,7 +23,6 @@
 #ifndef __dwi_tractography_file_h__
 #define __dwi_tractography_file_h__
 
-#include <fstream>
 #include <map>
 #include <vector>
 
@@ -31,6 +30,7 @@
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -209,9 +209,7 @@ namespace MR
           WriterUnbuffered (const std::string& file, const Properties& properties) :
             __WriterBase__<T> (file)
         {
-          std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-          if (!out)
-            throw Exception ("error creating tracks file \"" + name + "\": " + strerror (errno));
+          File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
           const_cast<Properties&> (properties).set_timestamp();
 
@@ -259,9 +257,7 @@ namespace MR
             weights_name = path;
             if (!App::overwrite_files && Path::exists (name))
               throw Exception ("error creating file \"" + weights_name + "\": file exists (use -force option to force overwrite)");
-            std::ofstream out (weights_name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-            if (!out)
-              throw Exception ("error creating empty streamline weights file \"" + weights_name + "\": " + strerror (errno));
+            File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
           }
 
         protected:
@@ -284,9 +280,7 @@ namespace MR
 
           //! write track weights data to file
           void write_weights (const std::string& contents) {
-            std::ofstream out (weights_name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            if (!out)
-              throw Exception ("error re-opening streamline weights file \"" + weights_name + "\": " + strerror (errno));
+            File::OFStream out (weights_name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out << contents;
             if (!out.good())
               throw Exception ("error writing streamline weights file \"" + weights_name + "\": " + strerror (errno));
@@ -303,10 +297,7 @@ namespace MR
             int64_t prev_barrier_addr = barrier_addr;
 
             format_point (barrier(), data[num_points]);
-            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            if (!out)
-              throw Exception ("error re-opening tracks file \"" + name + "\": " + strerror (errno));
-
+            File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out.write (reinterpret_cast<const char* const> (data+1), sizeof (Point<value_type>) * num_points);
             verify_stream (out);
             barrier_addr = int64_t (out.tellp()) - sizeof(Point<value_type>);

@@ -30,6 +30,7 @@
 #include <sys/mman.h>
 #endif
 
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/mmap.h"
 #include "file/config.h"
@@ -130,9 +131,7 @@ namespace MR
       else {
         if (readwrite) {
           INFO ("writing back contents of mapped file \"" + Entry::name + "\"...");
-          std::ofstream out (Entry::name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
-          if (!out) 
-            throw Exception ("failed to open file \"" + Entry::name + "\": " + strerror (errno));
+          File::OFStream out (Entry::name, std::ios::in | std::ios::out | std::ios::binary);
           out.seekp (start, out.beg);
           out.write ((char*) first, msize);
           if (!out.good())

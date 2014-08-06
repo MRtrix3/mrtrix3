@@ -42,16 +42,16 @@ using namespace App;
 const OptionGroup LookupTableOption = OptionGroup ("Options for importing information from parcellation lookup tables")
 
   + Option ("lut_basic", "get information from a basic lookup table consisting of index / name pairs")
-    + Argument("path").type_file()
+    + Argument("path").type_file_in()
 
   + Option ("lut_freesurfer", "get information from a FreeSurfer lookup table (typically \"FreeSurferColorLUT.txt\")")
-    + Argument("path").type_file()
+    + Argument("path").type_file_in()
 
   + Option ("lut_aal", "get information from the AAL lookup table (typically \"ROI_MNI_V4.txt\")")
-    + Argument("path").type_file()
+    + Argument("path").type_file_in()
 
   + Option ("lut_itksnap", "get information from an ITK-SNAP lookup table (this includes the IIT atlas file \"LUT_GM.txt\")")
-    + Argument("path").type_file();
+    + Argument("path").type_file_in();
 
   // TODO Add more e.g. FSL
   // FSL's HarvardOxford atlas has identical labels across left and right hemispheres...

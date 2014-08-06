@@ -23,12 +23,12 @@
 #ifndef __math_vector_h__
 #define __math_vector_h__
 
-#include <fstream>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_vector_float.h>
 
 #include "mrtrix.h"
 #include "debug.h"
+#include "file/ofstream.h"
 #include "math/math.h"
 
 #ifdef __math_complex_h__
@@ -340,9 +340,7 @@ namespace MR
 
         //! write to text file \a filename
         void save (const std::string& filename) const {
-          std::ofstream out (filename.c_str());
-          if (!out)
-            throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
+          File::OFStream out (filename);
           out << *this;
         }
 
