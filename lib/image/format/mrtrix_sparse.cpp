@@ -144,9 +144,6 @@ namespace MR
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
 
-        if (!File::is_tempfile (H.name()))
-          File::create (H.name());
-
         File::OFStream out (H.name(), std::ios::out | std::ios::binary);
 
         out << "mrtrix sparse image\n";

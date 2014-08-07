@@ -84,8 +84,6 @@ namespace MR
         File::NIfTI::write (NH, H, false);
 
         std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
-        File::create (hdr_name);
-
         File::OFStream out (hdr_name);
         out.write ( (char*) &NH, 352);
         out.close();

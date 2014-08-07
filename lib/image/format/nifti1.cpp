@@ -80,8 +80,6 @@ namespace MR
         memset (extender.extension, 0x00, sizeof (nifti1_extender));
         File::NIfTI::write (NH, H, true);
 
-        File::create (H.name());
-
         File::OFStream out (H.name(), std::ios::out | std::ios::binary);
         out.write ( (char*) &NH, 348);
         out.write (extender.extension, 4);

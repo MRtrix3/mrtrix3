@@ -95,9 +95,6 @@ namespace MR
 
       RefPtr<Handler::Base> MRtrix::create (Header& H) const
       {
-        if (!File::is_tempfile (H.name()))
-          File::create (H.name());
-
         File::OFStream out (H.name(), std::ios::out | std::ios::binary);
 
         out << "mrtrix image\n";

@@ -115,8 +115,6 @@ namespace MR
         File::MGH::write_header (MGHH, H);
         File::MGH::write_other  (MGHO, H);
 
-        File::create (H.name());
-
         File::OFStream out (H.name());
         out.write ( (char*) &MGHH, MGH_HEADER_SIZE);
         out.close();
