@@ -34,7 +34,9 @@ namespace MR
   void OFStream::open (const std::string& path, const std::ios_base::openmode mode)
   {
     if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in))
-      File::output_file_check (path);
+      if (!File::is_tempfile (path))
+        File::output_file_check (path);
+
     std::ofstream::open (path.c_str(), mode);
     if (std::ofstream::operator!())
       throw Exception ("error opening output file \"" + path + "\": " + std::strerror (errno));

@@ -63,7 +63,6 @@ namespace MR
           return false;
 
         H.name() = File::create_tempfile (0, "mif");
-        File::unlink (H.name());
 
         return mrtrix_handler.check (H, num_axes);
       }
