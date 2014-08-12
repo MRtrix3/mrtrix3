@@ -35,12 +35,15 @@ namespace MR
 
       RefPtr<Handler::Base> Pipe::read (Header& H) const
       {
-        if (H.name() != "-") 
-          return RefPtr<Handler::Base>();
-
-        std::string name;
-        getline (std::cin, name);
-        H.name() = name;
+        if (H.name() == "-") {
+          std::string name;
+          getline (std::cin, name);
+          H.name() = name;
+        }
+        else {
+          if (!File::is_tempfile (H.name())) 
+            return RefPtr<Handler::Base>();
+        }
 
         if (H.name().empty())
           throw Exception ("no filename supplied to standard input (broken pipe?)");
