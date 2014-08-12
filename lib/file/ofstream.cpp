@@ -33,9 +33,10 @@ namespace MR
 
   void OFStream::open (const std::string& path, const std::ios_base::openmode mode)
   {
-    if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in))
+    if (!(mode & std::ios_base::app) && !(mode & std::ios_base::ate) && !(mode & std::ios_base::in)) {
       if (!File::is_tempfile (path))
-        File::output_file_check (path);
+        File::create (path);
+    }
 
     std::ofstream::open (path.c_str(), mode);
     if (std::ofstream::operator!())
