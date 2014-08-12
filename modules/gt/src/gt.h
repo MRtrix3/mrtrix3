@@ -58,6 +58,9 @@ namespace MR {
           double lam_ext;
           double lam_int;
           
+          double beta;
+          double tikhonov;
+          
           Math::Matrix<float> resp_WM;
           std::vector< Math::Vector<float> > resp_ISO;
           

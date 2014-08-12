@@ -129,8 +129,16 @@ void usage ()
     + Argument ("end").type_float(1e-6, 0.001, 1e6)
       
   + Option ("niter",
-           "set the number of iterations of the metropolis hastings optimizer.")
+            "set the number of iterations of the metropolis hastings optimizer.")
     + Argument ("n").type_integer(1, 1000000, std::numeric_limits<int>::max())
+  
+  + Option ("beta",
+            "set the width of the Hanning interpolation window.")
+    + Argument ("b").type_float(0.0, 0.1, 1.0)
+  
+  + Option ("lambda",
+            "set the weight of a Tikhonov constraint on the no. segments.")
+    + Argument ("t").type_float(0.0, 0.0, 1e3)
 
   + Option ("todi",
             "filename of the resulting TOD image.")
@@ -185,6 +193,8 @@ void run ()
   properties.weight = 0.1;
   properties.lam_ext = 1.;
   properties.lam_int = 1.;
+  properties.beta = 0.1;
+  properties.tikhonov = 0.0;
   
   opt = get_options("lmax");
   if (opt.size()) 
@@ -271,6 +281,14 @@ void run ()
   opt = get_options("t1");
   if (opt.size())
     t1 = opt[0][0];
+  
+  opt = get_options("beta");
+  if (opt.size())
+    properties.beta = opt[0][0];
+  
+  opt = get_options("lambda");
+  if (opt.size())
+    properties.tikhonov = opt[0][0];
 
 
   // Prepare buffers --------------------------------------------------------------------

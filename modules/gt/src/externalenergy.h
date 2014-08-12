@@ -77,6 +77,7 @@ namespace MR {
             
           protected:
             int lmax, nrows, ncols, nf;
+            double beta, lambda;
             
             Image::BufferPreload<float>& dwi;
             Image::BufferScratch<float>* tod; 
@@ -92,7 +93,7 @@ namespace MR {
           ExternalEnergyComputer(Stats& stat, const Shared& shared)
             : EnergyComputer(stat), s(shared), dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
               T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
-              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0), beta(0.1)
+              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
           {
             resetEnergy();
           }
@@ -100,7 +101,7 @@ namespace MR {
           ExternalEnergyComputer(const ExternalEnergyComputer& E)
             : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
               T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
-              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0), beta(0.1)
+              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
           {  }
           
           ~ExternalEnergyComputer() { }
@@ -148,7 +149,7 @@ namespace MR {
           Math::Vector<double> y, t, d, fk, c;
           Math::Vector<double>::View f;
           const Math::Matrix<double>::View A;
-          double dE, beta;
+          double dE;
           
           std::vector<Point<int> > changes_vox;
           std::vector<Math::Vector<float> > changes_tod;
@@ -166,7 +167,7 @@ namespace MR {
           
           inline double hanning(const double w) const
           {
-            return (w <= (1-beta)/2) ? 0.0 : (w >= (1+beta)/2) ? 1.0 : (1 - Math::cos(M_PI * (w-(1-beta)/2)/beta )) / 2;
+            return (w <= (1.0-s.beta)/2) ? 0.0 : (w >= (1.0+s.beta)/2) ? 1.0 : (1 - Math::cos(M_PI * (w-(1.0-s.beta)/2)/s.beta )) / 2;
           }
           
         };
