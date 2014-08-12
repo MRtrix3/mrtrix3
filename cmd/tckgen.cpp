@@ -129,7 +129,10 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Seeding::SeedOption;
+  + DWI::Tractography::Seeding::SeedOption
+  
+  + DWI::GradOption;
+
 
 };
 

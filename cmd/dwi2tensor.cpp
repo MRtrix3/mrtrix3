@@ -390,7 +390,6 @@ void run()
   while (dwi_buffer.dim (dwi_axis) < 2) ++dwi_axis;
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
-  DWI::normalise_grad (grad);
   Math::Matrix<cost_value_type> bmatrix;
   DWI::grad2bmatrix (bmatrix, grad);
 
