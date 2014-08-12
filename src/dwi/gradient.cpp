@@ -40,15 +40,9 @@ namespace MR
       Math::Matrix<float> G (grad.rows(), 3);
 
       // rotate vectors from scanner space to image space
-      Math::Matrix<float> D (header.transform());
-      Math::Permutation p (4);
-      int signum;
-      Math::LU::decomp (D, p, signum);
-      Math::Matrix<float> image2scanner (4,4);
-      Math::LU::inv (image2scanner, D, p);
-      Math::Matrix<float> rotation = image2scanner.sub (0,3,0,3);
       Math::Matrix<float> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::mult (G, float(0.0), float(1.0), CblasNoTrans, grad_G, CblasTrans, rotation);
+      Math::Matrix<float> rotation = header.transform().sub (0,3,0,3);
+      Math::mult (G, 0.0f, 1.0f, CblasNoTrans, grad_G, CblasNoTrans, rotation);
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
