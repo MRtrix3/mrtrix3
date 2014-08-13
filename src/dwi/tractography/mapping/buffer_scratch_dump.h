@@ -56,7 +56,17 @@ class BufferScratchDump : public Image::BufferScratch<value_type>
 
     void dump_to_file (const std::string&, const Image::Header&) const;
 
+  private:
+    // Helper function to get the underlying data pointer
+    inline const char* get_data_ptr() const { return reinterpret_cast<const char*> ((const value_type*) (Image::BufferScratch<value_type>::data_)); }
+
 };
+
+template <>
+inline const char* BufferScratchDump<bool>::get_data_ptr() const
+{
+  return reinterpret_cast<const char*> ((const uint8_t*) (Image::BufferScratch<bool>::data_));
+}
 
 
 
@@ -134,8 +144,8 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
     out_dat.open (dat_path, std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
   }
 
-  const value_type* data_ptr = Image::BufferScratch<value_type>::data_;
-  out_dat.write (reinterpret_cast<const char*>(data_ptr), dat_size);
+  const char* data_ptr = get_data_ptr();
+  out_dat.write (data_ptr, dat_size);
   out_dat.close();
 
   // If dat_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
