@@ -27,6 +27,7 @@
 
 #include "types.h"
 #include "point.h"
+#include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "dwi/tractography/properties.h"

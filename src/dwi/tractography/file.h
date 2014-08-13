@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "app.h"
+#include "file/config.h"
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
