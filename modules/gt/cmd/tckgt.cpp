@@ -130,7 +130,7 @@ void usage ()
       
   + Option ("niter",
             "set the number of iterations of the metropolis hastings optimizer.")
-    + Argument ("n").type_integer(1, 1000000, std::numeric_limits<int>::max())
+    + Argument ("n").type_float(0, 1e6, std::numeric_limits<float>::max())
   
   + Option ("beta",
             "set the width of the Hanning interpolation window.")
@@ -267,7 +267,7 @@ void run ()
     mask = new Image::BufferPreload<bool>(opt[0][0]);
   
   
-  int niter = 1000000;
+  float niter = 1e6;
   opt = get_options("niter");
   if (opt.size())
     niter = opt[0][0];

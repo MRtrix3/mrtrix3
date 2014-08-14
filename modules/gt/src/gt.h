@@ -24,7 +24,7 @@
 #ifndef __gt_gt_h__
 #define __gt_gt_h__
 
-#define ITER_BIGSTEP 1000
+#define ITER_BIGSTEP 10000
 #define FRAC_BURNIN 10
 #define FRAC_PHASEOUT 10
 
@@ -72,7 +72,7 @@ namespace MR {
         {
         public:
           
-          Stats(const double T0, const double T1, const int maxiter) 
+          Stats(const double T0, const double T1, const float maxiter) 
             : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter), 
               progress("running MH sampler", n_max/ITER_BIGSTEP)
           {
@@ -206,10 +206,10 @@ namespace MR {
           double EextTot, EintTot;
           double alpha;
 
-          unsigned int n_gen[5];
-          unsigned int n_acc[5];
-          unsigned int n_iter;
-          const unsigned int n_max;
+          unsigned long n_gen[5];
+          unsigned long n_acc[5];
+          unsigned long n_iter;
+          const unsigned long n_max;
           
           ProgressBar progress;
           std::ofstream out;
