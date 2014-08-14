@@ -71,7 +71,7 @@ namespace MR
 
 
           private:
-            SeedMask init_seeder;
+            Rejection init_seeder;
             const float perturb_max_step;
 
             bool perturb (Point<float>&, Interp&);
