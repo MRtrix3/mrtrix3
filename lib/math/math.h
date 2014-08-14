@@ -34,9 +34,6 @@
   inline double name (const double val) throw () { return ::name (val); } \
   inline long double name (const long double val) throw () { return ::name##l (val); }
 
-using std::isnan;
-using std::isinf;
-
 namespace MR
 {
   namespace Math
