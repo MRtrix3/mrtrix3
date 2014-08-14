@@ -48,6 +48,7 @@ namespace MR
           size_t m_xdim, m_ydim, xdim, ydim, slices;
 
           virtual void load ();
+          virtual void unload ();
       };
 
     }

@@ -35,6 +35,16 @@ namespace MR
     namespace Handler
     {
 
+      Pipe::~Pipe () 
+      { 
+        close(); 
+        if (!is_new && files.size() == 1) {
+          DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
+          unlink (files[0].name.c_str());
+        }
+      }
+
+
 
       void Pipe::load ()
       {
@@ -59,10 +69,6 @@ namespace MR
           mmap = NULL;
           if (is_new)
             std::cout << files[0].name << "\n";
-          else {
-            DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
-            unlink (files[0].name.c_str());
-          }
           addresses[0] = NULL;
         }
       }
