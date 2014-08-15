@@ -228,6 +228,19 @@ namespace MR
 
         bool Rejection::get_seed (Point<float>& p)
         {
+#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
+          FloatImage::interp_type interp (image->interp);
+          Point<float> pos;
+          float selector;
+          do {
+            pos[0] = rng.uniform() * (image->dim(0)-1);
+            pos[1] = rng.uniform() * (image->dim(1)-1);
+            pos[2] = rng.uniform() * (image->dim(2)-1);
+            interp.voxel (pos);
+            selector = rng.uniform() * max;
+          } while (interp.value() < selector);
+          p = interp.voxel2scanner (pos);
+#else
           FloatImage::voxel_type seed (*image);
           float selector;
           do {
@@ -238,8 +251,10 @@ namespace MR
           } while (seed.value() < selector);
           p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
           p = image->transform.voxel2scanner (p);
+#endif
           return true;
         }
+
 
 
 

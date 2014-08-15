@@ -126,7 +126,7 @@ namespace MR
             p += step;
             tissues = get_tissues (p, interp);
 
-            if (tissues.valid() && (tissues.get_gm() >= tissues.get_wm()) && (Math::abs (tissues.get_gm() - tissues.get_wm()) > GMWMI_ACCURACY))
+            if (tissues.valid() && (tissues.get_gm() >= tissues.get_wm()) && (tissues.get_gm() - tissues.get_wm() < GMWMI_ACCURACY))
               return true;
 
           } while (step.norm() < 0.5 * min_vox);

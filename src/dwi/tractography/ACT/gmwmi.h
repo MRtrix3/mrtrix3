@@ -55,6 +55,7 @@ namespace MR
         class GMWMI_finder
         {
 
+          protected:
             typedef Image::Interp::Linear< Image::Buffer<float>::voxel_type > Interp;
 
           public:
