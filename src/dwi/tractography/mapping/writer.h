@@ -157,7 +157,7 @@ class MapWriter : public MapWriterBase
             v_buffer.value() = std::numeric_limits<value_type>::max();
         } else if (voxel_statistic == V_MAX) {
           for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-            v_buffer.value() = -std::numeric_limits<value_type>::max();
+            v_buffer.value() = std::numeric_limits<value_type>::lowest();
         } else {
           buffer.zero();
         }
@@ -233,7 +233,7 @@ class MapWriter : public MapWriterBase
           if (type == DEC || type == TOD)
             break;
           for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
-            if (v_buffer.value() == -std::numeric_limits<value_type>::max())
+            if (v_buffer.value() == std::numeric_limits<value_type>::lowest())
               v_buffer.value() = value_type(0);
           }
           break;
