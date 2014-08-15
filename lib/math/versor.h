@@ -88,10 +88,10 @@ namespace MR
         }
 
         operator bool () const {
-          return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
+          return ! (std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]));
         }
         bool operator! () const {
-          return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]);
+          return std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]);
         }
 
         void invalidate ()  {

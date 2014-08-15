@@ -191,7 +191,7 @@ void run ()
 
     {
       Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
-                            isnan (percentile) ?
+                            std::isnan (percentile) ?
                             (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
                               (str (percentile*100.0) + "\% percentile")
                             ) + "...");
@@ -246,7 +246,7 @@ void run ()
       Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
       threshold_value = hist.first_min();
     }
-    else if (isnan (threshold_value)) {
+    else if (std::isnan (threshold_value)) {
       Ptr<Image::Buffer<bool> > mask_data;
       Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
       opt = get_options ("mask");

@@ -292,7 +292,7 @@ namespace MR
       desc += "\n  Voxel size:        ";
       for (i = 0; i < ndim(); i++) {
         if (i) desc += " x ";
-        desc += isnan (vox (i)) ? "?" : str (vox (i));
+        desc += std::isnan (vox (i)) ? "?" : str (vox (i));
       }
 
       desc += std::string ("\n  Data type:         ") + (datatype().description() ? datatype().description() : "invalid") + "\n"

@@ -163,23 +163,23 @@ namespace MR
         void ScreenCapture::on_screen_capture ()
         {
 
-          if (isnan (rotation_axis_x->value()))
+          if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
-          if (isnan (rotation_axis_y->value()))
+          if (std::isnan (rotation_axis_y->value()))
             rotation_axis_y->setValue (0.0);
-          if (isnan (rotation_axis_z->value()))
+          if (std::isnan (rotation_axis_z->value()))
             rotation_axis_z->setValue (0.0);
-          if (isnan (degrees_button->value()))
+          if (std::isnan (degrees_button->value()))
             degrees_button->setValue (0.0);
 
-          if (isnan (translate_x->value()))
+          if (std::isnan (translate_x->value()))
             translate_x->setValue(0.0);
-          if (isnan (translate_y->value()))
+          if (std::isnan (translate_y->value()))
             translate_y->setValue(0.0);
-          if (isnan (translate_z->value()))
+          if (std::isnan (translate_z->value()))
             translate_z->setValue(0.0);
 
-          if (isnan (FOV_multipler->value()))
+          if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)

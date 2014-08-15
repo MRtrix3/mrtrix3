@@ -328,7 +328,7 @@ namespace MR
 
         update_levels();
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (std::isnan (display_midpoint) || std::isnan (display_range))
           reset_windowing();
 
         gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
@@ -451,7 +451,7 @@ namespace MR
 
         update_levels();
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (std::isnan (display_midpoint) || std::isnan (display_range))
           reset_windowing();
 
       }

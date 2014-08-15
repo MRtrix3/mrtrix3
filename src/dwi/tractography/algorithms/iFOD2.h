@@ -247,7 +247,7 @@ end_init:
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
                 value_type val = path_prob (calib_positions, calib_tangents);
-                if (isnan (val))
+                if (std::isnan (val))
                   ++nan_count;
                 else if (val > max_val)
                   max_val = val;
@@ -391,7 +391,7 @@ end_init:
               for (size_t i = 0; i < S.num_samples; ++i) {
 
                 value_type fod_amp = FOD (positions[i], tangents[i]);
-                if (isnan (fod_amp))
+                if (std::isnan (fod_amp))
                   return (NAN);
                 if (fod_amp < S.threshold)
                   return 0.0;

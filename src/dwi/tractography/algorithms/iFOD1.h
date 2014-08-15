@@ -183,7 +183,7 @@ namespace MR
         size_t nan_count = 0;
         for (size_t i = 0; i < calibrate_list.size(); ++i) {
           value_type val = FOD (rotate_direction (dir, calibrate_list[i]));
-          if (isnan (val))
+          if (std::isnan (val))
             ++nan_count;
           else if (val > max_val)
             max_val = val;

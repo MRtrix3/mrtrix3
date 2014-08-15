@@ -281,13 +281,13 @@ class Processor
         (*ipeaks_vox)[1] = item.pos[1];
         (*ipeaks_vox)[2] = item.pos[2];
         (*ipeaks_vox)[3] = 0;
-        if (isnan (value_type (ipeaks_vox->value())))
+        if (std::isnan (value_type (ipeaks_vox->value())))
           return true;
       }
 
       bool no_peaks = true;
       for (size_t i = 0; i < item.data.size(); i++) {
-        if (isnan (item.data[i]))
+        if (std::isnan (item.data[i]))
           return true;
         if (no_peaks)
           if (i && item.data[i] != 0.0) 

@@ -880,15 +880,15 @@ class OpConj : public OpUnary {
 class OpIsNaN : public OpUnary {
   public:
     OpIsNaN () : OpUnary ("isnan (%1)", true, false) { }
-    complex_type R (real_type v) const { return isnan (v) != 0; }
-    complex_type Z (complex_type v) const { return isnan (v.real()) != 0 || isnan (v.imag()) != 0; }
+    complex_type R (real_type v) const { return std::isnan (v) != 0; }
+    complex_type Z (complex_type v) const { return std::isnan (v.real()) != 0 || std::isnan (v.imag()) != 0; }
 };
 
 class OpIsInf : public OpUnary {
   public:
     OpIsInf () : OpUnary ("isinf (%1)", true, false) { }
-    complex_type R (real_type v) const { return isinf (v) != 0; }
-    complex_type Z (complex_type v) const { return isinf (v.real()) != 0 || isinf (v.imag()) != 0; }
+    complex_type R (real_type v) const { return std::isinf (v) != 0; }
+    complex_type Z (complex_type v) const { return std::isinf (v.real()) != 0 || std::isinf (v.imag()) != 0; }
 };
 
 class OpFinite : public OpUnary {

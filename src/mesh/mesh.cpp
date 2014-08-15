@@ -405,7 +405,7 @@ namespace MR
     {
 
       for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-        if (isnan ((*i)[0]) || isnan ((*i)[1]) || isnan ((*i)[2]))
+        if (std::isnan ((*i)[0]) || std::isnan ((*i)[1]) || std::isnan ((*i)[2]))
           throw Exception ("NaN values in mesh vertex data");
       }
 

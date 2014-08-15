@@ -89,7 +89,7 @@ namespace MR
             if (!source) return (false);
             for (source[3] = 0; source[3] < source.dim(3); ++source[3])
               values[source[3]] = source.value();
-            return (!isnan (values[0]));
+            return (!std::isnan (values[0]));
         }
 
         template <class InterpolatorType>

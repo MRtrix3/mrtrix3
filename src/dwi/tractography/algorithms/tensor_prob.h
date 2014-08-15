@@ -246,7 +246,7 @@ namespace MR
                 --(*this)[1];
                 --(*this)[2];
 
-                return !isnan (data[0]);
+                return !std::isnan (data[0]);
               }
           };
 
