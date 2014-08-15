@@ -25,7 +25,7 @@
 #define __bitset_h__
 
 
-
+#include <atomic>
 #include <stdint.h>
 #include "mrtrix.h"
 
@@ -35,7 +35,7 @@ namespace MR {
 
 
 
-  //! a class for stroring bitwise information
+  //! a class for storing bitwise information
   /*! The BitSet class stores information in a bitwise fashion. Only a single
    * bit of memory is used for each bit of information. Unlike the std::bitset
    * class, the size of the BitSet can be specified (and modified) at runtime.
@@ -205,9 +205,28 @@ namespace MR {
 
       static const uint8_t masks[8];
 
-      bool test  (const size_t index) const { return (data[index>>3] &   masks[index&7]); }
-      void set   (const size_t index)       {         data[index>>3] |=  masks[index&7] ; }
-      void reset (const size_t index)       {         data[index>>3] &= ~masks[index&7] ; }
+
+      bool test  (const size_t index) const
+      {
+        assert (index < bits);
+        return (data[index>>3] & masks[index&7]);
+      }
+
+      void set   (const size_t index)
+      {
+        assert (index < bits);
+        std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (index>>3));
+        uint8_t prev = *at, new_value;
+        do { new_value = prev | masks[index&7]; } while (!at->compare_exchange_weak (prev, new_value));
+      }
+
+      void reset (const size_t index)
+      {
+        assert (index < bits);
+        std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (index>>3));
+        uint8_t prev = *at, new_value;
+        do { new_value = prev & ~masks[index&7]; } while (!at->compare_exchange_weak (prev, new_value));
+      }
 
   };
 
