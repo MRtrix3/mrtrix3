@@ -38,9 +38,9 @@ void usage ()
     + "test ICLS";
 
   ARGUMENTS
-    + Argument ("problem", "the problem matrix.").type_file()
-    + Argument ("constraint", "the constraint matrix.").type_file()
-    + Argument ("b", "the RHS vector.").type_file();
+    + Argument ("problem", "the problem matrix.").type_file_in()
+    + Argument ("constraint", "the constraint matrix.").type_file_in()
+    + Argument ("b", "the RHS vector.").type_file_in();
 }
 
 

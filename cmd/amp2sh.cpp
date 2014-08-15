@@ -79,7 +79,7 @@ void usage ()
                           "By default this option is not required providing the direction set is supplied "
                           "in the amplitude image. This should be supplied as a list of directions [az el], "
                           "as generated using the gendir command")
-  +   Argument ("file").type_file()
+  +   Argument ("file").type_file_in()
 
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
   +   Argument ("noise").type_image_in()

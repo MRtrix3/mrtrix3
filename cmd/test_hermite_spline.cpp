@@ -38,9 +38,9 @@ void usage ()
     + "test Hermite spline interpolation";
 
   ARGUMENTS
-    + Argument ("control_points", "the control point positions.").type_file()
-    + Argument ("values", "the values at the control points.").type_file()
-    + Argument ("positions", "the positions to interpolate to.").type_file();
+    + Argument ("control_points", "the control point positions.").type_file_in()
+    + Argument ("values", "the values at the control points.").type_file_in()
+    + Argument ("positions", "the positions to interpolate to.").type_file_in();
 }
 
 

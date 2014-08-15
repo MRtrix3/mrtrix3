@@ -37,11 +37,11 @@ void usage ()
     + "test response function class";
 
   ARGUMENTS
-    + Argument ("b-vals", "the b-values at which to evaluate the response function.").type_file();
+    + Argument ("b-vals", "the b-values at which to evaluate the response function.").type_file_in();
 
   OPTIONS
     + Option ("response", "the file from which to read the response function coefficients, if not using default values")
-    +   Argument ("file").type_file();
+    +   Argument ("file").type_file_in();
 }
 
 

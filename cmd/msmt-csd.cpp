@@ -39,7 +39,7 @@ namespace MR {
             "specify the directions over which to apply the non-negativity constraint "
             "(by default, the built-in 300 direction set is used). These should be "
             "supplied as a text file containing the [ az el ] pairs for the directions.")
-        + Argument ("file").type_file()
+        + Argument ("file").type_file_in()
 
         + Option ("norm_lambda",
             "the regularisation parameter lambda that controls the strength of the "
