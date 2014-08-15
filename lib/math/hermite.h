@@ -140,7 +140,7 @@ namespace MR
             typename std::vector<ValueType>::const_iterator it = std::find_if (cp.begin(), cp.end(), GreaterThan<ValueType> (position));
             index = it - cp.begin() - 2;
             if (index < 0) index = 0;
-            if (index > cp.size()-4) index = cp.size()-4;
+            if (index > ssize_t(cp.size())-4) index = cp.size()-4;
             H.set ((position-cp[index+1])/(cp[index+2]-cp[index+1]), &cp[index]);
           }
           else {
@@ -153,7 +153,7 @@ namespace MR
         template <class ArrayType>
           ValueType value (const ArrayType& intensities) const {
             value_type a = index > 0 ? intensities[index-1] : project_down (intensities[0], intensities[1], intensities[2]);
-            value_type d = index < cp.size()-4 ? intensities[index+2] : project_up (intensities[cp.size()-5], intensities[cp.size()-4], intensities[cp.size()-3]);
+            value_type d = index < ssize_t(cp.size())-4 ? intensities[index+2] : project_up (intensities[cp.size()-5], intensities[cp.size()-4], intensities[cp.size()-3]);
             return H.value (a, intensities[index], intensities[index+1], d);
         }
 
