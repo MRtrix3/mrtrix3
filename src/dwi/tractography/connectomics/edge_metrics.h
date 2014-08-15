@@ -35,6 +35,8 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
+#include "dwi/tractography/streamline.h"
+
 #include "dwi/tractography/connectomics/connectomics.h"
 
 
@@ -52,7 +54,7 @@ class Metric_base {
     Metric_base (const bool scale) : scale_by_count (scale) { }
     virtual ~Metric_base() { }
 
-    virtual double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    virtual double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       throw Exception ("Calling empty virtual function Metric_base::operator()");
     }
@@ -71,7 +73,7 @@ class Metric_count : public Metric_base {
   public:
     Metric_count () : Metric_base (false) { }
 
-    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       return 1.0;
     }
@@ -84,7 +86,7 @@ class Metric_meanlength : public Metric_base {
   public:
     Metric_meanlength () : Metric_base (true) { }
 
-    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       return (tck.size() - 1);
     }
@@ -97,7 +99,7 @@ class Metric_invlength : public Metric_base {
   public:
     Metric_invlength () : Metric_base (false) { }
 
-    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       return (tck.size() > 1 ? (1.0 / (tck.size() - 1)) : 0);
     }
@@ -122,7 +124,7 @@ class Metric_invnodevolume : public Metric_base {
       }
     }
 
-    virtual double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    virtual double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       return (2.0 / (node_volumes[nodes.first] + node_volumes[nodes.second]));
     }
@@ -140,7 +142,7 @@ class Metric_invlength_invnodevolume : public Metric_invnodevolume {
     Metric_invlength_invnodevolume (Image::Buffer<node_t>& in_data) :
       Metric_invnodevolume (in_data) { }
 
-    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
     }
@@ -158,12 +160,12 @@ class Metric_meanscalar : public Metric_base {
       v (image),
       interp_template (v) { }
 
-    double operator() (const std::vector< Point<float> >& tck, const std::pair<node_t, node_t>& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
       Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (interp_template);
       double sum = 0.0;
       size_t count = 0.0;
-      for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
+      for (Streamline<>::const_iterator i = tck.begin(); i != tck.end(); ++i) {
         if (!interp.scanner (*i)) {
           sum += interp.value();
           ++count;
@@ -179,6 +181,10 @@ class Metric_meanscalar : public Metric_base {
     const Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_template;
 
 };
+
+
+
+
 
 
 

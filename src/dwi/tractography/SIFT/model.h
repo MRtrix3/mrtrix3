@@ -83,6 +83,7 @@ namespace MR
           virtual ~Model ();
 
 
+          // Over-rides the function defined in ModelBase; need to build contributions member also
           void map_streamlines (const std::string&);
 
           void remove_excluded_fixels ();
@@ -183,26 +184,20 @@ namespace MR
 
         contributions.assign (count, NULL);
 
-        // Determine appropriate upsampling ratio for mapping
-        // In this particular context want the calculation of length to be precise - 1/10th voxel size at worst
-        float step_size = 0.0;
-        if (properties.find ("output_step_size") != properties.end())
-          step_size = to<float> (properties["output_step_size"]);
-        else
-          step_size = to<float> (properties["step_size"]);
-        if (!step_size || !std::isfinite (step_size))
-          throw Exception ("Cannot perform appropriate streamline mapping without knowledge of track step size!");
-        const float upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (H.vox(0), H.vox(1), H.vox(2)) * 0.1));
+        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
-        Mapping::TrackLoader loader (file, count);
-        Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
-        MappedTrackReceiver receiver (*this);
-        Thread::run_queue (
-            loader, 
-            Thread::batch (Tractography::Streamline<float>()), 
-            Thread::multi (mapper), 
-            Thread::batch (Mapping::SetDixel()), 
-            Thread::multi (receiver));
+        {
+          Mapping::TrackLoader loader (file, count);
+          Mapping::TrackMapperBase mapper (H, dirs);
+          mapper.set_upsample_ratio (upsample_ratio);
+          MappedTrackReceiver receiver (*this);
+          Thread::run_queue (
+              loader,
+              Thread::batch (Tractography::Streamline<float>()),
+              Thread::multi (mapper),
+              Thread::batch (Mapping::SetDixel()),
+              Thread::multi (receiver));
+        }
 
         if (!contributions.back()) {
           track_t num_tracks = 0, max_index = 0;
@@ -363,17 +358,17 @@ namespace MR
         double total_contribution = 0.0, total_length = 0.0;
 
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          total_length += i->get_value();
+          total_length += i->get_length();
           const size_t fixel_index = master.dixel2fixel (*i);
-          if (fixel_index && (i->get_value() > Track_fixel_contribution::min())) {
-            total_contribution += i->get_value() * master.fixels[fixel_index].get_weight();
+          if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
+            total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
             bool incremented = false;
             for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_value()))
+              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
                 incremented = true;
             }
             if (!incremented)
-              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_value()));
+              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_length()));
           }
         }
 
@@ -381,7 +376,7 @@ namespace MR
 
         TD_sum += total_contribution;
         for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
-          fixel_TDs [i->get_fixel_index()] += i->get_value();
+          fixel_TDs [i->get_fixel_index()] += i->get_length();
 
         return true;
 
@@ -402,8 +397,8 @@ namespace MR
             for (size_t i = 0; i != this_cont.dim(); ++i) {
               const size_t new_index = remapper[this_cont[i].get_fixel_index()];
               if (new_index) {
-                new_cont.push_back (Track_fixel_contribution (new_index, this_cont[i].get_value()));
-                total_contribution += this_cont[i].get_value() * master[new_index].get_weight();
+                new_cont.push_back (Track_fixel_contribution (new_index, this_cont[i].get_length()));
+                total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
               }
             }
             TrackContribution* new_contribution = new TrackContribution (new_cont, total_contribution, this_cont.get_total_length());

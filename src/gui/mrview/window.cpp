@@ -155,6 +155,13 @@ namespace MR
 
 
 
+
+
+
+
+
+
+
       //CONF option: MRViewFocusModifierKey 
       //CONF default: alt (cmd on MacOSX) 
       //CONF modifier key to select focus mode in MRView. Valid
@@ -178,6 +185,7 @@ namespace MR
 
       Window::Window() :
         glarea (new GLArea (*this)),
+        glrefresh_timer (new QTimer (this)),
         mode (NULL),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
@@ -437,32 +445,32 @@ namespace MR
         action->setShortcut (tr("Space"));
         addAction (action);
 
-        show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (updateGL()));
+        show_crosshairs_action = menu->addAction (tr ("Show focus"), this, SLOT (updateGL()));
         show_crosshairs_action->setShortcut (tr("F"));
         show_crosshairs_action->setCheckable (true);
         show_crosshairs_action->setChecked (true);
         addAction (show_crosshairs_action);
 
-        show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (updateGL()));
+        show_comments_action = menu->addAction (tr ("Show comments"), this, SLOT (updateGL()));
         show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
         show_comments_action->setShortcut (tr("H"));
         show_comments_action->setCheckable (true);
         show_comments_action->setChecked (true);
         addAction (show_comments_action);
 
-        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (updateGL()));
+        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), this, SLOT (updateGL()));
         show_voxel_info_action->setShortcut (tr("V"));
         show_voxel_info_action->setCheckable (true);
         show_voxel_info_action->setChecked (true);
         addAction (show_voxel_info_action);
 
-        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (updateGL()));
+        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), this, SLOT (updateGL()));
         show_orientation_labels_action->setShortcut (tr("O"));
         show_orientation_labels_action->setCheckable (true);
         show_orientation_labels_action->setChecked (true);
         addAction (show_orientation_labels_action);
 
-        show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (updateGL()));
+        show_colourbar_action = menu->addAction (tr ("Show colour bar"), this, SLOT (updateGL()));
         show_colourbar_action->setShortcut (tr("B"));
         show_colourbar_action->setCheckable (true);
         show_colourbar_action->setChecked (true);
@@ -606,7 +614,7 @@ namespace MR
 
 
         lighting_ = new GL::Lighting (this);
-        connect (lighting_, SIGNAL (changed()), glarea, SLOT (updateGL()));
+        connect (lighting_, SIGNAL (changed()), this, SLOT (updateGL()));
 
         set_image_menu ();
 
@@ -620,6 +628,8 @@ namespace MR
             WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
         }
 
+        glrefresh_timer->setSingleShot (true);
+        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
       }
 
 
@@ -744,12 +754,16 @@ namespace MR
         mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
         set_mode_features();
         emit modeChanged();
-        glarea->updateGL();
+        updateGL();
       }
 
 
       void Window::select_mouse_mode_slot (QAction* action)
       {
+        bool rotate_button_checked = mode_action_group->actions().indexOf (action) == 2;
+        if (rotate_button_checked) 
+          set_snap_to_image (false);
+        snap_to_image_action->setEnabled (!rotate_button_checked);
         set_cursor();
       }
 
@@ -782,7 +796,7 @@ namespace MR
         } else {
           tool->close();
         }
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -797,7 +811,7 @@ namespace MR
           while (action != colourmap_actions[n])
             ++n;
           imagep->set_colourmap (n);
-          glarea->updateGL();
+          updateGL();
         }
       }
 
@@ -807,7 +821,7 @@ namespace MR
       {
         if (image()) {
           image()->set_invert_scale (invert_scale_action->isChecked());
-          glarea->updateGL();
+          updateGL();
         }
       }
 
@@ -817,7 +831,9 @@ namespace MR
       {
         if (image()) {
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
-          glarea->updateGL();
+          if (snap_to_image_axes_and_voxel) 
+            mode->reset_orientation();
+          updateGL();
         }
       }
 
@@ -830,13 +846,25 @@ namespace MR
       }
 
 
+
+
+      void Window::updateGL () 
+      { 
+        if (glrefresh_timer->isActive())
+          return;
+
+        glrefresh_timer->start();
+      }
+
+
+
       void Window::image_reset_slot ()
       {
         Image* imagep = image();
         if (imagep) {
           imagep->reset_windowing();
           on_scaling_changed();
-          glarea->updateGL();
+          updateGL();
         }
       }
 
@@ -847,7 +875,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->set_interpolate (image_interpolate_action->isChecked());
-          glarea->updateGL();
+          updateGL();
         }
       }
 
@@ -866,7 +894,7 @@ namespace MR
         else if (action == sagittal_action) set_plane (0);
         else if (action == coronal_action) set_plane (1);
         else assert (0);
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -915,7 +943,7 @@ namespace MR
         assert (image());
         ++image()->interp[3];
         set_image_navigation_menu();
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -926,7 +954,7 @@ namespace MR
         assert (image());
         --image()->interp[3];
         set_image_navigation_menu();
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -937,7 +965,7 @@ namespace MR
         assert (image());
         ++image()->interp[4];
         set_image_navigation_menu();
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -948,7 +976,7 @@ namespace MR
         assert (image());
         --image()->interp[4];
         set_image_navigation_menu();
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -968,7 +996,7 @@ namespace MR
             mode->features & Mode::ShaderTransparency,
             mode->features & Mode::ShaderLighting);
         emit imageChanged();
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -998,7 +1026,7 @@ namespace MR
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
           show_colourbar_action->setChecked (annotations & 0x00000010);
         }
-        glarea->updateGL();
+        updateGL();
       }
 
 
@@ -1013,7 +1041,7 @@ namespace MR
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
         set_image_navigation_menu();
-        glarea->updateGL();
+        updateGL();
       }
 
       inline int Window::get_mouse_mode ()
@@ -1285,7 +1313,7 @@ namespace MR
 
               if (modifiers_ == Qt::ControlModifier) {
                 set_FOV (FOV() * Math::exp (-event->delta()/1200.0));
-                glarea->updateGL();
+                updateGL();
                 event->accept();
                 return;
               }
@@ -1393,7 +1421,7 @@ namespace MR
           else if (cmd == "view.fov") { 
             float fov = to<float> (args);
             set_FOV (fov);
-            glarea->updateGL();
+            updateGL();
           }
           
           // BATCH_COMMAND view.focus x,y,z # Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. 
@@ -1402,7 +1430,7 @@ namespace MR
             if (pos.size() != 3) 
               throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
             set_focus (Point<> (pos[0], pos[1], pos[2]));
-            glarea->updateGL();
+            updateGL();
           }
           
           // BATCH_COMMAND view.voxel x,y,z # Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. 
@@ -1412,7 +1440,7 @@ namespace MR
               if (pos.size() != 3) 
                 throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
               set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
-              glarea->updateGL();
+              updateGL();
             }
           }
 
@@ -1420,14 +1448,14 @@ namespace MR
           else if (cmd == "view.fov") { 
             float fov = to<float> (args);
             set_FOV (fov);
-            glarea->updateGL();
+            updateGL();
           }
           
           // BATCH_COMMAND view.plane num # Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
           else if (cmd == "view.plane") { 
             int n = to<int> (args);
             set_plane (n);
-            glarea->updateGL();
+            updateGL();
           }
 
           // BATCH_COMMAND view.lock # Set whether view is locked to image axes (0: no, 1: yes).

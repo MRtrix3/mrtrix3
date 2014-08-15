@@ -61,18 +61,18 @@ class Mapped_track
 
     void set_first_node  (const node_t i) { nodes.first = i;  }
     void set_second_node (const node_t i) { nodes.second = i; }
-    void set_nodes       (const std::pair<node_t, node_t>& i) { nodes = i; }
+    void set_nodes       (const NodePair& i) { nodes = i; }
     void set_factor      (const float i)    { factor = i; }
     void set_weight      (const float i)    { weight = i; }
 
     node_t get_first_node()  const { return nodes.first;  }
     node_t get_second_node() const { return nodes.second; }
-    const std::pair<node_t, node_t>& get_nodes() const { return nodes; }
+    const NodePair& get_nodes() const { return nodes; }
     float get_factor() const { return factor; }
     float get_weight() const { return weight; }
 
   private:
-    std::pair<node_t, node_t> nodes;
+    NodePair nodes;
     float factor, weight;
 
 };

@@ -23,13 +23,13 @@
 #ifndef __dwi_tractography_file_base_h__
 #define __dwi_tractography_file_base_h__
 
-#include <fstream>
 #include <iomanip>
 #include <map>
 
 #include "types.h"
 #include "point.h"
 #include "file/key_value.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "dwi/tractography/properties.h"
 
@@ -86,13 +86,11 @@ namespace MR
 
           ~__WriterBase__()
           {
-            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary);
-            if (!out) 
-              throw Exception ("error re-opening output file \"" + name + "\": " + strerror (errno));
+            File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary);
             update_counts (out);
           }
 
-          void create (std::ofstream& out, const Properties& properties, const std::string& type) {
+          void create (File::OFStream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
@@ -139,12 +137,12 @@ namespace MR
           int64_t  count_offset;
 
 
-          void verify_stream (const std::ofstream& out) {
+          void verify_stream (const File::OFStream& out) {
             if (!out.good())
               throw Exception ("error writing file \"" + name + "\": " + strerror (errno));
           }
 
-          void update_counts (std::ofstream& out) {
+          void update_counts (File::OFStream& out) {
             out.seekp (count_offset);
             out << count << "\ntotal_count: " << total_count << "\nEND\n";
             verify_stream (out);

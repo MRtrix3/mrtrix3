@@ -110,6 +110,12 @@ namespace MR
             void set_FOV (float value) { window.set_FOV (value); }
             void set_plane (int p) { window.set_plane (p); }
             void set_orientation (const Math::Versor<float>& Q) { window.set_orientation (Q); }
+            void reset_orientation () { 
+              Math::Versor<float> orient;
+              if (image()) 
+                orient.from_matrix (image()->header().transform());
+              set_orientation (orient);
+            }
 
             QGLWidget* glarea () const {
               return reinterpret_cast <QGLWidget*> (window.glarea);

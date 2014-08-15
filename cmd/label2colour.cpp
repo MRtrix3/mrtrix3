@@ -61,8 +61,8 @@ void usage ()
   OPTIONS
   + LookupTableOption
 
-  + Option ("config", "If the input parcellation image was created using mrprep4connectome, provide the connectome config file used so that the node indices are converted correctly")
-    + Argument ("file").type_file();
+  + Option ("config", "If the input parcellation image was created using labelconfig, provide the connectome config file used so that the node indices are converted correctly")
+    + Argument ("file").type_file_in();
 
 };
 

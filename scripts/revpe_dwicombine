@@ -1,0 +1,263 @@
+#!/usr/bin/python2
+
+# Script for performing EPI distortion correction using FSL 5.0 tools eddy / topup / applytopup
+
+# This script is only for the specific case where two DWI acquisitions have taken place, each containing precisely the same set of diffusion directions, and each contains at least one b=0 image, but the phase encode direction is precisely reversed in the second acquisition. These b=0 images are extracted by the script for the purpose of estimating the inhomogeneity field, and a single image file is produced that contains a single re-combined image volume per diffusion volume.
+
+# Order of arguments is as follows:
+# 1. First DWI volume image file
+# 2. Second DWI volume image file
+# 3. Phase encode axis (0, 1 or 2)
+# 4. Output DWI volume image file
+
+# Note that some versions of FSL's eddy tool appear to have a bug. If the script crashes with an error "These data are incompatible with least-squares reconstruction"... that's the bug. If you encounter this, you can try updating FSL; or if you are able to compile from the FSL source code, you can try the following fix (it's where I think the problem is, but haven't tested it).
+# File EddyUtils.cpp, line 58:
+#   double dp = NEWMAT::DotProduct(s1.GetAcqPara().PhaseEncodeVector(),s1.GetAcqPara().PhaseEncodeVector());
+# change to:
+#   double dp = NEWMAT::DotProduct(s1.GetAcqPara().PhaseEncodeVector(),s2.GetAcqPara().PhaseEncodeVector());
+
+
+import os, shutil, sys
+
+from lib.binaryInPath  import binaryInPath
+from lib.delTempDir    import delTempDir
+from lib.errorMessage  import errorMessage
+from lib.getFSLSuffix  import getFSLSuffix
+from lib.getHeaderInfo import getHeaderInfo
+from lib.loadOptions   import loadOptions
+from lib.makeTempDir   import makeTempDir
+from lib.printMessage  import printMessage
+from lib.runCommand    import runCommand
+from lib.warnMessage   import warnMessage
+
+
+num_args = 4
+
+if len(sys.argv) < num_args+1:
+  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <DWI image 1> <DWI image 2> <PE direction> <Output image series>')
+
+fsl_path = os.environ.get('FSLDIR', '')
+if not fsl_path:
+  errorMessage('Environment variable FSLDIR is not set; please run appropriate FSL configuration script')
+
+topup_config_path = os.path.join(fsl_path, 'etc', 'flirtsch', 'b02b0.cnf')
+if not os.path.isfile(topup_config_path):
+  errorMessage('Could not find necessary default config file for FSL\'s topup program\n(expected location: ' + topup_config_path + ')')
+
+topup_cmd = 'topup'
+if not binaryInPath(topup_cmd):
+  topup_cmd = 'fsl5.0-topup'
+  if not binaryInPath(topup_cmd):
+    errorMessage('Could not find FSL program topup; please verify FSL install')
+
+applytopup_cmd = 'applytopup'
+if not binaryInPath(applytopup_cmd):
+  applytopup_cmd = 'fsl5.0-applytopup'
+  if not binaryInPath(applytopup_cmd):
+    errorMessage('Could not find FSL program applytopup; please verify FSL install')
+    
+eddy_cmd = 'eddy'
+if not binaryInPath(eddy_cmd):
+  eddy_cmd = 'fsl5.0-eddy'
+  if not binaryInPath(eddy_cmd):
+    errorMessage('Could not find FSL program eddy; please verify FSL install')
+
+(quiet, verbose) = loadOptions(num_args)
+
+fsl_suffix = getFSLSuffix()
+
+working_dir = os.getcwd()
+temp_dir = makeTempDir(verbose)
+
+# Convert all input images into MRtrix format and store in temprary directory first;
+#   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
+runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(temp_dir, 'dwi1.mif') + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(temp_dir, 'dwi2.mif') + quiet, verbose)
+
+# TODO Enhancement: If diffusion encoding is not embedded within the input files,
+#   check the directory (/ies) of the input files for bvecs / bvals pair
+
+# Get the phase encode axis
+PEAxis = int(sys.argv[3])
+
+# Move into the temporary directory
+if verbose:
+  printMessage('Changing to temporary directory (' + temp_dir + ')')
+os.chdir(temp_dir)
+
+# Verify that input images are valid
+DWI1_dim = getHeaderInfo ('dwi1.mif', 'dimensions', verbose).split()
+DWI2_dim = getHeaderInfo ('dwi2.mif', 'dimensions', verbose).split()
+
+if len(DWI1_dim) != 4:
+  errorMessage ('First input image must be a 4D image')
+if len(DWI2_dim) != 4:
+  errorMessage ('Second input image must be a 4D image')
+if DWI1_dim != DWI1_dim:
+  errorMessage ('Dimensions of input image file pair do not match')
+  
+spatial_dims = DWI1_dim[:3]
+num_volumes = DWI1_dim[3]
+  
+# Get the axis strides from one of the input images, so the output image can be modified to match
+stride = getHeaderInfo ('dwi1.mif', 'stride', verbose)
+stride_option = ' -stride ' + stride.replace(' ', ',')
+
+# Convert the input files as necessary for FSL tools & later commands
+runCommand('mrconvert dwi1.mif dwi1.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrconvert dwi2.mif dwi2.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrinfo dwi1.mif -export_grad_mrtrix grad1.b' + quiet, verbose)
+runCommand('mrinfo dwi2.mif -export_grad_mrtrix grad2.b' + quiet, verbose)
+runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3' + quiet, verbose)
+runCommand('dwiextract dwi1.mif -bzero dwi1b0.mif' + quiet, verbose)
+runCommand('dwiextract dwi2.mif -bzero dwi2b0.mif' + quiet, verbose)
+runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4' + quiet, verbose)
+
+# Find out how many b=0 volumes there are
+DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions', verbose)
+DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions', verbose)
+DWI1_b0_count = int(1)
+if len(DWI1_b0_dims) == 4:
+  DWI1_b0_count = int(DWI1_b0_dims[3])
+DWI2_b0_count = int(1)
+if len(DWI2_b0_dims) == 4:
+  DWI2_b0_count = int(DWI2_b0_dims[3])
+
+# If no axes need to be cropped, use the original 4D volume with the image pair
+# Otherwise, need to call mrcrop with the appropriate options, and pass the modified images to topup
+topup_imain = 'b0all.nii'
+series_imain = 'dwiall.nii'
+
+# For any non-even dimensions, crop the first voxel along that dimension
+crop_option = ''
+for axis, axis_dim in enumerate(spatial_dims):
+  if int(axis_dim)%2:
+    crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_dim)-1) 
+
+if crop_option:
+  warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
+  runCommand('mrcrop b0all.nii b0all_crop.nii' + crop_option + quiet, verbose)
+  runCommand('mrcrop dwiall.nii dwiall_crop.nii' + crop_option + quiet, verbose)
+  topup_imain = 'b0all_crop.nii'
+  series_imain = 'dwiall_crop.nii'
+
+# Construct a configuration file
+if verbose:
+  printMessage('Creating phase-encoding configuration file')
+config_file = open('config.txt', 'w')
+config_line = [ 0, 0, 0, 0.1 ]
+config_line[PEAxis] = 1
+for line_count in xrange(0,DWI1_b0_count):
+  for column_value in config_line:
+    config_file.write(str(column_value) + ' ')
+config_file.write('\n')
+config_line[PEAxis] = -1
+for line_count in xrange(0,DWI2_b0_count):
+  for column_value in config_line:
+    config_file.write(str(column_value) + ' ')
+config_file.write('\n')
+config_file.close()
+
+# See if the verbose field should be sent to FSL commands
+fsl_verbose = ''
+if verbose:
+  fsl_verbose = ' --verbose'
+
+# Perform the field estimation
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map.nii --iout=b0_topup.nii --config=' + topup_config_path + fsl_verbose, verbose)
+
+# Concatenate the diffusion gradient tables
+filenames = [ 'grad1.b', 'grad2.b' ]
+with open('grad_combined.b', 'w') as outfile:
+  for fname in filenames:
+    with open(fname) as infile:
+        outfile.write (infile.read())
+
+# Generate an initial distortion-corrected volume
+runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
+runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
+runCommand('mrcat dwi1_topup.' + fsl_suffix + ' dwi2_topup.' + fsl_suffix + ' - -axis 3' + quiet + ' | mrconvert - topup_combined.mif -grad grad_combined.b' + quiet, verbose)
+
+# Produce a brain mask based on this initial correction
+runCommand('dwi2mask topup_combined.mif - -grad grad_combined.b' + quiet + ' | maskfilter - dilate -' + quiet + ' | mrconvert - mask.nii -datatype float32' + quiet, verbose)
+
+# Create the diffusion gradient table in FSL format
+runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals' + quiet, verbose)
+    
+# When producing this config file, it's possible that the first DWI input has more than one b=0 image
+# In that case, all volumes in the second DWI input need to refer to one of the config file lines
+#   that was set based on the b=0's in the second input
+# TODO A better setup here would be: for each volume, give the index of the b=0 image in the config file
+#   that is closest in time (this is because eddy uses the motion parameters from topup as an initial estimate)
+DWI2_config_index = str(DWI1_b0_count + 1)
+indices = ''
+for volume in xrange(0,int(num_volumes)):
+  indices = indices + '1 '
+for volume in xrange(0,int(num_volumes)):
+  indices = indices + DWI2_config_index + ' '
+with open('indices.txt', 'w') as index_file:
+  index_file.write(indices);
+
+
+
+# Run eddy
+#runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=lsr' + fsl_verbose, verbose)
+
+# Convert the resulting LSR-reconstructed volume to the output image, and re-insert the diffusion encoding
+# Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
+#   gradient vectors is performed. It should be possible to get the motion parameters from the eddy
+#   text file output and modify them manually, or FMRIB may update eddy itself.
+#result_path = 'result' + os.path.splitext(sys.argv[4])[1]
+#runCommand('mrconvert eddy_output.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals' + quiet, verbose)
+
+
+
+# Looks like least-squares reconstruction is not supported in the publicly-available eddy code
+# Instead, generate a Jacobian-modulated output image for each volume, get the field image from topup, and
+#   do a manual combination using the equation from Skare and Bammer ISMRM 2010
+
+runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac' + fsl_verbose, verbose)
+
+# Derive the weight images
+# To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
+# Scaling appears to be correct; however FSL is a bit ambiguous when it comes to image transforms & strides
+# Looks like topup flips the x-axis on output (both corrected images and field), and erases image transform
+# Eddy seems to expect this and operates accordingly; but since we're doing things external to FSL and
+#   voxel-by-voxel, need to do the flip explicitly; also import the transform from the first input image
+#   for the sake of visualisation
+transform = getHeaderInfo('dwi1.mif', 'transform', verbose)
+with open( 'dwi1_transform.txt', 'w' ) as f:
+  for line in transform:
+    f.write (line)
+runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace' + quiet + ' | mrconvert - field_map_flip.mif' + stride_option + quiet, verbose)
+
+# Scaling term for field map is identical to the bandwidth provided in the topup config file
+#   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
+# Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
+runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 ' + str(PEAxis) + ' -axes 0,1,2' + quiet, verbose)
+runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif' + quiet, verbose)
+runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif' + quiet, verbose)
+runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif' + quiet, verbose)
+runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif' + quiet, verbose)
+runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbose)
+
+# Manually combine corresponding volumes from EDDY output
+runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option + quiet, verbose)
+runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option + quiet, verbose)
+result_path = 'result' + os.path.splitext(sys.argv[4])[1]
+runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max -' + quiet + ' | mrconvert - ' + result_path + ' -grad grad1.b' + quiet, verbose)
+
+
+# Move back to original directory
+if verbose:
+  printMessage('Changing back to original directory (' + working_dir + ')')
+os.chdir(working_dir)
+
+# Get the final file from the temporary directory & put it in the correct location
+if verbose:
+  printMessage('Moving output file from temporary directory to user specified location')
+shutil.move(os.path.join(temp_dir, result_path), sys.argv[4])
+
+# Don't leave a trace
+delTempDir(temp_dir, verbose)
+

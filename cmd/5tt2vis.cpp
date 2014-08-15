@@ -55,8 +55,8 @@ void usage ()
   + "generate an image for visualisation purposes from an ACT 5TT segmented anatomical image";
 
   ARGUMENTS
-  + Argument ("input",  "the input 4D tissue-segmented image")
-  + Argument ("output", "the output 3D image for visualisation");
+  + Argument ("input",  "the input 4D tissue-segmented image").type_image_in()
+  + Argument ("output", "the output 3D image for visualisation").type_image_out();
 
   OPTIONS
 

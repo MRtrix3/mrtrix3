@@ -86,7 +86,7 @@ namespace MR
 
       bool MGZ::check (Header& H, size_t num_axes) const
       {
-        if (!Path::has_suffix (H.name(), ".nii.gz") && !Path::has_suffix (H.name(), ".mgz")) return false;
+        if (!Path::has_suffix (H.name(), ".mgh.gz") && !Path::has_suffix (H.name(), ".mgz")) return false;
         if (num_axes < 3) throw Exception ("cannot create MGZ image with less than 3 dimensions");
         if (num_axes > 4) throw Exception ("cannot create MGZ image with more than 4 dimensions");
 

@@ -34,7 +34,7 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
 const OptionGroup SIFTOutputOption = OptionGroup ("Options to make SIFT provide additional output files")
 
   + Option ("csv", "output statistics of execution per iteration to a .csv file")
-    + Argument ("file").type_file()
+    + Argument ("file").type_file_out()
 
   + Option ("output_debug", "provide various output images for assessing & debugging performace etc.");
 

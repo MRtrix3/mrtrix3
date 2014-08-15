@@ -37,7 +37,7 @@ void usage ()
   + "output DICOM fields in human-readable format.";
 
   ARGUMENTS
-  + Argument ("file", "the DICOM file to be scanned.").type_file ();
+  + Argument ("file", "the DICOM file to be scanned.").type_file_in();
 
   OPTIONS
   + Option ("all", "print all DICOM fields.")
@@ -47,8 +47,8 @@ void usage ()
   + Option ("tag", "print field specified by the group & element tags supplied. "
       "Tags should be supplied as Hexadecimal (i.e. as they appear in the -all listing).")
   .allow_multiple()
-  + Argument ("group")
-  + Argument ("element");
+  + Argument ("group").type_text()
+  + Argument ("element").type_text();
 }
 
 

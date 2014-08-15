@@ -78,7 +78,8 @@ namespace MR
                 const std::string& fod_path (properties["seed_dynamic"]);
 
                 typedef Mapping::SetDixel SetDixel;
-                typedef Mapping::TrackMapperDixel TckMapper;
+                typedef Mapping::TrackMapperBase TckMapper;
+                typedef Seeding::WriteKernelDynamic Writer;
 
                 DWI::Directions::FastLookupSet dirs (1281);
                 Image::Buffer<float> fod_data (fod_path);
@@ -88,7 +89,7 @@ namespace MR
                 typename Method::Shared shared (diff_path, properties);
                 Image::Header H (fod_path);
 
-                WriteKernel  writer  (shared, destination, properties);
+                Writer       writer  (shared, destination, properties);
                 Exec<Method> tracker (shared);
 
                 // Determine track upsampling ratio for mapping during dynamic seeding
@@ -104,16 +105,17 @@ namespace MR
                 if (std::isfinite(step_size) && !step_size)
                   upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
 
-                TckMapper mapper (H, upsample_ratio, true, dirs);
+                TckMapper mapper (H, dirs);
+                mapper.set_upsample_ratio (upsample_ratio);
 
                 Thread::Queue<GeneratedTrack>           tracking_output_queue;
                 Thread::Queue< Streamline<value_type> > writer_output_queue;
                 Thread::Queue<Mapping::SetDixel>        dixel_queue;
 
-                Thread::__Source<GeneratedTrack, Exec<Method> >                        q_tracker (tracking_output_queue, tracker);
-                Thread::__Pipe  <GeneratedTrack, WriteKernel, Streamline<value_type> > q_writer  (tracking_output_queue, writer, writer_output_queue);
-                Thread::__Pipe  <Streamline<value_type> , TckMapper, SetDixel>         q_mapper  (writer_output_queue, mapper, dixel_queue);
-                Thread::__Sink  <SetDixel, Seeding::Dynamic>                           q_seeder  (dixel_queue, *seeder);
+                Thread::__Source<GeneratedTrack, Exec<Method> >                   q_tracker (tracking_output_queue, tracker);
+                Thread::__Pipe  <GeneratedTrack, Writer, Streamline<value_type> > q_writer  (tracking_output_queue, writer, writer_output_queue);
+                Thread::__Pipe  <Streamline<value_type> , TckMapper, SetDixel>    q_mapper  (writer_output_queue, mapper, dixel_queue);
+                Thread::__Sink  <SetDixel, Seeding::Dynamic>                      q_seeder  (dixel_queue, *seeder);
 
                 Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > >             tracker_array (q_tracker, Thread::number_of_threads());
                 Thread::Array< Thread::__Pipe<Streamline<value_type>, TckMapper, SetDixel> > mapper_array  (q_mapper,  Thread::number_of_threads());

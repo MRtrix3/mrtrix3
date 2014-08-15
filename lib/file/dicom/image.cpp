@@ -447,16 +447,20 @@ namespace MR {
         const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
+          G(n,0) = G(n,1) = 0.0; G(n,2) = 1.0;
           G(n,3) = frame.bvalue;
-          if (rotate_DW_scheme) {
-            G(n,0) = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
-            G(n,1) = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
-            G(n,2) = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
-          }
-          else { 
-            G(n,0) = -frame.G[0];
-            G(n,1) = -frame.G[1];
-            G(n,2) =  frame.G[2];
+          if (G(n,3) && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
+
+            if (rotate_DW_scheme) {
+              G(n,0) = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
+              G(n,1) = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
+              G(n,2) = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
+            } else {
+              G(n,0) = -frame.G[0];
+              G(n,1) = -frame.G[1];
+              G(n,2) =  frame.G[2];
+            }
+
           }
         }
 

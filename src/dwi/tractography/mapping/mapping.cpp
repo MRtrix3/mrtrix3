@@ -27,11 +27,50 @@
 #include "dwi/tractography/mapping/mapping.h"
 
 
-
 namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace Mapping {
+
+
+
+
+        size_t determine_upsample_ratio (const Image::Info& info, const float step_size, const float ratio)
+        {
+          size_t upsample_ratio = 1;
+          if (step_size && std::isfinite (step_size))
+            upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
+          return upsample_ratio;
+        }
+
+        size_t determine_upsample_ratio (const Image::Info& info, const std::string& tck_path, const float ratio)
+        {
+          Tractography::Properties properties;
+          Tractography::Reader<> reader (tck_path, properties);
+          return determine_upsample_ratio (info, properties, ratio);
+        }
+
+
+        size_t determine_upsample_ratio (const Image::Info& info, const Tractography::Properties& properties, const float ratio)
+        {
+          if (info.ndim() < 3)
+            throw Exception ("Cannot perform streamline mapping on image with less than three dimensions");
+
+          Properties::const_iterator i = properties.find ("output_step_size");
+          if (i == properties.end()) {
+            i = properties.find ("step_size");
+            if (i == properties.end())
+              throw Exception ("Cannot perform streamline mapping: no step size information in track file header");
+          }
+          const float step_size = to<float> (i->second);
+
+          return determine_upsample_ratio (info, step_size, ratio);
+        }
+
+
+
+
+
 
 
 

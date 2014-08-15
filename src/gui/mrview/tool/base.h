@@ -23,6 +23,8 @@
 #ifndef __gui_mrview_tool_base_h__
 #define __gui_mrview_tool_base_h__
 
+#include "file/config.h"
+
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 

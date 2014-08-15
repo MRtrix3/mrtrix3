@@ -38,7 +38,7 @@ namespace MR
       {
         public:
           Pipe (Base& handler) : Base (handler) { }
-          ~Pipe () { close(); }
+          ~Pipe ();
 
         protected:
           Ptr<File::MMap> mmap;

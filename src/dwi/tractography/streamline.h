@@ -49,6 +49,11 @@ namespace MR
             index (-1),
             weight (value_type (1.0)) { }
 
+          Streamline (const Streamline& that) :
+            std::vector< Point<value_type> > (that),
+            index (that.index),
+            weight (that.weight) { }
+
           Streamline (const std::vector< Point<value_type> >& tck) :
             std::vector< Point<value_type> > (tck),
             index (-1),

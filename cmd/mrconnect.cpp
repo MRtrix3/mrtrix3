@@ -58,7 +58,7 @@ void usage ()
 
   OPTIONS
   + Option ("directions", "the list of directions associated with each 3D volume, generated using the gendir command")
-  + Argument ("file").type_file ()
+  + Argument ("file").type_file_in ()
 
   + Option ("angle", "the angular threshold used to define neighbouring directions (in degrees)")
   + Argument ("value").type_float (0, 15, 90)

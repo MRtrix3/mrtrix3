@@ -69,7 +69,7 @@ void usage ()
             "the linear frequency filtering parameters (default = [ 1 1 1 1 1 ]). "
             "These should be supplied as a text file containing the filtering "
             "coefficients for each even harmonic order.")
-  + Argument ("spec").type_file()
+  + Argument ("spec").type_file_in()
 
   + Option ("normalise", "min-max normalise the ODFs")
 
@@ -77,7 +77,7 @@ void usage ()
             "specify the directions to sample the ODF for min-max normalisation,"
             "(by default, the built-in 300 direction set is used). These should be "
             "supplied as a text file containing the [ el az ] pairs for the directions.")
-  + Argument ("file").type_file();
+  + Argument ("file").type_file_in();
 }
 
 

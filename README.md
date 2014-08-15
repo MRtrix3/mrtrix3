@@ -1,7 +1,7 @@
 # MRtrix
 
 The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/jdtournier/mrtrix3/wiki),
-including a detailed decription of the installation procedure.
+including a detailed decription of the installation procedure. The official website for MRtrix is hosted on <a href="https://plus.google.com/110975114527807720518" rel="publisher">Google+</a>.
 
 
 ## Quick install:

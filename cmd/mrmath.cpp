@@ -322,7 +322,6 @@ class ImageKernel : public ImageKernelBase {
 
 void run ()
 {
-
   const size_t num_inputs = argument.size() - 2;
   const int op = argument[num_inputs];
   const std::string& output_path = argument.back();
@@ -403,15 +402,16 @@ void run ()
     // Instantiate a kernel depending on the operation requested
     Ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: kernel = new ImageKernel<Mean>   (header, output_path); break;
-      case 1: kernel = new ImageKernel<Sum>    (header, output_path); break;
-      case 2: kernel = new ImageKernel<RMS>    (header, output_path); break;
-      case 3: kernel = new ImageKernel<Var>    (header, output_path); break;
-      case 4: kernel = new ImageKernel<Std>    (header, output_path); break;
-      case 5: kernel = new ImageKernel<Min>    (header, output_path); break;
-      case 6: kernel = new ImageKernel<Max>    (header, output_path); break;
-      case 7: kernel = new ImageKernel<AbsMax> (header, output_path); break;
-      case 8: kernel = new ImageKernel<MagMax> (header, output_path); break;
+      case 0: kernel = new ImageKernel<Mean>    (header, output_path); break;
+      case 1: kernel = new ImageKernel<Sum>     (header, output_path); break;
+      case 2: kernel = new ImageKernel<Product> (header, output_path); break;
+      case 3: kernel = new ImageKernel<RMS>     (header, output_path); break;
+      case 4: kernel = new ImageKernel<Var>     (header, output_path); break;
+      case 5: kernel = new ImageKernel<Std>     (header, output_path); break;
+      case 6: kernel = new ImageKernel<Min>     (header, output_path); break;
+      case 7: kernel = new ImageKernel<Max>     (header, output_path); break;
+      case 8: kernel = new ImageKernel<AbsMax>  (header, output_path); break;
+      case 9: kernel = new ImageKernel<MagMax>  (header, output_path); break;
       default: assert (0);
     }
 

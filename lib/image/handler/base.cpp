@@ -37,10 +37,7 @@ namespace MR
         writable (false) { }
 
 
-      Base::~Base ()
-      {
-        close();
-      }
+      Base::~Base () { }
 
 
       void Base::open ()
@@ -64,7 +61,6 @@ namespace MR
         addresses.clear();
       }
 
-      void Base::unload() { }
 
     }
   }

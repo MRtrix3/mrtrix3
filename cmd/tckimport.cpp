@@ -33,16 +33,12 @@ void usage ()
 {
   DESCRIPTION
   + "convert ascii track files into MRtrix format."
-  + "The input ascii files should consist of 3xN matrices, corresponding to the [ X Y Z ] coordinates of the N points making up the track. All the input tracks will be included into the same output MRtrix track file.";
+  + "The input ascii files should consist of 3xN matrices, corresponding to the [ X Y Z ] coordinates of the N points making up the track. "
+  + "All the input tracks will be included into the same output MRtrix track file.";
 
   ARGUMENTS
-  + Argument ("input",
-              "The input tracks to be included into the output track file.")
-  .allow_multiple()
-  .type_file ()
-
-  + Argument ("output",
-              "The output tracks file in MRtrix format").type_file();
+  + Argument ("input",  "The input tracks to be included into the output track file.").allow_multiple().type_file_in()
+  + Argument ("output", "The output tracks file in MRtrix format").type_file_out();
 }
 
 

@@ -277,8 +277,7 @@ class Entry:
     self.deps = list_cmd_deps(cc_file)
 
     skip = False
-    flags = copy.copy (gsl_ldflags)
-    if 'T' in file_flags[cc_file]: flags += thread_ldflags
+    flags = copy.copy (gsl_ldflags+ thread_ldflags)
     if 'Q' in file_flags[cc_file]: flags += qt_ldflags
 
     if not skip: 
@@ -306,7 +305,7 @@ class Entry:
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
     self.deps = set([ cc_file ])
-    flags = copy.copy (gsl_cflags)
+    flags = copy.copy (gsl_cflags + thread_cflags)
 
     if is_moc (cc_file):
       src_header = cc_file[:-len(moc_cpp_suffix)] + h_suffix
@@ -316,7 +315,6 @@ class Entry:
     self.deps.add (config_file)
 
     skip = False
-    if 'T' in file_flags[cc_file]: flags += thread_cflags
     if 'Q' in file_flags[cc_file]: flags += qt_cflags
 
     if not skip: 
@@ -503,9 +501,6 @@ def list_headers (current_file):
           line = line[8:].split ('//')[0].split ('/*')[0].strip()
           if line[0] == '"':
             line = line[1:].rstrip('"')
-            if line == 'thread/exec.h':
-              if 'T' not in file_flags[current_file]: 
-                file_flags[current_file] += 'T'
             for path in include_paths:
               if os.path.exists (os.path.join (path, line)):
                 line = os.path.join (path, line)

@@ -43,12 +43,12 @@ REFERENCES = "Jones, D.; Horsfield, M. & Simmons, A. "
              "Magnetic Resonance in Medicine, 42: 515-525 (1999).\n\n"
              
              "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
-            "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-            "Magnetic Resonance Imaging, 18: 671–679 (2000).";
+             "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
+             "Magnetic Resonance Imaging, 18: 671-679 (2000).";
 
 ARGUMENTS
   + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
-  + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file();
+  + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
 OPTIONS
   + Option ("power", "specify exponent to use for repulsion power law.")

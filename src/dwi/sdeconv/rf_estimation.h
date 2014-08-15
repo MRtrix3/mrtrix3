@@ -31,6 +31,8 @@
 #include "point.h"
 #include "ptr.h"
 
+#include "file/ofstream.h"
+
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/iterator.h"

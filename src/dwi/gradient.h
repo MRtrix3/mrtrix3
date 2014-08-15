@@ -143,7 +143,7 @@ namespace MR
      * image space, and then to compensate for the fact that FSL defines its vectors
      * with regards to the data strides in the image file.
      */
-    void save_bvecs_bvals (const Image::Header&, const std::string&);
+    void save_bvecs_bvals (const Image::Header&, const std::string&, const std::string&);
 
 
 

@@ -23,7 +23,6 @@
 #ifndef __math_matrix_h__
 #define __math_matrix_h__
 
-#include <fstream>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_matrix.h>
@@ -31,6 +30,7 @@
 #include <gsl/gsl_linalg.h>
 
 #include "ptr.h"
+#include "file/ofstream.h"
 #include "math/math.h"
 #include "math/vector.h"
 
@@ -315,9 +315,7 @@ namespace MR
 
         //! write to text file \a filename
         void save (const std::string& filename) const {
-          std::ofstream out (filename.c_str());
-          if (!out)
-            throw Exception ("cannot open matrix file \"" + filename + "\": " + strerror (errno));
+          File::OFStream out (filename);
           out << *this;
         }
 

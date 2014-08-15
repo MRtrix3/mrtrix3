@@ -26,16 +26,21 @@ namespace MR
           glarea (parent), 
           font (font) { } 
 
-        void set_viewport (int x, int y, int w, int h) {
+        void set_viewport (const QWidget& frame, int x, int y, int w, int h) {
           viewport[0] = x;
           viewport[1] = y;
           viewport[2] = w;
           viewport[3] = h;
-          set_viewport();
+          set_viewport (frame);
         }
 
-        void set_viewport () const {
+        void set_viewport (const QWidget& frame) const {
+#if QT_VERSION >= 0x050100
+          int m = frame.windowHandle()->devicePixelRatio();
+          gl::Viewport (m*viewport[0], m*viewport[1], m*viewport[2], m*viewport[3]);
+#else
           gl::Viewport (viewport[0], viewport[1], viewport[2], viewport[3]);
+#endif
         }
 
 
