@@ -100,7 +100,7 @@ void usage ()
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)")
   + Argument ("FWHM").type_float (0.0, 10.0, 200.0)
 
-  + Option ("nonstationary", "do not perform adjustment for non-stationarity");
+  + Option ("nonstationary", "do adjustment for non-stationarity");
 
 }
 
@@ -237,7 +237,7 @@ void run() {
   if (opt.size())
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;
 
-  bool do_nonstationary_adjustment = !get_options ("nonstationary").size();
+  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames
   std::vector<std::string> filenames;
