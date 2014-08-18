@@ -247,7 +247,7 @@ void run() {
     std::string temp;
     while (getline (ifs, temp)) {
       std::string filename (Path::join (folder, temp));
-      if (!MR::File::exists(filename))
+      if (!MR::Path::exists(filename))
         throw Exception ("input fixel image not found: " + filename);
       filenames.push_back (filename);
     }

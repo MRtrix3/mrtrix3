@@ -707,7 +707,7 @@ void run ()
                              "_h" + str(H[h]) + "_e" + str(E[e]) +
                              "_c" + str (C[c]));
 
-            if (MR::File::exists(filename)) {
+            if (MR::Path::exists(filename)) {
               CONSOLE ("Already done!");
             } else {
 
