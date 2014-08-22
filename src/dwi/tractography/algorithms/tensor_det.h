@@ -66,18 +66,7 @@ namespace MR
 
           properties["method"] = "TensorDet";
 
-          Math::Matrix<float> grad;
-          if (properties.find ("DW_scheme") != properties.end())
-            grad.load (properties["DW_scheme"]);
-          else
-            grad = source_buffer.DW_scheme();
-
-          if (grad.columns() != 4)
-            throw Exception ("unexpected number of columns in gradient encoding (expected 4 columns)");
-          if (grad.rows() < 7)
-            throw Exception ("too few rows in gradient encoding (need at least 7)");
-
-          normalise_grad (grad);
+          Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (source_buffer);
 
           grad2bmatrix (bmat, grad);
           Math::pinv (binv, bmat);

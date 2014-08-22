@@ -14,12 +14,12 @@ namespace MR
           "header. This should be supplied as a 4xN text file with each line is in "
           "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
           "applied gradient, and b gives the b-value in units of s/mm^2.")
-      + Argument ("encoding").type_file()
+      + Argument ("encoding").type_file_in()
 
       + Option ("fslgrad",
           "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
-      + Argument ("bvecs").type_file()
-      + Argument ("bvals").type_file()
+      + Argument ("bvecs").type_file_in()
+      + Argument ("bvals").type_file_in()
 
       + Option ("bvalue_scaling",
           "specifies whether the b-values should be scaled by the square of "
@@ -40,15 +40,9 @@ namespace MR
       Math::Matrix<float> G (grad.rows(), 3);
 
       // rotate vectors from scanner space to image space
-      Math::Matrix<float> D (header.transform());
-      Math::Permutation p (4);
-      int signum;
-      Math::LU::decomp (D, p, signum);
-      Math::Matrix<float> image2scanner (4,4);
-      Math::LU::inv (image2scanner, D, p);
-      Math::Matrix<float> rotation = image2scanner.sub (0,3,0,3);
       Math::Matrix<float> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::mult (G, float(0.0), float(1.0), CblasNoTrans, grad_G, CblasTrans, rotation);
+      Math::Matrix<float> rotation = header.transform().sub (0,3,0,3);
+      Math::mult (G, 0.0f, 1.0f, CblasNoTrans, grad_G, CblasNoTrans, rotation);
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output

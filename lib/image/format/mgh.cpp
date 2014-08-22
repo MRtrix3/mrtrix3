@@ -20,6 +20,7 @@
 
 */
 
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "file/mgh_utils.h"
@@ -114,10 +115,7 @@ namespace MR
         File::MGH::write_header (MGHH, H);
         File::MGH::write_other  (MGHO, H);
 
-        File::create (H.name());
-
-        std::ofstream out (H.name().c_str());
-        if (!out) throw Exception ("error opening file \"" + H.name() + "\" for writing: " + strerror (errno));
+        File::OFStream out (H.name());
         out.write ( (char*) &MGHH, MGH_HEADER_SIZE);
         out.close();
 

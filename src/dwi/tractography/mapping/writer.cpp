@@ -30,28 +30,9 @@ namespace Tractography {
 namespace Mapping {
 
 
-template <> float get_factor<SetVoxel>          (const SetVoxel&          set, const SetVoxel         ::const_iterator item) { return set.factor; }
-template <> float get_factor<SetVoxelDEC>       (const SetVoxelDEC&       set, const SetVoxelDEC      ::const_iterator item) { return set.factor; }
-template <> float get_factor<SetVoxelDir>       (const SetVoxelDir&       set, const SetVoxelDir      ::const_iterator item) { return item->get_length(); }
-template <> float get_factor<SetVoxelFactor>    (const SetVoxelFactor&    set, const SetVoxelFactor   ::const_iterator item) { return item->get_factor(); }
-template <> float get_factor<SetVoxelDECFactor> (const SetVoxelDECFactor& set, const SetVoxelDECFactor::const_iterator item) { return item->get_factor(); }
 
+const char* writer_dims[] = { "undefined", "greyscale", "DEC", "dixel", "TOD", NULL };
 
-
-
-
-template <>
-bool MapWriterColour<SetVoxelDir>::operator () (const SetVoxelDir& in)
-{
-  for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-    Image::Nav::set_pos (v_buffer, *i);
-    const Point<float>& tangent (i->get_dir());
-    const Point<float> pos_tangent (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
-    const Point<float> current_value = get_value();
-    set_value (current_value + (pos_tangent * i->get_length() * in.weight));
-  }
-  return true;
-}
 
 
 }

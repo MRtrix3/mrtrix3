@@ -191,6 +191,9 @@ cpp_flags = []
 ld = 'g++ OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = []
 
+if static:
+  ld_flags += [ '-static' ] 
+
 ld_lib = 'g++ OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
 
@@ -997,6 +1000,14 @@ int main() { Foo f; }
     error ('''error invoking Qt moc!
 
 use the MOC environment variable to specify the Qt moc command''')
+  except LinkError:
+    error ('''error linking Qt application!
+
+Are all necessary (static or shared) Qt libraries installed?''')
+  except QMOCError:
+    error ('''error invoking Qt moc!
+
+use the MOC environment variable to specify the Qt moc command''')
   except CompileError as e:
     error ('error compiling Qt application! ' + str(e))
   except OSError as e:
@@ -1146,10 +1157,6 @@ else:
   cpp_flags += [ '-O2', '-DNDEBUG' ]
 
 
-
-# set flags for static build if required:
-if static:
-  ld_flags = [ '-static' ] + zlib_ldflags + gsl_ldflags + thread_ldflags
 
 #
 # set macro for non-orthonormal SH basis if requested:

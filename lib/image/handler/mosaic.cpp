@@ -77,6 +77,8 @@ namespace MR
         segsize = std::numeric_limits<size_t>::max();
       }
 
+      void Mosaic::unload () { }
+
     }
   }
 }

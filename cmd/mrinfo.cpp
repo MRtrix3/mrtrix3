@@ -56,11 +56,11 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
 const OptionGroup GradExportOption = OptionGroup ("Options to export the diffusion weighting gradient table to file")
 
     + Option ("export_grad_mrtrix", "export the diffusion-weighted gradient table to file in MRtrix format")
-      + Argument ("path").type_text()
+      + Argument ("path").type_file_out()
 
     + Option ("export_grad_fsl", "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-      + Argument ("bvecs_path").type_text()
-      + Argument ("bvals_path").type_text();
+      + Argument ("bvecs_path").type_file_out()
+      + Argument ("bvals_path").type_file_out();
 
 
 

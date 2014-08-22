@@ -36,9 +36,9 @@ void usage ()
   + "an application to multiply corresponding values in track scalar files";
 
   ARGUMENTS
-  + Argument ("input",  "the input track scalar file.").type_file ()
-  + Argument ("input",  "the input track scalar file.").type_file ()
-  + Argument ("output", "the output track scalar file");
+  + Argument ("input",  "the input track scalar file.").type_file_in()
+  + Argument ("input",  "the input track scalar file.").type_file_in()
+  + Argument ("output", "the output track scalar file").type_file_out();
 }
 
 typedef float value_type;

@@ -4,6 +4,8 @@
 #include "mrtrix.h"
 #include "gui/opengl/gl.h"
 
+#define ADJUST_BUTTON_DEADZONE_SIZE 8
+
 namespace MR
 {
   namespace GUI
@@ -64,7 +66,9 @@ namespace MR
         protected:
           float rate, min, max;
           int previous_y;
-          bool adjusting;
+
+          int deadzone_y;
+          float deadzone_value;
 
           bool eventFilter (QObject *obj, QEvent *event);
       };

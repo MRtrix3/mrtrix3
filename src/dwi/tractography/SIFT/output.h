@@ -26,11 +26,11 @@
 #define __dwi_tractography_sift_output_h__
 
 
-#include <fstream>
-
 #include "dwi/fixel_map.h"
 
 #include "dwi/tractography/SIFT/model_base.h"
+
+#include "file/ofstream.h"
 
 #include "image/buffer.h"
 #include "image/buffer_sparse.h"
@@ -303,7 +303,7 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_scatterplot (const std::string& path) const
       {
-        std::ofstream out (path.c_str(), std::ios_base::trunc);
+        File::OFStream out (path, std::ios_base::out | std::ios_base::trunc);
         const double current_mu = mu();
         out << "FOD amplitude,Track density (unscaled),Track density (scaled),Weight,\n";
         for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)

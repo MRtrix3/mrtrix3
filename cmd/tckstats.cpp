@@ -21,13 +21,14 @@
 */
 
 
-#include <fstream>
 #include <vector>
 
 #include "command.h"
 #include "point.h"
 #include "progressbar.h"
 #include "ptr.h"
+
+#include "file/ofstream.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -52,14 +53,14 @@ void usage ()
   + "calculate statistics on streamlines length.";
 
   ARGUMENTS
-  + Argument ("tracks_in", "the input track file").type_file();
+  + Argument ("tracks_in", "the input track file").type_file_in();
 
   OPTIONS
   + Option ("histogram", "output a histogram of streamline lengths")
-    + Argument ("path").type_file()
+    + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
-    + Argument ("path").type_file()
+    + Argument ("path").type_file_out()
 
   + Tractography::TrackWeightsInOption;
 
@@ -91,10 +92,10 @@ void run ()
       step_size = 1.0;
     }
 
-    Ptr<std::ofstream> dump;
+    Ptr<File::OFStream> dump;
     Options opt = get_options ("dump");
     if (opt.size())
-      dump = new std::ofstream (std::string(opt[0][0]).c_str(), std::ios_base::trunc);
+      dump = new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc);
 
     ProgressBar progress ("Reading track file... ", header_count);
     Tractography::Streamline<> tck;
@@ -157,7 +158,7 @@ void run ()
 
   Options opt = get_options ("length_hist");
   if (opt.size()) {
-    std::ofstream out (argument[1].c_str(), std::ios_base::trunc);
+    File::OFStream out (argument[1], std::ios_base::out | std::ios_base::trunc);
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)

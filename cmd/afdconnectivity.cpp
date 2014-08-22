@@ -27,6 +27,7 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/mapper.h"
+#include "dwi/tractography/mapping/mapping.h"
 #include "dwi/tractography/SIFT/model_base.h"
 
 
@@ -68,13 +69,13 @@ void usage ()
   ARGUMENTS
   + Argument ("image", "the input FOD image.").type_image_in()
 
-  + Argument ("tracks", "the input track file defining the bundle of interest.").type_file();
+  + Argument ("tracks", "the input track file defining the bundle of interest.").type_file_in();
 
   OPTIONS
   + Option ("wbft", "provide a whole-brain fibre-tracking data set (of which the input track file "
                     "should be a subset), to improve the estimate of fibre bundle volume in the "
                     "presence of partial volume")
-    + Argument ("tracks").type_file()
+    + Argument ("tracks").type_file_in()
 
   + Option ("afd_map", "output a 3D image containing the AFD estimated for each voxel.")
     + Argument ("image").type_image_out()
@@ -122,7 +123,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
         DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
         have_wbft (wbft_path.size()),
         all_fixels (false),
-        mapper (fod_buffer, DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1), false, dirs),
+        mapper (fod_buffer, dirs),
         v_fod (fod_buffer)
     {
       if (have_wbft) {
@@ -131,6 +132,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
       } else {
         fmls = new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.dim(3)));
       }
+      mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1));
     }
 
 
@@ -144,7 +146,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
   private:
     const bool have_wbft;
     bool all_fixels;
-    DWI::Tractography::Mapping::TrackMapperDixel mapper;
+    DWI::Tractography::Mapping::TrackMapperBase mapper;
     Image::Buffer<value_type>::voxel_type v_fod;
     Ptr<DWI::FMLS::Segmenter> fmls;
 
@@ -177,7 +179,7 @@ value_type AFDConnectivity::get (const std::string& path)
     double this_length = 0.0, this_volume = 0.0;
 
     for (SetDixel::const_iterator i = dixels.begin(); i != dixels.end(); ++i) {
-      this_length += i->get_value();
+      this_length += i->get_length();
 
       // If wbft has not been provided (i.e. FODs have not been pre-segmented), need to
       //   check to see if any data have been provided for this voxel; and if not yet,
@@ -205,9 +207,9 @@ value_type AFDConnectivity::get (const std::string& path)
 
       const size_t fixel_index = dixel2fixel (*i);
       Fixel& fixel = fixels[fixel_index];
-      fixel.add_to_selection (i->get_value());
+      fixel.add_to_selection (i->get_length());
       if (have_wbft)
-        this_volume += fixel.get_selected_volume (i->get_value());
+        this_volume += fixel.get_selected_volume (i->get_length());
 
     }
 
@@ -239,7 +241,7 @@ value_type AFDConnectivity::get (const std::string& path)
       for (loop.start (v); loop.ok(); loop.next (v)) {
         if (v.value()) {
           value_type voxel_afd = 0.0, max_td = 0.0;
-          for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+          for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
             if (i().get_selected_length() > max_td) {
               max_td = i().get_selected_length();
               voxel_afd = i().get_FOD();
@@ -275,14 +277,14 @@ void AFDConnectivity::save (const std::string& path)
   for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
     value_type value = 0.0;
     if (have_wbft) {
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
         value += i().get_selected_volume();
     } else if (all_fixels) {
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
         value += (i().is_selected() ? i().get_FOD() : 0.0);
     } else {
       value_type max_td = 0.0;
-      for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
+      for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
         if (i().get_selected_length() > max_td) {
           max_td = i().get_selected_length();
           value = i().get_FOD();

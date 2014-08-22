@@ -23,12 +23,13 @@
 #ifndef __dwi_tractography_scalar_file_h__
 #define __dwi_tractography_scalar_file_h__
 
-#include <fstream>
 #include <map>
 
 #include "types.h"
 #include "point.h"
+#include "file/config.h"
 #include "file/key_value.h"
+#include "file/ofstream.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/file_base.h"
 
@@ -185,12 +186,8 @@ namespace MR
             buffer (new value_type [buffer_capacity+1]),
             buffer_size (0)
           {
-            std::ofstream out (name.c_str(), std::ios::out | std::ios::binary | std::ios::trunc);
-            if (!out)
-              throw Exception ("error creating track scalars file \"" + name + "\": " + strerror (errno));
-
+            File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
-
             create (out, properties, "track scalars");
             current_offset = out.tellp();
           }
@@ -243,11 +240,7 @@ namespace MR
           {
             if (buffer_size == 0)
               return;
-
-            std::ofstream out (name.c_str(), std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            if (!out)
-              throw Exception ("error re-opening track scalars file \"" + name + "\": " + strerror (errno));
-
+            File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out.seekp (current_offset, out.beg);
             out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
             current_offset = int64_t (out.tellp());

@@ -40,7 +40,8 @@ namespace MR
       namespace Tool
       {
 
-        enum ColourType { Value, Direction, Colour };
+        enum FixelColourType { CValue, Direction, Manual };
+        enum FixelLengthType { Unity, Amplitude, LValue };
 
         class Fixel : public Displayable {
           public:
@@ -50,21 +51,22 @@ namespace MR
 
               class Shader : public Displayable::Shader {
                 public:
-                  Shader () : do_crop_to_slice (false), color_type (Direction) { }
+                  Shader () : do_crop_to_slice (false), color_type (Direction), length_type (Amplitude) { }
                   virtual std::string vertex_shader_source (const Displayable& fixel_image);
                   virtual std::string fragment_shader_source (const Displayable& fixel_image);
                   virtual bool need_update (const Displayable& object) const;
                   virtual void update (const Displayable& object);
                 protected:
                   bool do_crop_to_slice;
-                  ColourType color_type;
+                  FixelColourType color_type;
+                  FixelLengthType length_type;
               } fixel_shader;
 
 
               void render (const Projection& projection, int axis, int slice);
 
               void renderColourBar (const Projection& transform) {
-                if (color_type == Value && show_colour_bar)
+                if (colour_type == CValue && show_colour_bar)
                   colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
               }
 
@@ -84,16 +86,20 @@ namespace MR
                 return line_length_multiplier;
               }
 
-              void set_line_length_by_value (bool value) {
-                scale_line_length_by_value = value;
+              void set_length_type (FixelLengthType value) {
+                length_type = value;
               }
 
-              bool get_line_length_by_value () const {
-                return scale_line_length_by_value;
+              FixelLengthType get_length_type () const {
+                return length_type;
               }
 
-              void set_colour_type (ColourType value) {
-                color_type = value;
+              void set_colour_type (FixelColourType value) {
+                colour_type = value;
+              }
+
+              FixelColourType get_colour_type () const {
+                return colour_type;
               }
 
               void set_show_colour_bar (bool value) {
@@ -118,10 +124,9 @@ namespace MR
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;
               float colour[3];
-              float line_length;
               float line_length_multiplier;
-              bool  scale_line_length_by_value;
-              ColourType color_type;
+              FixelLengthType length_type;
+              FixelColourType colour_type;
               bool show_colour_bar;
         };
 

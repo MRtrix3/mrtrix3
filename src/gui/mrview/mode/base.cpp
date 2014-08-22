@@ -313,7 +313,12 @@ done_painting:
           else
             set_plane (2);
 
-          Point<> p (image()->header().dim (0)/2.0f, image()->header().dim (1)/2.0f, image()->header().dim (2)/2.0f);
+          Point<> p (
+              floor ((image()->header().dim(0)-1)/2.0f),
+              floor ((image()->header().dim(1)-1)/2.0f),
+              floor ((image()->header().dim(2)-1)/2.0f)
+              );
+
           set_focus (image()->interp.voxel2scanner (p));
           set_target (focus());
           reset_orientation();

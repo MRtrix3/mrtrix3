@@ -218,7 +218,7 @@ namespace MR {
       }
 
 
-      std::ofstream& operator<< (std::ofstream& stream, Mask& d)
+      std::ostream& operator<< (std::ostream& stream, Mask& d)
       {
         stream << "0x";
         if (d.excess_bits()) {

@@ -175,7 +175,7 @@ namespace MR {
        * two BitSets of different sizes, where only the length of the smaller
        * BitSet is considered, this can be achieved as follows:
        * \code
-       * BitSet A (1000, B (2000);
+       * BitSet A (1000), B (2000);
        * // ...
        * BitSet B_small (B);
        * B_small.resize (A.size());
@@ -194,6 +194,8 @@ namespace MR {
       BitSet  operator&  (const BitSet&) const;
       BitSet  operator^  (const BitSet&) const;
       BitSet  operator~  () const;
+
+      const uint8_t* get_data_ptr() const { return data; }
 
 
     private:

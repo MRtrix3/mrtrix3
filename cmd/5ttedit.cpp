@@ -26,9 +26,11 @@
 
 #include "image/buffer.h"
 #include "image/info.h"
+#include "image/iterator.h"
 #include "image/loop.h"
 #include "image/nav.h"
 #include "image/position.h"
+#include "image/threaded_loop.h"
 #include "image/voxel.h"
 
 #include "dwi/tractography/ACT/act.h"

@@ -26,6 +26,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/combo_box_error.h"
 
 namespace MR
 {
@@ -68,8 +69,8 @@ namespace MR
             void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
-            void line_length_slot ();
-            void on_line_length_by_value_slot (bool length_by_value);
+            void length_multiplier_slot ();
+            void length_type_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void show_colour_bar_slot ();
             void select_colourmap_slot ();
@@ -83,21 +84,26 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            AdjustButton *max_value, *min_value;
-            AdjustButton *threshold_lower, *threshold_upper;
-            AdjustButton *line_length;
-            QGroupBox *line_length_by_value;
-            QGroupBox* crop_to_slice;
-            QCheckBox *threshold_upper_box, *threshold_lower_box;
-            QComboBox *colour_combobox;
-            QAction *show_colour_bar;
-            QAction *invert_scale;
+            ComboBoxWithErrorMsg *colour_combobox;
+
+            QGroupBox *colourmap_option_group;
             QMenu *colourmap_menu;
-            QAction **colourmap_actions;
             QActionGroup *colourmap_group;
+            QAction **colourmap_actions;
+            QAction *show_colour_bar, *invert_scale;
             QToolButton *colourmap_button;
-            QSlider* opacity_slider;
-            QSlider* line_thickness_slider;
+
+            AdjustButton *min_value, *max_value;
+            AdjustButton *threshold_lower, *threshold_upper;
+            QCheckBox *threshold_upper_box, *threshold_lower_box;
+
+            ComboBoxWithErrorMsg *length_combobox;
+            AdjustButton *length_multiplier;
+
+            QSlider *line_thickness_slider;
+            QSlider *opacity_slider;
+
+            QGroupBox *crop_to_slice;
 
         };
       }

@@ -188,7 +188,8 @@ namespace MR
 
         {
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperDixel mapper (H, upsample_ratio, true, dirs);
+          Mapping::TrackMapperBase mapper (H, dirs);
+          mapper.set_upsample_ratio (upsample_ratio);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (
               loader,
@@ -357,17 +358,17 @@ namespace MR
         double total_contribution = 0.0, total_length = 0.0;
 
         for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-          total_length += i->get_value();
+          total_length += i->get_length();
           const size_t fixel_index = master.dixel2fixel (*i);
-          if (fixel_index && (i->get_value() > Track_fixel_contribution::min())) {
-            total_contribution += i->get_value() * master.fixels[fixel_index].get_weight();
+          if (fixel_index && (i->get_length() > Track_fixel_contribution::min())) {
+            total_contribution += i->get_length() * master.fixels[fixel_index].get_weight();
             bool incremented = false;
             for (std::vector<Track_fixel_contribution>::iterator c = masked_contributions.begin(); !incremented && c != masked_contributions.end(); ++c) {
-              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_value()))
+              if ((c->get_fixel_index() == fixel_index) && c->add (i->get_length()))
                 incremented = true;
             }
             if (!incremented)
-              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_value()));
+              masked_contributions.push_back (Track_fixel_contribution (fixel_index, i->get_length()));
           }
         }
 
@@ -375,7 +376,7 @@ namespace MR
 
         TD_sum += total_contribution;
         for (std::vector<Track_fixel_contribution>::const_iterator i = masked_contributions.begin(); i != masked_contributions.end(); ++i)
-          fixel_TDs [i->get_fixel_index()] += i->get_value();
+          fixel_TDs [i->get_fixel_index()] += i->get_length();
 
         return true;
 
@@ -396,8 +397,8 @@ namespace MR
             for (size_t i = 0; i != this_cont.dim(); ++i) {
               const size_t new_index = remapper[this_cont[i].get_fixel_index()];
               if (new_index) {
-                new_cont.push_back (Track_fixel_contribution (new_index, this_cont[i].get_value()));
-                total_contribution += this_cont[i].get_value() * master[new_index].get_weight();
+                new_cont.push_back (Track_fixel_contribution (new_index, this_cont[i].get_length()));
+                total_contribution += this_cont[i].get_length() * master[new_index].get_weight();
               }
             }
             TrackContribution* new_contribution = new TrackContribution (new_cont, total_contribution, this_cont.get_total_length());

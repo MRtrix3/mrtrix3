@@ -64,7 +64,7 @@ namespace MR
             case Ends:
               source += "layout (location = 3) in vec3 color;\n";
               break;
-            case Colour:
+            case Manual:
               source += "uniform vec3 const_colour;\n";
               break;
             case ScalarFile:
@@ -103,7 +103,7 @@ namespace MR
             case Ends:
               source += std::string (" fragmentColour = color;\n");
               break;
-            case Colour:
+            case Manual:
               source +=
                   "  fragmentColour = const_colour;\n";
               break;
@@ -287,7 +287,7 @@ namespace MR
             if (use_discard_upper())
               gl::Uniform1f (gl::GetUniformLocation (track_shader, "upper"), greaterthan);
           }
-          else if (color_type == Colour) 
+          else if (color_type == Manual)
               gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour);
 
           if (tractography_tool.use_lighting) {

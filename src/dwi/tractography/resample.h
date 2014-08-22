@@ -64,7 +64,7 @@ class Upsampler
     void set_ratio (const size_t);
     bool operator() (std::vector< Point<T> >&) const;
 
-    size_t get_ratio() const { return (M.rows() + 1); }
+    size_t get_ratio() const { return (M.is_set() ? (M.rows() + 1) : 1); }
     bool   valid ()    const { return (M.is_set()); }
 
 

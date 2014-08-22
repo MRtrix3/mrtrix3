@@ -60,9 +60,9 @@ void usage ()
                "NeuroImage, 2013, 67, 298-312";
 
   ARGUMENTS
-  + Argument ("in_tracks",  "the input track file").type_file()
+  + Argument ("in_tracks",  "the input track file").type_file_in()
   + Argument ("in_fod",     "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
-  + Argument ("out_tracks", "the output filtered tracks file").type_file();
+  + Argument ("out_tracks", "the output filtered tracks file").type_file_out();
 
   OPTIONS
 
@@ -77,7 +77,7 @@ void usage ()
   + SIFTOutputOption
 
   + Option ("out_selection", "output a text file containing the binary selection of streamlines")
-    + Argument ("path").type_file()
+    + Argument ("path").type_file_out()
 
   + SIFTTermOption;
 

@@ -54,7 +54,6 @@ void usage ()
     + "convert diffusion-weighted images to tensor images." +
       "The following five algorithms are available to perform the fit:"
       "loglinear: standard log-linear least-squares fit."
-      "wloglinear: weighted log-linear least-squares fit."
       "nonlinear: non-linear least-squares fit, with positivity constraint on diagonal elements of tensor."
       "sech: non-linear fit assuming a sech() noise model, with positivity constraint on diagonal elements of tensor. This method has improved robustness to outliers."
       "rician: non-linear fit assuming a Rician noise model, with positivity constraint on diagonal elements of tensor.";
@@ -391,7 +390,6 @@ void run()
   while (dwi_buffer.dim (dwi_axis) < 2) ++dwi_axis;
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
-  DWI::normalise_grad (grad);
   Math::Matrix<cost_value_type> bmatrix;
   DWI::grad2bmatrix (bmatrix, grad);
 
