@@ -92,7 +92,8 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at l=0; better predictor for poor data
+// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
+//   this has proven to be a better predictor of SH basis for poor data
 // Also, if the regression has a substantial gradient, warn the user
 // Threshold on gradient will depend on the basis of the image
 //
@@ -194,32 +195,34 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     progress = NULL;
 
   // First is ratio to be used for SH basis decision, second is gradient of regression
-  std::pair<float, float> regression;
+  std::pair<float, float> regression = std::make_pair (0.0f, 0.0f);
   size_t l_for_decision;
+  float power_ratio;
 
   // The gradient will change depending on the current basis, so the threshold needs to also
   // The gradient is as a function of l, not of even orders
-  float grad_threshold = -0.02;
+  float grad_threshold = 0.02;
 
   switch (lmax) {
 
     // Lmax == 2: only one order to use
     case 2:
-      regression = std::make_pair (ratios.front(), 0.0);
+      power_ratio = ratios.front();
       l_for_decision = 2;
       break;
 
     // Lmax = 4: Use l=4 order to determine SH basis, can't check gradient since l=2 is untrustworthy
     case 4:
-      regression = std::make_pair (ratios.back(), 0.0);
+      power_ratio = ratios.back();
       l_for_decision = 4;
       break;
 
     // Lmax = 6: Use l=4 order to determine SH basis, but checking the gradient is not reliable:
     //   artificially double the threshold so the power ratio at l=6 needs to be substantially
-    //   smaller than l=4 to throw a warning
+    //   different to l=4 to throw a warning
     case 6:
-      regression = std::make_pair (ratios[1], 0.5 * (ratios[2] - ratios[1]));
+      regression = std::make_pair (ratios[1] - 2*(ratios[2]-ratios[1]), 0.5*(ratios[2]-ratios[1]));
+      power_ratio = ratios[1];
       l_for_decision = 4;
       grad_threshold *= 2.0;
       break;
@@ -228,18 +231,24 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     // (this is a more reliable quantification on poor data than l=4 alone)
     default:
       regression = get_regression (ratios);
+      power_ratio = regression.first;
       l_for_decision = 0;
       break;
 
   }
 
-  DEBUG ("Power ratio for assessing SH basis is " + str(regression.first) + " as derived from l=" + str(l_for_decision));
-  if (regression.second)
-    DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
+  // If the gradient is in fact positive (i.e. power ration increases for larger l), use the
+  //   regression to pull the power ratio from l=lmax
+  if (regression.second > 0.0) {
+    l_for_decision = lmax;
+    power_ratio = regression.first + (lmax * regression.second);
+  }
 
-  // Threshold to make decision on what basis is being used, if unambiguous
+  DEBUG ("Power ratio for assessing SH basis is " + str(power_ratio) + " as " + (lmax < 8 ? "derived from" : "regressed to") + " l=" + str(l_for_decision));
+
+  // Threshold to make decision on what basis the data are currently stored in
   value_type multiplier = 1.0;
-  if ((regression.first > (5.0/3.0)) && (regression.first < (7.0/3.0))) {
+  if ((power_ratio > (5.0/3.0)) && (power_ratio < (7.0/3.0))) {
 
     CONSOLE ("Image \"" + str(H.name()) + "\" appears to be in the old non-orthonormal basis");
     switch (conversion) {
@@ -251,7 +260,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     }
     grad_threshold *= 2.0;
 
-  } else if ((regression.first > (2.0/3.0)) && (regression.first < (4.0/3.0))) {
+  } else if ((power_ratio > (2.0/3.0)) && (power_ratio < (4.0/3.0))) {
 
     CONSOLE ("Image \"" + str(H.name()) + "\" appears to be in the new orthonormal basis");
     switch (conversion) {
@@ -266,7 +275,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 
     multiplier = 0.0;
     WARN ("Cannot make unambiguous decision on SH basis of image \"" + H.name()
-        + "\" (power ratio " + (l_for_decision ? ("in l=" + str(l_for_decision)) : ("regressed to l=0")) + " is " + str(regression.first) + ")");
+        + "\" (power ratio " + (lmax < 8 ? "in" : "regressed to") + " " + str(l_for_decision) + " is " + str(power_ratio) + ")");
 
     if (conversion == FORCE_OLDTONEW) {
       WARN ("Forcing conversion of image \"" + H.name() + "\" from old to new SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this conversion!");
@@ -279,9 +288,11 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   }
 
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
-  if (regression.second < grad_threshold) {
-    WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding");
-    WARN ("(m==0 to m!=0 power ratio decreasing by " + str(-2.0*regression.second) + " per even order)");
+  if (regression.second)
+    DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
+  if (Math::abs(regression.second) > grad_threshold) {
+    WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
+    WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
 
   // Adjust the image data in-place if necessary
