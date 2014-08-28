@@ -124,7 +124,7 @@ void run () {
 
   v[0] = asin (2.0 * rng.uniform() - 1.0);
   for (size_t n = 1; n < 2*ndirs-3; n+=2) {
-    v[n] =  M_PI * (2.0 * rng.uniform() - 1.0);
+    v[n] =  Math::pi * (2.0 * rng.uniform() - 1.0);
     v[n+1] = asin (2.0 * rng.uniform() - 1.0);
   }
 
@@ -320,14 +320,14 @@ void energy_fdf (const gsl_vector* x, void* params, double* f, gsl_vector* df)
 
 inline void range (double& azimuth, double& elevation)
 {
-  while (elevation < 0.0) elevation += 2.0*M_PI;
-  while (elevation >= 2.0*M_PI) elevation -= 2.0*M_PI;
-  if (elevation >= M_PI) {
-    elevation = 2.0*M_PI - elevation;
-    azimuth -= M_PI;
+  while (elevation < 0.0) elevation += 2.0*Math::pi;
+  while (elevation >= 2.0*Math::pi) elevation -= 2.0*Math::pi;
+  if (elevation >= Math::pi) {
+    elevation = 2.0*Math::pi - elevation;
+    azimuth -= Math::pi;
   }
-  while (azimuth < -M_PI) azimuth += 2.0*M_PI;
-  while (azimuth >= M_PI) azimuth -= 2.0*M_PI;
+  while (azimuth < -Math::pi) azimuth += 2.0*Math::pi;
+  while (azimuth >= Math::pi) azimuth -= 2.0*Math::pi;
 }
 
 

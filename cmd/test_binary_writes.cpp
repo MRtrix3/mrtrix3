@@ -26,6 +26,7 @@
 #include "debug.h"
 #include "timer.h"
 #include "math/rng.h"
+#include "math/math.h"
 #include "image/threaded_loop.h"
 #include "image/threaded_copy.h"
 #include "image/buffer_scratch.h"
@@ -69,6 +70,21 @@ class Check {
 
 void run () 
 {
+  VAR (Math::pi);
+  VAR (M_PI);
+
+  VAR (Math::pi_2);
+  VAR (M_PI_2);
+
+  VAR (Math::pi_4);
+  VAR (M_PI_4);
+
+  VAR (Math::sqrt2);
+  VAR (M_SQRT2);
+
+  VAR (Math::sqrt1_2);
+  VAR (M_SQRT1_2);
+
   Image::Info info;
   info.set_ndim (3);
 

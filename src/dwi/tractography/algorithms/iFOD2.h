@@ -69,7 +69,7 @@ namespace MR
                   throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
                 set_step_size (0.5);
-                INFO ("minimum radius of curvature = " + str(step_size / (max_angle / M_PI_2)) + " mm");
+                INFO ("minimum radius of curvature = " + str(step_size / (max_angle / Math::pi_2)) + " mm");
 
                 properties["method"] = "iFOD2";
                 properties.set (lmax, "lmax");

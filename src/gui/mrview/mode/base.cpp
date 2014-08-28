@@ -202,8 +202,8 @@ done_painting:
           Point<> v (x.cross (z));
           float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
-          if (angle > M_PI_2) 
-            angle = M_PI_2;
+          if (angle > Math::pi_2) 
+            angle = Math::pi_2;
 
           return Math::Versor<float> (angle, v);
         }

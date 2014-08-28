@@ -39,6 +39,19 @@ namespace MR
   namespace Math
   {
 
+    /** @defgroup mathconstants Mathematical constants
+      @{ */
+
+    constexpr double pi = std::acos (-1.0); 
+    constexpr double pi_2 = pi / 2.0;
+    constexpr double pi_4 = pi / 4.0;
+    constexpr double sqrt2 = std::sqrt (2.0); 
+    constexpr double sqrt1_2 = 1.0 / sqrt2;
+
+    /** @} */
+
+
+
     /** @defgroup elfun Elementary Functions
       @{ */
 

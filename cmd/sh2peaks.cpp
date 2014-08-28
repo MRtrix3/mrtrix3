@@ -336,7 +336,7 @@ void run ()
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p (M_PI*to<float> (opt[n][0]) /180.0, M_PI*float (opt[n][1]) /180.0);
+    Direction p (Math::pi*to<float> (opt[n][0]) /180.0, Math::pi*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
   if (true_peaks.size()) 

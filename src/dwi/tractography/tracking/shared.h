@@ -261,13 +261,13 @@ namespace MR
               max_angle = 90.0 * step_size / vox();
               properties.set (max_angle, "max_angle");
               INFO ("maximum deviation angle = " + str (max_angle) + " deg");
-              max_angle *= M_PI / 180.0;
+              max_angle *= Math::pi / 180.0;
               cos_max_angle = Math::cos (max_angle);
 
               if (rk4) {
                 max_angle_rk4 = max_angle;
                 cos_max_angle_rk4 = cos_max_angle;
-                max_angle = M_PI;
+                max_angle = Math::pi;
                 cos_max_angle = 0.0;
               }
             }

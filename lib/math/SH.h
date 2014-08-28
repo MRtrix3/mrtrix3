@@ -82,8 +82,8 @@ namespace MR
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-                SHT (i,index (l, m)) = M_SQRT2 * AL[l]*cos (m*dirs (i,0));
-                SHT (i,index (l,-m)) = M_SQRT2 * AL[l]*sin (m*dirs (i,0));
+                SHT (i,index (l, m)) = Math::sqrt2 * AL[l]*cos (m*dirs (i,0));
+                SHT (i,index (l,-m)) = Math::sqrt2 * AL[l]*sin (m*dirs (i,0));
 #else
                 SHT (i,index (l, m)) = AL[l]*cos (m*dirs (i,0));
                 SHT (i,index (l,-m)) = AL[l]*sin (m*dirs (i,0));
@@ -197,7 +197,7 @@ namespace MR
             ValueType s = s0 * cos_azimuth + c0 * sin_azimuth;  // sin(m*azimuth)
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-              amplitude += AL[l] * M_SQRT2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
+              amplitude += AL[l] * Math::sqrt2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
 #else
               amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
 #endif
@@ -251,8 +251,8 @@ namespace MR
             ValueType s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-              delta_vec[index (l,m)]  = AL[l] * M_SQRT2 * c;
-              delta_vec[index (l,-m)] = AL[l] * M_SQRT2 * s;
+              delta_vec[index (l,m)]  = AL[l] * Math::sqrt2 * c;
+              delta_vec[index (l,-m)] = AL[l] * Math::sqrt2 * s;
 #else
               delta_vec[index (l,m)]  = AL[l] * 2.0 * c;
               delta_vec[index (l,-m)] = AL[l] * 2.0 * s;
@@ -412,7 +412,7 @@ namespace MR
         VLA_MAX (AL, ValueType, lmax+1, 64);
 
         for (int i = 0; i < precision; i++) {
-          ValueType el = i*M_PI/ (2.0* (precision-1));
+          ValueType el = i*Math::pi / (2.0* (precision-1));
           sigs[i] = exp (-bvalue* (ev1*cos (el) *cos (el) + ev2*sin (el) *sin (el)));
           Legendre::Plm_sph (AL, lmax, 0, cos (el));
           for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
@@ -434,7 +434,7 @@ namespace MR
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-#define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
+#define SH_NON_M0_SCALE_FACTOR (m?Math::sqrt2:1.0)*
 #else
 #define SH_NON_M0_SCALE_FACTOR
 #endif
@@ -460,7 +460,7 @@ namespace MR
             lmax = up_to_lmax;
             ndir = num_dir;
             nAL = NforL_mpos (lmax);
-            inc = M_PI/ (ndir-1);
+            inc = Math::pi / (ndir-1);
             AL.resize (ndir*nAL);
             VLA_MAX (buf, value_type, lmax+1, 64);
 
@@ -626,8 +626,8 @@ namespace MR
 
           for (int m = 1; m <= lmax; m++) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-            ValueType caz = M_SQRT2 * cos (m*azimuth);
-            ValueType saz = M_SQRT2 * sin (m*azimuth);
+            ValueType caz = Math::sqrt2 * cos (m*azimuth);
+            ValueType saz = Math::sqrt2 * sin (m*azimuth);
 #else
             ValueType caz = cos (m*azimuth);
             ValueType saz = sin (m*azimuth);

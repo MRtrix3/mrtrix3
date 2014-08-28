@@ -28,8 +28,6 @@
 #include "image/filter/connected_components.h"
 #include "math/matrix.h"
 
-#include <cmath>
-
 
 using namespace MR;
 using namespace App;

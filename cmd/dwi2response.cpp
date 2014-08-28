@@ -216,7 +216,7 @@ void run ()
     response[0] = sum / double (count);
     response[1] = - 0.5 * Math::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
     // Account for scaling in SH basis
-    response *= Math::sqrt (4.0 * M_PI);
+    response *= Math::sqrt (4.0 * Math::pi);
   }
   INFO ("Initial response function is [" + str(response, 2) + "]");
 

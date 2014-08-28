@@ -228,14 +228,14 @@ namespace MR {
         const float min_dp = adj_dot_product_sum / double(adj_dot_product_count);
         const float max_angle_step = acos (min_dp);
 
-        num_az_grids = ceil (2.0 * M_PI / max_angle_step);
-        num_el_grids = ceil (      M_PI / max_angle_step);
+        num_az_grids = ceil (2.0 * Math::pi / max_angle_step);
+        num_el_grids = ceil (      Math::pi / max_angle_step);
         total_num_angle_grids = num_az_grids * num_el_grids;
 
-        az_grid_step = 2.0 * M_PI / float(num_az_grids - 1);
-        el_grid_step =       M_PI / float(num_el_grids - 1);
+        az_grid_step = 2.0 * Math::pi / float(num_az_grids - 1);
+        el_grid_step =       Math::pi / float(num_el_grids - 1);
 
-        az_begin = -M_PI;
+        az_begin = -Math::pi;
         el_begin = 0.0;
 
         grid_lookup = new std::vector<dir_t>[total_num_angle_grids];

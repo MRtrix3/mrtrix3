@@ -266,7 +266,7 @@ namespace MR
             Point<> v = x.cross (z);
             v.normalise();
             float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
-            if (angle > M_PI_2) angle = M_PI_2;
+            if (angle > Math::pi_2) angle = Math::pi_2;
 
             Math::Versor<float> rot (angle, v);
             orientation = rot * orientation;

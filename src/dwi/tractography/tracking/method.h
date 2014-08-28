@@ -140,7 +140,7 @@ namespace MR
 
     Point<value_type> MethodBase::random_direction (value_type max_angle, value_type sin_max_angle)
     {
-      value_type phi = 2.0 * M_PI * rng.uniform();
+      value_type phi = 2.0 * Math::pi * rng.uniform();
       value_type theta;
       do {
         theta = max_angle * rng.uniform();

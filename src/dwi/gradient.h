@@ -80,7 +80,7 @@ namespace MR
           if (z >= 1.0) 
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
-            dirs (i,1) = M_PI;
+            dirs (i,1) = Math::pi;
           else 
             dirs (i,1) = Math::acos (z);
         }

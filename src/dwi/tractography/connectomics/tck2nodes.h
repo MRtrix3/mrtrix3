@@ -186,7 +186,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
     Tck2nodes_forwardsearch (Image::Buffer<node_t>& nodes_data, const float length) :
       Tck2nodes_base (nodes_data),
       max_dist       (length),
-      angle_limit    (M_PI_4) { } // 45 degree limit
+      angle_limit    (Math::pi_4) { } // 45 degree limit
 
     Tck2nodes_forwardsearch (const Tck2nodes_forwardsearch& that) :
       Tck2nodes_base (that),

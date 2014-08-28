@@ -127,7 +127,7 @@ class FOD_lobe {
     void finalise()
     {
       // 4pi == solid angle of sphere in steradians
-      integral *= 4.0 * M_PI / float(mask.size());
+      integral *= 4.0 * Math::pi / float(mask.size());
       // This is calculated as the lobe is built, just needs to be set to unit length
       mean_dir.normalise();
     }

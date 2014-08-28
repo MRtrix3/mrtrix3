@@ -184,7 +184,7 @@ namespace MR
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
-          float radians = degrees_button->value() * (M_PI / 180.0) / frames->value();
+          float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           int first_index = start_index->value();

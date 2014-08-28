@@ -233,12 +233,12 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
   if ((regression.first > (5.0/3.0)) && (regression.first < (7.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the old non-orthonormal basis");
     if (force_new)
-      multiplier = 1.0 / M_SQRT2;
+      multiplier = 1.0 / Math::sqrt2;
     grad_threshold *= 2.0;
   } else if ((regression.first > (2.0/3.0)) && (regression.first < (4.0/3.0))) {
     CONSOLE ("Image " + str(H.name()) + " appears to be in the new orthonormal basis");
     if (force_old)
-      multiplier = M_SQRT2;
+      multiplier = Math::sqrt2;
   } else {
     multiplier = 0.0;
     WARN ("Cannot make unambiguous decision on SH basis of image " + H.name()

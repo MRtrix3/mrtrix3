@@ -71,7 +71,7 @@ void run () {
         float val = SH.value();
 #ifdef USE_NON_ORTHONORMAL_SH_BASIS
         if (m != 0) 
-          val *= M_SQRT1_2;
+          val *= Math::sqrt1_2;
 #endif
         power += Math::pow2 (val);
       }
