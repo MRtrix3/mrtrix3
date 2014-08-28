@@ -63,6 +63,12 @@ Math::Matrix<float> get_flirt_transform (const Image::Header& header)
 }
 
 
+inline void cleanup_4x4_transform (Math::Matrix<float>& transform)
+{
+  transform(3,0) = transform(3,1) = transform(3,2) = 0.0f;
+  transform(3,3) = 1.0f;
+}
+
 
 
 void run ()
@@ -83,6 +89,8 @@ void run ()
 
   Math::Matrix<float> output;
   Math::mult (output, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
+
+  cleanup_4x4_transform (output);
 
   output.save (argument[3]);
 }
