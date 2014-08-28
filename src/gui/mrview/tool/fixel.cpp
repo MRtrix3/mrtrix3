@@ -61,19 +61,6 @@ namespace MR
           }
 
 
-        Fixel::~Fixel()
-        {
-//          if (vertex_buffer)
-//            gl::DeleteBuffers (1, &vertex_buffer);
-//          if (vertex_array_object)
-//            gl::DeleteVertexArrays (1, &vertex_array_object);
-//          if (value_buffer)
-//            gl::DeleteBuffers (1, &value_buffer);
-//          if (value_array_object)
-//            gl::DeleteBuffers (1, &value_array_object);
-        }
-
-
         std::string Fixel::Shader::vertex_shader_source (const Displayable& fixel)
         {
            std::string source =

@@ -47,8 +47,6 @@ namespace MR
           public:
             Fixel (const std::string& filename, Vector& fixel_tool);
 
-            ~Fixel();
-
               class Shader : public Displayable::Shader {
                 public:
                   Shader () : do_crop_to_slice (false), color_type (Direction), length_type (Amplitude) { }
