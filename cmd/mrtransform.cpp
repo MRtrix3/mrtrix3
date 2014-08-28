@@ -168,8 +168,7 @@ void run ()
   if (inverse) {
     if (!linear_transform.is_set())
       throw Exception ("no transform provided for option '-inverse' (specify using '-transform' option)");
-    Math::Matrix<float> I;
-    Math::LU::inv (I, linear_transform);
+    Math::Matrix<float> I = Math::LU::inv (linear_transform);
     linear_transform.swap (I);
   }
 
