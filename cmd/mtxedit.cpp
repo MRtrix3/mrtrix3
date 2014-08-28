@@ -22,7 +22,9 @@
 
 #include "command.h"
 #include "image/header.h"
+#include "file/nifti1_utils.h"
 #include "math/matrix.h"
+#include "math/LU.h"
 
 
 using namespace MR;
@@ -44,34 +46,44 @@ void usage ()
 }
 
 
+Math::Matrix<float> get_flirt_transform (const Image::Header& header)
+{
+  std::vector<size_t> axes;
+  Math::Matrix<float> nifti_transform = File::NIfTI::adjust_transform (header, axes);
+  if (Math::LU::sgndet (nifti_transform) < 0.0) 
+    return nifti_transform;
+
+  Math::Matrix<float> coord_switch (4,4);
+  coord_switch.identity();
+  coord_switch(0,0) = -1.0f;
+  coord_switch(0,3) = (header.dim(axes[0])-1) * header.vox(axes[0]);
+
+  Math::Matrix<float> updated_transform;
+  return Math::mult (updated_transform, nifti_transform, coord_switch);
+}
+
+
+
 
 void run ()
 {
-  Math::Matrix<float> input;
-  input.load (argument[0]);
+  Math::Matrix<float> flirt_transform;
+  flirt_transform.load (argument[0]);
 
-  const Image::Header from (argument[1]);
-  const Image::Header to (argument[2]);
+  Image::Header src_header (argument[1]);
+  Math::Matrix<float> src_flirt_to_scanner = get_flirt_transform (src_header);
 
-  Math::Matrix<float> R(4,4);
-  R.identity();
-  R(0,0) = -1.0;
-  R(0,3) = (to.dim(0)-1) * to.vox(0);
-  VAR (R);
-  VAR (input);
+  Image::Header dest_header (argument[2]);
+  Math::Matrix<float> dest_flirt_to_scanner = get_flirt_transform (dest_header);
 
-  Math::Matrix<float> M;
-  Math::mult (M, R, input);
-  VAR (M);
+  Math::Matrix<float> scanner_to_src_flirt = Math::LU::inv (src_flirt_to_scanner);
 
-  R(0,3) = (from.dim(0)-1) * from.vox(0);
-  VAR (R);
+  Math::Matrix<float> scanner_to_transformed_dest_flirt;
+  Math::mult (scanner_to_transformed_dest_flirt, flirt_transform, scanner_to_src_flirt);
 
-  Math::mult (input, M, R);
-  VAR (input);
+  Math::Matrix<float> output;
+  Math::mult (output, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
 
-  Math::mult (R, to.transform(), input);
-
-  R.save (argument[3]);
+  output.save (argument[3]);
 }
 
