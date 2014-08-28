@@ -63,14 +63,14 @@ namespace MR
 
         Fixel::~Fixel()
         {
-          if (vertex_buffer)
-            gl::DeleteBuffers (1, &vertex_buffer);
-          if (vertex_array_object)
-            gl::DeleteVertexArrays (1, &vertex_array_object);
-          if (value_buffer)
-            gl::DeleteBuffers (1, &value_buffer);
-          if (value_array_object)
-            gl::DeleteBuffers (1, &value_array_object);
+//          if (vertex_buffer)
+//            gl::DeleteBuffers (1, &vertex_buffer);
+//          if (vertex_array_object)
+//            gl::DeleteVertexArrays (1, &vertex_array_object);
+//          if (value_buffer)
+//            gl::DeleteBuffers (1, &value_buffer);
+//          if (value_array_object)
+//            gl::DeleteBuffers (1, &value_array_object);
         }
 
 
@@ -231,7 +231,7 @@ namespace MR
 
           gl::LineWidth (fixel_tool.line_thickness);
 
-          gl::BindVertexArray (vertex_array_object);
+          vertex_array_object.bind();
 
           if (!fixel_tool.do_crop_to_slice) {
             for (size_t x = 0; x < slice_fixel_indices[0].size(); ++x)
@@ -289,11 +289,11 @@ namespace MR
           lessthan = value_min;
 
           // voxel centres and fixel directions
-          gl::GenBuffers (1, &vertex_buffer);
-          gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffer);
+          vertex_buffer.gen();
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_dir.size() * sizeof(Point<float>), &buffer_dir[0][0], gl::STATIC_DRAW);
-          gl::GenVertexArrays (1, &vertex_array_object);
-          gl::BindVertexArray (vertex_array_object);
+          vertex_array_object.gen();
+          vertex_array_object.bind();
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
           gl::EnableVertexAttribArray (1);
@@ -302,8 +302,8 @@ namespace MR
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
           // fixel amplitudes and values
-          gl::GenBuffers (1, &value_buffer);
-          gl::BindBuffer (gl::ARRAY_BUFFER, value_buffer);
+          value_buffer.gen();
+          value_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (3);
           gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
