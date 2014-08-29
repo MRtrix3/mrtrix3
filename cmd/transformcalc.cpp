@@ -33,16 +33,23 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "edit transformation matrices."
+  + "edit transformations."
 
-  + "This is needed in particular to convert the transformation matrix provided "
-    "FSL's flirt command to a format usable in MRtrix.";
+  + "Currently, this command's only function is to convert the transformation matrix provided "
+    "by FSL's flirt command to a format usable in MRtrix.";
 
   ARGUMENTS
   + Argument ("input", "input transformation matrix").type_file_in ()
-  + Argument ("from", "the image the input transformation matrix maps from").type_image_in ()
-  + Argument ("to", "the image the input transformation matrix maps onto").type_image_in ()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
+
+
+  OPTIONS
+    + Option ("flirt_import", 
+        "convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
+        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
+        "with the -in and -ref options.")
+    + Argument ("in").type_image_in ()
+    + Argument ("ref").type_image_in ();
 }
 
 
@@ -73,25 +80,27 @@ inline void cleanup_4x4_transform (Math::Matrix<float>& transform)
 
 void run ()
 {
-  Math::Matrix<float> flirt_transform;
-  flirt_transform.load (argument[0]);
+  Math::Matrix<float> transform;
+  transform.load (argument[0]);
 
-  Image::Header src_header (argument[1]);
-  Math::Matrix<float> src_flirt_to_scanner = get_flirt_transform (src_header);
+  Options opt = get_options ("flirt_import");
+  if (opt.size()) {
+    Image::Header src_header (opt[0][0]);
+    Math::Matrix<float> src_flirt_to_scanner = get_flirt_transform (src_header);
 
-  Image::Header dest_header (argument[2]);
-  Math::Matrix<float> dest_flirt_to_scanner = get_flirt_transform (dest_header);
+    Image::Header dest_header (opt[0][1]);
+    Math::Matrix<float> dest_flirt_to_scanner = get_flirt_transform (dest_header);
 
-  Math::Matrix<float> scanner_to_src_flirt = Math::LU::inv (src_flirt_to_scanner);
+    Math::Matrix<float> scanner_to_src_flirt = Math::LU::inv (src_flirt_to_scanner);
 
-  Math::Matrix<float> scanner_to_transformed_dest_flirt;
-  Math::mult (scanner_to_transformed_dest_flirt, flirt_transform, scanner_to_src_flirt);
+    Math::Matrix<float> scanner_to_transformed_dest_flirt;
+    Math::mult (scanner_to_transformed_dest_flirt, transform, scanner_to_src_flirt);
 
-  Math::Matrix<float> output;
-  Math::mult (output, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
+    Math::mult (transform, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
+  }
 
-  cleanup_4x4_transform (output);
+  cleanup_4x4_transform (transform);
 
-  output.save (argument[3]);
+  transform.save (argument[1]);
 }
 
