@@ -249,10 +249,7 @@ namespace MR
                            enhancer (enhancer), do_nonstationarity (do_nonstationarity_adjustment),
                            empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
                            perm_dist_pos (perm_dist_pos), perm_dist_neg (perm_dist_neg),
-                           enhanced_output_pos (enhanced_output_pos), enchanced_output_neg (enhanced_output_neg), tvalue_output (tvalue_output) {
-                  if (do_nonstationarity_adjustment)
-                    enhanced_statistic.resize (empirical_enhanced_statistic.size());
-                }
+                           enhanced_output_pos (enhanced_output_pos), enchanced_output_neg (enhanced_output_neg), tvalue_output (tvalue_output) {}
 
 
               void execute ()
@@ -296,11 +293,11 @@ namespace MR
                 if (index)
                   perm_dist_pos[index-1] = max_enhanced_statistic;
 
-                // Compute the opposite contrast
+                // Compute the opposite contrast TODO - maybe make this optional?
                 for (size_t i = 0; i < stats.size(); ++i)
                   stats[i] = -stats[i];
                 if (do_nonstationarity)
-                  max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, index ? NULL : &enhanced_output_pos);
+                  max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, index ? NULL : &enchanced_output_neg);
                 else
                   max_enhanced_statistic = enhancer (-min_stat, stats, index ? NULL : &enchanced_output_neg);
                 if (index)
@@ -345,18 +342,15 @@ namespace MR
               }
 
               for (size_t i = 0; i < empirical_enhanced_statistic.size(); ++i) {
-                if (empirical_enhanced_statistic[i] < 0.0) {
-                  empirical_enhanced_statistic[i] = 1.0;
-                  WARN ("emprical enhanced statistic below 1.0"); //TODO check this
-                }
-                empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
+                if (global_enhanced_count[i] > 0)
+                  empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
               }
             }
 
             {
               PermutationStack permutations (num_permutations,
-                                           stats_calculator.num_samples(),
-                                           "running " + str(num_permutations) + " permutations...");
+                                             stats_calculator.num_samples(),
+                                             "running " + str(num_permutations) + " permutations...");
 
               Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
                                                                do_nonstationary_adjustment, empirical_enhanced_statistic,
