@@ -20,6 +20,8 @@
 
  */
 
+#include <thread>
+
 #include "app.h"
 #include "thread/exec.h"
 #include "thread/mutex.h"
@@ -45,7 +47,7 @@ namespace MR
       if (__number_of_threads)
         return __number_of_threads;
       const App::Options opt = App::get_options ("nthreads");
-      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", 1);
+      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", std::thread::hardware_concurrency());
       return __number_of_threads;
     }
 
