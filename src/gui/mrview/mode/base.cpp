@@ -75,7 +75,7 @@ namespace MR
             if (window.show_voxel_info()) {
               Point<> voxel (image()->interp.scanner2voxel (focus()));
               Image::VoxelType& imvox (image()->voxel());
-              ssize_t vox [] = { std::round<int> (voxel[0]), std::round<int> (voxel[1]), std::round<int> (voxel[2]) };
+              ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
               for (size_t n = 3; n < imvox.ndim(); ++n)
