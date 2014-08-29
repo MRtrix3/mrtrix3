@@ -102,9 +102,9 @@ namespace MR
             if (mask) {
               Mask::voxel_type voxel (*mask);
               Point<> v = mask->transform.scanner2voxel (p);
-              voxel[0] = Math::round (v[0]);
-              voxel[1] = Math::round (v[1]);
-              voxel[2] = Math::round (v[2]);
+              voxel[0] = std::round (v[0]);
+              voxel[1] = std::round (v[1]);
+              voxel[2] = std::round (v[2]);
               if (!Image::Nav::within_bounds (voxel))
                 return false;
               return (voxel.value());

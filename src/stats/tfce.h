@@ -134,7 +134,7 @@ namespace MR
                 for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
                   if (stats[connected_fixel->first] > h)
                     extent += connected_fixel->second.value;
-                tfce_stats[fixel] += Math::pow (extent, E) * Math::pow (h, H);
+                tfce_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
               }
               if (tfce_stats[fixel] > max_tfce_stat)
                 max_tfce_stat = tfce_stats[fixel];

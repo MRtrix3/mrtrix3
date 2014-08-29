@@ -51,7 +51,7 @@ namespace MR
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source_buffer.dim(3))),
           max_trials (MAX_TRIALS),
-          sin_max_angle (Math::sin (max_angle)),
+          sin_max_angle (std::sin (max_angle)),
           mean_samples (0.0),
           mean_truncations (0.0),
           max_max_truncation (0.0),
@@ -68,7 +68,7 @@ namespace MR
           } else {
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
-          sin_max_angle = Math::sin (max_angle);
+          sin_max_angle = std::sin (max_angle);
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
@@ -267,7 +267,7 @@ namespace MR
 
           value_type operator() (value_type el)
           {
-            return Math::SH::value (P.values, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)), P.S.lmax);
+            return Math::SH::value (P.values, Point<value_type> (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
           }
 
         private:

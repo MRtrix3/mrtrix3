@@ -93,7 +93,7 @@ namespace MR
             for (size_t j = 0; j < 3; ++j) {
               if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
-              axes_[j].dim = Math::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
+              axes_[j].dim = std::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
               for (size_t i = 0; i < 3; ++i)
                 transform_(i,3) += 0.5 * (voxel_size[j] - axes_[j].vox) * transform_(i,j);
               axes_[j].vox = voxel_size[j];
@@ -129,7 +129,7 @@ namespace MR
             for (size_t d = 0; d < 3; ++d) {
               if (scale[d] <= 0.0)
                 throw Exception ("the scale factor must be larger than zero");
-              new_voxel_size[d] = (this->dim(d) * this->vox(d)) / Math::ceil (this->dim(d) * scale[d]);
+              new_voxel_size[d] = (this->dim(d) * this->vox(d)) / std::ceil (this->dim(d) * scale[d]);
             }
             set_voxel_size (new_voxel_size);
           }

@@ -39,7 +39,7 @@ namespace MR {
         {
           size_t upsample_ratio = 1;
           if (step_size && std::isfinite (step_size))
-            upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
+            upsample_ratio = std::ceil<size_t> (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
           return upsample_ratio;
         }
 
@@ -108,7 +108,7 @@ namespace MR {
           header.set_ndim (3);
 
           for (size_t i = 0; i != 3; ++i) {
-            header.dim(i) = Math::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
+            header.dim(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
             header.vox(i) = voxel_size[i];
             header.stride(i) = i+1;
             //header.set_units (i, Image::Axis::millimeters);
@@ -139,7 +139,7 @@ namespace MR {
           for (size_t j = 0; j != 3; ++j) {
             for (size_t i = 0; i < 3; ++i)
               header.transform()(i,3) += 0.5 * (voxel_size[j] - header.vox(j)) * transform(i,j);
-            header.dim(j) = Math::ceil(header.dim(j) * header.vox(j) / voxel_size[j]);
+            header.dim(j) = std::ceil(header.dim(j) * header.vox(j) / voxel_size[j]);
             header.vox(j) = voxel_size[j];
           }
         }

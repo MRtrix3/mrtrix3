@@ -1312,7 +1312,7 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * Math::exp (-event->delta()/1200.0));
+                set_FOV (FOV() * std::exp (-event->delta()/1200.0));
                 updateGL();
                 event->accept();
                 return;

@@ -392,7 +392,7 @@ namespace MR
      *
      * LoopInOrder loop (vox, order);
      * for (loop.start (vox); loop.ok(); loop.next (vox))
-     *   value = Math::exp (value - vox.value());
+     *   value = std::exp (value - vox.value());
      * \endcode
      * This will iterate over the axes in the same order as the first example
      * above, irrespective of the strides of the VoxelType.

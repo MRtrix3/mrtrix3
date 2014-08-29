@@ -246,7 +246,7 @@ namespace MR
               for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
                 for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
                   cfloat val = vox.value();
-                  float mag = Math::abs (val.real());
+                  float mag = std::abs (val.real());
                   data[3*(vox[x]+vox[y]*xdim) + n] = mag;
                   if (std::isfinite (mag)) {
                     if (mag < value_min) value_min = mag;
@@ -539,7 +539,7 @@ namespace MR
               ValueType* p = data + n;
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-                  ValueType val = *p = Math::abs (ValueType (V.value()));
+                  ValueType val = *p = std::abs (ValueType (V.value()));
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;

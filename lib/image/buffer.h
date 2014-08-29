@@ -86,7 +86,7 @@ namespace MR
         inline value_out_type round_finite (value_type val) 
         { 
           return std::isfinite (val) ? 
-            value_out_type(Math::round (val)) : 
+            value_out_type(std::round (val)) : 
             value_out_type (0); 
         }
 

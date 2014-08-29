@@ -153,7 +153,7 @@ namespace MR
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
                 const Point<float> new_v_float (transform.scanner2voxel (p));
-                const Point<int> new_v (Math::round (new_v_float[0]), Math::round (new_v_float[1]), Math::round (new_v_float[2]));
+                const Point<int> new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
             }

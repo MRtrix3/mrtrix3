@@ -179,7 +179,7 @@ namespace MR
      *
      * \code
      * void my_function (MyVoxelType& vox) {
-     *   vox.value() = Math::exp (vox.value());
+     *   vox.value() = std::exp (vox.value());
      * }
      *
      * ...
@@ -197,7 +197,7 @@ namespace MR
      *   public: 
      *     template <class VoxelType> 
      *       void operator() (VoxelType& vox) {
-     *         vox.value() = Math::exp (vox.value());
+     *         vox.value() = std::exp (vox.value());
      *       }
      * };
      *
@@ -257,7 +257,7 @@ namespace MR
      * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
      *     .run (RMS(SoS), vox);
      *
-     * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
+     * double rms = std::sqrt (SoS / Image::voxel_count (vox));
      * \endcode
      *
      * \section threaded_loop_run_outer The run_outer() method

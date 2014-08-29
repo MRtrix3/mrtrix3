@@ -125,7 +125,7 @@ namespace MR
             dir_adjacency_matrix_.resize(dirs_az_el.rows(), dirs_az_el.rows(), 0.0);
             for (size_t m = 0; m < dirs_az_el.rows(); m++) {
               for (size_t n = m + 1; n < dirs_az_el.rows(); n++) {
-                float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
+                float angle = std::acos(Math::dot(vert.row(m), vert.row(n)));
                 if (angle > Math::pi_2)
                   angle = Math::pi - angle;
                 if (angle < angular_threshold) {
@@ -175,7 +175,7 @@ namespace MR
                 for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
                   if (offset.norm2() && (do_26_connectivity_ || offset.norm() == 1)) {
                     for (size_t dim = 0; dim != 3; ++dim)
-                      if (Math::abs (offset[dim]) && dim_to_ignore_[dim])
+                      if (std::abs (offset[dim]) && dim_to_ignore_[dim])
                         continue;
                     neighbour_offsets.push_back (offset);
                   }

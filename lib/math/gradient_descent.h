@@ -181,7 +181,7 @@ namespace MR
                 g[n] *= preconditioner_weights[n];
               }
               normg = g_projected / normg;
-              step_unscaled = Math::sqrt (step_unscaled);
+              step_unscaled = std::sqrt (step_unscaled);
             }
           }
 

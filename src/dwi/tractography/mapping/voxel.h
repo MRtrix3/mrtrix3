@@ -43,7 +43,7 @@ namespace Mapping {
 inline Point<int> round (const Point<float>& p)
 { 
   assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
-  return (Point<int> (Math::round<int> (p[0]), Math::round<int> (p[1]), Math::round<int> (p[2])));
+  return (Point<int> (std::round<int> (p[0]), std::round<int> (p[1]), std::round<int> (p[2])));
 }
 
 inline bool check (const Point<int>& V, const Image::Info& H)
@@ -53,7 +53,7 @@ inline bool check (const Point<int>& V, const Image::Info& H)
 
 inline Point<float> vec2DEC (const Point<float>& d)
 {
-  return (Point<float> (Math::abs(d[0]), Math::abs(d[1]), Math::abs(d[2])));
+  return (Point<float> (std::abs(d[0]), std::abs(d[1]), std::abs(d[2])));
 }
 
 

@@ -75,14 +75,14 @@ namespace MR
       {
         dirs.allocate (dwi.size(),2);
         for (size_t i = 0; i < dwi.size(); i++) {
-          dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
           ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
           if (z >= 1.0) 
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
             dirs (i,1) = Math::pi;
           else 
-            dirs (i,1) = Math::acos (z);
+            dirs (i,1) = std::acos (z);
         }
         return dirs;
       }

@@ -128,7 +128,7 @@ namespace MR
                   float grad_sq = 0.0;
                   for (temp_voxel[3] = 0; temp_voxel[3] != 3; ++temp_voxel[3])
                     grad_sq += Math::pow2<float> (temp_voxel.value());
-                  out.value() = Math::sqrt (grad_sq);
+                  out.value() = std::sqrt (grad_sq);
                 }
                 return;
               }

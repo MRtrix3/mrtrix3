@@ -214,9 +214,9 @@ void run ()
       }
     }
     response[0] = sum / double (count);
-    response[1] = - 0.5 * Math::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
+    response[1] = - 0.5 * std::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
     // Account for scaling in SH basis
-    response *= Math::sqrt (4.0 * Math::pi);
+    response *= std::sqrt (4.0 * Math::pi);
   }
   INFO ("Initial response function is [" + str(response, 2) + "]");
 
@@ -314,7 +314,7 @@ void run ()
       }
       bool rf_changed = false;
       for (size_t i = 0; i != response.size(); ++i) {
-        if (Math::abs ((new_response[i] - response[i]) / new_response[i]) > max_change)
+        if (std::abs ((new_response[i] - response[i]) / new_response[i]) > max_change)
           rf_changed = true;
       }
       if (!rf_changed) {

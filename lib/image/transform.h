@@ -280,7 +280,7 @@ namespace MR
           if (out_of_bounds)
             return Point<float> ();
           else
-            return Point<float> (pos[0]-Math::floor (pos[0]), pos[1]-Math::floor (pos[1]), pos[2]-Math::floor (pos[2]));
+            return Point<float> (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
         }
 
         template <class P1>

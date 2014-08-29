@@ -151,10 +151,10 @@ void run ()
   if (std::isfinite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
-      bottomN = Math::round (Image::voxel_count (data_in) * percentile);
+      bottomN = std::round (Image::voxel_count (data_in) * percentile);
       invert = !invert;
     }
-    else topN = Math::round (Image::voxel_count (data_in) * (1.0 - percentile));
+    else topN = std::round (Image::voxel_count (data_in) * (1.0 - percentile));
   }
 
   Image::Header header_out (data_in);
@@ -179,9 +179,9 @@ void run ()
     }
 
     if (std::isfinite (topNpercent))
-      topN = Math::round (0.01 * topNpercent * count);
+      topN = std::round (0.01 * topNpercent * count);
     else
-      bottomN = Math::round (0.01 * bottomNpercent * count);
+      bottomN = std::round (0.01 * bottomNpercent * count);
   }
 
 

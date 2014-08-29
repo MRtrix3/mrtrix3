@@ -130,7 +130,7 @@ void run () {
   }
 
   Image::Header header (argument[3]);
-  float vox = Math::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.0f/3.0f);
+  float vox = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.0f/3.0f);
   Options opt = get_options ("vox");
   if (opt.size()) 
     vox = opt[0][0];

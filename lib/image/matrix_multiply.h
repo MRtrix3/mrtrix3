@@ -114,7 +114,7 @@ namespace MR
      * following will take the log on the input data before the matrix
      * multiply, and clamp the output at a pre-specified maximum value:
      * \code
-     * float take_log (float val) { return Math::log (val); }
+     * float take_log (float val) { return std::log (val); }
      * 
      * class clamp_to_max {
      *   public:

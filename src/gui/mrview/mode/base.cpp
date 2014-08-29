@@ -75,7 +75,7 @@ namespace MR
             if (window.show_voxel_info()) {
               Point<> voxel (image()->interp.scanner2voxel (focus()));
               Image::VoxelType& imvox (image()->voxel());
-              ssize_t vox [] = { Math::round<int> (voxel[0]), Math::round<int> (voxel[1]), Math::round<int> (voxel[2]) };
+              ssize_t vox [] = { std::round<int> (voxel[0]), std::round<int> (voxel[1]), std::round<int> (voxel[2]) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
               for (size_t n = 3; n < imvox.ndim(); ++n)
@@ -200,7 +200,7 @@ done_painting:
           Point<> x = proj->screen_to_model_direction (dpos, target());
           Point<> z = proj->screen_normal();
           Point<> v (x.cross (z));
-          float angle = -ROTATION_INC * Math::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
+          float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
           v.normalise();
           if (angle > Math::pi_2) 
             angle = Math::pi_2;

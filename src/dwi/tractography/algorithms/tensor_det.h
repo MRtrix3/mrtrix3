@@ -167,7 +167,7 @@ namespace MR
         get_EV();
 
         value_type dot = prev_dir.dot (dir);
-        if (Math::abs (dot) < S.cos_max_angle)
+        if (std::abs (dot) < S.cos_max_angle)
           return HIGH_CURVATURE;
 
         if (dot < 0.0)

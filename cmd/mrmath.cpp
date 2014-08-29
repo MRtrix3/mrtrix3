@@ -140,7 +140,7 @@ class RMS {
     value_type result() const {
       if (!count)
         return NAN;
-      return Math::sqrt(sum / count);
+      return std::sqrt(sum / count);
     }
     double sum;
     size_t count;
@@ -170,7 +170,7 @@ class Var {
 class Std : public Var {
   public:
     Std() : Var() { }
-    value_type result () const { return Math::sqrt (Var::result()); }
+    value_type result () const { return std::sqrt (Var::result()); }
 };
 
 
@@ -202,8 +202,8 @@ class AbsMax {
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && Math::abs(val) > max) 
-        max = Math::abs(val);
+      if (std::isfinite (val) && std::abs(val) > max) 
+        max = std::abs(val);
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
@@ -214,7 +214,7 @@ class MagMax {
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && Math::abs(val) > max) 
+      if (std::isfinite (val) && std::abs(val) > max) 
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -285,13 +285,13 @@ class ImageKernel : public ImageKernelBase {
 
   public:
     ImageKernel (const Image::Header& header, const std::string& path) :
-        ImageKernelBase (path),
-        header (header),
-        buffer (header)
-    {
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (InitFunctor(), v_buffer);
-    }
+      ImageKernelBase (path),
+      header (header),
+      buffer (header)
+  {
+    typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
+    Image::ThreadedLoop (v_buffer).run (InitFunctor(), v_buffer);
+  }
 
     ~ImageKernel()
     {

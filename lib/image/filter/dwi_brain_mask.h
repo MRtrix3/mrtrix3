@@ -106,7 +106,7 @@ namespace MR
               for (size_t s = 0; s != shells.count(); ++s) {
                 const DWI::Shell shell (shells[s]);
 
-                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(Math::round(shell.get_mean()))) + " image");
+                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
                 typename BufferScratch<value_type>::voxel_type shell_voxel (shell_data);
 
                 for (loop.start (input, shell_voxel); loop.ok(); loop.next (input, shell_voxel)) {

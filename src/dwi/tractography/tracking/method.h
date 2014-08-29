@@ -157,9 +157,7 @@ namespace MR
 
     Point<value_type> MethodBase::rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction)
     {
-      using namespace Math;
-
-      value_type n = sqrt (pow2(reference[0]) + pow2(reference[1]));
+      value_type n = std::sqrt (Math::pow2(reference[0]) + Math::pow2(reference[1]));
       if (n == 0.0)
         return (reference[2] < 0.0 ? -direction : direction);
 

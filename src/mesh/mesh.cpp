@@ -107,7 +107,7 @@ namespace MR
         load_polygon_vertices (this_poly_verts, poly_index);
         for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
           for (size_t axis = 0; axis != 3; ++axis) {
-            const int this_axis_voxel = Math::round((*v)[axis]);
+            const int this_axis_voxel = std::round((*v)[axis]);
             lower_bound[axis] = std::min (lower_bound[axis], this_axis_voxel);
             upper_bound[axis] = std::max (upper_bound[axis], this_axis_voxel);
           }

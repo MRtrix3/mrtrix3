@@ -717,7 +717,7 @@ class OpTernary : public OpBase {
 class OpAbs : public OpUnary {
   public:
     OpAbs () : OpUnary ("|%1|", true) { }
-    complex_type R (real_type v) const { return Math::abs (v); }
+    complex_type R (real_type v) const { return std::abs (v); }
     complex_type Z (complex_type v) const { return std::abs (v); }
 };
 
@@ -731,126 +731,126 @@ class OpNeg : public OpUnary {
 class OpSqrt : public OpUnary {
   public:
     OpSqrt () : OpUnary ("sqrt (%1)") { } 
-    complex_type R (real_type v) const { return Math::sqrt (v); }
+    complex_type R (real_type v) const { return std::sqrt (v); }
     complex_type Z (complex_type v) const { return std::sqrt (v); }
 };
 
 class OpExp : public OpUnary {
   public:
     OpExp () : OpUnary ("exp (%1)") { }
-    complex_type R (real_type v) const { return Math::exp (v); }
+    complex_type R (real_type v) const { return std::exp (v); }
     complex_type Z (complex_type v) const { return std::exp (v); }
 };
 
 class OpLog : public OpUnary {
   public:
     OpLog () : OpUnary ("log (%1)") { }
-    complex_type R (real_type v) const { return Math::log (v); }
+    complex_type R (real_type v) const { return std::log (v); }
     complex_type Z (complex_type v) const { return std::log (v); }
 };
 
 class OpLog10 : public OpUnary {
   public:
     OpLog10 () : OpUnary ("log10 (%1)") { }
-    complex_type R (real_type v) const { return Math::log10 (v); }
+    complex_type R (real_type v) const { return std::log10 (v); }
     complex_type Z (complex_type v) const { return std::log10 (v); }
 };
 
 class OpCos : public OpUnary {
   public:
     OpCos () : OpUnary ("cos (%1)") { } 
-    complex_type R (real_type v) const { return Math::cos (v); }
+    complex_type R (real_type v) const { return std::cos (v); }
     complex_type Z (complex_type v) const { return std::cos (v); }
 };
 
 class OpSin : public OpUnary {
   public:
     OpSin () : OpUnary ("sin (%1)") { } 
-    complex_type R (real_type v) const { return Math::sin (v); }
+    complex_type R (real_type v) const { return std::sin (v); }
     complex_type Z (complex_type v) const { return std::sin (v); }
 };
 
 class OpTan : public OpUnary {
   public:
     OpTan () : OpUnary ("tan (%1)") { }
-    complex_type R (real_type v) const { return Math::tan (v); }
+    complex_type R (real_type v) const { return std::tan (v); }
     complex_type Z (complex_type v) const { return std::tan (v); }
 };
 
 class OpCosh : public OpUnary {
   public:
     OpCosh () : OpUnary ("cosh (%1)") { }
-    complex_type R (real_type v) const { return Math::cosh (v); }
+    complex_type R (real_type v) const { return std::cosh (v); }
     complex_type Z (complex_type v) const { return std::cosh (v); }
 };
 
 class OpSinh : public OpUnary {
   public:
     OpSinh () : OpUnary ("sinh (%1)") { }
-    complex_type R (real_type v) const { return Math::sinh (v); }
+    complex_type R (real_type v) const { return std::sinh (v); }
     complex_type Z (complex_type v) const { return std::sinh (v); }
 };
 
 class OpTanh : public OpUnary {
   public:
     OpTanh () : OpUnary ("tanh (%1)") { } 
-    complex_type R (real_type v) const { return Math::tanh (v); }
+    complex_type R (real_type v) const { return std::tanh (v); }
     complex_type Z (complex_type v) const { return std::tanh (v); }
 };
 
 class OpAcos : public OpUnary {
   public:
     OpAcos () : OpUnary ("acos (%1)") { }
-    complex_type R (real_type v) const { return Math::acos (v); }
+    complex_type R (real_type v) const { return std::acos (v); }
 };
 
 class OpAsin : public OpUnary {
   public:
     OpAsin () : OpUnary ("asin (%1)") { } 
-    complex_type R (real_type v) const { return Math::asin (v); }
+    complex_type R (real_type v) const { return std::asin (v); }
 };
 
 class OpAtan : public OpUnary {
   public:
     OpAtan () : OpUnary ("atan (%1)") { }
-    complex_type R (real_type v) const { return Math::atan (v); }
+    complex_type R (real_type v) const { return std::atan (v); }
 };
 
 class OpAcosh : public OpUnary {
   public:
     OpAcosh () : OpUnary ("acosh (%1)") { } 
-    complex_type R (real_type v) const { return Math::acosh (v); }
+    complex_type R (real_type v) const { return std::acosh (v); }
 };
 
 class OpAsinh : public OpUnary {
   public:
     OpAsinh () : OpUnary ("asinh (%1)") { }
-    complex_type R (real_type v) const { return Math::asinh (v); }
+    complex_type R (real_type v) const { return std::asinh (v); }
 };
 
 class OpAtanh : public OpUnary {
   public:
     OpAtanh () : OpUnary ("atanh (%1)") { }
-    complex_type R (real_type v) const { return Math::atanh (v); }
+    complex_type R (real_type v) const { return std::atanh (v); }
 };
 
 
 class OpRound : public OpUnary {
   public:
     OpRound () : OpUnary ("round (%1)") { } 
-    complex_type R (real_type v) const { return Math::round (v); }
+    complex_type R (real_type v) const { return std::round (v); }
 };
 
 class OpCeil : public OpUnary {
   public:
     OpCeil () : OpUnary ("ceil (%1)") { } 
-    complex_type R (real_type v) const { return Math::ceil (v); }
+    complex_type R (real_type v) const { return std::ceil (v); }
 };
 
 class OpFloor : public OpUnary {
   public:
     OpFloor () : OpUnary ("floor (%1)") { }
-    complex_type R (real_type v) const { return Math::floor (v); }
+    complex_type R (real_type v) const { return std::floor (v); }
 };
 
 class OpReal : public OpUnary {
@@ -934,7 +934,7 @@ class OpDivide : public OpBinary {
 class OpPow : public OpBinary {
   public:
     OpPow () : OpBinary ("%1^%2") { }
-    complex_type R (real_type a, real_type b) const { return Math::pow (a, b); }
+    complex_type R (real_type a, real_type b) const { return std::pow (a, b); }
     complex_type Z (complex_type a, complex_type b) const { return std::pow (a, b); }
 };
 

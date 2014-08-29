@@ -203,7 +203,7 @@ class Processor
         p.a = Math::SH::get_peak (item.data.ptr(), lmax, p.v);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
-            if (Math::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+            if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
               break;
             }
@@ -229,7 +229,7 @@ class Processor
 
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = Math::abs (p.dot (all_peaks[n].v));
+            value_type f = std::abs (p.dot (all_peaks[n].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -241,7 +241,7 @@ class Processor
         for (int i = 0; i < npeaks; i++) {
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            value_type f = std::abs (all_peaks[n].v.dot (true_peaks[i].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];

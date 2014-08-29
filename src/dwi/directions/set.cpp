@@ -88,8 +88,8 @@ namespace MR {
         for (size_t i = 0; i != size(); ++i) {
           const float azimuth   = az_el_pairs(i, 0);
           const float elevation = az_el_pairs(i, 1);
-          const float sin_elevation = Math::sin (elevation);
-          unit_vectors[i].set (Math::cos (azimuth) * sin_elevation, Math::sin (azimuth) * sin_elevation, Math::cos (elevation));
+          const float sin_elevation = std::sin (elevation);
+          unit_vectors[i].set (std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation));
         }
 
         adj_dirs = new std::vector<dir_t> [size()];
@@ -176,10 +176,10 @@ namespace MR {
         const size_t grid_index = dir2gridindex (p);
 
         dir_t best_dir = grid_lookup[grid_index].front();
-        float max_dp = Math::abs (p.dot (get_dir (best_dir)));
+        float max_dp = std::abs (p.dot (get_dir (best_dir)));
         for (size_t i = 1; i != grid_lookup[grid_index].size(); ++i) {
           const dir_t this_dir = (grid_lookup[grid_index])[i];
-          const float this_dp = Math::abs (p.dot (get_dir (this_dir)));
+          const float this_dp = std::abs (p.dot (get_dir (this_dir)));
           if (this_dp > max_dp) {
             max_dp = this_dp;
             best_dir = this_dir;
@@ -196,9 +196,9 @@ namespace MR {
       {
 
         dir_t dir = 0;
-        float max_dot_product = Math::abs (p.dot (unit_vectors[0]));
+        float max_dot_product = std::abs (p.dot (unit_vectors[0]));
         for (size_t i = 1; i != size(); ++i) {
-          const float this_dot_product = Math::abs (p.dot (unit_vectors[i]));
+          const float this_dot_product = std::abs (p.dot (unit_vectors[i]));
           if (this_dot_product > max_dot_product) {
             max_dot_product = this_dot_product;
             dir = i;
@@ -219,7 +219,7 @@ namespace MR {
         for (size_t i = 0; i != size(); ++i) {
           for (std::vector<dir_t>::const_iterator j = adj_dirs[i].begin(); j != adj_dirs[i].end(); ++j) {
             if (*j > i) {
-              adj_dot_product_sum += Math::abs (unit_vectors[i].dot (unit_vectors[*j]));
+              adj_dot_product_sum += std::abs (unit_vectors[i].dot (unit_vectors[*j]));
               ++adj_dot_product_count;
             }
           }
@@ -302,8 +302,8 @@ namespace MR {
         const float azimuth   = atan2(p[1], p[0]);
         const float elevation = acos (p[2]);
 
-        const size_t azimuth_grid   = Math::floor (( azimuth  - az_begin) / az_grid_step);
-        const size_t elevation_grid = Math::floor ((elevation - el_begin) / el_grid_step);
+        const size_t azimuth_grid   = std::floor (( azimuth  - az_begin) / az_grid_step);
+        const size_t elevation_grid = std::floor ((elevation - el_begin) / el_grid_step);
         const size_t index = (azimuth_grid * num_el_grids) + elevation_grid;
 
         return index;

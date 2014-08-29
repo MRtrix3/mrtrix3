@@ -66,13 +66,13 @@ class DWI2ADC {
       Image::voxel_assign (adc_vox, pos);
       for (dwi_vox[dwi_axis] = 0; dwi_vox[dwi_axis] < dwi_vox.dim(dwi_axis); ++dwi_vox[dwi_axis]) {
         value_type val = dwi_vox.value();
-        dwi[dwi_vox[dwi_axis]] = val ? Math::log (val) : 1.0e-12;
+        dwi[dwi_vox[dwi_axis]] = val ? std::log (val) : 1.0e-12;
       }
 
       Math::mult (adc, binv, dwi);
 
       adc_vox[3] = 0;
-      adc_vox.value() = Math::exp (adc[0]);
+      adc_vox.value() = std::exp (adc[0]);
       adc_vox[3] = 1;
       adc_vox.value() = adc[1];
     }

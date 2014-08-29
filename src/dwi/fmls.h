@@ -77,10 +77,10 @@ class FOD_lobe {
         mask (dirs),
         values (dirs.size(), 0.0),
         peak_dir_bin (seed),
-        peak_value (Math::abs (value)),
+        peak_value (std::abs (value)),
         peak_dir (dirs.get_dir (seed)),
         mean_dir (peak_dir * value),
-        integral (Math::abs (value)),
+        integral (std::abs (value)),
         neg (value <= 0.0)
     {
       mask[seed] = true;
@@ -106,7 +106,7 @@ class FOD_lobe {
       const Point<float>& dir = mask.get_dirs()[bin];
       const float multiplier = (peak_dir.dot (dir)) > 0.0 ? 1.0 : -1.0;
       mean_dir += dir * multiplier * value;
-      integral += Math::abs (value);
+      integral += std::abs (value);
     }
 
     void revise_peak (const Point<float>& real_peak, const float value)
