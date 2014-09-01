@@ -44,226 +44,9 @@ namespace MR
         class Problem {
           public:
             Problem () { }
-            Problem (const Matrix<ValueType>& problem_matrix, const Matrix<ValueType>& constraint_matrix) :
-              problem_matrix (problem_matrix),
-              problem_matrix_decomp (problem_matrix.columns(), problem_matrix.columns()),
-              transformed_problem_matrix (problem_matrix.columns(), problem_matrix.rows()),
-              transformed_constraint_matrix (constraint_matrix.columns(), constraint_matrix.rows()) {
-                rankN_update (problem_matrix_decomp, problem_matrix, CblasTrans, CblasLower);
-                Cholesky::decomp (problem_matrix_decomp);
-
-                transformed_problem_matrix = problem_matrix;
-                solve_triangular (problem_matrix_decomp, transformed_problem_matrix, CblasRight);
-
-                transformed_constraint_matrix = constraint_matrix;
-                solve_triangular (problem_matrix_decomp, transformed_constraint_matrix, CblasRight);
-              }
-            
-            Matrix<ValueType> problem_matrix, problem_matrix_decomp;
-            Matrix<ValueType> transformed_problem_matrix, transformed_constraint_matrix;
-      };
-
-
-
-
-
-      template <typename ValueType>
-        class Solver {
-          public:
-            Solver (const Problem<ValueType>& problem) :
-              problem (problem),
-              transformed_solution (problem.problem_matrix_decomp.rows()),
-              transformed_unconstrained_solution (problem.problem_matrix_decomp.rows()),
-              lambda (transformed_solution.size()),
-              constraint_values (problem.transformed_constraint_matrix.rows()),
-              active_constraint_matrix (transformed_solution.size(), transformed_solution.size()),
-              active_constraint_decomp (transformed_solution.size(), transformed_solution.size()) { }
-
-            void operator() (Vector<ValueType>& x, const Vector<ValueType>& b) {
-              active_constraints.clear();
-              previous_active_constraints.clear();
-              mult (transformed_unconstrained_solution, ValueType (1.0), CblasTrans, problem.transformed_problem_matrix, b);
-              x = transformed_unconstrained_solution;
-
-              do {
-                add_active_constraints (x);
-                if (active_constraints.empty()) 
-                  break;
-
-                do {
-                  form_active_constraint_matrix ();
-                  get_constraint_coefficients (x);
-                } while (remove_inactive_constraints());
-
-                mult (x, ValueType(1.0), CblasTrans, active_constraint_matrix, lambda);
-                x += transformed_unconstrained_solution;
-
-              } while (active_constraints_changed());
-
-              solve_triangular (x, problem.problem_matrix_decomp);
-            }
-
-          protected:
-            const Problem<ValueType>& problem;
-            Vector<ValueType> transformed_solution, transformed_unconstrained_solution, lambda, constraint_values;
-            Matrix<ValueType> active_constraint_matrix, active_constraint_decomp;
-            std::set<size_t> active_constraints, previous_active_constraints;
-
-            void add_active_constraints (const Vector<ValueType>& x) {
-              mult (constraint_values, problem.transformed_constraint_matrix, x);
-              size_t index = std::numeric_limits<size_t>::max();
-              ValueType min = 0.0;
-              for (size_t n = 0; n < constraint_values.size() && active_constraints.size() < x.size(); ++n) {
-                if (constraint_values[n] < min) {
-                  index = n;
-                  min = constraint_values[n];
-                }
-              }
-              if (index < constraint_values.size())
-                active_constraints.insert (index);
-            }
-
-            void form_active_constraint_matrix () {
-              active_constraint_matrix.allocate (active_constraints.size(), transformed_unconstrained_solution.size());
-              size_t n = 0;
-              for (typename std::set<size_t>::const_iterator i = active_constraints.begin(); i != active_constraints.end(); ++i)
-                active_constraint_matrix.row (n++) = problem.transformed_constraint_matrix.row (*i);
-            }
-
-            void get_constraint_coefficients (Vector<ValueType>& x) {
-              mult (lambda, ValueType(-1.0), CblasNoTrans, active_constraint_matrix, transformed_unconstrained_solution);
-              active_constraint_decomp.allocate (lambda.size(), lambda.size());
-              rankN_update (active_constraint_decomp, active_constraint_matrix, CblasNoTrans, CblasLower);
-              Cholesky::decomp (active_constraint_decomp);
-              Cholesky::solve (lambda, active_constraint_decomp);
-            }
-
-            bool remove_inactive_constraints () {
-              size_t previous_num_active_constraints = active_constraints.size();
-              typename std::set<size_t>::iterator i = active_constraints.begin(); 
-              for (size_t n = 0; n < lambda.size(); ++n) {
-                if (lambda[n] <= 0.0) {
-                  typename std::set<size_t>::iterator del = i;
-                  ++i;
-                  active_constraints.erase (del);
-                }
-                else 
-                  ++i;
-              }
-              return active_constraints.size() != previous_num_active_constraints;;
-            }
-
-            bool active_constraints_changed () {
-              if (active_constraints.size() == previous_active_constraints.size())
-                if (std::equal (active_constraints.begin(), active_constraints.end(), previous_active_constraints.begin()))
-                  return false;
-              previous_active_constraints = active_constraints;
-              return true;
-            }
-
-
-            void print_set (const std::set<size_t>& set) {
-              std::cout << "[ ";
-              for (typename std::set<size_t>::const_iterator i = set.begin(); i != set.end(); ++i)
-                std::cout << *i << " ";
-              std::cout << "]\n";
-            }
-        };
-
-    }
-
-
-
-
-
-    namespace ICLS2 {
-
-      template <typename ValueType>
-        class Problem {
-          public:
-            Problem () { }
-            Problem (const Matrix<ValueType>& problem_matrix, const Matrix<ValueType>& constraint_matrix) :
-              problem_matrix (problem_matrix),
-              problem_matrix_decomp (problem_matrix.columns(), problem_matrix.columns()),
-              transformed_problem_matrix (problem_matrix.columns(), problem_matrix.rows()),
-              transformed_constraint_matrix (constraint_matrix.columns(), constraint_matrix.rows()) {
-                rankN_update (problem_matrix_decomp, problem_matrix, CblasTrans, CblasLower);
-                Cholesky::decomp (problem_matrix_decomp);
-
-                transformed_problem_matrix = problem_matrix;
-                solve_triangular (problem_matrix_decomp, transformed_problem_matrix, CblasRight);
-
-                transformed_constraint_matrix = constraint_matrix;
-                solve_triangular (problem_matrix_decomp, transformed_constraint_matrix, CblasRight);
-
-                mult (lambda_matrix, ValueType(1.0), CblasNoTrans, transformed_constraint_matrix, CblasTrans, transformed_constraint_matrix);
-              }
-            
-            Matrix<ValueType> problem_matrix, problem_matrix_decomp;
-            Matrix<ValueType> transformed_problem_matrix, transformed_constraint_matrix;
-            Matrix<ValueType> lambda_matrix;
-      };
-
-
-
-
-
-      template <typename ValueType>
-        class Solver {
-          public:
-            Solver (const Problem<ValueType>& problem) :
-              problem (problem),
-              transformed_unconstrained_solution (problem.problem_matrix_decomp.rows()),
-              lambda (problem.lambda_matrix.rows()),
-              gradient (lambda.size()) { }
-
-            void operator() (Vector<ValueType>& x, const Vector<ValueType>& b) {
-              mult (transformed_unconstrained_solution, ValueType (1.0), CblasTrans, problem.transformed_problem_matrix, b);
-              mult (gradient, problem.transformed_constraint_matrix, transformed_unconstrained_solution);
-              lambda.zero();
-              std::cout << lambda << "\n";
-
-              for (size_t niter = 0; niter < 10000; ++niter) {
-                for (size_t n = 0; n < lambda.size(); ++n) {
-                  ValueType l = std::max (ValueType (0.0), lambda[n] - gradient[n]/problem.lambda_matrix(n,n));
-                  if (l != lambda[n]) {
-                    ValueType dl = l - lambda[n];
-                    for (size_t k = 0; k < gradient.size(); ++k)
-                      gradient[k] += problem.lambda_matrix(k,n) * dl;
-                    lambda[n] = l;
-                  }
-                }
-                std::cout << lambda << "\n";
-              }
-
-              x = transformed_unconstrained_solution;
-              mult (x, ValueType(1.0), ValueType(1.0), CblasTrans, problem.transformed_constraint_matrix, lambda);
-              solve_triangular (x, problem.problem_matrix_decomp);
-            }
-
-          protected:
-            const Problem<ValueType>& problem;
-            Vector<ValueType> transformed_unconstrained_solution, lambda, gradient;
-
-        };
-
-    }
-
-
-
-
-
-
-
-    namespace ICLS3 {
-
-      template <typename ValueType>
-        class Problem {
-          public:
-            Problem () { }
             Problem (const Matrix<ValueType>& problem_matrix, const Matrix<ValueType>& constraint_matrix, 
-                ValueType initial_constraint_factor = ValueType(1.0), ValueType constraint_multiplier = ValueType(10.0), 
-                ValueType final_constraint_factor = ValueType (1.0e12), ValueType tolerance = ValueType(1.0e-8), 
+                ValueType initial_constraint_factor = ValueType(1.0), ValueType constraint_multiplier = ValueType(2.0), 
+                ValueType final_constraint_factor = ValueType (1.0e8), ValueType tolerance = ValueType(1.0e-8), 
                 size_t max_iterations = 1000) :
               H (problem_matrix),
               A (constraint_matrix),
@@ -306,7 +89,6 @@ namespace MR
 
               QA = P.Q;
               solve(x);
-              std::cout << x << "\n";
 
               size_t n = 0;
               for (; n < P.max_niter; ++n) {
@@ -317,13 +99,10 @@ namespace MR
                 } 
                 form_constrained_matrix ();
                 solve (x);
-                std::cout << x << "\n";
               }
 
               if (n >= P.max_niter)
                 throw Exception ("constrained least-squares failed to converge");
-
-              VAR (n);
             }
 
           protected:
