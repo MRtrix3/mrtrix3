@@ -81,7 +81,7 @@ void usage ()
 
   + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)")
 
-  + Option ("stationary", "do not perform non-stationarity correction");
+  + Option ("zstationary", "do not perform non-stationarity correction");
 }
 
 

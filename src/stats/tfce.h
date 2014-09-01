@@ -66,6 +66,35 @@ namespace MR
       };
 
 
+      class PermutationStack {
+        public:
+          PermutationStack (size_t num_permutations, size_t num_samples, std::string msg, bool include_default = true) :
+            num_permutations (num_permutations),
+            current_permutation (0),
+            progress (msg, num_permutations) {
+              Math::Stats::generate_permutations (num_permutations, num_samples, permutations, include_default);
+            }
+
+          size_t next () {
+            Thread::Mutex::Lock lock (permutation_mutex);
+            size_t index = current_permutation++;
+            if (index < permutations.size())
+              ++progress;
+            return index;
+          }
+          const std::vector<size_t>& permutation (size_t index) const {
+            return permutations[index];
+          }
+
+          const size_t num_permutations;
+
+        protected:
+          size_t current_permutation;
+          ProgressBar progress;
+          std::vector <std::vector<size_t> > permutations;
+          Thread::Mutex permutation_mutex;
+      };
+
 
       class Spatial {
         public:
@@ -144,37 +173,6 @@ namespace MR
           const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
           std::vector<value_type> enhanced_stats;
           value_type dh, E, H;
-      };
-
-
-
-      class PermutationStack {
-        public:
-          PermutationStack (size_t num_permutations, size_t num_samples, std::string msg, bool include_default = true) :
-            num_permutations (num_permutations),
-            current_permutation (0),
-            progress (msg, num_permutations) {
-              Math::Stats::generate_permutations (num_permutations, num_samples, permutations, include_default);
-            }
-
-          size_t next () {
-            Thread::Mutex::Lock lock (permutation_mutex);
-            size_t index = current_permutation++;
-            if (index < permutations.size())
-              ++progress;
-            return index;
-          }
-          const std::vector<size_t>& permutation (size_t index) const {
-            return permutations[index];
-          }
-
-          const size_t num_permutations;
-
-        protected:
-          size_t current_permutation;
-          ProgressBar progress;
-          std::vector <std::vector<size_t> > permutations;
-          Thread::Mutex permutation_mutex;
       };
 
 
@@ -293,15 +291,15 @@ namespace MR
                 if (index)
                   perm_dist_pos[index-1] = max_enhanced_statistic;
 
-                // Compute the opposite contrast TODO - maybe make this optional?
-                for (size_t i = 0; i < stats.size(); ++i)
-                  stats[i] = -stats[i];
-                if (do_nonstationarity)
-                  max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, index ? NULL : &enchanced_output_neg);
-                else
-                  max_enhanced_statistic = enhancer (-min_stat, stats, index ? NULL : &enchanced_output_neg);
-                if (index)
-                  perm_dist_neg[index-1] = max_enhanced_statistic;
+//                // Compute the opposite contrast TODO - maybe make this optional?
+//                for (size_t i = 0; i < stats.size(); ++i)
+//                  stats[i] = -stats[i];
+//                if (do_nonstationarity)
+//                  max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, index ? NULL : &enchanced_output_neg);
+//                else
+//                  max_enhanced_statistic = enhancer (-min_stat, stats, index ? NULL : &enchanced_output_neg);
+//                if (index)
+//                  perm_dist_neg[index-1] = max_enhanced_statistic;
               }
 
 
@@ -331,8 +329,8 @@ namespace MR
             if (do_nonstationary_adjustment) {
               std::vector<size_t> global_enhanced_count (empirical_enhanced_statistic.size(), 0);
 
-              PermutationStack preprocessor_permutations (num_permutations,
-                                                          stats_calculator.num_samples(),
+              PermutationStack preprocessor_permutations (10000,
+                                                          stats_calculator.num_subjects(),
                                                           "precomputing empirical statistic for non-stationarity adjustment...", false);
               {
                 PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
@@ -348,9 +346,9 @@ namespace MR
             }
 
             {
-              PermutationStack permutations (num_permutations,
-                                             stats_calculator.num_samples(),
-                                             "running " + str(num_permutations) + " permutations...");
+              PermutationStack permutations (num_permutations + 1,
+                                             stats_calculator.num_subjects(),
+                                             "running " + str(num_permutations - 1) + " permutations...");
 
               Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
                                                                do_nonstationary_adjustment, empirical_enhanced_statistic,
