@@ -100,7 +100,10 @@ void usage ()
   + Option ("smooth", "smooth the fixel value along the fibre tracts using a Gaussian kernel with the supplied FWHM (default: 10mm)")
   + Argument ("FWHM").type_float (0.0, 10.0, 200.0)
 
-  + Option ("nonstationary", "do adjustment for non-stationarity");
+  + Option ("nonstationary", "do adjustment for non-stationarity")
+
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction")
+  +   Argument ("num").type_integer (1, 5000, 100000);
 
 }
 
@@ -237,7 +240,12 @@ void run() {
   if (opt.size())
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;
 
-  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
+  bool do_nonstationary_adjustment = get_options ("nperms_nonstationary").size();
+
+  opt = get_options ("nperms");
+  int nperms_nonstationary = 5000;
+  if (opt.size())
+    num_perms = opt[0][0];
 
   // Read filenames
   std::vector<std::string> filenames;
@@ -442,6 +450,29 @@ void run() {
     write_fixel_output (output_prefix + "_std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
   }
 
+  Math::Stats::GLMTTest glm_ttest (data, design, contrast);
+  Stats::TFCE::Connectivity cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
+  Ptr<std::vector<value_type> > empirical_cfe_statistic;
+
+  Image::Header output_header (input_header);
+  output_header.comments().push_back ("num permutations = " + str(num_perms));
+  output_header.comments().push_back ("dh = " + str(cfe_dh));
+  output_header.comments().push_back ("cfe_e = " + str(cfe_e));
+  output_header.comments().push_back ("cfe_h = " + str(cfe_h));
+  output_header.comments().push_back ("cfe_c = " + str(cfe_c));
+  output_header.comments().push_back ("angular threshold = " + str(angular_threshold));
+  output_header.comments().push_back ("connectivity threshold = " + str(connectivity_threshold));
+  output_header.comments().push_back ("smoothing FWHM = " + str(smooth_std_dev));
+
+  if (do_nonstationary_adjustment) {
+    empirical_cfe_statistic = new std::vector<value_type> (num_fixels, 0.0);
+    Stats::TFCE::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
+    output_header.comments().push_back ("nonstationary adjustment = true");
+    write_fixel_output (output_prefix + "_cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
+  } else {
+    output_header.comments().push_back ("nonstationary adjustment = false");
+  }
+
 
   // Perform permutation testing
   opt = get_options ("notest");
@@ -453,11 +484,9 @@ void run() {
     std::vector<value_type> tvalue_output (num_fixels, 0.0);
     std::vector<value_type> pvalue_output_pos (num_fixels, 0.0);
     std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
-    std::vector<value_type> empirical_cfe_statistic (num_fixels, 0.0);
 
-    Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-    Stats::TFCE::Connectivity cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-    Stats::TFCE::run (glm_ttest, cfe_integrator, num_perms, do_nonstationary_adjustment, empirical_cfe_statistic,
+
+    Stats::TFCE::run (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
                       perm_distribution_pos, perm_distribution_neg,
                       cfe_output_pos, cfe_output_neg, tvalue_output);
 
@@ -466,21 +495,6 @@ void run() {
 //    perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
     Math::Stats::statistic2pvalue (perm_distribution_pos, cfe_output_pos, pvalue_output_pos);
 //    Math::Stats::statistic2pvalue (perm_distribution_neg, cfe_output_neg, pvalue_output_neg);
-    Image::Header output_header (input_header);
-    output_header.comments().push_back ("num permutations = " + str(num_perms));
-    output_header.comments().push_back ("dh = " + str(cfe_dh));
-    output_header.comments().push_back ("cfe_e = " + str(cfe_e));
-    output_header.comments().push_back ("cfe_h = " + str(cfe_h));
-    output_header.comments().push_back ("cfe_c = " + str(cfe_c));
-    output_header.comments().push_back ("angular threshold = " + str(angular_threshold));
-    output_header.comments().push_back ("connectivity threshold = " + str(connectivity_threshold));
-    output_header.comments().push_back ("smoothing FWHM = " + str(smooth_std_dev));
-    if (do_nonstationary_adjustment) {
-      output_header.comments().push_back ("nonstationary adjustment = true");
-      write_fixel_output (output_prefix + "_cfe_empirical.msf", empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
-    } else {
-      output_header.comments().push_back ("nonstationary adjustment = false");
-    }
     write_fixel_output (output_prefix + "_cfe_pos.msf", cfe_output_pos, output_header, mask_vox, indexer_vox);
 //    write_fixel_output (output_prefix + "_cfe_neg.msf", cfe_output_neg, output_header, mask_vox, indexer_vox);
     write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
