@@ -238,14 +238,12 @@ namespace MR
           class Processor {
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
-                         const EnhancementType& enhancer, const bool do_nonstationarity_adjustment,
-                         const std::vector<value_type>& empirical_enhanced_statistic,
+                         const EnhancementType& enhancer, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
                          Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
                          std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg,
                          std::vector<value_type>& tvalue_output) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
-                           enhancer (enhancer), do_nonstationarity (do_nonstationarity_adjustment),
-                           empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
+                           enhancer (enhancer), empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
                            perm_dist_pos (perm_dist_pos), perm_dist_neg (perm_dist_neg),
                            enhanced_output_pos (enhanced_output_pos), enchanced_output_neg (enhanced_output_neg), tvalue_output (tvalue_output) {}
 
@@ -266,7 +264,7 @@ namespace MR
                 enhancer (max_stat, stats, &enhanced_statistic);
                 value_type max_enhanced_statistic = 0.0;
                 for (size_t i = 0; i < stats.size(); ++i) {
-                  enhanced_statistic[i] /= empirical_enhanced_statistic[i];
+                  enhanced_statistic[i] /= (*empirical_enhanced_statistic)[i];
                   if (enhanced_statistic[i] > max_enhanced_statistic)
                     max_enhanced_statistic = enhanced_statistic[i];
                 }
@@ -284,7 +282,7 @@ namespace MR
                 if (index == 0)
                   tvalue_output = stats;
                 value_type max_enhanced_statistic = 0.0;
-                if (do_nonstationarity)
+                if (empirical_enhanced_statistic)
                   max_enhanced_statistic = nonstationarity_enhancement (max_stat, stats, index ? NULL : &enhanced_output_pos);
                 else
                   max_enhanced_statistic = enhancer (max_stat, stats, index ? NULL : &enhanced_output_pos);
@@ -306,8 +304,7 @@ namespace MR
               PermutationStack& perm_stack;
               StatsType stats_calculator;
               EnhancementType enhancer;
-              const bool do_nonstationarity;
-              const std::vector<value_type> empirical_enhanced_statistic;
+              Ptr<std::vector<value_type> > empirical_enhanced_statistic;
               std::vector<value_type> enhanced_statistic;
               std::vector<value_type> adjusted_enhanced_statistic;
               Math::Vector<value_type>& perm_dist_pos;
@@ -320,30 +317,36 @@ namespace MR
 
 
         template <class StatsType, class EnhancementType>
-          inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations,
-                           const bool do_nonstationary_adjustment, std::vector<value_type>& empirical_enhanced_statistic,
-                           Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
-                           std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg, std::vector<value_type>& tvalue_output)
+          inline void precompute_empirical_stat (const StatsType& stats_calculator, const EnhancementType& enhancer,
+                                                 size_t num_permutations, std::vector<value_type>& empirical_statistic)
           {
 
-            if (do_nonstationary_adjustment) {
-              std::vector<size_t> global_enhanced_count (empirical_enhanced_statistic.size(), 0);
+              std::vector<size_t> global_enhanced_count (empirical_statistic.size(), 0);
 
-              PermutationStack preprocessor_permutations (10000,
+              PermutationStack preprocessor_permutations (num_permutations,
                                                           stats_calculator.num_subjects(),
                                                           "precomputing empirical statistic for non-stationarity adjustment...", false);
               {
                 PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
-                                                                       empirical_enhanced_statistic, global_enhanced_count);
+                                                                       empirical_statistic, global_enhanced_count);
                 Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
                 Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
               }
 
-              for (size_t i = 0; i < empirical_enhanced_statistic.size(); ++i) {
+              for (size_t i = 0; i < empirical_statistic.size(); ++i) {
                 if (global_enhanced_count[i] > 0)
-                  empirical_enhanced_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
+                  empirical_statistic[i] /= static_cast<value_type> (global_enhanced_count[i]);
               }
-            }
+          }
+
+
+
+
+        template <class StatsType, class EnhancementType>
+          inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
+                           Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
+                           std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg, std::vector<value_type>& tvalue_output)
+          {
 
             {
               PermutationStack permutations (num_permutations + 1,
@@ -351,7 +354,7 @@ namespace MR
                                              "running " + str(num_permutations - 1) + " permutations...");
 
               Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
-                                                               do_nonstationary_adjustment, empirical_enhanced_statistic,
+                                                               empirical_enhanced_statistic,
                                                                perm_dist_pos, perm_dist_neg, enhanced_output_pos,
                                                                enhanced_output_neg, tvalue_output);
               Thread::Array< Processor<StatsType, EnhancementType> > thread_list (processor);

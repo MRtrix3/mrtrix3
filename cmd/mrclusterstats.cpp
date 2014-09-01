@@ -81,7 +81,11 @@ void usage ()
 
   + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)")
 
-  + Option ("zstationary", "do not perform non-stationarity correction");
+  + Option ("nonstationary", "perform non-stationarity correction")
+
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction")
+  +   Argument ("num").type_integer (1, 5000, 100000);
+
 }
 
 
@@ -115,9 +119,15 @@ void run() {
   if (opt.size())
     num_perms = opt[0][0];
 
+  opt = get_options ("nperms_nonstationary");
+  int nperms_nonstationary = 5000;
+  if (opt.size())
+    num_perms = opt[0][0];
+
+
   bool do_26_connectivity = get_options("connectivity").size();
 
-  bool do_nonstationary_adjustment = !get_options ("nonstationary").size();
+  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames
   std::vector<std::string> subjects;
@@ -209,20 +219,27 @@ void run() {
   std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
   std::vector<value_type> tvalue_output (num_vox, 0.0);
 
-  std::vector<value_type> empirical_statistic (num_vox, 0.0);
+  Ptr<std::vector<value_type> > empirical_statistic;
 
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
     if (std::isfinite (cluster_forming_threshold)) {
+      if (do_nonstationary_adjustment)
+        throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
-      Stats::TFCE::run (glm, cluster_size_test, num_perms, do_nonstationary_adjustment, empirical_statistic,
+      Stats::TFCE::run (glm, cluster_size_test, num_perms, empirical_statistic,
                         perm_distribution_pos, perm_distribution_neg,
                         cluster_output_pos, cluster_output_neg, tvalue_output);
     }
     else { // TFCE
 
+
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
-      Stats::TFCE::run (glm, tfce_integrator, num_perms, do_nonstationary_adjustment, empirical_statistic,
+      if (do_nonstationary_adjustment) {
+        empirical_statistic = new std::vector<value_type> (num_vox, 0.0);
+        Stats::TFCE::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_statistic);
+      }
+      Stats::TFCE::run (glm, tfce_integrator, num_perms, empirical_statistic,
                         perm_distribution_pos, perm_distribution_neg,
                         cluster_output_pos, cluster_output_neg, tvalue_output);
     }
