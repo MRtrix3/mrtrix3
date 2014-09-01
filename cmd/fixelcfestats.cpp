@@ -427,7 +427,7 @@ void run() {
   }
 
   {
-    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation");
+    ProgressBar progress ("outputting beta coefficients, effect size and standard deviation...");
     Math::Matrix<float> temp;
 
     Math::Stats::GLM::solve_betas (data, design, temp);
@@ -446,8 +446,8 @@ void run() {
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
-    Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
-    Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
+    Math::Vector<value_type> perm_distribution_pos (num_perms);
+    Math::Vector<value_type> perm_distribution_neg (num_perms);
     std::vector<value_type> cfe_output_pos (num_fixels, 0.0);
     std::vector<value_type> cfe_output_neg (num_fixels, 0.0);
     std::vector<value_type> tvalue_output (num_fixels, 0.0);
@@ -461,29 +461,30 @@ void run() {
                       perm_distribution_pos, perm_distribution_neg,
                       cfe_output_pos, cfe_output_neg, tvalue_output);
 
-    ProgressBar progress ("outputting final results");
+    ProgressBar progress ("outputting final results...");
     perm_distribution_pos.save (output_prefix + "_perm_dist_pos.txt");
-    perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
+//    perm_distribution_neg.save (output_prefix + "_perm_dist_neg.txt");
     Math::Stats::statistic2pvalue (perm_distribution_pos, cfe_output_pos, pvalue_output_pos);
-    Math::Stats::statistic2pvalue (perm_distribution_neg, cfe_output_neg, pvalue_output_neg);
+//    Math::Stats::statistic2pvalue (perm_distribution_neg, cfe_output_neg, pvalue_output_neg);
     Image::Header output_header (input_header);
-    output_header.comments().push_back("num permutations = " + str(num_perms));
-    output_header.comments().push_back("dh = " + str(cfe_dh));
-    output_header.comments().push_back("cfe_e = " + str(cfe_e));
-    output_header.comments().push_back("cfe_h = " + str(cfe_h));
-    output_header.comments().push_back("cfe_c = " + str(cfe_c));
-    output_header.comments().push_back("angular threshold = " + str(angular_threshold));
-    output_header.comments().push_back("connectivity threshold = " + str(connectivity_threshold));
-    output_header.comments().push_back("smoothing FWHM = " + str(smooth_std_dev));
-    output_header.comments().push_back("nonstationary adjustment = " + str(do_nonstationary_adjustment));
-
+    output_header.comments().push_back ("num permutations = " + str(num_perms));
+    output_header.comments().push_back ("dh = " + str(cfe_dh));
+    output_header.comments().push_back ("cfe_e = " + str(cfe_e));
+    output_header.comments().push_back ("cfe_h = " + str(cfe_h));
+    output_header.comments().push_back ("cfe_c = " + str(cfe_c));
+    output_header.comments().push_back ("angular threshold = " + str(angular_threshold));
+    output_header.comments().push_back ("connectivity threshold = " + str(connectivity_threshold));
+    output_header.comments().push_back ("smoothing FWHM = " + str(smooth_std_dev));
     if (do_nonstationary_adjustment) {
+      output_header.comments().push_back ("nonstationary adjustment = true");
       write_fixel_output (output_prefix + "_cfe_empirical.msf", empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
+    } else {
+      output_header.comments().push_back ("nonstationary adjustment = false");
     }
     write_fixel_output (output_prefix + "_cfe_pos.msf", cfe_output_pos, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "_cfe_neg.msf", cfe_output_neg, output_header, mask_vox, indexer_vox);
+//    write_fixel_output (output_prefix + "_cfe_neg.msf", cfe_output_neg, output_header, mask_vox, indexer_vox);
     write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
     write_fixel_output (output_prefix + "_pvalue_pos.msf", pvalue_output_pos, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
+//    write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
   }
 }
