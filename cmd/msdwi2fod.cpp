@@ -22,7 +22,7 @@ void usage () {
   DESCRIPTION
     + "Multi-shell, multi-tissue CSD";
 
-  REFERENCES = "Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A.; Sijbers, J.
+  REFERENCES = "Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A.; Sijbers, J."
              "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data"
              "NeuroImage, in press, DOI: 10.1016/j.neuroimage.2014.07.061";
 
@@ -98,7 +98,7 @@ class Shared {
 					response__/=DSH.sub(0,tissue_nmzero);
 					Math::Vector<value_type> fconv(tissue_n);
 					int li = 0; int mi = 0;
-					for (int l = 0; l <= tissue_lmax; l+=2) {
+					for (int l = 0; l <= int(tissue_lmax); l+=2) {
 						for (int m = -l; m <= l; m++) {
 							fconv[mi] = response__[li];
 							mi++;
