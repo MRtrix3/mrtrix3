@@ -44,9 +44,6 @@ typedef Image::Buffer<bool> MaskBufferType;
 typedef Image::Buffer<value_type> OutputBufferType;
 
 
-
-
-
 class Shared {
   public:
     Shared (std::vector<size_t>& lmax_, std::vector<Math::Matrix<value_type> >& response_, Math::Matrix<value_type>& grad_) :
@@ -95,9 +92,7 @@ class Shared {
       size_t tissue_n = Math::SH::NforL(tissue_lmax);
       size_t tissue_nmzero = tissue_lmax/2+1;
       for (size_t shell_idx = 0; shell_idx < nbvals; shell_idx++) {
-        //std::cout << "TISSUE,SHELL: " << tissue_idx << ", " << shell_idx << std::endl;
         Math::Vector<value_type> response_ = response[tissue_idx].row(shell_idx);
-        //std::cout << "RESPONSE_:" << response_ << std::endl;
         Math::Vector<value_type> response__(response_);
         response__/=DSH.sub(0,tissue_nmzero);
         Math::Vector<value_type> fconv(tissue_n);
@@ -109,7 +104,6 @@ class Shared {
           }
           li++;
         }
-        //std::cout << "FCONV:" << fconv << std::endl;
         std::vector<size_t> vols = shells[shell_idx].get_volumes();
         for (size_t idx = 0; idx < vols.size(); idx++) {
           Math::Vector<value_type> SHT_(SHT.row(vols[idx]).sub(0,tissue_n));
@@ -142,17 +136,11 @@ class Shared {
     }
 
     Math::Matrix<value_type> A (M,N);
-    //b.allocate(A.rows());
     size_t b_m = 0; size_t b_n = 0;
     for(size_t i = 0; i < lmax.size(); i++) {
       A.sub(b_m,b_m+m[i],b_n,b_n+n[i]) = SHT300.sub(0,m[i],0,n[i]);
       b_m+=m[i]; b_n+=n[i];
     }
-    //A*=-1;
-    //H.allocate(C.columns(),C.columns());
-    //mult(H,value_type(0),value_type(1),CblasTrans,C,CblasNoTrans,C);
-
-
     problem = Math::ICLS::Problem<value_type> (C, A);
   };
 
@@ -162,10 +150,6 @@ class Shared {
     Math::Matrix<value_type>& grad;
     Math::ICLS::Problem<value_type> problem;
 };
-
-
-
-
 
 
 class Processor {
@@ -183,19 +167,17 @@ class Processor {
         fodf_out(fodf_out_vox),
         dwi(dwi_in.dim(3)),
         fodf(fodf_out.dim(3))
-  { }
+    { }
 
     void operator () (const Image::Iterator& pos) {
       if (!load_data(pos))
         return;
-      // dwi contains the data for one voxel (e.g. 153 x 1)
-      // shared.C is the forward convolution matrix (e.g. 153 x 47)
-      // shared.A is the constraint matrix (e.g. 302 x 47)
-      // shared.b just contains zeros (e.g. 302 x 1)
-      // fodf should be filled with the output of the fitting procedure (e.g 47 x 1)
-
-      solver (fodf, dwi);
-      fodf.save("x_mrtrix.txt");
+	  try {
+        solver (fodf, dwi);
+	  } catch (Exception& E) {
+        E.display();
+	  }
+	  fodf[fodf.size()] = solver.iterations();
       write_back (pos);
     }
 
@@ -233,17 +215,9 @@ class Processor {
       for (loop.start(fodf_out); loop.ok(); loop.next(fodf_out)) {
         fodf_out.value() = fodf[fodf_out[3]];
       }
-    }
+	}
 
 };
-
-
-
-
-
-
-
-
 
 void run () {
   /* input DWI image */
@@ -288,11 +262,10 @@ void run () {
   /* precalculate everything */
   Shared shared (lmax,response,grad);
 
-
-  Image::Header fodf_out_header (dwi_in_buffer); fodf_out_header.set_ndim (4); fodf_out_header.dim (3) = nparams;
+  Image::Header fodf_out_header (dwi_in_buffer); fodf_out_header.set_ndim (4); fodf_out_header.dim (3) = nparams+1;
   OutputBufferType fodf_out_buffer (argument[1], fodf_out_header);
   OutputBufferType::voxel_type fodf_out_vox (fodf_out_buffer);
-
+  
   Image::ThreadedLoop loop ("working...", dwi_in_vox, 1, 0, 3);
   Processor processor (shared, dwi_in_vox, mask_in_vox, fodf_out_vox);
   loop.run (processor);

@@ -72,6 +72,7 @@ namespace MR
         class Solver {
           public:
             Solver (const Problem<ValueType>& problem) :
+			  iter(0),
               P (problem),
               QA (P.Q.rows(), P.Q.columns()),
               Ak (P.A.rows(), P.A.columns()),
@@ -90,8 +91,8 @@ namespace MR
               QA = P.Q;
               solve(x);
 
-              size_t n = 0;
-              for (; n < P.max_niter; ++n) {
+              iter = 0;
+              for (; iter < P.max_niter; ++iter) {
                 if (active_set_unchanged (x)) {
                   lambda *= P.lambda_inc;
                   if (lambda > P.lambda_max) 
@@ -100,12 +101,16 @@ namespace MR
                 form_constrained_matrix ();
                 solve (x);
               }
-
-              if (n >= P.max_niter)
+			  if (iter >= P.max_niter)
                 throw Exception ("constrained least-squares failed to converge");
             }
-
+			
+			size_t iterations () const {
+			  return iter;
+			}
+			
           protected:
+		    size_t iter;
             const Problem<ValueType>& P;
             Matrix<ValueType> QA, Ak;
             Vector<ValueType> d, c;
