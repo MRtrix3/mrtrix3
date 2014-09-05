@@ -288,7 +288,6 @@ class Processor {
          output_voxel.value()[f].value = data[index];
         }
       }
-    }
 
 
     void process_noise_realisation (size_t index) {
@@ -296,11 +295,8 @@ class Processor {
       std::vector<value_type> cfe_test_statistic;
       std::vector<value_type> cfe_noise;
 
-      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], &cfe_test_statistic, 2.0);
-      cfe (max_statistics[index], smoothed_noise[index], &cfe_noise, 2.0);
-
-//      write_fixel_output ("cfe_statistic_new.msf", cfe_test_statistic);
-//      write_fixel_output ("cfe_noise_new.msf", cfe_noise);
+      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], &cfe_test_statistic);
+      cfe (max_statistics[index], smoothed_noise[index], &cfe_noise);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
 
@@ -319,7 +315,6 @@ class Processor {
         if (contains_false_positive)
           thread_num_noise_instances_with_a_false_positive[t]++;
 
-//        global_TPRates (t, index) = (value_type) num_true_positives[t] / (value_type) actual_positives;
       }
     }
 
@@ -532,16 +527,11 @@ void run ()
           std::vector<value_type> noise_only (num_fixels, 0.0);
 
           // Add noise
-          Math::RNG rng (r);
+          Math::RNG rng;
           for (int32_t f = 0; f < num_fixels; ++f) {
             value_type the_noise = rng.normal();
             noisy_test_statistic[f] = truth_statistic[f] * SNR[snr] + the_noise;
             noise_only[f] = the_noise;
-          }
-          if (r ==0) {
-            write_fixel_output ("truth_new.msf", truth_statistic, input_header, input_fixel, indexer_vox);
-            write_fixel_output ("noisy_statistic_new.msf", noisy_test_statistic, input_header, input_fixel, indexer_vox);
-            write_fixel_output ("noise_new.msf", noise_only, input_header, input_fixel, indexer_vox);
           }
 
           // Smooth
@@ -567,9 +557,6 @@ void run ()
         }
       }
 
-
-
-      write_fixel_output ("smoothed_statistic_new.msf", smoothed_test_statistic[0], input_header, input_fixel, indexer_vox);
 
       for (size_t c = 0; c < C.size(); ++c) {
 
@@ -598,7 +585,6 @@ void run ()
               CONSOLE ("Already done!");
             } else {
               std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_noise_realisations, 0));
-//              TPRates.zero();
               std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
 
               {
@@ -614,16 +600,25 @@ void run ()
               // output all noise instance TPR values for variance calculations
               std::string filename_all_TPR (filename);
               filename_all_TPR.append("_all_tpr");
-//              TPRates.save (filename_all_TPR);
 
-              // output the average TPR and FPR over all noise realisations
+              std::ofstream output_all;
+              output_all.open (filename_all_TPR.c_str());
+              for (size_t t = 0; t < num_ROC_samples; ++t) {
+                for (size_t p = 0; p < num_noise_realisations; ++p) {
+                  output_all << (value_type) TPRates [t][p] / (value_type) actual_positives << " ";
+                }
+                output_all << std::endl;
+              }
+              output_all.close();
+
               std::ofstream output;
               output.open (filename.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
                 // average TPR across all realisations
                 u_int32_t sum = 0.0;
-                for (size_t p = 0; p < num_noise_realisations; ++p)
+                for (size_t p = 0; p < num_noise_realisations; ++p) {
                   sum += TPRates [t][p];
+                }
                 output << (value_type) sum / ((value_type) actual_positives * (value_type) num_noise_realisations)   << " ";
                 // FPR is defined as the fraction of realisations with a false positive
                 output << (value_type) num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
