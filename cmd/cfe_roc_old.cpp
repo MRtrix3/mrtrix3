@@ -106,28 +106,8 @@ class FixelIndex
 };
 
 
-void write_fixel_output (const std::string filename,
-                         const std::vector<value_type> data,
-                         const Image::Header& header,
-                         Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
-                         Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
-  Image::BufferSparse<FixelMetric> output_buffer (filename, header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
-  Image::LoopInOrder loop (mask_vox);
-  for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
-    output_voxel.value().set_size (mask_vox.value().size());
-    indexer_vox[3] = 0;
-    int32_t index = indexer_vox.value();
-    for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
-      output_voxel.value()[f] = mask_vox.value()[f];
-      output_voxel.value()[f].value = data[index];
-    }
-  }
-}
-
-
 /**
- * Process each track (represented as a set of fixels). For each track tangent dixel, identify the closest fixel, build connectivity matrix
+ * Process each track (represented as a set of fixels). For each track tangent dixel, identify the closest fixel
  */
 class TrackProcessor {
 
@@ -201,9 +181,10 @@ class Stack {
 
     size_t next () {
       Thread::Mutex::Lock lock (permutation_mutex);
+      index++;
       if (index < num_noise_realisation)
         ++progress;
-      return index++;
+      return index;
     }
 
     const size_t num_noise_realisation;
@@ -219,24 +200,27 @@ class Stack {
 class Processor {
   public:
     Processor (Stack& stack,
+               const int32_t num_fixels,
                const int32_t actual_positives,
                const int32_t num_ROC_samples,
                const std::vector<value_type>& truth_statistic,
+               const std::vector<std::map<int32_t, value_type> >& fixel_smoothing_weights,
                const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
-               std::vector<std::vector<uint32_t> >& global_TPRates,
+               std::vector<value_type>& global_TPRates,
                std::vector<int32_t>& global_num_noise_instances_with_a_false_positive,
                const value_type dh,
+               const value_type smooth,
+               const value_type snr,
                const value_type e,
                const value_type h,
-               const std::vector<std::vector<value_type> >& smoothed_test_statistic,
-               const std::vector<std::vector<value_type> >& smoothed_noise,
-               const std::vector<value_type>& max_statistics,
+               const value_type c,
                Image::Header& input_header,
                Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
                const Image::BufferSparse<FixelMetric>& template_data,
                Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
                const Image::BufferScratch<int32_t>& indexer_data):
                  stack (stack),
+                 num_fixels (num_fixels),
                  actual_positives (actual_positives),
                  num_ROC_samples (num_ROC_samples),
                  truth_statistic (truth_statistic),
@@ -244,34 +228,41 @@ class Processor {
                  fixel_connectivity (fixel_connectivity),
                  global_TPRates (global_TPRates),
                  global_num_noise_instances_with_a_false_positive (global_num_noise_instances_with_a_false_positive),
-                 thread_TPRates (num_ROC_samples, 0.0),
-                 thread_num_noise_instances_with_a_false_positive (num_ROC_samples, 0),
-                 smoothed_test_statistic (smoothed_test_statistic),
-                 smoothed_noise (smoothed_noise),
-                 max_statistics (max_statistics),
-                 cfe (fixel_connectivity, dh, e, h),
+                 TPRates (num_ROC_samples, 0.0),
+                 num_noise_instances_with_a_false_positive (num_ROC_samples, 0),
+                 dh (dh),
+                 smooth (smooth),
+                 snr (snr),
+                 e (e),
+                 h (h),
+                 c (c),
+                 noisy_test_statistic (num_fixels, 0.0),
+                 smoothed_test_statistic (num_fixels, 0.0),
+                 noise_only (num_fixels, 0.0),
+                 smoothed_noise (num_fixels, 0.0),
                  input_header (input_header),
                  template_vox (template_vox),
                  template_data (template_data),
                  indexer_vox (indexer_vox),
-                 indexer_data (indexer_data){
+                 indexer_data (indexer_data) {
 
     }
 
     ~Processor () {
-      for (size_t t = 0; t < num_ROC_samples; ++t)
-        global_num_noise_instances_with_a_false_positive[t] += thread_num_noise_instances_with_a_false_positive[t];
+      for (size_t t = 0; t < num_ROC_samples; ++t) {
+        global_num_noise_instances_with_a_false_positive[t] += num_noise_instances_with_a_false_positive[t];
+        global_TPRates[t] += TPRates[t];
+      }
     }
 
 
     void execute () {
       size_t index = 0;
-      while (( index = stack.next() ) < stack.num_noise_realisation)
-        process_noise_realisation (index);
+      while (( index = stack.next() ) <= stack.num_noise_realisation)
+        process_noise_realisation ();
     }
 
   private:
-
 
     void write_fixel_output (const std::string filename,
                              const std::vector<value_type>& data) {
@@ -290,55 +281,122 @@ class Processor {
       }
     }
 
+    void process_noise_realisation () {
 
-    void process_noise_realisation (size_t index) {
+      float max_stat = 0.0;
+
+      // Add noise
+      Math::RNG rng;
+      for (int32_t f = 0; f < num_fixels; ++f) {
+        value_type the_noise = rng.normal();
+        noisy_test_statistic[f] = truth_statistic[f] * snr + the_noise;
+        noise_only[f] = the_noise;
+        if (noisy_test_statistic[f] > max_stat)
+          max_stat = noisy_test_statistic[f];
+      }
+
+//      TRACE;
+//      write_fixel_output ("truth_old.msf", truth_statistic);
+//      write_fixel_output ("noisy_statistic_old.msf", noisy_test_statistic);
+//      write_fixel_output ("noise_old.msf", noise_only);
+
+
+      // Smooth
+      if (smooth > 0.0) {
+        double sum_squares = 0.0;
+        for (int32_t f = 0; f < num_fixels; ++f) {
+          std::map<int32_t, value_type>::const_iterator it = fixel_smoothing_weights[f].begin();
+          for (; it != fixel_smoothing_weights[f].end(); ++it) {
+            smoothed_test_statistic[f] += noisy_test_statistic[it->first] * it->second;
+            smoothed_noise[f] += noise_only[it->first] * it->second;
+          }
+          sum_squares += Math::pow2 (smoothed_noise[f]);
+        }
+
+        // Normalise so noise std is 1.0 after smoothing
+        double scale_factor = 1.0 / Math::sqrt(sum_squares / (double)num_fixels);
+        max_stat = 0.0;
+        for (int32_t f = 0; f < num_fixels; ++f) {
+          smoothed_test_statistic[f] *= scale_factor;
+          smoothed_noise[f] *= scale_factor;
+          if (smoothed_test_statistic[f] > max_stat)
+            max_stat = smoothed_test_statistic[f];
+        }
+//        TRACE;
+//        write_fixel_output ("smoothed_statistic_old.msf", smoothed_test_statistic);
+//        write_fixel_output ("moothed_noise_old.msf", smoothed_noise);
+
+      }
 
       std::vector<value_type> cfe_test_statistic;
       std::vector<value_type> cfe_noise;
+      MR::Stats::TFCE::Connectivity cfe (fixel_connectivity, dh, e, h);
 
-      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], &cfe_test_statistic, 2.0);
-      cfe (max_statistics[index], smoothed_noise[index], &cfe_noise, 2.0);
+      float max_cfe_statistic = 0;
 
-//      write_fixel_output ("cfe_statistic_new.msf", cfe_test_statistic);
-//      write_fixel_output ("cfe_noise_new.msf", cfe_noise);
+      if (smooth > 0.0) {
+        max_cfe_statistic = cfe (max_stat, smoothed_test_statistic, &cfe_test_statistic, c);
+        cfe (max_stat, smoothed_noise, &cfe_noise, c);
+      } else {
+        max_cfe_statistic = cfe (max_stat, noisy_test_statistic, &cfe_test_statistic, c);
+        cfe (max_stat, noise_only, &cfe_noise, c);
+      }
+
+//      write_fixel_output ("cfe_statistic.msf", cfe_test_statistic);
+//      write_fixel_output ("cfe_noisy.msf", cfe_noise);
+
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
+      std::vector<value_type> num_false_positives (num_ROC_samples);
 
       for (size_t t = 0; t < num_ROC_samples; ++t) {
         value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
+
         bool contains_false_positive = false;
-        for (uint32_t f = 0; f < truth_statistic.size(); ++f) {
+
+        for (int32_t f = 0; f < num_fixels; ++f) {
           if (truth_statistic[f] >= 1.0) {
             if (cfe_test_statistic[f] > threshold)
-              global_TPRates [t][index]++;
+              num_true_positives[t]++;
+          } else {
+            if (cfe_test_statistic[f] > threshold)
+              num_false_positives[t]++;
+            if (cfe_noise[f] > threshold)
+              contains_false_positive = true;
           }
-          if (cfe_noise[f] > threshold)
-             contains_false_positive = true;
         }
 
         if (contains_false_positive)
-          thread_num_noise_instances_with_a_false_positive[t]++;
+          num_noise_instances_with_a_false_positive[t]++;
 
-//        global_TPRates (t, index) = (value_type) num_true_positives[t] / (value_type) actual_positives;
+        TPRates[t] += (float) num_true_positives[t] / (float) actual_positives;
       }
+
     }
 
 
 
     Stack& stack;
+    const int32_t num_fixels;
     const int32_t actual_positives;
     const size_t num_ROC_samples;
     const std::vector<value_type>& truth_statistic;
     const std::vector<std::map<int32_t, value_type> >& fixel_smoothing_weights;
     const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity;
-    std::vector<std::vector<uint32_t> >& global_TPRates;
+    std::vector<value_type>& global_TPRates;
     std::vector<int32_t>& global_num_noise_instances_with_a_false_positive;
-    std::vector<value_type> thread_TPRates;
-    std::vector<int32_t> thread_num_noise_instances_with_a_false_positive;
-    const std::vector<std::vector<value_type> >& smoothed_test_statistic;
-    const std::vector<std::vector<value_type> >& smoothed_noise;
-    const std::vector<value_type>& max_statistics;
-    MR::Stats::TFCE::Connectivity cfe;
+    std::vector<value_type> TPRates;
+    std::vector<int32_t> num_noise_instances_with_a_false_positive;
+    const value_type dh;
+    const value_type smooth;
+    const value_type snr;
+    const value_type e;
+    const value_type h;
+    const value_type c;
+    std::vector<value_type> noisy_test_statistic;
+    std::vector<value_type> smoothed_test_statistic;
+    std::vector<value_type> noise_only;
+    std::vector<value_type> smoothed_noise;
     Image::Header input_header;
     Image::BufferSparse<FixelMetric>::voxel_type template_vox;
     const Image::BufferSparse<FixelMetric>& template_data;
@@ -346,6 +404,15 @@ class Processor {
     const Image::BufferScratch<int32_t>& indexer_data;
 };
 
+bool file_exists (const std::string& filename)
+{
+    struct stat buf;
+    if (stat(filename.c_str(), &buf) != -1)
+    {
+        return true;
+    }
+    return false;
+}
 
 void run ()
 {
@@ -354,18 +421,18 @@ void run ()
   const value_type connectivity_threshold = 0.01;
 
 
-  Options opt = get_options ("roc");
-  size_t num_ROC_samples = 1000;
+  Options opt = get_options("roc");
+  int num_ROC_samples = 1000;
   if (opt.size())
     num_ROC_samples = opt[0][0];
 
-  size_t num_noise_realisations = 1000;
+  int num_noise_realisations = 1000;
   opt = get_options("realisations");
   if (opt.size())
     num_noise_realisations = opt[0][0];
 
 
-  std::vector<value_type> SNR (1);
+  std::vector<value_type> SNR(1);
   SNR[0] = 1.0;
   opt = get_options("snr");
   if (opt.size())
@@ -451,7 +518,7 @@ void run ()
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity...");
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (index_header);
-    TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold );
+    TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold);
     Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
   }
 
@@ -501,7 +568,7 @@ void run ()
          }
        }
     }
-    // add self smoothing weight
+    // add self smoothing weight of 1
     for (int32_t f = 0; f < num_fixels; ++f)
       fixel_smoothing_weights[f].insert (std::pair<int32_t, value_type> (f, gaussian_const1));
 
@@ -519,118 +586,41 @@ void run ()
 
 
     for (size_t snr = 0; snr < SNR.size(); ++snr) {
+      for (size_t h = 0; h < H.size(); ++h) {
+        for (size_t e = 0; e < E.size(); ++e) {
+          for (size_t c = 0; c < C.size(); ++c) {
 
-      std::vector<std::vector<value_type> > smoothed_test_statistic (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
-      std::vector<std::vector<value_type> > smoothed_noise (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
-      std::vector<value_type> max_statistics (num_noise_realisations, 0.0);
-
-      {
-        ProgressBar progress ("generating noise realisations", num_noise_realisations);
-        for (size_t r = 0; r < num_noise_realisations; ++r) {
-
-          std::vector<value_type> noisy_test_statistic (num_fixels, 0.0);
-          std::vector<value_type> noise_only (num_fixels, 0.0);
-
-          // Add noise
-          Math::RNG rng (r);
-          for (int32_t f = 0; f < num_fixels; ++f) {
-            value_type the_noise = rng.normal();
-            noisy_test_statistic[f] = truth_statistic[f] * SNR[snr] + the_noise;
-            noise_only[f] = the_noise;
-          }
-          if (r ==0) {
-            write_fixel_output ("truth_new.msf", truth_statistic, input_header, input_fixel, indexer_vox);
-            write_fixel_output ("noisy_statistic_new.msf", noisy_test_statistic, input_header, input_fixel, indexer_vox);
-            write_fixel_output ("noise_new.msf", noise_only, input_header, input_fixel, indexer_vox);
-          }
-
-          // Smooth
-          double sum_squares = 0.0;
-          for (int32_t f = 0; f < num_fixels; ++f) {
-            std::map<int32_t, value_type>::const_iterator it = fixel_smoothing_weights[f].begin();
-            for (; it != fixel_smoothing_weights[f].end(); ++it) {
-              smoothed_test_statistic[r][f] += noisy_test_statistic[it->first] * it->second;
-              smoothed_noise[r][f] += noise_only[it->first] * it->second;
-            }
-            sum_squares += Math::pow2 (smoothed_noise[r][f]);
-          }
-
-          // Normalise so noise std is 1.0 after smoothing
-          double scale_factor = 1.0 / Math::sqrt(sum_squares / (double)num_fixels);
-          for (int32_t f = 0; f < num_fixels; ++f) {
-            smoothed_test_statistic[r][f] *= scale_factor;
-            smoothed_noise[r][f] *= scale_factor;
-            if (smoothed_test_statistic[r][f] > max_statistics[r])
-              max_statistics[r] = smoothed_test_statistic[r][f];
-          }
-          progress++;
-        }
-      }
-
-
-
-      write_fixel_output ("smoothed_statistic_new.msf", smoothed_test_statistic[0], input_header, input_fixel, indexer_vox);
-
-      for (size_t c = 0; c < C.size(); ++c) {
-
-        // Here we pre-exponentiate each connectivity value to speed up the CFE
-        std::vector<std::map<int32_t, Stats::TFCE::connectivity> > weighted_fixel_connectivity (num_fixels);
-        for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-          std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
-          while (it != fixel_connectivity[fixel].end()) {
-            Stats::TFCE::connectivity weighted_connectivity;
-            weighted_connectivity.value = Math::pow (it->second.value , C[c]);
-            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (it->first, weighted_connectivity));
-            ++it;
-          }
-        }
-
-        for (size_t h = 0; h < H.size(); ++h) {
-          for (size_t e = 0; e < E.size(); ++e) {
             CONSOLE ("starting test: smoothing = " + str(smooth[s]) + ", snr = " + str(SNR[snr]) + ", h = " + str(H[h]) + ", e = " + str(E[e]) + ", c = " + str(C[c]));
 
-            MR::Timer timer;
-
+            std::ofstream output;
             std::string filename (argument[2]);
             filename.append ("_s" + str(smooth[s]) + "_snr" + str(SNR[snr]) + "_h" + str(H[h]) + "_e" + str(E[e]) + "_c" + str (C[c]));
-
-            if (Path::exists (filename)) {
+            if (file_exists (filename)) {
               CONSOLE ("Already done!");
             } else {
-              std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_noise_realisations, 0));
-//              TPRates.zero();
+
+              std::vector<value_type> TPRates (num_ROC_samples, 0.0);
               std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
 
               {
                 Stack stack (num_noise_realisations);
-                Processor processor (stack, actual_positives, num_ROC_samples, truth_statistic,
-                                     weighted_fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive, dh, E[e], H[h],
-                                     smoothed_test_statistic, smoothed_noise, max_statistics,
+                Processor processor (stack, num_fixels, actual_positives, num_ROC_samples, truth_statistic, fixel_smoothing_weights,
+                                     fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive, dh, smooth[s] / 2.3548, SNR[snr], E[e], H[h], C[c],
                                      input_header, input_fixel, input_data, indexer_vox, indexer);
                 Thread::Array< Processor > thread_list (processor);
                 Thread::Exec threads (thread_list, "threads");
               }
 
-              // output all noise instance TPR values for variance calculations
-              std::string filename_all_TPR (filename);
-              filename_all_TPR.append("_all_tpr");
-//              TPRates.save (filename_all_TPR);
-
-              // output the average TPR and FPR over all noise realisations
-              std::ofstream output;
               output.open (filename.c_str());
-              for (size_t t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all realisations
-                u_int32_t sum = 0.0;
-                for (size_t p = 0; p < num_noise_realisations; ++p)
-                  sum += TPRates [t][p];
-                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_noise_realisations)   << " ";
-                // FPR is defined as the fraction of realisations with a false positive
-                output << (value_type) num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
+
+              for (int t = 0; t < num_ROC_samples; ++t) {
+                // average TPR across all SNR realisations
+                output << TPRates[t] / (value_type) num_noise_realisations << " ";
+                // FPR is defined as the fraction of SNR realisations with a false positive
+                output << num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
               }
               output.close();
             }
-            std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
           }
         }
       }

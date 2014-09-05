@@ -118,11 +118,13 @@ class TrackProcessor {
                     const std::vector<Point<value_type> >& fixel_directions,
                     std::vector<uint16_t>& fixel_TDI,
                     std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& connectivity_matrix,
+                    std::vector<Thread::Mutex>& fixel_mutexes,
                     value_type angular_threshold):
                     fixel_indexer (fixel_indexer) ,
                     fixel_directions (fixel_directions),
                     fixel_TDI (fixel_TDI),
-                    connectivity_matrix (connectivity_matrix) {
+                    connectivity_matrix (connectivity_matrix),
+                    fixel_mutexes (fixel_mutexes) {
       angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
     }
 
@@ -156,9 +158,11 @@ class TrackProcessor {
       }
 
       for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
+        Thread::Mutex::Lock lock_i (fixel_mutexes[tract_fixel_indices[i]]);
         for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
           connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-          connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
+//          Thread::Mutex::Lock /*lock_j (fixel_mutexes[tract_fixel_indices[j]]);
+//          connectivity_matrix[*/tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
         }
       }
 
@@ -170,6 +174,7 @@ class TrackProcessor {
     const std::vector<Point<value_type> >& fixel_directions;
     std::vector<uint16_t>& fixel_TDI;
     std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& connectivity_matrix;
+    std::vector<Thread::Mutex>& fixel_mutexes;
     value_type angular_threshold_dp;
 };
 
@@ -328,13 +333,14 @@ void run() {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity...");
     DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (input_header);
-    TrackProcessor tract_processor (fixel_indexer, directions, fixel_TDI, connectivity_matrix, angular_threshold);
+    std::vector<Thread::Mutex> fixel_mutexes (num_fixels);
+    TrackProcessor tract_processor (fixel_indexer, directions, fixel_TDI, connectivity_matrix, fixel_mutexes, angular_threshold);
     Thread::run_queue (
         loader,
         Thread::batch (DWI::Tractography::Streamline<float>()),
         mapper,
         Thread::batch (SetVoxelDir()),
-        tract_processor);
+        Thread::multi (tract_processor));
   }
   track_file.close();
 
