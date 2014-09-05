@@ -288,6 +288,7 @@ class Processor {
          output_voxel.value()[f].value = data[index];
         }
       }
+    }
 
 
     void process_noise_realisation (size_t index) {
