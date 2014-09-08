@@ -164,7 +164,8 @@ class TrackProcessor {
 //          Thread::Mutex::Lock /*lock_j (fixel_mutexes[tract_fixel_indices[j]]);
 //          connectivity_matrix[*/tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
         }
-      }
+     }
+
 
       return true;
     }
@@ -344,6 +345,16 @@ void run() {
   }
   track_file.close();
 
+
+  // Here we symmetrise the connectivity matrix since we could not do this while it was being built using multiple threads
+  for (uint32_t fixel = 0; fixel < num_fixels; ++fixel) {
+    std::map<int32_t, Stats::TFCE::connectivity>::iterator it = connectivity_matrix[fixel].begin();
+    while (it != connectivity_matrix[fixel].end()) {
+      //yfixel_connectivity[it->first].insert (std::pair<int32_t, value_type> (fixel, it->second));
+      connectivity_matrix[it->first][fixel] = it->second;
+      ++it;
+    }
+  }
 
   // Normalise connectivity matrix and threshold, pre-compute fixel-fixel weights for smoothing.
   std::vector<std::map<int32_t, value_type> > smoothing_weights (num_fixels);
