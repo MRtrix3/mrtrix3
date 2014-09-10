@@ -18,23 +18,23 @@ using namespace App;
 
 void usage () {
   AUTHOR = "Ben Jeurissen (ben.jeurissen@gmail.com)";
-  
+
   DESCRIPTION
     + "Multi-shell, multi-tissue CSD";
 
   REFERENCES = "Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A.; Sijbers, J."
-             "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data"
-             "NeuroImage, in press, DOI: 10.1016/j.neuroimage.2014.07.061";
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data"
+    "NeuroImage, in press, DOI: 10.1016/j.neuroimage.2014.07.061";
 
   ARGUMENTS
     + Argument ("dwi",
         "the input diffusion-weighted image.").type_image_in()
-	+ Argument ("fodf",
+    + Argument ("fodf",
         "the output fodf image.").type_image_out();
-		
+
   OPTIONS
     + Option ("mask",
-      "only perform computation within the specified binary brain mask image.")
+        "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in ();
 }
 
@@ -152,6 +152,11 @@ class Shared {
 };
 
 
+
+
+
+
+
 class Processor {
   public:
     Processor (
@@ -167,17 +172,17 @@ class Processor {
         fodf_out(fodf_out_vox),
         dwi(dwi_in.dim(3)),
         fodf(fodf_out.dim(3))
-    { }
+  { }
 
     void operator () (const Image::Iterator& pos) {
       if (!load_data(pos))
         return;
-	  try {
+      try {
         solver (fodf, dwi);
-	  } catch (Exception& E) {
+      } catch (Exception& E) {
         E.display();
-	  }
-	  fodf[fodf.size()] = solver.iterations();
+      }
+      fodf[fodf.size()] = solver.iterations();
       write_back (pos);
     }
 
@@ -215,9 +220,16 @@ class Processor {
       for (loop.start(fodf_out); loop.ok(); loop.next(fodf_out)) {
         fodf_out.value() = fodf[fodf_out[3]];
       }
-	}
+    }
 
 };
+
+
+
+
+
+
+
 
 void run () {
   /* input DWI image */
@@ -265,7 +277,7 @@ void run () {
   Image::Header fodf_out_header (dwi_in_buffer); fodf_out_header.set_ndim (4); fodf_out_header.dim (3) = nparams+1;
   OutputBufferType fodf_out_buffer (argument[1], fodf_out_header);
   OutputBufferType::voxel_type fodf_out_vox (fodf_out_buffer);
-  
+
   Image::ThreadedLoop loop ("working...", dwi_in_vox, 1, 0, 3);
   Processor processor (shared, dwi_in_vox, mask_in_vox, fodf_out_vox);
   loop.run (processor);

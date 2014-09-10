@@ -1,22 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+   Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+   Written by J-Donald Tournier, 27/06/08.
 
-    This file is part of MRtrix.
+   This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   MRtrix is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   MRtrix is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -25,7 +25,8 @@
 
 #include <set>
 
-#include "math/cholesky.h"
+//#include "math/cholesky.h"
+#include "math/LU.h"
 
 namespace MR
 {
@@ -44,26 +45,27 @@ namespace MR
         class Problem {
           public:
             Problem () { }
-            Problem (const Matrix<ValueType>& problem_matrix, const Matrix<ValueType>& constraint_matrix, 
-                ValueType initial_constraint_factor = ValueType(1.0), ValueType constraint_multiplier = ValueType(2.0), 
-                ValueType final_constraint_factor = ValueType (1.0e8), ValueType tolerance = ValueType(1.0e-8), 
+            Problem (const Matrix<ValueType>& problem_matrix, 
+                const Matrix<ValueType>& constraint_matrix, 
+                ValueType initial_constraint_factor = ValueType(1.0), 
+                ValueType constraint_multiplier = ValueType(5.0), 
+                ValueType tolerance = ValueType(1.0e-10), 
                 size_t max_iterations = 1000) :
               H (problem_matrix),
               A (constraint_matrix),
-              Q (H.columns(), H.columns()), 
-              lambda_init (initial_constraint_factor), 
-              lambda_inc (constraint_multiplier),
-              lambda_max (final_constraint_factor),
-              tol (tolerance), 
+              HtH (H.columns(), H.columns()), 
+              mu_init (initial_constraint_factor), 
+              mu_inc (constraint_multiplier),
+              tol2 (pow2 (tolerance)), 
               max_niter (max_iterations) {
-                rankN_update (Q, H, CblasTrans, CblasLower);
+                //rankN_update (HtH, H, CblasTrans, CblasLower);
+                mult (HtH, ValueType(0.0), ValueType(1.0), CblasTrans, H, CblasNoTrans, H);
               }
-            
-            Matrix<ValueType> H, A, Q;
-            ValueType lambda_init, lambda_inc, lambda_max, tol;
-            size_t max_niter;
-      };
 
+            Matrix<ValueType> H, A, HtH;
+            ValueType mu_init, mu_inc, tol2;
+            size_t max_niter;
+        };
 
 
 
@@ -72,85 +74,116 @@ namespace MR
         class Solver {
           public:
             Solver (const Problem<ValueType>& problem) :
-			  iter(0),
+              iter(0),
               P (problem),
-              QA (P.Q.rows(), P.Q.columns()),
+              HtH_muAtA (P.HtH.rows(), P.HtH.columns()),
               Ak (P.A.rows(), P.A.columns()),
-              d (P.Q.rows()),
-              c (P.A.rows()) {
+              dx (P.HtH.rows()),
+              d (P.HtH.rows()),
+              c (P.A.rows()),
+              lambda (c.size()),
+              lambda_k (lambda.size()) {
                 k.reserve (c.size());
-                k_prev.reserve (c.size());
               }
 
-            void operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
+            int operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
-              lambda = P.lambda_init;
+              lambda = 0.0;
+              mu = P.mu_init;
+              mu_inc = P.mu_inc;
               mult (d, ValueType (1.0), CblasTrans, P.H, b);
-              x.allocate (d.size());
+              x = d;
 
-              QA = P.Q;
-              solve(x);
+              HtH_muAtA = P.HtH;
+              solve (x, HtH_muAtA);
+              mult (c, P.A, x);
+              //std::cout << x << std::endl;
 
               iter = 0;
               for (; iter < P.max_niter; ++iter) {
-                if (active_set_unchanged (x)) {
-                  lambda *= P.lambda_inc;
-                  if (lambda > P.lambda_max) 
-                    break;
-                } 
-                form_constrained_matrix ();
-                solve (x);
+                find_active_set();
+                form_constrained_matrix (x);
+                solve (x, HtH_muAtA);
+                //std::cout << x << std::endl;
+
+                dx -= x;
+                ValueType t = norm2 (dx) / norm2 (x);
+                if (t < P.tol2)
+                  return iter;
+
+                mult (c, P.A, x);
+                update_mu_lambda();
+                dx = x;
               }
-			  if (iter >= P.max_niter)
-                throw Exception ("constrained least-squares failed to converge");
+              throw Exception ("constrained least-squares failed to converge");
             }
-			
-			size_t iterations () const {
-			  return iter;
-			}
-			
+
+            size_t iterations () const {
+              return iter;
+            }
+
           protected:
-		    size_t iter;
+            size_t iter;
             const Problem<ValueType>& P;
-            Matrix<ValueType> QA, Ak;
-            Vector<ValueType> d, c;
-            std::vector<size_t> k, k_prev;
-            ValueType lambda;
+            Matrix<ValueType> HtH_muAtA, Ak;
+             Vector<ValueType> dx, d, c, lambda, lambda_k;
+            std::vector<size_t> k;
+            ValueType mu, mu_inc;
 
-            bool active_set_unchanged (Math::Vector<ValueType>& x) 
-            { 
-              compute_active_set(x);
-              if (k.size() == k_prev.size())
-                if (std::equal (k.begin(), k.end(), k_prev.begin()))
-                  return true;
-              k_prev = k;
-              return false;
-            };
+            static void solve (Vector<ValueType>& x, Matrix<ValueType>& M)
+            {
+              Permutation p (M.rows());
+              int signum;
+              LU::decomp (M, p, signum);
+              LU::solve (x, M, p);
+            }
 
-            void compute_active_set (Math::Vector<ValueType>& x) 
+            void find_active_set ()
             {
               k.clear();
-              mult (c, P.A, x);
               for (size_t n = 0; n < c.size(); ++n)
-                if (c[n] < P.tol)
+                if (c[n] - mu*lambda[n] <= 0.0)
                   k.push_back (n);
             }
 
-            void form_constrained_matrix () 
+            void form_constrained_matrix (Vector<ValueType>& x) 
             {
               Ak.allocate (k.size(), P.A.columns());
               for (size_t n = 0; n < k.size(); ++n)
                 Ak.row(n) = P.A.row(k[n]);
 
-              QA = P.Q;
-              rankN_update (QA, Ak, CblasTrans, CblasLower, lambda, ValueType(1.0));
+              lambda_k.allocate (k.size());
+              for (size_t n = 0; n < k.size(); ++n)
+                lambda_k[n] = lambda[k[n]];
+
+              HtH_muAtA = P.HtH;
+              //rankN_update (HtH_muAtA, Ak, CblasTrans, CblasLower, mu, ValueType(1.0));
+              mult (HtH_muAtA, ValueType(1.0), mu, CblasTrans, Ak, CblasNoTrans, Ak);
+
+              x = d;
+              mult (x, ValueType(1.0), ValueType(1.0), CblasTrans, Ak, lambda_k);
             }
 
-            void solve (Math::Vector<ValueType>& x) 
+            void update_mu_lambda () 
             {
-              Cholesky::decomp (QA);
-              Cholesky::solve (x, QA, d);
+              ValueType max_c (0.0), max_lambda (0.0);
+              for (size_t n = 0; n < c.size(); ++n ) {
+                if (c[n] < max_c) 
+                  max_c = c[n];
+                if (lambda[n] > max_lambda)
+                  max_lambda = lambda[n];
+              }
+              if (max_lambda > 0.0 && -mu*max_c > max_lambda) {
+                mu /= P.mu_inc; 
+                mu_inc = 1.0 + (mu_inc-1.0)/2.0;
+              }
+              else {
+                for (size_t n = 0; n < c.size(); ++n) 
+                  lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
+                mu *= mu_inc;
+              }
             }
+
         };
 
     }

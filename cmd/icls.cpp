@@ -55,13 +55,13 @@ void run ()
   Math::Vector<double> b;
   b.load (argument[2]);
 
-  Math::ICLS::Problem<double> icls_problem (H, A, 1.0, 2.0, 1.0e8, 1.0e-8);
+  Math::ICLS::Problem<double> icls_problem (H, A);
   Math::ICLS::Solver<double> icls_solver (icls_problem);
 
   Math::Vector<double> x;
   Timer timer;
-  icls_solver (x, b);
+  VAR (icls_solver (x, b));
   VAR (timer.elapsed());
-  x.save ("x.txt");
+  std::cout << x << std::endl;
 }
 
