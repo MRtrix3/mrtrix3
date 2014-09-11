@@ -3,16 +3,9 @@ import numpy
 from sys import argv
 from scipy.integrate import simps, trapz
 
-def write_file (filename, data):
-    f = open(filename, 'w')
-    f.write("%f\n" % data)
-    f.close()
 
-# A function to read in a file, and compute the AUC for all FPR < 0.05
-def compute_auc(filename):
-    data = numpy.loadtxt(filename)
-    FPR = data[::-1,1]
-    TPR = data[::-1,0]                                   
+# Compute the AUC for all FPR < 0.05
+def compute_auc(TPR, FPR):
     i = 0
     while FPR[i] < 0.05:
         i = i + 1                           
@@ -26,30 +19,15 @@ def compute_auc(filename):
     return trapz(TPR_05, x=FPR_05) * 20
 
 
-# loop over all parameter combinations, compute AUC and average across ROIs
-#for smooth in ['0','5','10','20']:
-#    for h in ['0.5','1','2','3']:
-#        for e in ['0.5','1','2','3']:
-#            for c in ['0','0.25','0.5','0.75','1']:
-#                for effect in ['0.15','0.3','0.45']:
-#                   data = numpy.loadtxt(prefix + str(smooth) + '_snr' + str(effect) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c))
-#                  uncinate = compute_auc(effect,smooth, h, e, c, '../ROIs/uncinate/output/ROC_s');
-#                  write_file('/data/dave/cfe/experiment_2_sims/invivo/uncinate/AUC/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), uncinate)
-#                  arcuate = compute_auc(effect,smooth, h, e, c, '../ROIs/arcuate/output/ROC_s');
-#                  write_file('/data/dave/cfe/experiment_2_sims/invivo/arcuate/AUC/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), arcuate)
-#                  cingulum = compute_auc(effect,smooth, h, e, c, '../ROIs/cingulum/output/ROC_s');
-#                  write_file('/data/dave/cfe/experiment_2_sims/invivo/cingulum/AUC/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), cingulum)
-#                  posterior_cingulum = compute_auc(effect,smooth, h, e, c, '../ROIs/posterior_cingulum/output/ROC_s');
-#                  write_file('/data/dave/cfe/experiment_2_sims/invivo/posterior_cingulum/AUC/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), posterior_cingulum)
-#                  CC = compute_auc(effect,smooth, h, e, c, '../ROIs/CC/output/ROC_s');
-#                  write_file('/data/dave/cfe/experiment_2_sims/ROIs/CC/AUC/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), CC)
-#                  average = (uncinate + arcuate + cingulum + posterior_cingulum + CC ) / 5.0
-#                  write_file ('/data/dave/cfe/experiment_2_sims/averageAUCs/' + str(effect) + '_' + str(smooth) + '_h' + str(h) + '_e' + str(e) + '_c' + str(c), average)
-
-
 if __name__ == "__main__":
-    AUC = compute_auc(argv[1])
-    print (AUC)
-    if len(argv) == 3:
-        write_file (argv[2], AUC)
+    all_TPR = numpy.loadtxt(argv[1])
+    average_TPR_FPR = numpy.loadtxt(argv[2])
+    FPR = average_TPR_FPR[::-1,1]
+    output_file = open(argv[3], 'w')
+    print argv[3]
+    for realisation in all_TPR.transpose():
+        TPR = realisation[::-1]
+        AUC = compute_auc(TPR, FPR)
+        output_file.write("%f\n" % AUC)
+    output_file.close()
                     
