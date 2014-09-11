@@ -158,11 +158,9 @@ class TrackProcessor {
       }
 
       for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-        Thread::Mutex::Lock lock_i (fixel_mutexes[tract_fixel_indices[i]]);
         for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
           connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-//          Thread::Mutex::Lock /*lock_j (fixel_mutexes[tract_fixel_indices[j]]);
-//          connectivity_matrix[*/tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
+          connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
         }
      }
 
@@ -341,7 +339,7 @@ void run() {
         Thread::batch (DWI::Tractography::Streamline<float>()),
         mapper,
         Thread::batch (SetVoxelDir()),
-        Thread::multi (tract_processor));
+        tract_processor);
   }
   track_file.close();
 
