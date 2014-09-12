@@ -179,8 +179,9 @@ class Processor {
         return;
       try {
         solver (fodf, dwi);
-      } catch (Exception& E) {
-        E.display();
+      } 
+      catch (Exception& E) {
+        INFO ("failed to converge for voxel " + str(pos));
       }
       fodf[fodf.size()] = solver.iterations();
       write_back (pos);

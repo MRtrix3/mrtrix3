@@ -54,7 +54,7 @@ namespace MR
         ssize_t& operator[] (size_t axis) { return p[axis]; }
 
         friend std::ostream& operator<< (std::ostream& stream, const Iterator& V) {
-          stream << "iterator, position [ ";
+          stream << "[ ";
           for (size_t n = 0; n < V.ndim(); ++n)
             stream << V[n] << " ";
           stream << "]";

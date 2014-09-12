@@ -51,30 +51,38 @@ namespace MR
         Permutation (size_t n) {
           p = gsl_permutation_alloc (n);
         }
+        Permutation (const Permutation& other) {
+          p = gsl_permutation_alloc (other.size());
+        }
+
         ~Permutation () {
           gsl_permutation_free (p);
         }
 
+        size_t size () const { 
+          return gsl_permutation_size (p);
+        }
+
         size_t operator[] (const size_t i) const {
-          return (gsl_permutation_get (p, i));
+          return gsl_permutation_get (p, i);
         }
         size_t& operator[] (const size_t i)       {
-          return (gsl_permutation_data (p) [i]);
+          return gsl_permutation_data (p) [i];
         }
 
         template <typename T> Vector<T>& apply (Vector<T>& V) const {
           permute (p, V);
-          return (V);
+          return V;
         }
         bool   valid () const {
-          return (gsl_permutation_valid (p));
+          return gsl_permutation_valid (p);
         }
 
         gsl_permutation* gsl () {
-          return (p);
+          return p;
         }
         const gsl_permutation* gsl () const {
-          return (p);
+          return p;
         }
       private:
         gsl_permutation* p;
