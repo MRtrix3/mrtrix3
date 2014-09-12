@@ -47,8 +47,6 @@ namespace MR
           public:
             Fixel (const std::string& filename, Vector& fixel_tool);
 
-            ~Fixel();
-
               class Shader : public Displayable::Shader {
                 public:
                   Shader () : do_crop_to_slice (false), color_type (Direction), length_type (Amplitude) { }
@@ -116,10 +114,9 @@ namespace MR
               MR::Image::Transform header_transform;
               ColourMap::Renderer colourbar_renderer;
               int colourbar_position_index;
-              GLuint vertex_buffer;
-              GLuint vertex_array_object;
-              GLuint value_buffer;
-              GLuint value_array_object;
+              GL::VertexBuffer vertex_buffer;
+              GL::VertexArrayObject vertex_array_object;
+              GL::VertexBuffer value_buffer;
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;

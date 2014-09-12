@@ -100,18 +100,10 @@ namespace MR
             }
 
 
-            void set_response (const std::string& response_file_or_coefs)
+            void set_response (const std::string& path)
             {
-              try {
-                std::vector<float> coefs = parse_floats (response_file_or_coefs);
-                response.resize (coefs.size());
-                for (size_t n = 0; n < coefs.size(); ++n)
-                  response[n] = coefs[n];
-              }
-              catch (Exception) {
-                INFO ("loading response function from file \"" + response_file_or_coefs + "\"");
-                response.load (response_file_or_coefs);
-              }
+              INFO ("loading response function from file \"" + path + "\"");
+              response.load (path);
 
               lmax_data = 2*(response.size()-1);
               INFO ("setting response function using even SH coefficients: " + str (response));

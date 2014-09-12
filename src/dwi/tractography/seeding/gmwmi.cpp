@@ -39,9 +39,10 @@ namespace MR
 
       GMWMI::GMWMI (const std::string& in, const Math::RNG& rng, const std::string& anat_path) :
         Base (in, rng, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
+        GMWMI_5TT_Wrapper (anat_path),
+        ACT::GMWMI_finder (anat_data),
         init_seeder (in, rng),
-        anat_data (anat_path),
-        interface (anat_data)
+        perturb_max_step (4.0f * std::pow (anat_data.vox(0) * anat_data.vox(1) * anat_data.vox(2), (1.0f/3.0f)))
       {
         volume = init_seeder.vol();
       }
@@ -51,11 +52,30 @@ namespace MR
 
       bool GMWMI::get_seed (Point<float>& p)
       {
+        Interp interp (interp_template);
         do {
           init_seeder.get_seed (p);
-          if (interface.find_interface (p))
-            return true;
+          if (find_interface (p, interp)) {
+            if (perturb (p, interp))
+              return true;
+          }
         } while (1);
+        return false;
+      }
+
+
+
+      bool GMWMI::perturb (Point<float>& p, Interp& interp)
+      {
+        const Point<float> normal (get_normal (p, interp));
+        if (!normal.valid())
+          return false;
+        Point<float> plane_one ((normal.cross (Point<float> (0.0f,0.0f,1.0f))).normalise());
+        if (!plane_one.valid())
+          plane_one = (normal.cross (Point<float> (0.0f,1.0f,0.0f))).normalise();
+        const Point<float> plane_two ((normal.cross (plane_one)).normalise());
+        p += ((rng.uniform()-0.5f) * perturb_max_step * plane_one) + ((rng.uniform()-0.5f) * perturb_max_step * plane_two);
+        return find_interface (p, interp);
       }
 
 

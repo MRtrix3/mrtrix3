@@ -46,7 +46,7 @@ namespace MR
       //! component of a mask
       /*!
        *
-       * Unline the ConnectedComponents filter, this filter only
+       * Unlike the ConnectedComponents filter, this filter only
        * extracts the largest-volume connected component from a
        * mask image. This reduction in complexity allows a
        * simpler implementation, and means that the output image

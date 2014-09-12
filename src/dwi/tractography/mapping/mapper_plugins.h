@@ -21,7 +21,7 @@
 */
 
 #ifndef __dwi_tractography_mapping_mapper_plugins_h__
-#define __dwi_tractography_mapping_mapper_h__
+#define __dwi_tractography_mapping_mapper_plugins_h__
 
 
 #include <vector>

@@ -28,7 +28,7 @@
 #include "image/buffer.h"
 #include "image/header.h"
 #include "image/loop.h"
-#include "image/interp/linear.h"
+#include "image/nav.h"
 #include "image/voxel.h"
 #include "progressbar.h"
 
@@ -77,29 +77,33 @@ void run ()
   DWI::Tractography::ACT::verify_5TT_image (H_in);
   Image::Buffer<float> image_in (H_in);
   Image::Buffer<float>::voxel_type v_in (image_in);
-  Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_in (v_in);
+
+  // TODO It would be nice to have the capability to define this mask based on another image
+  // This will however require the use of interpolators
 
   Ptr< Image::Buffer<bool> > image_mask;
   Ptr< Image::Buffer<bool>::voxel_type > v_mask;
   Options opt = get_options ("mask_in");
   if (opt.size()) {
     image_mask = new Image::Buffer<bool> (opt[0][0]);
+    if (!Image::dimensions_match (image_in, *image_mask, 0, 3))
+      throw Exception ("Mask image provided using the -mask option must match the input 5TT image");
     v_mask = new Image::Buffer<bool>::voxel_type (*image_mask);
   }
 
   Image::Header H_out;
   if (image_mask) {
     H_out = *image_mask;
+    H_out.datatype() = DataType::Float32;
+    H_out.datatype().set_byte_order_native();
   } else {
     H_out = image_in;
     H_out.set_ndim (3);
-    H_out.datatype() = DataType::Bit;
   }
-  Image::Buffer<bool> image_out (argument[1], H_out);
-  Image::Buffer<bool>::voxel_type v_out (image_out);
-  Image::Interp::Linear< Image::Buffer<bool>::voxel_type > interp_out (v_out);
+  Image::Buffer<float> image_out (argument[1], H_out);
+  Image::Buffer<float>::voxel_type v_out (image_out);
 
-  Image::Loop loop ("Determining GMWMI seeding mask...");
+  Image::LoopInOrder loop (v_out, "Determining GMWMI seeding mask...");
   for (loop.start (v_out); loop.ok(); loop.next (v_out)) {
 
     // If a mask is defined, but is false in this voxel, do not continue processing
@@ -113,53 +117,36 @@ void run ()
 
     if (process_voxel) {
 
-      // Determine whether or not this voxel should be true in the output mask
-      // Base this decision on the presence of a gradient within the voxel volume of both the GM and the WM fractions
-
-      const Point<float> voxel_centre   (v_out[0], v_out[1], v_out[2]);
-      const Point<float> p_voxel_centre (interp_out.voxel2scanner (voxel_centre));
-
-      if (!interp_in.scanner (p_voxel_centre)) {
-
-        DWI::Tractography::ACT::Tissues values_voxel_centre (interp_in);
-        if (values_voxel_centre.valid()) {
-
-          bool mask_value = false;
-
-          for (size_t i = 0; !mask_value && i != 8; ++i) {
-            Point<float> voxel_corner;
-            switch (i) {
-              case 0: voxel_corner.set (v_out[0] - 0.5, v_out[1] - 0.5, v_out[2] - 0.5); break;
-              case 1: voxel_corner.set (v_out[0] - 0.5, v_out[1] - 0.5, v_out[2] + 0.5); break;
-              case 2: voxel_corner.set (v_out[0] - 0.5, v_out[1] + 0.5, v_out[2] - 0.5); break;
-              case 3: voxel_corner.set (v_out[0] - 0.5, v_out[1] + 0.5, v_out[2] + 0.5); break;
-              case 4: voxel_corner.set (v_out[0] + 0.5, v_out[1] - 0.5, v_out[2] - 0.5); break;
-              case 5: voxel_corner.set (v_out[0] + 0.5, v_out[1] - 0.5, v_out[2] + 0.5); break;
-              case 6: voxel_corner.set (v_out[0] + 0.5, v_out[1] + 0.5, v_out[2] - 0.5); break;
-              case 7: voxel_corner.set (v_out[0] + 0.5, v_out[1] + 0.5, v_out[2] + 0.5); break;
-            }
-            const Point<float> p_voxel_corner (interp_out.voxel2scanner (voxel_corner));
-            if (!interp_in.scanner (p_voxel_corner)) {
-              DWI::Tractography::ACT::Tissues values_voxel_corner (interp_in);
-              if (values_voxel_corner.valid()) {
-
-                // No absolute values for differences here - one must increase, the other must decrease
-                mask_value = ((values_voxel_corner.get_gm() - values_voxel_centre.get_gm() > MIN_TISSUE_CHANGE) && (values_voxel_centre.get_wm() - values_voxel_corner.get_wm() > MIN_TISSUE_CHANGE))
-                          || ((values_voxel_centre.get_gm() - values_voxel_corner.get_gm() > MIN_TISSUE_CHANGE) && (values_voxel_corner.get_wm() - values_voxel_centre.get_wm() > MIN_TISSUE_CHANGE));
-
-
-              }
-
-            }
-
-          }
-
-          v_out.value() = mask_value;
-
+      // Generate a non-binary seeding mask.
+      // Image intensity should be proportional to the tissue gradient present across the voxel
+      // Remember: This seeding mask is generated in the same space as the 5TT image: exploit this
+      //   (no interpolators should be necessary)
+      // Essentially looking for an absolute gradient in (GM - WM) - just do in three axes
+      //   - well, not quite; needs to be the minimum of the two
+      float gradient = 0.0;
+      for (size_t axis = 0; axis != 3; ++axis) {
+        Image::Nav::set_pos (v_in, v_out, 0, 3);
+        float multiplier = 0.5;
+        if (!v_out[axis]) {
+          multiplier = 1.0;
+        } else {
+          v_in[axis] = v_out[axis] - 1;
         }
-
+        const DWI::Tractography::ACT::Tissues neg (v_in);
+        if (v_out[axis] == v_out.dim(axis)-1) {
+          multiplier = 1.0;
+          v_in[axis] = v_out[axis];
+        } else {
+          v_in[axis] = v_out[axis] + 1;
+        }
+        const DWI::Tractography::ACT::Tissues pos (v_in);
+        gradient += Math::pow2 (multiplier * std::min (std::abs (pos.get_gm() - neg.get_gm()), std::abs (pos.get_wm() - neg.get_wm())));
       }
+      gradient = std::sqrt (gradient);
+      v_out.value() = gradient;
 
+    } else {
+      v_out.value() = 0.0f;
     }
 
   }
