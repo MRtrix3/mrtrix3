@@ -145,39 +145,39 @@ namespace MR
          * if appropriate. Note that only those axes specified in the Loop
          * constructor will have their coordinates set to zero; the coordinates
          * of all other axes will be left untouched. */
-        template <class VoxelType>
-        inline void start (VoxelType& vox) {
+        template <class Set>
+        inline void start (Set& set) {
           cont_ = true;
-          for (size_t n = from_; n < max_axis(vox); ++n)
-            vox[n] = 0;
+          for (size_t n = from_; n < max_axis(set); ++n)
+            set[n] = 0;
           if (progress_)
-            progress_.set_max (voxel_count (vox, from_, to_));
+            progress_.set_max (voxel_count (set, from_, to_));
         }
         //! Start the loop to iterate over two VoxelType objects
-        /*! \copydetails Loop::start(VoxelType&) */
-        template <class VoxelType, class VoxelType2>
-        inline void start (VoxelType& vox, VoxelType2& vox2) {
+        /*! \copydetails Loop::start(Set&) */
+        template <class Set, class Set2>
+        inline void start (Set& set, Set2& set2) {
           cont_ = true;
-          for (size_t n = from_; n < max_axis(vox); ++n) {
-            vox[n] = 0;
-            vox2[n] = 0;
+          for (size_t n = from_; n < max_axis(set); ++n) {
+            set[n] = 0;
+            set2[n] = 0;
           }
           if (progress_)
-            progress_.set_max (voxel_count (vox, from_, to_));
+            progress_.set_max (voxel_count (set, from_, to_));
         }
 
         //! Start the loop to iterate over three VoxelType objects
-        /*! \copydetails Loop::start(VoxelType&) */
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        inline void start (VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
+        /*! \copydetails Loop::start(Set&) */
+        template <class Set, class Set2, class Set3>
+        inline void start (Set& set, Set2& set2, Set3& set3) {
           cont_ = true;
-          for (size_t n = from_; n < max_axis(vox); ++n) {
-            vox[n] = 0;
-            vox2[n] = 0;
-            vox3[n] = 0;
+          for (size_t n = from_; n < max_axis(set); ++n) {
+            set[n] = 0;
+            set2[n] = 0;
+            set3[n] = 0;
           }
           if (progress_)
-            progress_.set_max (voxel_count (vox, from_, to_));
+            progress_.set_max (voxel_count (set, from_, to_));
         }
 
         //! Check whether the loop should continue iterating
@@ -189,31 +189,31 @@ namespace MR
         //! Proceed to next iteration for a single VoxelType
         /*! Advance coordinates of all specified VoxelType objects to the next position
          * to be processed, and update the progress status if appropriate. */
-        template <class VoxelType>
-        void next (VoxelType& vox) {
-          next_impl (from_, vox);
+        template <class Set>
+        void next (Set& set) {
+          next_impl (from_, set);
           ++progress_;
         }
 
         //! Proceed to next iteration for two VoxelType objects
-        /*! \copydetails Loop::next(VoxelType&) */
-        template <class VoxelType, class VoxelType2>
-        void next (VoxelType& vox, VoxelType2& vox2) {
-          next_impl (from_, vox, vox2);
+        /*! \copydetails Loop::next(Set&) */
+        template <class Set, class Set2>
+        void next (Set& set, Set2& set2) {
+          next_impl (from_, set, set2);
           ++progress_;
         }
 
         //! Proceed to next iteration for three VoxelType objects
-        /*! \copydetails Loop::next(VoxelType&) */
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void next (VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
-          next_impl (from_, vox, vox2, vox3);
+        /*! \copydetails Loop::next(Set&) */
+        template <class Set, class Set2, class Set3>
+        void next (Set& set, Set2& set2, Set3& set3) {
+          next_impl (from_, set, set2, set3);
           ++progress_;
         }
 
         //! set position along relevant axes of \a target to that of \a reference
-        template <class VoxelType, class VoxelType2>
-        void set_position (const VoxelType& reference, VoxelType2& target) const {
+        template <class Set, class Set2>
+        void set_position (const Set& reference, Set2& target) const {
           for (size_t i = from_; i < max_axis (reference); ++i) {
             const ssize_t x = reference[i];
             target[i] = x;
@@ -221,8 +221,8 @@ namespace MR
         }
 
         //! set position along relevant axes of \a targets to that of \a reference
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void set_position (const VoxelType& reference, VoxelType2& target, VoxelType3& target2) const {
+        template <class Set, class Set2, class Set3>
+        void set_position (const Set& reference, Set2& target, Set3& target2) const {
           for (size_t i = from_; i < max_axis(reference); ++i) {
             const ssize_t x = reference[i];
             target[i] = x;
@@ -231,8 +231,8 @@ namespace MR
         }
 
         //! set position along relevant axes of \a targets to that of \a reference
-        template <class VoxelType, class VoxelType2, class VoxelType3, class VoxelType4>
-        void set_position (const VoxelType& reference, VoxelType2& target, VoxelType3& target2, VoxelType4& target3) const {
+        template <class Set, class Set2, class Set3, class Set4>
+        void set_position (const Set& reference, Set2& target, Set3& target2, Set4& target3) const {
           for (size_t i = from_; i < max_axis(reference); ++i) {
             const ssize_t x = reference[i];
             target[i] = x;
@@ -248,44 +248,44 @@ namespace MR
         ProgressBar progress_;
 
 
-        template <class VoxelType>
-        size_t max_axis (const VoxelType& vox) const {
-          return std::min (vox.ndim(), to_);
+        template <class Set>
+        size_t max_axis (const Set& set) const {
+          return std::min (set.ndim(), to_);
         }
 
-        template <class VoxelType>
-        void next_impl (size_t axis, VoxelType& vox) {
-          if (axis < max_axis(vox)) {
-            if (vox[axis] + 1 < vox.dim (axis)) ++vox[axis];
+        template <class Set>
+        void next_impl (size_t axis, Set& set) {
+          if (axis < max_axis(set)) {
+            if (set[axis] + 1 < set.dim (axis)) ++set[axis];
             else {
-              if (axis+1 == max_axis(vox)) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
-                next_impl (axis+1, vox);
-                if (cont_) vox[axis] = 0;
+                next_impl (axis+1, set);
+                if (cont_) set[axis] = 0;
               }
             }
           }
           else cont_ = false;
         }
 
-        template <class VoxelType, class VoxelType2>
-        void next_impl (size_t axis, VoxelType& vox, VoxelType2& vox2) {
-          if (axis < max_axis(vox)) {
-            if (vox[axis] + 1 < vox.dim (axis)) {
-              ++vox[axis];
-              ++vox2[axis];
+        template <class Set, class Set2>
+        void next_impl (size_t axis, Set& set, Set2& set2) {
+          if (axis < max_axis(set)) {
+            if (set[axis] + 1 < set.dim (axis)) {
+              ++set[axis];
+              ++set2[axis];
             }
             else {
-              if (axis+1 == max_axis(vox)) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
-                next_impl (axis+1, vox, vox2);
+                next_impl (axis+1, set, set2);
                 if (cont_) {
-                  vox[axis] = 0;
-                  vox2[axis] = 0;
+                  set[axis] = 0;
+                  set2[axis] = 0;
                 }
               }
             }
@@ -293,24 +293,24 @@ namespace MR
           else cont_ = false;
         }
 
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void next_impl (size_t axis, VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
-          if (axis < max_axis(vox)) {
-            if (vox[axis] + 1 < vox.dim (axis)) {
-              ++vox[axis];
-              ++vox2[axis];
-              ++vox3[axis];
+        template <class Set, class Set2, class Set3>
+        void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3) {
+          if (axis < max_axis(set)) {
+            if (set[axis] + 1 < set.dim (axis)) {
+              ++set[axis];
+              ++set2[axis];
+              ++set3[axis];
             }
             else {
-              if (axis+1 == max_axis(vox)) {
+              if (axis+1 == max_axis(set)) {
                 cont_ = false;
               }
               else {
-                next_impl (axis+1, vox, vox2, vox3);
+                next_impl (axis+1, set, set2, set3);
                 if (cont_) {
-                  vox[axis] = 0;
-                  vox2[axis] = 0;
-                  vox3[axis] = 0;
+                  set[axis] = 0;
+                  set2[axis] = 0;
+                  set3[axis] = 0;
                 }
               }
             }
@@ -456,9 +456,9 @@ namespace MR
          * arguments \a from_axis and \a to_axis can be used to restrict those
          * axes that will be looped over: the Loop will then iterate from axis
          * \a from_axis up to but \b not including axis \a to_axis. */
-        template <class VoxelType>
-        LoopInOrder (const VoxelType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-          axes_ (Stride::order (vox, from_axis, to_axis)), cont_ (true) { }
+        template <class Set>
+        LoopInOrder (const Set& set, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true) { }
 
         //! Constructor from VoxelType strides with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified
@@ -467,9 +467,9 @@ namespace MR
          * from_axis and \a to_axis can be used to restrict those axes that
          * will be looped over: the Loop will then iterate from axis \a
          * from_axis up to but \b not including axis \a to_axis. */
-        template <class VoxelType>
-        LoopInOrder (const VoxelType& vox, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-          axes_ (Stride::order (vox, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
+        template <class Set>
+        LoopInOrder (const Set& set, const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          axes_ (Stride::order (set, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
 
         //! Start the loop to iterate over a single VoxelType
         /*! Start the loop by resetting the appropriate coordinates of each of
@@ -477,39 +477,39 @@ namespace MR
          * if appropriate. Note that only those axes specified in the
          * LoopInOrder constructor will have their coordinates set to zero; the
          * coordinates of all other axes will be left untouched. */
-        template <class VoxelType>
-        inline void start (VoxelType& vox) {
+        template <class Set>
+        inline void start (Set& set) {
           cont_ = true;
           for (size_t n = 0; n < axes_.size(); ++n)
-            vox[axes_[n]] = 0;
+            set[axes_[n]] = 0;
           if (progress_)
-            progress_.set_max (voxel_count (vox, axes_));
+            progress_.set_max (voxel_count (set, axes_));
         }
         //! Start the loop to iterate over two VoxelType objects
-        /*! \copydetails LoopInOrder::start(VoxelType&) */
-        template <class VoxelType, class VoxelType2>
-        inline void start (VoxelType& vox, VoxelType2& vox2) {
+        /*! \copydetails LoopInOrder::start(Set&) */
+        template <class Set, class Set2>
+        inline void start (Set& set, Set2& set2) {
           cont_ = true;
           for (size_t n = 0; n < axes_.size(); ++n) {
-            vox[axes_[n]] = 0;
-            vox2[axes_[n]] = 0;
+            set[axes_[n]] = 0;
+            set2[axes_[n]] = 0;
           }
           if (progress_)
-            progress_.set_max (voxel_count (vox, axes_));
+            progress_.set_max (voxel_count (set, axes_));
         }
 
         //! Start the loop to iterate over three VoxelType objects
-        /*! \copydetails LoopInOrder::start(VoxelType&) */
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        inline void start (VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
+        /*! \copydetails LoopInOrder::start(Set&) */
+        template <class Set, class Set2, class Set3>
+        inline void start (Set& set, Set2& set2, Set3& set3) {
           cont_ = true;
           for (size_t n = 0; n < axes_.size(); ++n) {
-            vox[axes_[n]] = 0;
-            vox2[axes_[n]] = 0;
-            vox3[axes_[n]] = 0;
+            set[axes_[n]] = 0;
+            set2[axes_[n]] = 0;
+            set3[axes_[n]] = 0;
           }
           if (progress_)
-            progress_.set_max (voxel_count (vox, axes_));
+            progress_.set_max (voxel_count (set, axes_));
         }
 
         //! Check whether the loop should continue iterating
@@ -521,31 +521,31 @@ namespace MR
         //! Proceed to next iteration for a single VoxelType
         /*! Advance coordinates of all specified VoxelType objects to the next position
          * to be processed, and update the progress status if appropriate. */
-        template <class VoxelType>
-        void next (VoxelType& vox) {
-          next_impl (0, vox);
+        template <class Set>
+        void next (Set& set) {
+          next_impl (0, set);
           ++progress_;
         }
 
         //! Proceed to next iteration for two VoxelType objects
-        /*! \copydetails LoopInOrder::next(VoxelType&) */
-        template <class VoxelType, class VoxelType2>
-        void next (VoxelType& vox, VoxelType2& vox2) {
-          next_impl (0, vox, vox2);
+        /*! \copydetails LoopInOrder::next(Set&) */
+        template <class Set, class Set2>
+        void next (Set& set, Set2& set2) {
+          next_impl (0, set, set2);
           ++progress_;
         }
 
         //! Proceed to next iteration for three VoxelType objects
-        /*! \copydetails LoopInOrder::next(VoxelType&) */
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void next (VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
-          next_impl (0, vox, vox2, vox3);
+        /*! \copydetails LoopInOrder::next(Set&) */
+        template <class Set, class Set2, class Set3>
+        void next (Set& set, Set2& set2, Set3& set3) {
+          next_impl (0, set, set2, set3);
           ++progress_;
         }
 
         //! set position along relevant axes of \a target to that of \a reference
-        template <class VoxelType, class VoxelType2>
-        void set_position (const VoxelType& reference, VoxelType2& target) const {
+        template <class Set, class Set2>
+        void set_position (const Set& reference, Set2& target) const {
           for (size_t i = 0; i < axes_.size(); ++i) {
             const size_t a = axes_[i];
             const ssize_t x = reference[a];
@@ -554,8 +554,8 @@ namespace MR
         }
 
         //! set position along relevant axes of \a targets to that of \a reference
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void set_position (const VoxelType& reference, VoxelType2& target, VoxelType3& target2) const {
+        template <class Set, class Set2, class Set3>
+        void set_position (const Set& reference, Set2& target, Set3& target2) const {
           for (size_t i = 0; i < axes_.size(); ++i) {
             const size_t a = axes_[i];
             const ssize_t x = reference[a];
@@ -565,8 +565,8 @@ namespace MR
         }
 
         //! set position along relevant axes of \a targets to that of \a reference
-        template <class VoxelType, class VoxelType2, class VoxelType3, class VoxelType4>
-        void set_position (const VoxelType& reference, VoxelType2& target, VoxelType3& target2, VoxelType4& target3) const {
+        template <class Set, class Set2, class Set3, class Set4>
+        void set_position (const Set& reference, Set2& target, Set3& target2, Set4& target3) const {
           for (size_t i = 0; i < axes_.size(); ++i) {
             const size_t a = axes_[i];
             const ssize_t x = reference[a];
@@ -578,8 +578,8 @@ namespace MR
 
         const std::vector<size_t>& axes () const { return axes_; }
 
-        template <class VoxelType>
-        size_t max_axis (const VoxelType& vox) const {
+        template <class Set>
+        size_t max_axis (const Set& set) const {
           size_t a = 0;
           for (size_t i = 0; i < axes_.size(); ++i)
             if (axes_[i] > a)
@@ -592,60 +592,60 @@ namespace MR
         bool cont_;
         ProgressBar progress_;
 
-        template <class VoxelType>
-        void next_impl (size_t axis, VoxelType& vox) {
+        template <class Set>
+        void next_impl (size_t axis, Set& set) {
           size_t a = axes_[axis];
-          if (vox[a] + 1 < vox.dim (a)) ++vox[a];
+          if (set[a] + 1 < set.dim (a)) ++set[a];
           else {
             if (axis+1 == axes_.size()) {
               cont_ = false;
             }
             else {
-              next_impl (axis+1, vox);
-              if (cont_) vox[a] = 0;
+              next_impl (axis+1, set);
+              if (cont_) set[a] = 0;
             }
           }
         }
 
-        template <class VoxelType, class VoxelType2>
-        void next_impl (size_t axis, VoxelType& vox, VoxelType2& vox2) {
+        template <class Set, class Set2>
+        void next_impl (size_t axis, Set& set, Set2& set2) {
           size_t a = axes_[axis];
-          if (vox[a] + 1 < vox.dim (a)) {
-            ++vox[a];
-            ++vox2[a];
+          if (set[a] + 1 < set.dim (a)) {
+            ++set[a];
+            ++set2[a];
           }
           else {
             if (axis+1 == axes_.size()) {
               cont_ = false;
             }
             else {
-              next_impl (axis+1, vox, vox2);
+              next_impl (axis+1, set, set2);
               if (cont_) {
-                vox[a] = 0;
-                vox2[a] = 0;
+                set[a] = 0;
+                set2[a] = 0;
               }
             }
           }
         }
 
-        template <class VoxelType, class VoxelType2, class VoxelType3>
-        void next_impl (size_t axis, VoxelType& vox, VoxelType2& vox2, VoxelType3& vox3) {
+        template <class Set, class Set2, class Set3>
+        void next_impl (size_t axis, Set& set, Set2& set2, Set3& set3) {
           size_t a = axes_[axis];
-          if (vox[a] + 1 < vox.dim (a)) {
-            ++vox[a];
-            ++vox2[a];
-            ++vox3[a];
+          if (set[a] + 1 < set.dim (a)) {
+            ++set[a];
+            ++set2[a];
+            ++set3[a];
           }
           else {
             if (axis+1 == axes_.size()) {
               cont_ = false;
             }
             else {
-              next_impl (axis+1, vox, vox2, vox3);
+              next_impl (axis+1, set, set2, set3);
               if (cont_) {
-                vox[a] = 0;
-                vox2[a] = 0;
-                vox3[a] = 0;
+                set[a] = 0;
+                set2[a] = 0;
+                set3[a] = 0;
               }
             }
           }

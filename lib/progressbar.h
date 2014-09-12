@@ -97,7 +97,8 @@ namespace MR
       ProgressBar (const std::string& text, size_t target = 0, int log_level = 1) :
         ProgressInfo (text, target),
         show (App::log_level >= log_level),
-        current_val (0) {
+        current_val (0),
+        finished (false) {
           if (!show) return;
 
           if (as_percentage)
@@ -108,9 +109,14 @@ namespace MR
           display_func (*this);
         }
 
-      ~ProgressBar () {
-        if (show)
+      ~ProgressBar () { done(); }
+
+      void done () {
+        if (show && !finished) {
+          finished = true;
+          current_val = 0;
           done_func (*this);
+        }
       }
 
       //! returns whether the progress will be shown
@@ -155,6 +161,7 @@ namespace MR
             while (next_val.i <= current_val)
               ++next_val.i;
             display_func (*this);
+            finished = false;
           }
         }
         else {
@@ -180,6 +187,7 @@ namespace MR
     private:
       const bool show;
       size_t current_val;
+      bool finished;
       union {
         size_t i;
         double d;

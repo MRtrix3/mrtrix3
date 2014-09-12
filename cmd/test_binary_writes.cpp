@@ -31,6 +31,7 @@
 #include "image/threaded_copy.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
+#include "image/loop2.h"
 
 
 using namespace MR;
@@ -91,7 +92,7 @@ void run ()
   // use a prime number at least for the first dimension.
   // using a mulitple of 8 leads to no effect if strides are
   // identical...
-  info.dim(0) = 2129; 
+  info.dim(0) = 212; 
   info.dim(1) = info.dim(2) = 513; 
   info.vox(0) = info.vox(1) = info.vox(2) = 1.0;
   info.stride(0) = 1;
@@ -116,19 +117,93 @@ void run ()
   Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
   CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
 
+  {
+    timer.start();
+    Image::Loop loop ("copy with old Image::Loop...");
+    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
 
+    timer.start();
+    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+  {
+    timer.start();
+    Image2::Loop loop ("copy with new Image::Loop...");
+    for (auto unused : loop.over (in, out)) 
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+
+    timer.start();
+    for (auto unused : loop.over (in, out)) 
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+  {
+    timer.start();
+    Image::LoopInOrder loop (in, "copy with old Image::LoopInOrder...");
+    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+
+    timer.start();
+    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+  {
+    timer.start();
+    Image2::LoopInOrder loop (in, "copy with new Image::LoopInOrder...");
+    for (auto unused : loop.over (in, out)) 
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+
+    timer.start();
+    for (auto unused : loop.over (in, out)) 
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
 
   /*const size_t num = 10000;
-  uint8_t buf [num];
-  for (size_t n = 0; n < num; ++n) {
+    uint8_t buf [num];
+    for (size_t n = 0; n < num; ++n) {
     std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (buf+n);
     at->store (n);
-    //buf[n] = n;
-  }
-  size_t total = 0;
-  for (size_t n = 0; n < num; ++n) {
-    total += buf[n];
-  }
-  VAR (total);*/
+//buf[n] = n;
+}
+size_t total = 0;
+for (size_t n = 0; n < num; ++n) {
+total += buf[n];
+}
+VAR (total);*/
 }
 
