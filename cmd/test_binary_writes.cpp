@@ -139,6 +139,26 @@ void run ()
   {
     timer.start();
     Image2::Loop loop ("copy with new Image::Loop...");
+    std::tuple<Image::BufferScratch<uint8_t>::voxel_type&, Image::BufferScratch<bool>::voxel_type&> images (in, out);
+    for (loop.start (images); loop.ok(); loop.next (images))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+
+    timer.start();
+    for (loop.start (images); loop.ok(); loop.next (images))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+  {
+    timer.start();
+    Image2::Loop loop ("copy with new Image::Loop (range-based)...");
     for (auto unused : loop.over (in, out)) 
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");

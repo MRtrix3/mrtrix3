@@ -42,12 +42,12 @@ namespace MR
       template <class LoopImagesType>
         class LoopIterator {
           public:
-            LoopIterator (LoopImagesType& range) : range (range) { }
-            bool operator!= (LoopIterator&) const { return range.ok(); }
-            void operator++ () { range.next (); }
+            LoopIterator (LoopImagesType& images) : images (images) { }
+            bool operator!= (LoopIterator&) const { return images.ok(); }
+            void operator++ () { images.next (); }
             void* operator* () { return nullptr; }
           private:
-            LoopImagesType& range;
+            LoopImagesType& images;
         };
 
 
@@ -66,23 +66,30 @@ namespace MR
         };
 
 
-      template <size_t I = 0, typename... VoxelType, typename std::enable_if<I == sizeof...(VoxelType), int>::type = 0>
-        inline void set_pos (std::tuple<VoxelType&...>& vox, size_t axis, ssize_t index) { }
+      template <class F, size_t I = 0, typename... Args, typename std::enable_if<I == sizeof...(Args), int>::type = 0>
+        inline void apply (F&& f, std::tuple<Args&...>& t) { }
 
-      template <size_t I = 0, typename... VoxelType, typename std::enable_if<I < sizeof...(VoxelType), int>::type = 0>
-        inline void set_pos (std::tuple<VoxelType&...>& vox, size_t axis, ssize_t index) {
-          std::get<I> (vox)[axis] = index;
-          set_pos<I+1, VoxelType...> (vox, axis, index);
+      template <class F, size_t I = 0, typename... Args, typename std::enable_if<I < sizeof...(Args), int>::type = 0>
+        inline void apply (F&& f, std::tuple<Args&...>& t) {
+          f (std::get<I> (t));
+          apply<F, I+1, Args...> (std::forward<F> (f), t);
         }
 
-      template <size_t I = 0, typename... VoxelType, typename std::enable_if<I == sizeof...(VoxelType), int>::type = 0>
-        inline void inc_pos (std::tuple<VoxelType&...>& vox, size_t axis) { }
+      struct set_pos {
+        set_pos (size_t axis, ssize_t index) : axis (axis), index (index) { }
+        template <class VoxelType> 
+          void operator() (VoxelType& vox) { vox[axis] = index; }
+        size_t axis;
+        ssize_t index;
+      };
 
-      template <size_t I = 0, typename... VoxelType, typename std::enable_if<I < sizeof...(VoxelType), int>::type = 0>
-        inline void inc_pos (std::tuple<VoxelType&...>& vox, size_t axis) {
-          std::get<I> (vox)[axis]++;
-          inc_pos<I+1, VoxelType...> (vox, axis);
-        }
+      struct inc_pos {
+        inc_pos (size_t axis) : axis (axis) { }
+        template <class VoxelType> 
+          void operator() (VoxelType& vox) { vox[axis]++; }
+        size_t axis;
+      };
+
 
     }
 
@@ -217,7 +224,7 @@ namespace MR
             void start (std::tuple<VoxelType&...>& vox) {
               cont_ = true;
               for (size_t n = from_; n < max_axis(vox); ++n) 
-                set_pos (vox, n, 0);
+                apply (set_pos (n, 0), vox);
 
               if (progress_)
                 progress_.set_max (voxel_count (std::get<0> (vox), from_, to_));
@@ -249,7 +256,7 @@ namespace MR
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, std::tuple<VoxelType&...>& target) const {
               for (size_t i = from_; i < max_axis (reference); ++i) 
-                set_pos (target, i, reference[i]);
+                apply (set_pos (i, reference[i]), target);
             }
 
 
@@ -267,7 +274,7 @@ namespace MR
             void next_axis (size_t axis, std::tuple<VoxelType&...>& vox) {
               if (axis < max_axis(vox)) {
                 if (std::get<0>(vox)[axis] + 1 < std::get<0>(vox).dim (axis)) 
-                  inc_pos (vox, axis);
+                  apply (inc_pos (axis), vox);
                 else {
                   if (axis+1 == max_axis(vox)) {
                     cont_ = false;
@@ -275,7 +282,7 @@ namespace MR
                   }
                   else {
                     next_axis (axis+1, vox);
-                    if (cont_) set_pos (vox, axis, 0);
+                    if (cont_) apply (set_pos (axis, 0), vox);
                   }
                 }
               }
@@ -460,7 +467,8 @@ namespace MR
             void start (std::tuple<VoxelType&...>& vox) {
               cont_ = true;
               for (size_t n = 0; n < axes_.size(); ++n) 
-                set_pos (vox, axes_[n], 0);
+                apply (set_pos (axes_[n], 0), vox);
+
 
               if (progress_)
                 progress_.set_max (voxel_count (std::get<0> (vox), axes_));
@@ -516,7 +524,7 @@ namespace MR
             void next_axis (size_t axis, std::tuple<VoxelType&...>& vox) {
               size_t a = axes_[axis];
               if (std::get<0>(vox)[a] + 1 < std::get<0>(vox).dim (a)) 
-                inc_pos (vox, a);
+                apply (inc_pos (a), vox);
               else {
                 if (axis+1 == axes_.size()) {
                   cont_ = false;
@@ -524,7 +532,7 @@ namespace MR
                 }
                 else {
                   next_axis (axis+1, vox);
-                  if (cont_) set_pos (vox, a, 0);
+                  if (cont_) apply (set_pos (a, 0), vox);
                 }
               }
             }
