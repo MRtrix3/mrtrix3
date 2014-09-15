@@ -51,6 +51,7 @@ namespace MR
             Problem () { }
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
+                ValueType min_norm_constraint = 1.e-8,
                 ValueType initial_quadratic_constraint_factor = ValueType(1.0e3), 
                 ValueType quadratic_constraint_multiplier = ValueType(10.0), 
                 ValueType max_quadratic_constraint_factor = ValueType(1.0e10), 
@@ -62,6 +63,7 @@ namespace MR
               mu_inc (quadratic_constraint_multiplier),
               mu_max (max_quadratic_constraint_factor),
               tol2 (pow2 (tolerance)), 
+              min_norm_lambda (min_norm_constraint),
               max_niter (max_iterations) {
 
                 // form quadratic problem matrix H'*H:
@@ -86,7 +88,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType mu_init, mu_inc, mu_max, tol2;
+            ValueType mu_init, mu_inc, mu_max, tol2, min_norm_lambda;
             size_t max_niter;
         };
 
@@ -141,7 +143,7 @@ namespace MR
                   // update problem matrix (which is identity after preconditioning)
                   // with the scaled constraint matrix:
                   rankN_update (HtH_muBtB, Bk, CblasTrans, CblasLower, mu);
-                  HtH_muBtB.diagonal() += 1.0;
+                  HtH_muBtB.diagonal() += (1.0 + P.min_norm_lambda);
 
                   // add constraints to RHS:
                   mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
@@ -154,6 +156,7 @@ namespace MR
                     return iter;
                   }
                   HtH_muBtB.identity();
+                  HtH_muBtB.diagonal() += P.min_norm_lambda;
                   x = d;
                 }
 
