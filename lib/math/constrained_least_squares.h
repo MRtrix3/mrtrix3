@@ -136,7 +136,7 @@ namespace MR
                   }
                 }
 
-                if (lambda_k.size()) {
+                if (idx) {
                   Bk.resize (idx, P.B.columns());
                   lambda_k.resize (idx);
 
