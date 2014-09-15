@@ -36,35 +36,26 @@ namespace MR
 
     //! \cond skip
 
+    template <class LoopType, typename... VoxelType>
+      class LoopIter {
+        public:
+          LoopIter (LoopType& loop, VoxelType&... voxels) : loop (loop), vox (voxels...) { this->loop.start (vox); }
+          LoopIter (LoopIter&&) = default;
+
+          LoopIter () = delete;
+          LoopIter (const LoopIter&) = delete;
+          LoopIter& operator=(const LoopIter&) = delete;
+
+          operator bool() const { return loop.ok(); }
+          void operator++ () { loop.next (vox); }
+          void operator++ (int) { loop.next (vox); }
+        private:
+          LoopType loop;
+          std::tuple<VoxelType&...> vox;
+      };
+
+
     namespace {
-
-      // helper classes for C++11 range-based for loops:
-      template <class LoopImagesType>
-        class LoopIterator {
-          public:
-            LoopIterator (LoopImagesType& images) : images (images) { }
-            bool operator!= (LoopIterator&) const { return images.ok(); }
-            void operator++ () { images.next (); }
-            void* operator* () { return nullptr; }
-          private:
-            LoopImagesType& images;
-        };
-
-
-      template <class LoopType, typename... VoxelType>
-        class LoopImages {
-          public:
-            typedef LoopIterator<LoopImages> Iterator;
-            LoopImages (LoopType& loop, VoxelType&... vox) : loop (loop), vox (vox...) { }
-            Iterator begin () { loop.start (vox); return Iterator (*this); }
-            Iterator end () { return Iterator (*this); }
-            void next () { loop.next (vox); }
-            bool ok () const { return loop.ok(); }
-          private:
-            LoopType& loop;
-            std::tuple<VoxelType&...> vox;
-        };
-
 
       template <class F, size_t I = 0, typename... Args, typename std::enable_if<I == sizeof...(Args), int>::type = 0>
         inline void apply (F&& f, std::tuple<Args&...>& t) { }
@@ -181,6 +172,10 @@ namespace MR
       class Loop
       {
         public:
+
+          template <class LoopType, typename... VoxelType> 
+            friend class LoopIter;
+
           //! Constructor
           /*! Construct a Loop object to iterate over the axes specified. By
            * default, the Loop will iterate over all axes of the first VoxelType
@@ -188,7 +183,7 @@ namespace MR
            * the Loop will iterate from axis \a from_axis up to but \b not
            * including axis \a to_axis. */
           Loop (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-            from_ (from_axis), to_ (to_axis), cont_ (true) { }
+            from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true) { }
 
           //! Constructor with progress status
           /*! Construct a Loop object to iterate over the axes specified and
@@ -198,85 +193,83 @@ namespace MR
            * iterate from axis \a from_axis up to but \b not including axis \a
            * to_axis. */
           Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-            from_ (from_axis), to_ (to_axis), cont_ (true), progress_ (message, 1) { }
+            from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true), progress_ (message, 1) { }
 
 
-          //! return iteratable object for use in range-based for loops
-          /*! This specifies which images are to be looped over, and is designed
-           * to be used in range-based for loops. For example:
+          //! return iteratable object for use in loop
+          /*! This start the loop by resetting the appropriate coordinates of
+           * each of the specified VoxelType objects to zero, and initialising
+           * the progress status if appropriate. Note that only those axes
+           * specified in the Loop constructor will have their coordinates set
+           * to zero; the coordinates of all other axes will be left untouched.
+           *
+           * The object returned by this function is designed to be used
+           * directly the loop, for example:
            * \code
            * Loop loop ("copy...");
-           * for (auto dummy : loop.over (vox_in, vox_out)) 
+           * for (auto i = loop (vox_in, vox_out); i; ++i)
            *   vox_out.value() = vox_in.value();
            * \endcode */
           template <typename... VoxelType> 
-            LoopImages<Loop,VoxelType&...> over (VoxelType&... vox) {
+            LoopIter<Loop,VoxelType&...> operator() (VoxelType&... vox) {
               return { *this, vox... };
             }
 
-          //! Start the loop to iterate over a single VoxelType
-          /*! Start the loop by resetting the appropriate coordinates of each of
-           * the specified VoxelType objects to zero, and initialising the progress status
-           * if appropriate. Note that only those axes specified in the Loop
-           * constructor will have their coordinates set to zero; the coordinates
-           * of all other axes will be left untouched. */
           template <typename... VoxelType>
             void start (std::tuple<VoxelType&...>& vox) {
               cont_ = true;
-              for (size_t n = from_; n < max_axis(vox); ++n) 
+              max_axis_ = std::min (std::get<0> (vox).ndim(), to_);
+              for (size_t n = from_; n < max_axis_; ++n) 
                 apply (set_pos (n, 0), vox);
 
               if (progress_)
                 progress_.set_max (voxel_count (std::get<0> (vox), from_, to_));
             }
-
-          //! Check whether the loop should continue iterating
-          /*! \return true if the loop has not completed, false otherwise. */
-          bool ok () const {
+          
+          bool ok() const {
             return cont_;
           }
 
-          //! Proceed to next iteration for a single VoxelType
-          /*! Advance coordinates of all specified VoxelType objects to the next position
-           * to be processed, and update the progress status if appropriate. */
           template <typename... VoxelType>
             void next (std::tuple<VoxelType&...>& vox) {
               next_axis (from_, vox);
               ++progress_;
             }
 
-
           //! set position along relevant axes of \a target to that of \a reference
+          /*! set the position of \a target along those axes involved in the
+           * loop to the that of \a reference, leaving all other coordinates
+           * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, VoxelType&... target) const {
               set_position (reference, std::tuple<VoxelType&...> (target...));
             }
 
           //! set position along relevant axes of \a target to that of \a reference
+          /*! set the position of \a target along those axes involved in the
+           * loop to the that of \a reference, leaving all other coordinates
+           * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, std::tuple<VoxelType&...>& target) const {
-              for (size_t i = from_; i < max_axis (reference); ++i) 
+              for (size_t i = from_; i < max_axis_; ++i) 
                 apply (set_pos (i, reference[i]), target);
             }
 
 
         private:
           const size_t from_, to_;
+          size_t max_axis_;
           bool cont_;
           ProgressBar progress_;
 
-          template <typename... VoxelType>
-            size_t max_axis (const std::tuple<VoxelType&...>& vox) const {
-              return std::min (std::get<0> (vox).ndim(), to_);
-            }
 
           template <typename... VoxelType>
             void next_axis (size_t axis, std::tuple<VoxelType&...>& vox) {
-              if (axis < max_axis(vox)) {
+              if (axis < max_axis_) {
                 if (std::get<0>(vox)[axis] + 1 < std::get<0>(vox).dim (axis)) 
                   apply (inc_pos (axis), vox);
                 else {
-                  if (axis+1 == max_axis(vox)) {
+                  if (axis+1 == max_axis_) {
                     cont_ = false;
                     progress_.done();
                   }
@@ -291,7 +284,6 @@ namespace MR
                 progress_.done();
               }
             }
-
       };
 
 
@@ -410,16 +402,20 @@ namespace MR
       class LoopInOrder
       {
         public:
+          template <class LoopType, typename... VoxelType> 
+
+            friend class LoopIter;
+
           //! Constructor from axes indices
           /*! Construct a LoopInOrder object to iterate over the axes specified. */
           LoopInOrder (const std::vector<size_t>& axes) :
-            axes_ (axes), cont_ (true) { }
+            axes_ (axes), first_axis (axes_[0]), cont_ (true) { }
 
           //! Construct from axes indices with progress status
           /*! Construct a LoopInOrder object to iterate over the axes specified and
            * display the progress status with the specified message. */
           LoopInOrder (const std::vector<size_t>& axes, const std::string& message) :
-            axes_ (axes), cont_ (true), progress_ (message, 1) { }
+            axes_ (axes), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
           //! Construct from VoxelType strides
           /*! Construct a LoopInOrder object to iterate over the axes of \a set
@@ -429,7 +425,7 @@ namespace MR
            * \a from_axis up to but \b not including axis \a to_axis. */
           template <class VoxelType>
             LoopInOrder (const VoxelType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-              axes_ (Stride::order (vox, from_axis, to_axis)), cont_ (true) { }
+              axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true) { }
 
           //! Constructor from VoxelType strides with progress status
           /*! Construct a LoopInOrder object to iterate over the axes specified
@@ -441,62 +437,66 @@ namespace MR
           template <class VoxelType>
             LoopInOrder (const VoxelType& vox, const std::string& message, 
                 size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
-              axes_ (Stride::order (vox, from_axis, to_axis)), cont_ (true), progress_ (message, 1) { }
+              axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
 
-          //! return iteratable object for use in range-based for loops
-          /*! This specifies which images are to be looped over, and is designed
-           * to be used in range-based for loops. For example:
+          //! return iteratable object for use in loop
+          /*! This start the loop by resetting the appropriate coordinates of
+           * each of the specified VoxelType objects to zero, and initialising
+           * the progress status if appropriate. Note that only those axes
+           * specified in the Loop constructor will have their coordinates set
+           * to zero; the coordinates of all other axes will be left untouched.
+           *
+           * The object returned by this function is designed to be used
+           * directly the loop, for example:
            * \code
            * LoopInOrder loop (vox_in, "copy...");
-           * for (auto dummy : loop.over (vox_in, vox_out)) 
+           * for (auto i = loop (vox_in, vox_out); i; ++i)
            *   vox_out.value() = vox_in.value();
            * \endcode */
           template <typename... VoxelType> 
-            LoopImages<LoopInOrder,VoxelType&...> over (VoxelType&... vox) {
+            LoopIter<LoopInOrder,VoxelType&...> operator() (VoxelType&... vox) {
               return { *this, vox... };
             }
 
-          //! Start the loop to iterate over a single VoxelType
-          /*! Start the loop by resetting the appropriate coordinates of each of
-           * the specified VoxelType objects to zero, and initialising the progress status
-           * if appropriate. Note that only those axes specified in the Loop
-           * constructor will have their coordinates set to zero; the coordinates
-           * of all other axes will be left untouched. */
           template <typename... VoxelType>
             void start (std::tuple<VoxelType&...>& vox) {
               cont_ = true;
+              first_axis_dim = std::get<0>(vox).dim (first_axis) - 1;
               for (size_t n = 0; n < axes_.size(); ++n) 
                 apply (set_pos (axes_[n], 0), vox);
-
-
               if (progress_)
                 progress_.set_max (voxel_count (std::get<0> (vox), axes_));
             }
 
-          //! Check whether the loop should continue iterating
-          /*! \return true if the loop has not completed, false otherwise. */
-          bool ok () const {
+          bool ok() const {
             return cont_;
           }
 
-          //! Proceed to next iteration for a single VoxelType
-          /*! Advance coordinates of all specified VoxelType objects to the next position
-           * to be processed, and update the progress status if appropriate. */
           template <typename... VoxelType>
             void next (std::tuple<VoxelType&...>& vox) {
-              next_axis (0, vox);
+              if (std::get<0>(vox)[first_axis] < first_axis_dim)
+                apply (inc_pos (first_axis), vox);
+              else {
+                next_axis (1, vox);
+                if (cont_) apply (set_pos (first_axis, 0), vox);
+              }
               ++progress_;
             }
 
-
           //! set position along relevant axes of \a target to that of \a reference
+          /*! set the position of \a target along those axes involved in the
+           * loop to the that of \a reference, leaving all other coordinates
+           * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, VoxelType&... target) const {
               set_position (reference, std::tuple<VoxelType&...> (target...));
             }
 
           //! set position along relevant axes of \a target to that of \a reference
+          /*! set the position of \a target along those axes involved in the
+           * loop to the that of \a reference, leaving all other coordinates
+           * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, std::tuple<VoxelType&...>& target) const {
               for (size_t i = 0; i < axes_.size(); ++i) 
@@ -506,34 +506,28 @@ namespace MR
 
           const std::vector<size_t>& axes () const { return axes_; }
 
-          template <typename... VoxelType>
-            size_t max_axis (const std::tuple<VoxelType&...>& vox) const {
-              size_t a = 0;
-              for (size_t i = 0; i < axes_.size(); ++i)
-                if (axes_[i] > a)
-                  a = axes_[i];
-              return a;
-            }
-
         private:
           const std::vector<size_t> axes_;
+          const size_t first_axis;
+          ssize_t first_axis_dim;
           bool cont_;
           ProgressBar progress_;
 
+
           template <typename... VoxelType>
             void next_axis (size_t axis, std::tuple<VoxelType&...>& vox) {
+              if (axis == axes_.size()) {
+                cont_ = false;
+                progress_.done();
+                return;
+              }
+
               size_t a = axes_[axis];
-              if (std::get<0>(vox)[a] + 1 < std::get<0>(vox).dim (a)) 
+              if (std::get<0>(vox)[a] < std::get<0>(vox).dim (a) - 1) 
                 apply (inc_pos (a), vox);
               else {
-                if (axis+1 == axes_.size()) {
-                  cont_ = false;
-                  progress_.done();
-                }
-                else {
-                  next_axis (axis+1, vox);
-                  if (cont_) apply (set_pos (a, 0), vox);
-                }
+                next_axis (axis+1, vox);
+                if (cont_) apply (set_pos (a, 0), vox);
               }
             }
 

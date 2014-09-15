@@ -87,6 +87,8 @@ namespace MR
        * ProgressBar within another class' constructor, and that ProgressBar
        * will never be used in that particular instance. */
       ProgressBar () : show (0) { }
+      //ProgressBar (const ProgressBar&) = delete;
+      //ProgressBar (ProgressBar&&) = default;
 
       //! Create a new ProgressBar, displaying the specified text.
       /*! If \a target is unspecified or set to zero, the ProgressBar will

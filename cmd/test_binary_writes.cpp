@@ -71,6 +71,7 @@ class Check {
 
 void run () 
 {
+  // Math constants:
   VAR (Math::pi);
   VAR (M_PI);
 
@@ -86,13 +87,16 @@ void run ()
   VAR (Math::sqrt1_2);
   VAR (M_SQRT1_2);
 
+
+  // Check multi-threaded binary writes:
+
   Image::Info info;
   info.set_ndim (3);
 
   // use a prime number at least for the first dimension.
   // using a mulitple of 8 leads to no effect if strides are
   // identical...
-  info.dim(0) = 212; 
+  info.dim(0) = 217; 
   info.dim(1) = info.dim(2) = 513; 
   info.vox(0) = info.vox(1) = info.vox(2) = 1.0;
   info.stride(0) = 1;
@@ -114,102 +118,90 @@ void run ()
   Image::threaded_copy_with_progress_message ("multi-threaded copy...", in, out);
   CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
   size_t grand_total = 0;
-  Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+  Image::ThreadedLoop (in).run (Check (grand_total), in, out);
   CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
 
-  {
-    timer.start();
-    Image::Loop loop ("copy with old Image::Loop...");
-    for (loop.start (in, out); loop.ok(); loop.next (in, out))
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
 
+
+
+  // test new image looping constructs:
+  {
+    CONSOLE ("============= old Image::Loop ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
+    Image::Loop loop;
     for (loop.start (in, out); loop.ok(); loop.next (in, out))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
     CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
   }
 
   {
+    CONSOLE ("============= new Image::Loop ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    Image2::Loop loop ("copy with new Image::Loop...");
-    std::tuple<Image::BufferScratch<uint8_t>::voxel_type&, Image::BufferScratch<bool>::voxel_type&> images (in, out);
+    Image2::Loop loop;
+    auto images = std::forward_as_tuple (in, out);
     for (loop.start (images); loop.ok(); loop.next (images))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
     CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
 
+  {
+    CONSOLE ("============= new Image::Loop (using iterator) ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
+    for (auto i = Image2::Loop() (in, out); i; ++i)
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+  {
+    CONSOLE ("============= old Image::LoopInOrder ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
+    timer.start();
+    Image::LoopInOrder loop (in);
+    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+      out.value() = in.value();
+    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
+    grand_total = 0;
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
+    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
+  }
+
+
+  {
+    CONSOLE ("============= new Image::LoopInOrder ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
+    timer.start();
+    Image2::LoopInOrder loop (in);
+    auto images = std::forward_as_tuple (in, out);
     for (loop.start (images); loop.ok(); loop.next (images))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
     CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
   }
 
   {
+    CONSOLE ("============= new Image::LoopInOrder (using iterator) ================");
+    Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    Image2::Loop loop ("copy with new Image::Loop (range-based)...");
-    for (auto unused : loop.over (in, out)) 
+    Image2::LoopInOrder loop (in);
+    for (auto i = Image2::LoopInOrder(in)(in, out); i; ++i) 
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-
-    timer.start();
-    for (auto unused : loop.over (in, out)) 
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-  }
-
-  {
-    timer.start();
-    Image::LoopInOrder loop (in, "copy with old Image::LoopInOrder...");
-    for (loop.start (in, out); loop.ok(); loop.next (in, out))
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-
-    timer.start();
-    for (loop.start (in, out); loop.ok(); loop.next (in, out))
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-  }
-
-  {
-    timer.start();
-    Image2::LoopInOrder loop (in, "copy with new Image::LoopInOrder...");
-    for (auto unused : loop.over (in, out)) 
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-
-    timer.start();
-    for (auto unused : loop.over (in, out)) 
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop ("checking for errors...", in).run (Check (grand_total), in, out);
+    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
     CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
   }
 
