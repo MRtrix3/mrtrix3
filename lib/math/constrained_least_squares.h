@@ -63,11 +63,12 @@ namespace MR
               mu_inc (quadratic_constraint_multiplier),
               mu_max (max_quadratic_constraint_factor),
               tol2 (pow2 (tolerance)), 
-              min_norm_lambda (min_norm_constraint),
               max_niter (max_iterations) {
 
                 // form quadratic problem matrix H'*H:
                 rankN_update (chol_HtH, H, CblasTrans, CblasLower);
+                // add minimum norm constraint:
+                chol_HtH.diagonal() += min_norm_constraint;
                 // get Cholesky decomposition:
                 Cholesky::decomp (chol_HtH);
 
@@ -88,7 +89,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType mu_init, mu_inc, mu_max, tol2, min_norm_lambda;
+            ValueType mu_init, mu_inc, mu_max, tol2;
             size_t max_niter;
         };
 
@@ -143,7 +144,7 @@ namespace MR
                   // update problem matrix (which is identity after preconditioning)
                   // with the scaled constraint matrix:
                   rankN_update (HtH_muBtB, Bk, CblasTrans, CblasLower, mu);
-                  HtH_muBtB.diagonal() += (1.0 + P.min_norm_lambda);
+                  HtH_muBtB.diagonal() += 1.0;
 
                   // add constraints to RHS:
                   mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
@@ -156,7 +157,6 @@ namespace MR
                     return iter;
                   }
                   HtH_muBtB.identity();
-                  HtH_muBtB.diagonal() += P.min_norm_lambda;
                   x = d;
                 }
 
