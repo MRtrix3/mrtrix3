@@ -133,17 +133,29 @@ namespace MR
                     ++idx;
                   }
                 }
-                Bk.resize (idx, P.B.columns());
-                lambda_k.resize (idx);
 
-                // update problem matrix (which is identity after preconditioning)
-                // with the scaled constraint matrix:
-                rankN_update (HtH_muBtB, Bk, CblasTrans, CblasLower, mu);
-                HtH_muBtB.diagonal() += 1.0;
+                if (lambda_k.size()) {
+                  Bk.resize (idx, P.B.columns());
+                  lambda_k.resize (idx);
 
-                // add constraints to RHS:
-                mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
-                x += d;
+                  // update problem matrix (which is identity after preconditioning)
+                  // with the scaled constraint matrix:
+                  rankN_update (HtH_muBtB, Bk, CblasTrans, CblasLower, mu);
+                  HtH_muBtB.diagonal() += 1.0;
+
+                  // add constraints to RHS:
+                  mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
+                  x += d;
+                }
+                else {
+                  // no active constraints
+                  if (iter == 0) { // unconstrained solution does not violate constraints
+                    solve_triangular (x, P.chol_HtH);
+                    return iter;
+                  }
+                  HtH_muBtB.identity();
+                  x = d;
+                }
 
                 // solve for x by Cholesky decomposition:
                 Cholesky::decomp (HtH_muBtB);
