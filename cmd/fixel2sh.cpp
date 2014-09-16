@@ -84,7 +84,7 @@ void run ()
   Math::Vector<float> apsf_values;
 
   Image::LoopInOrder loop (fixel, "converting sparse fixel data to SH image... ");
-  for (loop.start (fixel, sh); loop.ok(); loop.next (fixel, sh)) {
+  for (auto l = loop (fixel, sh); l; ++l) {
     values.assign (n, float(0.0));
     for (size_t index = 0; index != fixel.value().size(); ++index) {
       apsf_values = aPSF (apsf_values, fixel.value()[index].dir);

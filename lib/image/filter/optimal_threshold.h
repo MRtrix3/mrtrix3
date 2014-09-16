@@ -286,7 +286,7 @@ namespace MR
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               
               Image::LoopInOrder threshold_loop (input, "thresholding...");
-              for (threshold_loop.start (input, output); threshold_loop.ok(); threshold_loop.next (input, output)) {
+              for (auto l = threshold_loop (input, output); l; ++l) {
                 input_value_type val = input.value();
                 output.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;
               }

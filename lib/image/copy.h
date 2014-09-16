@@ -35,7 +35,7 @@ namespace MR
     void copy (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, from_axis, to_axis);
-      for (loop.start (source, destination); loop.ok(); loop.next (source, destination))
+      for (auto i = loop (source, destination); i; ++i)
         destination.value() = source.value();
     }
 
@@ -53,7 +53,7 @@ namespace MR
     void copy_with_progress_message (const std::string& message, InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
       LoopInOrder loop (source, message, from_axis, to_axis);
-      for (loop.start (source, destination); loop.ok(); loop.next (source, destination))
+      for (auto i = loop (source, destination); i; ++i)
         destination.value() = source.value();
     }
 

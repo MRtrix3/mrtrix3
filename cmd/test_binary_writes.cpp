@@ -31,7 +31,7 @@
 #include "image/threaded_copy.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
-#include "image/loop2.h"
+#include "image/loop.h"
 
 
 using namespace MR;
@@ -67,7 +67,10 @@ class Check {
       inline void operator() (const VoxType1& in, const VoxType2& out) { if (in.value() != out.value()) ++total; }
 };
 
-
+template <typename... Types>
+void test (std::tuple<Types&...>& stuff) {
+  VAR (std::get<0> (stuff));
+}
 
 void run () 
 {
@@ -125,26 +128,14 @@ void run ()
 
 
   // test new image looping constructs:
-  {
-    CONSOLE ("============= old Image::Loop ================");
-    Image::ThreadedLoop (out).run (FillIn(), out);
-    timer.start();
-    Image::Loop loop;
-    for (loop.start (in, out); loop.ok(); loop.next (in, out))
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-  }
 
   {
     CONSOLE ("============= new Image::Loop ================");
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    Image2::Loop loop;
+    Image::Loop loop;
     auto images = std::forward_as_tuple (in, out);
-    for (loop.start (images); loop.ok(); loop.next (images))
+    for (loop.start (std::forward_as_tuple (in, out)); loop.ok(); loop.next (std::forward_as_tuple (in, out)))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
@@ -156,20 +147,7 @@ void run ()
     CONSOLE ("============= new Image::Loop (using iterator) ================");
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    for (auto i = Image2::Loop() (in, out); i; ++i)
-      out.value() = in.value();
-    CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
-    grand_total = 0;
-    Image::ThreadedLoop (in).run (Check (grand_total), in, out);
-    CONSOLE ("number of errors: " + str(grand_total) + " (" + str(100.0f*float(grand_total)/float(Image::voxel_count (in))) + "%)");
-  }
-
-  {
-    CONSOLE ("============= old Image::LoopInOrder ================");
-    Image::ThreadedLoop (out).run (FillIn(), out);
-    timer.start();
-    Image::LoopInOrder loop (in);
-    for (loop.start (in, out); loop.ok(); loop.next (in, out))
+    for (auto i = Image::Loop() (in, out); i; ++i)
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
@@ -182,9 +160,9 @@ void run ()
     CONSOLE ("============= new Image::LoopInOrder ================");
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    Image2::LoopInOrder loop (in);
+    Image::LoopInOrder loop (in);
     auto images = std::forward_as_tuple (in, out);
-    for (loop.start (images); loop.ok(); loop.next (images))
+    for (loop.start (std::forward_as_tuple (in, out)); loop.ok(); loop.next (std::forward_as_tuple (in, out)))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;
@@ -196,8 +174,8 @@ void run ()
     CONSOLE ("============= new Image::LoopInOrder (using iterator) ================");
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
-    Image2::LoopInOrder loop (in);
-    for (auto i = Image2::LoopInOrder(in)(in, out); i; ++i) 
+    Image::LoopInOrder loop (in);
+    for (auto i = Image::LoopInOrder(in)(in, out); i; ++i) 
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
     grand_total = 0;

@@ -621,7 +621,7 @@ class ThreadFunctor {
       Chunk& chunk = top_entry.evaluate (storage);
 
       std::vector<complex_type>::const_iterator value (chunk.begin());
-      for (loop.start (vox); loop.ok(); loop.next (vox)) 
+      for (auto l = loop (vox); l; ++l) 
         vox.value() = *(value++);
     }
 

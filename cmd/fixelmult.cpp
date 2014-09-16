@@ -64,7 +64,7 @@ void run ()
   Image::BufferSparse<FixelMetric>::voxel_type output_vox (output_data);
 
   Image::LoopInOrder loop (input_data1, "multiplying fixel images...");
-  for (loop.start (input_vox1, input_vox2, output_vox); loop.ok(); loop.next (input_vox1, input_vox2, output_vox)) {
+  for (auto i = loop (input_vox1, input_vox2, output_vox); i; ++i) {
     if (input_vox1.value().size() != input_vox2.value().size())
       throw Exception ("the fixel images do not have corresponding fixels in all voxels");
     output_vox.value().set_size (input_vox1.value().size());

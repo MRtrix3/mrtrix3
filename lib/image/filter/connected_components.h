@@ -130,7 +130,7 @@ namespace MR
 
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask);
-            for (loop.start (mask, index_image); loop.ok(); loop.next (mask, index_image)) {
+            for (auto l = loop (mask, index_image); l; ++l) {
               if (mask.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
                 index_image.value() = mask_indices.size();
@@ -336,7 +336,7 @@ namespace MR
             label_lookup[clusters[c].label - 1] = c + 1;
 
           Image::LoopInOrder loop (out);
-          for (loop.start(out); loop.ok(); loop.next(out))
+          for (auto l = loop (out); l; ++l) 
             out.value() = 0;
 
           for (uint32_t i = 0; i < mask_indices.size(); i++) {

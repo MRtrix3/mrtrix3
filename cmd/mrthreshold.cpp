@@ -172,7 +172,7 @@ void run ()
   if (std::isfinite (topNpercent) || std::isfinite (bottomNpercent)) {
     Image::LoopInOrder loop (in, "computing voxel count...");
     size_t count = 0;
-    for (loop.start (in); loop.ok(); loop.next (in)) {
+    for (auto l = loop (in); l; ++l) {
       float val = in.value();
       if (ignore_zeroes && val == 0.0) continue;
       ++count;
@@ -197,7 +197,7 @@ void run ()
                             ) + "...");
 
       if (topN) {
-        for (loop.start (in); loop.ok(); loop.next (in)) {
+        for (auto l = loop (in); l; ++l) {
           const float val = in.value();
           if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
@@ -212,7 +212,7 @@ void run ()
         }
       }
       else {
-        for (loop.start (in); loop.ok(); loop.next (in)) {
+        for (auto l = loop (in); l; ++l) {
           const float val = in.value();
           if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
@@ -230,10 +230,8 @@ void run ()
       }
     }
 
-    Image::Loop loop;
-    for (loop.start (out); loop.ok(); loop.next (out)) {
+    for (auto l = Image::Loop() (out); l; ++l) 
       out.value() = zero;
-    }
 
     for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
       for (size_t n = 0; n < out.ndim(); ++n)
@@ -258,7 +256,7 @@ void run ()
     }
 
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
-    for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
+    for (auto l = Image::Loop() (out, in); l; ++l) {
       float val = in.value();
       out.value() = ( !std::isfinite (val) || val < threshold_value ) ? zero : one;
     }

@@ -104,7 +104,7 @@ void run ()
   Image::Buffer<float>::voxel_type v_out (image_out);
 
   Image::LoopInOrder loop (v_out, "Determining GMWMI seeding mask...");
-  for (loop.start (v_out); loop.ok(); loop.next (v_out)) {
+  for (auto l = loop (v_out); l; ++l) {
 
     // If a mask is defined, but is false in this voxel, do not continue processing
     bool process_voxel = true;

@@ -240,7 +240,7 @@ namespace MR
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        for (auto l = loop (v); l; ++l) {
           if (v.value()) {
 
             size_t new_start_index = new_fixels.size();

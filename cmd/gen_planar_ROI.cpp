@@ -196,8 +196,7 @@ void run () {
 
   Image::Buffer<bool> roi_buffer (argument[4], header);
   Image::Buffer<bool>::voxel_type roi (roi_buffer);
-  Image::LoopInOrder loop (roi);
-  for (loop.start (roi); loop.ok(); loop.next (roi))
+  for (auto i = Image::LoopInOrder (roi) (roi); i; ++i)
     roi.value() = true;
 
 }

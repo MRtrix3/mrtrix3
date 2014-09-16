@@ -153,10 +153,9 @@ void run () {
   int axis_offset = 0;
 
   for (int i = 0; i < num_images; i++) {
-    Image::Loop loop;
     Image::Buffer<value_type>::voxel_type in_vox (*in[i]);
 
-    for (loop.start (in_vox); loop.ok(); loop.next (in_vox)) {
+    for (auto i = Image::Loop() (in_vox); i; ++i) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {
         if (static_cast<int> (dim) == axis)
           out_vox[dim] = dim < in_vox.ndim() ? axis_offset + in_vox[dim] : i;

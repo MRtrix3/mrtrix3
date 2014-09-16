@@ -76,8 +76,7 @@ namespace MR
       {
         typename T::voxel_type v (data);
         uint32_t count = 0;
-        Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        for (auto i = Image::Loop() (v); i; ++i) {
           if (v.value())
             ++count;
         }
@@ -91,7 +90,7 @@ namespace MR
         typename T::voxel_type v (data);
         float volume = 0;
         Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v))
+        for (auto i = Image::Loop() (v); i; ++i) 
           volume += v.value();
         return volume;
       }

@@ -88,8 +88,7 @@ namespace MR {
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
         size_t sum = 0;
 
-        Image::Loop loop (0,3);
-        for (loop.start (vox); loop.ok(); loop.next (vox)) {
+        for (auto l = Image::Loop (0,3) (vox); l; ++l) {
           if (vox.value()) {
             ++sum;
             if (size_t(vox[0]) < bottom[0]) bottom[0] = vox[0];

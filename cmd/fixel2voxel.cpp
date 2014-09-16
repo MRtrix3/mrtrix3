@@ -82,7 +82,7 @@ void run ()
 
 
   Image::LoopInOrder loop (voxel, "converting sparse fixel data to scalar image... ");
-  for (loop.start (voxel, out); loop.ok(); loop.next (voxel, out)) {
+  for (auto i = loop (voxel, out); i; ++i) {
     if (op) {
       out.value() = voxel.value().size();
     } else {

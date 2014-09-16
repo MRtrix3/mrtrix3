@@ -29,7 +29,7 @@
 #include "image/stride.h"
 #include "image/value.h"
 #include "image/position.h"
-#include "image/threaded_copy.h"
+//#include "image/threaded_copy.h"
 #include "image/buffer.h"
 
 namespace MR
@@ -127,7 +127,7 @@ namespace MR
             header.info() = info();
             Image::Buffer<value_type> buffer_out (filename, header);
             typename Image::Buffer<value_type>::voxel_type out (buffer_out);
-            Image::threaded_copy (in, out);
+            //Image::threaded_copy (in, out);
             return buffer_out.__get_handler()->files[0].name;
           }
 

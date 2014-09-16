@@ -99,7 +99,6 @@ namespace MR
 
 
 
-
   //! read a line from the stream
   /*! a replacement for the standard getline() function that also discards
    * carriage returns if found at the end of the line. */

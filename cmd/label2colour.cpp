@@ -111,7 +111,7 @@ void run ()
 
     node_t max_index = 0;
     Image::LoopInOrder loop (nodes);
-    for (loop.start (nodes); loop.ok(); loop.next (nodes)) {
+    for (auto l = loop (nodes); l; ++l) {
       const node_t index = nodes.value();
       if (index > max_index)
         max_index = index;
@@ -144,7 +144,7 @@ void run ()
   Image::Buffer<uint8_t>::voxel_type out (out_data);
 
   Image::LoopInOrder loop (nodes, "Colourizing parcellated node image... ");
-  for (loop.start (nodes, out); loop.ok(); loop.next (nodes, out)) {
+  for (auto l = loop (nodes, out); l; ++l) {
     const node_t index = nodes.value();
     Node_map::const_iterator i = node_map.find (index);
     if (i == node_map.end()) {

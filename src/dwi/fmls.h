@@ -34,6 +34,7 @@
 #include "image/buffer.h"
 #include "image/voxel.h"
 #include "image/nav.h"
+#include "image/loop.h"
 
 
 #include <map> // Used for sorting FOD samples
@@ -200,7 +201,7 @@ class FODQueueWriter
       FODQueueWriter (FODVoxelOrBufferType& fod) :
         fod_vox (fod),
         loop ("Segmenting FODs...", 0, 3) {
-          loop.start (fod_vox);
+          loop.start (std::forward_as_tuple (fod_vox));
         }
 
     template <class FODVoxelOrBufferType, class MaskVoxelOrBufferType>
@@ -209,7 +210,7 @@ class FODQueueWriter
         loop ("Segmenting FODs...", 0, 3),
         mask_vox_ptr (new MaskVoxelType (mask))
     {
-      loop.start (fod_vox);
+      loop.start (std::forward_as_tuple (fod_vox));
     }
 
 
@@ -227,14 +228,14 @@ class FODQueueWriter
         do {
           Image::voxel_assign (*mask_vox_ptr, fod_vox, 0, 3);
           if (!mask_vox_ptr->value())
-            loop.next (fod_vox);
+            loop.next (std::forward_as_tuple (fod_vox));
         } while (loop.ok() && !mask_vox_ptr->value());
       }
       out.vox[0] = fod_vox[0]; out.vox[1] = fod_vox[1]; out.vox[2] = fod_vox[2];
       out.allocate (fod_vox.dim (3));
       for (fod_vox[3] = 0; fod_vox[3] != fod_vox.dim (3); ++fod_vox[3])
         out[fod_vox[3]] = fod_vox.value();
-      loop.next (fod_vox);
+      loop.next (std::forward_as_tuple (fod_vox));
       return true;
     }
 

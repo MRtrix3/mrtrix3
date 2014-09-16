@@ -126,7 +126,7 @@ namespace MR
 
               if (centre_zero_) {
                 Image::LoopInOrder loop (output);
-                for (loop.start (output); loop.ok(); loop.next (output)) {
+                for (auto l = loop (output); l; ++l) {
                   Image::Nav::set_pos (temp_voxel, output);
                   for (std::vector<size_t>::const_iterator flip_axis = axes_to_process.begin(); flip_axis != axes_to_process.end(); ++flip_axis)
                     temp_voxel[*flip_axis] = (temp_voxel[*flip_axis] >= (temp_voxel.dim (*flip_axis) / 2)) ?

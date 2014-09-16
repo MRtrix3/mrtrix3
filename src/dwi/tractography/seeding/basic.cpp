@@ -182,8 +182,7 @@ namespace MR
           std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
           std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
-          Image::Loop loop (0,3);
-          for (loop.start (vox); loop.ok(); loop.next (vox)) {
+          for (auto i = Image::Loop (0,3) (vox); i; ++i) {
             const float value = vox.value();
             if (value) {
               if (value < 0.0)

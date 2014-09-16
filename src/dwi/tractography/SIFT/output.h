@@ -61,8 +61,7 @@ namespace MR
         Image::Buffer<float> out (path, H);
         Image::Buffer<float>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
@@ -88,7 +87,7 @@ namespace MR
         Image::Buffer<float>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out, 0, 3);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = loop (v_out, v); l; ++l) {
           if (v.value()) {
             Math::Vector<float> sum;
             sum.resize (N, 0.0);
@@ -121,8 +120,7 @@ namespace MR
         Image::BufferSparse<FixelMetric> out (path, H_fixel);
         Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
             v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
@@ -141,8 +139,7 @@ namespace MR
         Image::Buffer<float> out (path, H);
         Image::Buffer<float>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
@@ -161,8 +158,7 @@ namespace MR
         Image::Buffer<float> out (path, H);
         Image::Buffer<float>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
@@ -191,7 +187,7 @@ namespace MR
         Image::Buffer<float>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out, 0, 3);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = loop (v_out, v); l; ++l) {
           if (v.value()) {
             Math::Vector<float> sum;
             sum.resize (N, 0.0);
@@ -225,8 +221,7 @@ namespace MR
         Image::BufferSparse<FixelMetric> out (path, H_fixel);
         Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
             v_out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
@@ -245,8 +240,7 @@ namespace MR
         Image::Buffer<float> max_abs_diff (max_abs_diff_path, H), diff (diff_path, H), cost (cost_path, H);
         Image::Buffer<float>::voxel_type v_max_abs_diff (max_abs_diff), v_diff (diff), v_cost (cost);
         VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v);
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        for (auto l = Image::LoopInOrder(v) (v); l; ++l) {
           v_max_abs_diff[2] = v_diff[2] = v_cost[2] = v[2];
           v_max_abs_diff[1] = v_diff[1] = v_cost[1] = v[1];
           v_max_abs_diff[0] = v_diff[0] = v_cost[0] = v[0];
@@ -285,7 +279,7 @@ namespace MR
         Image::BufferSparse<FixelMetric>::voxel_type v_cost (out_cost);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_diff);
-        for (loop.start (v, v_diff, v_cost); loop.ok(); loop.next (v, v_diff, v_cost)) {
+        for (auto l = loop (v, v_diff, v_cost); l; ++l) {
           if (v.value()) {
             v_diff.value().set_size ((*v.value()).num_fixels());
             v_cost.value().set_size ((*v.value()).num_fixels());
@@ -320,7 +314,7 @@ namespace MR
         Image::Buffer<uint8_t>::voxel_type v_out (image);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out);
-        for (loop.start (v_out, v); loop.ok(); loop.next (v_out, v)) {
+        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value())
             v_out.value() = (*v.value()).num_fixels();
           else
@@ -339,7 +333,7 @@ namespace MR
         Image::Buffer<float>  ::voxel_type v_out_amps  (out_amps);
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out_count);
-        for (loop.start (v_out_count, v_out_amps, v); loop.ok(); loop.next (v_out_count, v_out_amps, v)) {
+        for (auto l = loop (v_out_count, v_out_amps, v); l; ++l) {
           if (v.value()) {
             uint8_t count = 0;
             float sum = 0.0;

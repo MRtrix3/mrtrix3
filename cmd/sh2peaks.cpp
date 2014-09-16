@@ -120,17 +120,17 @@ class DataLoader
       if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
         mask = new Image::Buffer<bool>::voxel_type (*mask_data);
-        loop.start (*mask, sh);
+        loop.start (std::forward_as_tuple (*mask, sh));
       }
       else
-        loop.start (sh);
+        loop.start (std::forward_as_tuple (sh));
       }
 
     bool operator() (Item& item) {
       if (loop.ok()) {
         if (mask) {
           while (!mask->value()) {
-            loop.next (*mask, sh);
+            loop.next (std::forward_as_tuple (*mask, sh));
             if (!loop.ok())
               return false;
           }
@@ -142,14 +142,14 @@ class DataLoader
 
         item.data.allocate (sh.dim(3));
 
-        Image::Loop inner (3); // iterates over SH coefficients
-        for (inner.start (sh); inner.ok(); inner.next (sh))
+        // iterates over SH coefficients
+        for (auto l = Image::Loop(3) (sh); l; ++l)
           item.data[sh[3]] = sh.value();
 
         if (mask)
-          loop.next (*mask, sh);
+          loop.next (std::forward_as_tuple (*mask, sh));
         else
-          loop.next (sh);
+          loop.next (std::forward_as_tuple (sh));
 
         return true;
       }
@@ -190,8 +190,7 @@ class Processor
       dirs_vox[2] = item.pos[2];
 
       if (check_input (item)) {
-        Image::Loop inner (3);
-        for (inner.start (dirs_vox); inner.ok(); inner.next (dirs_vox))
+        for (auto l = Image::Loop(3) (dirs_vox); l; ++l)
           dirs_vox.value() = NAN;
         return true;
       }

@@ -123,9 +123,9 @@ void run ()
   Image::Buffer<node_t> out_data (argument[2], H);
   Image::Buffer<node_t>::voxel_type out (out_data);
 
-  // Fill the output image with data
   Image::Loop loop;
-  for (loop.start (in, out); loop.ok(); loop.next (in, out))
+  // Fill the output image with data
+  for (auto l = loop (in, out); l; ++l)
     out.value() = lookup[in.value()];
 
   // If the spine segment option has been provided, add this retrospectively
@@ -141,7 +141,7 @@ void run ()
 
       if (dimensions_match (in_spine, out)) {
 
-        for (loop.start (in_spine, out); loop.ok(); loop.next (in_spine, out)) {
+        for (auto l = loop (in_spine, out); l; ++l) {
           if (in_spine.value())
             out.value() = spine_node_index;
         }
@@ -153,7 +153,7 @@ void run ()
 
         Image::Transform transform (out);
         Image::Interp::Nearest< Image::Buffer<bool>::voxel_type > nearest (in_spine);
-        for (loop.start (out); loop.ok(); loop.next (out)) {
+        for (auto l = loop (out); l; ++l) {
           const Point<float> p (transform.voxel2scanner (out));
           if (!nearest.scanner (p) && nearest.value())
             out.value() = spine_node_index;

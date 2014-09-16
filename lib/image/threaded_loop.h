@@ -127,10 +127,10 @@ namespace MR
      *
      * // the outer loop is processed sequentially in a thread-safe manner,
      * // so that each thread receives the next position in the loop:
-     * for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox) {
+     * for (auto i = outer_loop (vox); i; ++i) {
      *   // the inner loop is processed within each thread, with multiple threads 
      *   // running concurrently, each processing a different row of voxels:
-     *   for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox) 
+     *   for (auto j = inner_loop (vox); j; ++j)
      *     my_func (vox);
      * }
      * \endcode
@@ -285,7 +285,6 @@ namespace MR
             loop (axes_out_of_thread),
             dummy (source),
             axes (axes_in_thread) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -296,7 +295,6 @@ namespace MR
             loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes)),
             dummy (source),
             axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -308,7 +306,6 @@ namespace MR
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis)),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -320,7 +317,6 @@ namespace MR
             loop (axes_out_of_thread, progress_message),
             dummy (source),
             axes (axes_in_thread) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -332,7 +328,6 @@ namespace MR
             loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -345,7 +340,6 @@ namespace MR
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-              loop.start (dummy);
             }
 
        
@@ -362,12 +356,16 @@ namespace MR
         //! a dummy object that can be used to construct other Iterators
         const Iterator& iterator () const { return dummy; }
 
+        void start (Iterator& pos) {
+          loop.start (std::forward_as_tuple (pos));
+        }
+
         //! get next position in the outer loop
         bool next (Iterator& pos) {
           Thread::Mutex::Lock lock (mutex);
           if (loop.ok()) {
             loop.set_position (dummy, pos);
-            loop.next (dummy);
+            loop.next (std::forward_as_tuple (dummy));
             return true;
           }
           else return false;
@@ -448,6 +446,7 @@ namespace MR
 
              void execute () {
                Iterator pos (shared.iterator());
+               shared.start (pos);
                while (shared.next (pos))
                  func (pos);
              }
@@ -470,7 +469,7 @@ namespace MR
                outer_axes (shared_info.outer_axes()) { }
 
              void operator() (Iterator& pos) {
-               for (loop.start (pos); loop.ok(); loop.next (pos)) 
+               for (auto i = loop (pos); i; ++i)
                  func (pos);
              }
 
@@ -491,7 +490,7 @@ namespace MR
 
              void operator() (const Iterator& pos) {
                voxel_assign (vox1, pos, this->outer_axes);
-               for (this->loop.start (vox1); this->loop.ok(); this->loop.next (vox1)) 
+               for (auto i = this->loop (vox1); i; ++i)
                  this->func (vox1);
              }
 
@@ -510,7 +509,7 @@ namespace MR
 
              void operator() (const Iterator& pos) {
                voxel_assign2 (vox1, vox2, pos, this->outer_axes);
-               for (this->loop.start (vox1, vox2); this->loop.ok(); this->loop.next (vox1, vox2)) 
+               for (auto i = this->loop (vox1, vox2); i; ++i)
                  this->func (vox1, vox2);
              }
 
@@ -531,7 +530,7 @@ namespace MR
 
              void operator() (const Iterator& pos) {
                voxel_assign3 (vox1, vox2, vox3, pos, this->outer_axes);
-               for (this->loop.start (vox1, vox2, vox3); this->loop.ok(); this->loop.next (vox1, vox2, vox3)) 
+               for (auto i = this->loop (vox1, vox2, vox3); i; ++i)
                  this->func (vox1, vox2, vox3);
              }
 
@@ -560,7 +559,7 @@ namespace MR
        inline void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
        {
          if (Thread::number_of_threads() == 0) {
-           for (loop.start (dummy); loop.ok(); loop.next (dummy)) 
+           for (auto i = loop (dummy); i; ++i)
              functor (dummy);
            return;
          }
@@ -578,8 +577,8 @@ namespace MR
        {
          if (Thread::number_of_threads() == 0) {
            LoopInOrder inner_loop (axes);
-           for (loop.start (dummy); loop.ok(); loop.next (dummy)) {
-             for (inner_loop.start (dummy); inner_loop.ok(); inner_loop.next (dummy))
+           for (auto i = loop (dummy); i; ++i) {
+             for (auto j = inner_loop (dummy); j; ++j)
                functor (dummy);
            }
            return;
@@ -595,8 +594,8 @@ namespace MR
        {
          if (Thread::number_of_threads() == 0) {
            LoopInOrder inner_loop (axes);
-           for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
-             for (inner_loop.start (vox1); inner_loop.ok(); inner_loop.next (vox1))
+           for (auto i = loop (vox1); i; ++i) {
+             for (auto j = inner_loop (vox1); j; ++j)
                functor (vox1);
            }
            return;
@@ -614,8 +613,8 @@ namespace MR
        {
          if (Thread::number_of_threads() == 0) {
            LoopInOrder inner_loop (axes);
-           for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
-             for (inner_loop.start (vox1, vox2); inner_loop.ok(); inner_loop.next (vox1, vox2))
+           for (auto i = loop (vox1, vox2); i; ++i) {
+             for (auto j = inner_loop (vox1, vox2); j; ++j)
                functor (vox1, vox2);
            }
            return;
@@ -633,8 +632,8 @@ namespace MR
        {
          if (Thread::number_of_threads() == 0) {
            LoopInOrder inner_loop (axes);
-           for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
-             for (inner_loop.start (vox1, vox2, vox3); inner_loop.ok(); inner_loop.next (vox1, vox2, vox3))
+           for (auto i = loop (vox1, vox2, vox3); i; ++i) {
+             for (auto j = inner_loop (vox1, vox2, vox3); j; ++j)
                functor (vox1, vox2, vox3);
            }
            return;

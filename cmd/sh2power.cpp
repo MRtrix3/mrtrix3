@@ -62,7 +62,7 @@ void run () {
   Image::Buffer<float>::voxel_type P (power_data);
 
   Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);
-  for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {
+  for (auto i = loop (P, SH); i; ++i) {
     P[3] = 0;
     for (int l = 0; l <= lmax; l+=2) {
       float power = 0.0;

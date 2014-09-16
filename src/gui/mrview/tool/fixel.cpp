@@ -251,7 +251,7 @@ namespace MR
           buffer_dir.push_back(Point<float>());
           buffer_val.push_back(NAN);
           Point<float> voxel_pos;
-          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+          for (auto l = loop (fixel_vox); l; ++l) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               if (fixel_vox.value()[f].value > value_max)
                 value_max = fixel_vox.value()[f].value;

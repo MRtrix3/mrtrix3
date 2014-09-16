@@ -62,14 +62,14 @@ namespace MR
             Image::voxel_assign (out, pos);
 
             // load input values into matrix:
-            for (val_loop.start (in); val_loop.ok(); val_loop.next (in)) 
+            for (auto l = val_loop (in); l; ++l) 
               vals_in [in[val_axis]] = func_pre (in.value());
 
             // apply matrix:
             Math::mult (vals_out, matrix, vals_in);
 
             // write back:
-            for (val_loop.start (out); val_loop.ok(); val_loop.next (out)) 
+            for (auto l = val_loop (out); l; ++l) 
               out.value() = func_post (vals_out[out[val_axis]]);
           }
 

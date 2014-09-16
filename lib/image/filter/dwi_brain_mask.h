@@ -109,7 +109,7 @@ namespace MR
                 BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
                 typename BufferScratch<value_type>::voxel_type shell_voxel (shell_data);
 
-                for (loop.start (input, shell_voxel); loop.ok(); loop.next (input, shell_voxel)) {
+                for (auto l = loop (input, shell_voxel); l; ++l) {
                   value_type mean = 0;
                   for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                     input[3] = *v;
@@ -129,7 +129,7 @@ namespace MR
                   ++(*progress);
 
                 // Add this mask to the master
-                for (loop.start (mask_voxel, shell_mask_voxel); loop.ok(); loop.next (mask_voxel, shell_mask_voxel)) {
+                for (auto l = loop (mask_voxel, shell_mask_voxel); l; ++l) {
                   if (shell_mask_voxel.value())
                     mask_voxel.value() = true;
                 }
@@ -153,7 +153,7 @@ namespace MR
               if (progress)
                 ++(*progress);
 
-              for (loop.start (temp_voxel); loop.ok(); loop.next (temp_voxel))
+              for (auto l = loop (temp_voxel); l; ++l) 
                 temp_voxel.value() = !temp_voxel.value();
               if (progress)
                 ++(*progress);
@@ -162,7 +162,7 @@ namespace MR
               if (progress)
                 ++(*progress);
 
-              for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
+              for (auto l = loop (temp_voxel, output); l; ++l) 
                 output.value() = !temp_voxel.value();
           }
 

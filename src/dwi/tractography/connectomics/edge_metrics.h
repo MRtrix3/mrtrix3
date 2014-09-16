@@ -116,7 +116,7 @@ class Metric_invnodevolume : public Metric_base {
     {
       Image::Buffer<node_t>::voxel_type in (in_data);
       Image::Loop loop;
-      for (loop.start (in); loop.ok(); loop.next (in)) {
+      for (auto l = Image::Loop() (in); l; ++l) {
         const node_t node_index = in.value();
         if (node_index >= node_volumes.size())
           node_volumes.resize (node_index + 1, 0);

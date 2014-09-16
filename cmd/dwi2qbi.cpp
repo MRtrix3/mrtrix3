@@ -115,12 +115,12 @@ class DataLoader
       if (mask) {
         Image::Buffer<bool>::voxel_type mask_vox (*mask);
         Image::check_dimensions (mask_vox, dwi, 0, 3);
-        for (loop.start (mask_vox, dwi); loop.ok(); loop.next (mask_vox, dwi))
+        for (auto l = loop (mask_vox, dwi); l; ++l)
           if (mask_vox.value() > 0.5)
             load (item);
       }
       else {
-        for (loop.start (dwi); loop.ok(); loop.next (dwi))
+        for (auto l = loop (dwi); l; ++l)
           load (item);
       }
     }

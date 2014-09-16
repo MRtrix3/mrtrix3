@@ -112,7 +112,7 @@ namespace MR
             // Once all of the 5TT data has been read in, use it to derive the processing mask
             Image::LoopInOrder loop (v_5tt, 0, 3);
             v_5tt[3] = 2; // Access the WM fraction
-            for (loop.start (v_5tt, mask); loop.ok(); loop.next (v_5tt, mask))
+            for (auto l = loop (v_5tt, mask); l; ++l)
               mask.value() = Math::pow2<float> (v_5tt.value()); // Processing mask value is the square of the WM fraction
 
           } else {
@@ -121,7 +121,7 @@ namespace MR
             typedef typename Set::voxel_type::value_type value_type;
             Image::LoopInOrder loop (dwi, "Creating homogeneous processing mask...", 0, 3);
             dwi[3] = 0;
-            for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
+            for (auto l = loop (dwi, mask); l; ++l)
               mask.value() = (dwi.value() && std::isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
 
           }

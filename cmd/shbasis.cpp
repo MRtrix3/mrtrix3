@@ -139,7 +139,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   size_t voxel_count = 0;
   {
     Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
-    for (loop.start (v, v_mask); loop.ok(); loop.next (v, v_mask)) {
+    for (auto i = loop (v, v_mask); i; ++i) {
       const value_type value = v.value();
       if (value && std::isfinite (value)) {
         v_mask.value() = true;
@@ -167,7 +167,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     Image::LoopInOrder loop (v, 0, 3);
     for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
       double sum = 0.0;
-      for (loop.start (v, v_mask); loop.ok(); loop.next (v, v_mask)) {
+      for (auto i = loop (v, v_mask); i; ++i) {
         if (v_mask.value())
           sum += Math::pow2 (value_type(v.value()));
       }
@@ -302,7 +302,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
     for (v[3] = 1; v[3] != N; ++v[3]) {
       if (!mzero_terms[v[3]]) {
-        for (loop.start (v); loop.ok(); loop.next (v))
+        for (auto i = loop (v); i; ++i) 
           v.value() *= multiplier;
       }
       ++progress;

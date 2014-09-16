@@ -298,8 +298,8 @@ void run () {
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
-      for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
-        for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
+      for (auto i = outer_loop (vox); i; ++i) {
+        for (auto j = inner_loop (mask, vox); j; ++j) {
           if (mask.value())
             calibrate (complex_type(vox.value()).real());
           ++progress;
@@ -308,7 +308,7 @@ void run () {
       calibrate.init (*hist_stream);
     }
 
-    for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+    for (auto i = outer_loop (vox); i; ++i) {
       Stats stats (vox.datatype().is_complex());
 
       if (dumpstream)
@@ -317,7 +317,7 @@ void run () {
       if (hist_stream)
         stats.generate_histogram (calibrate);
 
-      for (inner_loop.start (mask, vox); inner_loop.ok(); inner_loop.next (mask, vox)) {
+      for (auto j = inner_loop (mask, vox); j; ++j) {
         if (mask.value() > 0.5) {
           stats (vox.value());
           if (position_stream) {
@@ -348,8 +348,8 @@ void run () {
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
-      for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
-        for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox)) {
+      for (auto i = outer_loop (vox); i; ++i) {
+        for (auto j = inner_loop (vox); j; ++j) {
           calibrate (complex_type(vox.value()).real());
           ++progress;
         }
@@ -357,7 +357,7 @@ void run () {
       calibrate.init (*hist_stream);
     }
 
-    for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+    for (auto l = outer_loop (vox); l; ++l) {
       Stats stats (vox.datatype().is_complex());
 
       if (dumpstream)
@@ -366,7 +366,7 @@ void run () {
       if (hist_stream)
         stats.generate_histogram (calibrate);
 
-      for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox)) {
+      for (auto j = inner_loop (vox); j; ++j) {
         stats (vox.value());
         if (position_stream) {
           for (size_t i = 0; i < vox.ndim(); ++i)
@@ -408,7 +408,7 @@ void run () {
 
   if (hist_stream) {
     ProgressBar progress ("calibrating histogram...", voxel.size());
-    for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+    for (auto i = outer_loop (vox); i; ++i) {
       for (size_t i = 0; i < voxel.size(); ++i) {
         vox[0] = voxel[i][0];
         vox[1] = voxel[i][1];
@@ -420,7 +420,7 @@ void run () {
     calibrate.init (*hist_stream);
   }
 
-  for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox)) {
+  for (auto i = outer_loop (vox); i; ++i) {
     Stats stats (vox.datatype().is_complex());
 
     if (dumpstream)

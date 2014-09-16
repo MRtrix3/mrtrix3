@@ -87,8 +87,7 @@ namespace MR
             for (unsigned int pass = 0; pass < npass_; pass++) {
               out_data = new BufferScratch<bool> (input);
               out = new BufferScratch<bool>::voxel_type (*out_data);
-              LoopInOrder loop (*in);
-              for (loop.start (*in, *out); loop.ok(); loop.next (*in, *out)) {
+              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l) {
                out->value() = erode (*in);
               }
               if (pass < npass_ - 1) {

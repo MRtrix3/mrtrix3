@@ -89,10 +89,9 @@ void run ()
       bounds[axis][1] = 0;
     }
 
-    Image::Loop loop_mask;
     // Note that even though only 3 dimensions are cropped when using a mask, the bounds
     // are computed by checking the extent for all dimensions (for example a 4D AFD mask)
-    for (loop_mask.start (voxel_mask); loop_mask.ok(); loop_mask.next (voxel_mask)) {
+    for (auto i = Image::Loop() (voxel_mask); i; ++i) {
       if (voxel_mask.value()) {
         for (size_t axis = 0; axis != 3; ++axis) {
           bounds[axis][0] = std::min (bounds[axis][0], int (voxel_mask[axis]));

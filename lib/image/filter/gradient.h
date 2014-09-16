@@ -120,8 +120,7 @@ namespace MR
                 Image::BufferScratch<float> temp_data (header, "full 3D gradient image");
                 Image::BufferScratch<float>::voxel_type temp_voxel (temp_data);
                 full_gradient (in, temp_voxel);
-                Image::LoopInOrder loop (out);
-                for (loop.start (out); loop.ok(); loop.next (out)) {
+                for (auto l = Image::LoopInOrder(out) (out); l; ++l) {
                   Image::Nav::set_pos (temp_voxel, out, 0, 3);
                   if (out.ndim() == 4)
                     temp_voxel[4] = out[3];
@@ -171,8 +170,7 @@ namespace MR
                   Math::Vector<float> gradient (3);
                   Math::Vector<float> gradient_wrt_scanner (3);
 
-                  Image::Loop loop (0, 3);
-                  for (loop.start (out); loop.ok(); loop.next (out)) {
+                  for (auto l = Image::Loop(0,3) (out); l; ++l) {
                     for (size_t dim = 0; dim < 3; dim++) {
                       out[3] = dim;
                       gradient[dim] = out.value() / in.vox(dim);

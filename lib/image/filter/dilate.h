@@ -90,7 +90,7 @@ namespace MR
               out_data = new BufferScratch<bool> (input);
               out = new BufferScratch<bool>::voxel_type (*out_data);
               LoopInOrder loop (*in);
-              for (loop.start (*in, *out); loop.ok(); loop.next (*in, *out))
+              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l)
                 out->value() = dilate (*in);
               if (pass < npass_ - 1) {
                 in_data = out_data;

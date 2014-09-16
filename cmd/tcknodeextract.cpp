@@ -121,7 +121,7 @@ void run ()
 
   node_t max_node_index = 0;
   Image::LoopInOrder loop (nodes);
-  for (loop.start (nodes); loop.ok(); loop.next (nodes))
+  for (auto l = loop (nodes); l; ++l)
     max_node_index = MAX (max_node_index, nodes.value());
 
   INFO ("Maximum node index is " + str(max_node_index));

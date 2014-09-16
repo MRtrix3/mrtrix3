@@ -94,7 +94,7 @@ void run ()
   }
 
   Image::Loop loop ("concatenating images...", 0, 3);
-  for (loop.start (v_out); loop.ok(); loop.next (v_out)) {
+  for (auto l = loop (v_out); l; ++l) {
 
     for (size_t axis = 0; axis != 3; ++axis)
       v_fast_csf[axis] = v_fast_gm[axis] = v_wm_fixed[axis] = v_first[axis] = v_out[axis];

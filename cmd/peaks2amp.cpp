@@ -60,7 +60,7 @@ void run ()
 
   Image::LoopInOrder loop (dir_vox, "converting directions to amplitudes...", 0, 3);
 
-  for (loop.start (dir_vox, amp_vox); loop.ok(); loop.next (dir_vox, amp_vox)) {
+  for (auto i = loop (dir_vox, amp_vox); i; ++i) {
     Math::Vector<float> dir (3);
     dir_vox[3] = 0;
     amp_vox[3] = 0;

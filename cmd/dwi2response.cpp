@@ -168,8 +168,7 @@ void run ()
     Image::Buffer<bool>::voxel_type v_in (in);
     Image::copy (v_in, v_mask, 0, 3);
   } else {
-    Image::LoopInOrder loop (v_mask);
-    for (loop.start (v_mask); loop.ok(); loop.next (v_mask))
+    for (auto l = Image::LoopInOrder (v_mask) (v_mask); l; ++l) 
       v_mask.value() = true;
   }
 
@@ -202,7 +201,7 @@ void run ()
     double sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
     Image::LoopInOrder loop (dwi, "initialising response function... ", 0, 3);
-    for (loop.start (v_dwi, v_mask); loop.ok(); loop.next (v_dwi, v_mask)) {
+    for (auto l = loop (v_dwi, v_mask); l; ++l) {
       if (v_mask.value()) {
         for (size_t volume_index = 0; volume_index != shared.dwis.size(); ++volume_index) {
           v_dwi[3] = shared.dwis[volume_index];
@@ -265,8 +264,7 @@ void run ()
           Image::Buffer<bool>::voxel_type v_in (in);
           Image::copy (v_in, v_mask, 0, 3);
         } else {
-          Image::LoopInOrder loop (v_mask);
-          for (loop.start (v_mask); loop.ok(); loop.next (v_mask))
+          for (auto l = Image::LoopInOrder(v_mask) (v_mask); l; ++l)
             v_mask.value() = true;
         }
         ++progress;

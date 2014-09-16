@@ -237,8 +237,7 @@ value_type AFDConnectivity::get (const std::string& path)
 
       // Only allow one fixel per voxel to contribute to the result
       VoxelAccessor v (accessor);
-      Image::LoopInOrder loop (v);
-      for (loop.start (v); loop.ok(); loop.next (v)) {
+      for (auto l = Image::LoopInOrder(v) (v); l; ++l) {
         if (v.value()) {
           value_type voxel_afd = 0.0, max_td = 0.0;
           for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
@@ -273,8 +272,7 @@ void AFDConnectivity::save (const std::string& path)
   Image::Buffer<value_type> out_buffer (path, H);
   Image::Buffer<value_type>::voxel_type out (out_buffer);
   VoxelAccessor v (accessor);
-  Image::LoopInOrder loop (v);
-  for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
+  for (auto l = Image::LoopInOrder(v) (v, out); l; ++l) {
     value_type value = 0.0;
     if (have_wbft) {
       for (Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)

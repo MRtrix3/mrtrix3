@@ -185,7 +185,7 @@ namespace MR
 
       // Find those voxels that remain unassigned, and set them to INSIDE
       Image::Loop loop;
-      for (loop.start (init_seg); loop.ok(); loop.next (init_seg)) {
+      for (auto l = loop (init_seg); l; ++l) {
         if (init_seg.value() == vox_mesh_t (UNDEFINED))
           init_seg.value() = vox_mesh_t (INSIDE);
       }
@@ -196,7 +196,7 @@ namespace MR
       Image::BufferScratch<float> pve_est_data (H);
       Image::BufferScratch<float>::voxel_type pve_est (pve_est_data);
 
-      for (loop.start (init_seg, pve_est); loop.ok(); loop.next (init_seg, pve_est)) {
+      for (auto l = loop (init_seg, pve_est); l; ++l) {
         switch (init_seg.value()) {
           case vox_mesh_t (UNDEFINED):   throw Exception ("Code error: poor filling of initial mesh estimate"); break;
           case vox_mesh_t (ON_MESH):     pve_est.value() = 0.5; break;

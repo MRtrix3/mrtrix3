@@ -110,7 +110,7 @@ void run() {
 
   if (voxel_out.ndim() == 4) {
 
-    for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
+    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
       for (size_t i = 0; i < volumes.size(); i++) {
         voxel_in[3] = volumes[i];
         voxel_out[3] = i;
@@ -121,7 +121,7 @@ void run() {
   } else {
 
     const size_t volume = volumes[0];
-    for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
+    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
       voxel_in[3] = volume;
       voxel_out.value() = voxel_in.value();
     }

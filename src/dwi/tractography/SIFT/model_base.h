@@ -251,8 +251,7 @@ namespace MR
         VoxelAccessor v (accessor);
         Image::BufferScratch<float>::voxel_type v_anat (*act_5tt);
         FOD_sum = 0.0;
-        Image::LoopInOrder loop (v);
-        for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
+        for (auto l = Image::LoopInOrder(v) (v, v_anat); l; ++l) {
           Tractography::ACT::Tissues tissues (v_anat);
           const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
           for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {

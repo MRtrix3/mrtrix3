@@ -109,7 +109,7 @@ void run ()
   Image::Buffer<float>::voxel_type v_in (in), v_out (out);
 
   Image::LoopInOrder loop (v_out, 0, 3);
-  for (loop.start (v_in, v_out); loop.ok(); loop.next (v_in, v_out)) {
+  for (auto l = loop (v_in, v_out); l; ++l) {
     const DWI::Tractography::ACT::Tissues t (v_in);
     const float bg = 1.0 - (t.get_cgm() + t.get_sgm() + t.get_wm() + t.get_csf() + t.get_path());
     v_out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());

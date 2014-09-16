@@ -266,7 +266,7 @@ void run () {
       Image::Buffer<float>::voxel_type output_voxel (output_data);
 
       Image::LoopInOrder loop (output_voxel);
-      for (loop.start (temp_voxel, output_voxel); loop.ok(); loop.next (temp_voxel, output_voxel))
+      for (auto l = loop (temp_voxel, output_voxel); l; ++l) 
         output_voxel.value() = std::abs (cdouble(temp_voxel.value()));
 
     } else {
