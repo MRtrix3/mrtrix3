@@ -118,7 +118,8 @@ void run ()
 
   Image::ThreadedLoop ("filling in test buffer...", in).run (FillIn(), in);
   Timer timer;
-  Image::threaded_copy_with_progress_message ("multi-threaded copy...", in, out);
+  Image::ThreadedLoop ("multi-threaded copy...", in)
+    .run ([] (decltype(in)& in, decltype(out)& out) { out.value()=in.value(); }, in, out);
   CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
   size_t grand_total = 0;
   Image::ThreadedLoop (in).run (Check (grand_total), in, out);
@@ -134,7 +135,6 @@ void run ()
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
     Image::Loop loop;
-    auto images = std::forward_as_tuple (in, out);
     for (loop.start (std::forward_as_tuple (in, out)); loop.ok(); loop.next (std::forward_as_tuple (in, out)))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
@@ -161,7 +161,6 @@ void run ()
     Image::ThreadedLoop (out).run (FillIn(), out);
     timer.start();
     Image::LoopInOrder loop (in);
-    auto images = std::forward_as_tuple (in, out);
     for (loop.start (std::forward_as_tuple (in, out)); loop.ok(); loop.next (std::forward_as_tuple (in, out)))
       out.value() = in.value();
     CONSOLE ("time taken: " + str(timer.elapsed()) + "ms");
