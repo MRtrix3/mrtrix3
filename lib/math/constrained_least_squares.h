@@ -52,15 +52,13 @@ namespace MR
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
                 ValueType min_norm_constraint = 1.e-8,
-                ValueType initial_quadratic_constraint_factor = ValueType(1.0e3), 
-                ValueType quadratic_constraint_multiplier = ValueType(10.0), 
+                ValueType min_quadratic_constraint_factor = ValueType(1.0e-3), 
                 ValueType max_quadratic_constraint_factor = ValueType(1.0e10), 
                 ValueType tolerance = ValueType(1.0e-10), 
-                size_t max_iterations = 10000) :
+                size_t max_iterations = 1000) :
               H (problem_matrix),
               chol_HtH (H.columns(), H.columns()), 
-              mu_init (initial_quadratic_constraint_factor), 
-              mu_inc (quadratic_constraint_multiplier),
+              mu_min (min_quadratic_constraint_factor),
               mu_max (max_quadratic_constraint_factor),
               tol2 (pow2 (tolerance)), 
               max_niter (max_iterations) {
@@ -89,7 +87,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType mu_init, mu_inc, mu_max, tol2;
+            ValueType mu_min, mu_max, tol2;
             size_t max_niter;
         };
 
@@ -113,9 +111,8 @@ namespace MR
 
             int operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
+              mu = 0.1;
               lambda = 0.0;
-              mu = P.mu_init;
-              mu_inc = P.mu_inc;
               mult (d, ValueType (1.0), CblasTrans, P.b2d, b);
 
               dx = x = d;
@@ -149,6 +146,10 @@ namespace MR
                   // add constraints to RHS:
                   mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
                   x += d;
+
+                  // solve for x by Cholesky decomposition:
+                  Cholesky::decomp (HtH_muBtB);
+                  Cholesky::solve (x, HtH_muBtB);
                 }
                 else {
                   // no active constraints
@@ -159,10 +160,6 @@ namespace MR
                   HtH_muBtB.identity();
                   x = d;
                 }
-
-                // solve for x by Cholesky decomposition:
-                Cholesky::decomp (HtH_muBtB);
-                Cholesky::solve (x, HtH_muBtB);
 
                 // check for convergence:
                 dx -= x;
@@ -185,21 +182,33 @@ namespace MR
                   if (lambda[n] > max_lambda)
                     max_lambda = lambda[n];
                 }
-                if (max_lambda > 0.0 && -mu*max_c > max_lambda) {
-                  // changes are becoming unstable - reduce mu radically and
-                  // reduce rate of increase in mu for future iterations:
-                  mu /= P.mu_inc; 
-                  mu_inc = 1.0 + (mu_inc-1.0)/2.0;
+                ValueType mean_c (0.0);
+                //ValueType mean_l (0.0);
+                size_t count = 0;
+                for (size_t n = 0; n < c.size(); ++n ) {
+                  if (c[n] < 0.0) {
+                    mean_c += c[n];
+                    //mean_l += lambda[n];
+                    ++count;
+                  }
                 }
-                else {
-                  // progress OK, update lambda and increase mu:
+                mean_c /= count;
+                //mean_l /= count;
+                //std::cout << mu << " " << mean_l << " " << mu * mean_c;
+
+                ValueType mu_fac = 0.5; 
+                if (count) 
+                  mu_fac = std::exp (1.01 + 0.01*mu*mean_c);
+                if (mu_fac > 0.9)
                   for (size_t n = 0; n < c.size(); ++n) 
                     lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
-                  mu *= mu_inc;
-                  // make sure mu never exceeds max:
-                  if (mu > P.mu_max)
-                    mu = P.mu_max;
-                }
+
+                mu *= mu_fac;
+                if (mu > P.mu_max)
+                  mu = P.mu_max;
+                if (mu < P.mu_min)
+                  mu = P.mu_min;
+                //std::cout << " ==> mu = " << mu << std::endl;
 
                 dx = x;
               }
