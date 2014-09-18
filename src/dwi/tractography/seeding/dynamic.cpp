@@ -106,7 +106,8 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::Float32;
         Image::Buffer<float> prob_mean_data ("seed_prob_mean.mif", H), prob_sum_data ("seed_prob_sum.mif", H);
-        Image::Buffer<float>::voxel_type prob_mean (prob_mean_data), prob_sum (prob_sum_data);
+        auto prob_mean = prob_mean_data.voxel();
+        auto prob_sum = prob_sum_data.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
         for (loop.start (v, prob_mean, prob_sum); loop.ok(); loop.next (v, prob_mean, prob_sum)) {

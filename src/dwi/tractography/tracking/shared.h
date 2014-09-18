@@ -286,7 +286,7 @@ namespace MR
             void add_termination (const term_t i, const Point<value_type>& p) const
             {
               ++terminations[i];
-              Image::Buffer<uint32_t>::voxel_type voxel (*debug_images[i]);
+              auto voxel debug_images[i]->voxel();
               const Point<value_type> pv = transform.scanner2voxel (p);
               const Point<int> v (std::round (pv[0]), std::round (pv[1]), std::round (pv[2]));
               if (Image::Nav::within_bounds (voxel, v)) {

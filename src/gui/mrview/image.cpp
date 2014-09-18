@@ -499,7 +499,7 @@ namespace MR
         inline void Image::copy_texture_3D (GLenum format)
       {
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
-        typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
+        auto V = buffer_tmp.voxel();
         GLenum type = GLtype<ValueType>();
         int N = ( format == gl::RED ? 1 : 3 );
         Ptr<ValueType,true> data (new ValueType [N * V.dim(0) * V.dim(1)]);
@@ -571,7 +571,7 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        MR::Image::Buffer<cfloat>::voxel_type V (buffer);
+        auto V = buffer.voxel();
         Ptr<float,true> data (new float [2 * V.dim (0) * V.dim (1)]);
 
         ProgressBar progress ("loading image data...", V.dim (2));

@@ -175,7 +175,7 @@ class ThreadLocalStorageItem {
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
   public:
 
-      void load (Chunk& chunk, Image::Buffer<complex_type>::voxel_type& vox) {
+      void load (Chunk& chunk, complex_vox_type& vox) {
         for (size_t n = 0; n < vox.ndim(); ++n)
           if (vox.dim(n) > 1)
             vox[n] = (*iter)[n];
@@ -603,7 +603,7 @@ class ThreadFunctor {
 
       storage.push_back (ThreadLocalStorageItem());
       if (entry.buffer) {
-        storage.back().vox = new Image::Buffer<complex_type>::voxel_type (*entry.buffer);
+        storage.back().vox = new complex_vox_type (*entry.buffer);
         storage.back().chunk.resize (chunk_size);
         return;
       }
@@ -628,7 +628,7 @@ class ThreadFunctor {
 
 
     const StackEntry& top_entry;
-    Image::Buffer<complex_type>::voxel_type vox;
+    complex_vox_type vox;
     Image::LoopInOrder loop;
     ThreadLocalStorage storage;
     size_t chunk_size;

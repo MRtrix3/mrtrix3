@@ -55,7 +55,7 @@ void usage ()
 
 void run() {
   Image::BufferPreload<float> data_in (argument[0], Image::Stride::contiguous_along_axis (3));
-  Image::BufferPreload<float>::voxel_type voxel_in (data_in);
+  auto voxel_in = data_in.voxel();
 
   Math::Matrix<value_type> grad (DWI::get_valid_DW_scheme<float> (data_in));
 
@@ -104,7 +104,7 @@ void run() {
   }
 
   Image::Buffer<value_type> data_out (argument[1], header);
-  Image::Buffer<value_type>::voxel_type voxel_out (data_out);
+  auto voxel_out = data_out.voxel();
 
   Image::Loop outer ("extracting volumes...", 0, 3);
 

@@ -219,6 +219,8 @@ namespace MR
         typedef ValueType value_type;
         typedef typename Image::Voxel<Buffer> voxel_type;
 
+        voxel_type voxel() { return voxel_type (*this); }
+
         value_type get_value (size_t offset) const {
           ssize_t nseg (offset / handler_->segment_size());
           return scale_from_storage (get_func (handler_->segment (nseg), offset - nseg*handler_->segment_size()));

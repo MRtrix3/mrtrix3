@@ -58,12 +58,12 @@ void run ()
 {
   Image::Header input_header (argument[0]);
   Image::BufferSparse<FixelMetric> input_data (input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type input_vox (input_data);
+  auto input_vox = input_data.voxel();
 
   float threshold = argument[1];
 
   Image::BufferSparse<FixelMetric> output (argument[2], input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_vox (output);
+  auto output_vox = output.voxel();
 
   Options opt = get_options("crop");
 

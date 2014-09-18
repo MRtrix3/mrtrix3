@@ -111,8 +111,8 @@ void run () {
 
   OutputBufferType adc_buffer (argument[1], header);
 
-  InputBufferType::voxel_type dwi_vox (dwi_buffer);
-  OutputBufferType::voxel_type adc_vox (adc_buffer);
+  auto dwi_vox = dwi_buffer.voxel();
+  auto adc_vox = adc_buffer.voxel();
 
   Image::ThreadedLoop ("computing ADC values...", dwi_vox, 1, 0, 3)
     .run (DWI2ADC (dwi_vox, adc_vox, binv, dwi_axis));

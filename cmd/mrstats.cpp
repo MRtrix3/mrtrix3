@@ -248,7 +248,7 @@ void print_header (bool is_complex)
 
 void run () {
   Image::Buffer<complex_type> data (argument[0]);
-  Image::Buffer<complex_type>::voxel_type vox (data);
+  auto vox = data.voxel();
 
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
@@ -294,7 +294,7 @@ void run () {
 
     Image::Buffer<bool> mask_data (opt[0][0]);
     check_dimensions (mask_data, data, 0, 3);
-    Image::Buffer<bool>::voxel_type mask (mask_data);
+    auto mask = mask_data.voxel();
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));

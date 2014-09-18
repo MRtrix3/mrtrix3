@@ -50,14 +50,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<complex_value_type> input_data (argument[0]);
-       * Buffer<complex_value_type>::voxel_type input_voxel (input_data);
+       * auto nput_voxel = input_data.voxel();
        *
        * Filter::FFT fft (input_data);
        * Header header (input_data);
        * header.info() = fft.info();
        *
        * Buffer<complex_value_type> output_data (header, argument[1]);
-       * Buffer<complex_value_type>::voxel_type output_voxel (output_data);
+       * auto output_voxel = output_data.voxel();
        * fft (input_voxel, output_voxel);
        *
        * \endcode
@@ -107,7 +107,7 @@ namespace MR
                 progress = new ProgressBar (message, axes_to_process.size() + 2);
 
               Image::BufferScratch<cdouble> temp_data (info());
-              Image::BufferScratch<cdouble>::voxel_type temp_voxel (temp_data);
+              auto temp_voxel = temp_data.voxel();
               Image::copy (input, temp_voxel);
               if (progress) ++(*progress);
 
@@ -119,7 +119,7 @@ namespace MR
                     break;
                   }
                 }
-                FFTKernel< Image::BufferScratch<cdouble>::voxel_type > kernel (temp_voxel, *axis, inverse);
+                FFTKernel<decltype(temp_voxel)> kernel (temp_voxel, *axis, inverse);
                 ThreadedLoop (temp_voxel, axes, 1).run (kernel);
                 if (progress) ++(*progress);
               }

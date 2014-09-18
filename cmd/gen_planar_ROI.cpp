@@ -195,7 +195,7 @@ void run () {
   header.DW_scheme().clear();
 
   Image::Buffer<bool> roi_buffer (argument[4], header);
-  Image::Buffer<bool>::voxel_type roi (roi_buffer);
+  auto roi = roi_buffer.voxel();
   for (auto i = Image::LoopInOrder (roi) (roi); i; ++i)
     roi.value() = true;
 

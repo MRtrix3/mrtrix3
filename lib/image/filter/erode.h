@@ -45,14 +45,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<bool> input_data (argument[0]);
-       * Buffer<bool>::voxel_type input_voxel (input_data);
+       * auto input_voxel = input_data.voxel();
        *
        * Filter::Erode erode (input_data);
        * Header header (input_data);
        * header.info() = erode.info();
        *
        * Buffer<bool> output_data (header, argument[1]);
-       * Buffer<bool>::voxel_type output_voxel (output_data);
+       * auto output_voxel = output_data.voxel();
        * erode (input_voxel, output_voxel);
        *
        * \endcode
@@ -87,9 +87,9 @@ namespace MR
             for (unsigned int pass = 0; pass < npass_; pass++) {
               out_data = new BufferScratch<bool> (input);
               out = new BufferScratch<bool>::voxel_type (*out_data);
-              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l) {
+              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l) 
                out->value() = erode (*in);
-              }
+              
               if (pass < npass_ - 1) {
                 in_data = out_data;
                 in = out;

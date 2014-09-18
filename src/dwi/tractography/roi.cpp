@@ -83,7 +83,7 @@ namespace MR {
       Mask* get_mask (const std::string& name)
       {
         Image::Buffer<bool> data (name);
-        Image::Buffer<bool>::voxel_type vox (data);
+        auto vox = data.voxel();
         std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
         size_t sum = 0;
@@ -118,7 +118,7 @@ namespace MR {
             new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
         }
 
-        Image::Adapter::Subset< Image::Buffer<bool>::voxel_type > sub (vox, bottom, top);
+        Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
         
         return new Mask (sub, new_info, data.name());
 

@@ -160,10 +160,10 @@ void run ()
   Image::Header header_out (data_in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
-  Image::Buffer<float>::voxel_type in (data_in);
+  auto in = data_in.voxel();
 
   Image::Buffer<float> data_out (argument[1], header_out);
-  Image::Buffer<float>::voxel_type out (data_out);
+  auto out = data_out.voxel();
 
   float zero = use_NaN ? NAN : 0.0;
   float one  = 1.0;
@@ -241,7 +241,7 @@ void run ()
   }
   else {
     if (use_histogram) {
-      Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
+      Image::Histogram<decltype(in)> hist (in);
       threshold_value = hist.first_min();
     }
     else if (std::isnan (threshold_value)) {

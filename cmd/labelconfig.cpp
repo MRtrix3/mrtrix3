@@ -111,7 +111,7 @@ void run ()
 
   // Open the input file
   Image::Buffer<node_t> in_data (argument[0]);
-  Image::Buffer<node_t>::voxel_type in (in_data);
+  auto in = in_data.voxel();
 
   // Create a new header for the output file
   Image::Header H (in_data);
@@ -121,7 +121,7 @@ void run ()
 
   // Create the output file
   Image::Buffer<node_t> out_data (argument[2], H);
-  Image::Buffer<node_t>::voxel_type out (out_data);
+  auto out = out_data.voxel();
 
   Image::Loop loop;
   // Fill the output image with data
@@ -137,7 +137,7 @@ void run ()
       const node_t spine_node_index = find_spine_node_index->second;
 
       Image::Buffer<bool> in_spine_data (opt[0][0]);
-      Image::Buffer<bool>::voxel_type in_spine (in_spine_data);
+      auto in_spine = in_spine_data.voxel();
 
       if (dimensions_match (in_spine, out)) {
 
@@ -152,7 +152,7 @@ void run ()
         WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
         Image::Transform transform (out);
-        Image::Interp::Nearest< Image::Buffer<bool>::voxel_type > nearest (in_spine);
+        Image::Interp::Nearest<decltype(in_spine)> nearest (in_spine);
         for (auto l = loop (out); l; ++l) {
           const Point<float> p (transform.voxel2scanner (out));
           if (!nearest.scanner (p) && nearest.value())

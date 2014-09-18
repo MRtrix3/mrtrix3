@@ -147,13 +147,13 @@ void run () {
 
 
   Image::Buffer<value_type> data_out (argument[num_images], header_out);
-  Image::Buffer<value_type>::voxel_type out_vox (data_out);
+  auto out_vox = data_out.voxel();
 
   ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));
   int axis_offset = 0;
 
   for (int i = 0; i < num_images; i++) {
-    Image::Buffer<value_type>::voxel_type in_vox (*in[i]);
+    auto in_vox = in[i]->voxel();
 
     for (auto i = Image::Loop() (in_vox); i; ++i) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {

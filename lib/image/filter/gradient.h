@@ -47,7 +47,7 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::Gradient gradient_filter (src);
        *
        * Image::Header header (src_data);
@@ -55,7 +55,7 @@ namespace MR
        * header.datatype() = src_data.datatype();
        *
        * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * gradient_filter (src, dest);
        *
@@ -118,7 +118,7 @@ namespace MR
                 Image::Header header;
                 header.info() = full_gradient.info();
                 Image::BufferScratch<float> temp_data (header, "full 3D gradient image");
-                Image::BufferScratch<float>::voxel_type temp_voxel (temp_data);
+                auto temp_voxel = temp_data.voxel();
                 full_gradient (in, temp_voxel);
                 for (auto l = Image::LoopInOrder(out) (out); l; ++l) {
                   Image::Nav::set_pos (temp_voxel, out, 0, 3);
@@ -133,7 +133,7 @@ namespace MR
               }
 
               Image::BufferScratch<float> smoothed_data (smoother.info());
-              Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
+              auto smoothed_voxel = smoothed_data.voxel();
               if (message.size())
                 smoother.set_message ("applying smoothing prior to calculating gradient... ");
               smoother (in, smoothed_voxel);
@@ -150,7 +150,7 @@ namespace MR
                   out[4] = vol;
                 }
 
-                Adapter::Gradient1D<Image::BufferScratch<float>::voxel_type> gradient1D (smoothed_voxel);
+                Adapter::Gradient1D<decltype(smoothed_voxel)> gradient1D (smoothed_voxel);
                 out[3] = 0;
                 gradient1D.set_axis (0);
                 threaded_copy (gradient1D, out, 2, 0, 3);
@@ -195,25 +195,5 @@ namespace MR
     }
   }
 }
-
-/*
-    Image::Filter::GaussianSmooth<> smooth_filter (input_voxel);
-    Image::Filter::Gradient gradient_filter (input_voxel);
-
-    Image::Header smooth_header (input_data);
-    smooth_header.info() = smooth_filter.info();
-
-    Image::BufferScratch<float> smoothed_data (smooth_header);
-    Image::BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
-
-    Image::Header output_header (input_data);
-    output_header.info() = gradient_filter.info();
-
-    Image::Buffer<float> output_data (argument[2], output_header);
-    Image::Buffer<float>::voxel_type output_voxel (output_data);
-
-    smooth_filter (input_voxel, smoothed_voxel);
-    gradient_filter (smoothed_voxel, output_voxel);
-*/
 
 #endif

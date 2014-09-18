@@ -113,7 +113,7 @@ void run ()
   Tractography::Reader<float> reader (argument[0], properties);
 
   Image::Buffer<node_t> nodes_data (argument[1]);
-  Image::Buffer<node_t>::voxel_type nodes (nodes_data);
+  auto nodes = nodes_data.voxel();
 
   const std::string prefix (argument[2]);
 

@@ -270,7 +270,7 @@ void AFDConnectivity::save (const std::string& path)
   Image::Header H;
   H.info() = info();
   Image::Buffer<value_type> out_buffer (path, H);
-  Image::Buffer<value_type>::voxel_type out (out_buffer);
+  auto out = out_buffer.voxel();
   VoxelAccessor v (accessor);
   for (auto l = Image::LoopInOrder(v) (v, out); l; ++l) {
     value_type value = 0.0;

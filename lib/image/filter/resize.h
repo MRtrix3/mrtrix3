@@ -52,7 +52,7 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::Resize resize_filter (src);
        * float scale = 0.5;
        * resize_filter.set_scale_factor (scale);
@@ -62,7 +62,7 @@ namespace MR
        * header.datatype() = src_data.datatype();
        *
        * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * resize_filter (src, dest);
        *
@@ -159,7 +159,7 @@ namespace MR
                 Filter::Smooth smooth_filter (input);
                 smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
-                BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
+                auto smoothed_voxel = smoothed_data.voxel();
                 {
                   LogLevelLatch log_level (0);
                   smooth_filter (input, smoothed_voxel);

@@ -92,7 +92,7 @@ namespace MR
       // Create some memory to work with:
       // Stores a flag for each voxel as encoded in enum vox_mesh_t
       Image::BufferScratch<uint8_t> init_seg_data (H);
-      Image::BufferScratch<uint8_t>::voxel_type init_seg (init_seg_data);
+      auto init_seg  = init_seg_data.voxel();
 
       // For every voxel, stores those polygons that may intersect the voxel
       typedef std::map< Point<int>, std::vector<size_t> > Vox2Poly;
@@ -194,7 +194,7 @@ namespace MR
 
       // Generate the initial estimated PVE image
       Image::BufferScratch<float> pve_est_data (H);
-      Image::BufferScratch<float>::voxel_type pve_est (pve_est_data);
+      auto pve_est = pve_est_data.voxel();
 
       for (auto l = loop (init_seg, pve_est); l; ++l) {
         switch (init_seg.value()) {

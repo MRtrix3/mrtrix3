@@ -126,7 +126,7 @@ namespace MR
           const std::vector<std::vector<int> >& precompute_adjacency (MaskVoxelType& mask) {
 
             Image::BufferScratch<uint32_t> index_data (mask);
-            Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
+            auto index_image = index_data.voxel();
 
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask);
@@ -271,14 +271,14 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<bool> src_data (argument[0]);
-       * Image::BufferPreload<bool>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::ConnectedComponents filter (src);
        *
        * Image::Header header (src_data);
        * header.info() = filter.info();
        *
        * Image::Buffer<uint32_t> dest_data (argument[1], src_data);
-       * Image::Buffer<uint32_t>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * filter.precompute_adjacency (src);
        * filter (src, dest);

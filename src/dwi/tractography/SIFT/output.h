@@ -59,7 +59,7 @@ namespace MR
       void ModelBase<Fixel>::output_target_image (const std::string& path) const
       {
         Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
@@ -84,7 +84,7 @@ namespace MR
         H_sh.dim(3) = N;
         H_sh.stride (3) = 0;
         Image::Buffer<float> out (path, H_sh);
-        Image::Buffer<float>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out, 0, 3);
         for (auto l = loop (v_out, v); l; ++l) {
@@ -118,7 +118,7 @@ namespace MR
         H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
         H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
         Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
@@ -137,7 +137,7 @@ namespace MR
       {
         const double current_mu = mu();
         Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
@@ -156,7 +156,7 @@ namespace MR
       {
         const double current_mu = mu();
         Image::Buffer<float> out (path, H);
-        Image::Buffer<float>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
@@ -184,7 +184,7 @@ namespace MR
         H_sh.dim(3) = N;
         H_sh.stride (3) = 0;
         Image::Buffer<float> out (path, H_sh);
-        Image::Buffer<float>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out, 0, 3);
         for (auto l = loop (v_out, v); l; ++l) {
@@ -219,7 +219,7 @@ namespace MR
         H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
         H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
         Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_out (out);
+        auto v_out = out.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
           if (v.value()) {
@@ -238,7 +238,9 @@ namespace MR
       {
         const double current_mu = mu();
         Image::Buffer<float> max_abs_diff (max_abs_diff_path, H), diff (diff_path, H), cost (cost_path, H);
-        Image::Buffer<float>::voxel_type v_max_abs_diff (max_abs_diff), v_diff (diff), v_cost (cost);
+        auto v_max_abs_diff = max_abs_diff.voxel();
+        auto v_diff = diff.voxel();
+        auto v_cost = cost.voxel();
         VoxelAccessor v (accessor);
         for (auto l = Image::LoopInOrder(v) (v); l; ++l) {
           v_max_abs_diff[2] = v_diff[2] = v_cost[2] = v[2];
@@ -274,9 +276,9 @@ namespace MR
         H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
         H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
         Image::BufferSparse<FixelMetric> out_diff (diff_path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_diff (out_diff);
+        auto v_diff = out_diff.voxel();
         Image::BufferSparse<FixelMetric> out_cost (cost_path, H_fixel);
-        Image::BufferSparse<FixelMetric>::voxel_type v_cost (out_cost);
+        auto v_cost = out_cost.voxel();
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_diff);
         for (auto l = loop (v, v_diff, v_cost); l; ++l) {
@@ -311,7 +313,7 @@ namespace MR
         Image::Header H_out (H);
         H_out.datatype() = DataType::UInt8;
         Image::Buffer<uint8_t> image (path, H_out);
-        Image::Buffer<uint8_t>::voxel_type v_out (image);
+        auto v_out = image.voxel();
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out);
         for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
@@ -329,8 +331,8 @@ namespace MR
         H_uint8_t.datatype() = DataType::UInt8;
         Image::Buffer<uint8_t> out_count (path_count, H_uint8_t);
         Image::Buffer<float>   out_amps (path_amps, H);
-        Image::Buffer<uint8_t>::voxel_type v_out_count (out_count);
-        Image::Buffer<float>  ::voxel_type v_out_amps  (out_amps);
+        auto v_out_count = out_count.voxel();
+        auto v_out_amps = out_amps.voxel();
         VoxelAccessor v (accessor);
         Image::LoopInOrder loop (v_out_count);
         for (auto l = loop (v_out_count, v_out_amps, v); l; ++l) {

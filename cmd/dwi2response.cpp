@@ -154,7 +154,7 @@ void run ()
   Image::Info info (H);
   info.set_ndim (3);
   Image::BufferScratch<bool> mask (info);
-  Image::BufferScratch<bool>::voxel_type v_mask (mask);
+  auto v_mask = mask.voxel();
 
   std::string mask_path;
   Options opt = get_options ("mask");
@@ -165,7 +165,7 @@ void run ()
       throw Exception ("Input mask image does not match DWI");
     if (!(in.ndim() == 3 || (in.ndim() == 4 && in.dim(3) == 1)))
       throw Exception ("Input mask image must be a 3D image");
-    Image::Buffer<bool>::voxel_type v_in (in);
+    auto v_in = in.voxel();
     Image::copy (v_in, v_mask, 0, 3);
   } else {
     for (auto l = Image::LoopInOrder (v_mask) (v_mask); l; ++l) 
@@ -197,7 +197,7 @@ void run ()
     // Initialise response function
     // Use lmax = 2, get the DWI intensity mean and standard deviation within the mask and
     //   use these as the first two coefficients
-    Image::Buffer<float>::voxel_type v_dwi (dwi);
+    auto v_dwi = dwi.voxel();
     double sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
     Image::LoopInOrder loop (dwi, "initialising response function... ", 0, 3);
@@ -261,7 +261,7 @@ void run ()
       if (reset_mask) {
         if (mask_path.size()) {
           Image::Buffer<bool> in (mask_path);
-          Image::Buffer<bool>::voxel_type v_in (in);
+          auto v_in = in.voxel();
           Image::copy (v_in, v_mask, 0, 3);
         } else {
           for (auto l = Image::LoopInOrder(v_mask) (v_mask); l; ++l)

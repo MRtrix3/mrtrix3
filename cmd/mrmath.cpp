@@ -287,28 +287,20 @@ class ImageKernel : public ImageKernelBase {
     ImageKernel (const Image::Header& header, const std::string& path) :
       ImageKernelBase (path),
       header (header),
-      buffer (header)
-  {
-    typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-    Image::ThreadedLoop (v_buffer).run (InitFunctor(), v_buffer);
-  }
+      buffer (header) {
+        Image::ThreadedLoop (buffer).run (InitFunctor(), buffer.voxel());
+      }
 
     ~ImageKernel()
     {
       Image::Buffer<value_type> out (output_path, header);
-      Image::Buffer<value_type>::voxel_type v_out (out);
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (ResultFunctor(), v_out, v_buffer);
+      Image::ThreadedLoop (buffer).run (ResultFunctor(), out.voxel(), buffer.voxel());
     }
 
     void process (const Image::Header& image_in)
     {
       Image::Buffer<value_type> in (image_in);
-      Image::Buffer<value_type>::voxel_type v_in (in);
-      for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
-        v_in[axis] = 0;
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (ProcessFunctor(), v_buffer, v_in);
+      Image::ThreadedLoop (buffer).run (ProcessFunctor(), buffer.voxel(), in.voxel());
     }
 
   protected:
@@ -346,8 +338,8 @@ void run ()
 
     BufferType buffer_out (output_path, header_out);
 
-    PreloadBufferType::voxel_type vox_in (buffer_in);
-    BufferType::voxel_type vox_out (buffer_out);
+    auto vox_in = buffer_in.voxel();
+    auto vox_out = buffer_out.voxel();
 
 
     Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);

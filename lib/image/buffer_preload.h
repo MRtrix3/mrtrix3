@@ -75,6 +75,8 @@ namespace MR
         typedef ValueType value_type;
         typedef Image::Voxel<BufferPreload> voxel_type;
 
+        voxel_type voxel() { return voxel_type (*this); }
+
         value_type get_value (size_t index) const {
           return data_[index];
         }

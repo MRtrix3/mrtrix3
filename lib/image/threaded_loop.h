@@ -25,6 +25,7 @@
 
 #include "debug.h"
 #include "image/loop.h"
+#include "image/utils.h"
 #include "image/iterator.h"
 #include "thread/mutex.h"
 #include "thread/exec.h"
@@ -33,55 +34,6 @@ namespace MR
 {
   namespace Image
   {
-
-
-    template <class VoxelType>
-      struct __assign_pos_axis_range
-      {
-        template <class VoxelType2>
-          void operator() (VoxelType2& out) const {
-            const size_t max_axis = std::min (to_axis, std::min (ref.ndim(), out.ndim()));
-            for (size_t n = from_axis; n < max_axis; ++n)
-              out[n] = ref[n];
-          }
-        const VoxelType& ref;
-        const size_t from_axis, to_axis;
-      };
-
-
-    template <class VoxelType, typename IntType>
-      struct __assign_pos_axes
-      {
-        template <class VoxelType2>
-          void operator() (VoxelType2& out) const {
-            for (auto a : axes) 
-              out[a] = ref[a];
-          }
-        const VoxelType& ref;
-        const std::vector<IntType> axes;
-      };
-
-
-    template <class VoxelType>
-      inline __assign_pos_axis_range<VoxelType> 
-      assign_pos (const VoxelType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
-      {
-        return { reference, from_axis, to_axis };
-      }
-
-    template <class VoxelType, typename IntType>
-      inline __assign_pos_axes<VoxelType, IntType> 
-      assign_pos (const VoxelType& reference, const std::vector<IntType>& axes) 
-      {
-        return { reference, axes };
-      }
-
-    template <class VoxelType, typename IntType>
-      inline __assign_pos_axes<VoxelType, IntType> 
-      assign_pos (const VoxelType& reference, const std::vector<IntType>&& axes) 
-      {
-        return assign_pos (reference, axes);
-      }
 
     /** \addtogroup Thread
      * @{
@@ -404,7 +356,7 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
-          void run_outer (Functor functor, const std::string& thread_label = "unknown")
+          void run_outer (Functor& functor, const std::string& thread_label = "unknown") 
           {
             if (Thread::number_of_threads() == 0) {
               for (auto i = loop (dummy); i; ++i)
@@ -417,45 +369,50 @@ namespace MR
             Thread::Exec threads (thread_list, thread_label);
           }
 
+        template <class Functor> 
+          void run_outer (Functor&& functor, const std::string& thread_label = "unknown") {
+            run_outer (functor);
+          }
+
 
 
 
         template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) == 0, int>::type = 0> 
           void run (Functor& functor, VoxelType&... vox)
           {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (auto i = loop (dummy); i; ++i) {
-             for (auto j = inner_loop (dummy); j; ++j)
-               functor (dummy);
-           }
-           return;
-         }
+            if (Thread::number_of_threads() == 0) {
+              LoopInOrder inner_loop (axes);
+              for (auto i = loop (dummy); i; ++i) {
+                for (auto j = inner_loop (dummy); j; ++j)
+                  functor (dummy);
+              }
+              return;
+            }
 
-         __RunFunctorIter<Functor> loop_thread (*this, functor);
-         run_outer (loop_thread, "run thread");
-       }
+            __RunFunctorIter<Functor> loop_thread (*this, functor);
+            run_outer (loop_thread, "run thread");
+          }
 
 
-     template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) != 0, int>::type = 0> 
-       void run (Functor& functor, VoxelType&... vox)
-       {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (auto i = loop (vox...); i; ++i) {
-             for (auto j = inner_loop (vox...); j; ++j)
-               functor (vox...);
-           }
-           return;
-         }
+        template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) != 0, int>::type = 0> 
+          void run (Functor& functor, VoxelType&... vox)
+          {
+            if (Thread::number_of_threads() == 0) {
+              LoopInOrder inner_loop (axes);
+              for (auto i = loop (vox...); i; ++i) {
+                for (auto j = inner_loop (vox...); j; ++j)
+                  functor (vox...);
+              }
+              return;
+            }
 
-         __RunFunctor<Functor, VoxelType&...> 
-           loop_thread (*this, functor, vox...);
-         run_outer (loop_thread, "run thread");
-       }
+            __RunFunctor<Functor, VoxelType...> 
+              loop_thread (*this, functor, vox...);
+            run_outer (loop_thread, "run thread");
+          }
 
         template <class Functor, class... VoxelType> 
-          void run (Functor&& functor, VoxelType&... vox) {
+          void run (Functor&& functor, VoxelType&&... vox) {
             run (functor, vox...);
           }
 
@@ -568,7 +525,7 @@ namespace MR
              Functor func;
              LoopInOrder loop;
              const std::vector<size_t>& outer_axes;
-             std::tuple<VoxelType&...> vox;
+             std::tuple<VoxelType...> vox;
          };
 
 

@@ -76,7 +76,7 @@ void run ()
   Image::Header H_in (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (H_in);
   Image::Buffer<float> image_in (H_in);
-  Image::Buffer<float>::voxel_type v_in (image_in);
+  auto v_in = image_in.voxel();
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -101,7 +101,7 @@ void run ()
     H_out.set_ndim (3);
   }
   Image::Buffer<float> image_out (argument[1], H_out);
-  Image::Buffer<float>::voxel_type v_out (image_out);
+  auto v_out = image_out.voxel();
 
   Image::LoopInOrder loop (v_out, "Determining GMWMI seeding mask...");
   for (auto l = loop (v_out); l; ++l) {

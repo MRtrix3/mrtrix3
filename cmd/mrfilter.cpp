@@ -246,7 +246,7 @@ void run () {
     // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
     //   convert between cfloat and cdouble...
     Image::Buffer<cdouble> input_data (input_header);
-    Image::Buffer<cdouble>::voxel_type input_voxel (input_data);
+    auto input_voxel = input_data.voxel();
     Image::Filter::FFT* filter = (dynamic_cast<Image::Filter::FFT*> (create_fft_filter (input_voxel)));
 
     Image::Header header;
@@ -258,12 +258,12 @@ void run () {
     if (get_options ("magnitude").size()) {
 
       Image::BufferScratch<cdouble> temp_data (header, "complex FFT result");
-      Image::BufferScratch<cdouble>::voxel_type temp_voxel (temp_data);
+      auto temp_voxel = temp_data.voxel();
       (*filter) (input_voxel, temp_voxel);
 
       header.datatype() = DataType::Float32;
       Image::Buffer<float> output_data (argument[2], header);
-      Image::Buffer<float>::voxel_type output_voxel (output_data);
+      auto output_voxel = output_data.voxel();
 
       Image::LoopInOrder loop (output_voxel);
       for (auto l = loop (temp_voxel, output_voxel); l; ++l) 
@@ -272,7 +272,7 @@ void run () {
     } else {
 
       Image::Buffer<cdouble> output_data (argument[2], header);
-      Image::Buffer<cdouble>::voxel_type output_voxel (output_data);
+      auto output_voxel = output_data.voxel();
       (*filter) (input_voxel, output_voxel);
 
     }
@@ -283,7 +283,7 @@ void run () {
   }
 
   Image::BufferPreload<float> input_data (input_header);
-  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
+  auto input_voxel = input_data.voxel();
 
   Image::Filter::Base* filter = NULL;
   switch (filter_index) {
@@ -299,7 +299,7 @@ void run () {
   Image::Stride::set_from_command_line (header);
 
   Image::Buffer<float> output_data (argument[2], header);
-  Image::Buffer<float>::voxel_type output_voxel (output_data);
+  auto output_voxel = output_data.voxel();
 
   filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
 

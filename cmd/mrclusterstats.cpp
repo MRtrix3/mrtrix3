@@ -143,7 +143,7 @@ void run() {
   // Load Mask
   Image::Header header (argument[3]);
   Image::Buffer<value_type> mask_data (header);
-  Image::Buffer<value_type>::voxel_type mask_vox (mask_data);
+  auto mask_vox = mask_data.voxel();
 
   Image::Filter::Connector connector (do_26_connectivity);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
@@ -158,7 +158,7 @@ void run() {
     LogLevelLatch log_level (0);
     Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
     Image::check_dimensions (fod_data, mask_vox, 0, 3);
-    Image::BufferPreload<value_type>::voxel_type input_vox (fod_data);
+    auto input_vox = fod_data.voxel();
     int index = 0;
     std::vector<std::vector<int> >::iterator it;
     for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {
@@ -208,11 +208,11 @@ void run() {
   Math::Stats::statistic2pvalue (perm_distribution_pos, tfce_output_pos, pvalue_output_pos);
   Math::Stats::statistic2pvalue (perm_distribution_neg, tfce_output_neg, pvalue_output_neg);
 
-  Image::Buffer<value_type>::voxel_type tfce_voxel_pos (tfce_data_pos);
-  Image::Buffer<value_type>::voxel_type tfce_voxel_neg (tfce_data_neg);
-  Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
+  auto tfce_voxel_pos = tfce_data_pos.voxel();
+  auto tfce_voxel_neg = tfce_data_neg.voxel();
+  auto tvalue_voxel = tvalue_data.voxel();
+  auto pvalue_voxel_pos = pvalue_data_pos.voxel();
+  auto pvalue_voxel_neg = pvalue_data_neg.voxel();
 
   {
     ProgressBar progress ("generating output...");

@@ -506,7 +506,7 @@ void run ()
   if (!output_count)
     throw Exception ("Nothing to do; please specify at least one output image type");
 
-  FMLS::FODQueueWriter<Image::Buffer<float>::voxel_type> writer (fod_data);
+  FMLS::FODQueueWriter<decltype(fod_data)::voxel_type> writer (fod_data);
 
   opt = get_options ("mask");
   Ptr<Image::Buffer<bool> > mask_buffer_ptr;

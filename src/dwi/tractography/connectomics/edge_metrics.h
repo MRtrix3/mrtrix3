@@ -114,7 +114,7 @@ class Metric_invnodevolume : public Metric_base {
     Metric_invnodevolume (Image::Buffer<node_t>& in_data) :
       Metric_base (false)
     {
-      Image::Buffer<node_t>::voxel_type in (in_data);
+      auto in = in_data.voxel();
       Image::Loop loop;
       for (auto l = Image::Loop() (in); l; ++l) {
         const node_t node_index = in.value();
@@ -162,7 +162,7 @@ class Metric_meanscalar : public Metric_base {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
-      Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp (interp_template);
+      auto interp = interp_template;
       double sum = 0.0;
       size_t count = 0.0;
       for (Streamline<>::const_iterator i = tck.begin(); i != tck.end(); ++i) {

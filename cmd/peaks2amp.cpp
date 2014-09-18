@@ -50,13 +50,13 @@ void usage ()
 void run ()
 {
   Image::Buffer<float> dir_buf (argument[0]);
-  Image::Buffer<float>::voxel_type dir_vox (dir_buf);
+  auto dir_vox = dir_buf.voxel();
 
   Image::Header header (argument[0]);
   header.dim(3) = header.dim(3)/3;
 
   Image::Buffer<float> amp_buf (argument[1], header);
-  Image::Buffer<float>::voxel_type amp_vox (amp_buf);
+  auto amp_vox = amp_buf.voxel();
 
   Image::LoopInOrder loop (dir_vox, "converting directions to amplitudes...", 0, 3);
 

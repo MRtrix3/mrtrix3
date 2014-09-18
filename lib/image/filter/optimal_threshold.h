@@ -25,7 +25,7 @@
 
 #include "ptr.h"
 #include "image/buffer_scratch.h"
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 #include "image/min_max.h"
 #include "image/adapter/replicate.h"
 #include "image/filter/base.h"
@@ -234,8 +234,7 @@ namespace MR
       template <class InputVoxelType> 
         inline typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input)
         {
-          typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-          return estimate_optimal_threshold (input, (BogusMaskType*) NULL);
+          return estimate_optimal_threshold (input, nullptr);
         }
 
       /** \addtogroup Filters
@@ -248,14 +247,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<value_type> input_data (argument[0]);
-       * Buffer<value_type>::voxel_type input_voxel (input_data);
+       * auto input_voxel = input_data.voxel();
        *
        * Filter::OptimalThreshold filter (input_data);
        * Header mask_header (input_data);
        * mask_header.info() = filter.info();
        *
        * Buffer<bool> mask_data (mask_header, argument[1]);
-       * Buffer<bool>::voxel_type mask_voxel (mask_data);
+       * auto mask_voxel mask_data.voxel();
        *
        * filter(input_voxel, mask_voxel);
        *
@@ -272,24 +271,18 @@ namespace MR
           }
 
 
-          template <class InputVoxelType, class OutputVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output) {
-              typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-              operator() <InputVoxelType, OutputVoxelType, BogusMaskType> (input, output);
-            }
-
-          template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType>
-            void operator() (InputVoxelType& input, OutputVoxelType& output, MaskVoxelType* mask = NULL) 
+          template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType = Image::BufferScratch<bool>::voxel_type>
+            void operator() (InputVoxelType& input, OutputVoxelType& output, MaskVoxelType* mask = nullptr) 
             {
               axes_.resize (4);
               typedef typename InputVoxelType::value_type input_value_type;
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               
-              Image::LoopInOrder threshold_loop (input, "thresholding...");
-              for (auto l = threshold_loop (input, output); l; ++l) {
-                input_value_type val = input.value();
-                output.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;
-              }
+              auto f = [&](decltype(input) in, decltype(output) out) {
+                input_value_type val = in.value();
+                out.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;
+              };
+              Image::ThreadedLoop ("thresholding...", input) .run (f, input, output);
             }
       };
       //! @}

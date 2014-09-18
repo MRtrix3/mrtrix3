@@ -90,7 +90,7 @@ void run ()
 {
 
   Image::Buffer<node_t> nodes_data (argument[1]);
-  Image::Buffer<node_t>::voxel_type nodes (nodes_data);
+  auto nodes = nodes_data.voxel();
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   node_t max_node_index = 0;

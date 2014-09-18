@@ -128,14 +128,14 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 
   // Open in read-write mode if there's a chance of modification
   typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
-  typename Image::Buffer<value_type>::voxel_type v (buffer);
+  auto v = buffer.voxel();
 
   // Need to mask out voxels where the DC term is zero
   Image::Info info_mask (H);
   info_mask.set_ndim (3);
   info_mask.datatype() = DataType::Bit;
   Image::BufferScratch<bool> mask (info_mask);
-  Image::BufferScratch<bool>::voxel_type v_mask (mask);
+  auto v_mask = mask.voxel();
   size_t voxel_count = 0;
   {
     Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
