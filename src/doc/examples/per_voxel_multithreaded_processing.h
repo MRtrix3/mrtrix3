@@ -73,16 +73,18 @@ void usage ()
 
 
 // Use typedefs as in previous example:
+// I often use two such types: one for the type of the values stored in the
+// dataset (I typically use float rather than double to keep RAM usage low),
+// the other for the values used in the computation itself (this often
+// needs to be higher precision to avoid rounding errors, etc).
 typedef float value_type;
 typedef float compute_type;
-typedef Image::Buffer<value_type> BufferIn;
-typedef Image::Buffer<value_type> BufferOut;
 
 
 
 // In this case, we also declare a SharedInfo class to hold large data
-// structures to be accessed read-only by each thread. This keeps the amount of
-// RAM and especially CPU cache needed by the application at run-time, since
+// structures to be accessed read-only by each thread. This reduces the amount
+// of RAM and especially CPU cache needed by the application at run-time, since
 // this would otherwise be replicated for each thread (this quickly adds up on
 // modern multi-core CPUs). 
 class SharedInfo 
@@ -95,7 +97,7 @@ class SharedInfo
     // information from the input image is only needed within the body of the
     // constructor - i.e. no members are dependent on the type of the input
     // image - again, this means I don't need to worry about the type of the
-    // image, the compile will figure this out at compile-time.
+    // image, the compiler will figure this out at compile-time.
     template <class InfoType>
       SharedInfo (const InfoType& info, size_t num_el) :
         A (num_el, info.dim(3)) {
@@ -138,14 +140,14 @@ class MathMulFunctor {
         Image::Loop loop (3);
 
         // read input values into vector:
-        for (loop.start (in); loop.ok(); loop.next (in)) 
+        for (auto l = loop (in); l; ++l) 
           vec_in[in[3]] = in.value();
 
         // do matrix multiplication:
         Math::mult (vec_out, shared.A, vec_in);
 
         // write-back to output voxel:
-        for (loop.start (out); loop.ok(); loop.next (out)) 
+        for (auto l = loop (out); l; ++l) 
           out.value() = vec_out[out[3]];
       }
 
@@ -174,7 +176,7 @@ void run ()
     nvol = opt[0][0];
 
   // create a Buffer to access the input data:
-  BufferIn buffer_in (argument[0]);
+  Image::Buffer<value_type> buffer_in (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
   Image::Header header (buffer_in);
@@ -183,23 +185,19 @@ void run ()
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  BufferOut buffer_out (argument[1], header);
-
-  // create the appropriate Voxel objects to access the intensities themselves:
-  BufferIn::voxel_type vox_in (buffer_in);
-  BufferIn::voxel_type vox_out (buffer_out);
+  Image::Buffer<value_type> buffer_out (argument[1], header);
 
   // Create the SharedInfo object:
-  SharedInfo shared (vox_in, nvol);
+  SharedInfo shared (buffer_in, nvol);
 
   // create a threaded loop object that will display a progress message, and
-  // iterate over vox_in in order of increasing stride. In this case, only loop
+  // iterate over buffer_in in order of increasing stride. In this case, only loop
   // over the first 3 axes, with one axis run within each thread between
   // synchronisation calls (see Image::ThreadedLoop documentation for details). 
-  Image::ThreadedLoop loop ("performing matrix multiplication...", vox_in, 1, 0, 3);
+  Image::ThreadedLoop loop ("performing matrix multiplication...", buffer_in, 1, 0, 3);
 
-  // run the loop, invoking the functor MathMulFunctor that you constructed
-  loop.run (MathMulFunctor (shared), vox_in, vox_out);
+  // run the loop, invoking the functor MathMulFunctor that you constructed:
+  loop.run (MathMulFunctor (shared), buffer_in.voxel(), buffer_out.voxel());
 }
 \endcode
 

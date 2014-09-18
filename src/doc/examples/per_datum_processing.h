@@ -67,14 +67,6 @@ void usage ()
 // be changed later on.
 typedef float value_type;
 
-// It is also a good idea to typedef the various Buffer's used, so they can
-// easily be changed to a different type later if that proves advantageous
-// performance-wise. It also helps keep the code shorter and cleaner. 
-typedef Image::Buffer<value_type> BufferIn;
-typedef Image::Buffer<value_type> BufferOut;
-
-
-
 
 // This is where execution proper starts - the equivalent of main(). 
 // The difference is that this is invoked after all command-line parsing has
@@ -92,7 +84,7 @@ void run ()
     power = opt[0][0];
 
   // create a Buffer to access the input data:
-  BufferIn buffer_in (argument[0]);
+  Image::Buffer<value_type> buffer_in (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
   Image::Header header (buffer_in);
@@ -100,11 +92,11 @@ void run ()
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  BufferOut buffer_out (argument[1], header);
+  Image::Buffer<value_type> buffer_out (argument[1], header);
 
   // create the appropriate Voxel objects to access the intensities themselves:
-  BufferIn::voxel_type vox_in (buffer_in);
-  BufferIn::voxel_type vox_out (buffer_out);
+  auto vox_in = buffer_in.voxel();
+  auto vox_out = buffer_out.voxel();
 
   // create the loop structure. This version will traverse the image data in
   // order of increasing stride of the input dataset, to ensure contiguous
@@ -115,8 +107,8 @@ void run ()
   Image::LoopInOrder loop (vox_in);
 
   // run the loop:
-  for (loop.start (vox_in, vox_out); loop.ok(); loop.next (vox_in, vox_out))
-    vox_out.value() = Math::pow (vox_in.value(), power);
+  for (auto l = loop (vox_in, vox_out); l; ++l)
+    vox_out.value() = std::pow (vox_in.value(), power);
 
   // That's it! Data write-back is performed by the Image::Buffer destructor,
   // invoked when it goes out of scope at function exit.
