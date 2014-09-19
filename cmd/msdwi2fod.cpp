@@ -58,7 +58,7 @@ typedef Image::BufferScratch<value_type> BufferScratchType;
 
 class Shared {
   public:
-    Shared (std::vector<int>& lmax_, std::vector<Math::Matrix<value_type> >& response_, Math::Matrix<value_type>& grad_) :
+    Shared (std::vector<int>& lmax_, std::vector<Math::Matrix<value_type> >& response_, Math::Matrix<value_type>& grad_, Math::Matrix<value_type>& HR_dirs) :
       lmax(lmax_),
       response(response_),
       grad(grad_)
@@ -133,8 +133,8 @@ class Shared {
     size_t M = 0;
     size_t N = 0;
 
-    Math::Matrix<value_type> HR_dirs;
-    DWI::Directions::electrostatic_repulsion_300(HR_dirs);
+    //Math::Matrix<value_type> HR_dirs;
+    //DWI::Directions::electrostatic_repulsion_300(HR_dirs);
     Math::Matrix<value_type> SHT300; Math::SH::init_transform (SHT300, HR_dirs, maxlmax);
 
     for(size_t i = 0; i < lmax.size(); i++) {
@@ -283,9 +283,16 @@ void run () {
     sumnparams+=Math::SH::NforL(lmax[i]);
     response[i].resize(response[i].rows(),lmax[i]/2+1);
   }
-
+  
+  /* HR dirs option */
+  Math::Matrix<value_type> HR_dirs;
+  DWI::Directions::electrostatic_repulsion_300(HR_dirs);
+  opt = get_options ("directions");
+  if (opt.size())
+    HR_dirs.load (opt[0][0]);
+  
   /* precalculate everything */
-  Shared shared (lmax,response,grad);
+  Shared shared (lmax,response,grad,HR_dirs);
   
   /* create scratch buffer for output */  
   Image::Header header (dwi_in_buffer); 
