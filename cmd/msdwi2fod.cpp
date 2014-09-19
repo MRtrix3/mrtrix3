@@ -25,8 +25,8 @@ void usage () {
   DESCRIPTION
     + "Multi-shell, multi-tissue CSD";
 
-  REFERENCES = "Jeurissen, B.; Tournier, J.-D.; Dhollander, T.; Connelly, A.; Sijbers, J."
-    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data"
+  REFERENCES = "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A; Sijbers, J "
+    "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
     "NeuroImage, in press, DOI: 10.1016/j.neuroimage.2014.07.061";
 
   ARGUMENTS
@@ -40,7 +40,13 @@ void usage () {
         "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in ()
     + Option ("lmax","")
-    + Argument ("order").type_integer (0, 8, 30).allow_multiple();
+    + Argument ("order").type_sequence_int()
+    + Option ("directions",
+                "specify the directions over which to apply the non-negativity constraint "
+                "(by default, the built-in 300 direction set is used). These should be "
+                "supplied as a text file containing the [ az el ] pairs for the directions.")
+    + Argument ("file").type_file_in()
+    + DWI::GradOption;
 }
 
 typedef double value_type;
@@ -52,7 +58,7 @@ typedef Image::BufferScratch<value_type> BufferScratchType;
 
 class Shared {
   public:
-    Shared (std::vector<size_t>& lmax_, std::vector<Math::Matrix<value_type> >& response_, Math::Matrix<value_type>& grad_) :
+    Shared (std::vector<int>& lmax_, std::vector<Math::Matrix<value_type> >& response_, Math::Matrix<value_type>& grad_) :
       lmax(lmax_),
       response(response_),
       grad(grad_)
@@ -63,11 +69,11 @@ class Shared {
     size_t nsamples = grad.rows();
     size_t ntissues = lmax.size();
     size_t nparams = 0;
-    size_t maxlmax = 0;
-    for(std::vector<size_t>::iterator it = lmax.begin(); it != lmax.end(); ++it) {
-      nparams+=Math::SH::NforL(*it);
-      if (*it > maxlmax)
-        maxlmax = *it;
+    int maxlmax = 0;
+    for(size_t i = 0; i < lmax.size(); i++) {
+      nparams+=Math::SH::NforL(lmax[i]);
+      if (lmax[i] > maxlmax)
+        maxlmax = lmax[i];
     }
     Math::Matrix<value_type> C (nsamples,nparams);
 
@@ -153,7 +159,7 @@ class Shared {
   };
 
   public:
-    std::vector<size_t> lmax;
+    std::vector<int> lmax;
     std::vector<Math::Matrix<value_type> > response;
     Math::Matrix<value_type>& grad;
     Math::ICLS::Problem<value_type> problem;
@@ -229,26 +235,18 @@ class Processor {
 
 
 
-
-
-
-
-
 void run () {
-  std::cout << argument.size() << std::endl;
-  std::cout << (argument.size()-1)/2 << std::endl;
-  
   /* input DWI image */
   InputBufferType dwi_in_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
   InputBufferType::voxel_type dwi_in_vox (dwi_in_buffer);
   
   /* input response functions */
-  std::vector<size_t> lmax_response;
+  std::vector<int> lmax;
   std::vector<Math::Matrix<value_type> > response;
   for (size_t i = 0; i < (argument.size()-1)/2; i++) {
     Math::Matrix<value_type> r(argument[i*2+1]);
     response.push_back(r);
-    lmax_response.push_back((r.columns()-1)*2);
+    lmax.push_back((r.columns()-1)*2);
   }
   
   /* input mask image */
@@ -264,16 +262,18 @@ void run () {
   /* gradient directions from header */
   auto grad = DWI::get_valid_DW_scheme<value_type> (dwi_in_buffer);
 
-  /* for now,  lmaxes are taken from the response files, still take into account lmax option */
-  /*int lmax_ = 8;
+  /* lmax */
   opt = get_options ("lmax");
-  if (opt.size())
-    lmax_ = opt[0][0];
-  std::vector<size_t> lmax;
-  lmax.push_back(0);
-  lmax.push_back(0);
-  lmax.push_back(lmax_);*/
-  std::vector<size_t> lmax = lmax_response;
+  if (opt.size()) {
+    std::vector<int> lmax_in = opt[0][0];
+    if (lmax_in.size() == lmax.size()) {
+      for (size_t i = 0; i<lmax_in.size(); i++) {
+        lmax[i] = lmax_in[i];
+      }
+    } else {
+      throw Exception ("number of lmaxes does not match number of response functions");
+    }
+  }
 
   /* make sure responses abide to the lmaxes */
   size_t sumnparams = 0;
@@ -300,7 +300,7 @@ void run () {
   Processor processor (shared, dwi_in_vox, mask_in_vox, scratch_vox);
   loop.run (processor);
  
-  /* copy from scratch buffer to output files */
+  /* copy from scratch buffer to output buffers */
   std::vector<ssize_t> from (4, 0);
   std::vector<ssize_t> to = { scratch_vox.dim(0), scratch_vox.dim(1), scratch_vox.dim(2), 0 };
 
