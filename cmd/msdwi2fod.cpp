@@ -3,9 +3,12 @@
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
+#include "image/copy.h"
 #include "image/loop.h"
+#include "image/adapter/subset.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
 #include "image/voxel.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
@@ -28,20 +31,23 @@ void usage () {
 
   ARGUMENTS
     + Argument ("dwi",
-        "the input diffusion-weighted image.").type_image_in()
-    + Argument ("fodf",
-        "the output fodf image.").type_image_out();
+      "the input diffusion-weighted image.").type_image_in()
+    + Argument ("response odf",
+      "the input tissue response and the output ODF image.").allow_multiple();
 
   OPTIONS
     + Option ("mask",
         "only perform computation within the specified binary brain mask image.")
-    + Argument ("image").type_image_in ();
+    + Argument ("image").type_image_in ()
+    + Option ("lmax","")
+    + Argument ("order").type_integer (0, 8, 30).allow_multiple();
 }
 
 typedef double value_type;
 typedef Image::BufferPreload<value_type> InputBufferType;
 typedef Image::Buffer<bool> MaskBufferType;
 typedef Image::Buffer<value_type> OutputBufferType;
+typedef Image::BufferScratch<value_type> BufferScratchType;
 
 
 class Shared {
@@ -141,9 +147,8 @@ class Shared {
       A.sub(b_m,b_m+m[i],b_n,b_n+n[i]) = SHT300.sub(0,m[i],0,n[i]);
       b_m+=m[i]; b_n+=n[i];
     }
-
-    C.save ("C.txt", 16);
-    A.save ("A.txt", 16);
+    //A.save("A.txt",16);
+    //C.save("C.txt",16);
     problem = Math::ICLS::Problem<value_type> (C, A);
   };
 
@@ -157,16 +162,13 @@ class Shared {
 
 
 
-
-
-
 class Processor {
   public:
     Processor (
         Shared& shared,
         InputBufferType::voxel_type& dwi_in_vox,
         Ptr<MaskBufferType::voxel_type>& mask_in_vox,
-        OutputBufferType::voxel_type& fodf_out_vox)
+        BufferScratchType::voxel_type& fodf_out_vox)
       :
         shared (shared),
         solver (shared.problem),
@@ -185,8 +187,8 @@ class Processor {
       } 
       catch (Exception& E) {
         INFO ("failed to converge for voxel " + str(pos));
+        //dwi.save("d" + str(pos) + ".txt",16);
       }
-      fodf[fodf.size()] = solver.iterations();
       write_back (pos);
     }
 
@@ -195,7 +197,7 @@ class Processor {
     Math::ICLS::Solver<value_type> solver;
     InputBufferType::voxel_type dwi_in;
     Ptr<MaskBufferType::voxel_type> mask_in;
-    OutputBufferType::voxel_type fodf_out;
+    BufferScratchType::voxel_type fodf_out;
     Math::Vector<value_type> dwi;
     Math::Vector<value_type> fodf;
 
@@ -233,10 +235,22 @@ class Processor {
 
 
 void run () {
+  std::cout << argument.size() << std::endl;
+  std::cout << (argument.size()-1)/2 << std::endl;
+  
   /* input DWI image */
   InputBufferType dwi_in_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
   InputBufferType::voxel_type dwi_in_vox (dwi_in_buffer);
-
+  
+  /* input response functions */
+  std::vector<size_t> lmax_response;
+  std::vector<Math::Matrix<value_type> > response;
+  for (size_t i = 0; i < (argument.size()-1)/2; i++) {
+    Math::Matrix<value_type> r(argument[i*2+1]);
+    response.push_back(r);
+    lmax_response.push_back((r.columns()-1)*2);
+  }
+  
   /* input mask image */
   Ptr<MaskBufferType> mask_in_buffer;
   Ptr<MaskBufferType::voxel_type> mask_in_vox;
@@ -248,38 +262,54 @@ void run () {
   }
 
   /* gradient directions from header */
-  Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_in_buffer);
+  auto grad = DWI::get_valid_DW_scheme<value_type> (dwi_in_buffer);
 
-  /* for now,  lmaxes are hardcoded instead of read from the commandline */
+  /* for now,  lmaxes are taken from the response files, still take into account lmax option */
+  /*int lmax_ = 8;
+  opt = get_options ("lmax");
+  if (opt.size())
+    lmax_ = opt[0][0];
   std::vector<size_t> lmax;
   lmax.push_back(0);
   lmax.push_back(0);
-  lmax.push_back(8);
-
-  /* for now, responses are hardcoded instead of read from the commandline */
-  Math::Matrix<value_type> r1("csf.txt");
-  Math::Matrix<value_type> r2("gm.txt");
-  Math::Matrix<value_type> r3("wm.txt");
-  std::vector<Math::Matrix<value_type> > response;
-  response.push_back(r1);
-  response.push_back(r2);
-  response.push_back(r3);
+  lmax.push_back(lmax_);*/
+  std::vector<size_t> lmax = lmax_response;
 
   /* make sure responses abide to the lmaxes */
-  size_t nparams = 0;
+  size_t sumnparams = 0;
+  std::vector<size_t> nparams;
   for(size_t i = 0; i < lmax.size(); i++) {
-    nparams+=Math::SH::NforL(lmax[i]);
+    nparams.push_back(Math::SH::NforL(lmax[i]));
+    sumnparams+=Math::SH::NforL(lmax[i]);
     response[i].resize(response[i].rows(),lmax[i]/2+1);
   }
 
   /* precalculate everything */
   Shared shared (lmax,response,grad);
-
-  Image::Header fodf_out_header (dwi_in_buffer); fodf_out_header.set_ndim (4); fodf_out_header.dim (3) = nparams+1;
-  OutputBufferType fodf_out_buffer (argument[1], fodf_out_header);
-  OutputBufferType::voxel_type fodf_out_vox (fodf_out_buffer);
-
+  
+  /* create scratch buffer for output */  
+  Image::Header header (dwi_in_buffer); 
+  header.set_ndim (4); 
+  header.dim (3) = sumnparams;
+  header.datatype() = DataType::Float32;
+  BufferScratchType scratch_buffer (header);
+  auto scratch_vox = scratch_buffer.voxel();
+  
+  /* do the actual work */
   Image::ThreadedLoop loop ("working...", dwi_in_vox, 1, 0, 3);
-  Processor processor (shared, dwi_in_vox, mask_in_vox, fodf_out_vox);
+  Processor processor (shared, dwi_in_vox, mask_in_vox, scratch_vox);
   loop.run (processor);
+ 
+  /* copy from scratch buffer to output files */
+  std::vector<ssize_t> from (4, 0);
+  std::vector<ssize_t> to = { scratch_vox.dim(0), scratch_vox.dim(1), scratch_vox.dim(2), 0 };
+
+   for (size_t i = 0; i < (argument.size()-1)/2; ++i) {
+    header.dim (3) = nparams[i];
+    OutputBufferType out_buffer (argument[(i+1)*2], header);
+    to[3] = nparams[i];
+    Image::copy (Image::Adapter::Subset<decltype(scratch_vox)> (scratch_vox, from, to), out_buffer.voxel());
+    from[3]+= nparams[i];
+  }
+  
 }

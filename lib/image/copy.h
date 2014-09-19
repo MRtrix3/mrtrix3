@@ -31,31 +31,87 @@ namespace MR
   namespace Image
   {
 
-    template <class InputVoxelType, class OutputVoxelType>
-    void copy (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
-    {
-      LoopInOrder loop (source, from_axis, to_axis);
-      for (auto i = loop (source, destination); i; ++i)
-        destination.value() = source.value();
+    //! \cond skip
+    namespace {
+      template <class InputVoxelType, class OutputVoxelType>
+        void __copy_impl (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis, size_t to_axis)
+        {
+          LoopInOrder loop (source, from_axis, to_axis);
+          for (auto i = loop (source, destination); i; ++i)
+            destination.value() = source.value();
+        }
+
+
+
+      template <class InputVoxelType, class OutputVoxelType>
+        void __copy_with_progress_impl (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis, size_t to_axis)
+        {
+          copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
+              source, destination, from_axis, to_axis);
+        }
+
+
+      template <class InputVoxelType, class OutputVoxelType>
+        void __copy_with_progress_message_impl (const std::string& message, InputVoxelType& source, OutputVoxelType& destination, size_t from_axis, size_t to_axis)
+        {
+          LoopInOrder loop (source, message, from_axis, to_axis);
+          for (auto i = loop (source, destination); i; ++i)
+            destination.value() = source.value();
+        }
     }
+    //! \endcond
+
+
+    template <class InputVoxelType, class OutputVoxelType>
+      void copy (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      { __copy_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+      void copy (InputVoxelType& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      { __copy_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+      void copy (InputVoxelType&& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      { __copy_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+      void copy (InputVoxelType&& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+      { __copy_impl (source, destination, from_axis, to_axis); }
 
 
 
     template <class InputVoxelType, class OutputVoxelType>
     void copy_with_progress (InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
-    {
-      copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
-         source, destination, from_axis, to_axis);
-    }
+    { __copy_with_progress_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress (InputVoxelType& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress (InputVoxelType&& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_impl (source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress (InputVoxelType&& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_impl (source, destination, from_axis, to_axis); }
 
 
     template <class InputVoxelType, class OutputVoxelType>
     void copy_with_progress_message (const std::string& message, InputVoxelType& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
-    {
-      LoopInOrder loop (source, message, from_axis, to_axis);
-      for (auto i = loop (source, destination); i; ++i)
-        destination.value() = source.value();
-    }
+    { __copy_with_progress_message_impl (message, source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress_message (const std::string& message, InputVoxelType& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_message_impl (message, source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress_message (const std::string& message, InputVoxelType&& source, OutputVoxelType& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_message_impl (message, source, destination, from_axis, to_axis); }
+
+    template <class InputVoxelType, class OutputVoxelType>
+    void copy_with_progress_message (const std::string& message, InputVoxelType&& source, OutputVoxelType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
+    { __copy_with_progress_message_impl (message, source, destination, from_axis, to_axis); }
 
   }
 }
