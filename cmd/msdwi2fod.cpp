@@ -240,11 +240,19 @@ void run () {
   InputBufferType dwi_in_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
   InputBufferType::voxel_type dwi_in_vox (dwi_in_buffer);
   
+  /* input gradient directions */
+  auto grad = DWI::get_valid_DW_scheme<value_type> (dwi_in_buffer);
+  
+  DWI::Shells shells (grad);
+  size_t nbvals = shells.count();
+  
   /* input response functions */
   std::vector<int> lmax;
   std::vector<Math::Matrix<value_type> > response;
   for (size_t i = 0; i < (argument.size()-1)/2; i++) {
     Math::Matrix<value_type> r(argument[i*2+1]);
+    if (r.rows() != nbvals)
+      throw Exception ("number of rows in response function text file should match number of shells in dwi");
     response.push_back(r);
     lmax.push_back((r.columns()-1)*2);
   }
@@ -259,8 +267,6 @@ void run () {
     mask_in_vox = new MaskBufferType::voxel_type (*mask_in_buffer);
   }
 
-  /* gradient directions from header */
-  auto grad = DWI::get_valid_DW_scheme<value_type> (dwi_in_buffer);
 
   /* lmax */
   opt = get_options ("lmax");
@@ -268,6 +274,9 @@ void run () {
     std::vector<int> lmax_in = opt[0][0];
     if (lmax_in.size() == lmax.size()) {
       for (size_t i = 0; i<lmax_in.size(); i++) {
+        if (lmax_in[i] < 0 || lmax_in[i] > 30) {
+          throw Exception ("lmaxes should be even and between 0 and 30");
+        }
         lmax[i] = lmax_in[i];
       }
     } else {
