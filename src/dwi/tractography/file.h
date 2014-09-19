@@ -76,7 +76,7 @@ namespace MR
 
             do {
               Point<value_type> p = get_next_point();
-              if (isinf (p[0])) {
+              if (std::isinf (p[0])) {
                 in.close();
                 check_excess_weights();
                 return false;
@@ -87,7 +87,7 @@ namespace MR
                 return false;
               }
 
-              if (isnan (p[0])) {
+              if (std::isnan (p[0])) {
                 tck.index = current_index++;
 
                 if (weights_file) {

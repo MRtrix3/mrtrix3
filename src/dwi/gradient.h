@@ -78,14 +78,14 @@ namespace MR
       for (size_t i = 0; i < N; i++) {
         size_t index = dwi.size() ? dwi[i] : i;
         if (grad(index,3) > 0.0) {
-          dirs (i,0) = Math::atan2 (grad (index,1), grad (index,0));
+          dirs (i,0) = std::atan2 (grad (index,1), grad (index,0));
           ValueType z = grad (index,2) / Math::norm (grad.row (index).sub (0,3));
           if (z >= 1.0) 
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
-            dirs (i,1) = M_PI;
+            dirs (i,1) = Math::pi;
           else 
-            dirs (i,1) = Math::acos (z);
+            dirs (i,1) = std::acos (z);
         }
         else
           dirs(i,0) = dirs(i,1) = 0.0;

@@ -24,6 +24,7 @@
 #define __file_nifti1_utils_h__
 
 #include "file/nifti1.h"
+#include "math/matrix.h"
 
 namespace MR
 {
@@ -35,6 +36,8 @@ namespace MR
   {
     namespace NIfTI
     {
+
+      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& order);
 
       void check (Image::Header& H, bool single_file);
       //! \todo add straight Analyse support

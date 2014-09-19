@@ -235,7 +235,7 @@ void TrackMapper::voxelise_precise (const Streamline<>& tck, Cont& out) const
     PointF traversal_vector ((p_voxel_exit - p_voxel_entry).normalise());
     if (traversal_vector.valid() && check (this_voxel, info)) {
       const float index_voxel_exit = float(p) + mu;
-      const size_t mean_tck_index = Math::round (0.5 * (index_voxel_entry + index_voxel_exit));
+      const size_t mean_tck_index = std::round (0.5 * (index_voxel_entry + index_voxel_exit));
       const float factor = tck_index_to_factor (mean_tck_index);
       add_to_set (out, this_voxel, traversal_vector, length, factor);
     }
@@ -290,8 +290,8 @@ inline void TrackMapper::add_to_set (SetVoxelTOD& out, const Point<int>& v, cons
 inline float TrackMapper::tck_index_to_factor (const size_t i) const
 {
   const float ideal_index = float(i) / float(upsampler.get_ratio());
-  const size_t lower_index = std::max (size_t(Math::floor (ideal_index)), size_t(0));
-  const size_t upper_index = std::min (size_t(Math::ceil  (ideal_index)), size_t(factors.size() - 1));
+  const size_t lower_index = std::max (size_t(std::floor (ideal_index)), size_t(0));
+  const size_t upper_index = std::min (size_t(std::ceil  (ideal_index)), size_t(factors.size() - 1));
   const float mu = ideal_index - float(lower_index);
   return ((mu * factors[upper_index]) + ((1.0f-mu) * factors[lower_index]));
 }

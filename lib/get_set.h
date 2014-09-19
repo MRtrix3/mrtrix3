@@ -34,6 +34,8 @@
 /** \defgroup Binary Binary access functions
  * \brief functions to provide easy access to binary data. */
 
+#include <atomic>
+
 #include "mrtrix.h"
 
 #define BITMASK 0x01U << 7
@@ -347,8 +349,13 @@ namespace MR
 
   template <> inline void put<bool> (const bool value, void* data, size_t i, bool is_big_endian)
   {
-    if (value) ( (uint8_t*) data) [i/8] |= (BITMASK >> i%8);
-    else ( (uint8_t*) data) [i/8] &= ~ (BITMASK >> i%8);
+    std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (i/8));
+    uint8_t prev = *at, new_value;
+    do {
+      if (value) new_value = prev | (BITMASK >> i%8);
+      else new_value = prev & ~(BITMASK >> i%8);
+    } while (!at->compare_exchange_weak (prev, new_value));
+
   }
 
   //! \endcond

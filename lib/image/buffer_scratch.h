@@ -60,6 +60,8 @@ namespace MR
         typedef ValueType value_type;
         typedef Image::Voxel<BufferScratch> voxel_type;
 
+        voxel_type voxel() { return voxel_type (*this); }
+
         void zero () {
           memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
         }
@@ -122,6 +124,8 @@ namespace MR
 
         typedef bool value_type;
         typedef Image::Voxel<BufferScratch> voxel_type;
+
+        voxel_type voxel() { return voxel_type (*this); }
 
         void zero () {
           memset (data_, 0x00, bytes_);

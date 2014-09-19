@@ -94,10 +94,10 @@ namespace MR
 
           template <class InfoType>
             Reslice (const VoxelType& original,
-                     const InfoType& reference,
-                     const Math::Matrix<float>& transform = NoTransform,
-                     const std::vector<int>& oversample = AutoOverSample,
-                     const value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
+                const InfoType& reference,
+                const Math::Matrix<float>& transform = NoTransform,
+                const std::vector<int>& oversample = AutoOverSample,
+                const value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
               ConstInfo (reference),
               interp (original, value_when_out_of_bounds) {
                 assert (ndim() >= 3);
@@ -130,30 +130,30 @@ namespace MR
                   Image::Transform::transform_position (x0, direct_transform, x1);
                   x1[0] = 1.0;
                   Image::Transform::transform_position (x0, direct_transform, x1);
-                  OS[0] = Math::ceil (0.999 * (y-x0).norm());
+                  OS[0] = std::ceil (0.999 * (y-x0).norm());
                   x1[0] = 0.0;
                   x1[1] = 1.0;
                   Image::Transform::transform_position (x0, direct_transform, x1);
-                  OS[1] = Math::ceil (0.999 * (y-x0).norm());
+                  OS[1] = std::ceil (0.999 * (y-x0).norm());
                   x1[1] = 0.0;
                   x1[2] = 1.0;
                   Image::Transform::transform_position (x0, direct_transform, x1);
-              OS[2] = Math::ceil (0.999 * (y-x0).norm());
-            }
+                  OS[2] = std::ceil (0.999 * (y-x0).norm());
+                }
 
-            if (OS[0] * OS[1] * OS[2] > 1) {
-              INFO ("using oversampling factors [ " + str (OS[0]) + " " + str (OS[1]) + " " + str (OS[2]) + " ]");
-              oversampling = true;
-              norm = 1.0;
-              for (size_t i = 0; i < 3; ++i) {
-                inc[i] = 1.0/float (OS[i]);
-                from[i] = 0.5* (inc[i]-1.0);
-                norm *= OS[i];
+                if (OS[0] * OS[1] * OS[2] > 1) {
+                  INFO ("using oversampling factors [ " + str (OS[0]) + " " + str (OS[1]) + " " + str (OS[2]) + " ]");
+                  oversampling = true;
+                  norm = 1.0;
+                  for (size_t i = 0; i < 3; ++i) {
+                    inc[i] = 1.0/float (OS[i]);
+                    from[i] = 0.5* (inc[i]-1.0);
+                    norm *= OS[i];
+                  }
+                  norm = 1.0 / norm;
+                }
+                else oversampling = false;
               }
-              norm = 1.0 / norm;
-            }
-            else oversampling = false;
-          }
 
 
           size_t ndim () const {

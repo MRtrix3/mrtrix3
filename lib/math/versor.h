@@ -88,10 +88,10 @@ namespace MR
         }
 
         operator bool () const {
-          return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
+          return ! (std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]));
         }
         bool operator! () const {
-          return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]);
+          return std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]);
         }
 
         void invalidate ()  {
@@ -145,7 +145,7 @@ namespace MR
           const value_type sinangle2 =  Math::norm (axis);
           if (sinangle2 > 1.0)
             throw Exception ("trying to set a versor with magnitude greater than 1.");
-          x[0] = Math::sqrt(1.0 - sinangle2 * sinangle2);
+          x[0] = std::sqrt(1.0 - sinangle2 * sinangle2);
           x[1] = axis[0];
           x[2] = axis[1];
           x[3] = axis[2];
@@ -153,8 +153,8 @@ namespace MR
 
         void set (const Vector<value_type>& axis, value_type angle) {
           const value_type vector_norm = Math::norm (axis);
-          const value_type cosangle2 = Math::cos (angle / 2.0);
-          const value_type sinangle2 = Math::sin (angle / 2.0);
+          const value_type cosangle2 = std::cos (angle / 2.0);
+          const value_type sinangle2 = std::sin (angle / 2.0);
           const value_type factor = sinangle2 / vector_norm;
           x[0] = cosangle2;
           x[1] = axis[0] * factor;

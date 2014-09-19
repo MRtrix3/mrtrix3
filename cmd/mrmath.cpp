@@ -140,7 +140,7 @@ class RMS {
     value_type result() const {
       if (!count)
         return NAN;
-      return Math::sqrt(sum / count);
+      return std::sqrt(sum / count);
     }
     double sum;
     size_t count;
@@ -170,7 +170,7 @@ class Var {
 class Std : public Var {
   public:
     Std() : Var() { }
-    value_type result () const { return Math::sqrt (Var::result()); }
+    value_type result () const { return std::sqrt (Var::result()); }
 };
 
 
@@ -202,8 +202,8 @@ class AbsMax {
   public:
     AbsMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && Math::abs(val) > max) 
-        max = Math::abs(val);
+      if (std::isfinite (val) && std::abs(val) > max) 
+        max = std::abs(val);
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
     value_type max;
@@ -214,7 +214,7 @@ class MagMax {
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && Math::abs(val) > max) 
+      if (std::isfinite (val) && std::abs(val) > max) 
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
@@ -285,30 +285,22 @@ class ImageKernel : public ImageKernelBase {
 
   public:
     ImageKernel (const Image::Header& header, const std::string& path) :
-        ImageKernelBase (path),
-        header (header),
-        buffer (header)
-    {
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (InitFunctor(), v_buffer);
-    }
+      ImageKernelBase (path),
+      header (header),
+      buffer (header) {
+        Image::ThreadedLoop (buffer).run (InitFunctor(), buffer.voxel());
+      }
 
     ~ImageKernel()
     {
       Image::Buffer<value_type> out (output_path, header);
-      Image::Buffer<value_type>::voxel_type v_out (out);
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (ResultFunctor(), v_out, v_buffer);
+      Image::ThreadedLoop (buffer).run (ResultFunctor(), out.voxel(), buffer.voxel());
     }
 
     void process (const Image::Header& image_in)
     {
       Image::Buffer<value_type> in (image_in);
-      Image::Buffer<value_type>::voxel_type v_in (in);
-      for (size_t axis = buffer.ndim(); axis < v_in.ndim(); ++axis)
-        v_in[axis] = 0;
-      typename Image::BufferScratch<Operation>::voxel_type v_buffer (buffer);
-      Image::ThreadedLoop (v_buffer).run (ProcessFunctor(), v_buffer, v_in);
+      Image::ThreadedLoop (buffer).run (ProcessFunctor(), buffer.voxel(), in.voxel());
     }
 
   protected:
@@ -346,8 +338,8 @@ void run ()
 
     BufferType buffer_out (output_path, header_out);
 
-    PreloadBufferType::voxel_type vox_in (buffer_in);
-    BufferType::voxel_type vox_out (buffer_out);
+    auto vox_in = buffer_in.voxel();
+    auto vox_out = buffer_out.voxel();
 
 
     Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);

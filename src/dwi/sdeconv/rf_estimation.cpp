@@ -101,7 +101,7 @@ void SFThresholds::update (const std::vector<FODSegResult>& data, const float di
   }
   const float dispersion_mean  = dispersion_sum / double(count);
   const float integral_mean  = integral_sum / double(count);
-  const float integral_stdev = Math::sqrt ((integral_sq_sum / double(count)) - Math::pow2 (integral_mean));
+  const float integral_stdev = std::sqrt ((integral_sq_sum / double(count)) - Math::pow2 (integral_mean));
 
   min_integral = integral_mean - (integral_multiplier * integral_stdev);
   max_integral = integral_mean + (integral_multiplier * integral_stdev);

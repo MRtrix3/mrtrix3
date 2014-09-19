@@ -90,19 +90,19 @@ void run ()
 {
 
   Image::Buffer<node_t> nodes_data (argument[1]);
-  Image::Buffer<node_t>::voxel_type nodes (nodes_data);
+  auto nodes = nodes_data.voxel();
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   node_t max_node_index = 0;
   Image::LoopInOrder loop (nodes);
-  for (loop.start (nodes); loop.ok(); loop.next (nodes)) {
+  for (auto i = loop (nodes); i; ++i) {
     if (nodes.value() > max_node_index)
       max_node_index = nodes.value();
   }
 
   // Check for node volume for all nodes
   std::vector<uint32_t> node_volumes (max_node_index + 1);
-  for (loop.start (nodes); loop.ok(); loop.next (nodes))
+  for (auto i = loop (nodes); i; ++i) 
     ++node_volumes[nodes.value()];
   std::set<node_t> missing_nodes;
   for (size_t i = 1; i != node_volumes.size(); ++i) {

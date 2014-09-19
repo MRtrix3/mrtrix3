@@ -87,6 +87,8 @@ namespace MR
        * ProgressBar within another class' constructor, and that ProgressBar
        * will never be used in that particular instance. */
       ProgressBar () : show (0) { }
+      //ProgressBar (const ProgressBar&) = delete;
+      //ProgressBar (ProgressBar&&) = default;
 
       //! Create a new ProgressBar, displaying the specified text.
       /*! If \a target is unspecified or set to zero, the ProgressBar will
@@ -97,7 +99,8 @@ namespace MR
       ProgressBar (const std::string& text, size_t target = 0, int log_level = 1) :
         ProgressInfo (text, target),
         show (App::log_level >= log_level),
-        current_val (0) {
+        current_val (0),
+        active (false) {
           if (!show) return;
 
           if (as_percentage)
@@ -108,9 +111,14 @@ namespace MR
           display_func (*this);
         }
 
-      ~ProgressBar () {
-        if (show)
+      ~ProgressBar () { done(); }
+
+      void done () {
+        if (show && active) {
+          active = false;
+          current_val = 0;
           done_func (*this);
+        }
       }
 
       //! returns whether the progress will be shown
@@ -155,6 +163,7 @@ namespace MR
             while (next_val.i <= current_val)
               ++next_val.i;
             display_func (*this);
+            active = true;
           }
         }
         else {
@@ -180,6 +189,7 @@ namespace MR
     private:
       const bool show;
       size_t current_val;
+      bool active;
       union {
         size_t i;
         double d;

@@ -111,8 +111,8 @@ class Cost
           for (; j < 6; j++) 
             offdiag_bij += Math::pow2 (bmatrix(i,j));
         }
-        diag_bij = Math::sqrt (3.0*bmatrix.rows() / diag_bij);
-        offdiag_bij = Math::sqrt (3.0*bmatrix.rows() / offdiag_bij);
+        diag_bij = std::sqrt (3.0*bmatrix.rows() / diag_bij);
+        offdiag_bij = std::sqrt (3.0*bmatrix.rows() / offdiag_bij);
       }
 
     size_t nm () const { return bmatrix.rows(); }
@@ -131,7 +131,7 @@ class Cost
       noise_multiplier = 1.5e3;
       b0_multiplier = 1.0e2;
       x[6] /= b0_multiplier;
-      x[7] = 2.0 * (Math::log (noise_multiplier) - x[6])/noise_multiplier;
+      x[7] = 2.0 * (std::log (noise_multiplier) - x[6])/noise_multiplier;
       return 0.01 * (x[0]+x[1]+x[2]);
     }
 
@@ -151,11 +151,11 @@ class Cost
           - bmatrix(i,5) * x[5] 
           + b0_multiplier * x[6];
 
-        A[i] = Math::exp (v);
+        A[i] = std::exp (v);
         assert (std::isfinite (A[i]));
       }
 
-      cost_value_type noise = Math::exp (noise_multiplier * x[7]);
+      cost_value_type noise = std::exp (noise_multiplier * x[7]);
       cost_value_type E = NAN;
 
       if (fitting_method == 1) // nonlinear
@@ -196,7 +196,7 @@ class Cost
     {
       for (int i = 0; i < 6; i++)
         x[i] = state[i];
-      x[6] = Math::exp (b0_multiplier * state[6]);
+      x[6] = std::exp (b0_multiplier * state[6]);
     }
 
 
@@ -205,7 +205,7 @@ class Cost
     {
       for (int i = 0; i < 6; i++)
         std::cout << x[i] << " ";
-      std::cout << Math::exp (b0_multiplier * x[6]) << " " << 1.0/Math::sqrt (Math::exp (noise_multiplier * x[7])) << "\n";
+      std::cout << std::exp (b0_multiplier * x[6]) << " " << 1.0/std::sqrt (std::exp (noise_multiplier * x[7])) << "\n";
     }
 
     void test (const Math::Vector<cost_value_type>& x)
@@ -321,7 +321,7 @@ class Processor
         for (dwi[sig_axis] = 0; dwi[sig_axis] < dwi.dim(sig_axis); ++dwi[sig_axis]) {
           cost_value_type val = std::max (cost_value_type (dwi.value()), cost_value_type (1.0));
           signals(N, dwi[sig_axis]) = val;
-          logsignals(N, dwi[sig_axis]) = -Math::log (val);
+          logsignals(N, dwi[sig_axis]) = -std::log (val);
         }
         ++N;
       }

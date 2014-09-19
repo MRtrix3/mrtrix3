@@ -33,10 +33,12 @@ namespace MR
     //! \cond skip
     namespace {
 
-      template <class InputVoxelType, class OutputVoxelType>
-        inline void __copy (InputVoxelType& in, OutputVoxelType& out) {
-          out.value() = in.value();
-        }
+      struct __copy_func {
+        template <class InputVoxelType, class OutputVoxelType>
+          inline void operator() (InputVoxelType& in, OutputVoxelType& out) const {
+            out.value() = in.value();
+          }
+      };
 
     }
     
@@ -53,7 +55,7 @@ namespace MR
           size_t num_axes_in_thread = 1) 
       {
         ThreadedLoop (source, axes, num_axes_in_thread)
-          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
+          .run (__copy_func(), source, destination);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -65,7 +67,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis)
-          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
+          .run (__copy_func(), source, destination);
       }
 
 
@@ -80,7 +82,7 @@ namespace MR
           size_t num_axes_in_thread = 1)
       {
         ThreadedLoop (message, source, axes, num_axes_in_thread)
-          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
+          .run (__copy_func(), source, destination);
       }
 
     template <class InputVoxelType, class OutputVoxelType>
@@ -93,7 +95,7 @@ namespace MR
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
         ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis)
-          .run (__copy<InputVoxelType, OutputVoxelType>, source, destination);
+          .run (__copy_func(), source, destination);
       }
 
 

@@ -61,7 +61,7 @@ namespace MR
 
           set_step_size (0.1);
           max_angle *= vox() / step_size;
-          dot_threshold = Math::cos (max_angle);
+          dot_threshold = std::cos (max_angle);
 
           properties["method"] = "FACT";
         }
@@ -139,7 +139,7 @@ namespace MR
           const value_type* const m = &values[3*n];
           value_type norm = Math::norm(m,3);
           value_type dot = Math::dot (m, (value_type*) d, 3) / norm;
-          value_type abs_dot = Math::abs (dot);
+          value_type abs_dot = std::abs (dot);
           if (abs_dot < S.dot_threshold) continue;
           if (max_abs_dot < abs_dot) {
             max_abs_dot = abs_dot;

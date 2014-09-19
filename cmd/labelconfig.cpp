@@ -111,7 +111,7 @@ void run ()
 
   // Open the input file
   Image::Buffer<node_t> in_data (argument[0]);
-  Image::Buffer<node_t>::voxel_type in (in_data);
+  auto in = in_data.voxel();
 
   // Create a new header for the output file
   Image::Header H (in_data);
@@ -121,11 +121,11 @@ void run ()
 
   // Create the output file
   Image::Buffer<node_t> out_data (argument[2], H);
-  Image::Buffer<node_t>::voxel_type out (out_data);
+  auto out = out_data.voxel();
 
-  // Fill the output image with data
   Image::Loop loop;
-  for (loop.start (in, out); loop.ok(); loop.next (in, out))
+  // Fill the output image with data
+  for (auto l = loop (in, out); l; ++l)
     out.value() = lookup[in.value()];
 
   // If the spine segment option has been provided, add this retrospectively
@@ -137,11 +137,11 @@ void run ()
       const node_t spine_node_index = find_spine_node_index->second;
 
       Image::Buffer<bool> in_spine_data (opt[0][0]);
-      Image::Buffer<bool>::voxel_type in_spine (in_spine_data);
+      auto in_spine = in_spine_data.voxel();
 
       if (dimensions_match (in_spine, out)) {
 
-        for (loop.start (in_spine, out); loop.ok(); loop.next (in_spine, out)) {
+        for (auto l = loop (in_spine, out); l; ++l) {
           if (in_spine.value())
             out.value() = spine_node_index;
         }
@@ -152,8 +152,8 @@ void run ()
         WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
         Image::Transform transform (out);
-        Image::Interp::Nearest< Image::Buffer<bool>::voxel_type > nearest (in_spine);
-        for (loop.start (out); loop.ok(); loop.next (out)) {
+        Image::Interp::Nearest<decltype(in_spine)> nearest (in_spine);
+        for (auto l = loop (out); l; ++l) {
           const Point<float> p (transform.voxel2scanner (out));
           if (!nearest.scanner (p) && nearest.value())
             out.value() = spine_node_index;

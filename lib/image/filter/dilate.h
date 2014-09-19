@@ -46,14 +46,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<bool> input_data (argument[0]);
-       * Buffer<bool>::voxel_type input_voxel (input_data);
+       * auto input_voxel = input_data.voxel();
        *
        * Filter::Dilate dilate (input_data);
        * Header header (input_data);
        * header.info() = dilate.info();
        *
        * Buffer<bool> output_data (header, argument[1]);
-       * Buffer<bool>::voxel_type output_voxel (output_data);
+       * auto output_voxel = output_data.voxel();
        * dilate (input_voxel, output_voxel);
        *
        * \endcode
@@ -90,7 +90,7 @@ namespace MR
               out_data = new BufferScratch<bool> (input);
               out = new BufferScratch<bool>::voxel_type (*out_data);
               LoopInOrder loop (*in);
-              for (loop.start (*in, *out); loop.ok(); loop.next (*in, *out))
+              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l)
                 out->value() = dilate (*in);
               if (pass < npass_ - 1) {
                 in_data = out_data;

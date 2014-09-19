@@ -99,9 +99,9 @@ namespace MR
             if (out_of_bounds)
               return true;
 
-            (*this)[0] = Math::round<ssize_t> (pos[0]);
-            (*this)[1] = Math::round<ssize_t> (pos[1]);
-            (*this)[2] = Math::round<ssize_t> (pos[2]);
+            (*this)[0] = std::round (pos[0]);
+            (*this)[1] = std::round (pos[1]);
+            (*this)[2] = std::round (pos[2]);
             return false;
           }
 

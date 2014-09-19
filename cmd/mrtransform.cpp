@@ -168,8 +168,7 @@ void run ()
   if (inverse) {
     if (!linear_transform.is_set())
       throw Exception ("no transform provided for option '-inverse' (specify using '-transform' option)");
-    Math::Matrix<float> I;
-    Math::LU::inv (I, linear_transform);
+    Math::Matrix<float> I = Math::LU::inv (linear_transform);
     linear_transform.swap (I);
   }
 
@@ -351,9 +350,6 @@ void run ()
         Math::mult (output_header.transform(), linear_transform, M);
       }
     }
-    input_header.transform().save ("in.txt");
-    output_header.transform().save ("out.txt");
-    linear_transform.save ("T.txt");
 
     Image::Buffer<value_type> input_buffer (input_header);
     Image::Buffer<value_type>::voxel_type in (input_buffer);

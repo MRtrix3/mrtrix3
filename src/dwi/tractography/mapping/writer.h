@@ -144,7 +144,7 @@ class MapWriter : public MapWriterBase
       if (type == DEC || type == TOD) {
 
         if (voxel_statistic == V_MIN) {
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
+          for (auto l = loop (v_buffer); l; ++l )
             v_buffer.value() = std::numeric_limits<value_type>::max();
         } else {
           buffer.zero();
@@ -153,11 +153,11 @@ class MapWriter : public MapWriterBase
       } else { // Greyscale and dixel
 
         if (voxel_statistic == V_MIN) {
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
+          for (auto l = loop (v_buffer); l; ++l )
             v_buffer.value() = std::numeric_limits<value_type>::max();
         } else if (voxel_statistic == V_MAX) {
-          for (loop.start (v_buffer); loop.ok(); loop.next (v_buffer))
-            v_buffer.value() = -std::numeric_limits<value_type>::max();
+          for (auto l = loop (v_buffer); l; ++l )
+            v_buffer.value() = std::numeric_limits<value_type>::lowest();
         } else {
           buffer.zero();
         }
@@ -195,7 +195,7 @@ class MapWriter : public MapWriterBase
         case V_SUM: break;
 
         case V_MIN:
-          for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
+          for (auto l = loop_buffer (v_buffer); l; ++l ) {
             if (v_buffer.value() == std::numeric_limits<value_type>::max())
               v_buffer.value() = value_type(0);
           }
@@ -204,7 +204,7 @@ class MapWriter : public MapWriterBase
         case V_MEAN:
           if (type == DEC) {
             Image::LoopInOrder loop_dec (v_buffer, 0, 3);
-            for (loop_dec.start (v_buffer, *v_counts); loop_dec.ok(); loop_dec.next (v_buffer, *v_counts)) {
+            for (auto l = loop_dec (v_buffer, *v_counts); l; ++l) {
               if (v_counts->value()) {
                 Point<value_type> value (get_dec());
                 value *= (1.0 / v_counts->value());
@@ -213,7 +213,7 @@ class MapWriter : public MapWriterBase
             }
           } else if (type == TOD) {
             Image::LoopInOrder loop_dec (v_buffer, 0, 3);
-            for (loop_dec.start (v_buffer, *v_counts); loop_dec.ok(); loop_dec.next (v_buffer, *v_counts)) {
+            for (auto l = loop_dec (v_buffer, *v_counts); l; ++l) {
               if (v_counts->value()) {
                 Math::Vector<float> value;
                 get_tod (value);
@@ -222,7 +222,7 @@ class MapWriter : public MapWriterBase
               }
             }
           } else { // Greyscale and dixel
-            for (loop_buffer.start (v_buffer, *v_counts); loop_buffer.ok(); loop_buffer.next (v_buffer, *v_counts)) {
+            for (auto l = loop_buffer (v_buffer, *v_counts); l; ++l) {
               if ((*v_counts).value())
                 v_buffer.value() /= float(v_counts->value());
             }
@@ -232,8 +232,8 @@ class MapWriter : public MapWriterBase
         case V_MAX:
           if (type == DEC || type == TOD)
             break;
-          for (loop_buffer.start (v_buffer); loop_buffer.ok(); loop_buffer.next (v_buffer)) {
-            if (v_buffer.value() == -std::numeric_limits<value_type>::max())
+          for (auto l = loop_buffer (v_buffer); l; ++l) {
+            if (v_buffer.value() == std::numeric_limits<value_type>::lowest())
               v_buffer.value() = value_type(0);
           }
           break;
@@ -257,7 +257,7 @@ class MapWriter : public MapWriterBase
         image_voxel_type v_out (out);
         if (type == DEC) {
           Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-          for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer)) {
+          for (auto l = loop_out (v_out, v_buffer); l; ++l) {
             Point<value_type> value (get_dec());
             v_out[3] = 0; v_out.value() = value[0];
             v_out[3] = 1; v_out.value() = value[1];
@@ -265,7 +265,7 @@ class MapWriter : public MapWriterBase
           }
         } else if (type == TOD) {
           Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-          for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer)) {
+          for (auto l = loop_out (v_out, v_buffer); l; ++l) {
             Math::Vector<float> value;
             get_tod (value);
             for (v_out[3] = 0; v_out[3] != v_out.dim(3); ++v_out[3])
@@ -273,7 +273,7 @@ class MapWriter : public MapWriterBase
           }
         } else { // Greyscale and Dixel
           Image::LoopInOrder loop_out (v_out, "writing image to file...");
-          for (loop_out.start (v_out, v_buffer); loop_out.ok(); loop_out.next (v_out, v_buffer))
+          for (auto l = loop_out (v_out, v_buffer); l; ++l) 
             v_out.value() = v_buffer.value();
         }
 

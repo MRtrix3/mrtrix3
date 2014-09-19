@@ -192,9 +192,9 @@ class Amp2SH {
       value_type norm_amp = 0.0;
       for (size_t n = 0; n < ap.size() ; ++n) {
         ap[n] = std::max (ap[n], value_type(0.0));
-        value_type t = Math::pow (ap[n]/noise, value_type(RICIAN_POWER));
+        value_type t = std::pow (ap[n]/noise, value_type(RICIAN_POWER));
         w[n] = 1.0;//Math::pow2 ((t + 1.7)/(t + 1.12));
-        value_type diff = a[n] - noise * Math::pow (t + 1.65, 1.0/RICIAN_POWER);
+        value_type diff = a[n] - noise * std::pow (t + 1.65, 1.0/RICIAN_POWER);
         norm_diff += Math::pow2 (diff);
         norm_amp += Math::pow2 (a[n]);
         ap[n] += diff;
@@ -261,8 +261,8 @@ void run ()
   Image::Stride::set_from_command_line (header);
   Image::Buffer<value_type> SH_data (argument[1], header);
 
-  Image::BufferPreload<value_type>::voxel_type amp_vox (amp_data);
-  Image::Buffer<value_type>::voxel_type SH_vox (SH_data);
+  auto amp_vox = amp_data.voxel();
+  auto SH_vox = SH_data.voxel();
 
   Amp2SHCommon common (dirs, lmax, bzeros, dwis, normalise);
 

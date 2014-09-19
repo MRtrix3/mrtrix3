@@ -128,7 +128,7 @@ void run ()
   double stdev = 0.0;
   for (size_t i = 0; i != histogram.size(); ++i)
     stdev += histogram[i] * Math::pow2 (i - mean);
-  stdev = Math::sqrt(stdev / total);
+  stdev = std::sqrt(stdev / total);
   size_t median = 0;
   double running_sum = 0.0, prev_sum = 0.0;
   do {
@@ -136,7 +136,7 @@ void run ()
     running_sum += histogram[median++];
   } while (running_sum < 0.5*total);
   --median;
-  if (Math::abs (prev_sum - (0.5*total)) < Math::abs (running_sum - (0.5*total)))
+  if (std::abs (prev_sum - (0.5*total)) < std::abs (running_sum - (0.5*total)))
     --median;
   const size_t max = histogram.size() - 1;
 

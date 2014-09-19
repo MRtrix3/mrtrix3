@@ -154,7 +154,7 @@ void run ()
   Image::Info info (H);
   info.set_ndim (3);
   Image::BufferScratch<bool> mask (info);
-  Image::BufferScratch<bool>::voxel_type v_mask (mask);
+  auto v_mask = mask.voxel();
 
   std::string mask_path;
   Options opt = get_options ("mask");
@@ -165,11 +165,10 @@ void run ()
       throw Exception ("Input mask image does not match DWI");
     if (!(in.ndim() == 3 || (in.ndim() == 4 && in.dim(3) == 1)))
       throw Exception ("Input mask image must be a 3D image");
-    Image::Buffer<bool>::voxel_type v_in (in);
+    auto v_in = in.voxel();
     Image::copy (v_in, v_mask, 0, 3);
   } else {
-    Image::LoopInOrder loop (v_mask);
-    for (loop.start (v_mask); loop.ok(); loop.next (v_mask))
+    for (auto l = Image::LoopInOrder (v_mask) (v_mask); l; ++l) 
       v_mask.value() = true;
   }
 
@@ -198,11 +197,11 @@ void run ()
     // Initialise response function
     // Use lmax = 2, get the DWI intensity mean and standard deviation within the mask and
     //   use these as the first two coefficients
-    Image::Buffer<float>::voxel_type v_dwi (dwi);
+    auto v_dwi = dwi.voxel();
     double sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
     Image::LoopInOrder loop (dwi, "initialising response function... ", 0, 3);
-    for (loop.start (v_dwi, v_mask); loop.ok(); loop.next (v_dwi, v_mask)) {
+    for (auto l = loop (v_dwi, v_mask); l; ++l) {
       if (v_mask.value()) {
         for (size_t volume_index = 0; volume_index != shared.dwis.size(); ++volume_index) {
           v_dwi[3] = shared.dwis[volume_index];
@@ -214,9 +213,9 @@ void run ()
       }
     }
     response[0] = sum / double (count);
-    response[1] = - 0.5 * Math::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
+    response[1] = - 0.5 * std::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
     // Account for scaling in SH basis
-    response *= Math::sqrt (4.0 * M_PI);
+    response *= std::sqrt (4.0 * Math::pi);
   }
   INFO ("Initial response function is [" + str(response, 2) + "]");
 
@@ -262,11 +261,10 @@ void run ()
       if (reset_mask) {
         if (mask_path.size()) {
           Image::Buffer<bool> in (mask_path);
-          Image::Buffer<bool>::voxel_type v_in (in);
+          auto v_in = in.voxel();
           Image::copy (v_in, v_mask, 0, 3);
         } else {
-          Image::LoopInOrder loop (v_mask);
-          for (loop.start (v_mask); loop.ok(); loop.next (v_mask))
+          for (auto l = Image::LoopInOrder(v_mask) (v_mask); l; ++l)
             v_mask.value() = true;
         }
         ++progress;
@@ -314,7 +312,7 @@ void run ()
       }
       bool rf_changed = false;
       for (size_t i = 0; i != response.size(); ++i) {
-        if (Math::abs ((new_response[i] - response[i]) / new_response[i]) > max_change)
+        if (std::abs ((new_response[i] - response[i]) / new_response[i]) > max_change)
           rf_changed = true;
       }
       if (!rf_changed) {

@@ -141,6 +141,9 @@ class Shared {
       A.sub(b_m,b_m+m[i],b_n,b_n+n[i]) = SHT300.sub(0,m[i],0,n[i]);
       b_m+=m[i]; b_n+=n[i];
     }
+
+    C.save ("C.txt", 16);
+    A.save ("A.txt", 16);
     problem = Math::ICLS::Problem<value_type> (C, A);
   };
 
@@ -198,14 +201,13 @@ class Processor {
 
     bool load_data (const Image::Iterator& pos) {
       if (mask_in) {
-        Image::voxel_assign (*mask_in, pos);
+        Image::assign_pos(pos) (*mask_in);
         if (!mask_in->value())
           return false;
       }
-      Image::voxel_assign (dwi_in, pos);
+      Image::assign_pos(pos) (dwi_in);
 
-      Image::Loop loop(3);
-      for (loop.start(dwi_in); loop.ok(); loop.next(dwi_in)) {
+      for (auto l = Image::Loop(3) (dwi_in); l; ++l) {
         dwi[dwi_in[3]] = dwi_in.value();
         if (!std::isfinite (dwi[dwi_in[3]]))
           return false;
@@ -216,11 +218,9 @@ class Processor {
     }
 
     void write_back (const Image::Iterator& pos) {
-      Image::voxel_assign (fodf_out, pos);
-      Image::Loop loop(3);
-      for (loop.start(fodf_out); loop.ok(); loop.next(fodf_out)) {
+      Image::assign_pos(pos) (fodf_out);
+      for (auto l = Image::Loop(3) (fodf_out); l; ++l) 
         fodf_out.value() = fodf[fodf_out[3]];
-      }
     }
 
 };

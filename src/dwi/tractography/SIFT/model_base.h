@@ -226,8 +226,8 @@ namespace MR
       template <class BufferType>
       void ModelBase<Fixel>::perform_FOD_segmentation (BufferType& data)
       {
-        typename BufferType::voxel_type data_vox (data);
-        DWI::FMLS::FODQueueWriter<typename BufferType::voxel_type, Image::BufferScratch<float>::voxel_type> writer (data_vox, proc_mask);
+        auto data_vox = data.voxel();
+        DWI::FMLS::FODQueueWriter<decltype(data_vox), decltype(proc_mask)> writer (data_vox, proc_mask);
         DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.dim(3)));
         fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
         fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
@@ -249,10 +249,9 @@ namespace MR
         }
         // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
         VoxelAccessor v (accessor);
-        Image::BufferScratch<float>::voxel_type v_anat (*act_5tt);
+        auto v_anat = act_5tt->voxel();
         FOD_sum = 0.0;
-        Image::LoopInOrder loop (v);
-        for (loop.start (v, v_anat); loop.ok(); loop.next (v, v_anat)) {
+        for (auto l = Image::LoopInOrder(v) (v, v_anat); l; ++l) {
           Tractography::ACT::Tissues tissues (v_anat);
           const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
           for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
@@ -354,8 +353,7 @@ namespace MR
       {
         if (!have_act_data())
           throw Exception ("Cannot export 5TT image; none exists!");
-        Image::BufferScratch<float>::voxel_type v (*act_5tt);
-        v.save (path);
+        act_5tt->voxel().save (path);
       }
 
 

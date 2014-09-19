@@ -165,7 +165,7 @@ namespace MR
                 with_projection.draw_orientation_labels();
             }
 
-            int slice (int axis) const { return Math::round<int> (voxel_at (focus())[axis]); }
+            int slice (int axis) const { return std::round<int> (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
             void project_target_onto_current_slice();

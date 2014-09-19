@@ -46,7 +46,7 @@ namespace MR
       //! component of a mask
       /*!
        *
-       * Unline the ConnectedComponents filter, this filter only
+       * Unlike the ConnectedComponents filter, this filter only
        * extracts the largest-volume connected component from a
        * mask image. This reduction in complexity allows a
        * simpler implementation, and means that the output image
@@ -55,14 +55,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<bool> input_data (argument[0]);
-       * Buffer<bool>::voxel_type input_voxel (input_data);
+       * auto input_voxel = input_data.voxel();
        *
        * Filter::LargestConnectedComponent lcc (input_data);
        * Header header (input_data);
        * header.info() = dilate.info();
        *
        * Buffer<bool> output_data (header, argument[1]);
-       * Buffer<bool>::voxel_type output_voxel (output_data);
+       * auto output_voxel = output_data.voxel();
        * lcc (input_voxel, output_voxel);
        *
        * \endcode
@@ -91,7 +91,7 @@ namespace MR
 
               // Force calling the templated constructor instead of the copy-constructor
               BufferScratch<bool> visited_data (input, "visited");
-              BufferScratch<bool>::voxel_type visited (visited_data);
+              auto visited = visited_data.voxel();
               size_t largest_mask_size = 0;
 
               voxel_type seed (0, 0, 0);
@@ -114,7 +114,7 @@ namespace MR
 
                       visited.value() = true;
                       BufferScratch<value_type> local_mask_data (input, "local_mask");
-                      typename BufferScratch<value_type>::voxel_type local_mask (local_mask_data);
+                      auto local_mask = local_mask_data.voxel();
                       Image::Nav::set_value_at_pos (local_mask, seed, (value_type)input.value());
                       size_t local_mask_size = 1;
 

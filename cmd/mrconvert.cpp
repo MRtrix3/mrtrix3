@@ -172,7 +172,7 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
   std::vector<int> axes = set_header (header_out, in);
   header_out.datatype() = datatype;
   Image::Buffer<complex_type> buffer_out (output_filename, header_out);
-  Image::Buffer<complex_type>::voxel_type out (buffer_out);
+  auto out = buffer_out.voxel();
 
   if (axes.size()) {
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
@@ -206,7 +206,7 @@ void run ()
   Image::Header header_in (argument[0]);
 
   Image::Buffer<complex_type> buffer_in (header_in);
-  Image::Buffer<complex_type>::voxel_type in (buffer_in);
+  auto in = buffer_in.voxel();
 
   Image::Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
@@ -245,7 +245,7 @@ void run ()
       }
     }
 
-    Image::Adapter::Extract<Image::Buffer<complex_type>::voxel_type> extract (in, pos);
+    Image::Adapter::Extract<decltype(in)> extract (in, pos);
     copy_permute (extract, header_out, argument[1]);
   }
   else

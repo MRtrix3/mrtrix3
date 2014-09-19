@@ -55,7 +55,7 @@ namespace MR {
 
             leverage.allocate (H.rows());
             for (size_t n = 0; n < leverage.size(); ++n) 
-              leverage[n] = H(n,n) < 1.0 ? 1.0 / Math::sqrt (1.0 - H(n,n)) : 1.0;
+              leverage[n] = H(n,n) < 1.0 ? 1.0 / std::sqrt (1.0 - H(n,n)) : 1.0;
 
           }
 

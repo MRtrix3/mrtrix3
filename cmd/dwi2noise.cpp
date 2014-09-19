@@ -85,9 +85,9 @@ void run ()
   }
 
 
-  Image::Buffer<value_type>::voxel_type dwi_voxel (dwi_buffer);
-  Image::Adapter::Extract1D<Image::Buffer<value_type>::voxel_type> dwi (dwi_voxel, 3, container_cast< std::vector<int> > (dwis));
-  Image::Buffer<value_type>::voxel_type noise (noise_buffer);
+  auto dwi_voxel = dwi_buffer.voxel();
+  Image::Adapter::Extract1D<decltype(dwi_voxel)> dwi (dwi_voxel, 3, container_cast< std::vector<int> > (dwis));
+  auto noise = noise_buffer.voxel();
 
   estimator (dwi, noise, mapping);
 }

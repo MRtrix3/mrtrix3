@@ -116,8 +116,8 @@ void run ()
   Image::matrix_multiply (
       "computing amplitudes...",
       transformer.mat_SH2A(),
-      Image::Buffer<value_type>::voxel_type (sh_data), 
-      Image::Buffer<value_type>::voxel_type (amp_data),
+      sh_data.voxel(), 
+      amp_data.voxel(),
       Image::NoOp<value_type>, remove_negative (get_options("nonnegative").size()), 3);
 
 }

@@ -41,20 +41,19 @@ namespace MR {
       template <typename value_type>
         std::vector<Point<value_type> > direction_grid (value_type max_angle, value_type spacing)
         {
-          using namespace Math;
-          const value_type maxR = pow2 (max_angle / spacing);
+          const value_type maxR = Math::pow2 (max_angle / spacing);
           std::vector<Point<value_type> > list;
-          ssize_t extent = ceil (max_angle / spacing);
+          ssize_t extent = std::ceil (max_angle / spacing);
 
           for (ssize_t i = -extent; i <= extent; ++i) {
             for (ssize_t j = -extent; j <= extent; ++j) {
               value_type x = i + 0.5*j, y = SQRT_3_OVER_2*j;
-              value_type n = pow2(x) + pow2(y);
+              value_type n = Math::pow2(x) + Math::pow2(y);
               if (n > maxR) 
                 continue;
-              n = spacing*Math::sqrt (n);
-              value_type z = Math::cos (n);
-              if (n) n = spacing * Math::sin (n) / n;
+              n = spacing * std::sqrt (n);
+              value_type z = std::cos (n);
+              if (n) n = spacing * std::sin (n) / n;
               list.push_back (Point<value_type> (n*x, n*y, z));
             }
           }
@@ -74,7 +73,7 @@ namespace MR {
         void calibrate (Method& method) 
         {
           typename Method::Calibrate calibrate_func (method);
-          const value_type sqrt3 = Math::sqrt (3.0);
+          const value_type sqrt3 = std::sqrt (3.0);
 
           std::vector<Pair> amps;
           for (value_type el = 0.0; el < method.S.max_angle; el += 0.001) {

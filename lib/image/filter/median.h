@@ -42,14 +42,14 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::Median median_filter (src);
        *
        * Image::Header header (src_data);
        * header.info() = median_filter.info();
        *
        * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * median_filter (src, dest);
        *

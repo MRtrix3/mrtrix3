@@ -145,8 +145,8 @@ namespace MR
           }
           else {
             assert (position >= 0.0);
-            index = Math::floor<size_t> (position);
-            H.set (position - Math::floor (position));
+            index = std::floor<size_t> (position);
+            H.set (position - std::floor (position));
           }
         }
 

@@ -58,17 +58,17 @@ void run ()
 {
   Image::Header input_header (argument[0]);
   Image::BufferSparse<FixelMetric> input_data (input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type input_vox (input_data);
+  auto input_vox = input_data.voxel();
 
   float threshold = argument[1];
 
   Image::BufferSparse<FixelMetric> output (argument[2], input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_vox (output);
+  auto output_vox = output.voxel();
 
   Options opt = get_options("crop");
 
   Image::LoopInOrder loop (input_vox, "thresholding fixel image...");
-  for (loop.start (input_vox, output_vox); loop.ok(); loop.next (input_vox, output_vox)) {
+  for (auto i = loop (input_vox, output_vox); i; ++i) {
     if (opt.size()) {
         size_t fixel_count = 0;
         for (size_t f = 0; f != input_vox.value().size(); ++f) {

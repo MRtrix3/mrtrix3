@@ -135,7 +135,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case ENDS_MIN:
           assert (factors.size() == 2);
-          out.factor = (Math::abs(factors[0]) < Math::abs(factors[1])) ? factors[0] : factors[1];
+          out.factor = (std::abs(factors[0]) < std::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_MEAN:
@@ -145,7 +145,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case ENDS_MAX:
           assert (factors.size() == 2);
-          out.factor = (Math::abs(factors[0]) > Math::abs(factors[1])) ? factors[0] : factors[1];
+          out.factor = (std::abs(factors[0]) > std::abs(factors[1])) ? factors[0] : factors[1];
           break;
 
         case ENDS_PROD:
@@ -323,7 +323,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
     if (tangent_dot_product >= 1.0f)
       factors.push_back (0.0);
     else
-      factors.push_back (Math::acos (tangent_dot_product) / length);
+      factors.push_back (std::acos (tangent_dot_product) / length);
 
   }
 

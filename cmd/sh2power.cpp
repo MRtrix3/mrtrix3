@@ -56,13 +56,12 @@ void run () {
   power_header.dim (3) = 1 + lmax/2;
   power_header.datatype() = DataType::Float32;
 
-  Image::Buffer<float>::voxel_type SH (SH_data);
+  auto SH_vox = SH_data.voxel();
 
   Image::Buffer<float> power_data (argument[1], power_header);
-  Image::Buffer<float>::voxel_type P (power_data);
+  auto power_vox = power_data.voxel();
 
-  Image::LoopInOrder loop (P, "calculating SH power...", 0, 3);
-  for (loop.start (P, SH); loop.ok(); loop.next (P, SH)) {
+  auto f = [&] (decltype(power_vox)& P, decltype(SH_vox)& SH) {
     P[3] = 0;
     for (int l = 0; l <= lmax; l+=2) {
       float power = 0.0;
@@ -71,13 +70,14 @@ void run () {
         float val = SH.value();
 #ifdef USE_NON_ORTHONORMAL_SH_BASIS
         if (m != 0) 
-          val *= M_SQRT1_2;
+          val *= Math::sqrt1_2;
 #endif
         power += Math::pow2 (val);
       }
       P.value() = power / float (2*l+1);
       ++P[3];
     }
-  }
-
+  };
+  Image::ThreadedLoop ("calculating SH power...", SH_vox, 1, 0, 3)
+    .run (f, power_vox, SH_vox);
 }

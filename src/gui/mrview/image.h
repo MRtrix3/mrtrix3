@@ -90,7 +90,7 @@ namespace MR
 
           
           float focus_rate () const {
-            return 1e-3 * (Math::pow ( 
+            return 1e-3 * (std::pow ( 
                   interp.dim(0)*interp.vox(0) *
                   interp.dim(1)*interp.vox(1) *
                   interp.dim(2)*interp.vox(2),
