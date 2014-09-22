@@ -51,22 +51,23 @@ namespace MR
             Problem () { }
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
-                ValueType min_norm_constraint = 1.e-8,
-                ValueType min_quadratic_constraint_factor = ValueType(1.0e-3), 
-                ValueType max_quadratic_constraint_factor = ValueType(1.0e10), 
+                ValueType min_norm_regularisation = 1.e-8,
                 ValueType tolerance = ValueType(1.0e-10), 
-                size_t max_iterations = 1000) :
+                size_t max_iterations = 1000,
+                ValueType min_quadratic_constraint_factor = ValueType(1.0), 
+                ValueType max_quadratic_constraint_factor = ValueType(1.0e8)) :
               H (problem_matrix),
               chol_HtH (H.columns(), H.columns()), 
               mu_min (min_quadratic_constraint_factor),
               mu_max (max_quadratic_constraint_factor),
+              tol (tolerance), 
               tol2 (pow2 (tolerance)), 
               max_niter (max_iterations) {
 
                 // form quadratic problem matrix H'*H:
                 rankN_update (chol_HtH, H, CblasTrans, CblasLower);
                 // add minimum norm constraint:
-                chol_HtH.diagonal() += min_norm_constraint;
+                chol_HtH.diagonal() += min_norm_regularisation;
                 // get Cholesky decomposition:
                 Cholesky::decomp (chol_HtH);
 
@@ -87,7 +88,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType mu_min, mu_max, tol2;
+            ValueType mu_min, mu_max, tol, tol2;
             size_t max_niter;
         };
 
@@ -106,14 +107,24 @@ namespace MR
               d (HtH_muBtB.rows()),
               c (P.B.rows()),
               lambda (c.size()),
+              prev_lambda (c.size()),
               lambda_k (lambda.size()),
               p (HtH_muBtB.rows()) { }
 
             int operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
-              mu = 0.1;
+              //std::ofstream y_stream ("y.txt");
+              //std::ofstream lambda_stream ("l.txt");
+              //std::ofstream  c_stream ("c.txt");
+              //std::ofstream mu_stream ("mu.txt");
+              //std::ofstream t_stream ("t.txt");
+
+              //P.chol_HtH.save ("L.txt", 16);
+
+              ValueType mu = P.mu_min;
               lambda = 0.0;
               mult (d, ValueType (1.0), CblasTrans, P.b2d, b);
+              size_t num_under_tol = 0;
 
               dx = x = d;
 
@@ -122,6 +133,11 @@ namespace MR
               
               iter = 0;
               for (; iter < P.max_niter; ++iter) {
+                //y_stream << x << std::endl;
+                //lambda_stream << lambda << std::endl;
+                //c_stream << c << std::endl;
+                //mu_stream << mu << std::endl;
+
                 // form matrix of active constraints and corresponding lambdas:
                 Bk.allocate (P.B);
                 lambda_k.allocate (P.B.rows());
@@ -153,12 +169,12 @@ namespace MR
                 }
                 else {
                   // no active constraints
+                  x = d;
                   if (iter == 0) { // unconstrained solution does not violate constraints
                     solve_triangular (x, P.chol_HtH);
                     return iter;
                   }
                   HtH_muBtB.identity();
-                  x = d;
                 }
 
                 // check for convergence:
@@ -169,50 +185,39 @@ namespace MR
                   solve_triangular (x, P.chol_HtH);
                   return iter;
                 }
+                if (t < P.tol) {
+                  ++num_under_tol;
+                  if (num_under_tol > 5) {
+                    solve_triangular (x, P.chol_HtH);
+                    return iter;
+                  }
+                }
+
 
                 // compute constraint values:
                 mult (c, P.B, x);
 
-                // update mu and lamda based on ratio of max constraint
-                // violation and max lambda:
-                ValueType max_c (0.0), max_lambda (0.0);
-                for (size_t n = 0; n < c.size(); ++n ) {
-                  if (c[n] < max_c) 
-                    max_c = c[n];
-                  if (lambda[n] > max_lambda)
-                    max_lambda = lambda[n];
-                }
-                ValueType mean_c (0.0);
-                //ValueType mean_l (0.0);
-                size_t count = 0;
-                for (size_t n = 0; n < c.size(); ++n ) {
-                  if (c[n] < 0.0) {
-                    mean_c += c[n];
-                    //mean_l += lambda[n];
-                    ++count;
-                  }
-                }
-                mean_c /= count;
-                //mean_l /= count;
-                //std::cout << mu << " " << mean_l << " " << mu * mean_c;
 
-                ValueType mu_fac = 0.5; 
-                if (count) 
-                  mu_fac = std::exp (1.01 + 0.01*mu*mean_c);
-                if (mu_fac > 0.9)
-                  for (size_t n = 0; n < c.size(); ++n) 
-                    lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
+                // update lambda and compute change in lambda values:
+                prev_lambda = lambda;
+                ValueType min_c = 0.0;
+                for (size_t n = 0; n < lambda.size(); ++n) {
+                  min_c = std::min (min_c, c[n]);
+                  lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
+                }
 
-                mu *= mu_fac;
-                if (mu > P.mu_max)
-                  mu = P.mu_max;
-                if (mu < P.mu_min)
-                  mu = P.mu_min;
-                //std::cout << " ==> mu = " << mu << std::endl;
+                ValueType old_mu = mu;
+                mu = -100.0/min_c;
+                mu = std::min (mu, P.mu_max);
+                mu = std::max (mu, P.mu_min);
+
+                if (mu / old_mu < 0.1) 
+                  lambda = prev_lambda;
 
                 dx = x;
               }
 
+              solve_triangular (x, P.chol_HtH);
               throw Exception ("constrained least-squares failed to converge");
             }
 
@@ -224,9 +229,8 @@ namespace MR
             size_t iter;
             const Problem<ValueType>& P;
             Matrix<ValueType> HtH_muBtB, Bk;
-            Vector<ValueType> dx, d, c, lambda, lambda_k;
+            Vector<ValueType> dx, d, c, lambda, prev_lambda, lambda_k;
             Permutation p;
-            ValueType mu, mu_inc;
         };
 
 

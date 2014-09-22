@@ -143,7 +143,7 @@ namespace MR
         }
 
         //! construct from View
-        Matrix (const View& V) {
+        explicit Matrix (const View& V) {
           Matrix<ValueType>::size1 = V.size1;
           Matrix<ValueType>::size2 = V.size2;
           Matrix<ValueType>::tda = V.tda;
@@ -153,7 +153,7 @@ namespace MR
         }
 
         //! copy constructor
-        Matrix (const Matrix& M) {
+        explicit Matrix (const Matrix& M) {
           initialize (M.rows(), M.columns());
           LOOP (operator() (i,j) = M (i,j));
         }
@@ -166,7 +166,7 @@ namespace MR
 
         //! construct matrix of size \a nrows by \a ncolumns
         /** \note the elements of the matrix are left uninitialised. */
-        Matrix (size_t nrows, size_t ncolumns) {
+        explicit Matrix (size_t nrows, size_t ncolumns) {
           initialize (nrows, ncolumns);
         }
 
@@ -176,7 +176,7 @@ namespace MR
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (ValueType* data, size_t nrows, size_t ncolumns) throw () {
+        explicit Matrix (ValueType* data, size_t nrows, size_t ncolumns) throw () {
           size1 = nrows;
           size2 = tda = ncolumns;
           set (data);
@@ -189,7 +189,7 @@ namespace MR
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
+        explicit Matrix (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
           size1 = nrows;
           size2 = ncolumns;
           tda = row_skip;
@@ -199,7 +199,7 @@ namespace MR
         }
 
         //! construct a matrix by reading from the text file \a filename
-        Matrix (const std::string& filename) {
+        explicit Matrix (const std::string& filename) {
           size1 = size2 = tda = 0;
           data = NULL;
           block = NULL;

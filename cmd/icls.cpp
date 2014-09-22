@@ -60,8 +60,13 @@ void run ()
 
   Math::Vector<double> x;
   Timer timer;
-  VAR (icls_solver (x, b));
+  size_t niter = 0;
+  try { niter = icls_solver (x, b); }
+  catch (Exception& E) {
+    E.display();
+  }
   VAR (timer.elapsed());
+  VAR (niter);
   std::cout << x << std::endl;
 }
 
