@@ -224,7 +224,7 @@ namespace MR
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param contrast a matrix containing the contrast of interest. Note that the opposite contrast will automatically be computed at the same time.
+          * @param contrast a matrix containing the contrast of interest.
           */
           GLMTTest (const Math::Matrix<value_type>& measurements,
                     const Math::Matrix<value_type>& design,

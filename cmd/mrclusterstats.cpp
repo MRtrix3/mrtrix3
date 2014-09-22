@@ -39,7 +39,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "Voxel-based analysis using permutation testing and threshold-free cluster enhancement.";
@@ -63,6 +63,9 @@ void usage ()
 
 
   OPTIONS
+  + Option ("negative", "automatically test the negative (opposite) contrast. By computing the opposite contrast simultaneously "
+                        "the computation time is reduced.")
+
   + Option ("nperms", "the number of permutations (default = 5000).")
   +   Argument ("num").type_integer (1, 5000, 100000)
 
@@ -185,18 +188,6 @@ void run() {
   }
 
   header.datatype() = DataType::Float32;
-  std::string prefix (argument[4]);
-
-  std::string cluster_pos (prefix);
-  std::string cluster_neg (prefix);
-  if (std::isfinite (cluster_forming_threshold)) {
-     cluster_pos.append ("_clusters_pos.mif");
-     cluster_neg.append ("_clusters_neg.mif");
-  } else {
-    cluster_pos.append ("_tfce_pos.mif");
-    cluster_neg.append ("_tfce_neg.mif");
-  }
-
   Image::Header output_header (header);
   output_header.comments().push_back("num permutations = " + str(num_perms));
   output_header.comments().push_back("tfce_dh = " + str(tfce_dh));
@@ -205,68 +196,99 @@ void run() {
   output_header.comments().push_back("26 connectivity = " + str(do_26_connectivity));
   output_header.comments().push_back("nonstationary adjustment = " + str(do_nonstationary_adjustment));
 
-  Image::Buffer<value_type> cluster_data_pos (cluster_pos, output_header);
-  Image::Buffer<value_type> cluster_data_neg (cluster_neg, output_header);
+  std::string prefix (argument[4]);
+
+
+  std::string cluster_name (prefix);
+  if (std::isfinite (cluster_forming_threshold))
+     cluster_name.append ("_clusters.mif");
+  else
+    cluster_name.append ("_tfce.mif");
+
+  Image::Buffer<value_type> cluster_data (cluster_name, output_header);
   Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", output_header);
-  Image::Buffer<value_type> pvalue_data_pos (prefix + "_pvalue_pos.mif", output_header);
-  Image::Buffer<value_type> pvalue_data_neg (prefix + "_pvalue_neg.mif", output_header);
+  Image::Buffer<value_type> pvalue_data (prefix + "_pvalue.mif", output_header);
+  Ptr<Image::Buffer<value_type> > pvalue_data_neg;
+  Ptr<Image::Buffer<value_type> > cluster_data_neg;
 
-  Math::Vector<value_type> perm_distribution_pos (num_perms - 1);
-  Math::Vector<value_type> perm_distribution_neg (num_perms - 1);
-  std::vector<value_type> cluster_output_pos (num_vox, 0.0);
-  std::vector<value_type> cluster_output_neg (num_vox, 0.0);
-  std::vector<value_type> pvalue_output_pos (num_vox, 0.0);
-  std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
+
+  Math::Vector<value_type> perm_distribution (num_perms);
+  Ptr<Math::Vector<value_type> > perm_distribution_neg;
+  std::vector<value_type> cluster_output (num_vox, 0.0);
+  Ptr<std::vector<value_type> > cluster_output_neg;
   std::vector<value_type> tvalue_output (num_vox, 0.0);
-
   Ptr<std::vector<value_type> > empirical_statistic;
+
+
+  bool compute_negative_contrast = get_options("negative").size() ? true : false;
+  if (compute_negative_contrast) {
+    std::string cluster_neg_name (prefix);
+    if (std::isfinite (cluster_forming_threshold))
+       cluster_neg_name.append ("_clusters_neg.mif");
+    else
+      cluster_neg_name.append ("_tfce_neg.mif");
+    cluster_data_neg = new Image::Buffer<value_type> (cluster_neg_name, output_header);
+    perm_distribution_neg = new Math::Vector<value_type> (num_perms);
+    cluster_output_neg = new std::vector<value_type> (num_vox, 0.0);
+    pvalue_data_neg = new Image::Buffer<value_type> (prefix + "_pvalue_neg.mif", output_header);
+  }
 
   { // Do permutation testing:
     Math::Stats::GLMTTest glm (data, design, contrast);
+
+    // Suprathreshold clustering
     if (std::isfinite (cluster_forming_threshold)) {
       if (do_nonstationary_adjustment)
         throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
       Stats::TFCE::run (glm, cluster_size_test, num_perms, empirical_statistic,
-                        perm_distribution_pos, perm_distribution_neg,
-                        cluster_output_pos, cluster_output_neg, tvalue_output);
-    }
-    else { // TFCE
-
-
+                        perm_distribution, perm_distribution_neg,
+                        cluster_output, cluster_output_neg, tvalue_output);
+    // TFCE
+    } else {
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
       if (do_nonstationary_adjustment) {
         empirical_statistic = new std::vector<value_type> (num_vox, 0.0);
         Stats::TFCE::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_statistic);
       }
       Stats::TFCE::run (glm, tfce_integrator, num_perms, empirical_statistic,
-                        perm_distribution_pos, perm_distribution_neg,
-                        cluster_output_pos, cluster_output_neg, tvalue_output);
+                        perm_distribution, perm_distribution_neg,
+                        cluster_output, cluster_output_neg, tvalue_output);
     }
   }
 
-  perm_distribution_pos.save (prefix + "_perm_dist_pos.txt");
-  perm_distribution_neg.save (prefix + "_perm_dist_neg.txt");
-  Math::Stats::statistic2pvalue (perm_distribution_pos, cluster_output_pos, pvalue_output_pos);
-  Math::Stats::statistic2pvalue (perm_distribution_neg, cluster_output_neg, pvalue_output_neg);
+  perm_distribution.save (prefix + "_perm_dist.txt");
 
-  Image::Buffer<value_type>::voxel_type cluster_voxel_pos (cluster_data_pos);
-  Image::Buffer<value_type>::voxel_type cluster_voxel_neg (cluster_data_neg);
+  std::vector<value_type> pvalue_output (num_vox, 0.0);
+  Math::Stats::statistic2pvalue (perm_distribution, cluster_output, pvalue_output);
+  Image::Buffer<value_type>::voxel_type cluster_voxel (cluster_data);
   Image::Buffer<value_type>::voxel_type tvalue_voxel (tvalue_data);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_pos (pvalue_data_pos);
-  Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (pvalue_data_neg);
-
-
+  Image::Buffer<value_type>::voxel_type pvalue_voxel (pvalue_data);
   {
     ProgressBar progress ("generating output...");
     for (size_t i = 0; i < num_vox; i++) {
-      for (size_t dim = 0; dim < cluster_voxel_pos.ndim(); dim++)
-        tvalue_voxel[dim] = cluster_voxel_pos[dim] = cluster_voxel_neg[dim] = pvalue_voxel_pos[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
+      for (size_t dim = 0; dim < cluster_voxel.ndim(); dim++)
+        tvalue_voxel[dim] = cluster_voxel[dim] = pvalue_voxel[dim] = mask_indices[i][dim];
       tvalue_voxel.value() = tvalue_output[i];
-      cluster_voxel_pos.value() = cluster_output_pos[i];
-      cluster_voxel_neg.value() = cluster_output_neg[i];
-      pvalue_voxel_pos.value() = pvalue_output_pos[i];
-      pvalue_voxel_neg.value() = pvalue_output_neg[i];
+      cluster_voxel.value() = cluster_output[i];
+      pvalue_voxel.value() = pvalue_output[i];
     }
+  }
+  {
+    if (compute_negative_contrast) {
+      (*perm_distribution_neg).save (prefix + "_perm_dist_neg.txt");
+      std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
+      Math::Stats::statistic2pvalue (*perm_distribution_neg, *cluster_output_neg, pvalue_output_neg);
+      Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (*pvalue_data_neg);
+      Image::Buffer<value_type>::voxel_type cluster_voxel_neg (*cluster_data_neg);
+      ProgressBar progress ("generating negative contrast output...");
+      for (size_t i = 0; i < num_vox; i++) {
+        for (size_t dim = 0; dim < cluster_voxel.ndim(); dim++)
+          cluster_voxel_neg[dim] = pvalue_voxel_neg[dim] = mask_indices[i][dim];
+        cluster_voxel_neg.value() = (*cluster_output_neg)[i];
+        pvalue_voxel_neg.value() = pvalue_output_neg[i];
+      }
+    }
+
   }
 }

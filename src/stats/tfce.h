@@ -239,8 +239,8 @@ namespace MR
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
                          const EnhancementType& enhancer, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
-                         Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
-                         std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg,
+                         Math::Vector<value_type>& perm_dist_pos, Ptr<Math::Vector<value_type> > perm_dist_neg,
+                         std::vector<value_type>& enhanced_output_pos, Ptr<std::vector<value_type> > enhanced_output_neg,
                          std::vector<value_type>& tvalue_output) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
@@ -289,15 +289,24 @@ namespace MR
                 if (index)
                   perm_dist_pos[index-1] = max_enhanced_statistic;
 
-//                // Compute the opposite contrast TODO - maybe make this optional?
-//                for (size_t i = 0; i < stats.size(); ++i)
-//                  stats[i] = -stats[i];
-//                if (do_nonstationarity)
-//                  max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, index ? NULL : &enchanced_output_neg);
-//                else
-//                  max_enhanced_statistic = enhancer (-min_stat, stats, index ? NULL : &enchanced_output_neg);
-//                if (index)
-//                  perm_dist_neg[index-1] = max_enhanced_statistic;
+                // Compute the opposite contrast
+                if (perm_dist_neg) {
+                  for (size_t i = 0; i < stats.size(); ++i)
+                    stats[i] = -stats[i];
+                  if (empirical_enhanced_statistic) {
+                    if (index)
+                      max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, NULL);
+                    else
+                      max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, enchanced_output_neg);
+                  } else {
+                    if (index)
+                      max_enhanced_statistic = enhancer (-min_stat, stats, NULL);
+                    else
+                      max_enhanced_statistic = enhancer (-min_stat, stats, enchanced_output_neg);
+                  }
+                  if (index)
+                    perm_dist_neg[index-1] = max_enhanced_statistic;
+                }
               }
 
 
@@ -308,9 +317,9 @@ namespace MR
               std::vector<value_type> enhanced_statistic;
               std::vector<value_type> adjusted_enhanced_statistic;
               Math::Vector<value_type>& perm_dist_pos;
-              Math::Vector<value_type>& perm_dist_neg;
+              Ptr<Math::Vector<value_type> > perm_dist_neg;
               std::vector<value_type>& enhanced_output_pos;
-              std::vector<value_type>& enchanced_output_neg;
+              Ptr<std::vector<value_type> > enchanced_output_neg;
               std::vector<value_type>& tvalue_output;
         };
 
@@ -344,8 +353,8 @@ namespace MR
 
         template <class StatsType, class EnhancementType>
           inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
-                           Math::Vector<value_type>& perm_dist_pos, Math::Vector<value_type>& perm_dist_neg,
-                           std::vector<value_type>& enhanced_output_pos, std::vector<value_type>& enhanced_output_neg, std::vector<value_type>& tvalue_output)
+                           Math::Vector<value_type>& perm_dist_pos, Ptr<Math::Vector<value_type> > perm_dist_neg,
+                           std::vector<value_type>& enhanced_output_pos, Ptr<std::vector<value_type> > enhanced_output_neg, std::vector<value_type>& tvalue_output)
           {
 
             {
