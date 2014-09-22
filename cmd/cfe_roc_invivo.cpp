@@ -253,64 +253,80 @@ class TrackProcessor {
     value_type angular_threshold_dp;
 };
 
+class Stack {
+  public:
+  Stack (size_t num_noise_realisation) :
+    num_noise_realisation (num_noise_realisation),
+      progress ("running " + str(num_noise_realisation) + " noise realisations...", num_noise_realisation),
+      index (0) {}
+
+    size_t next () {
+      Thread::Mutex::Lock lock (permutation_mutex);
+      if (index < num_noise_realisation)
+        ++progress;
+      return index++;
+    }
+
+    const size_t num_noise_realisation;
+
+  protected:
+    ProgressBar progress;
+    size_t index;
+    Thread::Mutex permutation_mutex;
+};
 
 
 class Processor {
   public:
-    Processor (PermutationStack& perm_stack,
-               const Math::Matrix<value_type>& control_data,
-               const Math::Matrix<value_type>& path_data,
+    Processor (Stack& perm_stack,
                const Math::Matrix<value_type>& design,
                const Math::Matrix<value_type>& contrast,
-               const Math::Stats::GLMTTest& ttest_controls,
-               const int32_t num_fixels,
                const int32_t actual_positives,
                const int32_t num_ROC_samples,
                const std::vector<value_type>& truth_statistic,
-               const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
-               Math::Matrix<value_type>& global_TPRates,
-               std::vector<int32_t>& global_num_permutations_with_false_positive,
-               const value_type dh,
-               const value_type e,
-               const value_type h,
+               const std::vector<std::vector<value_type> >& control_test_statistics,
+               const std::vector<std::vector<value_type> >& path_test_statistics,
+               const std::vector<value_type>& max_statistics,
+               const Image::BufferSparse<FixelMetric>& template_data,
+               const Image::BufferScratch<int32_t>& indexer_data,
+               std::vector<std::vector<uint32_t> >& global_TPRates,
+               std::vector<int32_t>& global_num_permutations_with_a_false_positive,
                Image::Header& input_header,
                Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
-               const Image::BufferSparse<FixelMetric>& template_data,
                Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
-               const Image::BufferScratch<int32_t>& indexer_data):
+               const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
+               const value_type dh,
+               const value_type e,
+               const value_type h):
                  perm_stack (perm_stack),
-                 control_data (control_data),
-                 path_data (path_data),
                  design (design),
                  contrast (contrast),
-                 ttest_controls (ttest_controls),
-                 num_fixels (num_fixels),
                  actual_positives (actual_positives),
                  num_ROC_samples (num_ROC_samples),
                  truth_statistic (truth_statistic),
+                 control_test_statistics (control_test_statistics),
+                 path_test_statistics (path_test_statistics),
+                 max_statistics (max_statistics),
+                 template_data (template_data),
+                 indexer_data (indexer_data),
                  global_TPRates (global_TPRates),
-                 global_num_permutations_with_false_positive (global_num_permutations_with_false_positive),
-                 num_permutations_with_a_false_positive (num_ROC_samples, 0),
-                 control_test_statistic (num_fixels, 0.0),
-                 path_test_statistic (num_fixels, 0.0),
-                 cfe_control_test_statistic (num_fixels, 0.0),
-                 cfe_path_test_statistic (num_fixels, 0.0),
-                 cfe (fixel_connectivity, dh, e, h),
+                 global_num_permutations_with_a_false_positive (global_num_permutations_with_a_false_positive),
+                 thread_TPRates (num_ROC_samples, 0.0),
+                 thread_num_permutations_with_a_false_positive (num_ROC_samples, 0),
                  input_header (input_header),
                  template_vox (template_vox),
-                 template_data (template_data),
                  indexer_vox (indexer_vox),
-                 indexer_data (indexer_data){
+                 cfe (fixel_connectivity, dh, e, h){
     }
 
     ~Processor () {
       for (size_t t = 0; t < num_ROC_samples; ++t)
-        global_num_permutations_with_false_positive[t] += num_permutations_with_a_false_positive[t];
+        global_num_permutations_with_a_false_positive[t] += thread_num_permutations_with_a_false_positive[t];
     }
 
     void execute () {
       size_t index = 0;
-      while (( index = perm_stack.next() ) < perm_stack.num_permutations)
+      while (( index = perm_stack.next() ) < perm_stack.num_noise_realisation)
         process_permutation (index);
     }
 
@@ -334,87 +350,57 @@ class Processor {
     }
 
 
-    void process_permutation (int param_index) {
+    void process_permutation (int perm) {
 
-      // Create 2 groups of subjects  - pathology vs uneffected controls.
-      //    Compute t-statistic image (this is our signal + noise image)
-      // Here we use the random permutation to select which patients belong in each group, placing the
-      // control data in the LHS of the Y transposed matrix, and path data in the RHS.
-      // We then perform the t-test using the default permutation of the design matrix.
-      // This code assumes the number of subjects in each group is equal
-      Math::Matrix<value_type> path_v_control_data (control_data);
-      for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-        for (size_t row = 0; row < perm_stack.permutation (param_index).size(); ++row) {
-          if (row < perm_stack.permutation (param_index).size() / 2)
-            path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (param_index)[row]);
-          else
-            path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (param_index)[row]);
-        }
-      }
-
-
-      // Perform t-test and enhance
-      value_type max_stat = 0.0, min_stat = 0.0;
-      Math::Stats::GLMTTest ttest_path (path_v_control_data, design, contrast);
-      ttest_path (perm_stack.permutation (0), path_test_statistic, max_stat, min_stat);
-      //write_fixel_output ("path_tvalue.msf", path_test_statistic);
-
-      value_type max_cfe_statistic = cfe (max_stat, path_test_statistic, &cfe_path_test_statistic);
+      std::vector<value_type> cfe_control_test_statistic;
+      std::vector<value_type> cfe_path_test_statistic;
+      value_type max_cfe_statistic = cfe (max_statistics[perm], path_test_statistics[perm], &cfe_path_test_statistic);
       //write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
 
-      // Here we test control vs control population (ie null test statistic).
-      ttest_controls (perm_stack.permutation (param_index), control_test_statistic, max_stat, min_stat);
-      //write_fixel_output ("control_tvalue.msf", control_test_statistic);
-
-      cfe (max_stat, control_test_statistic, &cfe_control_test_statistic);
+      cfe (max_statistics[perm], control_test_statistics[perm], &cfe_control_test_statistic);
       //write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
 
-
       for (size_t t = 0; t < num_ROC_samples; ++t) {
         value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
         bool contains_false_positive = false;
-        for (int32_t f = 0; f < num_fixels; ++f) {
+        for (uint32_t f = 0; f < truth_statistic.size(); ++f) {
           if (truth_statistic[f] >= 1.0) {
             if (cfe_path_test_statistic[f] > threshold)
-              num_true_positives[t]++;
+              global_TPRates[t][perm]++;
           }
           if (cfe_control_test_statistic[f] > threshold)
-              contains_false_positive = true;
+             contains_false_positive = true;
         }
-        if (contains_false_positive)
-          num_permutations_with_a_false_positive[t]++;
-        global_TPRates(t, param_index) = (float) num_true_positives[t] / (float) actual_positives;
-      }
 
+        if (contains_false_positive)
+          thread_num_permutations_with_a_false_positive[t]++;
+
+      }
     }
 
-    PermutationStack& perm_stack;
-    const Math::Matrix<value_type>& control_data;
-    const Math::Matrix<value_type>& path_data;
+    Stack& perm_stack;
     const Math::Matrix<value_type>& design;
     const Math::Matrix<value_type>& contrast;
-    Math::Stats::GLMTTest ttest_controls;
-    const int32_t num_fixels;
     const int32_t actual_positives;
     const size_t num_ROC_samples;
     const std::vector<value_type>& truth_statistic;
-    Math::Matrix<value_type>& global_TPRates;
-    std::vector<int32_t>& global_num_permutations_with_false_positive;
-    std::vector<int32_t> num_permutations_with_a_false_positive;
-    std::vector<value_type> control_test_statistic;
-    std::vector<value_type> path_test_statistic;
-    std::vector<value_type> cfe_control_test_statistic;
-    std::vector<value_type> cfe_path_test_statistic;
-    MR::Stats::TFCE::Connectivity cfe;
+    const std::vector<std::vector<value_type> >& control_test_statistics;
+    const std::vector<std::vector<value_type> >& path_test_statistics;
+    const std::vector<value_type>& max_statistics;
+    const Image::BufferSparse<FixelMetric>& template_data;
+    const Image::BufferScratch<int32_t>& indexer_data;
+    std::vector<std::vector<uint32_t> >& global_TPRates;
+    std::vector<int32_t>& global_num_permutations_with_a_false_positive;
+    std::vector<value_type> thread_TPRates;
+    std::vector<int32_t> thread_num_permutations_with_a_false_positive;
     Image::Header input_header;
     Image::BufferSparse<FixelMetric>::voxel_type template_vox;
-    const Image::BufferSparse<FixelMetric>& template_data;
     Image::BufferScratch<int32_t>::voxel_type indexer_vox;
-    const Image::BufferScratch<int32_t>& indexer_data;
-};
+    MR::Stats::TFCE::Connectivity cfe;
 
+};
 
 
 
@@ -426,7 +412,7 @@ void run ()
   const value_type connectivity_threshold = 0.01;
 
   Options opt = get_options("roc");
-  int num_ROC_samples = 2000;
+  size_t num_ROC_samples = 2000;
   if (opt.size())
     num_ROC_samples = opt[0][0];
 
@@ -537,9 +523,8 @@ void run ()
     indexer_vox.value() = f;
   }
 
-  //  write_fixel_output ("before.msf", control_data.column(4), input_header, template_vox, indexer_vox);
 
-  // fixel-fixel connectivity matrix (sparse)
+  // fixel-fixel connectivity matrix
   std::vector<std::map<int32_t, Stats::TFCE::connectivity> > fixel_connectivity (num_fixels);
   std::vector<uint16_t> fixel_TDI (num_fixels, 0);
 
@@ -626,7 +611,7 @@ void run ()
 
     // write_fixel_output ("path.msf", path_data.column(4), input_header, template_vox, indexer_vox);
     for (size_t s = 0; s < smooth.size(); ++s) {
-      Math::Matrix<value_type> input_data (num_fixels, num_subjects);
+      Math::Matrix<value_type> input_control_data (num_fixels, num_subjects);
       Math::Matrix<value_type> input_path_data (num_fixels, num_subjects);
       if (smooth[s] > 0.0) {
         std::vector<std::map<int32_t, value_type> > fixel_smoothing_weights (num_fixels);
@@ -665,19 +650,85 @@ void run ()
           for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
             std::map<int32_t, value_type>::const_iterator it = fixel_smoothing_weights[fixel].begin();
             for (; it != fixel_smoothing_weights[fixel].end(); ++it) {
-              input_data (fixel, subject) += control_data (it->first, subject) * it->second;
+              input_control_data (fixel, subject) += control_data (it->first, subject) * it->second;
               input_path_data (fixel, subject) += path_data (it->first, subject) * it->second;
             }
           }
         }
 
-
       // no smoothing, just copy the data across
       } else {
-        input_data = control_data;
+        input_control_data = control_data;
         input_path_data = path_data;
       }
       //write_fixel_output ("path_smoothed.msf", input_path_data.column(4), input_header, template_vox, indexer_vox);
+
+
+      // Here we pre-compute the t-statistic images for all permutations
+      // Create 2 groups of subjects  - pathology vs uneffected controls.
+      //    Compute t-statistic image (this is our signal + noise image)
+      // Here we use the random permutation to select which patients belong in each group, placing the
+      // control data in the LHS of the Y transposed matrix, and path data in the RHS.
+      // We then perform the t-test using the default permutation of the design matrix.
+      // This code assumes the number of subjects in each group is equal
+
+      std::vector<std::vector<value_type> > control_test_statistics;
+      std::vector<std::vector<value_type> > path_test_statistics;
+      std::vector<value_type> max_statistics;
+      double average_max_t = 0.0;
+      double average_t = 0.0;
+      {
+        PermutationStack perm_stack (permutations);
+        ProgressBar progress ("precomputing tstats...", num_permutations);
+        for (size_t perm = 0; perm < num_permutations; ++perm) {
+          Math::Matrix<value_type> path_v_control_data (input_path_data);
+          Math::Matrix<value_type> control_v_control_data (input_control_data);
+          for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+            for (size_t subj = 0; subj < num_subjects; ++subj) {
+              if (subj < num_subjects / 2)
+                path_v_control_data (fixel, subj) = input_control_data (fixel, perm_stack.permutation (perm)[subj]);
+              else
+                path_v_control_data (fixel, subj) = input_path_data (fixel, perm_stack.permutation (perm)[subj]);
+              control_v_control_data (fixel, subj) = input_control_data (fixel, perm_stack.permutation (perm)[subj]);
+            }
+          }
+
+          std::vector<value_type> path_statistic;
+          std::vector<value_type> control_statistic;
+
+          // Perform t-test and enhance
+          value_type max_stat = 0.0, min_stat = 0.0;
+          Math::Stats::GLMTTest ttest_path (path_v_control_data, design, contrast);
+          ttest_path (perm_stack.permutation (0), path_statistic, max_stat, min_stat);
+          path_test_statistics.push_back (path_statistic);
+          max_statistics.push_back (max_stat);
+          average_max_t += max_stat;
+
+          // Here we test control vs control population (ie null test statistic).
+          Math::Stats::GLMTTest ttest_control (control_v_control_data, design, contrast);
+          ttest_control (perm_stack.permutation (0), control_statistic, max_stat, min_stat);
+          control_test_statistics.push_back (control_statistic);
+
+
+          uint32_t num_tp = 0;
+          float sum_max_t = 0.0;
+          for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
+            if (pathology_mask[fixel] > 0.0) {
+              sum_max_t += path_statistic[fixel];
+              num_tp++;
+            }
+          }
+          average_t += sum_max_t / (float) num_tp;
+//                  std::string path_file("path_tvalue" + str(perm) + ".msf");
+//                  std::string control_file("control_tvalue" + str(perm) + ".msf");
+//                  write_fixel_output (path_file, path_statistic, input_header, template_vox, indexer_vox);
+//                  write_fixel_output (control_file, control_statistic, input_header, template_vox, indexer_vox);
+          progress++;
+        }
+      }
+      std::cout << average_t / (float) num_permutations << std::endl;
+      std::cout << average_max_t / (float) num_permutations << std::endl;
+
 
       for (size_t c = 0; c < C.size(); ++c) {
 
@@ -713,53 +764,69 @@ void run ()
 
               MR::Timer timer;
 
-              Math::Matrix<value_type> TPRates (num_ROC_samples, num_permutations);
-              TPRates.zero();
+              std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_permutations, 0));
               std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
               {
 
-                PermutationStack perm_stack (permutations);
-                Math::Stats::GLMTTest ttest_control (control_data, design, contrast);
 
-                int index = 0;
-
-                Math::Matrix<value_type> path_v_control_data (control_data);
-                for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-                  for (size_t row = 0; row < perm_stack.permutation (index).size(); ++row) {
-                    if (row < perm_stack.permutation (index).size() / 2)
-                      path_v_control_data (fixel, row) = control_data (fixel, perm_stack.permutation (index)[row]);
-                    else
-                      path_v_control_data (fixel, row) = path_data (fixel, perm_stack.permutation (index)[row]);
-                  }
-                }
-
-                Processor processor (perm_stack, control_data, path_data, design, contrast, ttest_control, num_fixels, actual_positives,
-                                     num_ROC_samples, pathology_mask, weighted_fixel_connectivity, TPRates,
-                                     num_permutations_with_a_false_positive, dh, E[e], H[h],
-                                     input_header, template_vox, template_buffer, indexer_vox, indexer);
+                Stack stack (num_permutations);
+                Processor processor (stack, design, contrast, actual_positives,
+                                     num_ROC_samples, pathology_mask, control_test_statistics, path_test_statistics,
+                                     max_statistics, template_buffer, indexer, TPRates,
+                                     num_permutations_with_a_false_positive,
+                                     input_header, template_vox, indexer_vox, weighted_fixel_connectivity, dh, E[e], H[h]);
 
                 Thread::Array< Processor > thread_list (processor);
                 Thread::Exec threads (thread_list, "threads");
               }
 
 
+              // output all noise instance TPR values for variance calculations
               std::string filename_all_TPR (filename);
               filename_all_TPR.append("_all_tpr");
-              TPRates.save(filename_all_TPR);
+
+              std::ofstream output_all;
+              output_all.open (filename_all_TPR.c_str());
+              for (size_t t = 0; t < num_ROC_samples; ++t) {
+                for (size_t p = 0; p < num_permutations; ++p) {
+                  output_all << (value_type) TPRates [t][p] / (value_type) actual_positives << " ";
+                }
+                output_all << std::endl;
+              }
+              output_all.close();
 
               std::ofstream output;
               output.open (filename.c_str());
-
-              for (int t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all permutations realisations
-                double sum = 0.0;
-                for (size_t p = 0; p < num_permutations; ++p)
-                  sum += TPRates (t,p);
-                output << sum / (value_type) num_permutations << " ";
-                // FPR is defined as the fraction of permutations realisations with a false positive
-                output << num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
+              for (size_t t = 0; t < num_ROC_samples; ++t) {
+                // average TPR across all realisations
+                u_int32_t sum = 0.0;
+                for (size_t p = 0; p < num_permutations; ++p) {
+                  sum += TPRates [t][p];
+                }
+                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_permutations)   << " ";
+                // FPR is defined as the fraction of realisations with a false positive
+                output << (value_type) num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
+
+
+//              std::string filename_all_TPR (filename);
+//              filename_all_TPR.append("_all_tpr");
+//              TPRates.save(filename_all_TPR);
+
+//              std::ofstream output;
+//              output.open (filename.c_str());
+
+//              for (int t = 0; t < num_ROC_samples; ++t) {
+//                // average TPR across all permutations realisations
+//                double sum = 0.0;
+//                for (size_t p = 0; p < num_permutations; ++p)
+//                  sum += TPRates (t,p);
+//                output << sum / (value_type) num_permutations << " ";
+//                // FPR is defined as the fraction of permutations realisations with a false positive
+//                output << num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
+//              }
+//              output.close();
 
               std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
             }

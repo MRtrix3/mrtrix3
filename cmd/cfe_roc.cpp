@@ -299,8 +299,6 @@ class Processor {
       value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], &cfe_test_statistic);
       cfe (max_statistics[index], smoothed_noise[index], &cfe_noise);
 
-      std::vector<value_type> num_true_positives (num_ROC_samples);
-
       for (size_t t = 0; t < num_ROC_samples; ++t) {
         value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
         bool contains_false_positive = false;
