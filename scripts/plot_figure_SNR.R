@@ -19,9 +19,9 @@ mf_labeller <- function(var, value){
 
 setwd('/home/dave/dev/fixel_based_stats/scripts/')
 source('multiplot.R')
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/AUC_SNR5_smooth10.png", width=210, height=240, units = 'mm', res = 350)
-all_data <- read.csv('/data/dave/cfe/experiment_2_sims/artificial2/all_data.csv');
-sub <- subset(all_data, SNR == 5 & smoothing == 10, select = c (ROI, C, E, H, IQR25, AUC, IQR75))
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/invivo/AUC_all_smooth0.png", width=200, height=120, units = 'mm', res = 350)
+all_data <- read.csv('/data/dave/cfe/experiment_2_sims/invivo/all_data.csv');
+sub <- subset(all_data, smoothing == 0, select = c (ROI, SNR, C, E, H, IQR25, AUC, IQR75))
 sub$H <- factor(sub$H)
-print(ggplot(data=sub,  aes(x=E, y=AUC)) + geom_ribbon(aes(ymin=IQR25, ymax=IQR75 ,fill=H), alpha=0.2)+ geom_line(aes(colour=H)) + ylim(0,1) + facet_grid(ROI ~ C, labeller = mf_labeller)) 
+print(ggplot(data=sub,  aes(x=E, y=AUC)) + geom_ribbon(aes(ymin=IQR25, ymax=IQR75 ,fill=H), alpha=0.2)+ geom_line(aes(colour=H)) + ylim(0,1) + facet_grid(SNR ~ C, labeller = mf_labeller)) 
 dev.off()

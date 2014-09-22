@@ -3,7 +3,7 @@
 output=$1
 echo "ROI, SNR, smoothing, E, H, C, IQR25, AUC, IQR75" > $output
 
-for ROI in arcuate uncinate CC cingulum posterior_cingulum all;
+for ROI in all;
 do
   for s in 1 2 5;
   do
