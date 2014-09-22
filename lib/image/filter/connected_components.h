@@ -142,7 +142,6 @@ namespace MR
                 index_image.value() = 0;
               }
             }
-            std::cout << dim_to_ignore << std::endl;
             // Here we pre-compute the offsets for our neighbours in 4D space
             std::vector< std::vector<int> > neighbour_offsets;
             std::vector<int> offset (4);
