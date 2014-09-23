@@ -28,6 +28,8 @@
 #include "math/cholesky.h"
 #include "math/LU.h"
 
+//#define DEBUG_ICLS
+
 namespace MR
 {
   namespace Math
@@ -107,21 +109,21 @@ namespace MR
               d (HtH_muBtB.rows()),
               c (P.B.rows()),
               lambda (c.size()),
-              prev_lambda (c.size()),
               lambda_k (lambda.size()),
               p (HtH_muBtB.rows()) { }
 
             int operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
-              //std::ofstream y_stream ("y.txt");
-              //std::ofstream lambda_stream ("l.txt");
-              //std::ofstream  c_stream ("c.txt");
-              //std::ofstream mu_stream ("mu.txt");
-              //std::ofstream t_stream ("t.txt");
+#ifdef DEBUG_ICLS
+              std::ofstream y_stream ("y.txt");
+              std::ofstream lambda_stream ("l.txt");
+              std::ofstream c_stream ("n.txt");
+              std::ofstream mu_stream ("mu.txt");
+              std::ofstream t_stream ("t.txt");
+#endif
 
-              //P.chol_HtH.save ("L.txt", 16);
 
-              ValueType mu = P.mu_min;
+              ValueType mu = P.chol_HtH.rows() * P.mu_min;
               lambda = 0.0;
               mult (d, ValueType (1.0), CblasTrans, P.b2d, b);
               size_t num_under_tol = 0;
@@ -130,13 +132,15 @@ namespace MR
 
               // initial estimate of constraint values:
               mult (c, P.B, x);
+              ValueType min_c_prev = Math::min (c);
               
               iter = 0;
               for (; iter < P.max_niter; ++iter) {
-                //y_stream << x << std::endl;
-                //lambda_stream << lambda << std::endl;
-                //c_stream << c << std::endl;
-                //mu_stream << mu << std::endl;
+#ifdef DEBUG_ICLS
+                y_stream << x << std::endl;
+                lambda_stream << lambda << std::endl;
+                c_stream << c << std::endl;
+#endif
 
                 // form matrix of active constraints and corresponding lambdas:
                 Bk.allocate (P.B);
@@ -180,43 +184,46 @@ namespace MR
                 // check for convergence:
                 dx -= x;
                 ValueType t = norm2 (dx) / norm2 (x);
-                if (t < P.tol2) {
-                  // project back to unconditioned domain:
-                  solve_triangular (x, P.chol_HtH);
-                  return iter;
-                }
+#ifdef DEBUG_ICLS
+                t_stream << t << std::endl;
+#endif
                 if (t < P.tol) {
                   ++num_under_tol;
-                  if (num_under_tol > 5) {
+                  if (t < P.tol2 || num_under_tol > 10) {
+                    // project back to unconditioned domain:
                     solve_triangular (x, P.chol_HtH);
                     return iter;
                   }
                 }
+                else 
+                  num_under_tol = 0;
 
 
                 // compute constraint values:
                 mult (c, P.B, x);
 
-
-                // update lambda and compute change in lambda values:
-                prev_lambda = lambda;
-                ValueType min_c = 0.0;
-                for (size_t n = 0; n < lambda.size(); ++n) {
-                  min_c = std::min (min_c, c[n]);
+                for (size_t n = 0; n < lambda.size(); ++n) 
                   lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
+
+                ValueType min_c = -Math::min(c);
+
+                if (min_c < 0.0 || min_c / min_c_prev > 2.0) {
+                  mu *= 0.7;
                 }
-
-                ValueType old_mu = mu;
-                mu = -100.0/min_c;
-                mu = std::min (mu, P.mu_max);
-                mu = std::max (mu, P.mu_min);
-
-                if (mu / old_mu < 0.1) 
-                  lambda = prev_lambda;
+                else {
+                  if (min_c < min_c_prev) 
+                    mu *= 1.2;
+                  min_c_prev = min_c;
+                }
+                mu = std::max (std::min (mu, P.mu_max), P.mu_min);
+#ifdef DEBUG_ICLS
+                mu_stream << mu << std::endl;
+#endif
 
                 dx = x;
               }
 
+              // project back to unconditioned domain:
               solve_triangular (x, P.chol_HtH);
               throw Exception ("constrained least-squares failed to converge");
             }
@@ -229,7 +236,7 @@ namespace MR
             size_t iter;
             const Problem<ValueType>& P;
             Matrix<ValueType> HtH_muBtB, Bk;
-            Vector<ValueType> dx, d, c, lambda, prev_lambda, lambda_k;
+            Vector<ValueType> dx, d, c, lambda, lambda_k;
             Permutation p;
         };
 

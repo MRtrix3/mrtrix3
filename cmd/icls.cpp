@@ -22,6 +22,8 @@
 
 #include "command.h"
 #include "timer.h"
+
+#define DEBUG_ICLS
 #include "math/constrained_least_squares.h"
 
 
@@ -60,13 +62,13 @@ void run ()
 
   Math::Vector<double> x;
   Timer timer;
-  size_t niter = 0;
-  try { niter = icls_solver (x, b); }
+  try { icls_solver (x, b); }
   catch (Exception& E) {
-    E.display();
+    WARN ("=================== FAILURE =====================");
+    throw 1;
   }
   VAR (timer.elapsed());
-  VAR (niter);
+  VAR (icls_solver.iterations());
   std::cout << x << std::endl;
 }
 

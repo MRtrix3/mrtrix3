@@ -1,5 +1,6 @@
 #include "command.h"
 #include "ptr.h"
+#include "timer.h"
 #include "progressbar.h"
 #include "thread/exec.h"
 #include "thread/queue.h"
@@ -39,13 +40,16 @@ void usage () {
     + Option ("mask",
         "only perform computation within the specified binary brain mask image.")
     + Argument ("image").type_image_in ()
+
     + Option ("lmax","")
     + Argument ("order").type_sequence_int()
+
     + Option ("directions",
                 "specify the directions over which to apply the non-negativity constraint "
                 "(by default, the built-in 300 direction set is used). These should be "
                 "supplied as a text file containing the [ az el ] pairs for the directions.")
     + Argument ("file").type_file_in()
+
     + DWI::GradOption;
 }
 
@@ -314,7 +318,9 @@ void run () {
   /* do the actual work */
   Image::ThreadedLoop loop ("working...", dwi_in_vox, 1, 0, 3);
   Processor processor (shared, dwi_in_vox, mask_in_vox, scratch_vox);
+  Timer timer;
   loop.run (processor);
+  VAR (timer.elapsed());
  
   /* copy from scratch buffer to output buffers */
   std::vector<ssize_t> from (4, 0);
