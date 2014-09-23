@@ -71,7 +71,9 @@ void usage ()
 
   + Argument ("permutations", "the set of indices for all permutations").type_file()
 
-  + Argument ("output", "the output prefix").type_file();
+  + Argument ("tpr", "the output tpr prefix").type_file()
+
+  + Argument ("fpr", "the output fpr prefix").type_file();
 
   OPTIONS
   + Option ("effect", "the percentage decrease applied to simulate pathology")
@@ -749,16 +751,16 @@ void run ()
 
           for (size_t e = 0; e < E.size(); ++e) {
 
-            CONSOLE ("starting test: smoothing = " + str(smooth[s]) +
-                     ", effect = " + str(effect[effect_size]) + ", h = " + str(H[h]) +
-                     ", e = " + str(E[e]) + ", c = " + str(C[c]));
+            CONSOLE ("starting test: effect = " + str(effect[effect_size]) + ", smoothing = " + str(smooth[s]) +
+                     ", c = " + str(C[c]) +
+                     ", h = " + str(H[h]) +
+                     ", e = " + str(E[e]));
 
-            std::string filename (argument[6]);
-            filename.append ("_s" + str(smooth[s]) + "_effect" + str(effect[effect_size]) +
-                             "_h" + str(H[h]) + "_e" + str(E[e]) +
-                             "_c" + str (C[c]));
+            std::string filenameTPR (argument[6]);
+            filenameTPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+                                "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
-            if (MR::Path::exists(filename)) {
+            if (MR::Path::exists(filenameTPR)) {
               CONSOLE ("Already done!");
             } else {
 
@@ -782,11 +784,10 @@ void run ()
 
 
               // output all noise instance TPR values for variance calculations
-              std::string filename_all_TPR (filename);
-              filename_all_TPR.append("_all_tpr");
+
 
               std::ofstream output_all;
-              output_all.open (filename_all_TPR.c_str());
+              output_all.open (filenameTPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
                 for (size_t p = 0; p < num_permutations; ++p) {
                   output_all << (value_type) TPRates [t][p] / (value_type) actual_positives << " ";
@@ -795,8 +796,13 @@ void run ()
               }
               output_all.close();
 
+
+              std::string filenameFPR (argument[7]);
+              filenameFPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+                                  "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
+
               std::ofstream output;
-              output.open (filename.c_str());
+              output.open (filenameFPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
                 // average TPR across all realisations
                 u_int32_t sum = 0.0;
@@ -808,25 +814,6 @@ void run ()
                 output << (value_type) num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
-
-
-//              std::string filename_all_TPR (filename);
-//              filename_all_TPR.append("_all_tpr");
-//              TPRates.save(filename_all_TPR);
-
-//              std::ofstream output;
-//              output.open (filename.c_str());
-
-//              for (int t = 0; t < num_ROC_samples; ++t) {
-//                // average TPR across all permutations realisations
-//                double sum = 0.0;
-//                for (size_t p = 0; p < num_permutations; ++p)
-//                  sum += TPRates (t,p);
-//                output << sum / (value_type) num_permutations << " ";
-//                // FPR is defined as the fraction of permutations realisations with a false positive
-//                output << num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
-//              }
-//              output.close();
 
               std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
             }
