@@ -305,7 +305,7 @@ namespace MR
                       max_enhanced_statistic = enhancer (-min_stat, stats, enchanced_output_neg);
                   }
                   if (index)
-                    perm_dist_neg[index-1] = max_enhanced_statistic;
+                    (*perm_dist_neg)[index-1] = max_enhanced_statistic;
                 }
               }
 
