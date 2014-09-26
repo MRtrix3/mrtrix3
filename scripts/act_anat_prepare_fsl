@@ -92,7 +92,7 @@ pve_image_list = [ ]
 for struct in sgm_structures:
   pve_image_path = 'mesh2pve_' + struct + '.nii'
   vtk_path = 'first-' + struct + '_first.vtk'
-  if not os.path.exists(os.path.join(temp_dir, vtk_path)):
+  if not os.path.exists(vtk_path):
     errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed', temp_dir, working_dir)
   runCommand('mesh2pve ' + vtk_path + ' T1_preBET.nii ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
   pve_image_list.append(pve_image_path)
