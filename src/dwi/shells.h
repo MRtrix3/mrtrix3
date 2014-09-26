@@ -134,6 +134,12 @@ namespace MR
         const Shell& smallest() const { return shells.front(); }
         const Shell& largest()  const { return shells.back(); }
         size_t       count()    const { return shells.size(); }
+		size_t       volumecount()    const { 
+		  size_t count = 0;
+		  for (std::vector<Shell>::const_iterator it = shells.begin(); it != shells.end(); ++it)
+		    count += it->count();
+	      return count;
+		}
 
 
         void select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
