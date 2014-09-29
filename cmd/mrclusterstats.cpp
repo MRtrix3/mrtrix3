@@ -47,7 +47,10 @@ void usage ()
   REFERENCES = "If not using the -threshold command-line option: \n"
                "Smith, S. M. & Nichols, T. E. "
                "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
-               "NeuroImage, 2009, 44, 83-98 \n";
+               "NeuroImage, 2009, 44, 83-98 \n\n"
+               "If using the -nonstationary option: \n"
+               "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
+               "Neuroimage, 2011, 54(3), 2006-19\n" ;
 
 
   ARGUMENTS
@@ -84,9 +87,9 @@ void usage ()
 
   + Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)")
 
-  + Option ("nonstationary", "perform non-stationarity correction")
+  + Option ("nonstationary", "perform non-stationarity correction (currently only implemented with tfce)")
 
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction")
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
   +   Argument ("num").type_integer (1, 5000, 100000);
 
 }
@@ -201,36 +204,36 @@ void run() {
 
   std::string cluster_name (prefix);
   if (std::isfinite (cluster_forming_threshold))
-     cluster_name.append ("_clusters.mif");
+     cluster_name.append ("clusters.mif");
   else
-    cluster_name.append ("_tfce.mif");
+    cluster_name.append ("tfce.mif");
 
   Image::Buffer<value_type> cluster_data (cluster_name, output_header);
-  Image::Buffer<value_type> tvalue_data (prefix + "_tvalue.mif", output_header);
-  Image::Buffer<value_type> pvalue_data (prefix + "_pvalue.mif", output_header);
-  Ptr<Image::Buffer<value_type> > pvalue_data_neg;
-  Ptr<Image::Buffer<value_type> > cluster_data_neg;
+  Image::Buffer<value_type> tvalue_data (prefix + "tvalue.mif", output_header);
+  Image::Buffer<value_type> pvalue_data (prefix + "pvalue.mif", output_header);
+  RefPtr<Image::Buffer<value_type> > pvalue_data_neg;
+  RefPtr<Image::Buffer<value_type> > cluster_data_neg;
 
 
   Math::Vector<value_type> perm_distribution (num_perms);
-  Ptr<Math::Vector<value_type> > perm_distribution_neg;
+  RefPtr<Math::Vector<value_type> > perm_distribution_neg;
   std::vector<value_type> cluster_output (num_vox, 0.0);
-  Ptr<std::vector<value_type> > cluster_output_neg;
+  RefPtr<std::vector<value_type> > cluster_output_neg;
   std::vector<value_type> tvalue_output (num_vox, 0.0);
-  Ptr<std::vector<value_type> > empirical_statistic;
+  RefPtr<std::vector<value_type> > empirical_statistic;
 
 
   bool compute_negative_contrast = get_options("negative").size() ? true : false;
   if (compute_negative_contrast) {
     std::string cluster_neg_name (prefix);
     if (std::isfinite (cluster_forming_threshold))
-       cluster_neg_name.append ("_clusters_neg.mif");
+       cluster_neg_name.append ("clusters_neg.mif");
     else
-      cluster_neg_name.append ("_tfce_neg.mif");
+      cluster_neg_name.append ("tfce_neg.mif");
     cluster_data_neg = new Image::Buffer<value_type> (cluster_neg_name, output_header);
     perm_distribution_neg = new Math::Vector<value_type> (num_perms);
     cluster_output_neg = new std::vector<value_type> (num_vox, 0.0);
-    pvalue_data_neg = new Image::Buffer<value_type> (prefix + "_pvalue_neg.mif", output_header);
+    pvalue_data_neg = new Image::Buffer<value_type> (prefix + "pvalue_neg.mif", output_header);
   }
 
   { // Do permutation testing:
@@ -257,7 +260,7 @@ void run() {
     }
   }
 
-  perm_distribution.save (prefix + "_perm_dist.txt");
+  perm_distribution.save (prefix + "perm_dist.txt");
 
   std::vector<value_type> pvalue_output (num_vox, 0.0);
   Math::Stats::statistic2pvalue (perm_distribution, cluster_output, pvalue_output);
@@ -276,7 +279,7 @@ void run() {
   }
   {
     if (compute_negative_contrast) {
-      (*perm_distribution_neg).save (prefix + "_perm_dist_neg.txt");
+      (*perm_distribution_neg).save (prefix + "perm_dist_neg.txt");
       std::vector<value_type> pvalue_output_neg (num_vox, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cluster_output_neg, pvalue_output_neg);
       Image::Buffer<value_type>::voxel_type pvalue_voxel_neg (*pvalue_data_neg);
