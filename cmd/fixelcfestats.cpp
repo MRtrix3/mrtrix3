@@ -51,10 +51,10 @@ typedef float value_type;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Statistical analysis of fixel-specific measures using fixel-based connectivity enhancement and non-parametric permutation testing.";
+  + "Fixel-based analysis using connectivity-based fixel enhancement and non-parametric permutation testing.";
 
 
   ARGUMENTS
@@ -105,8 +105,12 @@ void usage ()
 
   + Option ("nonstationary", "do adjustment for non-stationarity")
 
-  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction")
+  + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
   +   Argument ("num").type_integer (1, 5000, 100000);
+
+  REFERENCES = "If using the -nonstationary option: \n"
+               "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
+               "Neuroimage, 2011, 54(3), 2006-19\n" ;
 
 }
 
