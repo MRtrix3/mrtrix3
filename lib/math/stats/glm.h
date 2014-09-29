@@ -70,8 +70,7 @@ namespace MR
       namespace GLM {
 
         //! scale contrasts for use in t-test
-        /*! Note each row of the contrast matrix will be treated as an
-         * independent contrast. */
+        /*! Note each row of the contrast matrix will be treated as an independent contrast. */
         template <typename ValueType>
           inline Math::Matrix<ValueType> scale_contrasts (const Math::Matrix<ValueType>& contrasts, const Math::Matrix<ValueType>& design, size_t degrees_of_freedom)
           {
@@ -225,7 +224,7 @@ namespace MR
           /*!
           * @param measurements a matrix storing the measured data for each subject in a column
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param contrast a matrix containing the contrast of interest. Note that the opposite contrast will automatically be computed at the same time.
+          * @param contrast a matrix containing the contrast of interest.
           */
           GLMTTest (const Math::Matrix<value_type>& measurements,
                     const Math::Matrix<value_type>& design,
@@ -273,7 +272,7 @@ namespace MR
             }
           }
 
-          size_t num_samples () const { return y.columns(); }
+          size_t num_subjects () const { return y.columns(); }
 
         protected:
           const Math::Matrix<value_type>& y;
