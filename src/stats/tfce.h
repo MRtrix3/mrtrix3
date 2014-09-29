@@ -238,9 +238,9 @@ namespace MR
           class Processor {
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
-                         const EnhancementType& enhancer, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
-                         Math::Vector<value_type>& perm_dist_pos, Ptr<Math::Vector<value_type> > perm_dist_neg,
-                         std::vector<value_type>& enhanced_output_pos, Ptr<std::vector<value_type> > enhanced_output_neg,
+                         const EnhancementType& enhancer, RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
+                         Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
+                         std::vector<value_type>& enhanced_output_pos, RefPtr<std::vector<value_type> > enhanced_output_neg,
                          std::vector<value_type>& tvalue_output) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
@@ -313,13 +313,13 @@ namespace MR
               PermutationStack& perm_stack;
               StatsType stats_calculator;
               EnhancementType enhancer;
-              Ptr<std::vector<value_type> > empirical_enhanced_statistic;
+              RefPtr<std::vector<value_type> > empirical_enhanced_statistic;
               std::vector<value_type> enhanced_statistic;
               std::vector<value_type> adjusted_enhanced_statistic;
               Math::Vector<value_type>& perm_dist_pos;
-              Ptr<Math::Vector<value_type> > perm_dist_neg;
+              RefPtr<Math::Vector<value_type> > perm_dist_neg;
               std::vector<value_type>& enhanced_output_pos;
-              Ptr<std::vector<value_type> > enchanced_output_neg;
+              RefPtr<std::vector<value_type> > enchanced_output_neg;
               std::vector<value_type>& tvalue_output;
         };
 
@@ -352,9 +352,9 @@ namespace MR
 
 
         template <class StatsType, class EnhancementType>
-          inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations, Ptr<std::vector<value_type> > empirical_enhanced_statistic,
-                           Math::Vector<value_type>& perm_dist_pos, Ptr<Math::Vector<value_type> > perm_dist_neg,
-                           std::vector<value_type>& enhanced_output_pos, Ptr<std::vector<value_type> > enhanced_output_neg, std::vector<value_type>& tvalue_output)
+          inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations, RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
+                           Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
+                           std::vector<value_type>& enhanced_output_pos, RefPtr<std::vector<value_type> > enhanced_output_neg, std::vector<value_type>& tvalue_output)
           {
 
             {
