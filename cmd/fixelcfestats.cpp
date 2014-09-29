@@ -448,19 +448,19 @@ void run() {
 
     Math::Stats::GLM::solve_betas (data, design, temp);
     for (size_t i = 0; i < contrast.columns(); ++i)
-      write_fixel_output (output_prefix + "_beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "beta" + str(i) + ".msf", temp.column (i), input_header, mask_vox, indexer_vox);
 
     Math::Stats::GLM::abs_effect_size (data, design, contrast, temp);
-    write_fixel_output (output_prefix + "_abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "abs_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
     Math::Stats::GLM::std_effect_size (data, design, contrast, temp);
-    write_fixel_output (output_prefix + "_std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "std_effect.msf", temp.column(0), input_header, mask_vox, indexer_vox);
     Math::Stats::GLM::stdev (data, design, temp);
-    write_fixel_output (output_prefix + "_std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "std_dev.msf", temp.column(0), input_header, mask_vox, indexer_vox);
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
   Stats::TFCE::Connectivity cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  Ptr<std::vector<value_type> > empirical_cfe_statistic;
+  RefPtr<std::vector<value_type> > empirical_cfe_statistic;
 
   Image::Header output_header (input_header);
   output_header.comments().push_back ("num permutations = " + str(num_perms));
@@ -476,7 +476,7 @@ void run() {
     empirical_cfe_statistic = new std::vector<value_type> (num_fixels, 0.0);
     Stats::TFCE::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
     output_header.comments().push_back ("nonstationary adjustment = true");
-    write_fixel_output (output_prefix + "_cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
   } else {
     output_header.comments().push_back ("nonstationary adjustment = false");
   }
@@ -486,9 +486,9 @@ void run() {
   opt = get_options ("notest");
   if (!opt.size()) {
     Math::Vector<value_type> perm_distribution (num_perms);
-    Ptr<Math::Vector<value_type> > perm_distribution_neg;
+    RefPtr<Math::Vector<value_type> > perm_distribution_neg;
     std::vector<value_type> cfe_output (num_fixels, 0.0);
-    Ptr<std::vector<value_type> > cfe_output_neg;
+    RefPtr<std::vector<value_type> > cfe_output_neg;
     std::vector<value_type> tvalue_output (num_fixels, 0.0);
 
     bool compute_negative_contrast = false;
@@ -504,20 +504,20 @@ void run() {
                       cfe_output, cfe_output_neg, tvalue_output);
 
     ProgressBar progress ("outputting final results...");
-    perm_distribution.save (output_prefix + "_perm_dist.txt");
+    perm_distribution.save (output_prefix + "perm_dist.txt");
 
     std::vector<value_type> pvalue_output (num_fixels, 0.0);
     Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
-    write_fixel_output (output_prefix + "_cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "_tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "_pvalue.msf", pvalue_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "pvalue.msf", pvalue_output, output_header, mask_vox, indexer_vox);
 
     if (compute_negative_contrast) {
-      (*perm_distribution_neg).save (output_prefix + "_perm_dist_neg.txt");
-      write_fixel_output (output_prefix + "_cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
+      (*perm_distribution_neg).save (output_prefix + "perm_dist_neg.txt");
+      write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
       std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
-      write_fixel_output (output_prefix + "_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
     }
   }
 }

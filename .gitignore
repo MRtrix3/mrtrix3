@@ -27,3 +27,4 @@ icons.cpp
 .pydevproject
 fixel_based_stats*
 scripts/.Rhistory
+scripts/.RData
