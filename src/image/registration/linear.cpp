@@ -15,7 +15,7 @@ namespace MR
         OptionGroup ("Rigid registration options")
 
         + Option ("rigid_out", "the output text file containing the rigid transformation as a 4x4 matrix")
-          + Argument ("file").type_file ()
+          + Argument ("file").type_file_in ()
 
         + Option ("rigid_scale", "use a multi-resolution scheme by defining a scale factor for each level "
                                  "using comma separated values (Default: 0.5,1)")
@@ -30,7 +30,7 @@ namespace MR
           OptionGroup ("Affine registration options")
 
         + Option ("affine_out", "the output text file containing the affine transformation as a 4x4 matrix")
-          + Argument ("file").type_file ()
+          + Argument ("file").type_file_out ()
 
         + Option ("affine_scale", "use a multi-resolution scheme by defining a scale factor for each level "
                                  "using comma separated values (Default: 0.5,1)")
@@ -45,7 +45,7 @@ namespace MR
         OptionGroup ("SyN registration options")
 
         + Option ("warp", "the output non-linear warp defined as a deformation field")
-          + Argument ("image").type_file ()
+          + Argument ("image").type_file_out ()
 
         + Option ("syn_scale", "use a multi-resolution scheme by defining a scale factor for each level "
                                  "using comma separated values (Default: 0.5,1)")
@@ -69,10 +69,10 @@ namespace MR
           OptionGroup ("Initialisation options")
 
         + Option ("rigid_init", "initialise either the rigid, affine, or syn registration with the supplied rigid transformation (as a 4x4 matrix)")
-          + Argument ("file").type_file ()
+          + Argument ("file").type_file_in ()
 
         + Option ("affine_init", "initialise either the affine, or syn registration with the supplied affine transformation (as a 4x4 matrix)")
-          + Argument ("file").type_file ()
+          + Argument ("file").type_file_in ()
 
         + Option ("syn_init", "initialise the syn registration with the supplied warp image (which includes the linear transform)")
           + Argument ("image").type_image_in ()
@@ -88,7 +88,7 @@ namespace MR
         OptionGroup ("FOD registration options")
 
         + Option ("directions", "the directions used for FOD reorienation using apodised point spread functions (Default: 60 directions)")
-          + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file()
+          + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
 
         + Option ("lmax", "explicitly set the lmax to be used in FOD registration. By default FOD registration will "
                          "first use lmax 2 until convergence, then add lmax 4 SH coefficients and run till convergence")
