@@ -59,21 +59,21 @@ void usage ()
   + "perform connectivity-based fixel enhancement ROC experiments";
 
   ARGUMENTS
-  + Argument ("input", "a text file listing the file names of the input fixel images").type_file ()
+  + Argument ("input", "a text file listing the file names of the input fixel images").type_file_in ()
 
   + Argument ("fixel_in", "the template fixel image including the fake pathology ROI.").type_image_in ()
 
-  + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file ()
+  + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file_in ()
 
-  + Argument ("design", "the design matrix").type_file()
+  + Argument ("design", "the design matrix").type_file_in()
 
-  + Argument ("contrast", "the contrast matrix").type_file()
+  + Argument ("contrast", "the contrast matrix").type_file_in()
 
-  + Argument ("permutations", "the set of indices for all permutations").type_file()
+  + Argument ("permutations", "the set of indices for all permutations").type_file_in()
 
-  + Argument ("tpr", "the output tpr prefix").type_file()
+  + Argument ("tpr", "the output tpr prefix").type_file_out()
 
-  + Argument ("fpr", "the output fpr prefix").type_file();
+  + Argument ("fpr", "the output fpr prefix").type_file_out();
 
   OPTIONS
   + Option ("effect", "the percentage decrease applied to simulate pathology")

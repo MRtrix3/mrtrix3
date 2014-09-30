@@ -58,9 +58,9 @@ void usage ()
   ARGUMENTS
   + Argument ("fixel_in", "the input fake signal fixel image.").type_image_in ()
 
-  + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file ()
+  + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file_in ()
 
-  + Argument ("output", "the output prefix").type_file();
+  + Argument ("output", "the output prefix").type_file_out ();
 
   OPTIONS
   + Option ("snr", "the snr of the test statistic")
