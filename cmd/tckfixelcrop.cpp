@@ -58,9 +58,9 @@ void usage ()
     "by outputting a track scalar file derived from the fixel values.";
 
   ARGUMENTS
-  + Argument ("tracks",   "the input track file ").type_file ()
+  + Argument ("tracks",   "the input track file ").type_file_in ()
   + Argument ("fixel_in", "the input fixel image").type_image_in ()
-  + Argument ("tracks",   "the output track file ").type_file ();
+  + Argument ("tracks",   "the output track file ").type_file_out ();
 
 
   OPTIONS

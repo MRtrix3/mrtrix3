@@ -180,7 +180,7 @@ class TrackProcessor {
     const std::vector<Point<value_type> >& fixel_directions;
     std::vector<uint16_t>& fixel_TDI;
     std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& connectivity_matrix;
-    std::vector<Thread::Mutex>& fixel_mutexes;
+    std::vector<Thread::Mutex>& fixel_mutexes; //TODO multithread this
     value_type angular_threshold_dp;
 };
 

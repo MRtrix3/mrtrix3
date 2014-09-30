@@ -37,8 +37,8 @@ void usage ()
   + "Gaussian filter a track scalar file";
 
   ARGUMENTS
-  + Argument ("input",  "the input track scalar file.").type_file ()
-  + Argument ("output", "the output track scalar file");
+  + Argument ("input",  "the input track scalar file.").type_file_in ()
+  + Argument ("output", "the output track scalar file").type_file_out ();
 
   OPTIONS
   + Option ("stdev", "apply Gaussian smoothing with the specified standard deviation. "

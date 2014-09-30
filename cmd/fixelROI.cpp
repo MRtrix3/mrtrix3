@@ -49,7 +49,7 @@ void usage ()
   ARGUMENTS
   + Argument ("fixel_in", "the input sparse fixel image.").type_image_in ()
 
-  + Argument ("tracks", "the input tract of interest").type_file ()
+  + Argument ("tracks", "the input tract of interest").type_file_in ()
 
   + Argument ("signal", "desired signal").type_float ()
 
