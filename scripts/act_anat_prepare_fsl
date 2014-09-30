@@ -75,8 +75,20 @@ os.chdir(temp_dir)
 # Use FSL command standard_space_roi to do an initial masking of the image before BET
 # Also reduce the FoV of the image
 # Using MNI 1mm dilated brain mask rather than the -b option in standard_space_roi (which uses the 2mm mask); the latter looks 'buggy' to me... Unfortunately even with the 1mm 'dilated' mask, it can still cut into some brain areas, hence the explicit dilation
-runCommand('maskfilter ' + os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz') + ' dilate mni_mask.nii -npass 4' + quiet, verbose)
-runCommand(ssroi_cmd + ' T1.nii T1_preBET.' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV', verbose)
+mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz')
+mni_mask_dilation = 0;
+if os.path.exists (mni_mask_path):
+  mni_mask_dilation = 4;
+else:
+  mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
+  if os.path.exists (mni_mask_path):
+    mni_mask_dilation = 2;
+
+if mni_mask_dilation:
+  runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation) + quiet, verbose)
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV', verbose)
+else:
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b', verbose)
 
 # BET
 runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R', verbose)
