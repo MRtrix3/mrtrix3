@@ -273,7 +273,7 @@ void run ()
       std::vector<FODSegResult> seg_results;
       {
         FODCalcAndSeg processor (dwi, mask, shared, directions, lmax, seg_results);
-        Image::ThreadedLoop loop (mask, 1, 0, 3);
+        Image::ThreadedLoop loop (mask, 0, 3);
         loop.run (processor);
       }
 

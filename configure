@@ -329,7 +329,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
         'OBJECT': obj.name })
       execute (cmd, CompileError)
       
-      with DeleteAfter ('./a.out') as out:
+      with DeleteAfter ('a.out') as out:
         cmd = fillin (ld, {
           'LDFLAGS': linker_flags,
           'OBJECTS': obj.name,
@@ -407,10 +407,10 @@ ld += ld_args
 
 # CPP flags:
 
-if 'CFLAGS' in os.environ.keys(): cpp_flags = shlex.split (os.environ['CFLAGS'])
-if 'LDFLAGS' in os.environ.keys(): ld_flags = shlex.split (os.environ['LDFLAGS'])
+if 'CFLAGS' in os.environ.keys(): cpp_flags += shlex.split (os.environ['CFLAGS'])
+if 'LDFLAGS' in os.environ.keys(): ld_flags + shlex.split (os.environ['LDFLAGS'])
 ld_lib_flags += ld_flags
-if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags = shlex.split (os.environ['LDLIB_FLAGS'])
+if 'LDLIB_FLAGS' in os.environ.keys(): ld_lib_flags + shlex.split (os.environ['LDLIB_FLAGS'])
 
 
 

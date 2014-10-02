@@ -114,7 +114,7 @@ void run () {
   auto dwi_vox = dwi_buffer.voxel();
   auto adc_vox = adc_buffer.voxel();
 
-  Image::ThreadedLoop ("computing ADC values...", dwi_vox, 1, 0, 3)
+  Image::ThreadedLoop ("computing ADC values...", dwi_vox, 0, 3)
     .run (DWI2ADC (dwi_vox, adc_vox, binv, dwi_axis));
 }
 

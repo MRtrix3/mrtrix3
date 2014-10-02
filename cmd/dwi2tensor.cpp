@@ -425,7 +425,7 @@ void run()
   InputBufferType::voxel_type dwi_vox (dwi_buffer);
   OutputBufferType::voxel_type dt_vox (dt_buffer);
 
-  Image::ThreadedLoop loop ("estimating tensor components...", dwi_vox, 1, 0, 3);
+  Image::ThreadedLoop loop ("estimating tensor components...", dwi_vox, 0, 3);
   Processor processor (dwi_vox, dt_vox, mask_vox, bmatrix, binv, method, regularisation, loop.inner_axes()[0], dwi_axis);
 
   loop.run_outer (processor);

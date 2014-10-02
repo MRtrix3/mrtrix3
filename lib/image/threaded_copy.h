@@ -66,7 +66,7 @@ namespace MR
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
-        ThreadedLoop (source, num_axes_in_thread, from_axis, to_axis)
+        ThreadedLoop (source, from_axis, to_axis, num_axes_in_thread)
           .run (__copy_func(), source, destination);
       }
 
@@ -94,7 +94,7 @@ namespace MR
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
       {
-        ThreadedLoop (message, source, num_axes_in_thread, from_axis, to_axis)
+        ThreadedLoop (message, source, from_axis, to_axis, num_axes_in_thread)
           .run (__copy_func(), source, destination);
       }
 

@@ -78,6 +78,6 @@ void run () {
       ++P[3];
     }
   };
-  Image::ThreadedLoop ("calculating SH power...", SH_vox, 1, 0, 3)
+  Image::ThreadedLoop ("calculating SH power...", SH_vox, 0, 3)
     .run (f, power_vox, SH_vox);
 }
