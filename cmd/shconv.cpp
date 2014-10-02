@@ -122,6 +122,6 @@ void run() {
   Image::Buffer<value_type> output_SH_buf (argument[2], output_SH_header);
 
   SDeconvFunctor sconv (input_buf, output_SH_buf, mask_buf, responseRH);
-  Image::ThreadedLoop loop ("performing convolution...", input_buf, 2, 0, 3);
+  Image::ThreadedLoop loop ("performing convolution...", input_buf, 0, 3, 2);
   loop.run (sconv);
 }

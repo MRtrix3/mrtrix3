@@ -225,10 +225,10 @@ void run ()
   opt = get_options ("mask");
   if (opt.size()) {
     Image::Buffer<bool> mask_data (opt[0][0]);
-    Image::ThreadedLoop ("estimating dODFs using Q-ball imaging...", dwi_data, 1, 0, 3)
+    Image::ThreadedLoop ("estimating dODFs using Q-ball imaging...", dwi_data, 0, 3)
       .run (DWI2QBI (FRT_SHT.mat_A2SH(), HR_SHT, shells), mask_data.voxel(), dwi_data.voxel(), qbi_data.voxel());
   }
   else 
-    Image::ThreadedLoop ("estimating dODFs using Q-ball imaging...", dwi_data, 1, 0, 3)
+    Image::ThreadedLoop ("estimating dODFs using Q-ball imaging...", dwi_data, 0, 3)
       .run (DWI2QBI (FRT_SHT.mat_A2SH(), HR_SHT, shells), dwi_data.voxel(), qbi_data.voxel());
 }

@@ -283,9 +283,9 @@ namespace MR
         template <class InfoType>
           ThreadedLoop (
               const InfoType& source,
-              size_t num_inner_axes = 1,
               size_t from_axis = 0,
-              size_t to_axis = std::numeric_limits<size_t>::max()) :
+              size_t to_axis = std::numeric_limits<size_t>::max(),
+              size_t num_inner_axes = 1) :
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis)),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
@@ -317,9 +317,9 @@ namespace MR
           ThreadedLoop (
               const std::string& progress_message,
               const InfoType& source,
-              size_t num_inner_axes = 1,
               size_t from_axis = 0,
-              size_t to_axis = std::numeric_limits<size_t>::max()) :
+              size_t to_axis = std::numeric_limits<size_t>::max(), 
+              size_t num_inner_axes = 1) :
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {

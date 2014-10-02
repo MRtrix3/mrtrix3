@@ -115,7 +115,7 @@ void run ()
     out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) 
       + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
   };
-  Image::ThreadedLoop (v_out, 1, 0, 3).run (f, v_in, v_out);
+  Image::ThreadedLoop (v_out, 0, 3).run (f, v_in, v_out);
 
 }
 

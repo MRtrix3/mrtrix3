@@ -104,7 +104,7 @@ namespace MR
               auto v_anat = in_anat.voxel();
               Image::copy (v_anat, v_5tt);
             } else {
-              Image::ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 1, 0, 3);
+              Image::ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
               ResampleFunctor<Set> functor (in_dwi, in_anat, *act_5tt);
               threaded_loop.run (functor);
             }
@@ -122,7 +122,7 @@ namespace MR
               typedef typename std::remove_reference<decltype(in_dwi)>::type::value_type value_type;
               mask.value() = (dwi.value() && std::isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
             };
-            Image::ThreadedLoop ("Creating homogeneous processing mask...", dwi, 1, 0, 3).run (f, dwi, mask);
+            Image::ThreadedLoop ("Creating homogeneous processing mask...", dwi, 0, 3).run (f, dwi, mask);
           }
 
         }
