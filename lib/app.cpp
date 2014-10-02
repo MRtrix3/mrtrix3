@@ -21,6 +21,7 @@
 */
 
 #include <gsl/gsl_version.h>
+#include <gsl/gsl_errno.h>
 
 #include "app.h"
 #include "debug.h"
@@ -34,6 +35,15 @@
 
 namespace MR
 {
+
+
+  void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
+  {
+    throw Exception (reason);
+  }
+
+
+
   namespace App
   {
 
@@ -395,6 +405,8 @@ namespace MR
 #endif
 
       srand (time (NULL));
+
+      gsl_set_error_handler (&mrtrix_gsl_error_handler);
     }
 
 
