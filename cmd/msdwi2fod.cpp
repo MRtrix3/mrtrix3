@@ -316,7 +316,7 @@ void run () {
   auto scratch_vox = scratch_buffer.voxel();
   
   /* do the actual work */
-  Image::ThreadedLoop loop ("working...", dwi_in_vox, 1, 0, 3);
+  Image::ThreadedLoop loop ("working...", dwi_in_vox, 0, 3);
   Processor processor (shared, dwi_in_vox, mask_in_vox, scratch_vox);
   Timer timer;
   loop.run (processor);

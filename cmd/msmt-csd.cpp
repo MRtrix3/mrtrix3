@@ -220,9 +220,9 @@ void run ()
   // launch the processing:
   if (mask_vox) 
     Image::ThreadedLoop (std::string("performing ") + (shared.is_multi_shell() ? "multi-shell " : "") + (shared.ncoefs.size() > 1 ? "multi-tissue " : "" ) + "CSD...", 
-        dwi_vox, 1, 0, 3).run (DWI::MTCSD::Processor<compute_type> (shared), dwi_vox, fod_vox, *mask_vox);
+        dwi_vox, 0, 3).run (DWI::MTCSD::Processor<compute_type> (shared), dwi_vox, fod_vox, *mask_vox);
   else
     Image::ThreadedLoop (std::string("performing ") + (shared.is_multi_shell() ? "multi-shell " : "") + (shared.ncoefs.size() > 1 ? "multi-tissue " : "" ) + "CSD...", 
-        dwi_vox, 1, 0, 3).run (DWI::MTCSD::Processor<compute_type> (shared), dwi_vox, fod_vox);
+        dwi_vox, 0, 3).run (DWI::MTCSD::Processor<compute_type> (shared), dwi_vox, fod_vox);
 }
 

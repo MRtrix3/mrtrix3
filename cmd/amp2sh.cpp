@@ -270,11 +270,11 @@ void run ()
   if (opt.size()) {
     Image::BufferPreload<value_type> noise_data (opt[0][0]);
     Image::BufferPreload<value_type>::voxel_type noise_vox (noise_data);
-    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 1, 0, 3)
+    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 0, 3)
       .run (Amp2SH (common), SH_vox, amp_vox, noise_vox);
   }
   else {
-    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 1, 0, 3)
+    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 0, 3)
       .run (Amp2SH (common), SH_vox, amp_vox);
   }
 }
