@@ -336,7 +336,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
           'EXECUTABLE': out.name })
         execute (cmd, LinkError)
 
-        ret = execute ([ out.name ], RuntimeError)
+        ret = execute ([ './'+out.name ], RuntimeError)
 
   return ret[1]
 
