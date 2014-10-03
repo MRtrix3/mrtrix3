@@ -133,6 +133,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
         fmls = new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.dim(3)));
       }
       mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1));
+      mapper.set_use_precise_mapping (true);
     }
 
 

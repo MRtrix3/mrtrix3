@@ -444,7 +444,9 @@ void run ()
   {
     typedef DWI::Tractography::Mapping::SetVoxelDir SetVoxelDir;
     DWI::Tractography::Mapping::TrackLoader loader (track_file, num_tracks, "pre-computing fixel-fixel connectivity...");
-    DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (index_header);
+    DWI::Tractography::Mapping::TrackMapperBase mapper (index_header);
+    mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
+    mapper.set_use_precise_mapping (true);
     TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold );
     Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
   }

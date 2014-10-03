@@ -112,7 +112,9 @@ void run ()
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 
-  DWI::Tractography::Mapping::TrackMapperBase<SetVoxelDir> mapper (input_header);
+  DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
+  mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
+  mapper.set_use_precise_mapping (true);
 
   ProgressBar progress ("cropping tracks by fixels...", num_tracks);
   DWI::Tractography::Streamline<float> tck;
