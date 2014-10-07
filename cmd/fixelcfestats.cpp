@@ -251,9 +251,9 @@ void run() {
   if (opt.size())
     smooth_std_dev = value_type(opt[0][0]) / 2.3548;
 
-  bool do_nonstationary_adjustment = get_options ("nperms_nonstationary").size();
+  bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  opt = get_options ("nperms");
+  opt = get_options ("nperms_nonstationary");
   int nperms_nonstationary = 5000;
   if (opt.size())
     num_perms = opt[0][0];
