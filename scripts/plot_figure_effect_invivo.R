@@ -1,4 +1,5 @@
 require(ggplot2)
+require(grid)
 
 mf_labeller <- function(var, value){ 
   value <- as.character(value)
@@ -6,6 +7,13 @@ mf_labeller <- function(var, value){
     value[value=="0.1"]   <- "effect=10%"
     value[value=="0.2"]   <- "effect=20%"
     value[value=="0.3"]   <- "effect=30%"
+  }
+  if (var=="ROI") {
+    value[value=="arcuate"]   <- "Arcuate"
+    value[value=="cingulum"]   <- "Cingulum"
+    value[value=="posterior_cingulum"]   <- "Post Cing"
+    value[value=="cst"]   <- "Corticospinal"
+    value[value=="ad"]   <- "Alzheimers"
   }
   if (var=="C") {
     value[value=="0"]   <- "C=0"
@@ -17,11 +25,15 @@ mf_labeller <- function(var, value){
   return(value)
 }
 
+
+
 setwd('/home/dave/dev/fixel_based_stats/scripts/')
 source('multiplot.R')
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/invivo2/AUC_effect1_smooth10.png", width=200, height=150, units = 'mm', res = 350)
+ppi <- 400
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/invivo2/AUC_effect3_smooth10.png", width=7*ppi, height=7*ppi, res = ppi)
 all_data <- read.csv('/data/dave/cfe/experiment_2_sims/invivo2/aucdata.csv');
-sub <- subset(all_data, effect == 0.2 & ROI == 'cst', select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
-sub$C <- factor(sub$C)
-print(ggplot(data=sub,  aes(x=E, y=AUC)) + geom_ribbon(aes(ymin=IQR25, ymax=IQR75 ,fill=C), alpha=0.2)+ geom_line(aes(colour=C)) + ylim(0,0.4) + facet_grid(smoothing ~ H, labeller = mf_labeller)) 
+sub <- subset(all_data, effect == 0.3 & smoothing == 10, select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
+sub$H <- factor(sub$H)
+sub$ROI <- factor(sub$ROI, levels = c("arcuate", "cst", "cingulum", "posterior_cingulum", "ad"))
+print(ggplot(data=sub,  aes(x=E, y=AUC)) + geom_ribbon(aes(ymin=IQR25, ymax=IQR75 ,fill=H), alpha=0.2)+ geom_line(aes(colour=H)) + ylim(0,1) + facet_grid(ROI ~ C, labeller = mf_labeller) + theme(plot.margin = unit(c(0,0,0,0),'mm'))) 
 dev.off()
