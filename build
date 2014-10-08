@@ -467,6 +467,8 @@ def print_deps (current_file, indent=''):
 
 
 def is_GUI_target (current_file):
+  if 'gui' in current_file.split (os.path.sep):
+    return True
   if current_file in file_flags: 
     if 'Q' in file_flags[current_file]: 
       return True
@@ -488,7 +490,7 @@ def list_headers (current_file):
       file_flags[current_file] = ''
 
     if not os.path.exists (current_file):
-      if os.path.basename(current_file) == 'icons'+cpp_suffix: 
+      if 'gui' in current_file.split (os.path.sep) or os.path.basename(current_file) == 'icons'+cpp_suffix: 
         if 'Q' not in file_flags[current_file]:
           file_flags[current_file] += 'Q'
         return headers[current_file]
@@ -510,9 +512,6 @@ def list_headers (current_file):
             else:
               sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + current_file + '\")' + os.linesep)
               sys.exit(1)
-          elif line.startswith ('<Q'):
-            if 'Q' not in file_flags[current_file]:
-              file_flags[current_file] += 'Q'
         elif line == 'Q_OBJECT':
           if 'M' not in file_flags[current_file]:
             file_flags[current_file] += 'M'
