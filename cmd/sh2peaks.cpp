@@ -306,11 +306,7 @@ extern value_type default_directions [];
 void run ()
 {
   Image::Buffer<value_type> SH_data (argument[0]);
-  if (SH_data.datatype().is_complex()) 
-    throw Exception ("cannot operate on complex data");
-
-  if (SH_data.ndim() != 4)
-    throw Exception ("spherical harmonic image should contain 4 dimensions");
+  Math::SH::check (SH_data);
 
   Options opt = get_options ("mask");
 

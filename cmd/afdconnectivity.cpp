@@ -303,6 +303,7 @@ void run ()
 
   DWI::Directions::FastLookupSet dirs (1281);
   Image::Buffer<value_type> fod (argument[0]);
+  Math::SH::check (fod);
   AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 
   opt = get_options ("all_fixels");
