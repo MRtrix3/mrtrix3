@@ -356,7 +356,7 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
-          void run_outer (Functor& functor, const std::string& thread_label = "unknown") 
+          void run_outer (Functor&& functor, const std::string& thread_label = "unknown") 
           {
             if (Thread::number_of_threads() == 0) {
               for (auto i = loop (dummy); i; ++i)
@@ -369,16 +369,11 @@ namespace MR
             Thread::Exec threads (thread_list, thread_label);
           }
 
-        template <class Functor> 
-          void run_outer (Functor&& functor, const std::string& thread_label = "unknown") {
-            run_outer (functor);
-          }
-
 
 
 
         template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) == 0, int>::type = 0> 
-          void run (Functor& functor, VoxelType&... vox)
+          void run (Functor&& functor, VoxelType&&... vox)
           {
             if (Thread::number_of_threads() == 0) {
               LoopInOrder inner_loop (axes);
@@ -395,7 +390,7 @@ namespace MR
 
 
         template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) != 0, int>::type = 0> 
-          void run (Functor& functor, VoxelType&... vox)
+          void run (Functor&& functor, VoxelType&&... vox)
           {
             if (Thread::number_of_threads() == 0) {
               LoopInOrder inner_loop (axes);
@@ -409,11 +404,6 @@ namespace MR
             __RunFunctor<Functor, VoxelType...> 
               loop_thread (*this, functor, vox...);
             run_outer (loop_thread, "run thread");
-          }
-
-        template <class Functor, class... VoxelType> 
-          void run (Functor&& functor, VoxelType&&... vox) {
-            run (functor, vox...);
           }
 
 

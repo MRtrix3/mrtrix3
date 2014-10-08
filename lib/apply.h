@@ -47,8 +47,8 @@ namespace MR {
         return f (std::get<S>(t) ...);
       }
 
-    template <class F, typename... Args>
-      inline auto __unpack_impl (F& f, std::tuple<Args...>& t) 
+    template <class F, template <typename...> class TupleType, typename... Args>
+      inline auto __unpack_impl (F& f, TupleType<Args...>& t) 
       -> decltype (__unpack_seq_impl (f, t, typename GenIntegerTemplateSequence<sizeof...(Args)>::type()))
       {
         return __unpack_seq_impl (f, t, typename GenIntegerTemplateSequence<sizeof...(Args)>::type());
@@ -56,34 +56,21 @@ namespace MR {
 
 
 
-    template <class F, size_t I = 0, typename... Args, typename std::enable_if<I == sizeof...(Args), int>::type = 0>
-      inline void __apply_impl (F& f, std::tuple<Args...>& t) { }
+    template <class F, size_t I = 0, template <typename...> class TupleType, typename... Args, typename std::enable_if<I == sizeof...(Args), int>::type = 0>
+      inline void __apply_impl (F& f, TupleType<Args...>& t) { }
 
-    template <class F, size_t I = 0, typename... Args, typename std::enable_if<I < sizeof...(Args), int>::type = 0>
-      inline void __apply_impl (F& f, std::tuple<Args...>& t) {
+    template <class F, size_t I = 0, template <typename...> class TupleType, typename... Args, typename std::enable_if<I < sizeof...(Args), int>::type = 0>
+      inline void __apply_impl (F& f, TupleType<Args...>& t) {
         f (std::get<I> (t));
-        __apply_impl<F, I+1, Args...> (f, t);
+        __apply_impl<F, I+1, TupleType, Args...> (f, t);
       }
   }
 
-  template <class F, typename... Args>
-    inline void apply (F& f, std::tuple<Args...>& t) { __apply_impl (f, t); }
-  template <class F, typename... Args>
-    inline void apply (F&& f, std::tuple<Args...>& t) { __apply_impl (f, t); }
-  template <class F, typename... Args>
-    inline void apply (F& f, std::tuple<Args...>&& t) { __apply_impl (f, t); }
-  template <class F, typename... Args>
-    inline void apply (F&& f, std::tuple<Args...>&& t) { __apply_impl (f, t); }
+  template <class F, class TupleType>
+    inline void apply (F&& f, TupleType&& t) { __apply_impl (f, t); }
 
-
-  template <class F, typename... Args>
-    inline auto unpack (F& f, std::tuple<Args...>& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
-  template <class F, typename... Args>
-    inline auto unpack (F&& f, std::tuple<Args...>& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
-  template <class F, typename... Args>
-    inline auto unpack (F& f, std::tuple<Args...>&& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
-  template <class F, typename... Args>
-    inline auto unpack (F&& f, std::tuple<Args...>&& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
+  template <class F, class TupleType>
+    inline auto unpack (F&& f, TupleType&& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
 }
 
 #endif
