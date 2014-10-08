@@ -37,7 +37,7 @@ namespace MR {
       namespace GT {
         
         ExternalEnergyComputer::Shared::Shared(Image::BufferPreload<float>& dwimage, const Properties& props)
-          : lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), beta(props.beta), lambda(props.tikhonov), dwi(dwimage)
+          : lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), beta(props.beta), mu(props.ppot), dwi(dwimage)
         {
           // Set buffers
           Image::Info info (dwimage);
@@ -250,7 +250,7 @@ namespace MR {
           Math::mult(c, 1.0, CblasTrans, s.Ak, y);          // c = Ak^T y
           Math::solve_LS_nonneg_Hf(fk, s.H, s.Hinv, c);     // H fk = c
           Math::mult(y, 1.0, -1.0, CblasNoTrans, A, f);     // res = y - A f
-          return Math::norm2(y) / s.nrows + s.lambda * t[0]*t[0];  // MSE + Tikhonov on segments
+          return Math::norm2(y) / s.nrows + s.mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
         }
         
         

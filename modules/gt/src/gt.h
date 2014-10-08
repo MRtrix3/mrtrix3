@@ -42,6 +42,9 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
+        const double M_4PI = 4 * M_PI;
+        const double M_sqrt4PI = Math::sqrt(M_4PI);
+        
         
         struct Properties
         {
@@ -59,7 +62,7 @@ namespace MR {
           double lam_int;
           
           double beta;
-          double tikhonov;
+          double ppot;
           
           Math::Matrix<float> resp_WM;
           std::vector< Math::Vector<float> > resp_ISO;

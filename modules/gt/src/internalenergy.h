@@ -111,14 +111,14 @@ namespace MR {
           
           EnergyComputer* clone() const { return new InternalEnergyComputer(*this); }
           
-          double getChemPot() const
+          double getConnPot() const
           {
             return cpot;
           }
           
-          void setChemPot(const double chempot)
+          void setConnPot(const double connpot)
           {
-            cpot = chempot;
+            cpot = connpot;
           }
           
           

@@ -77,7 +77,7 @@ namespace MR {
             
           protected:
             int lmax, nrows, ncols, nf;
-            double beta, lambda;
+            double beta, mu;
             
             Image::BufferPreload<float>& dwi;
             Image::BufferScratch<float>* tod; 

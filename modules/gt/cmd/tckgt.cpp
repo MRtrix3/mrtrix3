@@ -92,7 +92,7 @@ void usage ()
     + Argument ("w").type_float(1e-6, 0.1, 1.0)
 
   + Option ("cpot",
-            "set the energy term that drives two segments together.")
+            "set the connection potential, i.e., the energy term that drives two segments together.")
     + Argument ("c").type_float(0, 1.0, 1e6)
 
   + Option ("wmr",
@@ -136,8 +136,8 @@ void usage ()
             "set the width of the Hanning interpolation window.")
     + Argument ("b").type_float(0.0, 0.1, 1.0)
   
-  + Option ("lambda",
-            "set the weight of a Tikhonov constraint on the no. segments.")
+  + Option ("ppot",
+            "set the particle potential, i.e., the weight of a regularizer on the no. segments.")
     + Argument ("t").type_float(0.0, 0.0, 1e3)
 
   + Option ("todi",
@@ -194,7 +194,7 @@ void run ()
   properties.lam_ext = 1.;
   properties.lam_int = 1.;
   properties.beta = 0.1;
-  properties.tikhonov = 0.0;
+  properties.ppot = 0.0;
   
   opt = get_options("lmax");
   if (opt.size()) 
@@ -211,6 +211,8 @@ void run ()
   opt = get_options("wmr");
   Math::Matrix<float> wmr (opt[0][0]);
   properties.resp_WM = wmr;
+  
+  double wmscale2 = (properties.resp_WM(0,0)*properties.resp_WM(0,0))/M_4PI;
   
   Math::Vector<float> riso;
   opt = get_options("csfr");
@@ -286,9 +288,11 @@ void run ()
   if (opt.size())
     properties.beta = opt[0][0];
   
-  opt = get_options("lambda");
+  double mu = 0.0;
+  opt = get_options("ppot");
   if (opt.size())
-    properties.tikhonov = opt[0][0];
+    mu = opt[0][0];
+  properties.ppot = mu * wmscale2;
 
 
   // Prepare buffers --------------------------------------------------------------------
@@ -310,11 +314,11 @@ void run ()
   ParticleGrid pgrid = ParticleGrid(dwi_buffer);
   
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
-  Eint->setChemPot(ChemPot);
+  Eint->setConnPot(ChemPot);
   
   
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, 
-                                             Eext, properties.lam_ext * 4*M_PI/(properties.resp_WM(0,0)*properties.resp_WM(0,0)*properties.weight*properties.weight));
+                                             Eext, properties.lam_ext * 1/( wmscale2 * properties.weight*properties.weight ));
   
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
@@ -339,6 +343,7 @@ void run ()
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double) properties.weight));
   ftfileprops.comments.push_back("");
   ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) ChemPot));
+  ftfileprops.comments.push_back("particle potential = " + std::to_string((long double) mu));
   ftfileprops.comments.push_back("balance = " + std::to_string((long double) lam));
   ftfileprops.comments.push_back("");
   ftfileprops.comments.push_back("no. iterations = " + std::to_string((long long int) niter));
