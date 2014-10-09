@@ -120,17 +120,17 @@ class DataLoader
       if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
         mask = new Image::Buffer<bool>::voxel_type (*mask_data);
-        loop.start (std::forward_as_tuple (*mask, sh));
+        loop.start (*mask, sh);
       }
       else
-        loop.start (std::forward_as_tuple (sh));
+        loop.start (sh);
       }
 
     bool operator() (Item& item) {
       if (loop.ok()) {
         if (mask) {
           while (!mask->value()) {
-            loop.next (std::forward_as_tuple (*mask, sh));
+            loop.next (*mask, sh);
             if (!loop.ok())
               return false;
           }
@@ -147,9 +147,9 @@ class DataLoader
           item.data[sh[3]] = sh.value();
 
         if (mask)
-          loop.next (std::forward_as_tuple (*mask, sh));
+          loop.next (*mask, sh);
         else
-          loop.next (std::forward_as_tuple (sh));
+          loop.next (sh);
 
         return true;
       }
