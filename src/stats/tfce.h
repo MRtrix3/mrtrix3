@@ -286,8 +286,8 @@ namespace MR
                   max_enhanced_statistic = nonstationarity_enhancement (max_stat, stats, index ? NULL : &enhanced_output_pos);
                 else
                   max_enhanced_statistic = enhancer (max_stat, stats, index ? NULL : &enhanced_output_pos);
-                if (index)
-                  perm_dist_pos[index-1] = max_enhanced_statistic;
+
+                perm_dist_pos[index] = max_enhanced_statistic;
 
                 // Compute the opposite contrast
                 if (perm_dist_neg) {
@@ -304,8 +304,7 @@ namespace MR
                     else
                       max_enhanced_statistic = enhancer (-min_stat, stats, enchanced_output_neg);
                   }
-                  if (index)
-                    (*perm_dist_neg)[index-1] = max_enhanced_statistic;
+                  (*perm_dist_neg)[index] = max_enhanced_statistic;
                 }
               }
 
@@ -358,7 +357,7 @@ namespace MR
           {
 
             {
-              PermutationStack permutations (num_permutations + 1,
+              PermutationStack permutations (num_permutations,
                                              stats_calculator.num_subjects(),
                                              "running " + str(num_permutations) + " permutations...");
 
