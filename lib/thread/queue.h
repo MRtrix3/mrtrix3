@@ -1131,8 +1131,8 @@ namespace MR
      *
      * class Pipe {
      *   public:
-     *     bool operator() (const Item& item_in, Item& item_out) {
-     *       item_out.n = 2 * item_in.n;
+     *     bool operator() (const size_t& item_in, size_t& item_out) {
+     *       item_out = 2 * item_in;
      *       return true;
      *     }
      * };

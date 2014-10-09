@@ -191,6 +191,14 @@ namespace MR
      *   .run (MyFunction(), vox);
      * \endcode
      *
+     * Note that a simple operation such as the previous example can be written
+     * more compactly using C++11 lambda expressions:
+     * \code
+     * MyVoxelType vox;
+     * Image::ThreadedLoop ("computing exponential in-place...", vox)
+     *   .run ([](decltype(vox)& v) { v.value() = std::exp(v.value()); }, vox);
+     * \endcode
+     *
      *
      * As a further example, the following snippet performs the addition of any
      * VoxelTypes \a vox1 and \a vox2, this time storing the results in \a
@@ -209,6 +217,14 @@ namespace MR
      *
      * Image::ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2); 
      * \endcode 
+     *
+     * Again, such a simple operation can be written more compactly using C++11 lambda expressions:
+     * \code
+     * auto f = [](decltype(vox_out)& out, decltype(vox1)& in1, decltype(vox2)& in2) {
+     *   out.value() = in1.value() + in2.value();
+     * }
+     * Image::ThreadedLoop (vox1).run (f, vox_out, vox1, vox2);
+     * \endcode
      * 
      * 
      * This example uses a functor to computes the root-mean-square of \a vox:
