@@ -18,6 +18,7 @@
 icons.cpp
 /config.*
 /configure.log
+/build.log
 /lib/version.h
 /src/project_version.h
 /bin/
