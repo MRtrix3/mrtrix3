@@ -73,6 +73,9 @@ def error (msg):
   
 
 
+def split_path (filename):
+  return filename.replace ('\\', '/').split ('/')
+
 
 
 # common definitions:
@@ -280,7 +283,7 @@ class Entry:
     self.action = 'LB'
     if len(exe_suffix) > 0: cc_file = self.name[:-len(exe_suffix)]
     else: cc_file = self.name
-    cc_file = os.path.join (cmd_dir, os.sep.join (cc_file.split(os.sep)[1:])) + cpp_suffix
+    cc_file = os.path.join (cmd_dir, os.sep.join (split_path(cc_file)[1:])) + cpp_suffix
     self.deps = list_cmd_deps(cc_file)
 
     skip = False
@@ -403,10 +406,10 @@ def default_targets():
   return targets
 
 def is_executable (target):
-  return target.split (os.sep)[0] == bin_dir and not is_moc (target)
+  return split_path (target)[0] == bin_dir and not is_moc (target)
 
 def is_library (target):
-  return target.endswith (lib_suffix) and target.split(os.sep)[-1].startswith (lib_prefix)
+  return target.endswith (lib_suffix) and split_path(target)[-1].startswith (lib_prefix)
 
 def is_object (target):
   return target.endswith (obj_suffix)
@@ -473,7 +476,7 @@ def print_deps (current_file, indent=''):
 
 
 def is_GUI_target (current_file):
-  if 'gui' in current_file.split (os.path.sep):
+  if 'gui' in split_path (current_file):
     return True
   if current_file in file_flags: 
     if 'Q' in file_flags[current_file]: 
@@ -495,7 +498,7 @@ def list_headers (current_file):
     if current_file not in file_flags: 
       file_flags[current_file] = ''
 
-    if 'gui' in current_file.split (os.path.sep):
+    if 'gui' in split_path (current_file):
       if 'Q' not in file_flags[current_file]:
         file_flags[current_file] += 'Q'
     if not os.path.exists (current_file):
