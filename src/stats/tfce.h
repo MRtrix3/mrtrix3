@@ -27,7 +27,7 @@
 #include "math/matrix.h"
 #include "math/stats/permutation.h"
 #include "image/filter/connected_components.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 namespace MR
 {
@@ -164,7 +164,7 @@ namespace MR
               }
 
             size_t next () {
-              Thread::Mutex::Lock lock (permutation_mutex);
+              std::lock_guard<std::mutex> lock (permutation_mutex);
               size_t index = current_permutation++;
               if (index < permutations.size()) 
                 ++progress;
@@ -180,7 +180,7 @@ namespace MR
             size_t current_permutation;
             ProgressBar progress;
             std::vector <std::vector<size_t> > permutations;
-            Thread::Mutex permutation_mutex;
+            std::mutex permutation_mutex;
         };
 
 
@@ -227,14 +227,14 @@ namespace MR
               if (index == 0)
                 tvalue_output = stats;
 
-              value_type max_tfce_stat = tfce_integrator (max_stat, stats, index ? NULL : &tfce_output_pos);
+              value_type max_tfce_stat = tfce_integrator (max_stat, stats, index ? nullptr : &tfce_output_pos);
               if (index)
                 perm_distribution_pos[index-1] = max_tfce_stat;
 
               for (size_t i = 0; i < stats.size(); ++i) 
                 stats[i] = -stats[i];
 
-              max_tfce_stat = tfce_integrator (-min_stat, stats, index ? NULL : &tfce_output_neg);
+              max_tfce_stat = tfce_integrator (-min_stat, stats, index ? nullptr : &tfce_output_neg);
               if (index)
                 perm_distribution_neg[index-1] = max_tfce_stat;
             }
@@ -251,8 +251,7 @@ namespace MR
         {
           PermutationStack permutation_stack (num_permutations, stats_calculator.num_samples());
           Processor<StatsType, TFCEType> processor (permutation_stack, stats_calculator, tfce_integrator, perm_distribution_pos, perm_distribution_neg, tfce_output_pos, tfce_output_neg, tvalue_output);
-          Thread::Array< Processor<StatsType, TFCEType> > thread_list (processor);
-          Thread::Exec threads (thread_list, "TFCE threads");
+          Thread::run (Thread::multi (processor), "TFCE threads");
         }
 
     }

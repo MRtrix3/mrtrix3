@@ -27,8 +27,7 @@
 #include "exception.h"
 #include "mrtrix.h"
 
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"

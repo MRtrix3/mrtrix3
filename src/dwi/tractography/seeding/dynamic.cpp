@@ -163,7 +163,7 @@ namespace MR
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif
-              Thread::Mutex::Lock lock (mutex);
+              std::lock_guard<std::mutex> lock (mutex);
               total_samples += samples;
               ++total_seeds;
               return true;
@@ -198,8 +198,8 @@ namespace MR
 #ifdef DYNAMIC_SEED_DEBUGGING
       void Dynamic::write_seed (const Point<float>& p)
       {
-        static Thread::Mutex mutex;
-        Thread::Mutex::Lock lock (mutex);
+        static std::mutex mutex;
+        std::lock_guard<std::mutex> lock (mutex);
         std::vector< Point<float> > tck;
         tck.push_back (p);
         seed_output.append (tck);

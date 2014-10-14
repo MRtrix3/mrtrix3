@@ -37,7 +37,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"

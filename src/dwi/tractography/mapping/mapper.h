@@ -33,7 +33,7 @@
 #include "image/info.h"
 #include "image/transform.h"
 #include "math/matrix.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/directions/set.h"
 

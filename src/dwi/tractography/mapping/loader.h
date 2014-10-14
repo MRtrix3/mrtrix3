@@ -26,7 +26,7 @@
 
 #include "progressbar.h"
 #include "ptr.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/streamline.h"
 

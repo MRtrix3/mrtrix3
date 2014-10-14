@@ -53,7 +53,7 @@
 #include "image/header.h"
 #include "image/loop.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 //#define SIFT_MODEL_OUTPUT_SH_IMAGES

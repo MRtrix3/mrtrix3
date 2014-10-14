@@ -43,7 +43,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 
-#include "thread/mutex.h"
+#include "thread.h"
 
 #include "dwi/fmls.h"
 #include "dwi/gradient.h"
@@ -140,7 +140,7 @@ class FODCalcAndSeg
         fmls (new DWI::FMLS::Segmenter (dirs, lmax)),
         lmax (lmax),
         output (output),
-        mutex (new Thread::Mutex())
+        mutex (new std::mutex)
     {
       // TODO Still unhappy with the segmentation of small FOD lobes in this context
       // One possibility would be to NOT throw out negative lobes, use no thresholds, and instead
@@ -178,7 +178,7 @@ class FODCalcAndSeg
     const size_t lmax;
     std::vector<FODSegResult>& output;
 
-    RefPtr<Thread::Mutex> mutex;
+    RefPtr<std::mutex> mutex;
 
 };
 
@@ -276,7 +276,7 @@ class ResponseEstimator
         lmax (lmax),
         output (output),
         rng (),
-        mutex (new Thread::Mutex()) { }
+        mutex (new std::mutex()) { }
 
     ResponseEstimator (const ResponseEstimator& that) :
         dwi (that.dwi),
@@ -298,7 +298,7 @@ class ResponseEstimator
 
     mutable Math::RNG rng;
 
-    RefPtr<Thread::Mutex> mutex;
+    RefPtr<std::mutex> mutex;
 
     Math::Matrix<float> gen_rotation_matrix (const Point<float>&) const;
 

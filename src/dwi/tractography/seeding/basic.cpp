@@ -52,7 +52,7 @@ namespace MR
         SeedMask::~SeedMask()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
         bool SeedMask::get_seed (Point<float>& p)
@@ -75,7 +75,7 @@ namespace MR
         Random_per_voxel::~Random_per_voxel()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
 
@@ -85,7 +85,7 @@ namespace MR
           if (expired)
             return false;
 
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
 
           if (vox[2] < 0 || ++inc == num) {
             inc = 0;
@@ -125,7 +125,7 @@ namespace MR
         Grid_per_voxel::~Grid_per_voxel()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
         bool Grid_per_voxel::get_seed (Point<float>& p)
@@ -134,7 +134,7 @@ namespace MR
           if (expired)
             return false;
 
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
 
           if (++pos[2] >= os) {
             pos[2] = 0;
