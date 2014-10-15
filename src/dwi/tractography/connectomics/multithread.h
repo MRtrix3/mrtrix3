@@ -89,7 +89,7 @@ class Mapper
       tck2nodes (a),
       metric (b) { }
 
-    Mapper (Mapper& that) :
+    Mapper (const Mapper& that) :
       tck2nodes (that.tck2nodes),
       metric (that.metric) { }
 
