@@ -107,6 +107,10 @@ namespace MR {
           size_t level () const { return parents.size(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Element& item);
+          static std::string print_header () {
+             return "TYPE  GRP  ELEM VR     SIZE   OFFSET   NAME                                   CONTENTS\n"
+                    "----- ---- ---- --  -------  -------   -------------------------------------  ---------------------------------------\n";
+          }
 
 
         protected:
