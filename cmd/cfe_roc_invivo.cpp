@@ -71,9 +71,9 @@ void usage ()
 
   + Argument ("permutations", "the set of indices for all permutations").type_file_in()
 
-  + Argument ("tpr", "the output tpr prefix").type_file_out()
+  + Argument ("tpr", "the output tpr prefix").type_text()
 
-  + Argument ("fpr", "the output fpr prefix").type_file_out();
+  + Argument ("fpr", "the output fpr prefix").type_text();
 
   OPTIONS
   + Option ("effect", "the percentage decrease applied to simulate pathology")
