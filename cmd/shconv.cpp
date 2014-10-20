@@ -42,7 +42,7 @@ void usage ()
 
   ARGUMENTS
     + Argument ("SH", "the input spherical harmonics coefficients image.").type_image_in ()
-    + Argument ("response", "the convolution kernel (response function)").type_file ()
+    + Argument ("response", "the convolution kernel (response function)").type_file_in ()
     + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out ();
 
   OPTIONS

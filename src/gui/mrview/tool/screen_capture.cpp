@@ -229,13 +229,13 @@ namespace MR
 
 
 
-        bool ScreenCapture::select_output_folder_slot ()
+        void ScreenCapture::select_output_folder_slot ()
         {
           directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
           QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
+          if (!path.size()) return;
           folder_button->setText(path);
           on_output_update ();
-          return true;
         }
 
 

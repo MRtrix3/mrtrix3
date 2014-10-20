@@ -45,7 +45,7 @@ void usage ()
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel image.").type_image_in ()
   + Argument ("threshold", "the input threshold").type_float()
-  + Argument ("fixel",   "the output fixel image").type_file ();
+  + Argument ("fixel",   "the output fixel image").type_image_out ();
 
   OPTIONS
   + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)");

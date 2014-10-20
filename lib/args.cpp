@@ -122,8 +122,10 @@ namespace MR
           return ("float");
         case Text:
           return ("string");
-        case ArgFile:
-          return ("file");
+        case ArgFileIn:
+          return ("file in");
+        case ArgFileOut:
+          return ("file out");
         case ImageIn:
           return ("image in");
         case ImageOut:
@@ -343,8 +345,11 @@ namespace MR
           if (defaults.text)
             stream << " " << defaults.text;
           break;
-        case ArgFile:
-          stream << "FILE";
+        case ArgFileIn:
+          stream << "FILEIN";
+          break;
+        case ArgFileOut:
+          stream << "FILEOUT";
           break;
         case Choice:
           stream << "CHOICE";

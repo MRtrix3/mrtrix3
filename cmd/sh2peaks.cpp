@@ -37,7 +37,7 @@ using namespace App;
 void usage ()
 {
   DESCRIPTION
-  + "compute the amplitudes of a spherical harmonic function at each voxel, along the specified directions";
+    + "extract the peaks of a spherical harmonic function at each voxel, by commencing a Newton search along a set of specified directions";
 
   ARGUMENTS
   + Argument ("SH", "the input image of SH coefficients.")
@@ -71,11 +71,11 @@ void usage ()
   + Option ("seeds",
             "specify a set of directions from which to start the multiple restarts of "
             "the optimisation (by default, the built-in 60 direction set is used)")
-  + Argument ("file").type_file()
+  + Argument ("file").type_file_in()
 
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in ();
+  + Argument ("image").type_image_in();
 }
 
 

@@ -35,7 +35,9 @@ namespace MR
         rate (change_rate),
         min (-std::numeric_limits<float>::max()),
         max (std::numeric_limits<float>::max()),
-        adjusting (false) {
+        deadzone_y (-1),
+        deadzone_value (NAN)
+      {
           setValidator (new QDoubleValidator (this));
 
           setToolTip (tr ("Click & drag to adjust"));
@@ -66,24 +68,31 @@ namespace MR
         if (this->isEnabled()) {
           if (event->type() == QEvent::MouseButtonPress) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
-            if (mevent->button() == mevent->buttons())
-              previous_y = mevent->y();
+            if (mevent->button() == mevent->buttons()) {
+              previous_y = deadzone_y = mevent->y();
+              deadzone_value = value();
+            }
           }
           else if (event->type() == QEvent::MouseButtonRelease) {
-            if (static_cast<QMouseEvent*> (event)->buttons() == Qt::NoButton)
-              adjusting = false;
+            if (static_cast<QMouseEvent*> (event)->buttons() == Qt::NoButton) {
+              deadzone_y = -1;
+              deadzone_value = NAN;
+            }
           }
           else if (event->type() == QEvent::MouseMove) {
             QMouseEvent* mevent = static_cast<QMouseEvent*> (event);
             if (mevent->buttons() != Qt::NoButton) {
-              if (!adjusting && Math::abs (mevent->y() - previous_y) > 4) 
-                adjusting = true;
-              if (adjusting) {
+              if (Math::abs (mevent->y() - deadzone_y) < ADJUST_BUTTON_DEADZONE_SIZE) {
+                if (value() != deadzone_value) {
+                  setValue (deadzone_value);
+                  emit valueChanged();
+                }
+              } else if (mevent->y() != previous_y) {
                 setValue (value() - rate * (mevent->y() - previous_y));
-                previous_y = mevent->y();
                 emit valueChanged();
-                return true;
               }
+              previous_y = mevent->y();
+              return true;
             }
           }
         }

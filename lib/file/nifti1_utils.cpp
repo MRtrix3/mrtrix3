@@ -24,7 +24,7 @@
 #include "get_set.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
-#include "math/math.h"
+#include "math/LU.h"
 #include "math/permutation.h"
 #include "math/versor.h"
 #include "image/header.h"
@@ -40,6 +40,44 @@ namespace MR
       {
         bool  right_left_warning_issued = false;
       }
+
+
+
+
+
+      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& axes)
+      {
+        Image::Stride::List strides = Image::Stride::get (H);
+        strides.resize (3);
+        axes = Image::Stride::order (strides);
+        bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
+
+        if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
+            !flip[0] && !flip[1] && !flip[2])
+          return H.transform();
+
+        Math::Matrix<float> M (H.transform());
+
+        for (size_t i = 0; i < 3; i++)
+          M.column (i) = H.transform().column (axes[i]);
+
+        Math::Vector<float> translation = M.column (3).sub (0,3);
+        for (size_t i = 0; i < 3; ++i) {
+          if (flip[i]) {
+            float length = float (H.dim (axes[i])-1) * H.vox (axes[i]);
+            Math::Vector<float> axis = M.column (i).sub (0,3);
+            for (size_t n = 0; n < 3; n++) {
+              axis[n] = -axis[n];
+              translation[n] -= length*axis[n];
+            }
+          }
+        }
+
+        return M;
+      }
+
+
+
 
 
 
@@ -199,9 +237,9 @@ namespace MR
             M (3,3) = 1.0;
 
             // get voxel sizes:
-            H.vox(0) = Math::sqrt (Math::pow2 (M (0,0)) + Math::pow2 (M (1,0)) + Math::pow2 (M (2,0)));
-            H.vox(1) = Math::sqrt (Math::pow2 (M (0,1)) + Math::pow2 (M (1,1)) + Math::pow2 (M (2,1)));
-            H.vox(2) = Math::sqrt (Math::pow2 (M (0,2)) + Math::pow2 (M (1,2)) + Math::pow2 (M (2,2)));
+            H.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
             M (0,0) /= H.vox (0);
@@ -217,10 +255,14 @@ namespace MR
             M (2,2) /= H.vox (2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
-            Math::Versor<float> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
             H.transform().allocate(4,4);
-            Q.to_matrix (H.transform());
 
+            {
+              Math::Versor<double> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
+              Math::Matrix<double> R (3,3);
+              Q.to_matrix (R);
+              H.transform().sub (0,3,0,3) = R;
+            }
 
             H.transform()(0,3) = get<float32> (&NH.qoffset_x, is_BE);
             H.transform()(1,3) = get<float32> (&NH.qoffset_y, is_BE);
@@ -230,8 +272,8 @@ namespace MR
             H.transform()(3,3) = 1.0;
 
             // qfac:
-            float qfac = get<float32> (&NH.pixdim[0], is_BE);
-            if (qfac != 0.0) {
+            float qfac = get<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+            if (qfac < 0.0) {
               H.transform()(0,2) *= qfac;
               H.transform()(1,2) *= qfac;
               H.transform()(2,2) *= qfac;
@@ -299,6 +341,12 @@ namespace MR
 
 
 
+
+
+
+
+
+
       void write (nifti_1_header& NH, const Image::Header& H, bool has_nii_suffix)
       {
         if (H.ndim() > 7)
@@ -306,36 +354,8 @@ namespace MR
 
         bool is_BE = H.datatype().is_big_endian();
 
-
-
-        // new transform handling code starts here
-
-        Image::Stride::List strides = Image::Stride::get (H);
-        strides.resize (3);
-        std::vector<size_t> perm = Image::Stride::order (strides);
-        bool flip[] = { strides[perm[0]] < 0, strides[perm[1]] < 0, strides[perm[2]] < 0 };
-
-        Math::Matrix<float> M (H.transform());
-
-        if (perm[0] != 0 || perm[1] != 1 || perm[2] != 2 ||
-            flip[0] || flip[1] || flip[2]) {
-
-          for (size_t i = 0; i < 3; i++)
-            M.column (i) = H.transform().column (perm[i]);
-
-          Math::Vector<float> translation = M.column (3).sub (0,3);
-          for (size_t i = 0; i < 3; ++i) {
-            if (flip[i]) {
-              float length = float (H.dim (perm[i])-1) * H.vox (perm[i]);
-              Math::Vector<float> axis = M.column (i).sub (0,3);
-              for (size_t n = 0; n < 3; n++) {
-                axis[n] = -axis[n];
-                translation[n] -= length*axis[n];
-              }
-            }
-          }
-
-        }
+        std::vector<size_t> axes;
+        Math::Matrix<float> M = adjust_transform (H, axes);
 
 
         memset (&NH, 0, sizeof (NH));
@@ -351,7 +371,7 @@ namespace MR
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
         for (size_t i = 0; i < 3; i++)
-          put<int16_t> (H.dim (perm[i]), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++)
           put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
 
@@ -417,7 +437,7 @@ namespace MR
 
         // voxel sizes:
         for (size_t i = 0; i < 3; ++i)
-          put<float32> (H.vox (perm[i]), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.vox (axes[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); ++i)
           put<float32> (H.vox (i), &NH.pixdim[i+1], is_BE);
 
@@ -447,29 +467,37 @@ namespace MR
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        const Math::Versor<float> Q (M);
+        Math::Matrix<double> R = M.sub(0,3,0,3);
+        if (Math::LU::sgndet (R) < 0.0) {
+          R.column (2) *= -1.0;
+          NH.pixdim[0] = -1.0;
+        }
+        const Math::Versor<double> Q (R);
 
         put<float32> (Q[1], &NH.quatern_b, is_BE);
         put<float32> (Q[2], &NH.quatern_c, is_BE);
         put<float32> (Q[3], &NH.quatern_d, is_BE);
 
+
+        // sform:
+
         put<float32> (M(0,3), &NH.qoffset_x, is_BE);
         put<float32> (M(1,3), &NH.qoffset_y, is_BE);
         put<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.vox (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.vox (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.vox (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M (0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.vox (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.vox (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.vox (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M (1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.vox (perm[0]) *M (2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.vox (perm[1]) *M (2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.vox (perm[2]) *M (2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.vox (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.vox (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.vox (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);

@@ -22,13 +22,13 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <fstream>
 
 #include "datatype.h"
 #include "image/stride.h"
 #include "types.h"
 #include "file/utils.h"
 #include "file/entry.h"
+#include "file/ofstream.h"
 #include "file/path.h"
 #include "file/key_value.h"
 #include "image/utils.h"
@@ -144,12 +144,7 @@ namespace MR
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
 
-        if (!File::is_tempfile (H.name()))
-          File::create (H.name());
-
-        std::ofstream out (H.name().c_str(), std::ios::out | std::ios::binary);
-        if (!out)
-          throw Exception ("error creating file \"" + H.name() + "\":" + strerror (errno));
+        File::OFStream out (H.name(), std::ios::out | std::ios::binary);
 
         out << "mrtrix sparse image\n";
 

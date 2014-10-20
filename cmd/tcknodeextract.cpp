@@ -71,7 +71,7 @@ void usage ()
   + "see available command-line options for altering this behaviour.";
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file()
+  + Argument ("tracks_in",      "the input track file").type_file_in()
   + Argument ("nodes_image_in", "the input parcellated anatomical image").type_image_in()
   + Argument ("prefix_out",     "the output track file prefix").type_text();
 

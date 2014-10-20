@@ -112,7 +112,7 @@ void usage ()
               "- TensorDet / TensorProb: the DWI image.\n"
              ).type_image_in()
 
-  + Argument ("tracks", "the output file containing the tracks generated.").type_file();
+  + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
 
 
 
@@ -129,7 +129,10 @@ void usage ()
 
   + DWI::Tractography::ACT::ACTOption
 
-  + DWI::Tractography::Seeding::SeedOption;
+  + DWI::Tractography::Seeding::SeedOption
+  
+  + DWI::GradOption;
+
 
 };
 

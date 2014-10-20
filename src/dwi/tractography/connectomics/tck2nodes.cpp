@@ -33,7 +33,7 @@ namespace Connectomics {
 
 
 
-node_t Tck2nodes_voxel::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_voxel::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
 {
 
   const Point<float>& p (end ? tck.back() : tck.front());
@@ -72,7 +72,7 @@ void Tck2nodes_radial::initialise_search ()
 
 
 
-node_t Tck2nodes_radial::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
 {
 
   float min_dist = max_dist;
@@ -107,7 +107,7 @@ node_t Tck2nodes_radial::select_node (const std::vector< Point<float> >& tck, Vo
 
 
 
-node_t Tck2nodes_revsearch::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
 {
 
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
@@ -138,7 +138,7 @@ node_t Tck2nodes_revsearch::select_node (const std::vector< Point<float> >& tck,
 
 
 
-node_t Tck2nodes_forwardsearch::select_node (const std::vector< Point<float> >& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_forwardsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
 {
 
   // Start by defining the endpoint and the tangent at the endpoint

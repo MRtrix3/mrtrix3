@@ -118,15 +118,22 @@ namespace MR
             hlayout->setContentsMargins (0, 0, 0, 0);
             hlayout->setSpacing (0);
 
-            colour_combobox = new QComboBox;
-            colour_combobox->addItem ("Colour By Value");
-            colour_combobox->addItem ("Colour By Direction");
-            colour_combobox->addItem ("Set Colour");
-            colour_combobox->addItem ("Randomise Colour");
+            //colour_combobox = new QComboBox;
+            colour_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
+            hlayout->addWidget (new QLabel ("colour by "));
+            main_box->addLayout (hlayout);
+            colour_combobox->addItem ("Value");
+            colour_combobox->addItem ("Direction");
+            colour_combobox->addItem ("Manual Colour");
+            colour_combobox->addItem ("Random Colour");
             hlayout->addWidget (colour_combobox, 0);
             connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed_slot(int)));
 
-            // Colourmap menu:
+            colourmap_option_group = new QGroupBox ("Colour map and scaling");
+            main_box->addWidget (colourmap_option_group);
+            hlayout = new HBoxLayout;
+            colourmap_option_group->setLayout (hlayout);
+
             colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
 
             ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
@@ -153,12 +160,6 @@ namespace MR
             colourmap_button->setPopupMode (QToolButton::InstantPopup);
             colourmap_button->setMenu (colourmap_menu);
             hlayout->addWidget (colourmap_button);
-            main_box->addLayout (hlayout);
-
-            QGroupBox* group_box = new QGroupBox ("Intensity scaling");
-            main_box->addWidget (group_box);
-            hlayout = new HBoxLayout;
-            group_box->setLayout (hlayout);
 
             min_value = new AdjustButton (this);
             connect (min_value, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
@@ -167,7 +168,6 @@ namespace MR
             max_value = new AdjustButton (this);
             connect (max_value, SIGNAL (valueChanged()), this, SLOT (on_set_scaling_slot()));
             hlayout->addWidget (max_value);
-
 
             QGroupBox* threshold_box = new QGroupBox ("Thresholds");
             main_box->addWidget (threshold_box);
@@ -190,25 +190,28 @@ namespace MR
 
             hlayout = new HBoxLayout;
             main_box->addLayout (hlayout);
-            line_length_by_value = new QGroupBox (tr("line length by value"));
-            line_length_by_value->setCheckable (true);
-            line_length_by_value->setChecked (false);
-            hlayout->addWidget (line_length_by_value);
-            connect (line_length_by_value, SIGNAL (clicked (bool)), this, SLOT (on_line_length_by_value_slot (bool)));
+            hlayout->addWidget (new QLabel ("scale by "));
+            //length_combobox = new QComboBox;
+            length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
+            length_combobox->addItem ("Unity");
+            length_combobox->addItem ("Fixel amplitude");
+            length_combobox->addItem ("Associated value");
+            hlayout->addWidget (length_combobox, 0);
+            connect (length_combobox, SIGNAL (activated(int)), this, SLOT (length_type_slot(int)));
 
             hlayout = new HBoxLayout;
             main_box->addLayout (hlayout);
-            hlayout->addWidget (new QLabel ("line length"));
-            line_length = new AdjustButton (this, 0.01);
-            line_length->setMin (0.1);
-            line_length->setValue (1.0);
-            connect (line_length, SIGNAL (valueChanged()), this, SLOT (line_length_slot()));
-            hlayout->addWidget (line_length);
+            hlayout->addWidget (new QLabel ("length multiplier"));
+            length_multiplier = new AdjustButton (this, 0.01);
+            length_multiplier->setMin (0.1);
+            length_multiplier->setValue (1.0);
+            connect (length_multiplier, SIGNAL (valueChanged()), this, SLOT (length_multiplier_slot()));
+            hlayout->addWidget (length_multiplier);
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
             line_thickness_slider->setRange (100,1500);
-            line_thickness_slider->setSliderPosition (float (100.0));
+            line_thickness_slider->setSliderPosition (float (200.0));
             connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 0, 0);
             default_opt_grid->addWidget (line_thickness_slider, 0, 1);
@@ -307,26 +310,25 @@ namespace MR
 
         void Vector::update_selection ()
         {
-          //TODO fix multi selection seg fault, partially checked line length by value
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+
           colour_combobox->setEnabled (indices.size());
-          colourmap_menu->setEnabled (indices.size());
+          colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
           threshold_lower_box->setEnabled (indices.size());
           threshold_upper_box->setEnabled (indices.size());
           threshold_lower->setEnabled (indices.size());
           threshold_upper->setEnabled (indices.size());
-          line_length->setEnabled (indices.size());
-          line_length_by_value->setEnabled (indices.size());
+          length_multiplier->setEnabled (indices.size());
+          length_combobox->setEnabled (indices.size());
 
           if (!indices.size()) {
             max_value->setValue (NAN);
             min_value->setValue (NAN);
             threshold_lower->setValue (NAN);
             threshold_upper->setValue (NAN);
-            line_length->setValue (NAN);
-            line_length_by_value->setChecked (false);
+            length_multiplier->setValue (NAN);
             return;
           }
 
@@ -334,7 +336,6 @@ namespace MR
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
           float line_length_multiplier = 0.0f;
           int num_lower_threshold = 0, num_upper_threshold = 0;
-          int num_line_length_by_value = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
             Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
@@ -347,8 +348,8 @@ namespace MR
             rate += fixel->scaling_rate();
             min_val += fixel->scaling_min();
             max_val += fixel->scaling_max();
-            num_lower_threshold += fixel->use_discard_lower();
-            num_upper_threshold += fixel->use_discard_upper();
+            num_lower_threshold += (fixel->use_discard_lower() ? 1 : 0);
+            num_upper_threshold += (fixel->use_discard_upper() ? 1 : 0);
             if (!std::isfinite (fixel->lessthan))
               fixel->lessthan = fixel->intensity_min();
             if (!std::isfinite (fixel->greaterthan))
@@ -356,7 +357,6 @@ namespace MR
             lower_threshold_val += fixel->lessthan;
             upper_threshold_val += fixel->greaterthan;
             line_length_multiplier += fixel->get_line_length_multiplier();
-            num_line_length_by_value += fixel->get_line_length_by_value();
           }
 
           rate /= indices.size();
@@ -366,39 +366,96 @@ namespace MR
           upper_threshold_val /= indices.size();
           line_length_multiplier /= indices.size();
 
-          if (colourmap_index < 0)
-            for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i )
-              colourmap_actions[i]->setChecked (false);
-          else
-            colourmap_actions[colourmap_index]->setChecked (true);
+          // Not all colourmaps are added to this list; therefore need to find out
+          //   how many menu elements were actually created by ColourMap::create_menu()
+          static size_t colourmap_count = 0;
+          if (!colourmap_count) {
+            for (size_t i = 0; MR::GUI::MRView::ColourMap::maps[i].name; ++i) {
+              if (!MR::GUI::MRView::ColourMap::maps[i].special)
+                ++colourmap_count;
+            }
+          }
 
+          if (colourmap_index < 0) {
+            for (size_t i = 0; i != colourmap_count; ++i )
+              colourmap_actions[i]->setChecked (false);
+          } else {
+            colourmap_actions[colourmap_index]->setChecked (true);
+          }
+
+          // FIXME Intensity windowing display values are not correctly updated
           min_value->setRate (rate);
           max_value->setRate (rate);
           min_value->setValue (min_val);
           max_value->setValue (max_val);
-          line_length->setValue (line_length_multiplier);
+          length_multiplier->setValue (line_length_multiplier);
+
+          // Do a better job of setting colour / length with multiple inputs
+          Fixel* first_fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          const FixelLengthType length_type = first_fixel->get_length_type();
+          const FixelColourType colour_type = first_fixel->get_colour_type();
+          bool consistent_length = true, consistent_colour = true;
+          size_t colour_by_value_count = (first_fixel->get_colour_type() == CValue);
+          for (int i = 1; i < indices.size(); ++i) {
+            Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            if (fixel->get_length_type() != length_type)
+              consistent_length = false;
+            if (fixel->get_colour_type() != colour_type)
+              consistent_colour = false;
+            if (fixel->get_colour_type() == CValue)
+              ++colour_by_value_count;
+          }
+
+          if (consistent_length) {
+            length_combobox->setCurrentIndex (length_type);
+          } else {
+            length_combobox->setError();
+          }
+
+          if (consistent_colour) {
+            colour_combobox->setCurrentIndex (colour_type);
+            colourmap_option_group->setEnabled (colour_type == CValue);
+          } else {
+            colour_combobox->setError();
+            // Enable as long as there is at least one colour-by-value
+            colourmap_option_group->setEnabled (colour_by_value_count);
+          }
 
           threshold_lower->setValue (lower_threshold_val);
-          threshold_lower_box->setCheckState (num_lower_threshold ?
-              ( num_lower_threshold == indices.size() ?
-                Qt::Checked :
-                Qt::PartiallyChecked ) :
-                Qt::Unchecked);
+          if (num_lower_threshold) {
+            if (num_lower_threshold == indices.size()) {
+              threshold_lower_box->setTristate (false);
+              threshold_lower_box->setCheckState (Qt::Checked);
+              threshold_lower->setEnabled (true);
+            } else {
+              threshold_lower_box->setTristate (true);
+              threshold_lower_box->setCheckState (Qt::PartiallyChecked);
+              threshold_lower->setEnabled (true);
+            }
+          } else {
+            threshold_lower_box->setTristate (false);
+            threshold_lower_box->setCheckState (Qt::Unchecked);
+            threshold_lower->setEnabled (false);
+          }
           threshold_lower->setRate (rate);
 
           threshold_upper->setValue (upper_threshold_val);
-          threshold_upper_box->setCheckState (num_upper_threshold ?
-              ( num_upper_threshold == indices.size() ?
-                Qt::Checked :
-                Qt::PartiallyChecked ) :
-                Qt::Unchecked);
+          if (num_upper_threshold) {
+            if (num_upper_threshold == indices.size()) {
+              threshold_upper_box->setTristate (false);
+              threshold_upper_box->setCheckState (Qt::Checked);
+              threshold_upper->setEnabled (true);
+            } else {
+              threshold_upper_box->setTristate (true);
+              threshold_upper_box->setCheckState (Qt::PartiallyChecked);
+              threshold_upper->setEnabled (true);
+            }
+          } else {
+            threshold_upper_box->setTristate (false);
+            threshold_upper_box->setCheckState (Qt::Unchecked);
+            threshold_upper->setEnabled (false);
+          }
           threshold_upper->setRate (rate);
-
-          line_length_by_value->setChecked (num_line_length_by_value ?
-              ( num_line_length_by_value == indices.size() ?
-                Qt::Checked :
-                Qt::PartiallyChecked ) :
-                Qt::Unchecked);
         }
 
 
@@ -416,6 +473,39 @@ namespace MR
         }
 
 
+        void Vector::length_multiplier_slot ()
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (length_multiplier->value());
+          window.updateGL();
+        }
+
+
+        void Vector::length_type_slot (int selection)
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          switch (selection) {
+            case 0: {
+              for (int i = 0; i < indices.size(); ++i)
+                fixel_list_model->get_fixel_image (indices[i])->set_length_type (Unity);
+              break;
+            }
+            case 1: {
+              for (int i = 0; i < indices.size(); ++i)
+                fixel_list_model->get_fixel_image (indices[i])->set_length_type (Amplitude);
+              break;
+            }
+            case 2: {
+              for (int i = 0; i < indices.size(); ++i)
+                fixel_list_model->get_fixel_image (indices[i])->set_length_type (LValue);
+              break;
+            }
+          }
+          window.updateGL();
+        }
+
+
         void Vector::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
           update_selection ();
@@ -425,24 +515,6 @@ namespace MR
         void Vector::on_crop_to_slice_slot (bool is_checked)
         {
           do_crop_to_slice = is_checked;
-          window.updateGL();
-        }
-
-
-        void Vector::line_length_slot ()
-        {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (line_length->value());
-          }
-          window.updateGL();
-        }
-
-        void Vector::on_line_length_by_value_slot (bool length_by_value) {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            fixel_list_model->get_fixel_image (indices[i])->set_line_length_by_value (length_by_value);
-          }
           window.updateGL();
         }
 
@@ -476,32 +548,32 @@ namespace MR
 
           switch (selection) {
             case 0: {
-              colourmap_menu->setEnabled (true);
+              colourmap_option_group->setEnabled (true);
               for (int i = 0; i < indices.size(); ++i)
-                fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Value);
+                fixel_list_model->get_fixel_image (indices[i])->set_colour_type (CValue);
               break;
             }
             case 1: {
-              colourmap_menu->setEnabled (false);
+              colourmap_option_group->setEnabled (false);
               for (int i = 0; i < indices.size(); ++i)
                 fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Direction);
               break;
             }
             case 2: {
-              colourmap_menu->setEnabled (false);
+              colourmap_option_group->setEnabled (false);
               QColor color;
               color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
               float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
               if (color.isValid()) {
                 for (int i = 0; i < indices.size(); ++i) {
-                  fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Colour);
+                  fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Manual);
                   fixel_list_model->get_fixel_image (indices[i])->set_colour (colour);
                 }
               }
               break;
             }
             case 3: {
-              colourmap_menu->setEnabled (false);
+              colourmap_option_group->setEnabled (false);
               for (int i = 0; i < indices.size(); ++i) {
                 float colour[3];
                 Math::RNG rng;
@@ -510,7 +582,7 @@ namespace MR
                   colour[1] = rng.uniform();
                   colour[2] = rng.uniform();
                 } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-                dynamic_cast<Fixel*> (fixel_list_model->items[indices[i].row()])->set_colour_type (Colour);
+                dynamic_cast<Fixel*> (fixel_list_model->items[indices[i].row()])->set_colour_type (Manual);
                 dynamic_cast<Fixel*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
               }
               break;
@@ -553,6 +625,7 @@ namespace MR
 
         void Vector::threshold_lower_changed (int unused)
         {
+          if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -563,6 +636,7 @@ namespace MR
 
         void Vector::threshold_upper_changed (int unused)
         {
+          if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
@@ -573,6 +647,7 @@ namespace MR
 
         void Vector::threshold_lower_value_changed ()
         {
+          if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_lower_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
@@ -584,6 +659,7 @@ namespace MR
 
         void Vector::threshold_upper_value_changed ()
         {
+          if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           if (threshold_upper_box->isChecked()) {
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
@@ -604,6 +680,7 @@ namespace MR
           }
           return false;
         }
+
 
 
       }

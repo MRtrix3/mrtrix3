@@ -46,6 +46,10 @@ using namespace MR;
 using namespace App;
 
 
+const char* conversions[] = { "old", "new", "native", "force_oldtonew", "force_newtoold", NULL };
+enum conv_t { NONE, OLD, NEW, FORCE_OLDTONEW, FORCE_NEWTOOLD };
+
+
 void usage ()
 {
 
@@ -72,9 +76,13 @@ void usage ()
 
 
   OPTIONS
-    + Option ("force_old", "force the image data to use the old (i.e. non-orthonormal) basis")
-    + Option ("force_new", "force the image data to use the new (i.e. orthonormal) basis")
-    + Option ("force_native", "force the image data to use the basis under which MRtrix is compiled");
+    + Option ("convert", "convert the image data in-place to the desired basis (if necessary). "
+                         "Options are: old, new, native (whichever basis MRtrix is compiled for; "
+                         "most likely the new orthonormal basis), force_oldtonew, force_newtoold. "
+                         "Note that for the \"force_*\" choices should ideally only be used in "
+                         "cases where the command is unable to automatically determine the SH basis "
+                         "using the existing image data.")
+      + Argument ("mode").type_choice (conversions);
 
 }
 
@@ -84,7 +92,8 @@ void usage ()
 
 // Perform a linear regression on the power ratio in each order
 // Omit l=2 - tends to be abnormally small due to non-isotropic brain-wide fibre distribution
-// Use this to project the power ratio at l=0; better predictor for poor data
+// Use this to project the power ratio at either l=0 or l=lmax (depending on the gradient);
+//   this has proven to be a better predictor of SH basis for poor data
 // Also, if the regression has a substantial gradient, warn the user
 // Threshold on gradient will depend on the basis of the image
 //
@@ -106,7 +115,7 @@ std::pair<float, float> get_regression (const std::vector<float>& ratios)
 
 
 template <typename value_type>
-void check_and_update (Image::Header& H, const bool force_old, const bool force_new)
+void check_and_update (Image::Header& H, const conv_t conversion)
 {
 
   const size_t lmax = Math::SH::LforN (H.dim(3));
@@ -117,7 +126,8 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
 
-  typename Image::Buffer<value_type> buffer (H, (force_old || force_new));
+  // Open in read-write mode if there's a chance of modification
+  typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
   typename Image::Buffer<value_type>::voxel_type v (buffer);
 
   // Need to mask out voxels where the DC term is zero
@@ -147,7 +157,7 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
   // volumes independently, and report ratio for each harmonic order
   Ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress = new ProgressBar ("Evaluating SH basis of image " + H.name() + "...", N-1);
+    progress = new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1);
 
   std::vector<float> ratios;
 
@@ -177,7 +187,7 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
     ratios.push_back (power_ratio);
 
     INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
-        ", overall m=0 power: " + str (mzero_sum));
+        ", m==0 power: " + str (mzero_sum));
 
   }
 
@@ -185,32 +195,34 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
     progress = NULL;
 
   // First is ratio to be used for SH basis decision, second is gradient of regression
-  std::pair<float, float> regression;
+  std::pair<float, float> regression = std::make_pair (0.0f, 0.0f);
   size_t l_for_decision;
+  float power_ratio;
 
   // The gradient will change depending on the current basis, so the threshold needs to also
   // The gradient is as a function of l, not of even orders
-  float grad_threshold = -0.02;
+  float grad_threshold = 0.02;
 
   switch (lmax) {
 
     // Lmax == 2: only one order to use
     case 2:
-      regression = std::make_pair (ratios.front(), 0.0);
+      power_ratio = ratios.front();
       l_for_decision = 2;
       break;
 
     // Lmax = 4: Use l=4 order to determine SH basis, can't check gradient since l=2 is untrustworthy
     case 4:
-      regression = std::make_pair (ratios.back(), 0.0);
+      power_ratio = ratios.back();
       l_for_decision = 4;
       break;
 
     // Lmax = 6: Use l=4 order to determine SH basis, but checking the gradient is not reliable:
     //   artificially double the threshold so the power ratio at l=6 needs to be substantially
-    //   smaller than l=4 to throw a warning
+    //   different to l=4 to throw a warning
     case 6:
-      regression = std::make_pair (ratios[1], 0.5 * (ratios[2] - ratios[1]));
+      regression = std::make_pair (ratios[1] - 2*(ratios[2]-ratios[1]), 0.5*(ratios[2]-ratios[1]));
+      power_ratio = ratios[1];
       l_for_decision = 4;
       grad_threshold *= 2.0;
       break;
@@ -219,43 +231,75 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
     // (this is a more reliable quantification on poor data than l=4 alone)
     default:
       regression = get_regression (ratios);
+      power_ratio = regression.first;
       l_for_decision = 0;
       break;
 
   }
 
-  DEBUG ("Power ratio for assessing SH basis is " + str(regression.first) + " as derived from l=" + str(l_for_decision));
-  if (regression.second)
-    DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
+  // If the gradient is in fact positive (i.e. power ration increases for larger l), use the
+  //   regression to pull the power ratio from l=lmax
+  if (regression.second > 0.0) {
+    l_for_decision = lmax;
+    power_ratio = regression.first + (lmax * regression.second);
+  }
 
-  // Threshold to make decision on what basis is being used, if unambiguous
+  DEBUG ("Power ratio for assessing SH basis is " + str(power_ratio) + " as " + (lmax < 8 ? "derived from" : "regressed to") + " l=" + str(l_for_decision));
+
+  // Threshold to make decision on what basis the data are currently stored in
   value_type multiplier = 1.0;
-  if ((regression.first > (5.0/3.0)) && (regression.first < (7.0/3.0))) {
-    CONSOLE ("Image " + str(H.name()) + " appears to be in the old non-orthonormal basis");
-    if (force_new)
-      multiplier = 1.0 / M_SQRT2;
+  if ((power_ratio > (5.0/3.0)) && (power_ratio < (7.0/3.0))) {
+
+    CONSOLE ("Image \"" + str(H.name()) + "\" appears to be in the old non-orthonormal basis");
+    switch (conversion) {
+      case NONE: break;
+      case OLD: break;
+      case NEW: multiplier = 1.0 / M_SQRT2; break;
+      case FORCE_OLDTONEW: multiplier = 1.0 / M_SQRT2; break;
+      case FORCE_NEWTOOLD: WARN ("Refusing to convert image \"" + H.name() + "\" from new to old basis, as data appear to already be in the old non-orthonormal basis"); return;
+    }
     grad_threshold *= 2.0;
-  } else if ((regression.first > (2.0/3.0)) && (regression.first < (4.0/3.0))) {
-    CONSOLE ("Image " + str(H.name()) + " appears to be in the new orthonormal basis");
-    if (force_old)
-      multiplier = M_SQRT2;
+
+  } else if ((power_ratio > (2.0/3.0)) && (power_ratio < (4.0/3.0))) {
+
+    CONSOLE ("Image \"" + str(H.name()) + "\" appears to be in the new orthonormal basis");
+    switch (conversion) {
+      case NONE: break;
+      case OLD: multiplier = M_SQRT2; break;
+      case NEW: break;
+      case FORCE_OLDTONEW: WARN ("Refusing to convert image \"" + H.name() + "\" from old to new basis, as data appear to already be in the new orthonormal basis"); return;
+      case FORCE_NEWTOOLD: multiplier = M_SQRT2; break;
+    }
+
   } else {
+
     multiplier = 0.0;
-    WARN ("Cannot make unambiguous decision on SH basis of image " + H.name()
-        + " (power ratio " + (l_for_decision ? ("in l=" + str(l_for_decision)) : ("regressed to l=0")) + " is " + str(regression.first) + ")");
+    WARN ("Cannot make unambiguous decision on SH basis of image \"" + H.name()
+        + "\" (power ratio " + (lmax < 8 ? "in" : "regressed to") + " " + str(l_for_decision) + " is " + str(power_ratio) + ")");
+
+    if (conversion == FORCE_OLDTONEW) {
+      WARN ("Forcing conversion of image \"" + H.name() + "\" from old to new SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this conversion!");
+      multiplier = 1.0 / M_SQRT2;
+    } else if (conversion == FORCE_NEWTOOLD) {
+      WARN ("Forcing conversion of image \"" + H.name() + "\" from new to old SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this conversion!");
+      multiplier = M_SQRT2;
+    }
+
   }
 
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
-  if (regression.second < grad_threshold) {
-    WARN ("Image " + H.name() + " may have been derived from poor directional encoding");
-    WARN ("(m==0 to m!=0 power ratio decreasing by " + str(-2.0*regression.second) + " per even order)");
+  if (regression.second)
+    DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
+  if (Math::abs(regression.second) > grad_threshold) {
+    WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
+    WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
 
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
     Image::LoopInOrder loop (v, 0, 3);
-    ProgressBar progress ("Modifying SH basis of image " + H.name() + "...", N-1);
+    ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
     for (v[3] = 1; v[3] != N; ++v[3]) {
       if (!mzero_terms[v[3]]) {
         for (loop.start (v); loop.ok(); loop.next (v))
@@ -264,8 +308,8 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
       ++progress;
     }
 
-  } else if (multiplier && (force_old || force_new)) {
-    INFO ("Image " + H.name() + " already in desired basis; nothing to do");
+  } else if (multiplier && (conversion != NONE)) {
+    INFO ("Image \"" + H.name() + "\" already in desired basis; nothing to do");
   }
 
 }
@@ -278,46 +322,53 @@ void check_and_update (Image::Header& H, const bool force_old, const bool force_
 
 
 
-
-
-
-
 void run ()
 {
-  bool force_old = get_options ("force_old").size();
-  bool force_new = get_options ("force_new").size();
-  if (force_old && force_new)
-    throw Exception ("Options -force_old and -force_new are mutually exclusive");
-  if (get_options ("force_native").size()) {
-    if (force_old || force_new)
-      throw Exception ("Option -force_native cannot be used in conjunction with one of the other -force options");
+  conv_t conversion = NONE;
+  Options opt = get_options ("convert");
+  if (opt.size()) {
+    switch (int(opt[0][0])) {
+      case 0: conversion = OLD; break;
+      case 1: conversion = NEW; break;
+      case 2:
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-    INFO ("Forcing to new orthonormal basis (native)");
-    force_new = true;
+        conversion = NEW;
 #else
-    INFO ("Forcing to old non-orthonormal basis (native)");
-    force_old = true;
+        conversion = OLD;
 #endif
+        break;
+      case 3: conversion = FORCE_OLDTONEW; break;
+      case 4: conversion = FORCE_NEWTOOLD; break;
+      default: assert (0); break;
+    }
   }
 
   for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
     Image::Header H (path);
-    if (H.ndim() != 4)
-      throw Exception ("Image " + H.name() + " is not 4D and therefore cannot be an SH image");
+    if (H.ndim() != 4) {
+      WARN ("Image \"" + H.name() + "\" is not 4D and therefore cannot be an SH image");
+      continue;
+    }
     const size_t lmax = Math::SH::LforN (H.dim(3));
-    if (!lmax)
-      throw Exception ("Image " + H.name() + " does not contain enough volumes to be an SH image");
-    if (Math::SH::NforL (lmax) != size_t(H.dim(3)))
-      throw Exception ("Image " + H.name() + " does not contain a number of volumes appropriate for an SH image");
-    if (!H.datatype().is_floating_point())
-      throw Exception ("Image " + H.name() + " does not use a floating-point format and therefore cannot be an SH image");
+    if (!lmax) {
+      WARN ("Image \"" + H.name() + "\" does not contain enough volumes to be an SH image");
+      continue;
+    }
+    if (Math::SH::NforL (lmax) != size_t(H.dim(3))) {
+      WARN ("Image \"" + H.name() + "\" does not contain a number of volumes appropriate for an SH image");
+      continue;
+    }
+    if (!H.datatype().is_floating_point()) {
+      WARN ("Image \"" + H.name() + "\" does not use a floating-point data type and therefore cannot be an SH image");
+      continue;
+    }
 
     if (H.datatype().bytes() == 4)
-      check_and_update<float> (H, force_old, force_new);
+      check_and_update<float>  (H, conversion);
     else
-      check_and_update<double> (H, force_old, force_new);
+      check_and_update<double> (H, conversion);
 
   }
 

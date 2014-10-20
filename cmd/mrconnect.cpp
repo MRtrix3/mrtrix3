@@ -38,17 +38,13 @@ using namespace std;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Connected component labelling of a binary input image of n-dimensions. Each connected "
-    "component is labelled with a unique integer in increasing order of component size. \n\n"
-    "By default this filter will assume that neighbours (along all dimensions) have contiguous "
-    "indices (in space, time or whatever you feel like). Alternatively an adjacency matrix can "
-    "be used to define neighbouring indices for a particular dimension. If the 4th dimension "
-    "contains volumes that correspond to equally distributed directions, then the adjacency "
-    "can be defined using a set of directions and an angular threshold. This permits clustering "
-    "over both the spatial and orientations domains";
+  + "Connected component labelling of a binary input image. Each connected "
+    "component is labelled with a unique integer in order of component size."
+  + "Note that if the input image is 4D then the default behaviour is to connect components "
+    "within each 3D volume (see the -axes option to change this behaviour). "  ;
 
   ARGUMENTS
   + Argument ("image_in",
@@ -57,15 +53,9 @@ void usage ()
               "the labelled output image").type_image_out();
 
   OPTIONS
-  + Option ("directions", "the list of directions associated with each 3D volume, generated using the gendir command")
-  + Argument ("file").type_file ()
-
-  + Option ("angle", "the angular threshold used to define neighbouring directions (in degrees)")
-  + Argument ("value").type_float (0, 15, 90)
-
-  + Option ("ignore",
-            "specify one or more axes to ignore. For example, to perform connected "
-            "components separately on each 3D image within a 4D volume then ignore axis 3")
+  + Option ("axes",
+            "specify which axes should be included in the connected components. By default only "
+            "the first 3 axes are included. The axes should be provided as a comma-separated list of values.")
   + Argument ("axes").type_sequence_int()
 
   + Option ("largest",
@@ -85,29 +75,19 @@ void run ()
   Image::Filter::ConnectedComponents connected_filter(input_voxel);
   Image::Header header (input_data);
   header.info() = connected_filter.info();
-  Image::Buffer<bool> output_data (argument[1], header);
-  Image::Buffer<bool>::voxel_type output_vox (output_data);
+  Image::Buffer<int> output_data (argument[1], header);
+  Image::Buffer<int>::voxel_type output_vox (output_data);
 
-  Options opt = get_options ("angle");
-  float angular_threshold = 15.0;
-  if (opt.size())
-    angular_threshold = opt[0][0];
-
-  opt = get_options("directions");
-  Math::Matrix<float> dirs;
-  if (opt.size()) {
-    dirs.load (opt[0][0]);
-    connected_filter.set_directions(dirs, angular_threshold);
-  }
-
-  opt = get_options ("ignore");
+  Options opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
+    for (size_t d = 0; d < input_data.ndim(); d++)
+      connected_filter.set_ignore_dim (d, true);
     for (size_t i = 0; i < axes.size(); i++) {
       if (axes[i] >= static_cast<int> (input_header.ndim()) || axes[i] < 0)
         throw Exception ("axis supplied to option -ignore is out of bounds");
-      connected_filter.set_ignore_dim (true, axes[i]);
+      connected_filter.set_ignore_dim (axes[i], false);
     }
   }
 
@@ -119,6 +99,7 @@ void run ()
   if (opt.size())
     connected_filter.set_26_connectivity(true);
 
-  connected_filter(input_voxel, output_vox);
+  connected_filter.set_message ("computing connected components...");
+  connected_filter (input_voxel, output_vox);
 }
 

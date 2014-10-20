@@ -20,7 +20,6 @@
 
 */
 
-#include <fstream>
 #include <vector>
 #include <set>
 
@@ -45,6 +44,8 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/writer.h"
 
+#include "dwi/tractography/mapping/gaussian/mapper.h"
+#include "dwi/tractography/mapping/gaussian/voxel.h"
 
 
 
@@ -82,8 +83,19 @@ const OptionGroup OutputHeaderOption = OptionGroup ("Options for the header of t
 
 const OptionGroup OutputDimOption = OptionGroup ("Options for the dimensionality of the output image")
 
-    + Option ("colour",
-        "perform track mapping in directionally-encoded colour space");
+    + Option ("dec",
+        "perform track mapping in directionally-encoded colour (DEC) space")
+
+    + Option ("dixel",
+        "map streamlines to dixels within each voxel; requires either a number of dixels "
+        "(references an internal direction set), or a path to a text file containing a "
+        "set of directions stored as aximuth/elevation pairs")
+      + Argument ("path").type_text()
+
+    + Option ("tod",
+        "generate a Track Orientation Distribution (TOD) in each voxel; need to specify the maximum "
+        "spherical harmonic degree lmax to use when generating Apodised Point Spread Functions")
+      + Argument ("lmax").type_integer (2, 16, 20);
 
 
 
@@ -93,11 +105,11 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
   + Option ("contrast",
       "define the desired form of contrast for the output image\n"
-      "Options are: tdi, precise_tdi, endpoint, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
+      "Options are: tdi, length, invlength, scalar_map, scalar_map_count, fod_amp, curvature (default: tdi)")
     + Argument ("type").type_choice (contrasts)
 
   + Option ("image",
-      "provide the scalar image map for generating images with 'scalar_map' contrast, or the spherical harmonics image for 'fod_amp' contrast")
+      "provide the scalar image map for generating images with 'scalar_map' / 'scalar_map_count' contrast, or the spherical harmonics image for 'fod_amp' contrast")
     + Argument ("image").type_image_in()
 
   + Option ("stat_vox",
@@ -126,16 +138,29 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
 
 
 
-const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
+const OptionGroup MappingOption = OptionGroup ("Options for the streamline-to-voxel mapping mechanism")
 
   + Option ("upsample",
       "upsample the tracks by some ratio using Hermite interpolation before mappping\n"
       "(If omitted, an appropriate ratio will be determined automatically)")
     + Argument ("factor").type_integer (1, 1, std::numeric_limits<int>::max())
 
+  + Option ("precise",
+      "use a more precise streamline mapping strategy, that accurately quantifies the length through each voxel "
+      "(these lengths are then taken into account during TWI calculation)")
+
+  + Option ("ends_only",
+      "only map the streamline endpoints to the image");
+
+
+
+const OptionGroup ExtraOption = OptionGroup ("Additional options for tckmap")
+
   + Option ("dump",
-      "dump the scratch buffer contents directly to a .mih / .dat file pair, "
-      "rather than memory-mapping the output file");
+      "dump the scratch buffer contents directly to a .mih / .dat file pair or .mif file, "
+      "rather than memory-mapping the output file (this is useful if either the image is "
+      "larger than half the available RAM, or a network file system is in use where writing "
+      "to a memory-mapped output file performs very poorly)");
 
 
 
@@ -157,19 +182,36 @@ REFERENCES = "For TDI or DEC TDI:\n"
              "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
              "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
              "NeuroImage, 2011, 55, 133-141\n\n"
+             "If using -dixel option with TDI contrast only:\n"
+             "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
+             "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
+             "In proc. ISMRM, 2011, 19, 673\n\n"
+             "If using -dixel option with any other contrast:\n"
+             "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
+             "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
+             "In Proc. ISMRM, 2012, 20, 1912\n\n"
+             "If using -tod option:\n"
+             "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. "
+             "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
+             "NeuroImage, 2014, 94, 312-336\n\n"
              "If using other contrasts / statistics:\n"
              "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
              "A generalised framework for super-resolution track-weighted imaging. "
-             "NeuroImage, 2012, 59, 2494-2503";
+             "NeuroImage, 2012, 59, 2494-2503\n\n"
+             "If using -precise mapping option:\n"
+             "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+             "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+             "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
 ARGUMENTS
-  + Argument ("tracks", "the input track file.").type_file ()
+  + Argument ("tracks", "the input track file.").type_file_in()
   + Argument ("output", "the output track-weighted image").type_image_out();
 
 OPTIONS
   + OutputHeaderOption
   + OutputDimOption
   + TWIOption
+  + MappingOption
   + ExtraOption
   + Tractography::TrackWeightsInOption;
 
@@ -180,37 +222,87 @@ OPTIONS
 
 
 
-template <class Cont>
-MapWriterBase<Cont>* make_writer (Image::Header& H, const std::string& name, const bool dump, const vox_stat_t stat_vox)
+MapWriterBase* make_greyscale_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
 {
-    MapWriterBase<Cont>* writer = NULL;
-    const uint8_t dt = H.datatype() ();
-    if (dt & DataType::Signed) {
-      if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<int8_t,   Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<int16_t,  Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<int32_t,  Cont> (H, name, dump, stat_vox);
-      else
-        throw Exception ("Unsupported data type in image header");
-    } else {
-      if ((dt & DataType::Type) == DataType::Bit)
-        writer = new MapWriter<bool,     Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt8)
-        writer = new MapWriter<uint8_t,  Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt16)
-        writer = new MapWriter<uint16_t, Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::UInt32)
-        writer = new MapWriter<uint32_t, Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::Float32)
-        writer = new MapWriter<float,    Cont> (H, name, dump, stat_vox);
-      else if ((dt & DataType::Type) == DataType::Float64)
-        writer = new MapWriter<double,   Cont> (H, name, dump, stat_vox);
-      else
-        throw Exception ("Unsupported data type in image header");
-    }
-    return writer;
+  MapWriterBase* writer = NULL;
+  const uint8_t dt = H.datatype() ();
+  if (dt & DataType::Signed) {
+    if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriter<int8_t>   (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriter<int16_t>  (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriter<int32_t>  (H, name, stat_vox, GREYSCALE);
+    else
+      throw Exception ("Unsupported data type in image header");
+  } else {
+    if ((dt & DataType::Type) == DataType::Bit)
+      writer = new MapWriter<bool>     (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriter<uint8_t>  (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriter<uint16_t> (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriter<uint32_t> (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::Float32)
+      writer = new MapWriter<float>    (H, name, stat_vox, GREYSCALE);
+    else if ((dt & DataType::Type) == DataType::Float64)
+      writer = new MapWriter<double>   (H, name, stat_vox, GREYSCALE);
+    else
+      throw Exception ("Unsupported data type in image header");
+  }
+  return writer;
+}
+
+
+MapWriterBase* make_dixel_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
+{
+  MapWriterBase* writer = NULL;
+  const uint8_t dt = H.datatype() ();
+  if (dt & DataType::Signed) {
+    if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriter<int8_t>   (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriter<int16_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriter<int32_t>  (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  } else {
+    if ((dt & DataType::Type) == DataType::Bit)
+      writer = new MapWriter<bool>     (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt8)
+      writer = new MapWriter<uint8_t>  (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt16)
+      writer = new MapWriter<uint16_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::UInt32)
+      writer = new MapWriter<uint32_t> (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float32)
+      writer = new MapWriter<float>    (H, name, stat_vox);
+    else if ((dt & DataType::Type) == DataType::Float64)
+      writer = new MapWriter<double>   (H, name, stat_vox);
+    else
+      throw Exception ("Unsupported data type in image header");
+  }
+  return writer;
+}
+
+
+
+
+
+
+
+DataType determine_datatype (const DataType current_dt, const contrast_t contrast, const DataType default_dt, const bool precise)
+{
+  if (current_dt == DataType::Undefined) {
+    return default_dt;
+  } else if ((default_dt.is_floating_point() || precise) && !current_dt.is_floating_point()) {
+    WARN ("Cannot use non-floating-point datatype with " + str(Mapping::contrasts[contrast]) + " contrast" + (precise ? " and precise mapping" : "") + "; defaulting to " + str(default_dt.specifier()));
+    return default_dt;
+  } else {
+    return current_dt;
+  }
 }
 
 
@@ -221,12 +313,6 @@ void run () {
   Tractography::Reader<float> file (argument[0], properties);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
-
-  float step_size = 0.0;
-  if (properties.find ("output_step_size") != properties.end())
-    step_size = to<float> (properties["output_step_size"]);
-  else
-    step_size = to<float> (properties["step_size"]);
 
   std::vector<float> voxel_size;
   Options opt = get_options("vox");
@@ -247,19 +333,27 @@ void run () {
     Image::Header template_header (opt[0][0]);
     header = template_header;
     header.comments().clear();
+    header.std::map<std::string, std::string>::clear();
+    header["twi_template"] = str(opt[0][0]);
     if (!voxel_size.empty())
       oversample_header (header, voxel_size);
   }
   else {
     if (voxel_size.empty())
-      throw Exception ("please specify either a template image or the desired voxel size");
+      throw Exception ("please specify a template image and/or the desired voxel size");
     generate_header (header, argument[0], voxel_size);
   }
 
-  header.set_ndim (3);
+  if (header.ndim() > 3) {
+    header.set_ndim (3);
+    header.sanitise();
+  }
+
+  header.comments().push_back ("track-weighted image");
+  header["tck_source"] = str(argument[0]);
 
   opt = get_options ("contrast");
-  contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
+  const contrast_t contrast = opt.size() ? contrast_t(int(opt[0][0])) : TDI;
 
   opt = get_options ("stat_vox");
   vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_SUM;
@@ -267,32 +361,70 @@ void run () {
   opt = get_options ("stat_tck");
   tck_stat_t stat_tck = opt.size() ? tck_stat_t(int(opt[0][0])) : T_MEAN;
 
-  float gaussian_fwhm_tck = 0.0, gaussian_denominator_tck = 0.0;
+
+  float gaussian_fwhm_tck = 0.0;
   opt = get_options ("fwhm_tck");
   if (opt.size()) {
     if (stat_tck != GAUSSIAN) {
-      INFO ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
+      WARN ("Overriding per-track statistic to Gaussian as a full-width half-maximum has been provided.");
       stat_tck = GAUSSIAN;
     }
     gaussian_fwhm_tck = opt[0][0];
-    const float gaussian_theta_tck = gaussian_fwhm_tck / (2.0 * sqrt (2.0 * log (2.0)));
-    gaussian_denominator_tck = 2.0 * gaussian_theta_tck * gaussian_theta_tck;
   } else if (stat_tck == GAUSSIAN) {
     throw Exception ("If using Gaussian per-streamline statistic, need to provide a full-width half-maximum for the Gaussian kernel using the -fwhm option");
   }
 
-  opt = get_options ("colour");
-  const bool colour = opt.size();
 
-  opt = get_options ("map_zero");
-  const bool map_zero = opt.size();
+  // Determine the dimensionality of the output image
+  writer_dim writer_type = GREYSCALE;
 
-  if (colour) {
+  opt = get_options ("dec");
+  if (opt.size()) {
+    writer_type = DEC;
     header.set_ndim (4);
     header.dim(3) = 3;
-    //header.set_description (3, "directionally-encoded colour");
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
+
+  Ptr<DWI::Directions::FastLookupSet> dirs;
+  opt = get_options ("dixel");
+  if (opt.size()) {
+    if (writer_type != GREYSCALE)
+      throw Exception ("Options for setting output image dimensionality are mutually exclusive");
+    writer_type = DIXEL;
+    if (Path::exists (opt[0][0]))
+      dirs = new DWI::Directions::FastLookupSet (str(opt[0][0]));
+    else
+      dirs = new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0]));
+    header.set_ndim (4);
+    header.dim(3) = dirs->size();
+    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+    // Write directions to image header as diffusion encoding
+    Math::Matrix<float> grad (dirs->size(), 4);
+    for (size_t row = 0; row != dirs->size(); ++row) {
+      grad (row, 0) = ((*dirs)[row])[0];
+      grad (row, 1) = ((*dirs)[row])[1];
+      grad (row, 2) = ((*dirs)[row])[2];
+      grad (row, 3) = 1.0f;
+    }
+    header.DW_scheme() = grad;
+  }
+
+  opt = get_options ("tod");
+  if (opt.size()) {
+    if (writer_type != GREYSCALE)
+      throw Exception ("Options for setting output image dimensionality are mutually exclusive");
+    writer_type = TOD;
+    const size_t lmax = opt[0][0];
+    if (lmax % 2)
+      throw Exception ("lmax for TODI must be an even number");
+    header.set_ndim (4);
+    header.dim(3) = Math::SH::NforL (lmax);
+    Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
+  }
+
+  header["twi_dimensionality"] = writer_dims[writer_type];
+
 
   // Deal with erroneous statistics & provide appropriate messages
   switch (contrast) {
@@ -304,26 +436,6 @@ void run () {
       }
       if (stat_tck != T_MEAN)
         INFO ("Cannot use track statistic other than default for TDI generation - ignoring");
-      stat_tck = T_MEAN;
-      break;
-
-    case PRECISE_TDI:
-      if (stat_vox != V_SUM) {
-        INFO ("Cannot use voxel statistic other than 'sum' for precise TDI generation - ignoring");
-        stat_vox = V_SUM;
-      }
-      if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for precise TDI generation - ignoring");
-      stat_tck = T_MEAN;
-      break;
-
-    case ENDPOINT:
-      if (stat_vox != V_SUM && stat_vox != V_MEAN) {
-        INFO ("Cannot use voxel statistic other than 'sum' or 'mean' for endpoint map generation - ignoring");
-        stat_vox = V_SUM;
-      }
-      if (stat_tck != T_MEAN)
-        INFO ("Cannot use track statistic other than default for endpoint map generation - ignoring");
       stat_tck = T_MEAN;
       break;
 
@@ -356,68 +468,83 @@ void run () {
 
   }
 
+  header["twi_contrast"] = contrasts[contrast];
+  header["twi_vox_stat"] = voxel_statistics[stat_vox];
+  header["twi_tck_stat"] = track_statistics[stat_tck];
 
-  opt = get_options ("datatype");
-  bool manual_datatype = false;
 
-  if (colour) {
-    header.datatype() = DataType::Float32;
-    manual_datatype = true;
+  // Figure out how the streamlines will be mapped
+  const bool precise = get_options ("precise").size();
+  header["precise_mapping"] = precise ? "1" : "0";
+  const bool ends_only = get_options ("ends_only").size();
+  if (ends_only) {
+    if (precise)
+      throw Exception ("Options -precise and -ends_only are mutually exclusive");
+    header["endpoints_only"] = "1";
   }
-
-  if (opt.size()) {
-    if (colour) {
-      INFO ("Can't manually set datatype for directionally-encoded colour processing - overriding to Float32");
-    } else {
-      header.datatype() = DataType::parse (opt[0][0]);
-      manual_datatype = true;
-    }
-  }
-
-  if (get_options ("tck_weights_in").size() || (manual_datatype && header.datatype().is_integer())) {
-    if ((manual_datatype && header.datatype().is_integer()))
-      INFO ("Can't use an integer type if streamline weights are provided; overriding to Float32");
-    header.datatype() = DataType::Float32;
-    manual_datatype = true;
-  }
-
-  header.datatype().set_byte_order_native();
-
-  for (Tractography::Properties::iterator i = properties.begin(); i != properties.end(); ++i)
-    header.comments().push_back (i->first + ": " + i->second);
-  for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
-    header.comments().push_back ("ROI: " + i->first + " " + i->second);
-  for (std::vector<std::string>::iterator i = properties.comments.begin(); i != properties.comments.end(); ++i)
-    header.comments().push_back ("comment: " + *i);
 
   size_t upsample_ratio = 1;
   opt = get_options ("upsample");
   if (opt.size()) {
-    upsample_ratio = opt[0][0];
-    INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
-  }
-  else if (step_size && std::isfinite (step_size)) {
+    if (ends_only) {
+      WARN ("cannot use upsampling if only streamline endpoints are to be mapped");
+    } else {
+      upsample_ratio = opt[0][0];
+      INFO ("track upsampling ratio manually set to " + str(upsample_ratio));
+    }
+  } else if (!ends_only) {
     // If accurately calculating the length through each voxel traversed, need a higher upsampling ratio
     //   (1/10th of the voxel size was found to give a good quantification of chordal length)
     // For all other applications, making the upsampled step size about 1/3rd of a voxel seems sufficient
-    const float voxel_step_ratio = (contrast == PRECISE_TDI) ? 0.1 : 0.333;
-    upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (header.vox(0), header.vox(1), header.vox(2)) * voxel_step_ratio));
+    upsample_ratio = determine_upsample_ratio (header, properties, (precise ? 0.1 : 0.333));
     INFO ("track upsampling ratio automatically set to " + str(upsample_ratio));
   }
-  else {
-    if (contrast != PRECISE_TDI)
-      WARN ("track upsampling off; track step size information in header is absent or malformed");
+
+
+  // Get header datatype based on user input, or select an appropriate datatype automatically
+  header.datatype() = DataType::Undefined;
+  if (writer_type == DEC)
+    header.datatype() = DataType::Float32;
+
+  opt = get_options ("datatype");
+  if (opt.size()) {
+    if (writer_type == DEC || writer_type == TOD) {
+      WARN ("Can't manually set datatype for " + str(Mapping::writer_dims[writer_type]) + " processing - overriding to Float32");
+    } else {
+      header.datatype() = DataType::parse (opt[0][0]);
+    }
   }
 
-  const bool dump = get_options ("dump").size();
-  if (dump && Path::has_suffix (argument[1], "mih"))
-    throw Exception ("Option -dump only works when outputting to .mih image format");
+  const bool have_weights = get_options ("tck_weights_in").size();
+  if (have_weights && header.datatype().is_integer()) {
+    WARN ("Can't use an integer type if streamline weights are provided; overriding to Float32");
+    header.datatype() = DataType::Float32;
+  }
 
-  std::string msg = str("Generating ") + (colour ? "colour " : "") + "image with ";
+  DataType default_datatype = DataType::Float32;
+  if ((writer_type == GREYSCALE || writer_type == DIXEL) && !have_weights && ((!precise && contrast == TDI) || contrast == SCALAR_MAP_COUNT))
+    default_datatype = DataType::UInt32;
+  header.datatype() = determine_datatype (header.datatype(), contrast, default_datatype, precise);
+  header.datatype().set_byte_order_native();
+
+
+  // Whether or not to still ,ap streamlines even if the factor is zero
+  //   (can still affect output image if voxel-wise statistic is mean)
+  const bool map_zero = get_options ("map_zero").size();
+  if (map_zero)
+    header["map_zero"] = "1";
+
+
+  // Raw std::ofstream dump of image data from the internal RAM buffer to file
+  const bool dump = get_options ("dump").size();
+  if (dump && !Path::has_suffix (argument[1], ".mih") && !Path::has_suffix (argument[1], ".mif"))
+    throw Exception ("Option -dump only works when outputting to .mih / .mif image formats");
+
+
+  // Produce a useful INFO message
+  std::string msg = str("Generating ") + str(Mapping::writer_dims[writer_type]) + " image with ";
   switch (contrast) {
     case TDI:              msg += "density";                    break;
-    case PRECISE_TDI:      msg += "density (precise)";          break;
-    case ENDPOINT:         msg += "endpoint density";           break;
     case LENGTH:           msg += "length";                     break;
     case INVLENGTH:        msg += "inverse length";             break;
     case SCALAR_MAP:       msg += "scalar map";                 break;
@@ -459,74 +586,20 @@ void run () {
   }
   INFO (msg);
 
-  switch (contrast) {
-    case TDI:              header.comments().push_back ("track density image"); break;
-    case PRECISE_TDI:      header.comments().push_back ("track density image (precise calculation)"); break;
-    case ENDPOINT:         header.comments().push_back ("track endpoint density image"); break;
-    case LENGTH:           header.comments().push_back ("track density image (weighted by track length)"); break;
-    case INVLENGTH:        header.comments().push_back ("track density image (weighted by inverse track length)"); break;
-    case SCALAR_MAP:       header.comments().push_back ("track-weighted image (using scalar image)"); break;
-    case SCALAR_MAP_COUNT: header.comments().push_back ("track density image (using scalar image thresholding)"); break;
-    case FOD_AMP:          header.comments().push_back ("track-weighted image (using FOD amplitude)"); break;
-    case CURVATURE:        header.comments().push_back ("track-weighted image (using track curvature)"); break;
-  }
 
+  // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
-  // Use a branching IF instead of a switch statement to permit scope
-  if (contrast == TDI || contrast == ENDPOINT || contrast == LENGTH || contrast == INVLENGTH || (contrast == CURVATURE && stat_tck != GAUSSIAN)) {
-
-    if (!manual_datatype) {
-      header.datatype() = (contrast == TDI || contrast == ENDPOINT) ? DataType::UInt32 : DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
-
-    if (colour) {
-      TrackMapperTWI <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
-      MapWriterColour<SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
-    } else {
-      TrackMapperTWI    <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
-      Ptr< MapWriterBase<SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
-    }
-
-  } else if (contrast == PRECISE_TDI) {
-
-    if (!manual_datatype) {
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
-
-    if (colour) {
-      TrackMapperTWI <SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
-      MapWriterColour<SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
-    } else {
-      TrackMapperTWI <       SetVoxelDir> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck);
-      MapWriter      <float, SetVoxelDir> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDir(), writer);
-    }
-
-  } else if (contrast == CURVATURE && stat_tck == GAUSSIAN) {
-
-    if (!manual_datatype) {
-      header.datatype() = DataType::Float32;
-      header.datatype().set_byte_order_native();
-    }
-
-    if (colour) {
-      TrackMapperTWI <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
-      MapWriterColour<SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
-    } else {
-      TrackMapperTWI    <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck);
-      Ptr< MapWriterBase<SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-      Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
-    }
-
-  } else if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
-
+  Ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (header, contrast)) : (new TrackMapperTWI (header, contrast, stat_tck)));
+  mapper->set_upsample_ratio      (upsample_ratio);
+  mapper->set_map_zero            (map_zero);
+  mapper->set_use_precise_mapping (precise);
+  mapper->set_map_ends_only       (ends_only);
+  if (writer_type == DIXEL)
+    mapper->create_dixel_plugin (*dirs);
+  if (writer_type == TOD)
+    mapper->create_tod_plugin (header.dim(3));
+  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT || contrast == FOD_AMP) {
     opt = get_options ("image");
     if (!opt.size()) {
       if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
@@ -534,47 +607,47 @@ void run () {
       else
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
+    const std::string assoc_image (opt[0][0]);
+    const Image::Header H_assoc_image (assoc_image);
+    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+      mapper->add_scalar_image (assoc_image);
+    else
+      mapper->add_fod_image (assoc_image);
+    header["twi_assoc_image"] = str(opt[0][0]);
+  }
 
-    Image::BufferPreload<float> input_image (opt[0][0]);
-    if ((contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)) {
-      if (!(input_image.ndim() == 3 || (input_image.ndim() == 4 && input_image.dim(3) == 1)))
-        throw Exception ("Use of 'scalar_map' contrast option requires a 3-dimensional image; your image is " + str(input_image.ndim()) + "D");
+  Ptr<MapWriterBase> writer;
+  switch (writer_type) {
+    case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+    case GREYSCALE: writer = make_greyscale_writer (header, argument[1], stat_vox);      break;
+    case DEC:       writer = new MapWriter<float>  (header, argument[1], stat_vox, DEC); break;
+    case DIXEL:     writer = make_dixel_writer     (header, argument[1], stat_vox);      break;
+    case TOD:       writer = new MapWriter<float>  (header, argument[1], stat_vox, TOD); break;
+  }
+
+  writer->set_direct_dump (dump);
+
+  // Finally get to do some number crunching!
+  // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
+  //   keeping the code as separate as possible
+  if (stat_tck == GAUSSIAN) {
+    Gaussian::TrackMapper* const mapper_ptr = dynamic_cast<Gaussian::TrackMapper*>((TrackMapperTWI*)mapper);
+    mapper_ptr->set_gaussian_FWHM (gaussian_fwhm_tck);
+    switch (writer_type) {
+      case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+      case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxel(),    *writer); break;
+      case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxelDEC(), *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetDixel(),    *writer); break;
+      case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper_ptr), Gaussian::SetVoxelTOD(), *writer); break;
     }
-
-    if (contrast == FOD_AMP && input_image.ndim() != 4)
-      throw Exception ("Use of 'fod_amp' contrast option requires a 4-dimensional image; your image is " + str(input_image.ndim()) + "D");
-
-    if (!manual_datatype && (input_image.datatype() != DataType::Bit))
-      header.datatype() = input_image.datatype();
-
-    if (colour) {
-
-      if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage <SetVoxelDECFactor> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
-        MapWriterColour     <SetVoxelDECFactor> writer (header, argument[1], dump, stat_vox);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDECFactor(), writer);
-      } else {
-        TrackMapperTWIImage <SetVoxelDEC> mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
-        MapWriterColour     <SetVoxelDEC> writer (header, argument[1], dump, stat_vox);
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelDEC(), writer);
-      }
-
-    } else {
-
-      if (stat_tck == GAUSSIAN) {
-        TrackMapperTWIImage <SetVoxelFactor>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, gaussian_denominator_tck, input_image);
-        Ptr< MapWriterBase  <SetVoxelFactor> > writer (make_writer<SetVoxelFactor> (header, argument[1], dump, stat_vox));
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxelFactor(), *writer);
-      } else {
-        TrackMapperTWIImage <SetVoxel>   mapper (header, upsample_ratio, map_zero, step_size, contrast, stat_tck, 0.0, input_image);
-        Ptr< MapWriterBase  <SetVoxel> > writer (make_writer<SetVoxel> (header, argument[1], dump, stat_vox));
-        Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (mapper), SetVoxel(), *writer);
-      }
-
-    }
-
   } else {
-    throw Exception ("Undefined contrast mechanism for output image");
+    switch (writer_type) {
+      case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
+      case GREYSCALE: Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxel(),    *writer); break;
+      case DEC:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxelDEC(), *writer); break;
+      case DIXEL:     Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetDixel(),    *writer); break;
+      case TOD:       Thread::run_queue (loader, Tractography::Streamline<float>(), Thread::multi (*mapper), SetVoxelTOD(), *writer); break;
+    }
   }
 
 }

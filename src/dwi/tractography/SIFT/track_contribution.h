@@ -57,7 +57,7 @@ namespace MR
             data (0) { }
 
           uint32_t get_fixel_index() const { return (data & 0x00FFFFFF); }
-          float    get_value()       const { return (uint32_t((data & 0xFF000000) >> 24) * scale_from_storage); }
+          float    get_length()      const { return (uint32_t((data & 0xFF000000) >> 24) * scale_from_storage); }
 
 
           bool add (const float length)
@@ -106,17 +106,17 @@ class Track_fixel_contribution
   public:
     Track_fixel_contribution (const uint32_t fixel_index, const float length) :
       fixel (fixel_index),
-      value (length) { }
+      length (length) { }
 
     Track_fixel_contribution() :
       fixel (0),
-      value (0.0) { }
+      length (0.0) { }
 
 
     bool add (const float length) { value += length; return true; }
 
     uint32_t get_fixel_index() const { return fixel; }
-    float    get_value()       const { return value; }
+    float    get_length()      const { return length; }
 
 
     static void set_scaling (const Image::Info& in) { min_length_for_storage = 0.0; }
@@ -125,7 +125,7 @@ class Track_fixel_contribution
 
   private:
     uint32_t fixel;
-    float value;
+    float length;
 
     static float scale_to_storage, scale_from_storage, min_length_for_storage;
 

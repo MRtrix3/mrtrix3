@@ -20,6 +20,7 @@
 
 */
 
+#include "file/ofstream.h"
 #include "image/stride.h"
 #include "datatype.h"
 #include "get_set.h"
@@ -233,7 +234,7 @@ namespace MR
 
       void write_other_to_file (const std::string& path, const mgh_other& MGHO)
       {
-        std::ofstream out (path.c_str(), std::ios_base::app);
+        File::OFStream out (path, std::ios_base::out | std::ios_base::app);
         out.write ((char*) &MGHO, 5 * sizeof (float));
         for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
           out.write (i->c_str(), i->size() + 1);

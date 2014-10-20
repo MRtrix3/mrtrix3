@@ -55,7 +55,8 @@ namespace MR
       Boolean,
       Integer,
       Float,
-      ArgFile,
+      ArgFileIn,
+      ArgFileOut,
       Choice,
       ImageIn,
       ImageOut,
@@ -134,7 +135,7 @@ namespace MR
         std::string desc;
         //! the argument type
         ArgType  type;
-        //! the argument flags (AllowMultiple and/or Optional)
+        //! the argument flags (AllowMultiple & Optional)
         ArgFlags flags;
 
         //! a structure to store the various parameters of the Argument
@@ -253,9 +254,16 @@ namespace MR
           return *this;
         }
 
-        //! specifies that the argument should be a file
-        Argument& type_file () {
-          type = ArgFile;
+        //! specifies that the argument should be an input file
+        Argument& type_file_in () {
+          type = ArgFileIn;
+          defaults.text = NULL;
+          return *this;
+        }
+
+        //! specifies that the argument should be an output file
+        Argument& type_file_out () {
+          type = ArgFileOut;
           defaults.text = NULL;
           return *this;
         }

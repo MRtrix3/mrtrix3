@@ -49,7 +49,7 @@ namespace MR
 
           private slots:
             void on_screen_capture ();
-            bool select_output_folder_slot();
+            void select_output_folder_slot();
             void on_output_update ();
 
           private:

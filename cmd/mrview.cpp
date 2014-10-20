@@ -51,6 +51,10 @@ void usage ()
   + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool"
   ;
 
+  REFERENCES = "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+               "MRtrix: Diffusion tractography in crossing fiber regions. "
+               "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
+
   ARGUMENTS
     + Argument ("image", "an image to be loaded.")
     .optional()
@@ -59,10 +63,10 @@ void usage ()
 
   OPTIONS
     + Option ("run", "run command specified in string at start time").allow_multiple()
-    +   Argument("command")
+    +   Argument("command").type_text()
 
     + Option ("batch", "run commands in batch script at start time").allow_multiple()
-    +   Argument("file").type_file();
+    +   Argument("file").type_file_in();
 
   REQUIRES_AT_LEAST_ONE_ARGUMENT = false;
 

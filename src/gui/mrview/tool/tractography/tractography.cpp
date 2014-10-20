@@ -363,7 +363,7 @@ namespace MR
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
-              tractogram_list_model->get_tractogram (indices[i])->color_type = Colour;
+              tractogram_list_model->get_tractogram (indices[i])->color_type = Manual;
               tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
             }
           }
@@ -383,7 +383,7 @@ namespace MR
               colour[2] = rng.uniform();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->erase_nontrack_data();
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Colour;
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Manual;
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
           }
           window.updateGL();

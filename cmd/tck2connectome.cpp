@@ -64,9 +64,9 @@ void usage ()
   + "generate a connectome matrix from a streamlines file and a node parcellation image";
 
   ARGUMENTS
-  + Argument ("tracks_in",      "the input track file").type_file()
+  + Argument ("tracks_in",      "the input track file").type_file_in()
   + Argument ("nodes_in",       "the input node parcellation image").type_image_in()
-  + Argument ("connectome_out", "the output .csv file containing edge weights").type_file();
+  + Argument ("connectome_out", "the output .csv file containing edge weights").type_file_out();
 
 
   OPTIONS
@@ -89,14 +89,8 @@ void usage ()
 void run ()
 {
 
-  Tractography::Properties properties;
-  Tractography::Reader<float> reader (argument[0], properties);
-
   Image::Buffer<node_t> nodes_data (argument[1]);
   Image::Buffer<node_t>::voxel_type nodes (nodes_data);
-
-  Ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
-  Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
 
   // First, find out how many segmented nodes there are, so the matrix can be pre-allocated
   node_t max_node_index = 0;
@@ -122,8 +116,16 @@ void run ()
     for (++i; i != missing_nodes.end(); ++i)
       list += ", " + str(*i);
     WARN (list);
-    WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in mrprep4connectome, or very poor registration)");
+    WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in labelconfig, or very poor registration)");
   }
+
+  // Get the metric & assignment mechanism for connectome construction
+  Ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
+  Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
+
+  // Prepare for reading the track data
+  Tractography::Properties properties;
+  Tractography::Reader<float> reader (argument[0], properties);
 
   // Multi-threaded connectome construction
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");

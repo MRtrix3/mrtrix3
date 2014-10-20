@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "app.h"
+#include "file/ofstream.h"
 #include "image/header.h"
 #include "image/handler/default.h"
 #include "image/utils.h"
@@ -67,9 +68,7 @@ namespace MR
 
           if (writable) {
             for (size_t n = 0; n < files.size(); n++) {
-              std::ofstream out (files[n].name.c_str(), std::ios::out | std::ios::binary);
-              if (!out) 
-                throw Exception ("failed to open file \"" + files[n].name + "\": " + strerror (errno));
+              File::OFStream out (files[n].name, std::ios::out | std::ios::binary);
               out.seekp (files[n].start, out.beg);
               out.write ((char*) (addresses[0] + n*bytes_per_segment), bytes_per_segment);
               if (!out.good())

@@ -10,7 +10,7 @@
 # This script can be used in one of two ways. Firstly, it can directly change the nodes in
 #   one of FreeSurfer's segmentation outputs, by providing the file FreeSurferColorLUT.txt
 #   as the lookup table file. If such a segmentation has already been processed using
-#   mrprep4connectome, then provide the connectome config file used. These are necessary to
+#   labelconfig, then provide the connectome config file used. These are necessary to
 #   determine which integer values correspond to the sub-cortical grey matter structres
 #   that are being re-defined.
 
@@ -29,7 +29,7 @@ from lib.runCommand   import runCommand
 num_args = 4
 
 if len(sys.argv) < num_args+1:
-  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <lookup table file> <output parcellation image>')
+  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <lookup table / connectome config file> <output parcellation image>')
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -79,7 +79,13 @@ if verbose:
   printMessage('Changing to temporary directory (' + temp_dir + ')')
 os.chdir(temp_dir)
 
-runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii -o first', verbose)
+# Should verbosity be turned on for FIRST?
+fsl_verbose = ''
+if verbose:
+  fsl_verbose = ' --verbose'
+
+# Run FIRST
+runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii -o first' + fsl_verbose, verbose)
 
 # Convert FIRST meshes to node masks
 # In this use case, don't want the PVE images; want to threshold at 0.5

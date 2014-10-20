@@ -41,7 +41,7 @@ void usage ()
   + Argument ("coefs",
               "a text file containing the even spherical harmonics coefficients to display.")
   .optional()
-  .type_file();
+  .type_file_in();
 
   OPTIONS
   + Option ("response",

@@ -32,6 +32,13 @@
 #include "dwi/tractography/seeding/base.h"
 
 
+// By default, the rejection sampler will perform its sampling based on image intensity values,
+//   and then randomly select a position within that voxel
+// Use this flag to instead perform rejection sampling on the trilinear-interpolated value
+//   at each trial seed point
+//#define REJECTION_SAMPLING_USE_INTERPOLATION
+
+
 
 namespace MR
 {
@@ -144,20 +151,33 @@ namespace MR
 
 
 
-
         class Rejection : public Base
         {
 
           private:
             class FloatImage : public Image::BufferScratch<float> {
               public:
+                typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type> interp_type;
                 template <class InputVoxelType>
-                  FloatImage (InputVoxelType& D, const Image::Info& info, const std::string& description) :
-                    Image::BufferScratch<float> (info, description), transform (this->info()) {
-                      Image::BufferScratch<float>::voxel_type this_vox (*this);
-                      Image::copy (D, this_vox);
-                    }
+                FloatImage (InputVoxelType& D, const Image::Info& info, const std::string& description) :
+                    Image::BufferScratch<float> (info, description),
+#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
+                    voxel (*this),
+                    interp (voxel)
+#else
+                    transform (this->info())
+#endif
+                {
+                  Image::BufferScratch<float>::voxel_type this_vox (*this);
+                  Image::copy (D, this_vox);
+                }
+
+#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
+                const Image::BufferScratch<float>::voxel_type voxel;
+                const interp_type interp;
+#else
                 Image::Transform transform;
+#endif
             };
 
 

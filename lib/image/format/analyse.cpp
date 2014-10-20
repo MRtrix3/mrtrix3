@@ -20,6 +20,7 @@
 
 */
 
+#include "file/ofstream.h"
 #include "file/utils.h"
 #include "file/entry.h"
 #include "file/nifti1_utils.h"
@@ -83,11 +84,7 @@ namespace MR
         File::NIfTI::write (NH, H, false);
 
         std::string hdr_name (H.name().substr (0, H.name().size()-4) + ".hdr");
-        File::create (hdr_name);
-
-        std::ofstream out (hdr_name.c_str());
-        if (!out)
-          throw Exception ("error opening file \"" + hdr_name + "\" for writing: " + strerror (errno));
+        File::OFStream out (hdr_name);
         out.write ( (char*) &NH, 352);
         out.close();
 

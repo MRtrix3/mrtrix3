@@ -74,7 +74,7 @@ namespace MR
 
         const DWI::Directions::FastLookupSet& dirs;
 
-        size_t dixel2fixel (const Dixel&);
+        size_t dixel2fixel (const Dixel&) const;
 
 
         Fixel_TD_map (const Fixel_TD_map& that) : Fixel_map<Fixel> (that), dirs (that.dirs) { assert (0); }
@@ -91,14 +91,14 @@ namespace MR
         for (SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
           const size_t fixel_index = dixel2fixel (*i);
           if (fixel_index)
-            fixels[fixel_index] += i->get_value();
+            fixels[fixel_index] += i->get_length();
         }
         return true;
       }
 
 
       template <class Fixel>
-      size_t Fixel_TD_map<Fixel>::dixel2fixel (const Dixel& in)
+      size_t Fixel_TD_map<Fixel>::dixel2fixel (const Dixel& in) const
       {
         if (!Image::Nav::within_bounds (accessor, in))
           return 0;
