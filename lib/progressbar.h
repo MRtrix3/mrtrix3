@@ -52,7 +52,7 @@ namespace MR
        * intervals. */
       size_t value;
       //! the text to be shown with the progressbar
-      const std::string text;
+      std::string text;
       //! a pointer to additional data required by alternative implementations
       void* data;
   };
@@ -150,6 +150,12 @@ namespace MR
         if (!next_val.i)
           next_val.i = 1;
       }
+
+      void set_message (const std::string& new_message) {
+        text = new_message;
+        if (show) 
+          display_func (*this);
+      };
 
       //! increment the current value by one.
       void operator++ () {
