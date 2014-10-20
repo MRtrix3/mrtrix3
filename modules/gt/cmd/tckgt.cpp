@@ -59,7 +59,7 @@ void usage ()
               "the image containing the raw DWI data."
              ).type_image_in()
 
-  + Argument ("tracks", "the output file containing the tracks generated.").type_file();
+  + Argument ("tracks", "the output file containing the tracks generated.").type_file_out();
 
 
 
@@ -67,7 +67,7 @@ void usage ()
 
   + Option ("grad",
             "specify the diffusion encoding scheme (if not supplied in the header)")
-    + Argument ("scheme").type_file()
+    + Argument ("scheme").type_file_in()
 
   + Option ("lmax",
             "set the maximum harmonic order for the output series. By default, the "
@@ -97,19 +97,19 @@ void usage ()
 
   + Option ("wmr",
             "set the response of a single particle on the DWI signal.").required()
-    + Argument ("response").type_file()
+    + Argument ("response").type_file_in()
 
   + Option ("csfr",
             "set the response of CSF on the DWI signal.")
-    + Argument ("response").type_file()
+    + Argument ("response").type_file_in()
   
   + Option ("gmr",
             "set the response of GM on the DWI signal.")
-    + Argument ("response").type_file()
+    + Argument ("response").type_file_in()
 
   + Option ("riso",
             "set one or more isotropic response kernels.").allow_multiple()
-    + Argument ("response").type_file()
+    + Argument ("response").type_file_in()
 
   + Option ("balance",
             "set the balance between internal and external energy."
@@ -158,7 +158,7 @@ void usage ()
   
   + Option ("etrend",
             "internal and external energy trend and cooling statistics.")
-    + Argument ("stats").type_file();
+    + Argument ("stats").type_file_out();
 
 
 };
