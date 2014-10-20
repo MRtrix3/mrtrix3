@@ -39,7 +39,7 @@ namespace MR
 
   void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
   {
-    throw Exception (reason);
+    throw Exception (std::string ("GSL error: ") + reason);
   }
 
 
