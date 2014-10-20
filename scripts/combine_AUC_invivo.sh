@@ -6,13 +6,13 @@ echo "ROI, effect, smoothing, E, H, C, IQR25, AUC, IQR75" > $output
 for ROI in ad arcuate cst cingulum posterior_cingulum;
 do
   echo $ROI
-  for effect in 0.1 0.2 0.3 0.4;
+  for effect in 0.1 0.2 0.3;
   do
-    for smooth in 0 5 10 20;
+    for smooth in 10;
     do
-      for E in 0.5 1 2 3;
+      for E in 0.5 1 2 3 4 5 6;
         do
-        for H in 0.5 1 2 3;
+        for H in 0.5 1 2 3 4 5 6;
         do
           for C in 0 0.25 0.5 0.75 1;
           do
