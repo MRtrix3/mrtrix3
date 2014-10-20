@@ -140,6 +140,10 @@ void usage ()
             "set the particle potential, i.e., the weight of a regularizer on the no. segments.")
     + Argument ("t").type_float(0.0, 0.0, 1e3)
 
+  + Option ("lambda",
+            "set the weight of the internal energy.")
+    + Argument ("lam").type_float(0.0, 1.0, 1e5)
+  
   + Option ("todi",
             "filename of the resulting TOD image.")
     + Argument ("todimage").type_image_out()
@@ -293,6 +297,12 @@ void run ()
   if (opt.size())
     mu = opt[0][0];
   properties.ppot = mu * wmscale2;
+  
+  opt = get_options("lambda");
+  if (opt.size()) {   // If used, "balance" is completely ignored !
+    properties.lam_ext = 1.0;
+    properties.lam_int = opt[0][0];
+  }
 
 
   // Prepare buffers --------------------------------------------------------------------
@@ -317,8 +327,8 @@ void run ()
   Eint->setConnPot(ChemPot);
   
   
-  EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, 
-                                             Eext, properties.lam_ext * 1/( wmscale2 * properties.weight*properties.weight ));
+  EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int / (properties.weight*properties.weight), 
+                                             Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
   
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.

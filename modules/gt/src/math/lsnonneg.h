@@ -63,7 +63,7 @@ namespace MR {
       else {
         mult(mu, -1.0, 1.0, CblasTrans, H, x);
       }
-      for (int it = 0; it < 1000; it++)
+      for (int it = 0; it < 100; it++)
       {
         for (int k = 0; k < f.size(); k++)
         {
@@ -76,7 +76,7 @@ namespace MR {
               mu[l] += d * H(l,k);
           }
         }
-        if (Math::absmax(mu) < 1e-4) {
+        if (Math::absmax(mu) < 1e-2) {
           break;
         }
       }
