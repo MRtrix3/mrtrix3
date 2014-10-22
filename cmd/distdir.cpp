@@ -61,18 +61,14 @@ class Shared {
       directions (directions), subset (num_subsets), 
       best_energy (std::numeric_limits<value_type>::max()),
       target_num_permutations (target_num_permutations),
-      num_permutations (0),
-      progress ("distributing directions...", target_num_permutations) { 
-        const size_t num_per_subset = std::ceil (value_type(directions.rows()) / value_type(num_subsets));
+      num_permutations (0) {
         size_t s = 0;
-        size_t limit = num_per_subset;
         for (size_t n = 0; n < directions.rows(); ++n) {
-          if (n >= limit) {
-            limit += num_per_subset;
-            ++s;
-          }
-          subset[s].push_back (n);
+          subset[s++].push_back (n);
+          if (s >= num_subsets) s = 0;
         }
+        INFO ("split " + str(directions.rows()) + " directions into subsets with " + 
+            str([&]{ std::vector<size_t> c; for (auto& x : subset) c.push_back (x.size()); return c; }()) + " volumes");
       }
 
 
@@ -81,13 +77,14 @@ class Shared {
     bool update (value_type energy, const std::vector<std::vector<size_t>>& set) 
     {
       std::lock_guard<std::mutex> lock (mutex);
+      if (!progress) progress = new ProgressBar ("distributing directions...", target_num_permutations);;
       if (energy < best_energy) {
         best_energy = energy;
         best_subset = set;
-        progress.set_message ("distributing directions (current best configuration: energy = " + str(best_energy) + ")...");
+        progress->set_message ("distributing directions (current best configuration: energy = " + str(best_energy) + ")...");
       }
       ++num_permutations;
-      ++progress;
+      ++(*progress);
       return num_permutations < target_num_permutations;
     }
 
@@ -111,7 +108,7 @@ class Shared {
     value_type best_energy;
     const size_t target_num_permutations;
     size_t num_permutations;
-    ProgressBar progress;
+    Ptr<ProgressBar> progress;
 };
 
 
@@ -288,13 +285,13 @@ void run () {
 
 
   if (num_subsets == 2 || num_subsets == 4) {
-    for (size_t a = 0; a < num_subsets/2; ++a) {
-      Math::Matrix<value_type> dirs (best[a].size() + best[a+2].size(), 3);
+    for (size_t a = 0; a < num_subsets; a += 2) {
+      Math::Matrix<value_type> dirs (best[a].size() + best[a+1].size(), 3);
       size_t n = 0;
       for (size_t x = 0; x < best[a].size(); ++x, ++n)
         dirs.row(n) = directions.row (best[a][x]);
-      for (size_t x = 0; x < best[a+2].size(); ++x, ++n) {
-        dirs.row(n) = directions.row (best[a+2][x]);
+      for (size_t x = 0; x < best[a+1].size(); ++x, ++n) {
+        dirs.row(n) = directions.row (best[a+1][x]);
         dirs.row(n) *= -1.0;
       }
 
@@ -306,9 +303,9 @@ void run () {
       for (size_t x = 0; x < best[a].size(); ++x, ++n)
         if (signs[n] < 0)
           directions.row (best[a][x]) *= -1.0;
-      for (size_t x = 0; x < best[a+2].size(); ++x, ++n) 
+      for (size_t x = 0; x < best[a+1].size(); ++x, ++n) 
         if (signs[n] < 0)
-          directions.row (best[a+2][x]) *= -1.0;
+          directions.row (best[a+1][x]) *= -1.0;
     }
   }
 
