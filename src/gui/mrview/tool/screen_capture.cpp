@@ -201,8 +201,8 @@ namespace MR
             axis[1] = rotation_axis_y->value();
             axis[2] = rotation_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
-            rotation *= orientation;
-            this->window.set_orientation (rotation);
+            orientation *= rotation;
+            this->window.set_orientation (orientation);
 
             // Translation
             Point<float> focus (this->window.focus());
@@ -221,6 +221,7 @@ namespace MR
 
             start_index->setValue (i + 1);
             this->window.updateGL();
+            qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
           }
         }
 
