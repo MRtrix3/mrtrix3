@@ -24,8 +24,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "image/threaded_loop.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"

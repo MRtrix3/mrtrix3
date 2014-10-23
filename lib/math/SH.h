@@ -733,6 +733,19 @@ namespace MR
       };
 
 
+      template <class Infotype>
+        void check (const Infotype& info) {
+          if (info.datatype().is_complex()) 
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - contains complex data");
+          if (!info.datatype().is_floating_point()) 
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - data type is not floating-point");
+          if (info.ndim() < 4)
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - not 4D");
+          size_t l = LforN (info.dim(3));
+          if (l%1 || NforL (l) != size_t (info.dim(3)))
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
+        }
+
     }
   }
 }

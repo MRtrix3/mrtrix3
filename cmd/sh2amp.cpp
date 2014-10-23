@@ -80,9 +80,7 @@ class remove_negative
 void run ()
 {
   Image::Buffer<value_type> sh_data (argument[0]);
-
-  if (sh_data.ndim() != 4)
-    throw Exception ("the input spherical harmonic image should contain 4 dimensions");
+  Math::SH::check (sh_data);
 
   Image::Header amp_header (sh_data);
 

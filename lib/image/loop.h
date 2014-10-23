@@ -42,7 +42,7 @@ namespace MR
         public:
           LoopIter (const LoopType& loop_type, VoxelType&... voxels) : 
             loop (loop_type), vox (voxels...) { 
-              loop.start (std::forward<std::tuple<VoxelType&...>> (vox)); 
+              unpack ([this](VoxelType&... v) { loop.start (v...); }, vox); 
             }
           LoopIter (LoopIter&&) = default;
 
@@ -51,8 +51,8 @@ namespace MR
           LoopIter& operator=(const LoopIter&) = delete;
 
           operator bool() const { return loop.ok(); }
-          void operator++ () { loop.next (std::forward<std::tuple<VoxelType&...>> (vox)); }
-          void operator++ (int) { loop.next (std::forward<std::tuple<VoxelType&...>> (vox)); }
+          void operator++ () { unpack ([this](VoxelType&... v) { loop.next (v...); }, vox); }
+          void operator++ (int) { unpack ([this](VoxelType&... v) { loop.next (v...); }, vox); }
         private:
           LoopType loop;
           std::tuple<VoxelType&...> vox;
@@ -212,14 +212,15 @@ namespace MR
            * constructor will have their coordinates set to zero; the coordinates
            * of all other axes will be left untouched. */
           template <typename... VoxelType>
-            void start (std::tuple<VoxelType&...>&& vox) {
+            void start (VoxelType&... vox) {
               cont_ = true;
-              max_axis_ = std::min (std::get<0> (vox).ndim(), to_);
+              auto& ref = std::get<0> (std::tie (vox...));
+              max_axis_ = std::min (ref.ndim(), to_);
               for (size_t n = from_; n < max_axis_; ++n) 
-                apply (set_pos (n, 0), std::forward<std::tuple<VoxelType&...>> (vox));
+                apply (set_pos (n, 0), std::tie (vox...));
 
               if (progress_)
-                progress_.set_max (voxel_count (std::get<0> (vox), from_, to_));
+                progress_.set_max (voxel_count (ref, from_, to_));
             }
 
           //! Check whether the loop should continue iterating
@@ -232,15 +233,10 @@ namespace MR
           /*! Advance coordinates of all specified VoxelType objects to the next position
            * to be processed, and update the progress status if appropriate. */
           template <typename... VoxelType>
-            void next (std::tuple<VoxelType&...>& vox) {
-              next_axis (from_, vox);
+            void next (VoxelType&... vox) {
+              auto tvox = std::tie (vox...);
+              next_axis (from_, tvox);
               ++progress_;
-            }
-
-          //! \copydoc Loop::next()
-          template <typename... VoxelType>
-            void next (std::tuple<VoxelType&...>&& vox) {
-              next (vox);
             }
 
           //! set position along relevant axes of \a target to that of \a reference
@@ -249,7 +245,8 @@ namespace MR
            * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, VoxelType&... target) const {
-              set_position (reference, std::tuple<VoxelType&...> (target...));
+              auto t = std::tie (target...);
+              set_position (reference, t);
             }
 
           //! set position along relevant axes of \a target to that of \a reference
@@ -281,7 +278,8 @@ namespace MR
                   }
                   else {
                     next_axis (axis+1, vox);
-                    if (cont_) apply (set_pos (axis, 0), vox);
+                    if (cont_) 
+                      apply (set_pos (axis, 0), vox);
                   }
                 }
               }
@@ -469,19 +467,14 @@ namespace MR
            * constructor will have their coordinates set to zero; the coordinates
            * of all other axes will be left untouched. */
           template <typename... VoxelType>
-            void start (std::tuple<VoxelType&...>& vox) {
+            void start (VoxelType&... vox) {
               cont_ = true;
-              first_axis_dim = std::get<0>(vox).dim (first_axis) - 1;
+              auto& ref = std::get<0> (std::tie (vox...));
+              first_axis_dim = ref.dim (first_axis) - 1;
               for (size_t n = 0; n < axes_.size(); ++n) 
-                apply (set_pos (axes_[n], 0), vox);
+                apply (set_pos (axes_[n], 0), std::tie (vox...));
               if (progress_)
-                progress_.set_max (voxel_count (std::get<0> (vox), axes_));
-            }
-
-          //! \copydoc LoopInOrder::start()
-          template <typename... VoxelType>
-            void start (std::tuple<VoxelType&...>&& vox) {
-              start (vox);
+                progress_.set_max (voxel_count (ref, axes_));
             }
 
           //! Check whether the loop should continue iterating
@@ -494,20 +487,17 @@ namespace MR
           /*! Advance coordinates of all specified VoxelType objects to the next position
            * to be processed, and update the progress status if appropriate. */
           template <typename... VoxelType>
-            void next (std::tuple<VoxelType&...>& vox) {
-              if (std::get<0>(vox)[first_axis] < first_axis_dim)
-                apply (inc_pos (first_axis), vox);
+            void next (VoxelType&... vox) {
+              auto tvox = std::tie (vox...);
+              auto& ref = std::get<0> (tvox);
+              if (ref[first_axis] < first_axis_dim)
+                apply (inc_pos (first_axis), tvox);
               else {
-                next_axis (1, vox);
-                if (cont_) apply (set_pos (first_axis, 0), vox);
+                next_axis (1, tvox);
+                if (cont_) 
+                  apply (set_pos (first_axis, 0), tvox);
               }
               ++progress_;
-            }
-
-          //! \copydoc LoopInOrder::next()
-          template <typename... VoxelType>
-            void next (std::tuple<VoxelType&...>&& vox) {
-              next (vox);
             }
 
           //! set position along relevant axes of \a target to that of \a reference
@@ -516,7 +506,8 @@ namespace MR
            * unchanged. */
           template <typename RefVoxelType, typename... VoxelType>
             void set_position (const RefVoxelType& reference, VoxelType&... target) const {
-              set_position (reference, std::tuple<VoxelType&...> (target...));
+              auto t = std::tie (target...);
+              set_position (reference, t);
             }
 
           //! set position along relevant axes of \a target to that of \a reference
@@ -527,11 +518,6 @@ namespace MR
             void set_position (const RefVoxelType& reference, std::tuple<VoxelType&...>& target) const {
               for (size_t i = 0; i < axes_.size(); ++i) 
                 apply (set_pos (axes_[i], reference[axes_[i]]), target);
-            }
-
-          template <typename RefVoxelType, typename... VoxelType>
-            void set_position (const RefVoxelType& reference, std::tuple<VoxelType&...>&& target) const {
-              set_position (reference, target);
             }
 
 

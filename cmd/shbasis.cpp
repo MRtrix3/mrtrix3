@@ -347,21 +347,11 @@ void run ()
 
     const std::string path = *i;
     Image::Header H (path);
-    if (H.ndim() != 4) {
-      WARN ("Image \"" + H.name() + "\" is not 4D and therefore cannot be an SH image");
-      continue;
+    try {
+      Math::SH::check (H);
     }
-    const size_t lmax = Math::SH::LforN (H.dim(3));
-    if (!lmax) {
-      WARN ("Image \"" + H.name() + "\" does not contain enough volumes to be an SH image");
-      continue;
-    }
-    if (Math::SH::NforL (lmax) != size_t(H.dim(3))) {
-      WARN ("Image \"" + H.name() + "\" does not contain a number of volumes appropriate for an SH image");
-      continue;
-    }
-    if (!H.datatype().is_floating_point()) {
-      WARN ("Image \"" + H.name() + "\" does not use a floating-point data type and therefore cannot be an SH image");
+    catch (Exception& E) {
+      E.display(0);
       continue;
     }
 

@@ -32,8 +32,6 @@
 
 #include "math/rng.h"
 
-#include "thread/mutex.h"
-
 
 
 // These constants set how many times a tracking algorithm should attempt to propagate
@@ -129,7 +127,7 @@ namespace MR
           uint32_t count;
           // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
           Math::RNG rng;
-          Thread::Mutex mutex;
+          std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 
         private:

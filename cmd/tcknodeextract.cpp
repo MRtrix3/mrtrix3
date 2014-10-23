@@ -44,7 +44,7 @@
 #include "image/transform.h"
 #include "image/voxel.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 

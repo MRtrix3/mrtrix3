@@ -32,7 +32,7 @@
 #include "image/nav.h"
 #include "image/header.h"
 #include "math/vector.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/tractography/mapping/buffer_scratch_dump.h"
 #include "dwi/tractography/mapping/twi_stats.h"

@@ -44,11 +44,9 @@ void usage () {
 
 void run () {
   Image::Buffer<float> SH_data (argument[0]);
+  Math::SH::check (SH_data);
+
   Image::Header power_header (SH_data);
-
-  if (power_header.ndim() != 4)
-    throw Exception ("SH image should contain 4 dimensions");
-
 
   int lmax = Math::SH::LforN (SH_data.dim (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));

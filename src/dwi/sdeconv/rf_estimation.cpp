@@ -157,7 +157,7 @@ bool FODCalcAndSeg::operator() (const Image::Iterator& pos)
   // Summarise the results of FOD segmentation and store
   const FODSegResult result (lobes);
   {
-    Thread::Mutex::Lock lock (*mutex);
+    std::lock_guard<std::mutex> lock (*mutex);
     output.push_back (result);
   }
 
@@ -227,7 +227,7 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   for (size_t l = 0; l <= lmax; l += 2)
     response[l/2] = SH[Math::SH::index (l, 0)];
   {
-    Thread::Mutex::Lock lock (*mutex);
+    std::lock_guard<std::mutex> lock (*mutex);
     output += response;
   }
 

@@ -22,8 +22,7 @@
 #include "command.h"
 #include "math/SH.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "image/loop.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
@@ -120,17 +119,17 @@ class DataLoader
       if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
         mask = new Image::Buffer<bool>::voxel_type (*mask_data);
-        loop.start (std::forward_as_tuple (*mask, sh));
+        loop.start (*mask, sh);
       }
       else
-        loop.start (std::forward_as_tuple (sh));
+        loop.start (sh);
       }
 
     bool operator() (Item& item) {
       if (loop.ok()) {
         if (mask) {
           while (!mask->value()) {
-            loop.next (std::forward_as_tuple (*mask, sh));
+            loop.next (*mask, sh);
             if (!loop.ok())
               return false;
           }
@@ -147,9 +146,9 @@ class DataLoader
           item.data[sh[3]] = sh.value();
 
         if (mask)
-          loop.next (std::forward_as_tuple (*mask, sh));
+          loop.next (*mask, sh);
         else
-          loop.next (std::forward_as_tuple (sh));
+          loop.next (sh);
 
         return true;
       }
@@ -306,11 +305,7 @@ extern value_type default_directions [];
 void run ()
 {
   Image::Buffer<value_type> SH_data (argument[0]);
-  if (SH_data.datatype().is_complex()) 
-    throw Exception ("cannot operate on complex data");
-
-  if (SH_data.ndim() != 4)
-    throw Exception ("spherical harmonic image should contain 4 dimensions");
+  Math::SH::check (SH_data);
 
   Options opt = get_options ("mask");
 

@@ -27,8 +27,7 @@
 #include "image/loop.h"
 #include "image/utils.h"
 #include "image/iterator.h"
-#include "thread/mutex.h"
-#include "thread/exec.h"
+#include "thread.h"
 
 namespace MR
 {
@@ -191,6 +190,14 @@ namespace MR
      *   .run (MyFunction(), vox);
      * \endcode
      *
+     * Note that a simple operation such as the previous example can be written
+     * more compactly using C++11 lambda expressions:
+     * \code
+     * MyVoxelType vox;
+     * Image::ThreadedLoop ("computing exponential in-place...", vox)
+     *   .run ([](decltype(vox)& v) { v.value() = std::exp(v.value()); }, vox);
+     * \endcode
+     *
      *
      * As a further example, the following snippet performs the addition of any
      * VoxelTypes \a vox1 and \a vox2, this time storing the results in \a
@@ -209,6 +216,14 @@ namespace MR
      *
      * Image::ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2); 
      * \endcode 
+     *
+     * Again, such a simple operation can be written more compactly using C++11 lambda expressions:
+     * \code
+     * auto f = [](decltype(vox_out)& out, decltype(vox1)& in1, decltype(vox2)& in2) {
+     *   out.value() = in1.value() + in2.value();
+     * }
+     * Image::ThreadedLoop (vox1).run (f, vox_out, vox1, vox2);
+     * \endcode
      * 
      * 
      * This example uses a functor to computes the root-mean-square of \a vox:
@@ -340,15 +355,15 @@ namespace MR
         const Iterator& iterator () const { return dummy; }
 
         void start (Iterator& pos) {
-          loop.start (std::forward_as_tuple (pos));
+          loop.start (pos);
         }
 
         //! get next position in the outer loop
         bool next (Iterator& pos) {
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           if (loop.ok()) {
             loop.set_position (dummy, pos);
-            loop.next (std::forward_as_tuple (dummy));
+            loop.next (dummy);
             return true;
           }
           else return false;
@@ -356,7 +371,7 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
-          void run_outer (const Functor& functor, const std::string& thread_label = "unknown") 
+          void run_outer (Functor&& functor)
           {
             if (Thread::number_of_threads() == 0) {
               for (auto i = loop (dummy); i; ++i)
@@ -364,56 +379,27 @@ namespace MR
               return;
             }
 
-            __Outer<Functor> loop_thread (*this, functor);
-            Thread::Array<__Outer<Functor> > thread_list (loop_thread);
-            Thread::Exec threads (thread_list, thread_label);
-          }
-
-        template <class Functor> 
-          void run_outer (Functor&& functor, const std::string& thread_label = "unknown") {
-            run_outer (functor);
+            __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
+            Thread::run (Thread::multi (loop_thread), "loop threads");
           }
 
 
 
 
         template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) == 0, int>::type = 0> 
-          void run (const Functor& functor, VoxelType&... vox)
+          void run (Functor&& functor, VoxelType&&... vox)
           {
-            if (Thread::number_of_threads() == 0) {
-              LoopInOrder inner_loop (axes);
-              for (auto i = loop (dummy); i; ++i) {
-                for (auto j = inner_loop (dummy); j; ++j)
-                  functor (dummy);
-              }
-              return;
-            }
-
-            __RunFunctorIter<Functor> loop_thread (*this, functor);
-            run_outer (loop_thread, "run thread");
+            __RunFunctorIter<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
+            run_outer (loop_thread);
           }
 
 
         template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) != 0, int>::type = 0> 
-          void run (const Functor& functor, VoxelType&... vox)
+          void run (Functor&& functor, VoxelType&&... vox)
           {
-            if (Thread::number_of_threads() == 0) {
-              LoopInOrder inner_loop (axes);
-              for (auto i = loop (vox...); i; ++i) {
-                for (auto j = inner_loop (vox...); j; ++j)
-                  functor (vox...);
-              }
-              return;
-            }
-
-            __RunFunctor<Functor, VoxelType...> 
+            __RunFunctor<typename std::remove_reference<Functor>::type, typename std::remove_reference<VoxelType>::type...> 
               loop_thread (*this, functor, vox...);
-            run_outer (loop_thread, "run thread");
-          }
-
-        template <class Functor, class... VoxelType> 
-          void run (Functor&& functor, VoxelType&&... vox) {
-            run (functor, vox...);
+            run_outer (loop_thread);
           }
 
 
@@ -421,7 +407,7 @@ namespace MR
         LoopInOrder loop;
         Iterator dummy;
         const std::vector<size_t> axes;
-        Thread::Mutex mutex;
+        std::mutex mutex;
 
         static std::vector<size_t> __get_axes_in_thread (
             const std::vector<size_t>& axes_in_loop,
@@ -465,7 +451,7 @@ namespace MR
        template <class Functor>
          class __Outer {
            public:
-             __Outer (ThreadedLoop& shared_info, const Functor& functor) :
+             __Outer (ThreadedLoop& shared_info, Functor& functor) :
                shared (shared_info),
                func (functor) { }
 
@@ -478,7 +464,7 @@ namespace MR
 
            protected:
              ThreadedLoop& shared;
-             Functor func;
+             typename std::remove_reference<Functor>::type func;
          };
 
 
@@ -499,7 +485,7 @@ namespace MR
              }
 
            protected:
-             Functor func;
+             typename std::remove_reference<Functor>::type func;
              LoopInOrder loop;
          };
 
@@ -522,7 +508,7 @@ namespace MR
              }
 
            protected:
-             Functor func;
+             typename std::remove_reference<Functor>::type func;
              LoopInOrder loop;
              const std::vector<size_t>& outer_axes;
              std::tuple<VoxelType...> vox;

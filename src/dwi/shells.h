@@ -135,6 +135,19 @@ namespace MR
         const Shell& largest()  const { return shells.back(); }
         size_t       count()    const { return shells.size(); }
 
+        std::vector<size_t> get_counts() const { 
+          std::vector<size_t> c (count()); 
+          for (size_t n = 0; n < count(); ++n)
+            c[n] = shells[n].count();
+          return c;
+        }
+
+        std::vector<size_t> get_bvalues() const { 
+          std::vector<size_t> b (count()); 
+          for (size_t n = 0; n < count(); ++n)
+            b[n] = shells[n].get_mean();
+          return b;
+        }
 
         void select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
 

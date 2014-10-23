@@ -26,8 +26,7 @@
 
 #include "image/transform.h"
 
-#include "thread/mutex.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/fmls.h"
 
@@ -175,7 +174,7 @@ namespace MR
 
         // Want to know statistics on dynamic seeding sampling
         uint64_t total_samples, total_seeds;
-        Thread::Mutex mutex;
+        std::mutex mutex;
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING

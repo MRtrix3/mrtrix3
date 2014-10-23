@@ -25,10 +25,10 @@
 #define __mrtrix_thread_queue_h__
 
 #include <stack>
+#include <condition_variable>
 
 #include "ptr.h"
-#include "thread/condition.h"
-#include "thread/exec.h"
+#include "thread.h"
 
 #define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
 #define MRTRIX_QUEUE_DEFAULT_BATCH_SIZE 128
@@ -45,18 +45,6 @@ namespace MR
       /********************************************************************
        * convenience Functor classes for use in Thread::run_queue()
        ********************************************************************/
-
-      template <class Functor> 
-        class __Multi {
-          public:
-            __Multi (Functor& object, size_t number) : obj (object), num (number) { }
-            template <class X> bool operator() (const X& x) { assert (0); return false; }
-            template <class X> bool operator() (X& x) { assert (0); return false; }
-            template <class X, class Y> bool operator() (const X& x, Y& y) { assert (0); return false; }
-            Functor& obj;
-            size_t num;
-        };
-
       template <class Item> 
         class __Batch {
           public:
@@ -68,46 +56,37 @@ namespace MR
 
       // to handle batched / unbatched seamlessly:
       template <class X> class __item { public: typedef X type; }; 
-      template <class X> class __item < __Batch<X> > { public: typedef X type; };
+      template <class X> class __item <__Batch<X>> { public: typedef X type; };
 
       // to get multi/single job/functor seamlessly:
       template <class X>
         class __job
         {
           public:
-            typedef X type;
-            static X& functor (const X& job) { return const_cast<X&> (job); }
+            typedef typename std::remove_reference<X>::type type;
+            typedef typename std::remove_reference<X>::type& member_type;
+            static X& functor (X& job) { return job; }
+
+            template <class SingleFunctor>
+              static SingleFunctor& get (X& f, SingleFunctor& functor) {
+                return functor;
+              }
         };
 
       template <class X>
-        class __job < __Multi<X> >
+        class __job <__Multi<X>>
         {
           public:
-            typedef X type;
-            static X& functor (const __Multi<X>& job) { return const_cast<X&> (job.obj); }
+            typedef typename std::remove_reference<X>::type type;
+            typedef typename std::remove_reference<X>::type member_type;
+            static X& functor (__Multi<X>& job) { return job.functor; }
+
+            template <class SingleFunctor>
+              static __Multi<SingleFunctor> get (__Multi<X>& f, SingleFunctor& functor) {
+                return __Multi<SingleFunctor> (functor, f.num);
+              }
         };
 
-      // to launch multi/single job/functor seamlessly:
-      template <class F, class T> 
-        class __exec 
-        { 
-          public:
-            __exec (const F& f, T& t, const char* name) : launcher (t, name) { }
-          private:
-            Exec launcher;
-        };
-
-      template <class F, class T> 
-        class __exec <__Multi<F>, T>
-        { 
-          public:
-            __exec (const __Multi<F>& f, T& t, const char* name) : 
-              array (t, f.num),
-              launcher (array, name) { }
-          private:
-            Array<T> array;
-            Exec launcher;
-        };
 
     }
 
@@ -388,8 +367,6 @@ namespace MR
          * MRTRIX_QUEUE_DEFAULT_CAPACITY items.
          */
         Queue (const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
-          more_data (mutex),
-          more_space (mutex),
           buffer (new T* [buffer_size]),
           front (buffer),
           back (buffer),
@@ -402,8 +379,6 @@ namespace MR
 
         //! needed for Thread::run_queue()
         Queue (const T& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
-          more_data (mutex),
-          more_space (mutex),
           buffer (new T* [buffer_size]),
           front (buffer),
           back (buffer),
@@ -528,7 +503,7 @@ namespace MR
                  *
                  * \note There should only be one Reader::Item object per
                  * Reader. */
-                Item (const Reader& reader) : Q (reader.Q), p (NULL) { }
+                Item (const Reader& reader) : Q (reader.Q), p (nullptr) { }
                 //! Unregister the parent Reader from the queue
                 ~Item () {
                   Q.unregister_reader();
@@ -556,7 +531,7 @@ namespace MR
 
         //! Print out a status report for debugging purposes
         void status () {
-          Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           std::cerr << "Thread::Queue \"" + name + "\": "
                     << writer_count << " writer" << (writer_count > 1 ? "s" : "") << ", "
                     << reader_count << " reader" << (reader_count > 1 ? "s" : "") << ", items waiting: " << size() << "\n";
@@ -564,8 +539,8 @@ namespace MR
 
 
       private:
-        Mutex mutex;
-        Cond more_data, more_space;
+        std::mutex mutex;
+        std::condition_variable more_data, more_space;
         T** buffer;
         T** front;
         T** back;
@@ -584,29 +559,39 @@ namespace MR
         }
 
         void register_writer ()   {
-          Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           ++writer_count;
         }
         void unregister_writer () {
-          Mutex::Lock lock (mutex);
-          assert (writer_count);
-          --writer_count;
-          if (!writer_count) {
+          bool finish = false;
+          {
+            std::lock_guard<std::mutex> lock (mutex);
+            assert (writer_count);
+            --writer_count;
+            if (!writer_count) 
+              finish = true;
+          }
+          if (finish) {
             DEBUG ("no writers left on queue \"" + name + "\"");
-            more_data.broadcast();
+            more_data.notify_all();
           }
         }
         void register_reader ()   {
-          Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           ++reader_count;
         }
         void unregister_reader () {
-          Mutex::Lock lock (mutex);
-          assert (reader_count);
-          --reader_count;
-          if (!reader_count) {
+          bool finish = false;
+          {
+            std::lock_guard<std::mutex> lock (mutex);
+            assert (reader_count);
+            --reader_count;
+            if (!reader_count) 
+              finish = true;
+          }
+          if (finish) {
             DEBUG ("no readers left on queue \"" + name + "\"");
-            more_space.broadcast();
+            more_space.notify_all();
           }
         }
 
@@ -621,47 +606,52 @@ namespace MR
         }
 
         T* get_item () {
-          Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           T* item = new T;
           items.push_back (item);
-          return (item);
+          return item;
         }
 
         bool push (T*& item) {
-          Mutex::Lock lock (mutex);
-          while (full() && reader_count) more_space.wait();
-          if (!reader_count) return (false);
-          *back = item;
-          back = inc (back);
-          more_data.signal();
-          if (item_stack.empty()) {
-            item = new T;
-            items.push_back (item);
+          {
+            std::unique_lock<std::mutex> lock (mutex);
+            more_space.wait (lock, [this]{ return !(full() && reader_count); });
+            if (!reader_count) return false;
+            *back = item;
+            back = inc (back);
+            if (item_stack.empty()) {
+              item = new T;
+              items.push_back (item);
+            }
+            else {
+              item = item_stack.top();
+              item_stack.pop();
+            }
           }
-          else {
-            item = item_stack.top();
-            item_stack.pop();
-          }
-          return (true);
+          more_data.notify_one();
+          return true;
         }
 
         bool pop (T*& item) {
-          Mutex::Lock lock (mutex);
-          if (item) 
-            item_stack.push (item);
-          item = NULL;
-          while (empty() && writer_count) more_data.wait();
-          if (empty() && !writer_count) return (false);
-          item = *front;
-          front = inc (front);
-          more_space.signal();
-          return (true);
+          {
+            std::unique_lock<std::mutex> lock (mutex);
+            if (item) 
+              item_stack.push (item);
+            item = nullptr;
+            more_data.wait (lock, [this]{ return !(empty() && writer_count); });
+            if (empty() && !writer_count) 
+              return false;
+            item = *front;
+            front = inc (front);
+          }
+          more_space.notify_one();
+          return true;
         }
 
         T** inc (T** p) const {
           ++p;
           if (p >= buffer + capacity) p = buffer;
-          return (p);
+          return p;
         }
     };
 
@@ -672,7 +662,7 @@ namespace MR
 
      //* \cond skip
 
-    template <class T> class Queue< __Batch<T> >
+    template <class T> class Queue<__Batch<T>>
     {
       private:
         typedef std::vector<T> BatchType;
@@ -687,7 +677,8 @@ namespace MR
         class Writer
         {
           public:
-            Writer (Queue< __Batch<T> >& queue) : batch_writer (queue.batch_queue), batch_size (queue.batch_size) { }
+            Writer (Queue<__Batch<T>>& queue) : 
+              batch_writer (queue.batch_queue), batch_size (queue.batch_size) { }
 
             class Item
             {
@@ -732,7 +723,8 @@ namespace MR
         class Reader
         {
           public:
-            Reader (Queue< __Batch<T> >& queue) : batch_reader (queue.batch_queue), batch_size (queue.batch_size) { }
+            Reader (Queue<__Batch<T>>& queue) : 
+              batch_reader (queue.batch_queue), batch_size (queue.batch_size) { }
 
             class Item
             {
@@ -783,14 +775,13 @@ namespace MR
      * Thread::run_queue with functionality needed for use with Thread::Queue */
     namespace {
 
+
        template <class Type, class Functor>
          class __Source
          {
            public:
              __Source (Queue<Type>& queue, Functor& functor) :
                writer (queue), func (__job<Functor>::functor (functor)) { }
-             __Source (const __Source& S) :
-               writer (S.writer), funcp (new Functor (S.func)), func (*funcp) { }
 
              void execute () {
                typename Queue<Type>::Writer::Item out (writer);
@@ -802,8 +793,7 @@ namespace MR
 
            private:
              typename Queue<Type>::Writer writer;
-             Ptr<typename __job<Functor>::type> funcp;
-             typename __job<Functor>::type& func;
+             typename __job<Functor>::member_type func;
          };
 
 
@@ -811,12 +801,8 @@ namespace MR
          class __Pipe
          {
            public:
-             typedef typename __job<Functor>::type Functype;
-
              __Pipe (Queue<Type1>& queue_in, Functor& functor, Queue<Type2>& queue_out) :
                reader (queue_in), writer (queue_out), func (__job<Functor>::functor (functor)) { }
-             __Pipe (const __Pipe& P) :
-               reader (P.reader), writer (P.writer), funcp (new Functor (P.func)), func (*funcp) { }
 
              void execute () {
                typename Queue<Type1>::Reader::Item in (reader);
@@ -830,8 +816,7 @@ namespace MR
            private:
              typename Queue<Type1>::Reader reader;
              typename Queue<Type2>::Writer writer;
-             Ptr<typename __job<Functor>::type> funcp;
-             typename __job<Functor>::type& func;
+             typename __job<Functor>::member_type func;
          };
 
 
@@ -840,12 +825,8 @@ namespace MR
          class __Sink
          {
            public:
-             typedef typename __job<Functor>::type Functype;
-
              __Sink (Queue<Type>& queue, Functor& functor) :
                reader (queue), func (__job<Functor>::functor (functor)) { }
-             __Sink (const __Sink& S) :
-               reader (S.reader), funcp (new Functor (S.func)), func (*funcp) { }
 
              void execute () {
                typename Queue<Type>::Reader::Item in (reader);
@@ -857,8 +838,7 @@ namespace MR
 
            private:
              typename Queue<Type>::Reader reader;
-             Ptr<typename __job<Functor>::type> funcp;
-             typename __job<Functor>::type& func;
+             typename __job<Functor>::member_type func;
          };
 
 
@@ -870,20 +850,6 @@ namespace MR
 
 
 
-
-
-
-
-    //! used to request multiple threads of the corresponding functor
-    /*! This function is used in combination with Thread::run_queue to request
-     * that the functor \a object be run in parallel using \a number threads of
-     * execution (defaults to Thread::number_of_threads()). 
-     * \sa Thread::run_queue() */
-    template <class Functor>
-      inline __Multi<Functor> multi (Functor& object, size_t number = number_of_threads()) 
-      {
-        return __Multi<Functor> (object, number);
-      }
 
  
     //! used to request batched processing of items
@@ -913,13 +879,6 @@ namespace MR
      * of the Items to be passed through each stage of the pipeline - these are
      * provided purely to specify the type of object to pass through the
      * queue(s).
-     *
-     * \note While the functors are passed by const-reference, you  should not
-     * rely on them being unmodified - they will immediately be cast back
-     * to their non-const version within Thread::run_queue(). The reason for
-     * the const declaration is to support passing the lightweight temporary
-     * structures produced by Thread::multi(), which have to be passed by
-     * const-reference as mandated by the C++ standard.
      *
      * \section thread_run_queue_functors Functors
      *
@@ -1093,28 +1052,25 @@ namespace MR
 
     template <class Source, class Type, class Sink>
       inline void run_queue (
-          const Source& source, 
+          Source&& source, 
           const Type& item_type, 
-          const Sink& sink, 
+          Sink&& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
         if (number_of_threads() == 0) {
           typename __item<Type>::type item;
-          while (const_cast<Source&> (source) (item)) 
-            if (!const_cast<Sink&> (sink) (item))
+          while (source (item)) 
+            if (!sink (item))
               return;
           return;
         }
 
-        typedef typename __job<Source>::type SourceType;
-        typedef typename __job<Sink>::type SinkType;
-
          Queue<Type> queue (item_type, "source->sink", capacity);
-         __Source<Type,SourceType> source_functor (queue, __job<Source>::functor (source));
-         __Sink<Type,SinkType>     sink_functor   (queue, __job<Sink>::functor (sink));
+         __Source<Type,Source> source_functor (queue, source);
+         __Sink<Type,Sink>     sink_functor   (queue, sink);
 
-         __exec<Source, __Source<Type,SourceType> > source_threads (source, source_functor, "source");
-         __exec<Sink, __Sink<Type,SinkType> >       sink_threads   (sink, sink_functor, "sink");
+        auto t1 = run (__job<Source>::get (source, source_functor), "source");
+        auto t2 = run (__job<Sink>::get (sink, sink_functor), "sink");
       }
 
 
@@ -1131,8 +1087,8 @@ namespace MR
      *
      * class Pipe {
      *   public:
-     *     bool operator() (const Item& item_in, Item& item_out) {
-     *       item_out.n = 2 * item_in.n;
+     *     bool operator() (const size_t& item_in, size_t& item_out) {
+     *       item_out = 2 * item_in;
      *       return true;
      *     }
      * };
@@ -1165,39 +1121,80 @@ namespace MR
      * */
     template <class Source, class Type1, class Pipe, class Type2, class Sink>
       inline void run_queue (
-          const Source& source,
+          Source&& source,
           const Type1& item_type1, 
-          const Pipe& pipe, 
+          Pipe&& pipe, 
           const Type2& item_type2, 
-          const Sink& sink, 
+          Sink&& sink, 
           size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
       {
         if (number_of_threads() == 0) {
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
-          while (const_cast <Source&> (source) (item1)) {
-            if (const_cast<Pipe&> (pipe) (item1, item2))
-              if (!const_cast<Sink&> (sink) (item2))
+          while (source (item1)) {
+            if (pipe (item1, item2))
+              if (!sink (item2))
                 return;
           }
           return;
         }
 
 
-        typedef typename __job<Source>::type SourceType;
-        typedef typename __job<Pipe>::type PipeType;
-        typedef typename __job<Sink>::type SinkType;
+        Queue<Type1> queue1 (item_type1, "source->pipe", capacity);
+        Queue<Type2> queue2 (item_type2, "pipe->sink", capacity);
 
-         Queue<Type1> queue1 (item_type1, "source->pipe", capacity);
-         Queue<Type2> queue2 (item_type2, "pipe->sink", capacity);
+        __Source<Type1,Source>   source_functor (queue1, source);
+        __Pipe<Type1,Pipe,Type2> pipe_functor   (queue1, pipe, queue2);
+        __Sink<Type2,Sink>       sink_functor   (queue2, sink);
 
-         __Source<Type1,SourceType>   source_functor (queue1, __job<Source>::functor (source));
-         __Pipe<Type1,PipeType,Type2> pipe_functor   (queue1, __job<Pipe>::functor (pipe), queue2);
-         __Sink<Type2,SinkType>       sink_functor   (queue2, __job<Sink>::functor (sink));
+        auto t1 = run (__job<Source>::get (source, source_functor), "source");
+        auto t2 = run (__job<Pipe>::get (pipe, pipe_functor), "pipe");
+        auto t3 = run (__job<Sink>::get (sink, sink_functor), "sink");
+      }
 
-         __exec<Source, __Source<Type1,SourceType> >   source_threads (source, source_functor, "source");
-         __exec<Pipe, __Pipe<Type1,PipeType,Type2> >   pipe_threads (pipe, pipe_functor, "pipe");
-         __exec<Sink, __Sink<Type2,SinkType> >         sink_threads (sink, sink_functor, "sink");
+
+
+    //! convenience functions to set up and run a 4-stage multi-threaded pipeline.
+    /*! This function extends the 2-stage Thread::run_queue() function to allow
+     * a 3-stage pipeline.  */
+    template <class Source, class Type1, class Pipe1, class Type2, class Pipe2, class Type3, class Sink>
+      inline void run_queue (
+          Source&& source,
+          const Type1& item_type1, 
+          Pipe1&& pipe1, 
+          const Type2& item_type2, 
+          Pipe2&& pipe2, 
+          const Type3& item_type3, 
+          Sink&& sink, 
+          size_t capacity = MRTRIX_QUEUE_DEFAULT_CAPACITY)
+      {
+        if (number_of_threads() == 0) {
+          typename __item<Type1>::type item1;
+          typename __item<Type2>::type item2;
+          typename __item<Type3>::type item3;
+          while (source (item1)) {
+            if (pipe1 (item1, item2))
+              if (pipe2 (item2, item3))
+                if (!sink (item3))
+                  return;
+          }
+          return;
+        }
+
+
+        Queue<Type1> queue1 (item_type1, "source->pipe", capacity);
+        Queue<Type2> queue2 (item_type2, "pipe->pipe", capacity);
+        Queue<Type3> queue3 (item_type3, "pipe->sink", capacity);
+
+        __Source<Type1,Source>    source_functor (queue1, source);
+        __Pipe<Type1,Pipe1,Type2> pipe1_functor   (queue1, pipe1, queue2);
+        __Pipe<Type2,Pipe2,Type3> pipe2_functor   (queue2, pipe2, queue3);
+        __Sink<Type3,Sink>        sink_functor   (queue3, sink);
+
+        auto t1 = run (__job<Source>::get (source, source_functor), "source");
+        auto t2 = run (__job<Pipe1>::get (pipe1, pipe1_functor), "pipe1");
+        auto t3 = run (__job<Pipe2>::get (pipe2, pipe2_functor), "pipe2");
+        auto t4 = run (__job<Sink>::get (sink, sink_functor), "sink");
       }
 
 

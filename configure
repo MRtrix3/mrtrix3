@@ -105,10 +105,6 @@ LDFLAGS         Any additional flags to the linker.
 
 LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
 
-PTHREAD_CFLAGS  Any flags required to compile with POSIX threads.
-
-PTHREAD_LDFLAGS Any flags required to link with POSIX threads.
-
 GSL_CFLAGS      Any flags required to compile with the GSL.
                 This may include in particular the path to the
                 include files, if not in a standard location
@@ -189,20 +185,17 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11' ]
+cpp_flags = [ '-std=c++11', '-pthread' ]
 
 ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = []
+ld_flags = [ '-pthread' ]
 
 if static:
   ld_flags += [ '-static' ] 
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ ]
-
-thread_cflags = []
-thread_ldflags = [ '-lpthread' ]
+ld_lib_flags = [ '-pthread' ]
 
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
@@ -336,7 +329,7 @@ def compile (source, compiler_flags = [], linker_flags = []):
           'EXECUTABLE': out.name })
         execute (cmd, LinkError)
 
-        ret = execute ([ out.name ], RuntimeError)
+        ret = execute ([ './'+out.name ], RuntimeError)
 
   return ret[1]
 
@@ -477,52 +470,6 @@ else:
 
 
 
-report ('Checking for unordered_map: ')
-try:
-  compile ('''
-#include <unordered_map>
-
-int main() { 
-  std::unordered_map<int,int> map; 
-  return (map.size());
-}
-''', cpp_flags, ld_flags)
-  report ('present\n')
-except:
-  report ('no\n')
-  report ('Checking for TR1 unordered_map: ')
-  try:
-    compile ('''
-#include <tr1/unordered_map>
-
-int main() { 
-  std::tr1::unordered_map<int,int> map; 
-  return (map.size());
-}
-''', cpp_flags, ld_flags)
-    report ('present\n')
-    cpp_flags += [ '-DMRTRIX_USE_TR1' ]
-  except:
-    report ('no - will use SGI std::hash_map instead\n')
-    cpp_flags += [ '-DMRTRIX_USE_HASH_MAP' ]
-
-
-
-
-report ('Checking for 64-bit integer type: ')
-try:
-  compile ('''
-#include <stdint.h>
-
-int main() { 
-  int64_t t = 0; 
-  return (t); 
-}
-''', cpp_flags, ld_flags)
-  report ('yes\n')
-except:
-  report ('no\n')
-  error ('<stdint.h> is not C99 compliant - it does not define a int64_t type.')
 
 
 
@@ -612,49 +559,6 @@ ld_lib_flags += zlib_ldflags
 
 
 
-
-
-# POSIX threads:
-
-report ('Checking for POSIX threads: ')
-
-if 'PTHREAD_CFLAGS' in os.environ.keys(): thread_cflags = shlex.split (os.environ['PTHREAD_CFLAGS'])
-if 'PTHREAD_LDFLAGS' in os.environ.keys(): thread_ldflags = shlex.split (os.environ['PTHREAD_LDFLAGS'])
-
-try:
-  compile ('''
-#include <pthread.h>
-
-void* func (void*) { return (NULL); } 
-
-int main() { 
-  pthread_t t; 
-  if (pthread_create(&t, NULL, func, NULL)) return (1);
-  pthread_exit (NULL); 
-  return (0); 
-}
-''', cpp_flags + thread_cflags, ld_flags + thread_ldflags)
-  report ('yes\n')
-except CompileError:
-  error ('''compiler error!
-
-Use the PTHREAD_CFLAGS environment variable to set the path to
-the pthread include files and to set any required flags
-For example:
-     PTHREAD_CFLAGS="-I/usr/local/include" ./configure''')
-except LinkError:
-  error ('''linker error!
-
-Use the PTHREAD_LDFLAGS environment variable to set the path to
-the pthread libraries and to set the library to use
-For example:
-     PTHREAD_LDFLAGS="-L/usr/local/lib -lpthread" ./configure''')
-except RuntimeError:
-  error ('''runtime error!
-
-There is something wrong with your POSIX threads implementation!''')
-except:
-  error (' POSIX threads implementation not found!')
 
 
 
@@ -1208,8 +1112,6 @@ else:
   cache.write ('True\n')
   commit ('ld_lib', ld_lib);
   commit ('ld_lib_flags', ld_lib_flags);
-commit ('thread_cflags', thread_cflags)
-commit ('thread_ldflags', thread_ldflags)
 commit ('gsl_cflags', gsl_cflags)
 commit ('gsl_ldflags', gsl_ldflags)
 

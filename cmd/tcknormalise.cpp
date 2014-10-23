@@ -27,7 +27,7 @@
 #include "get_set.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 

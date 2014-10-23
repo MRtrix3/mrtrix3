@@ -228,11 +228,7 @@ namespace MR
 
       std::sort (shells.begin(), shells.end());
 
-      if (smallest().is_bzero()) {
-        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " + str(smallest().count()) + " b=0 volumes");
-      } else {
-        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells");
-      }
+      INFO ("Diffusion gradient encoding data clustered into " + str(count()) + " shells with volumes counts = " + str(get_counts()) + ", b-values = " + str(get_bvalues()) + "");
     }
 
 

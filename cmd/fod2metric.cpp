@@ -37,7 +37,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
@@ -439,15 +439,10 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 void run ()
 {
   Image::Header H (argument[0]);
+  Math::SH::check (H);
   Image::Buffer<float> fod_data (H);
 
-  if (fod_data.ndim() != 4)
-    throw Exception ("input FOD image should contain 4 dimensions");
-
   const size_t lmax = Math::SH::LforN (fod_data.dim(3));
-
-  if (Math::SH::NforL (lmax) != size_t(fod_data.dim(3)))
-    throw Exception ("Input image does not appear to contain an SH series per voxel");
 
   const DWI::Directions::Set dirs (1281);
   Segmented_FOD_receiver receiver (H, dirs);
