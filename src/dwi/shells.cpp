@@ -19,7 +19,7 @@ namespace MR
           "processing, as a comma-separated list of the desired approximate b-values. "
           "Note that some commands are incompatible with multiple shells, and "
           "will throw an error if more than one b-value are provided.")
-        + Argument ("list").type_sequence_int();
+        + Argument ("list").type_sequence_float();
 
 
 
@@ -66,11 +66,11 @@ namespace MR
       App::Options opt = App::get_options ("shell");
       if (opt.size()) {
 
-        std::vector<int> desired_bvalues = opt[0][0];
+        std::vector<float> desired_bvalues = opt[0][0];
         if (desired_bvalues.size() > 1 && !(desired_bvalues.front() == 0) && force_single_shell)
           throw Exception ("Command not compatible with multiple non-zero b-shells");
 
-        for (std::vector<int>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+        for (std::vector<float>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
           if (*b < 0)
             throw Exception ("Cannot select shells corresponding to negative b-values");

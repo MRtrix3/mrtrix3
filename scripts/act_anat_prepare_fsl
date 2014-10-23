@@ -75,11 +75,23 @@ os.chdir(temp_dir)
 # Use FSL command standard_space_roi to do an initial masking of the image before BET
 # Also reduce the FoV of the image
 # Using MNI 1mm dilated brain mask rather than the -b option in standard_space_roi (which uses the 2mm mask); the latter looks 'buggy' to me... Unfortunately even with the 1mm 'dilated' mask, it can still cut into some brain areas, hence the explicit dilation
-runCommand('maskfilter ' + os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz') + ' dilate mni_mask.nii -npass 4' + quiet, verbose)
-runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV', verbose)
+mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_1mm_brain_mask_dil.nii.gz')
+mni_mask_dilation = 0;
+if os.path.exists (mni_mask_path):
+  mni_mask_dilation = 4;
+else:
+  mni_mask_path = os.path.join(fsl_path, 'data', 'standard', 'MNI152_T1_2mm_brain_mask_dil.nii.gz')
+  if os.path.exists (mni_mask_path):
+    mni_mask_dilation = 2;
+
+if mni_mask_dilation:
+  runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation) + quiet, verbose)
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV', verbose)
+else:
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b', verbose)
 
 # BET
-runCommand(bet_cmd + ' T1_preBET.nii T1_bet.' + fsl_suffix + ' -f 0.15 -R', verbose)
+runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R', verbose)
 
 # FAST
 runCommand(fast_cmd + ' T1_bet.' + fsl_suffix, verbose)
@@ -92,9 +104,9 @@ pve_image_list = [ ]
 for struct in sgm_structures:
   pve_image_path = 'mesh2pve_' + struct + '.nii'
   vtk_path = 'first-' + struct + '_first.vtk'
-  if not os.path.exists(os.path.join(temp_dir, vtk_path)):
+  if not os.path.exists(vtk_path):
     errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed', temp_dir, working_dir)
-  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.nii ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
+  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum -' + quiet + ' | mrcalc - 1.0 -min all_sgms.nii' + quiet, verbose)
