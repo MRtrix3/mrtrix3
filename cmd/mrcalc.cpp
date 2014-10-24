@@ -657,7 +657,7 @@ void run_operations (const std::vector<StackEntry>& stack)
 
   Image::Buffer<complex_type> output (stack[1].arg, header);
 
-  Image::ThreadedLoop loop ("computing: " + operation_string(stack[0]) + " ...", output, 2);
+  Image::ThreadedLoop loop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
 
   ThreadFunctor functor (loop, stack[0], output);
   loop.run_outer (functor);
