@@ -220,7 +220,7 @@ void run() {
   std::vector<value_type> cluster_output (num_vox, 0.0);
   RefPtr<std::vector<value_type> > cluster_output_neg;
   std::vector<value_type> tvalue_output (num_vox, 0.0);
-  RefPtr<std::vector<value_type> > empirical_statistic;
+  RefPtr<std::vector<value_type> > empirical_tfce_statistic;
   std::vector<value_type> uncorrected_pvalues (num_vox, 0.0);
   RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
 
@@ -246,20 +246,24 @@ void run() {
     if (std::isfinite (cluster_forming_threshold)) {
       if (do_nonstationary_adjustment)
         throw Exception ("nonstationary adjustment is not currently implemented for threshold-based cluster analysis");
-      Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
-      Stats::TFCE::run (glm, cluster_size_test, num_perms, empirical_statistic,
-                        perm_distribution, perm_distribution_neg,
-                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
+//      Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
+//      Stats::TFCE::run_permutations (glm, cluster_size_test, num_perms, empirical_statistic,
+//                        perm_distribution, perm_distribution_neg,
+//                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
     // TFCE
     } else {
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
       if (do_nonstationary_adjustment) {
-        empirical_statistic = new std::vector<value_type> (num_vox, 0.0);
-        Stats::TFCE::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_statistic);
+        empirical_tfce_statistic = new std::vector<value_type> (num_vox, 0.0);
+        Stats::TFCE::precompute_empirical_stat (glm, tfce_integrator, nperms_nonstationary, *empirical_tfce_statistic);
       }
-      Stats::TFCE::run (glm, tfce_integrator, num_perms, empirical_statistic,
-                        perm_distribution, perm_distribution_neg,
-                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
+
+      Stats::TFCE::precompute_default_permutation (glm, tfce_integrator, empirical_tfce_statistic, cluster_output, cluster_output_neg, tvalue_output);
+
+
+//      Stats::TFCE::run_permutations (glm, tfce_integrator, num_perms, empirical_tfce_statistic,
+//                        perm_distribution, perm_distribution_neg,
+//                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
     }
   }
 

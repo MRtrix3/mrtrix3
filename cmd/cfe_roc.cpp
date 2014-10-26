@@ -296,8 +296,8 @@ class Processor {
       std::vector<value_type> cfe_test_statistic;
       std::vector<value_type> cfe_noise;
 
-      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], &cfe_test_statistic);
-      cfe (max_statistics[index], smoothed_noise[index], &cfe_noise);
+      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], cfe_test_statistic);
+      cfe (max_statistics[index], smoothed_noise[index], cfe_noise);
 
       for (size_t t = 0; t < num_ROC_samples; ++t) {
         value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;

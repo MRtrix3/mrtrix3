@@ -356,10 +356,10 @@ class Processor {
 
       std::vector<value_type> cfe_control_test_statistic;
       std::vector<value_type> cfe_path_test_statistic;
-      value_type max_cfe_statistic = cfe (max_statistics[perm], path_test_statistics[perm], &cfe_path_test_statistic);
+      value_type max_cfe_statistic = cfe (max_statistics[perm], path_test_statistics[perm], cfe_path_test_statistic);
       //write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
 
-      cfe (max_statistics[perm], control_test_statistics[perm], &cfe_control_test_statistic);
+      cfe (max_statistics[perm], control_test_statistics[perm], cfe_control_test_statistic);
       //write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);

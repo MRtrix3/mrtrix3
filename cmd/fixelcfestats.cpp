@@ -210,7 +210,11 @@ void write_fixel_output (const std::string& filename,
 
 void run() {
 
-  Options opt = get_options ("cfe_dh");
+
+  Options opt = get_options ("negative");
+  bool compute_negative_contrast = opt.size() ? true : false;
+
+  opt = get_options ("cfe_dh");
   value_type cfe_dh = 0.1;
   if (opt.size())
     cfe_dh = opt[0][0];
@@ -487,12 +491,18 @@ void run() {
     output_header.comments().push_back ("nonstationary adjustment = false");
   }
 
+  std::vector<value_type> cfe_output (num_fixels, 0.0);
+  RefPtr<std::vector<value_type> > cfe_output_neg;
+  std::vector<value_type> tvalue_output (num_fixels, 0.0);
+  if (compute_negative_contrast)
+    cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
 
+  Stats::TFCE::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
-
-  ?// TODO HERE
-
-
+  write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
+  write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
+  if (compute_negative_contrast)
+    write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
 
 
   // Perform permutation testing
@@ -500,40 +510,33 @@ void run() {
   if (!opt.size()) {
     Math::Vector<value_type> perm_distribution (num_perms);
     RefPtr<Math::Vector<value_type> > perm_distribution_neg;
-    std::vector<value_type> cfe_output (num_fixels, 0.0);
-    RefPtr<std::vector<value_type> > cfe_output_neg;
-    std::vector<value_type> tvalue_output (num_fixels, 0.0);
     std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
     RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
 
-    bool compute_negative_contrast = false;
-    opt = get_options ("negative");
-    if (opt.size()) {
-      compute_negative_contrast = true;
+    if (compute_negative_contrast) {
       perm_distribution_neg = new Math::Vector<value_type> (num_perms);
       cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
     }
 
-    Stats::TFCE::run (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
-                      perm_distribution, perm_distribution_neg,
-                      cfe_output, cfe_output_neg, tvalue_output,
-                      uncorrected_pvalues, uncorrected_pvalues_neg);
+    Stats::TFCE::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
+                                   cfe_output, cfe_output_neg,
+                                   perm_distribution, perm_distribution_neg,
+                                   uncorrected_pvalues, uncorrected_pvalues_neg);
 
     ProgressBar progress ("outputting final results...");
     perm_distribution.save (output_prefix + "perm_dist.txt");
 
     std::vector<value_type> pvalue_output (num_fixels, 0.0);
     Math::Stats::statistic2pvalue (perm_distribution, cfe_output, pvalue_output);
-    write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
-    write_fixel_output (output_prefix + "pvalue.msf", pvalue_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "fwe_pvalue.msf", pvalue_output, output_header, mask_vox, indexer_vox);
+    write_fixel_output (output_prefix + "uncorrected_pvalue.msf", uncorrected_pvalues, output_header, mask_vox, indexer_vox);
 
     if (compute_negative_contrast) {
       (*perm_distribution_neg).save (output_prefix + "perm_dist_neg.txt");
-      write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
       std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
-      write_fixel_output (output_prefix + "pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "uncorrected_pvalue.msf", *uncorrected_pvalues_neg, output_header, mask_vox, indexer_vox);
     }
   }
 }
