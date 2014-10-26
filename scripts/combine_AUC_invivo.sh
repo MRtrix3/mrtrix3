@@ -8,7 +8,7 @@ do
   echo $ROI
   for effect in 0.1 0.2 0.3;
   do
-    for smooth in 10;
+    for smooth in 0 5 10 20;
     do
       for E in 0.5 1 2 3 4 5 6;
         do

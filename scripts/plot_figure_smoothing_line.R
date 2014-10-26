@@ -36,10 +36,9 @@ mf_labeller <- function(var, value){
 setwd('/home/dave/dev/fixel_based_stats/scripts/')
 source('multiplot.R')
 ppi <- 400
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/invivo2/AUC_arcuate_smoothing.png", width=7*ppi, height=4*ppi, res = ppi)
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/invivo2/AUC_cst_smoothing.png", width=7*ppi, height=4*ppi, res = ppi)
 all_data <- read.csv('/data/dave/cfe/experiment_2_sims/invivo2/aucdata.csv');
-sub <- subset(all_data, ROI == 'arcuate' & C == 0 & effect != 0.4, select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
+sub <- subset(all_data, ROI == 'cst' & C == 0 & effect != 0.4, select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
 sub$H <- factor(sub$H)
-#sub$ROI <- factor(sub$ROI, levels = c("arcuate", "cst", "cingulum", "posterior_cingulum", "ad"))
 print(ggplot(data=sub,  aes(x=E, y=AUC)) + geom_ribbon(aes(ymin=IQR25, ymax=IQR75 ,fill=H), alpha=0.2)+ geom_line(aes(colour=H)) + ylim(0,1) + facet_grid(effect ~ smoothing, labeller = mf_labeller) + theme(plot.margin = unit(c(0,0,0,0),'mm'))) 
 dev.off()
