@@ -145,7 +145,7 @@ namespace MR
                           connectivity_map (connectivity_map), dh (dh), E (E), H (H) { }
 
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
-                                 std::vector<value_type>* get_enhanced_stats)
+                                 std::vector<value_type>& enhanced_stats)
           {
             enhanced_stats.resize (stats.size());
             std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
@@ -163,15 +163,11 @@ namespace MR
                 max_enhanced_stat = enhanced_stats[fixel];
             }
 
-            if (get_enhanced_stats)
-              *get_enhanced_stats = enhanced_stats;
-
             return max_enhanced_stat;
           }
 
         protected:
           const std::vector<std::map<int32_t, connectivity> >& connectivity_map;
-          std::vector<value_type> enhanced_stats;
           value_type dh, E, H;
       };
 
@@ -238,73 +234,78 @@ namespace MR
           class Processor {
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
-                         const EnhancementType& enhancer, RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
+                         const EnhancementType& enhancer, const RefPtr<std::vector<value_type> > empirical_enhanced_statistics,
+                         const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
                          Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
-                         std::vector<value_type>& enhanced_output_pos, RefPtr<std::vector<value_type> > enhanced_output_neg,
-                         std::vector<value_type>& tvalue_output) :
+                         std::vector<size_t>& global_uncorrected_pvalue_counter, RefPtr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
-                           enhancer (enhancer), empirical_enhanced_statistic (empirical_enhanced_statistic), enhanced_statistic (0),
+                           enhancer (enhancer), empirical_enhanced_statistics (empirical_enhanced_statistics),
+                           statistics (stats_calculator.num_elements()), enhanced_statistics (stats_calculator.num_elements()),
+                           default_enhanced_statistic (stats_calculator.num_elements()), uncorrected_pvalue_counter (uncorrected_pvalue_counter),
                            perm_dist_pos (perm_dist_pos), perm_dist_neg (perm_dist_neg),
-                           enhanced_output_pos (enhanced_output_pos), enchanced_output_neg (enhanced_output_neg), tvalue_output (tvalue_output) {}
+                           global_uncorrected_pvalue_counter (global_uncorrected_pvalue_counter),
+                           global_uncorrected_pvalue_counter_neg (global_uncorrected_pvalue_counter_neg) {
+                             if (global_uncorrected_pvalue_counter_neg)
+                               uncorrected_pvalue_counter_neg = new std::vector<size_t>(stats_calculator.num_elements(), 0);
+              }
 
+
+              ~Processor () {
+                for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
+                  global_uncorrected_pvalue_counter[i] += uncorrected_pvalue_counter[i];
+                  if (global_uncorrected_pvalue_counter_neg)
+                    (*global_uncorrected_pvalue_counter_neg)[i] = global_uncorrected_pvalue_counter[i];
+                }
+              }
 
               void execute ()
               {
                 size_t index;
                 while (( index = perm_stack.next() ) < perm_stack.num_permutations)
-                  process_permutation (index);
+                    process_permutation (index);
               }
 
 
             protected:
-              value_type nonstationarity_enhancement (const value_type max_stat,
-                                                      const std::vector<value_type>& stats,
-                                                      std::vector<value_type>* get_enhanced_stats)
-              {
-                enhancer (max_stat, stats, &enhanced_statistic);
-                value_type max_enhanced_statistic = 0.0;
-                for (size_t i = 0; i < stats.size(); ++i) {
-                  enhanced_statistic[i] /= (*empirical_enhanced_statistic)[i];
-                  if (enhanced_statistic[i] > max_enhanced_statistic)
-                    max_enhanced_statistic = enhanced_statistic[i];
-                }
-                if (get_enhanced_stats)
-                  *get_enhanced_stats = enhanced_statistic;
-                return max_enhanced_statistic;
-              }
-
 
               void process_permutation (size_t index)
               {
                 value_type max_stat = 0.0, min_stat = 0.0;
-                std::vector<value_type> stats;
-                stats_calculator (perm_stack.permutation (index), stats, max_stat, min_stat);
-                if (index == 0)
-                  tvalue_output = stats;
-                value_type max_enhanced_statistic = 0.0;
-                if (empirical_enhanced_statistic)
-                  max_enhanced_statistic = nonstationarity_enhancement (max_stat, stats, index ? NULL : &enhanced_output_pos);
-                else
-                  max_enhanced_statistic = enhancer (max_stat, stats, index ? NULL : &enhanced_output_pos);
+                stats_calculator (perm_stack.permutation (index), statistics, max_stat, min_stat);
+                perm_dist_pos[index] = enhancer (max_stat, statistics, enhanced_statistics);
 
-                perm_dist_pos[index] = max_enhanced_statistic;
+                if (empirical_enhanced_statistics) {
+                  for (size_t i = 0; i < statistics.size(); ++i) {
+                    enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
+                    if (enhanced_statistics[i] > perm_dist_pos[index])
+                      perm_dist_pos[index] = enhanced_statistics[i];
+                  }
+                }
+
+                for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
+                  if (default_enhanced_statistics[i] > enhanced_statistics[i])
+                      uncorrected_pvalue_counter[i]++;
+                }
 
                 // Compute the opposite contrast
                 if (perm_dist_neg) {
-                  for (size_t i = 0; i < stats.size(); ++i)
-                    stats[i] = -stats[i];
-                  if (empirical_enhanced_statistic) {
-                    if (index)
-                      max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, NULL);
-                    else
-                      max_enhanced_statistic = nonstationarity_enhancement (-max_stat, stats, enchanced_output_neg);
-                  } else {
-                    if (index)
-                      max_enhanced_statistic = enhancer (-min_stat, stats, NULL);
-                    else
-                      max_enhanced_statistic = enhancer (-min_stat, stats, enchanced_output_neg);
+                  for (size_t i = 0; i < statistics.size(); ++i)
+                    statistics[i] = -statistics[i];
+
+                  (*perm_dist_neg)[index] = enhancer (-min_stat, statistics, enhanced_statistics);
+
+                  if (empirical_enhanced_statistics) {
+                    for (size_t i = 0; i < statistics.size(); ++i) {
+                      enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
+                      if (enhanced_statistics[i] > perm_dist_pos[index])
+                        (*perm_dist_neg)[index] = enhanced_statistics[i];
+                    }
                   }
-                  (*perm_dist_neg)[index] = max_enhanced_statistic;
+
+                  for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
+                    if ((*default_enhanced_statistics_neg)[i] > enhanced_statistics[i])
+                        uncorrected_pvalue_counter_neg[i]++;
+                  }
                 }
               }
 
@@ -312,14 +313,17 @@ namespace MR
               PermutationStack& perm_stack;
               StatsType stats_calculator;
               EnhancementType enhancer;
-              RefPtr<std::vector<value_type> > empirical_enhanced_statistic;
-              std::vector<value_type> enhanced_statistic;
-              std::vector<value_type> adjusted_enhanced_statistic;
+              RefPtr<std::vector<value_type> > empirical_enhanced_statistics;
+              std::vector<value_type>& default_enhanced_statistics;
+              RefPtr<std::vector<value_type> > default_enhanced_statistics_neg;
+              std::vector<value_type> statistics;
+              std::vector<value_type> enhanced_statistics;
+              std::vector<size_t> uncorrected_pvalue_counter;
+              RefPtr<std::vector<size_t> > uncorrected_pvalue_counter_neg;
               Math::Vector<value_type>& perm_dist_pos;
               RefPtr<Math::Vector<value_type> > perm_dist_neg;
-              std::vector<value_type>& enhanced_output_pos;
-              RefPtr<std::vector<value_type> > enchanced_output_neg;
-              std::vector<value_type>& tvalue_output;
+              std::vector<size_t>& global_uncorrected_pvalue_counter;
+              RefPtr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg;
         };
 
 
@@ -347,14 +351,52 @@ namespace MR
               }
           }
 
+          // Here we can compute (and save) the default statistic image and enhanced statistic. We also need to precompute this for uncorrected p-value calculations
+          template <class StatsType, class EnhancementType>
+            inline void precompute_default_permutation (const StatsType& stats_calculator, const EnhancementType& enhancer,
+                                                        const RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
+                                                        std::vector<value_type>& default_enhanced_statistics, RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
+                                                        std::vector<value_type>& default_statistics)
+            {
 
+              std::vector<size_t> default_labelling (stats_calculator.num_subjects());
+              for (size_t i = 0; i < num_subjects; ++i)
+                default_labelling[i] = i;
+              value_type max_stat = 0.0, min_stat = 0.0;
+              stats_calculator (default_labelling, default_statistics, max_stat, min_stat);
+              max_stat = enhancer (max_stat, statistics, default_enhanced_statistics);
 
+              if (empirical_enhanced_statistic) {
+                for (size_t i = 0; i < default_statistics.size(); ++i)
+                  default_enhanced_statistics[i] /= (*empirical_enhanced_statistic)[i];
+              }
+
+              // Compute the opposite contrast
+              if (default_enhanced_statistics_neg) {
+                for (size_t i = 0; i < default_statistics.size(); ++i)
+                  default_statistics[i] = -default_statistics[i];
+
+                max_stat = enhancer (-min_stat, statistics, default_enhanced_statistics_neg);
+
+                if (empirical_enhanced_statistic) {
+                  for (size_t i = 0; i < statistics.size(); ++i)
+                    default_enhanced_statistics_neg[i] /= (*empirical_enhanced_statistic)[i];
+                }
+              }
+            }
 
         template <class StatsType, class EnhancementType>
-          inline void run (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations, RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
-                           Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
-                           std::vector<value_type>& enhanced_output_pos, RefPtr<std::vector<value_type> > enhanced_output_neg, std::vector<value_type>& tvalue_output)
+          inline void run_permutations (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations,
+                                        const RefPtr<std::vector<value_type> > empirical_enhanced_statistic,
+                                        const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
+                                        Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
+                                        std::vector<value_type>& uncorrected_pvalues, RefPtr<std::vector<value_type> > uncorrected_pvalues_neg)
           {
+
+            std::vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
+            RefPtr<std::vector<size_t> > global_uncorrected_pvalue_count_neg;
+            if (perm_dist_neg)
+              global_uncorrected_pvalue_count_neg = new std::vector<size_t>  (stats_calculator.num_elements(), 0);
 
             {
               PermutationStack permutations (num_permutations,
@@ -363,11 +405,19 @@ namespace MR
 
               Processor<StatsType, EnhancementType> processor (permutations, stats_calculator, enhancer,
                                                                empirical_enhanced_statistic,
-                                                               perm_dist_pos, perm_dist_neg, enhanced_output_pos,
-                                                               enhanced_output_neg, tvalue_output);
+                                                               default_enhanced_statistics, default_enhanced_statistics_neg,
+                                                               perm_dist_pos, perm_dist_neg,
+                                                               global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
               Thread::Array< Processor<StatsType, EnhancementType> > thread_list (processor);
               Thread::Exec threads (thread_list, "permutation threads");
             }
+
+            for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
+              uncorrected_pvalues[i] = static_cast<value_type> (global_uncorrected_pvalue_count[i]) / static_cast<value_type> (num_permutations);
+              if (perm_dist_neg)
+                (*uncorrected_pvalues_neg)[i] = static_cast<value_type> ((*global_uncorrected_pvalue_count_neg)[i]) / static_cast<value_type> (num_permutations);
+            }
+
           }
           //! @}
 

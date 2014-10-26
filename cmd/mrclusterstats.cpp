@@ -221,6 +221,8 @@ void run() {
   RefPtr<std::vector<value_type> > cluster_output_neg;
   std::vector<value_type> tvalue_output (num_vox, 0.0);
   RefPtr<std::vector<value_type> > empirical_statistic;
+  std::vector<value_type> uncorrected_pvalues (num_vox, 0.0);
+  RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
 
 
   bool compute_negative_contrast = get_options("negative").size() ? true : false;
@@ -234,6 +236,7 @@ void run() {
     perm_distribution_neg = new Math::Vector<value_type> (num_perms);
     cluster_output_neg = new std::vector<value_type> (num_vox, 0.0);
     pvalue_data_neg = new Image::Buffer<value_type> (prefix + "pvalue_neg.mif", output_header);
+    uncorrected_pvalues_neg = new std::vector<value_type> (num_vox, 0.0);
   }
 
   { // Do permutation testing:
@@ -246,7 +249,7 @@ void run() {
       Stats::TFCE::ClusterSize cluster_size_test (connector, cluster_forming_threshold);
       Stats::TFCE::run (glm, cluster_size_test, num_perms, empirical_statistic,
                         perm_distribution, perm_distribution_neg,
-                        cluster_output, cluster_output_neg, tvalue_output);
+                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
     // TFCE
     } else {
       Stats::TFCE::Spatial tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
@@ -256,7 +259,7 @@ void run() {
       }
       Stats::TFCE::run (glm, tfce_integrator, num_perms, empirical_statistic,
                         perm_distribution, perm_distribution_neg,
-                        cluster_output, cluster_output_neg, tvalue_output);
+                        cluster_output, cluster_output_neg, tvalue_output, uncorrected_pvalues, uncorrected_pvalues_neg);
     }
   }
 

@@ -488,6 +488,13 @@ void run() {
   }
 
 
+
+
+  ?// TODO HERE
+
+
+
+
   // Perform permutation testing
   opt = get_options ("notest");
   if (!opt.size()) {
@@ -496,6 +503,8 @@ void run() {
     std::vector<value_type> cfe_output (num_fixels, 0.0);
     RefPtr<std::vector<value_type> > cfe_output_neg;
     std::vector<value_type> tvalue_output (num_fixels, 0.0);
+    std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
+    RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
 
     bool compute_negative_contrast = false;
     opt = get_options ("negative");
@@ -507,7 +516,8 @@ void run() {
 
     Stats::TFCE::run (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
                       perm_distribution, perm_distribution_neg,
-                      cfe_output, cfe_output_neg, tvalue_output);
+                      cfe_output, cfe_output_neg, tvalue_output,
+                      uncorrected_pvalues, uncorrected_pvalues_neg);
 
     ProgressBar progress ("outputting final results...");
     perm_distribution.save (output_prefix + "perm_dist.txt");
