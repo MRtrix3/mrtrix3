@@ -31,7 +31,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 #include "math/rng.h"
-#include "stats/tfce.h"
+#include "stats/cfe.h"
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/loader.h"
@@ -54,6 +54,8 @@ using Image::Sparse::FixelMetric;
 
 void usage ()
 {
+
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "perform connectivity-based fixel enhancement ROC experiments";
@@ -192,69 +194,6 @@ class FixelIndex
 };
 
 
-/**
- * Process each track. For each track tangent dixel, identify the closest fixel
- */
-class TrackProcessor {
-
-  public:
-    TrackProcessor (Image::BufferScratch<int32_t>& FOD_fixel_indexer,
-                    const std::vector<Point<value_type> >& FOD_fixel_directions,
-                    std::vector<uint16_t>& fixel_TDI,
-                    std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
-                    value_type angular_threshold_dp):
-                    fixel_indexer (FOD_fixel_indexer) ,
-                    fixel_directions (FOD_fixel_directions),
-                    fixel_TDI (fixel_TDI),
-                    fixel_connectivity (fixel_connectivity),
-                    angular_threshold_dp (angular_threshold_dp) { }
-
-    bool operator () (MR::DWI::Tractography::Mapping::SetVoxelDir& in)
-    {
-      // For each voxel tract tangent, assign to a fixel
-      std::vector<int32_t> tract_fixel_indices;
-      for (MR::DWI::Tractography::Mapping::SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (fixel_indexer, *i);
-        fixel_indexer[3] = 0;
-        int32_t first_index = fixel_indexer.value();
-        if (first_index >= 0) {
-          fixel_indexer[3] = 1;
-          int32_t last_index = first_index + fixel_indexer.value();
-          int32_t closest_fixel_index = -1;
-          value_type largest_dp = 0.0;
-          Point<value_type> dir (i->get_dir());
-          dir.normalise();
-          for (int32_t j = first_index; j < last_index; ++j) {
-            value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-            if (dp > largest_dp) {
-              largest_dp = dp;
-              closest_fixel_index = j;
-            }
-          }
-          if (largest_dp > angular_threshold_dp) {
-            tract_fixel_indices.push_back (closest_fixel_index);
-            fixel_TDI[closest_fixel_index]++;
-          }
-        }
-      }
-
-      for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-        for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-          fixel_connectivity[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-          fixel_connectivity[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
-        }
-      }
-      return true;
-    }
-
-  private:
-    Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-    const std::vector<Point<value_type> >& fixel_directions;
-    std::vector<uint16_t>& fixel_TDI;
-    std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity;
-    value_type angular_threshold_dp;
-};
-
 class Stack {
   public:
   Stack (size_t num_noise_realisation) :
@@ -296,7 +235,7 @@ class Processor {
                Image::Header& input_header,
                Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
                Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
-               const std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& fixel_connectivity,
+               const std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity,
                const value_type dh,
                const value_type e,
                const value_type h):
@@ -357,10 +296,10 @@ class Processor {
       std::vector<value_type> cfe_control_test_statistic;
       std::vector<value_type> cfe_path_test_statistic;
       value_type max_cfe_statistic = cfe (max_statistics[perm], path_test_statistics[perm], cfe_path_test_statistic);
-      //write_fixel_output ("path_tfce.msf", cfe_path_test_statistic);
+      //write_fixel_output ("path_cfe.msf", cfe_path_test_statistic);
 
       cfe (max_statistics[perm], control_test_statistics[perm], cfe_control_test_statistic);
-      //write_fixel_output ("control_tfce.msf", cfe_control_test_statistic);
+      //write_fixel_output ("control_cfe.msf", cfe_control_test_statistic);
 
       std::vector<value_type> num_true_positives (num_ROC_samples);
 
@@ -378,7 +317,6 @@ class Processor {
 
         if (contains_false_positive)
           thread_num_permutations_with_a_false_positive[t]++;
-
       }
     }
 
@@ -400,7 +338,7 @@ class Processor {
     Image::Header input_header;
     Image::BufferSparse<FixelMetric>::voxel_type template_vox;
     Image::BufferScratch<int32_t>::voxel_type indexer_vox;
-    MR::Stats::TFCE::Connectivity cfe;
+    MR::Stats::CFE::Enhancer cfe;
 
 };
 
@@ -527,7 +465,7 @@ void run ()
 
 
   // fixel-fixel connectivity matrix
-  std::vector<std::map<int32_t, Stats::TFCE::connectivity> > fixel_connectivity (num_fixels);
+  std::vector<std::map<int32_t, Stats::CFE::connectivity> > fixel_connectivity (num_fixels);
   std::vector<uint16_t> fixel_TDI (num_fixels, 0);
 
   DWI::Tractography::Properties properties;
@@ -542,14 +480,14 @@ void run ()
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_header);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold_dp);
+    Stats::CFE::TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold_dp);
     Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
   }
 
   { // Normalise connectivity matrix and threshold
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-      std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+      std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
       while (it != fixel_connectivity[fixel].end()) {
        value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
        if (connectivity < connectivity_threshold)  {
@@ -560,9 +498,9 @@ void run ()
        }
       }
       // Make sure the fixel is fully connected to itself giving it a smoothing weight of 1
-      Stats::TFCE::connectivity self_connectivity;
+      Stats::CFE::connectivity self_connectivity;
       self_connectivity.value = 1.0;
-      fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (fixel, self_connectivity));
+      fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (fixel, self_connectivity));
       progress++;
     }
   }
@@ -623,7 +561,7 @@ void run ()
         const value_type gaussian_const2 = 2.0 * stdev * stdev;
         value_type gaussian_const1 = 1.0 / (stdev *  Math::sqrt (2.0 * M_PI));
         for (int32_t f = 0; f < num_fixels; ++f) {
-          std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[f].begin();
+          std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[f].begin();
           while (it != fixel_connectivity[f].end()) {
             value_type connectivity = it->second.value;
             value_type distance = Math::sqrt (Math::pow2 (fixel_positions[f][0] - fixel_positions[it->first][0]) +
@@ -737,13 +675,13 @@ void run ()
       for (size_t c = 0; c < C.size(); ++c) {
 
         // Here we pre-exponentiate each connectivity value to speed up the CFE
-        std::vector<std::map<int32_t, Stats::TFCE::connectivity> > weighted_fixel_connectivity (num_fixels);
+        std::vector<std::map<int32_t, Stats::CFE::connectivity> > weighted_fixel_connectivity (num_fixels);
         for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-          std::map<int32_t, Stats::TFCE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+          std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
           while (it != fixel_connectivity[fixel].end()) {
-            Stats::TFCE::connectivity weighted_connectivity;
+            Stats::CFE::connectivity weighted_connectivity;
             weighted_connectivity.value = Math::pow (it->second.value , C[c]);
-            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (it->first, weighted_connectivity));
+            weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (it->first, weighted_connectivity));
             ++it;
           }
         }
@@ -786,8 +724,6 @@ void run ()
 
 
               // output all noise instance TPR values for variance calculations
-
-
               std::ofstream output_all;
               output_all.open (filenameTPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
@@ -806,7 +742,7 @@ void run ()
               std::ofstream output;
               output.open (filenameFPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all realisations
+                // average TPR across all permutations
                 u_int32_t sum = 0.0;
                 for (size_t p = 0; p < num_permutations; ++p) {
                   sum += TPRates [t][p];

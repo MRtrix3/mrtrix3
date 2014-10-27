@@ -34,7 +34,8 @@
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"
 #include "timer.h"
-#include "stats/tfce.h"
+#include "stats/cfe.h"
+#include "stats/permtest.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 #include "dwi/tractography/mapping/mapper.h"
@@ -115,75 +116,6 @@ void usage ()
 }
 
 
-/**
- * Process each track by converting each streamline to a set of dixels, and map these to fixels.
- */
-class TrackProcessor {
-
-  public:
-    TrackProcessor (Image::BufferScratch<int32_t>& fixel_indexer,
-                    const std::vector<Point<value_type> >& fixel_directions,
-                    std::vector<uint16_t>& fixel_TDI,
-                    std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& connectivity_matrix,
-                    std::vector<Thread::Mutex>& fixel_mutexes,
-                    value_type angular_threshold):
-                    fixel_indexer (fixel_indexer) ,
-                    fixel_directions (fixel_directions),
-                    fixel_TDI (fixel_TDI),
-                    connectivity_matrix (connectivity_matrix),
-                    fixel_mutexes (fixel_mutexes) {
-      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
-    }
-
-    bool operator () (SetVoxelDir& in)
-    {
-      // For each voxel tract tangent, assign to a fixel
-      std::vector<int32_t> tract_fixel_indices;
-      for (SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (fixel_indexer, *i);
-        fixel_indexer[3] = 0;
-        int32_t first_index = fixel_indexer.value();
-        if (first_index >= 0) {
-          fixel_indexer[3] = 1;
-          int32_t last_index = first_index + fixel_indexer.value();
-          int32_t closest_fixel_index = -1;
-          value_type largest_dp = 0.0;
-          Point<value_type> dir (i->get_dir());
-          dir.normalise();
-          for (int32_t j = first_index; j < last_index; ++j) {
-            value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-            if (dp > largest_dp) {
-              largest_dp = dp;
-              closest_fixel_index = j;
-            }
-          }
-          if (largest_dp > angular_threshold_dp) {
-            tract_fixel_indices.push_back (closest_fixel_index);
-            fixel_TDI[closest_fixel_index]++;
-          }
-        }
-      }
-
-      for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-        for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-          connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-          connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
-        }
-     }
-
-
-      return true;
-    }
-
-  private:
-    Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-    const std::vector<Point<value_type> >& fixel_directions;
-    std::vector<uint16_t>& fixel_TDI;
-    std::vector<std::map<int32_t, Stats::TFCE::connectivity> >& connectivity_matrix;
-    std::vector<Thread::Mutex>& fixel_mutexes; //TODO multithread this
-    value_type angular_threshold_dp;
-};
-
 
 template <class VectorType>
 void write_fixel_output (const std::string& filename,
@@ -204,7 +136,6 @@ void write_fixel_output (const std::string& filename,
     }
   }
 }
-
 
 
 
@@ -327,7 +258,7 @@ void run() {
   CONSOLE ("number of fixels: " + str(num_fixels));
 
   // Compute fixel-fixel connectivity
-  std::vector<std::map<int32_t, Stats::TFCE::connectivity> > connectivity_matrix (num_fixels);
+  std::vector<std::map<int32_t, Stats::CFE::connectivity> > connectivity_matrix (num_fixels);
   std::vector<uint16_t> fixel_TDI (num_fixels, 0.0);
   std::string track_filename = argument[4];
   std::string output_prefix = argument[5];
@@ -345,8 +276,7 @@ void run() {
     DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    std::vector<Thread::Mutex> fixel_mutexes (num_fixels);
-    TrackProcessor tract_processor (fixel_indexer, directions, fixel_TDI, connectivity_matrix, fixel_mutexes, angular_threshold);
+    Stats::CFE::TrackProcessor tract_processor (fixel_indexer, directions, fixel_TDI, connectivity_matrix, angular_threshold);
     Thread::run_queue (
         loader,
         Thread::batch (DWI::Tractography::Streamline<float>()),
@@ -369,7 +299,7 @@ void run() {
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (unsigned int fixel = 0; fixel < num_fixels; ++fixel) {
-      std::map<int32_t, Stats::TFCE::connectivity>::iterator it = connectivity_matrix[fixel].begin();
+      std::map<int32_t, Stats::CFE::connectivity>::iterator it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
         value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
         if (connectivity < connectivity_threshold)  {
@@ -389,9 +319,9 @@ void run() {
         }
       }
       // Make sure the fixel is fully connected to itself giving it a smoothing weight of 1
-      Stats::TFCE::connectivity self_connectivity;
+      Stats::CFE::connectivity self_connectivity;
       self_connectivity.value = 1.0;
-      connectivity_matrix[fixel].insert (std::pair<int32_t, Stats::TFCE::connectivity> (fixel, self_connectivity));
+      connectivity_matrix[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (fixel, self_connectivity));
       smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (fixel, gaussian_const1));
       progress++;
     }
@@ -469,8 +399,8 @@ void run() {
   }
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
-  Stats::TFCE::Connectivity cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  RefPtr<std::vector<value_type> > empirical_cfe_statistic;
+  Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
+  RefPtr<std::vector<double> > empirical_cfe_statistic;
 
   Image::Header output_header (input_header);
   output_header.comments().push_back ("num permutations = " + str(num_perms));
@@ -482,28 +412,29 @@ void run() {
   output_header.comments().push_back ("connectivity threshold = " + str(connectivity_threshold));
   output_header.comments().push_back ("smoothing FWHM = " + str(smooth_std_dev));
 
+  // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic = new std::vector<value_type> (num_fixels, 0.0);
-    Stats::TFCE::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
+    empirical_cfe_statistic = new std::vector<double> (num_fixels, 0.0);
+    Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
     output_header.comments().push_back ("nonstationary adjustment = true");
     write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
   } else {
     output_header.comments().push_back ("nonstationary adjustment = false");
   }
 
+  // Precompute default statistic and CFE statistic
   std::vector<value_type> cfe_output (num_fixels, 0.0);
   RefPtr<std::vector<value_type> > cfe_output_neg;
   std::vector<value_type> tvalue_output (num_fixels, 0.0);
   if (compute_negative_contrast)
     cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
 
-  Stats::TFCE::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
+  Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
   write_fixel_output (output_prefix + "cfe.msf", cfe_output, output_header, mask_vox, indexer_vox);
   write_fixel_output (output_prefix + "tvalue.msf", tvalue_output, output_header, mask_vox, indexer_vox);
   if (compute_negative_contrast)
     write_fixel_output (output_prefix + "cfe_neg.msf", *cfe_output_neg, output_header, mask_vox, indexer_vox);
-
 
   // Perform permutation testing
   opt = get_options ("notest");
@@ -518,10 +449,10 @@ void run() {
       cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
     }
 
-    Stats::TFCE::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
-                                   cfe_output, cfe_output_neg,
-                                   perm_distribution, perm_distribution_neg,
-                                   uncorrected_pvalues, uncorrected_pvalues_neg);
+    Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
+                                       cfe_output, cfe_output_neg,
+                                       perm_distribution, perm_distribution_neg,
+                                       uncorrected_pvalues, uncorrected_pvalues_neg);
 
     ProgressBar progress ("outputting final results...");
     perm_distribution.save (output_prefix + "perm_dist.txt");
