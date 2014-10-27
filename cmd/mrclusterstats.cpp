@@ -226,8 +226,8 @@ void run() {
   RefPtr<std::vector<value_type> > default_cluster_output_neg;
   std::vector<value_type> tvalue_output (num_vox, 0.0);
   RefPtr<std::vector<double> > empirical_tfce_statistic;
-  std::vector<value_type> uncorrected_pvalues (num_vox, 0.0);
-  RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
+  std::vector<value_type> uncorrected_pvalue (num_vox, 0.0);
+  RefPtr<std::vector<value_type> > uncorrected_pvalue_neg;
 
 
   bool compute_negative_contrast = get_options("negative").size() ? true : false;
@@ -240,8 +240,9 @@ void run() {
     cluster_data_neg = new Image::Buffer<value_type> (cluster_neg_name, output_header);
     perm_distribution_neg = new Math::Vector<value_type> (num_perms);
     default_cluster_output_neg = new std::vector<value_type> (num_vox, 0.0);
-    fwe_pvalue_data_neg = new Image::Buffer<value_type> (prefix + "pvalue_neg.mif", output_header);
-    uncorrected_pvalues_neg = new std::vector<value_type> (num_vox, 0.0);
+    fwe_pvalue_data_neg = new Image::Buffer<value_type> (prefix + "fwe_pvalue_neg.mif", output_header);
+    uncorrected_pvalue_neg = new std::vector<value_type> (num_vox, 0.0);
+    uncorrected_pvalue_data_neg = new Image::Buffer<value_type> (prefix + "uncorrected_pvalue_neg.mif", output_header);
   }
 
   { // Do permutation testing:
@@ -261,7 +262,7 @@ void run() {
       Stats::PermTest::run_permutations (glm, cluster_size_test, num_perms, empirical_tfce_statistic,
                                          default_cluster_output, default_cluster_output_neg,
                                          perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+                                         uncorrected_pvalue, uncorrected_pvalue_neg);
     // TFCE
     } else {
       Stats::TFCE::Enhancer tfce_integrator (connector, tfce_dh, tfce_E, tfce_H);
@@ -277,7 +278,7 @@ void run() {
       Stats::PermTest::run_permutations (glm, tfce_integrator, num_perms, empirical_tfce_statistic,
                                          default_cluster_output, default_cluster_output_neg,
                                          perm_distribution, perm_distribution_neg,
-                                         uncorrected_pvalues, uncorrected_pvalues_neg);
+                                         uncorrected_pvalue, uncorrected_pvalue_neg);
     }
   }
 
@@ -297,7 +298,7 @@ void run() {
       tvalue_voxel.value() = tvalue_output[i];
       cluster_voxel.value() = default_cluster_output[i];
       fwe_pvalue_voxel.value() = pvalue_output[i];
-      uncorrected_pvalue_voxel.value() = uncorrected_pvalues[i];
+      uncorrected_pvalue_voxel.value() = uncorrected_pvalue[i];
     }
   }
   {
@@ -315,7 +316,7 @@ void run() {
           cluster_voxel_neg[dim] = fwe_pvalue_voxel_neg[dim] = uncorrected_pvalue_voxel_neg[dim] = mask_indices[i][dim];
         cluster_voxel_neg.value() = (*default_cluster_output_neg)[i];
         fwe_pvalue_voxel_neg.value() = pvalue_output_neg[i];
-        uncorrected_pvalue_voxel_neg.value() = (*uncorrected_pvalues_neg)[i];
+        uncorrected_pvalue_voxel_neg.value() = (*uncorrected_pvalue_neg)[i];
 
       }
     }
