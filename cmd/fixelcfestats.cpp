@@ -447,6 +447,7 @@ void run() {
     if (compute_negative_contrast) {
       perm_distribution_neg = new Math::Vector<value_type> (num_perms);
       cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
+      uncorrected_pvalues_neg = new std::vector<value_type> (num_fixels, 0.0);
     }
 
     Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,
