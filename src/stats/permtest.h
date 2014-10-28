@@ -281,6 +281,9 @@ namespace MR
                   for (size_t i = 0; i < default_statistics.size(); ++i)
                     (*default_enhanced_statistics_neg)[i] /= (*empirical_enhanced_statistic)[i];
                 }
+                // revert default_statistics to positive contrast for output
+                for (size_t i = 0; i < default_statistics.size(); ++i)
+                  default_statistics[i] = -default_statistics[i];
               }
             }
 

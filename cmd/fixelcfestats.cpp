@@ -468,7 +468,7 @@ void run() {
       std::vector<value_type> pvalue_output_neg (num_fixels, 0.0);
       Math::Stats::statistic2pvalue (*perm_distribution_neg, *cfe_output_neg, pvalue_output_neg);
       write_fixel_output (output_prefix + "fwe_pvalue_neg.msf", pvalue_output_neg, output_header, mask_vox, indexer_vox);
-      write_fixel_output (output_prefix + "uncorrected_pvalue.msf", *uncorrected_pvalues_neg, output_header, mask_vox, indexer_vox);
+      write_fixel_output (output_prefix + "uncorrected_pvalue_neg.msf", *uncorrected_pvalues_neg, output_header, mask_vox, indexer_vox);
     }
   }
 }
