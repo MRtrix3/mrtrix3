@@ -153,7 +153,7 @@ namespace MR
                 for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {
                   global_uncorrected_pvalue_counter[i] += uncorrected_pvalue_counter[i];
                   if (global_uncorrected_pvalue_counter_neg)
-                    (*global_uncorrected_pvalue_counter_neg)[i] = global_uncorrected_pvalue_counter[i];
+                    (*global_uncorrected_pvalue_counter_neg)[i] = (*uncorrected_pvalue_counter_neg)[i];
                 }
               }
 
