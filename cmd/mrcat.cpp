@@ -155,7 +155,7 @@ void run () {
   for (int i = 0; i < num_images; i++) {
     auto in_vox = in[i]->voxel();
 
-    for (auto i = Image::Loop() (in_vox); i; ++i) {
+    for (auto l = Image::Loop() (in_vox); l; ++l) {
       for (size_t dim = 0; dim < out_vox.ndim(); dim++) {
         if (static_cast<int> (dim) == axis)
           out_vox[dim] = dim < in_vox.ndim() ? axis_offset + in_vox[dim] : i;
