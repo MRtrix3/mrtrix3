@@ -1059,8 +1059,8 @@ namespace MR
       {
         if (number_of_threads() == 0) {
           typename __item<Type>::type item;
-          while (source (item)) 
-            if (!sink (item))
+          while (__job<Source>::functor (source) (item)) 
+            if (!__job<Sink>::functor (sink) (item))
               return;
           return;
         }
@@ -1131,9 +1131,9 @@ namespace MR
         if (number_of_threads() == 0) {
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
-          while (source (item1)) {
-            if (pipe (item1, item2))
-              if (!sink (item2))
+          while (__job<Source>::functor (source) (item1)) {
+            if (__job<Pipe>::functor (pipe) (item1, item2))
+              if (!__job<Sink>::functor (sink) (item2))
                 return;
           }
           return;
@@ -1172,10 +1172,10 @@ namespace MR
           typename __item<Type1>::type item1;
           typename __item<Type2>::type item2;
           typename __item<Type3>::type item3;
-          while (source (item1)) {
-            if (pipe1 (item1, item2))
-              if (pipe2 (item2, item3))
-                if (!sink (item3))
+          while (__job<Source>::functor (source) (item1)) {
+            if (__job<Pipe1>::functor (pipe1) (item1, item2))
+              if (__job<Pipe2>::functor (pipe2) (item2, item3))
+                if (!__job<Sink>::functor (sink) (item3))
                   return;
           }
           return;
