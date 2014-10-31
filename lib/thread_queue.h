@@ -443,13 +443,13 @@ namespace MR
                 }
                 //! Push the item onto the queue
                 bool write () {
-                  return (Q.push (p));
+                  return Q.push (p);
                 }
                 T& operator*() const throw ()   {
-                  return (*p);
+                  return *p;
                 }
                 T* operator->() const throw ()  {
-                  return (p);
+                  return p;
                 }
               private:
                 Queue<T>& Q;
@@ -510,13 +510,13 @@ namespace MR
                 }
                 //! Get next item from the queue
                 bool read () {
-                  return (Q.pop (p));
+                  return Q.pop (p);
                 }
                 T& operator*() const throw ()   {
-                  return (*p);
+                  return *p;
                 }
                 T* operator->() const throw ()  {
-                  return (p);
+                  return p;
                 }
                 bool operator! () const throw () {
                   return !p;
