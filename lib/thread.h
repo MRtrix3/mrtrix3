@@ -126,8 +126,8 @@ namespace MR
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
-                  threads.push_back (std::thread (&F::execute, f));
-                threads.push_back (std::thread (&F::execute, functor));
+                  threads.push_back (std::thread (&F::execute, std::ref (f)));
+                threads.push_back (std::thread (&F::execute, std::ref (functor)));
               }
 
             __multi_thread (const __multi_thread& m) = delete;
