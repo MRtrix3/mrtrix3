@@ -31,6 +31,11 @@
 
 #include "math/SH.h"
 
+#include "image/buffer_sparse.h"
+#include "image/sparse/fixel_metric.h"
+#include "image/sparse/keys.h"
+#include "image/sparse/voxel.h"
+
 
 
 namespace MR
@@ -67,15 +72,17 @@ namespace MR
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
+      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const size_t num, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
           Base (in, rng, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
-          total_samples (0),
-          total_seeds   (0),
-          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
+          target_trackcount (num),
+          track_count (0),
+          attempts (0),
+          seeds (0),
 #ifdef DYNAMIC_SEED_DEBUGGING
-        , seed_output ("seeds.tck", Tractography::Properties())
+          seed_output ("seeds.tck", Tractography::Properties()),
 #endif
+          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
       {
         App::Options opt = App::get_options ("act");
         if (opt.size())
@@ -96,32 +103,28 @@ namespace MR
       Dynamic::~Dynamic()
       {
 
-        INFO ("Dynamic seeeding required " + str (total_samples) + " samples to draw " + str (total_seeds) + " seeds");
+        INFO ("Dynamic seeeding required " + str (attempts) + " samples to draw " + str (seeds) + " seeds");
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-        const double final_mu = mu();
-
         // Output seeding probabilites at end of execution
         Image::Header H;
         H.info() = info();
-        H.datatype() = DataType::Float32;
-        Image::Buffer<float> prob_mean_data ("seed_prob_mean.mif", H), prob_sum_data ("seed_prob_sum.mif", H);
-        auto prob_mean = prob_mean_data.voxel();
-        auto prob_sum = prob_sum_data.voxel();
+        H.datatype() = DataType::UInt64;
+        H.datatype().set_byte_order_native();
+        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
+        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
+        Image::BufferSparse<Image::Sparse::FixelMetric> buffer ("seed_probs.msf", H);
+        auto out = buffer.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
-        for (loop.start (v, prob_mean, prob_sum); loop.ok(); loop.next (v, prob_mean, prob_sum)) {
+        for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
           if (v.value()) {
-
-            float sum = 0.0;
-            size_t count = 0;
-            for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i) {
-              sum += i().get_seed_prob (final_mu);
-              ++count;
+            out.value().set_size ((*v.value()).num_fixels());
+            size_t index = 0;
+            for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
+              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              out.value()[index] = fixel;
             }
-            prob_mean.value() = sum / float(count);
-            prob_sum .value() = sum;
-
           }
         }
 #endif
@@ -134,15 +137,28 @@ namespace MR
       bool Dynamic::get_seed (Point<float>& p, Point<float>& d)
       {
 
-        uint64_t samples = 0;
+        uint64_t this_attempts = 0;
 
         while (1) {
 
-          ++samples;
+          ++this_attempts;
           const size_t fixel_index = 1 + rng.uniform_int (fixels.size() - 1);
-          const Fixel& fixel = fixels[fixel_index];
+          Fixel& fixel = fixels[fixel_index];
 
-          if (fixel.get_seed_prob (mu()) > rng.uniform()) {
+          // Derive the new seed probability
+          const float ratio = fixel.get_ratio (mu());
+          const bool force_seed = !fixel.get_TD();
+          const float cumulative_prob = fixel.get_cumulative_prob (attempts.load (std::memory_order_relaxed));
+          float seed_prob = cumulative_prob;
+          if (!force_seed) {
+            const size_t current_trackcount = track_count.load (std::memory_order_relaxed);
+            seed_prob = (ratio < 1.0) ?
+                        (cumulative_prob * (1.0f - (current_trackcount * ratio)) / (ratio * (target_trackcount - current_trackcount))) :
+                        0.0;
+          }
+          fixel.update_prob (seed_prob);
+
+          if (seed_prob > rng.uniform()) {
 
             const Point<int>& v (fixel.get_voxel());
             const Point<float> vp (v[0]+rng.uniform()-0.5, v[1]+rng.uniform()-0.5, v[2]+rng.uniform()-0.5);
@@ -163,9 +179,8 @@ namespace MR
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif
-              std::lock_guard<std::mutex> lock (mutex);
-              total_samples += samples;
-              ++total_seeds;
+              attempts.fetch_add (this_attempts, std::memory_order_relaxed);
+              seeds.fetch_add (1, std::memory_order_relaxed);
               return true;
             }
 
@@ -202,7 +217,7 @@ namespace MR
         std::lock_guard<std::mutex> lock (mutex);
         std::vector< Point<float> > tck;
         tck.push_back (p);
-        seed_output.append (tck);
+        seed_output (tck);
       }
 #endif
 
@@ -215,6 +230,11 @@ namespace MR
         {
           out.index = writer.count;
           out.weight = 1.0;
+          // With new pipe functors, should be possible to avoid sending empty tracks down the queue
+          if (in.empty()) {
+            out.clear();
+            return false;
+          }
           if (!WriteKernel::operator() (in)) {
             out.clear();
             // Flag to indicate that tracking has completed, and threads should therefore terminate

@@ -67,6 +67,9 @@ namespace MR
             }
           }
 
+          WriteKernel (const WriteKernel&) = delete;
+          WriteKernel& operator= (const WriteKernel&) = delete;
+
           ~WriteKernel ()
           {
             if (App::log_level > 0)

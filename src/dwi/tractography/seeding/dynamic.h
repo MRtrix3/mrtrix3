@@ -24,6 +24,8 @@
 #define __dwi_tractography_seeding_dynamic_h__
 
 
+#include <atomic>
+
 #include "image/transform.h"
 
 #include "thread_queue.h"
@@ -53,12 +55,17 @@
 
 
 
-//#define DYNAMIC_SEED_DEBUGGING
+#define DYNAMIC_SEED_DEBUGGING
 
 
 
 // TD_sum is set to this at the start of execution to prevent a divide_by_zero error
-#define DYNAMIC_SEED_INITIAL_TD_SUM 0.01
+#define DYNAMIC_SEED_INITIAL_TD_SUM 1e-6
+
+
+// Initial seeding probability: Smaller will be slower, but allow under-reconstructed fixels
+//   to be seeded more densely
+#define DYNAMIC_SEED_INITIAL_PROB 1e-3
 
 
 
@@ -82,28 +89,85 @@ namespace MR
         public:
           Fixel_TD_seed (const FMLS::FOD_lobe& lobe) :
             SIFT::FixelBase (lobe),
-            voxel (-1, -1, -1) { }
+            voxel (-1, -1, -1),
+            TD (SIFT::FixelBase::TD),
+            updating (ATOMIC_FLAG_INIT),
+            old_prob (DYNAMIC_SEED_INITIAL_PROB),
+            applied_prob (old_prob),
+            seed_count_at_last_update (0) { }
+
+          Fixel_TD_seed (const Fixel_TD_seed& that) :
+            SIFT::FixelBase (that),
+            voxel (that.voxel),
+            TD (double(that.TD)),
+            updating (ATOMIC_FLAG_INIT),
+            old_prob (that.old_prob),
+            applied_prob (that.applied_prob),
+            seed_count_at_last_update (that.seed_count_at_last_update) { }
 
           Fixel_TD_seed() :
             SIFT::FixelBase (),
-            voxel (-1, -1, -1) { }
+            voxel (-1, -1, -1),
+            TD (0.0),
+            updating (ATOMIC_FLAG_INIT),
+            old_prob (DYNAMIC_SEED_INITIAL_PROB),
+            applied_prob (old_prob),
+            seed_count_at_last_update (0) { }
+
+
+          double         get_TD     ()                    const { return TD.load (std::memory_order_relaxed); }
+          void           clear_TD   ()                          { TD.store (0.0, std::memory_order_seq_cst); }
+          double         get_diff   (const double mu)     const { return ((TD.load (std::memory_order_relaxed) * mu) - FOD); }
+
+
+          Fixel_TD_seed& operator+= (const double length)
+          {
+            double old_TD, new_TD;
+            do {
+              old_TD = TD.load (std::memory_order_relaxed);
+              new_TD = old_TD + length;
+            } while (!TD.compare_exchange_weak (old_TD, new_TD, std::memory_order_acq_rel));
+            return *this;
+          }
 
 
           void set_voxel (const Point<int>& i) { voxel = i; }
           const Point<int>&   get_voxel() const { return voxel; }
 
 
-          float get_seed_prob (const double mu) const
+          float get_ratio (const double mu) const { return ((mu * TD.load (std::memory_order_relaxed)) / FOD); }
+
+
+          float get_cumulative_prob (const uint64_t seed_count)
           {
-            const float diff = get_diff (mu);
-            if (diff >= 0.0)
-              return 0.0;
-            return (Math::pow2 (diff / FOD));
+            while (updating.test_and_set (std::memory_order_acquire));
+            float cumulative_prob = old_prob;
+            if (seed_count)
+              cumulative_prob = ((seed_count_at_last_update * old_prob) + ((seed_count - seed_count_at_last_update) * applied_prob)) / seed_count;
+            old_prob = cumulative_prob;
+            seed_count_at_last_update = seed_count;
+            return cumulative_prob;
           }
+
+          void update_prob (const float new_prob)
+          {
+            applied_prob = new_prob;
+            updating.clear (std::memory_order_release);
+          }
+
+
+          float get_old_prob() const { return old_prob; }
+
 
 
         private:
           Point<int> voxel;
+          std::atomic<double> TD; // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
+
+          // Multiple values to update - use an atomic boolean in a similar manner to a mutex, but with less overhead
+          std::atomic_flag updating;
+          float old_prob, applied_prob;
+          uint64_t seed_count_at_last_update;
 
 
       };
@@ -146,9 +210,11 @@ namespace MR
 
 
         public:
-        Dynamic (const std::string&, Image::Buffer<float>&, const Math::RNG&, const DWI::Directions::FastLookupSet&);
-
+        Dynamic (const std::string&, Image::Buffer<float>&, const size_t, const Math::RNG&, const DWI::Directions::FastLookupSet&);
         ~Dynamic();
+
+        Dynamic (const Dynamic&) = delete;
+        Dynamic& operator= (const Dynamic&) = delete;
 
         bool get_seed (Point<float>&, Point<float>&);
 
@@ -160,6 +226,10 @@ namespace MR
         {
           if (!i.weight) // Flags that tracking should terminate
             return false;
+          if (!i.empty()) {
+            if (++track_count >= target_trackcount)
+              return false;
+          }
           return SIFT::ModelBase<Fixel_TD_seed>::operator() (i);
         }
 
@@ -171,10 +241,12 @@ namespace MR
         using SIFT::ModelBase<Fixel>::mu;
         using SIFT::ModelBase<Fixel>::proc_mask;
 
+        // New members required for new dynamic seed probability equation
+        const size_t target_trackcount;
+        std::atomic<size_t> track_count;
 
         // Want to know statistics on dynamic seeding sampling
-        uint64_t total_samples, total_seeds;
-        std::mutex mutex;
+        std::atomic<uint64_t> attempts, seeds;
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
@@ -197,6 +269,8 @@ namespace MR
         public:
           WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const DWI::Tractography::Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }
+          WriteKernelDynamic (const WriteKernelDynamic&) = delete;
+          WriteKernelDynamic& operator= (const WriteKernelDynamic&) = delete;
           bool operator() (const Tracking::GeneratedTrack&, Tractography::Streamline<>&);
       };
 
