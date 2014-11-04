@@ -26,6 +26,7 @@
 #include "math/matrix.h"
 #include "math/rng.h"
 #include "point.h"
+#include "file/ofstream.h"
 
 #include <array>
 #include <random>
@@ -100,7 +101,7 @@ void run ()
         n = 0;
     }
   }
-  INFO ("reordered into " + str (num_subsets) + " sets of "+ 
+  INFO ("reordered into " + str (num_subsets) + " sets of " + 
       str ([&]{ std::vector<size_t> s; for (auto& n : merged_dirs) s.push_back (n.size()); return s; }()) + " volumes");
 
 
@@ -112,12 +113,15 @@ void run ()
 
   // write-out:
   
+  File::OFStream out (argument[argument.size()-1]);
   size_t s = 0;
   n = 0;
   while (true) {
     if (n >= merged_dirs[s].size())
       break;
-    std::cout << merged_dirs[s][n][0] << " " << merged_dirs[s][n][1] << " " << merged_dirs[s][n][2] << " " << merged_dirs[s][n][3] << " " << s+1 << "\n";
+    out << MR::printf ("%#10f %#10f %#10f %5d %3d\n", 
+        float (merged_dirs[s][n][0]), float (merged_dirs[s][n][1]), float (merged_dirs[s][n][2]), 
+        int (merged_dirs[s][n][3]), int (s+1));
     ++s;
     if (s >= num_subsets) {
       s = 0;
