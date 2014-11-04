@@ -1,0 +1,12 @@
+#!/usr/bin/env xdg-open
+[Desktop Entry]
+Value=1.0
+Type=Application
+Terminal=false
+Name=MRView
+GenericName=Medical image viewer
+Comment=The MRtrix image viewer
+Icon=application-x-mrtrix
+Exec=mrview %F
+Categories=Science;Development;Education;MedicalSoftware
+MimeType=application/x-mrtrix;application/x-mrtrix-gz;application/x-nifti;application/x-nifti-gz;application/x-image-mgh;application/x-image-mgz;application/x-image-analyze;

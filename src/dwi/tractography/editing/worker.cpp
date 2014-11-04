@@ -32,36 +32,55 @@ namespace MR {
 
 
 
-        bool Worker::operator() (const Tractography::Streamline<>& in, Tractography::Streamline<>& out)
+        bool Worker::operator() (const Tractography::Streamline<>& in, Tractography::Streamline<>& out) const
         {
 
           out.clear();
           out.index = in.index;
           out.weight = in.weight;
 
-          if (!thresholds (in))
+          if (!thresholds (in)) {
+            // Want to test thresholds before wasting time on upsampling; but if -inverse is set,
+            //   still need to apply both the upsampler and downsampler before writing to output
+            if (inverse) {
+              std::vector< Point<float> > tck (in);
+              upsampler (tck);
+              downsampler (tck);
+              tck.swap (out);
+            }
             return true;
-
-          std::vector< Point<float> > tck (in);
+          }
 
           // Upsample track before mapping to ROIs
-          if (upsampler.valid()) {
-            if (!upsampler (tck))
-              return false;
-          }
+          std::vector< Point<float> > tck (in);
+          upsampler (tck);
 
           // Assign to ROIs
-          include_visited.assign (properties.include.size(), false);
-          for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-            properties.include.contains (*p, include_visited);
-            if (properties.exclude.contains (*p))
-              return true;
-          }
+          if (properties.include.size() || properties.exclude.size()) {
 
-          // Make sure all of the include regions were visited
-          for (std::vector<bool>::const_iterator i = include_visited.begin(); i != include_visited.end(); ++i) {
-            if (!*i)
-              return true;
+            include_visited.assign (properties.include.size(), false);
+            for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
+              properties.include.contains (*p, include_visited);
+              if (properties.exclude.contains (*p)) {
+                if (inverse) {
+                  downsampler (tck);
+                  tck.swap (out);
+                }
+                return true;
+              }
+            }
+
+            // Make sure all of the include regions were visited
+            for (std::vector<bool>::const_iterator i = include_visited.begin(); i != include_visited.end(); ++i) {
+              if (!*i) {
+                if (inverse) {
+                  downsampler (tck);
+                  tck.swap (out);
+                }
+                return true;
+              }
+            }
+
           }
 
           if (properties.mask.size()) {
@@ -71,14 +90,17 @@ namespace MR {
             std::vector< Point<float> > temp;
 
             for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-              if (properties.mask.contains (*p)) {
-                temp.push_back (*p);
-              } else {
+              const bool contains = properties.mask.contains (*p);
+              if (contains == inverse) {
                 if (temp.size() >= 2)
                   cropped_tracks.push_back (temp);
                 temp.clear();
+              } else {
+                temp.push_back (*p);
               }
             }
+            if (temp.size() >= 2)
+              cropped_tracks.push_back (temp);
 
             if (cropped_tracks.empty())
               return true;
@@ -99,15 +121,21 @@ namespace MR {
                 out.push_back (*p);
               out.push_back (Point<float>());
             }
+            out.push_back (Point<float>());
             return true;
 
           } else {
-            downsampler (tck);
-            tck.swap (out);
+
+            if (!inverse) {
+              downsampler (tck);
+              tck.swap (out);
+            }
             return true;
+
           }
 
         }
+
 
 
 

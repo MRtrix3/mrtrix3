@@ -51,6 +51,7 @@ namespace MR
 
         public:
           RenderFrame (QWidget* parent);
+          ~RenderFrame();
 
           GL::Lighting* lighting;
 
@@ -109,7 +110,7 @@ namespace MR
         protected:
           float view_angle, distance, line_width, scale;
           int lmax_computed, lod_computed;
-          bool  recompute_mesh, recompute_amplitudes, show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
+          bool recompute_mesh, recompute_amplitudes, show_axes, hide_neg_lobes, color_by_dir, use_lighting, normalise;
 
           QPoint last_pos;
           GL::Font font;
@@ -129,6 +130,12 @@ namespace MR
           Renderer renderer;
           Math::Vector<float> values;
 
+          QTimer* glrefresh_timer;
+        protected slots:
+          void base_updateGL() { QGLWidget::updateGL(); }
+          void updateGL();
+
+        protected:
           virtual void initializeGL ();
           virtual void resizeGL (int w, int h);
           virtual void paintGL ();

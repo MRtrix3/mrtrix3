@@ -69,6 +69,9 @@ void usage ()
   + TruncateOption
   + WeightsOption
 
+  + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided, "
+                       "i.e. only those streamlines that fail at least one criterion will be written to file.")
+
   // TODO Input weights with multiple input files currently not supported
   + Tractography::TrackWeightsInOption
   + Tractography::TrackWeightsOutOption;
@@ -77,6 +80,8 @@ void usage ()
   // - Peak curvature threshold
   // - Mean curvature threshold
   // - Resample streamline to fixed step size
+
+
 
 };
 
@@ -167,6 +172,7 @@ void run ()
   const int upsample   = opt.size() ? int(opt[0][0]) : 1;
   opt = get_options ("downsample");
   const int downsample = opt.size() ? int(opt[0][0]) : 1;
+  const bool inverse = get_options ("inverse").size();
 
   // Parameters that the output thread needs to be aware of
   opt = get_options ("number");
@@ -175,7 +181,7 @@ void run ()
   const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
 
   Loader loader (input_file_list);
-  Worker worker (properties, upsample, downsample);
+  Worker worker (properties, upsample, downsample, inverse);
   // This needs to be run AFTER creation of the Worker class
   // (worker needs to be able to set max & min number of points based on step size in input file,
   //  receiver needs "output_step_size" field to have been updated before file creation)

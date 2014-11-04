@@ -697,13 +697,25 @@ namespace MR
       return norm_diff2 (x.ptr(), y.ptr(), x.size(), x.stride(), y.stride());
     }
 
-    //! compute the mean of the elements of a vector
-    template <typename ValueType> inline ValueType mean (const ValueType* V, size_t size = 3, size_t stride = 1)
+    //! compute the sum of the elements of a vector
+    template <typename ValueType> inline ValueType sum (const ValueType* V, size_t size = 3, size_t stride = 1)
     {
       ValueType n = 0.0;
       for (size_t i = 0; i < size; i++)
         n += V[i*stride];
-      return n/size;
+      return n;
+    }
+
+    //! compute the sum of the elements of a vector
+    template <typename ValueType> inline ValueType sum (const Vector<ValueType>& V)
+    {
+      return sum (V.ptr(), V.size(), V.stride());
+    }
+
+    //! compute the mean of the elements of a vector
+    template <typename ValueType> inline ValueType mean (const ValueType* V, size_t size = 3, size_t stride = 1)
+    {
+      return sum(V, size, stride)/size;
     }
 
     //! compute the mean of the elements of a vector
