@@ -107,23 +107,27 @@ namespace MR
 
 #ifdef DYNAMIC_SEED_DEBUGGING
         // Output seeding probabilites at end of execution
+        // Also output reconstruction ratios at end of execution
         Image::Header H;
         H.info() = info();
         H.datatype() = DataType::UInt64;
         H.datatype().set_byte_order_native();
         H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
         H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer ("seed_probs.msf", H);
-        auto out = buffer.voxel();
+        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("seed_probs.msf", H), buffer_ratios ("fixel_ratios.msf", H);
+        auto out_probs = buffer_probs.voxel(), out_ratios = buffer_ratios.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
-        for (loop.start (v, out); loop.ok(); loop.next (v, out)) {
+        for (loop.start (v, out_probs, out_ratios); loop.ok(); loop.next (v, out_probs, out_ratios)) {
           if (v.value()) {
-            out.value().set_size ((*v.value()).num_fixels());
+            out_probs .value().set_size ((*v.value()).num_fixels());
+            out_ratios.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
               Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
-              out.value()[index] = fixel;
+              out_probs.value()[index] = fixel;
+              fixel.value = mu() * i().get_TD() / i().get_FOD();
+              out_ratios.value()[index] = fixel;
             }
           }
         }
@@ -148,12 +152,14 @@ namespace MR
           // Derive the new seed probability
           const float ratio = fixel.get_ratio (mu());
           const bool force_seed = !fixel.get_TD();
-          const float cumulative_prob = fixel.get_cumulative_prob (attempts.load (std::memory_order_relaxed));
+          const size_t current_trackcount = track_count.load (std::memory_order_relaxed);
+          const float cumulative_prob = fixel.get_cumulative_prob (current_trackcount);
           float seed_prob = cumulative_prob;
           if (!force_seed) {
-            const size_t current_trackcount = track_count.load (std::memory_order_relaxed);
+            // TODO See if allowing seeding in over-defined fixels helps
+            //seed_prob = std::min (1.0f, cumulative_prob * (target_trackcount - (current_trackcount * ratio)) / (ratio * (target_trackcount - current_trackcount)));
             seed_prob = (ratio < 1.0) ?
-                        (cumulative_prob * (1.0f - (current_trackcount * ratio)) / (ratio * (target_trackcount - current_trackcount))) :
+                        (cumulative_prob * (target_trackcount - (current_trackcount * ratio)) / (ratio * (target_trackcount - current_trackcount))) :
                         0.0;
           }
           fixel.update_prob (seed_prob);

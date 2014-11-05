@@ -94,7 +94,7 @@ namespace MR
             updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
-            seed_count_at_last_update (0) { }
+            track_count_at_last_update (0) { }
 
           Fixel_TD_seed (const Fixel_TD_seed& that) :
             SIFT::FixelBase (that),
@@ -103,7 +103,7 @@ namespace MR
             updating (ATOMIC_FLAG_INIT),
             old_prob (that.old_prob),
             applied_prob (that.applied_prob),
-            seed_count_at_last_update (that.seed_count_at_last_update) { }
+            track_count_at_last_update (that.track_count_at_last_update) { }
 
           Fixel_TD_seed() :
             SIFT::FixelBase (),
@@ -112,7 +112,7 @@ namespace MR
             updating (ATOMIC_FLAG_INIT),
             old_prob (DYNAMIC_SEED_INITIAL_PROB),
             applied_prob (old_prob),
-            seed_count_at_last_update (0) { }
+            track_count_at_last_update (0) { }
 
 
           double         get_TD     ()                    const { return TD.load (std::memory_order_relaxed); }
@@ -138,14 +138,15 @@ namespace MR
           float get_ratio (const double mu) const { return ((mu * TD.load (std::memory_order_relaxed)) / FOD); }
 
 
-          float get_cumulative_prob (const uint64_t seed_count)
+          float get_cumulative_prob (const uint64_t track_count)
           {
             while (updating.test_and_set (std::memory_order_acquire));
             float cumulative_prob = old_prob;
-            if (seed_count)
-              cumulative_prob = ((seed_count_at_last_update * old_prob) + ((seed_count - seed_count_at_last_update) * applied_prob)) / seed_count;
-            old_prob = cumulative_prob;
-            seed_count_at_last_update = seed_count;
+            if (track_count > track_count_at_last_update) {
+              cumulative_prob = ((track_count_at_last_update * old_prob) + ((track_count - track_count_at_last_update) * applied_prob)) / float(track_count);
+              old_prob = cumulative_prob;
+              track_count_at_last_update = track_count;
+            }
             return cumulative_prob;
           }
 
@@ -157,6 +158,7 @@ namespace MR
 
 
           float get_old_prob() const { return old_prob; }
+          float get_prob()     const { return applied_prob; }
 
 
 
@@ -167,7 +169,7 @@ namespace MR
           // Multiple values to update - use an atomic boolean in a similar manner to a mutex, but with less overhead
           std::atomic_flag updating;
           float old_prob, applied_prob;
-          uint64_t seed_count_at_last_update;
+          size_t track_count_at_last_update;
 
 
       };
