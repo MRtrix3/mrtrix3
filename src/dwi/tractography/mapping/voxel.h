@@ -43,7 +43,7 @@ namespace Mapping {
 inline Point<int> round (const Point<float>& p)
 { 
   assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
-  return (Point<int> (std::round<int> (p[0]), std::round<int> (p[1]), std::round<int> (p[2])));
+  return (Point<int> (std::lround (p[0]), std::lround (p[1]), std::lround (p[2])));
 }
 
 inline bool check (const Point<int>& V, const Image::Info& H)
