@@ -52,7 +52,7 @@ ARGUMENTS
 
 OPTIONS
   + Option ("power", "specify exponent to use for repulsion power law.")
-  + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max())
+  + Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
 
   + Option ("niter", "specify the maximum number of iterations to perform.")
   + Argument ("num").type_integer (1, 10000, 1000000)
@@ -106,7 +106,7 @@ void range (double& azimuth, double& elevation);
 
 void run () {
   size_t niter = 10000;
-  float target_power = 128.0;
+  float target_power = 2.0;
 
   Options opt = get_options ("power");
   if (opt.size())
