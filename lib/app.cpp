@@ -370,7 +370,7 @@ namespace MR
         if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
           throw Exception ("required input file \"" + str(*i) + "\" not found");
         if (!overwrite_files && (i->arg->type == ArgFileOut) && Path::exists (std::string(*i)))
-          throw Exception ("required output file \"" + std::string(*i) + "\" already exists (use -force option to force overwrite)");
+          throw Exception ("output file \"" + std::string(*i) + "\" already exists (use -force option to force overwrite)");
       }
       for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
         for (size_t j = 0; j != i->opt->size(); ++j) {
