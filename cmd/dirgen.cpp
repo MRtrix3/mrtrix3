@@ -55,7 +55,7 @@ OPTIONS
   + Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
 
   + Option ("niter", "specify the maximum number of iterations to perform.")
-  + Argument ("num").type_integer (1, 10000, 1000000)
+  + Argument ("num").type_integer (1, 10000, std::numeric_limits<int>::max())
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 
