@@ -98,6 +98,8 @@ namespace MR
   template <class T, bool is_array = false> class Ptr
   {
     public:
+      typedef T value_type;
+
       explicit Ptr (T* p = NULL) throw () : ptr (p) { }
       //! destructor
       /*! if non-NULL, the managed object will be destroyed using the \c delete
@@ -233,6 +235,8 @@ namespace MR
   template <class T, bool is_array = false> class RefPtr
   {
     public:
+      typedef T value_type;
+
       explicit RefPtr (T* p = NULL) throw () : ptr (p), count (new size_t) {
         *count = 1;
       }
@@ -388,6 +392,8 @@ namespace MR
   template <class T, bool is_array = false> class VecPtr
   {
     public:
+      typedef T value_type;
+
       typedef typename std::vector<T*>::iterator iterator;
       typedef typename std::vector<T*>::const_iterator const_iterator;
       typedef typename std::vector<T*>::reference reference;

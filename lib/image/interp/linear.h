@@ -47,7 +47,7 @@ namespace MR
        * Image::Voxel<float> voxel (image);
        *
        * // create an Interp::Linear object using voxel as the parent data set:
-       * DataSet::Interp::Linear<Image::Voxel<float> > interp (voxel);
+       * Image::Interp::Linear<Image::Voxel<float> > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);

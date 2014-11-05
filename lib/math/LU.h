@@ -87,6 +87,17 @@ namespace MR
         return x;
       }
 
+      //! solve A*x = b by %LU decomposition, in place (b passed in as x).
+      template <typename T> inline Vector<T>& solve (Vector<T>& x, const Matrix<T>& A)
+      {
+        Permutation p (A.rows());
+        int signum;
+        Matrix<T> D;
+        D = A;
+        decomp (D, p, signum);
+        return solve (x, D, p);
+      }
+
       //! get determinant of A given its %LU decomposition D, signum.
       template <typename T> inline T det (Matrix<T>& D, int signum)
       {
