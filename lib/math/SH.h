@@ -306,26 +306,79 @@ namespace MR
         }
 
 
-      template <typename ValueType>
-        Point<ValueType> S2C (ValueType az, ValueType el)
-        {
-          return Point<ValueType> (
-              std::sin (el) * std::cos (az),
-              std::sin (el) * std::sin (az),
-              cos (el));
-        }
+      namespace {
+        template <typename> struct __dummy { typedef int type; };
+      }
 
-      template <typename ValueType>
-        void S2C (Matrix<ValueType>& az_el, Matrix<ValueType>& cartesian)
+
+      template <class VectorType1, class VectorType2>
+        inline void s2c (const VectorType1& az_el_r, VectorType2&& xyz)
         {
-          cartesian.allocate (az_el.rows(), 3);
-          for (size_t dir = 0; dir < az_el.rows(); ++dir) {
-            cartesian(dir, 0) = std::sin (az_el (dir, 1)) * std::cos (az_el (dir, 0));
-            cartesian(dir, 1) = std::sin (az_el (dir, 1)) * std::sin (az_el (dir, 0));
-            cartesian(dir, 2) = std::cos (az_el (dir, 1));
+          if (az_el_r.size() == 3) {
+            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
+          }
+          else {
+            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = cos (az_el_r[1]);
           }
         }
 
+
+      template <typename ValueType>
+        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>& cartesian)
+        {
+          cartesian.allocate (az_el.rows(), 3);
+          for (size_t dir = 0; dir < az_el.rows(); ++dir) 
+            s2c (az_el.row (dir), cartesian.row (dir));
+        }
+      template <typename ValueType>
+        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>&& cartesian) {
+          S2C (az_el, cartesian);
+        }
+
+      //! convert matrix of spherical coordinates to cartesian coordinates
+      template <typename ValueType>
+        inline Math::Matrix<ValueType> S2C (const Matrix<ValueType>& az_el)
+        {
+          Math::Matrix<ValueType> tmp;
+          Math::SH::S2C (az_el, tmp);
+          return tmp;
+        }
+
+
+
+      template <class VectorType1, class VectorType2>
+        inline void c2s (const VectorType1& xyz, VectorType2&& az_el_r)
+        {
+          typename std::remove_reference<decltype(az_el_r[0])>::type r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
+          az_el_r[0] = std::acos (xyz[2] / r);
+          az_el_r[1] = std::atan2 (xyz[1], xyz[0]);
+          if (az_el_r.size() == 3) 
+            az_el_r[2] = r;
+        }
+
+      template <typename ValueType>
+        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>& az_el, bool include_r = false)
+        {
+          az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
+          for (size_t dir = 0; dir < cartesian.rows(); ++dir) 
+            c2s (cartesian.row (dir), az_el.row (dir));
+        }
+      template <typename ValueType>
+        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>&& az_el, bool include_r = false) {
+          C2S (cartesian, az_el, include_r);
+        }
+
+      template <typename ValueType>
+        inline Math::Matrix<ValueType> C2S (const Matrix<ValueType>& cartesian, bool include_r = false)
+        {
+          Math::Matrix<ValueType> az_el;
+          Math::SH::C2S (cartesian, az_el, include_r);
+          return az_el;
+        }
 
       template <typename ValueType>
         class Rotate
@@ -343,7 +396,8 @@ namespace MR
                 Matrix<ValueType> D_rot (nSH, directions.rows());
                 for (size_t i = 0; i < directions.rows(); ++i) {
                   Vector<ValueType> V (D.column (i));
-                  Point<ValueType> dir = S2C (directions (i,0), directions (i,1));
+                  Point<ValueType> dir;
+                  S2C (directions.row(i), dir);
                   delta (V, dir, lmax);
 
                   Point<ValueType> dir_rot;
