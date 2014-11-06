@@ -295,17 +295,21 @@ namespace MR
       }
 
       size_t num_args_required = 0, num_command_arguments = 0;
-      bool has_optional_arguments = false;
+      size_t num_optional_arguments = 0;
 
+      ArgFlags flags = None;
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-        num_command_arguments++;
-        if (ARGUMENTS[i].flags & Optional)
-          has_optional_arguments = true;
-        else
-          num_args_required++;
-
-        if (ARGUMENTS[i].flags & AllowMultiple)
-          has_optional_arguments = true;
+        ++num_command_arguments;
+        if (ARGUMENTS[i].flags) {
+          if (flags && flags != ARGUMENTS[i].flags)
+            throw Exception ("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in command-line syntax");
+          flags = ARGUMENTS[i].flags;
+          ++num_optional_arguments;
+          if (!(flags & Optional))
+            ++num_args_required;
+        }
+        else 
+          ++num_args_required;
       }
 
       if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
@@ -313,34 +317,30 @@ namespace MR
         throw 0;
       }
 
-      if (has_optional_arguments && num_args_required > argument.size())
+      if (num_optional_arguments && num_args_required > argument.size())
         throw Exception ("expected at least " + str (num_args_required)
                          + " arguments (" + str (argument.size()) + " supplied)");
 
-      if (!has_optional_arguments && num_args_required != argument.size())
+      if (num_optional_arguments == 0 && num_args_required != argument.size())
         throw Exception ("expected exactly " + str (num_args_required)
                          + " arguments (" + str (argument.size()) + " supplied)");
 
-      // check for multiple instances of arguments:
-      size_t optional_argument = std::numeric_limits<size_t>::max();
-      for (size_t n = 0; n < argument.size(); n++) {
+      size_t num_extra_arguments = argument.size() - num_args_required;
+      size_t num_arg_per_multi = num_extra_arguments / num_optional_arguments;
+      if (num_arg_per_multi*num_optional_arguments != num_extra_arguments)
+        throw Exception ("number of optional arguments provided are not equal for all arguments");
+      if (!(flags & Optional))
+        ++num_arg_per_multi;
 
-        if (n < optional_argument)
-          if (ARGUMENTS[n].flags & (Optional | AllowMultiple))
-            optional_argument = n;
+      // assign arguments to their corresponding definitions:
+      for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
 
-        size_t index = n;
-        if (n >= optional_argument) {
-          if (int (num_args_required - optional_argument) < int (argument.size()-n))
-            index = optional_argument;
-          else
-            index = num_args_required - argument.size() + n + (ARGUMENTS[optional_argument].flags & Optional ? 1 : 0);
-        }
-
-        if (index >= num_command_arguments)
-          throw Exception ("too many arguments");
+        if (n >= next && ARGUMENTS[n].flags != None) 
+          next = n + num_arg_per_multi - 1;
 
         argument[n].arg = &ARGUMENTS[index];
+        if (n >= next) 
+          ++index;
       }
 
       // check for multiple instances of options:

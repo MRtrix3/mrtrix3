@@ -167,7 +167,6 @@ void run ()
   Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");
 
   auto& signs = eddy_shared.get_best_signs();
-  VAR (signs);
 
   for (size_t n = 0; n < directions.rows(); ++n) 
     if (signs[n] < 0)

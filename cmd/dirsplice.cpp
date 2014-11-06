@@ -39,7 +39,8 @@ using namespace App;
 void usage () {
 
 DESCRIPTION
-  + "splice or merge sets of directions over multiple shells into a single set";
+  + "splice or merge sets of directions over multiple shells into a single set, "
+    "in such a way as to maintain near-optimality upon truncation.";
 
 ARGUMENTS
   + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,4,10000)
@@ -70,11 +71,8 @@ void run ()
   while (current < argument.size()-1) {
     bvalue[n] = to<value_type> (argument[current++]);
     std::vector<Math::Matrix<value_type>> d;
-    for (size_t i = 0; i < num_subsets; ++i) {
-      Math::Matrix<value_type> m;
-      m.load (argument[current++]);
-      d.push_back (m);
-    }
+    for (size_t i = 0; i < num_subsets; ++i) 
+      d.push_back (DWI::Directions::load_cartesian<value_type> (argument[current++]));
     INFO ("found b = " + str(bvalue[n]) + ", " + 
         str ([&]{ std::vector<size_t> s; for (auto& n : d) s.push_back (n.rows()); return s; }()) + " volumes");
 
@@ -82,7 +80,15 @@ void run ()
     ++n;
   }
 
-  // re-order into per PE sets:
+
+  // TODO: need to adjust PE binning to ensure even PE cycling:
+
+
+
+
+
+
+
   n = 0;
   std::vector<std::vector<std::array<value_type, 4>>> merged_dirs (num_subsets);
   for (size_t b = 0; b < bvalue.size(); ++b) {
@@ -111,6 +117,10 @@ void run ()
   std::mt19937 g (rd());
   for (auto& s: merged_dirs)
     std::shuffle (s.begin(), s.end(), g);
+
+
+
+
 
   // write-out:
   

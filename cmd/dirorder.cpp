@@ -30,6 +30,7 @@
 #include "dwi/directions/file.h"
 
 #include <random>
+#include <functional>
 
 using namespace MR;
 using namespace App;
