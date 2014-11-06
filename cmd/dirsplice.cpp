@@ -26,6 +26,7 @@
 #include "math/matrix.h"
 #include "math/rng.h"
 #include "point.h"
+#include "dwi/directions/file.h"
 #include "file/ofstream.h"
 
 #include <array>
@@ -38,7 +39,7 @@ using namespace App;
 void usage () {
 
 DESCRIPTION
-  + "merge a set of directions into a single set";
+  + "splice or merge sets of directions over multiple shells into a single set";
 
 ARGUMENTS
   + Argument ("subsets", "the number of subsets (phase-encode directions) per b-value").type_integer(1,4,10000)

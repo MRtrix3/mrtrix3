@@ -28,6 +28,7 @@
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/rng.h"
+#include "dwi/directions/file.h"
 
 
 using namespace MR;
@@ -36,7 +37,7 @@ using namespace App;
 void usage () {
 
 DESCRIPTION
-  + "generate a set of directions evenly distributed over a hemisphere.";
+  + "generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.";
 
 REFERENCES = "Jones, D.; Horsfield, M. & Simmons, A. "
              "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
@@ -51,11 +52,13 @@ ARGUMENTS
   + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
 OPTIONS
-  + Option ("power", "specify exponent to use for repulsion power law.")
+  + Option ("power", "specify exponent to use for repulsion power law (default: 2).")
   + Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
 
-  + Option ("niter", "specify the maximum number of iterations to perform.")
+  + Option ("niter", "specify the maximum number of iterations to perform (default: 10000).")
   + Argument ("num").type_integer (1, 10000, std::numeric_limits<int>::max())
+
+  + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 
@@ -69,6 +72,7 @@ namespace
 {
   double power = -1.0;
   size_t   ndirs = 0;
+  bool bipolar = true;
 }
 
 
@@ -118,6 +122,8 @@ void run () {
 
   ndirs = to<int> (argument[0]);
 
+  if (get_options ("unipolar").size())
+    bipolar = false;
 
   Math::RNG    rng;
   Math::Vector<double> v (2*ndirs-3);
@@ -140,7 +146,7 @@ void run () {
 
 
   {
-    ProgressBar progress ("Optimising directions");
+    ProgressBar progress ("Optimising directions...");
     for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
       INFO ("setting power = " + str (-power*2.0));
       gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
@@ -158,6 +164,7 @@ void run () {
           break;
         }
 
+        progress.set_message ("Optimising directions (power " + str(-2.0*power) + ", current energy: " + str(minimizer->f, 8) + ")...");
         ++progress;
       }
       gsl_vector_memcpy (v.gsl(), minimizer->x);
@@ -180,18 +187,7 @@ void run () {
 
   gsl_multimin_fdfminimizer_free (minimizer);
 
-  opt = get_options ("cartesian");
-  if (opt.size()) {
-    Math::Matrix<double> cartesian (directions.rows(), 3);
-    for (unsigned int i = 0; i < cartesian.rows(); i++) {
-      cartesian(i,0) = sin(directions(i,1)) * cos(directions(i,0));
-      cartesian(i,1) = sin(directions(i,1)) * sin(directions(i,0));
-      cartesian(i,2) = cos(directions(i,1));
-    }
-    cartesian.save (argument[1]);
-  } else {
-    directions.save (argument[1]);
-  }
+  DWI::Directions::save (directions, argument[1], get_options ("cartesian").size());
 }
 
 
@@ -206,7 +202,9 @@ void run () {
 
 inline double SinCos::energy ()
 {
-  return (pow (r2_pos, power) + pow (r2_neg, power));
+  double E = pow (r2_neg, power);
+  if (bipolar) E += pow (r2_pos, power);
+  return E;
 }
 
 inline void SinCos::dist (const SinCos& B)
@@ -215,13 +213,15 @@ inline void SinCos::dist (const SinCos& B)
   double b1 = B.cos_az*B.sin_el;
   double a2 = sin_az*sin_el;
   double b2 = B.sin_az*B.sin_el;
-  r2_pos = (a1+b1) * (a1+b1) + (a2+b2) * (a2+b2) + (cos_el+B.cos_el) * (cos_el+B.cos_el);
-  r2_neg = (a1-b1) * (a1-b1) + (a2-b2) * (a2-b2) + (cos_el-B.cos_el) * (cos_el-B.cos_el);
+  r2_neg = Math::pow2(a1-b1) + Math::pow2(a2-b2) + Math::pow2(cos_el-B.cos_el);
+  r2_pos = bipolar ? Math::pow2(a1+b1) + Math::pow2(a2+b2) + Math::pow2(cos_el+B.cos_el) : 0.0;
 }
 
 inline void SinCos::init_deriv ()
 {
-  multiplier = 2.0 * power * (pow (r2_neg, power-1.0) - pow (r2_pos, power-1.0));
+  multiplier = pow (r2_neg, power-1.0);
+  if (bipolar) multiplier -= pow (r2_pos, power-1.0);
+  multiplier *= 2.0 * power;
 }
 
 inline double SinCos::daz (const SinCos& B) const

@@ -354,8 +354,8 @@ namespace MR
         inline void c2s (const VectorType1& xyz, VectorType2&& az_el_r)
         {
           typename std::remove_reference<decltype(az_el_r[0])>::type r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
-          az_el_r[0] = std::acos (xyz[2] / r);
-          az_el_r[1] = std::atan2 (xyz[1], xyz[0]);
+          az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
+          az_el_r[1] = std::acos (xyz[2] / r);
           if (az_el_r.size() == 3) 
             az_el_r[2] = r;
         }

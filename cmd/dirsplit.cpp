@@ -25,8 +25,10 @@
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/rng.h"
+#include "math/SH.h"
 #include "thread.h"
 #include "point.h"
+#include "dwi/directions/file.h"
 
 
 
@@ -36,18 +38,19 @@ using namespace App;
 void usage () {
 
 DESCRIPTION
-  + "distribute a set of evenly distributed directions (as generated "
-  "by gendir) evenly between N subsets.";
+  + "split a set of evenly distributed directions (as generated "
+  "by gendir) into approximately uniformly distributed subsets.";
 
 ARGUMENTS
   + Argument ("dirs", "the text file containing the directions.").type_file_in()
-  + Argument ("num", "the number of subsets into which to partition the directions").type_integer(1,4,10000)
-  + Argument ("out", "the prefix for the output partitioned directions").type_text();
+  + Argument ("out", "the output partitioned directions").type_file_out().allow_multiple();
 
 
 OPTIONS
   + Option ("permutations", "number of permutations to try")
-  +   Argument ("num").type_integer (1, 1e8);
+  +   Argument ("num").type_integer (1, 1e8)
+
+  + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 }
 
 
@@ -168,109 +171,12 @@ class EnergyCalculator {
 
 
 
+void run () 
+{
+  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
 
+  size_t num_subsets = argument.size() - 1;
 
-
-
-
-class EddyShared {
-  public:
-    EddyShared (const Math::Matrix<value_type>& directions, size_t target_num_permutations) :
-      directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
-      progress ("flipping directions...", target_num_permutations),
-      best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
-
-    bool update (value_type eddy, const std::vector<int>& signs) 
-    {
-      std::lock_guard<std::mutex> lock (mutex);
-      if (eddy < best_eddy) {
-        best_eddy = eddy;
-        best_signs = signs;
-        progress.set_message ("flipping directions (current best configuration: eddy = " + str(best_eddy) + ")...");
-      }
-      ++num_permutations;
-      ++progress;
-      return num_permutations < target_num_permutations;
-    }
-
-
-
-    value_type eddy (size_t i, size_t j, const std::vector<int>& signs) const {
-      Point<value_type> a = { directions(i,0), directions(i,1), directions(i,2) };
-      Point<value_type> b = { directions(j,0), directions(j,1), directions(j,2) };
-      if (signs[i] < 0) a = -a;
-      if (signs[j] < 0) b = -b;
-      return 1.0 / (a-b).norm2();
-    }
-
-
-    std::vector<int> get_init_signs () const { return std::vector<int> (directions.rows(), 1); }
-    const std::vector<int>& get_best_signs () const { return best_signs; }
-
-
-  protected:
-    const Math::Matrix<value_type>& directions;
-    const size_t target_num_permutations;
-    size_t num_permutations;
-    ProgressBar progress;
-    std::vector<int> best_signs;
-    value_type best_eddy;
-    std::mutex mutex;
-  
-};
-
-
-
-
-
-class EddyCalculator {
-  public:
-    EddyCalculator (EddyShared& shared) :
-      shared (shared),
-      signs (shared.get_init_signs()) { }
-
-    void execute () {
-      while (eval()); 
-    }
-
-
-    void next_permutation ()
-    {
-      signs[rng.uniform_int (signs.size())] *= -1;
-    }
-
-    bool eval ()
-    {
-      next_permutation();
-
-      value_type eddy = 0.0;
-      for (size_t i = 0; i < signs.size(); ++i) 
-        for (size_t j = i+1; j < signs.size(); ++j) 
-          eddy += shared.eddy (i, j, signs);
-
-      return shared.update (eddy, signs);
-    }
-
-  protected:
-    EddyShared& shared;
-    std::vector<int> signs;
-    Math::RNG rng;
-};
-
-
-
-
-
-
-
-
-
-void run () {
-
-  Math::Matrix<value_type> directions;
-  directions.load (argument[0]);
-
-  size_t num_subsets = argument[1];
   size_t num_permutations = 1e8;
   Options opt = get_options ("permutations");
   if (opt.size())
@@ -284,37 +190,13 @@ void run () {
   }
 
 
-  if (num_subsets == 2 || num_subsets == 4) {
-    for (size_t a = 0; a < num_subsets; a += 2) {
-      Math::Matrix<value_type> dirs (best[a].size() + best[a+1].size(), 3);
-      size_t n = 0;
-      for (size_t x = 0; x < best[a].size(); ++x, ++n)
-        dirs.row(n) = directions.row (best[a][x]);
-      for (size_t x = 0; x < best[a+1].size(); ++x, ++n) {
-        dirs.row(n) = directions.row (best[a+1][x]);
-        dirs.row(n) *= -1.0;
-      }
 
-      EddyShared eddy_shared (dirs, num_permutations);
-      Thread::run (Thread::multi (EddyCalculator (eddy_shared)), "eddy eval thread");
-
-      auto& signs = eddy_shared.get_best_signs();
-      n = 0;
-      for (size_t x = 0; x < best[a].size(); ++x, ++n)
-        if (signs[n] < 0)
-          directions.row (best[a][x]) *= -1.0;
-      for (size_t x = 0; x < best[a+1].size(); ++x, ++n) 
-        if (signs[n] < 0)
-          directions.row (best[a+1][x]) *= -1.0;
-    }
-  }
-
-
+  bool cartesian = get_options("cartesian").size();
   for (size_t i = 0; i < best.size(); ++i) {
     Math::Matrix<value_type> output (best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n) 
       output.row(n) = directions.row (best[i][n]);
-    output.save (std::string(argument[2]) + str(i) + ".txt");
+    DWI::Directions::save (output, argument[i+1], cartesian);
   }
 
 }
