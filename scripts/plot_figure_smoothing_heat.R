@@ -42,7 +42,7 @@ sub <- subset(all_data, ROI == 'arcuate' & C == 0, select = c (smoothing, ROI, e
 sub$H <- factor(sub$H)
 sub$E <- factor(sub$E)
 print(ggplot(data=sub,  aes(x=E, y=H)) + geom_tile(aes(fill = AUC), colour = "white") 
-      + scale_fill_gradientn(colours=c("black","blue","cyan","yellow","red"),.breaks=seq(-1,1,by=0.25)) 
+      + scale_fill_gradientn(colours=c("black","blue","cyan","yellow","red"),breaks=seq(0,0.8,by=0.2)) 
       + facet_grid(effect ~ smoothing, labeller = mf_labeller) 
       + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.margin = unit(c(2,0,0,0),'mm'),panel.background = element_blank(), axis.line = element_line(colour = "white"))
       + scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0) ))

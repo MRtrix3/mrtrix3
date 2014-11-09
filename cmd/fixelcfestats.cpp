@@ -446,7 +446,6 @@ void run() {
 
     if (compute_negative_contrast) {
       perm_distribution_neg = new Math::Vector<value_type> (num_perms);
-      cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
       uncorrected_pvalues_neg = new std::vector<value_type> (num_fixels, 0.0);
     }
 

@@ -132,10 +132,10 @@ namespace MR
           class Processor {
             public:
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
-                         const EnhancementType& enhancer, const RefPtr<std::vector<double> > empirical_enhanced_statistics,
-                         const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
-                         Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
-                         std::vector<size_t>& global_uncorrected_pvalue_counter, RefPtr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg) :
+                         const EnhancementType& enhancer, const RefPtr<std::vector<double> >& empirical_enhanced_statistics,
+                         const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> >& default_enhanced_statistics_neg,
+                         Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> >& perm_dist_neg,
+                         std::vector<size_t>& global_uncorrected_pvalue_counter, RefPtr<std::vector<size_t> >& global_uncorrected_pvalue_counter_neg) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistics (empirical_enhanced_statistics),
                            default_enhanced_statistics (default_enhanced_statistics), default_enhanced_statistics_neg (default_enhanced_statistics_neg),
@@ -254,8 +254,8 @@ namespace MR
           // Precompute the default statistic image and enhanced statistic. We need to precompute this for calculating the uncorrected p-values.
           template <class StatsType, class EnhancementType>
             inline void precompute_default_permutation (const StatsType& stats_calculator, const EnhancementType& enhancer,
-                                                        const RefPtr<std::vector<double> > empirical_enhanced_statistic,
-                                                        std::vector<value_type>& default_enhanced_statistics, RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
+                                                        const RefPtr<std::vector<double> >& empirical_enhanced_statistic,
+                                                        std::vector<value_type>& default_enhanced_statistics, RefPtr<std::vector<value_type> >& default_enhanced_statistics_neg,
                                                         std::vector<value_type>& default_statistics)
             {
               std::vector<size_t> default_labelling (stats_calculator.num_subjects());
@@ -292,10 +292,10 @@ namespace MR
 
         template <class StatsType, class EnhancementType>
           inline void run_permutations (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations,
-                                        const RefPtr<std::vector<double> > empirical_enhanced_statistic,
-                                        const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> > default_enhanced_statistics_neg,
-                                        Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> > perm_dist_neg,
-                                        std::vector<value_type>& uncorrected_pvalues, RefPtr<std::vector<value_type> > uncorrected_pvalues_neg)
+                                        const RefPtr<std::vector<double> >& empirical_enhanced_statistic,
+                                        const std::vector<value_type>& default_enhanced_statistics, const RefPtr<std::vector<value_type> >& default_enhanced_statistics_neg,
+                                        Math::Vector<value_type>& perm_dist_pos, RefPtr<Math::Vector<value_type> >& perm_dist_neg,
+                                        std::vector<value_type>& uncorrected_pvalues, RefPtr<std::vector<value_type> >& uncorrected_pvalues_neg)
           {
 
             std::vector<size_t> global_uncorrected_pvalue_count (stats_calculator.num_elements(), 0);
