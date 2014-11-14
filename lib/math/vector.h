@@ -801,11 +801,11 @@ namespace MR
     //! find the maximum absolute value of any elements within a vector
     template <typename ValueType> inline ValueType absmax (const Vector<ValueType>& V, size_t& i)
     {
-      ValueType val (abs (V[0]));
+      ValueType val (std::abs (V[0]));
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
-        if (val < abs (V[j])) {
-          val = abs (V[j]);
+        if (val < std::abs (V[j])) {
+          val = std::abs (V[j]);
           i = j;
         }
       }
