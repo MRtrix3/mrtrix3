@@ -160,7 +160,6 @@ namespace MR
       //! increment the current value by one.
       void operator++ () {
         if (!show) return;
-        active = true;
 
         if (as_percentage) {
           ++current_val;
@@ -170,6 +169,7 @@ namespace MR
             while (next_val.i <= current_val)
               ++next_val.i;
             display_func (*this);
+            active = true;
           }
         }
         else {
@@ -181,6 +181,7 @@ namespace MR
             }
             while (next_val.d <= time);
             display_func (*this);
+            active = true;
           }
         }
       }
