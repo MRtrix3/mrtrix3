@@ -29,48 +29,78 @@
 namespace MR {
   namespace {
 
-    template <int ...>
-      struct IntegerTemplateSequence { };
-
-    template <int N, int... S>
-      struct GenIntegerTemplateSequence : GenIntegerTemplateSequence<N-1, N-1, S...> { };
-
-    template <int ...S>
-      struct GenIntegerTemplateSequence<0, S...> {
-        typedef IntegerTemplateSequence<S...> type;
+    template<size_t N>
+      struct Apply {
+        template<typename F, typename T>
+          static inline void apply (F && f, T && t)
+          {
+            Apply<N-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
+            ::std::forward<F>(f) (::std::get<N> (::std::forward<T>(t)));
+          }
       };
 
-    template<class F, typename... Args, int ...S>
-      inline auto __unpack_seq_impl (F& f, std::tuple<Args...>& t, IntegerTemplateSequence<S...>) 
-      -> decltype (f (std::get<S>(t) ...))
-      {
-        return f (std::get<S>(t) ...);
-      }
-
-    template <class F, template <typename...> class TupleType, typename... Args>
-      inline auto __unpack_impl (F& f, TupleType<Args...>& t) 
-      -> decltype (__unpack_seq_impl (f, t, typename GenIntegerTemplateSequence<sizeof...(Args)>::type()))
-      {
-        return __unpack_seq_impl (f, t, typename GenIntegerTemplateSequence<sizeof...(Args)>::type());
-      }
+    template<>
+      struct Apply<0> {
+        template<typename F, typename T>
+          static inline void apply (F && f, T && t)
+          {
+            ::std::forward<F>(f) (::std::get<0> (::std::forward<T>(t)));
+          }
+      };
 
 
 
-    template <class F, size_t I = 0, template <typename...> class TupleType, typename... Args, typename std::enable_if<I == sizeof...(Args), int>::type = 0>
-      inline void __apply_impl (F& f, TupleType<Args...>& t) { }
 
-    template <class F, size_t I = 0, template <typename...> class TupleType, typename... Args, typename std::enable_if<I < sizeof...(Args), int>::type = 0>
-      inline void __apply_impl (F& f, TupleType<Args...>& t) {
-        f (std::get<I> (t));
-        __apply_impl<F, I+1, TupleType, Args...> (f, t);
-      }
+    template<size_t N>
+      struct Unpack {
+        template<typename F, typename T, typename... A>
+          static inline auto unpack (F && f, T && t, A &&... a)
+          -> decltype(Unpack<N-1>::unpack (
+                ::std::forward<F>(f), ::std::forward<T>(t),
+                ::std::get<N-1>(::std::forward<T>(t)), ::std::forward<A>(a)...
+                ))
+          {
+            return Unpack<N-1>::unpack (::std::forward<F>(f), ::std::forward<T>(t),
+                ::std::get<N-1>(::std::forward<T>(t)), ::std::forward<A>(a)...
+                );
+          }
+      };
+
+    template<>
+      struct Unpack<0> {
+        template<typename F, typename T, typename... A>
+          static inline auto unpack (F && f, T &&, A &&... a)
+          -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))
+          {
+            return ::std::forward<F>(f)(::std::forward<A>(a)...);
+          }
+      };
+
   }
 
-  template <class F, class TupleType>
-    inline void apply (F&& f, TupleType&& t) { __apply_impl (f, t); }
 
-  template <class F, class TupleType>
-    inline auto unpack (F&& f, TupleType&& t) -> decltype (__unpack_impl (f, t)) { return __unpack_impl (f, t); } 
+
+
+  //! invoke \c f(x) for each entry in \c t
+  template <class F, class T>
+    inline void apply (F && f, T && t) 
+    {
+      Apply<::std::tuple_size<
+        typename ::std::decay<T>::type
+        >::value-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
+    }
+
+  //! if \c t is a tuple of elements \c a..., invoke \c f(a...)
+  template<typename F, typename T>
+    inline auto unpack (F && f, T && t)
+    -> decltype(Unpack< ::std::tuple_size<
+        typename ::std::decay<T>::type
+        >::value>::unpack (::std::forward<F>(f), ::std::forward<T>(t)))
+    {
+      return Unpack< ::std::tuple_size<
+        typename ::std::decay<T>::type
+        >::value>::unpack (::std::forward<F>(f), ::std::forward<T>(t));
+    }
 }
 
 #endif
