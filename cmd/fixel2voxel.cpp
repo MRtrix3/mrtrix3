@@ -43,6 +43,7 @@ using Image::Sparse::FixelMetric;
 const char* operations[] = {
   "sum",
   "count",
+  "split",
   NULL
 };
 
@@ -51,7 +52,9 @@ void usage ()
 {
 
   DESCRIPTION
-  + "convert a fixel-based sparse-data image into a scalar image. Output either the sum of fixel values within a voxel, or the fixel count";
+  + "convert a fixel-based sparse-data image into a scalar image. "
+    "Output either the sum of fixel values within a voxel, the fixel count, "
+    "or a set of 3D scalar images, one per fixel value.";
 
   ARGUMENTS
   + Argument ("fixel_in",  "the input sparse fixel image.").type_image_in ()
@@ -68,28 +71,49 @@ void run ()
   Image::BufferSparse<FixelMetric> fixel_data (H_in);
   Image::BufferSparse<FixelMetric>::voxel_type voxel (fixel_data);
 
-  const size_t num_inputs = argument.size() - 2;
-  const int op = argument[num_inputs];
+  const int op = argument[1];
 
   Image::Header H_out (H_in);
-  if (op)
+  if (op == 1)
     H_out.datatype() = DataType::UInt8;
-  else
+  else {
     H_out.datatype() = DataType::Float32;
+    if (op == 2) {
+      H_out.set_ndim (4);
+      uint32_t max_count = 0;
+      Image::LoopInOrder loop (voxel, "determining largest fixel count... ");
+      for (loop.start (voxel); loop.ok(); loop.next (voxel)) 
+        max_count = std::max (max_count, voxel.value().size());
+      if (max_count == 0) 
+        throw Exception ("fixel image is empty");
+      H_out.dim(3) = max_count;
+    }
+  }
 
   Image::Buffer<float> out_data (argument[2], H_out);
   Image::Buffer<float>::voxel_type out (out_data);
 
-
   Image::LoopInOrder loop (voxel, "converting sparse fixel data to scalar image... ");
   for (loop.start (voxel, out); loop.ok(); loop.next (voxel, out)) {
-    if (op) {
-      out.value() = voxel.value().size();
-    } else {
-      float sum = 0;
-      for (size_t fixel = 0; fixel != voxel.value().size(); ++fixel)
-        sum += voxel.value()[fixel].value;
-      out.value() = sum;
+    switch (op) {
+      case 0: // sum
+        {
+          float sum = 0.0;
+          for (size_t fixel = 0; fixel != voxel.value().size(); ++fixel)
+            sum += voxel.value()[fixel].value;
+          out.value() = sum;
+        }
+        break;
+      case 1: // count
+        out.value() = voxel.value().size();
+        break; 
+      case 2: // split
+        for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
+          if (out[3] < voxel.value().size())
+            out.value() = voxel.value()[out[3]].value;
+          else
+            out.value() = 0.0;
+        }
     }
   }
 }
