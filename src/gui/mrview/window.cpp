@@ -639,6 +639,7 @@ namespace MR
       {
         mode = NULL;
         delete glarea;
+        delete glrefresh_timer;
         delete [] colourmap_actions;
       }
 
