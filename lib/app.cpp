@@ -326,7 +326,7 @@ namespace MR
                          + " arguments (" + str (argument.size()) + " supplied)");
 
       size_t num_extra_arguments = argument.size() - num_args_required;
-      size_t num_arg_per_multi = num_extra_arguments / num_optional_arguments;
+      size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
       if (num_arg_per_multi*num_optional_arguments != num_extra_arguments)
         throw Exception ("number of optional arguments provided are not equal for all arguments");
       if (!(flags & Optional))
