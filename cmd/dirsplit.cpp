@@ -84,7 +84,7 @@ class Shared {
       if (energy < best_energy) {
         best_energy = energy;
         best_subset = set;
-        progress->set_message ("distributing directions (current best configuration: energy = " + str(best_energy) + ")...");
+        progress->set_text ("distributing directions (current best configuration: energy = " + str(best_energy) + ")...");
       }
       ++num_permutations;
       ++(*progress);

@@ -185,7 +185,6 @@ namespace MR
           Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true), progress_ (message, 1) { }
 
-
           //! return iteratable object for use in loop
           /*! This start the loop by resetting the appropriate coordinates of
            * each of the specified VoxelType objects to zero, and initialising
@@ -235,8 +234,8 @@ namespace MR
           template <typename... VoxelType>
             void next (VoxelType&... vox) {
               auto tvox = std::tie (vox...);
-              next_axis (from_, tvox);
               ++progress_;
+              next_axis (from_, tvox);
             }
 
           //! set position along relevant axes of \a target to that of \a reference
@@ -439,7 +438,6 @@ namespace MR
                 size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
               axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
-
           //! return iteratable object for use in loop
           /*! This start the loop by resetting the appropriate coordinates of
            * each of the specified VoxelType objects to zero, and initialising
@@ -490,6 +488,7 @@ namespace MR
             void next (VoxelType&... vox) {
               auto tvox = std::tie (vox...);
               auto& ref = std::get<0> (tvox);
+              ++progress_;
               if (ref[first_axis] < first_axis_dim)
                 apply (inc_pos (first_axis), tvox);
               else {
@@ -497,7 +496,6 @@ namespace MR
                 if (cont_) 
                   apply (set_pos (first_axis, 0), tvox);
               }
-              ++progress_;
             }
 
           //! set position along relevant axes of \a target to that of \a reference
