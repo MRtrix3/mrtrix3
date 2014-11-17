@@ -108,10 +108,12 @@ void run ()
         out.value() = voxel.value().size();
         break; 
       case 2: // split
-        out[3] = 0;
-        for (size_t fixel = 0; fixel != voxel.value().size(); ++fixel, ++out[3])
-          out.value() = voxel.value()[fixel].value;
-
+        for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
+          if (out[3] < voxel.value().size())
+            out.value() = voxel.value()[out[3]].value;
+          else
+            out.value() = 0.0;
+        }
     }
   }
 }
