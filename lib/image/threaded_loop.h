@@ -354,10 +354,6 @@ namespace MR
         //! a dummy object that can be used to construct other Iterators
         const Iterator& iterator () const { return dummy; }
 
-        void start (Iterator& pos) {
-          loop.start (pos);
-        }
-
         //! get next position in the outer loop
         bool next (Iterator& pos) {
           std::lock_guard<std::mutex> lock (mutex);
@@ -380,6 +376,7 @@ namespace MR
             }
 
             __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
+            loop.start (dummy);
             Thread::run (Thread::multi (loop_thread), "loop threads");
           }
 
@@ -457,7 +454,6 @@ namespace MR
 
              void execute () {
                Iterator pos (shared.iterator());
-               shared.start (pos);
                while (shared.next (pos))
                  func (pos);
              }
