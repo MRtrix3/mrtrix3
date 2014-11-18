@@ -50,7 +50,7 @@
 
 #include "image/loop.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 
@@ -123,7 +123,7 @@ namespace MR
             public:
               MappedTrackReceiver (Model& i) :
                 master (i),
-                mutex (new Thread::Mutex()),
+                mutex (new std::mutex),
                 TD_sum (0.0),
                 fixel_TDs (master.fixels.size(), 0.0) { }
               MappedTrackReceiver (const MappedTrackReceiver& that) :
@@ -135,7 +135,7 @@ namespace MR
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
-              RefPtr<Thread::Mutex> mutex;
+              RefPtr<std::mutex> mutex;
               double TD_sum;
               std::vector<double> fixel_TDs;
           };
@@ -164,7 +164,7 @@ namespace MR
         for (std::vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i) {
             delete *i;
-            *i = NULL;
+            *i = nullptr;
           }
         }
       }
@@ -182,7 +182,7 @@ namespace MR
           throw Exception ("Input .tck file does not specify number of streamlines (run tckfixcount on your .tck file!)");
         const track_t count = to<track_t>(properties["count"]);
 
-        contributions.assign (count, NULL);
+        contributions.assign (count, nullptr);
 
         const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
 
@@ -240,7 +240,7 @@ namespace MR
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        for (auto l = loop (v); l; ++l) {
           if (v.value()) {
 
             size_t new_start_index = new_fixels.size();
@@ -256,7 +256,7 @@ namespace MR
             delete v.value();
 
             if (new_fixels.size() == new_start_index)
-              v.value() = NULL;
+              v.value() = nullptr;
             else
               v.value() = new MapVoxel (new_start_index, new_fixels.size() - new_start_index);
 
@@ -337,7 +337,7 @@ namespace MR
       template <class Fixel>
       Model<Fixel>::MappedTrackReceiver::~MappedTrackReceiver()
       {
-        Thread::Mutex::Lock lock (*mutex);
+        std::lock_guard<std::mutex> lock (*mutex);
         master.TD_sum += TD_sum;
         for (size_t i = 0; i != fixel_TDs.size(); ++i)
           master.fixels[i] += fixel_TDs[i];

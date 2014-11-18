@@ -151,19 +151,19 @@ void run ()
   if (std::isfinite (percentile)) {
     percentile /= 100.0;
     if (percentile < 0.5) {
-      bottomN = Math::round (Image::voxel_count (data_in) * percentile);
+      bottomN = std::round (Image::voxel_count (data_in) * percentile);
       invert = !invert;
     }
-    else topN = Math::round (Image::voxel_count (data_in) * (1.0 - percentile));
+    else topN = std::round (Image::voxel_count (data_in) * (1.0 - percentile));
   }
 
   Image::Header header_out (data_in);
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
-  Image::Buffer<float>::voxel_type in (data_in);
+  auto in = data_in.voxel();
 
   Image::Buffer<float> data_out (argument[1], header_out);
-  Image::Buffer<float>::voxel_type out (data_out);
+  auto out = data_out.voxel();
 
   float zero = use_NaN ? NAN : 0.0;
   float one  = 1.0;
@@ -172,16 +172,16 @@ void run ()
   if (std::isfinite (topNpercent) || std::isfinite (bottomNpercent)) {
     Image::LoopInOrder loop (in, "computing voxel count...");
     size_t count = 0;
-    for (loop.start (in); loop.ok(); loop.next (in)) {
+    for (auto l = loop (in); l; ++l) {
       float val = in.value();
       if (ignore_zeroes && val == 0.0) continue;
       ++count;
     }
 
     if (std::isfinite (topNpercent))
-      topN = Math::round (0.01 * topNpercent * count);
+      topN = std::round (0.01 * topNpercent * count);
     else
-      bottomN = Math::round (0.01 * bottomNpercent * count);
+      bottomN = std::round (0.01 * bottomNpercent * count);
   }
 
 
@@ -191,13 +191,13 @@ void run ()
 
     {
       Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at " + (
-                            isnan (percentile) ?
+                            std::isnan (percentile) ?
                             (str (topN ? topN : bottomN) + "th " + (topN ? "top" : "bottom") + " voxel") :
                               (str (percentile*100.0) + "\% percentile")
                             ) + "...");
 
       if (topN) {
-        for (loop.start (in); loop.ok(); loop.next (in)) {
+        for (auto l = loop (in); l; ++l) {
           const float val = in.value();
           if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
@@ -212,7 +212,7 @@ void run ()
         }
       }
       else {
-        for (loop.start (in); loop.ok(); loop.next (in)) {
+        for (auto l = loop (in); l; ++l) {
           const float val = in.value();
           if (!std::isfinite (val)) continue;
           if (ignore_zeroes && val == 0.0) continue;
@@ -230,10 +230,8 @@ void run ()
       }
     }
 
-    Image::Loop loop;
-    for (loop.start (out); loop.ok(); loop.next (out)) {
+    for (auto l = Image::Loop() (out); l; ++l) 
       out.value() = zero;
-    }
 
     for (std::multimap<float,std::vector<ssize_t> >::const_iterator i = list.begin(); i != list.end(); ++i) {
       for (size_t n = 0; n < out.ndim(); ++n)
@@ -243,10 +241,10 @@ void run ()
   }
   else {
     if (use_histogram) {
-      Image::Histogram<Image::Buffer<float>::voxel_type> hist (in);
+      Image::Histogram<decltype(in)> hist (in);
       threshold_value = hist.first_min();
     }
-    else if (isnan (threshold_value)) {
+    else if (std::isnan (threshold_value)) {
       Ptr<Image::Buffer<bool> > mask_data;
       Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
       opt = get_options ("mask");
@@ -258,7 +256,7 @@ void run ()
     }
 
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");
-    for (loop.start (out, in); loop.ok(); loop.next (out, in)) {
+    for (auto l = Image::Loop() (out, in); l; ++l) {
       float val = in.value();
       out.value() = ( !std::isfinite (val) || val < threshold_value ) ? zero : one;
     }

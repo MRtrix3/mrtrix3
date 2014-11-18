@@ -45,7 +45,7 @@ namespace MR
       mean /= float(volumes.size());
       for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
         stdev += Math::pow2 (grad (*i, 3) - mean);
-      stdev = Math::sqrt (stdev / (volumes.size() - 1));
+      stdev = std::sqrt (stdev / (volumes.size() - 1));
     }
 
 
@@ -117,7 +117,7 @@ namespace MR
               float best_num_stdevs = std::numeric_limits<float>::max();
               bool ambiguous = false;
               for (size_t s = 0; s != shells.size(); ++s) {
-                const float num_stdev = Math::abs ((*b - shells[s].get_mean()) / (zero_stdev ? Math::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
+                const float num_stdev = std::abs ((*b - shells[s].get_mean()) / (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
                 const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
                 if (within_range) {
                   if (!shell_selected) {
@@ -200,7 +200,7 @@ namespace MR
       std::vector<size_t> clusters (bvals.size(), 0);
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
-      if ((num_shells < 1) || (num_shells > Math::sqrt (float(grad.rows()))))
+      if ((num_shells < 1) || (num_shells > std::sqrt (float(grad.rows()))))
         throw Exception ("Gradient encoding matrix does not represent a HARDI sequence");
 
       for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
@@ -228,11 +228,7 @@ namespace MR
 
       std::sort (shells.begin(), shells.end());
 
-      if (smallest().is_bzero()) {
-        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " + str(smallest().count()) + " b=0 volumes");
-      } else {
-        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells");
-      }
+      INFO ("Diffusion gradient encoding data clustered into " + str(count()) + " shells with volumes counts = " + str(get_counts()) + ", b-values = " + str(get_bvalues()) + "");
     }
 
 
@@ -284,7 +280,7 @@ namespace MR
     void Shells::regionQuery (const BValueList& bvals, const float b, std::vector<size_t>& idx) const
     {
       for (size_t i = 0; i < bvals.size(); i++) {
-        if (Math::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
+        if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }
     }

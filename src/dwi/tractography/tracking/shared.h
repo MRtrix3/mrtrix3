@@ -238,7 +238,7 @@ namespace MR
 
             value_type vox () const
             {
-              return Math::pow (source_buffer.vox(0)*source_buffer.vox(1)*source_buffer.vox(2), value_type (1.0/3.0));
+              return std::pow (source_buffer.vox(0)*source_buffer.vox(1)*source_buffer.vox(2), value_type (1.0/3.0));
             }
 
             void set_step_size (value_type stepsize)
@@ -252,22 +252,22 @@ namespace MR
 
               value_type max_dist = 100.0 * vox();
               properties.set (max_dist, "max_dist");
-              max_num_points = round (max_dist/step_size) + 1;
+              max_num_points = std::round (max_dist/step_size) + 1;
 
               value_type min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
               properties.set (min_dist, "min_dist");
-              min_num_points = std::max (2, round (min_dist/step_size) + 1);
+              min_num_points = std::fmax (2, std::round (min_dist/step_size) + 1);
 
               max_angle = 90.0 * step_size / vox();
               properties.set (max_angle, "max_angle");
               INFO ("maximum deviation angle = " + str (max_angle) + " deg");
-              max_angle *= M_PI / 180.0;
-              cos_max_angle = Math::cos (max_angle);
+              max_angle *= Math::pi / 180.0;
+              cos_max_angle = std::cos (max_angle);
 
               if (rk4) {
                 max_angle_rk4 = max_angle;
                 cos_max_angle_rk4 = cos_max_angle;
-                max_angle = M_PI;
+                max_angle = Math::pi;
                 cos_max_angle = 0.0;
               }
             }
@@ -286,9 +286,9 @@ namespace MR
             void add_termination (const term_t i, const Point<value_type>& p) const
             {
               ++terminations[i];
-              Image::Buffer<uint32_t>::voxel_type voxel (*debug_images[i]);
+              auto voxel debug_images[i]->voxel();
               const Point<value_type> pv = transform.scanner2voxel (p);
-              const Point<int> v (Math::round (pv[0]), Math::round (pv[1]), Math::round (pv[2]));
+              const Point<int> v (std::round (pv[0]), std::round (pv[1]), std::round (pv[2]));
               if (Image::Nav::within_bounds (voxel, v)) {
                 Image::Nav::set_pos (voxel, v);
                 voxel.value() += 1;

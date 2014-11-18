@@ -42,39 +42,59 @@ namespace MR
 
     namespace
     {
-      template <typename value_type, typename S> value_type __get (const void* data, size_t i)
-      {
-        return value_type (MR::get<S> (data, i));
-      }
-      template <typename value_type, typename S> value_type __getLE (const void* data, size_t i)
-      {
-        return value_type (MR::getLE<S> (data, i));
-      }
-      template <typename value_type, typename S> value_type __getBE (const void* data, size_t i)
-      {
-        return value_type (MR::getBE<S> (data, i));
-      }
+      template <typename value_type, typename S> 
+        value_type __get (const void* data, size_t i) 
+        {
+          return value_type (MR::get<S> (data, i)); 
+        }
 
-      template <typename value_type, typename S> void __put (value_type val, void* data, size_t i)
-      {
-        return MR::put<S> (S (val), data, i);
-      }
-      template <typename value_type, typename S> void __putLE (value_type val, void* data, size_t i)
-      {
-        return MR::putLE<S> (S (val), data, i);
-      }
-      template <typename value_type, typename S> void __putBE (value_type val, void* data, size_t i)
-      {
-        return MR::putBE<S> (S (val), data, i);
-      }
+      template <typename value_type, typename S> 
+        value_type __getLE (const void* data, size_t i) 
+        { 
+          return value_type (MR::getLE<S> (data, i)); 
+        }
+
+      template <typename value_type, typename S> 
+        value_type __getBE (const void* data, size_t i) 
+        {
+          return value_type (MR::getBE<S> (data, i)); 
+        }
+
+
+      template <typename value_type, typename S> 
+        void __put (value_type val, void* data, size_t i) 
+        {
+          return MR::put<S> (S (val), data, i); 
+        }
+
+      template <typename value_type, typename S> 
+        void __putLE (value_type val, void* data, size_t i) 
+        {
+          return MR::putLE<S> (S (val), data, i);
+        }
+
+      template <typename value_type, typename S> 
+        void __putBE (value_type val, void* data, size_t i) 
+        {
+          return MR::putBE<S> (S (val), data, i); 
+        }
 
 
 
       // needed to round floating-point values and map non-finite values (NaN, Inf) to zero for integer types:
       template <typename value_out_type, typename value_type> 
-        inline value_out_type round_finite (value_type val) { return std::isfinite (val) ? value_out_type(Math::round (val)) : value_out_type (0); }
+        inline value_out_type round_finite (value_type val) 
+        { 
+          return std::isfinite (val) ? 
+            value_out_type(std::round (val)) : 
+            value_out_type (0); 
+        }
+
       template <typename value_out_type, typename value_type> 
-        inline value_out_type no_round (value_type val) { return val; }
+        inline value_out_type no_round (value_type val) 
+        {
+          return val; 
+        }
 
       // specialisations for conversion between real types and complex types, and integer types and floating-point types:
 
@@ -198,6 +218,8 @@ namespace MR
 
         typedef ValueType value_type;
         typedef typename Image::Voxel<Buffer> voxel_type;
+
+        voxel_type voxel() { return voxel_type (*this); }
 
         value_type get_value (size_t offset) const {
           ssize_t nseg (offset / handler_->segment_size());

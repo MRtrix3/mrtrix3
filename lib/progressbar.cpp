@@ -37,14 +37,12 @@ namespace MR
   {
 
     const char* busy[] = {
-      ".    ",
-      " .   ",
-      "  .  ",
-      "   . ",
-      "    .",
-      "   . ",
-      "  .  ",
-      " .   "
+      ".   ",
+      " .  ",
+      "  . ",
+      "   .",
+      "  . ",
+      " .  "
     };
 
 
@@ -52,18 +50,18 @@ namespace MR
     void display_func_cmdline (ProgressInfo& p)
     {
       if (p.as_percentage)
-        PROGRESS_PRINT "\r%s: %s %3zu%%", App::NAME.c_str(), p.text.c_str(), size_t (p.value));
+        PROGRESS_PRINT "\33[2K\r%s: [%3zu%%] %s", App::NAME.c_str(), size_t (p.value), p.text.c_str());
       else
-        PROGRESS_PRINT "\r%s: %s %s", App::NAME.c_str(), p.text.c_str(), busy[p.value%8]);
+        PROGRESS_PRINT "\33[2K\r%s: [%s] %s", App::NAME.c_str(), busy[p.value%6], p.text.c_str());
     }
 
 
     void done_func_cmdline (ProgressInfo& p)
     {
       if (p.as_percentage)
-        PROGRESS_PRINT "\r%s: %s %3u%%\n", App::NAME.c_str(), p.text.c_str(), 100);
+        PROGRESS_PRINT "\33[2K\r%s: [%3u%%] %s\n", App::NAME.c_str(), 100, p.text.c_str());
       else
-        PROGRESS_PRINT "\r%s: %s  - done\n", App::NAME.c_str(), p.text.c_str());
+        PROGRESS_PRINT "\33[2K\r%s: [done] %s\n", App::NAME.c_str(), p.text.c_str());
     }
   }
 

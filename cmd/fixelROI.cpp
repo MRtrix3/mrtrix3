@@ -118,14 +118,14 @@ void run ()
         tangent.normalise();
 
         Point<float> voxel_pos = transform.scanner2voxel (tck[p]);
-        voxel_pos[0] = Math::round (voxel_pos[0]);
-        voxel_pos[1] = Math::round (voxel_pos[1]);
-        voxel_pos[2] = Math::round (voxel_pos[2]);
+        voxel_pos[0] = std::round (voxel_pos[0]);
+        voxel_pos[1] = std::round (voxel_pos[1]);
+        voxel_pos[2] = std::round (voxel_pos[2]);
         Image::Nav::set_pos (output_fixel, voxel_pos);
         float largest_dp = 0.0;
         int closest_fixel_index = -1;
         for (size_t f = 0; f < output_fixel.value().size(); ++f ) {
-          float dp = Math::abs (tangent.dot (output_fixel.value()[f].dir));
+          float dp = std::abs (tangent.dot (output_fixel.value()[f].dir));
           if (dp > largest_dp) {
             largest_dp = dp;
             closest_fixel_index = f;

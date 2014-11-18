@@ -80,9 +80,7 @@ class remove_negative
 void run ()
 {
   Image::Buffer<value_type> sh_data (argument[0]);
-
-  if (sh_data.ndim() != 4)
-    throw Exception ("the input spherical harmonic image should contain 4 dimensions");
+  Math::SH::check (sh_data);
 
   Image::Header amp_header (sh_data);
 
@@ -116,8 +114,8 @@ void run ()
   Image::matrix_multiply (
       "computing amplitudes...",
       transformer.mat_SH2A(),
-      Image::Buffer<value_type>::voxel_type (sh_data), 
-      Image::Buffer<value_type>::voxel_type (amp_data),
+      sh_data.voxel(), 
+      amp_data.voxel(),
       Image::NoOp<value_type>, remove_negative (get_options("nonnegative").size()), 3);
 
 }

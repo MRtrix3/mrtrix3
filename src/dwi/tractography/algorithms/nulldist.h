@@ -50,7 +50,7 @@ namespace MR
           SharedBase (diff_path, property_set)
         {
           set_step_size (0.1);
-          sin_max_angle = Math::sin (max_angle);
+          sin_max_angle = std::sin (max_angle);
           properties["method"] = "Nulldist";
         }
         value_type sin_max_angle;

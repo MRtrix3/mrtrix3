@@ -82,7 +82,7 @@ namespace MR
                 Point<value_type> dir (i->get_dir());
                 dir.normalise();
                 for (int32_t j = first_index; j < last_index; ++j) {
-                  value_type dp = Math::abs (dir.dot (fixel_directions[j]));
+                  value_type dp = std::abs (dir.dot (fixel_directions[j]));
                   if (dp > largest_dp) {
                     largest_dp = dp;
                     closest_fixel_index = j;
@@ -136,7 +136,7 @@ namespace MR
                 for (connected_fixel = connectivity_map[fixel].begin(); connected_fixel != connectivity_map[fixel].end(); ++connected_fixel)
                   if (stats[connected_fixel->first] > h)
                     extent += connected_fixel->second.value;
-                enhanced_stats[fixel] += Math::pow (extent, E) * Math::pow (h, H);
+                enhanced_stats[fixel] += std::pow (extent, E) * std::pow (h, H);
               }
               if (enhanced_stats[fixel] > max_enhanced_stat)
                 max_enhanced_stat = enhanced_stats[fixel];

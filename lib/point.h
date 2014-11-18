@@ -52,10 +52,10 @@ namespace MR
       }
 
       bool operator! () const {
-        return (isnan (p[0]) || isnan (p[1]) || isnan (p[2]));
+        return (std::isnan (p[0]) || std::isnan (p[1]) || std::isnan (p[2]));
       }
       bool valid ()     const {
-        return (! (isnan (p[0]) || isnan (p[1]) || isnan (p[2])));
+        return (! (std::isnan (p[0]) || std::isnan (p[1]) || std::isnan (p[2])));
       }
 
       operator value_type* () { 

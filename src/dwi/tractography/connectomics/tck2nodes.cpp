@@ -38,7 +38,7 @@ node_t Tck2nodes_voxel::select_node (const Streamline<>& tck, VoxelType& voxel, 
 
   const Point<float>& p (end ? tck.back() : tck.front());
   const Point<float> v_float = transform.scanner2voxel (p);
-  const Point<int> v (Math::round (v_float[0]), Math::round (v_float[1]), Math::round (v_float[2]));
+  const Point<int> v (std::round (v_float[0]), std::round (v_float[1]), std::round (v_float[2]));
   return Image::Nav::get_value_at_pos (voxel, v);
 
 }
@@ -50,13 +50,13 @@ node_t Tck2nodes_voxel::select_node (const Streamline<>& tck, VoxelType& voxel, 
 void Tck2nodes_radial::initialise_search ()
 {
 
-  const int max_axis_offset (Math::floor ((max_dist + max_add_dist) / minvalue (nodes.vox(0), nodes.vox(1), nodes.vox(2))));
+  const int max_axis_offset (std::floor ((max_dist + max_add_dist) / minvalue (nodes.vox(0), nodes.vox(1), nodes.vox(2))));
   std::multimap< float, Point<int> > radial_search_map;
   Point<int> offset;
   for (offset[2] = -max_axis_offset; offset[2] <= +max_axis_offset; ++offset[2]) {
     for (offset[1] = -max_axis_offset; offset[1] <= +max_axis_offset; ++offset[1]) {
       for (offset[0] = -max_axis_offset; offset[0] <= +max_axis_offset; ++offset[0]) {
-        const float dist = Math::sqrt (Math::pow2 (offset[2] * nodes.vox(2)) + Math::pow2 (offset[1] * nodes.vox(1)) + Math::pow2 (offset[0] * nodes.vox(0)));
+        const float dist = std::sqrt (Math::pow2 (offset[2] * nodes.vox(2)) + Math::pow2 (offset[1] * nodes.vox(1)) + Math::pow2 (offset[0] * nodes.vox(0)));
         if (dist < (max_dist + max_add_dist))
           radial_search_map.insert (std::make_pair (dist, offset));
       }
@@ -80,7 +80,7 @@ node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel,
 
   const Point<float>& p (end ? tck.back() : tck.front());
   const Point<float> v_float = transform.scanner2voxel (p);
-  const Point<int> v (Math::round (v_float[0]), Math::round (v_float[1]), Math::round (v_float[2]));
+  const Point<int> v (std::round (v_float[0]), std::round (v_float[1]), std::round (v_float[2]));
 
   for (std::vector< Point<int> >::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
 
@@ -119,7 +119,7 @@ node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& vox
   for (int index = start_index; index != midpoint_index; index += step) {
     const Point<float>& p (tck[index]);
     const Point<float> v_float = transform.scanner2voxel (p);
-    const Point<int> v (Math::round (v_float[0]), Math::round (v_float[1]), Math::round (v_float[2]));
+    const Point<int> v (std::round (v_float[0]), std::round (v_float[1]), std::round (v_float[2]));
     if (Image::Nav::within_bounds (voxel, v)) {
       const node_t this_node = Image::Nav::get_value_at_pos (voxel, v);
       if (this_node)
@@ -167,7 +167,7 @@ node_t Tck2nodes_forwardsearch::select_node (const Streamline<>& tck, VoxelType&
   // Voxel containing streamline endpoint not guaranteed to be appropriate
   // Should it be tested anyway? Probably
   const Point<float> vp (transform.scanner2voxel (p));
-  const Point<int> v (Math::round (vp[0]), Math::round (vp[1]), Math::round (vp[2]));
+  const Point<int> v (std::round (vp[0]), std::round (vp[1]), std::round (vp[2]));
   if (!Image::Nav::within_bounds (nodes, v))
     return 0;
   visited.insert (v);
@@ -216,7 +216,7 @@ float Tck2nodes_forwardsearch::get_cf (const Point<float>& p, const Point<float>
   Point<float> offset (vp - p);
   const float dist = offset.norm();
   offset.normalise();
-  const float angle = Math::acos (t.dot (offset));
+  const float angle = std::acos (t.dot (offset));
   if (angle > angle_limit)
     return NAN;
 

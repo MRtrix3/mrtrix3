@@ -61,7 +61,7 @@ namespace MR {
           hessian.allocate (N, N);
           if (conditioner.size()) 
             for (size_t n = 0; n < N; ++n)
-              conditioner[n] = Math::sqrt(conditioner[n]);
+              conditioner[n] = std::sqrt(conditioner[n]);
         }
 
         for (size_t n = 0; n < N; ++n) {

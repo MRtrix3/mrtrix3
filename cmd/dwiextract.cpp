@@ -55,7 +55,7 @@ void usage ()
 
 void run() {
   Image::BufferPreload<float> data_in (argument[0], Image::Stride::contiguous_along_axis (3));
-  Image::BufferPreload<float>::voxel_type voxel_in (data_in);
+  auto voxel_in = data_in.voxel();
 
   Math::Matrix<value_type> grad (DWI::get_valid_DW_scheme<float> (data_in));
 
@@ -104,13 +104,13 @@ void run() {
   }
 
   Image::Buffer<value_type> data_out (argument[1], header);
-  Image::Buffer<value_type>::voxel_type voxel_out (data_out);
+  auto voxel_out = data_out.voxel();
 
   Image::Loop outer ("extracting volumes...", 0, 3);
 
   if (voxel_out.ndim() == 4) {
 
-    for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
+    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
       for (size_t i = 0; i < volumes.size(); i++) {
         voxel_in[3] = volumes[i];
         voxel_out[3] = i;
@@ -121,7 +121,7 @@ void run() {
   } else {
 
     const size_t volume = volumes[0];
-    for (outer.start (voxel_out, voxel_in); outer.ok(); outer.next (voxel_out, voxel_in)) {
+    for (auto i = outer (voxel_out, voxel_in); i; ++i) {
       voxel_in[3] = volume;
       voxel_out.value() = voxel_in.value();
     }

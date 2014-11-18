@@ -211,7 +211,7 @@ namespace MR
                        const Math::Matrix<float>& directions)
         {
           LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
-          Image::ThreadedLoop loop (fod_vox_in, 1, 0, 3);
+          Image::ThreadedLoop loop (fod_vox_in, 0, 3);
           loop.run (kernel);
         }
 
@@ -225,7 +225,7 @@ namespace MR
                        const Math::Matrix<float>& directions)
         {
           LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
-          Image::ThreadedLoop loop (progress_message, fod_vox_in, 1, 0, 3);
+          Image::ThreadedLoop loop (progress_message, fod_vox_in, 0, 3);
           loop.run (kernel);
         }
 
@@ -237,7 +237,7 @@ namespace MR
 //                       const Math::Matrix<float>& directions)
 //        {
 //          WarpReorientKernel<FODVoxelType, WarpVoxelType> kernel (fod_vox, directions, warp);
-//          Image::ThreadedLoop loop (fod_vox, 1, 0, 3);
+//          Image::ThreadedLoop loop (fod_vox, 0, 3);
 //          loop.run (kernel);
 //        }
 //
@@ -250,7 +250,7 @@ namespace MR
 //                       const Math::Matrix<float>& directions)
 //        {
 //          WarpReorientKernel<FODVoxelType, WarpVoxelType> kernel (fod_vox, directions, warp);
-//          Image::ThreadedLoop loop (progress_message, fod_vox, 1, 0, 3);
+//          Image::ThreadedLoop loop (progress_message, fod_vox, 0, 3);
 //          loop.run (kernel);
 //        }
 

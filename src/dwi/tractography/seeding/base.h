@@ -27,12 +27,10 @@
 #include "file/path.h"
 #include "point.h"
 
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 #include "image/voxel.h"
 
 #include "math/rng.h"
-
-#include "thread/mutex.h"
 
 
 
@@ -74,13 +72,9 @@ namespace MR
       template <typename T>
       uint32_t get_count (T& data)
       {
-        typename T::voxel_type v (data);
+        auto vox = data.voxel();
         uint32_t count = 0;
-        Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v)) {
-          if (v.value())
-            ++count;
-        }
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) ++count; }, vox);
         return count;
       }
 
@@ -88,11 +82,9 @@ namespace MR
       template <typename T>
       float get_volume (T& data)
       {
-        typename T::voxel_type v (data);
-        float volume = 0;
-        Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v))
-          volume += v.value();
+        auto vox = data.voxel();
+        float volume = 0.0f;
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { volume += v.value(); }, vox);
         return volume;
       }
 
@@ -135,7 +127,7 @@ namespace MR
           uint32_t count;
           // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
           Math::RNG rng;
-          Thread::Mutex mutex;
+          std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 
         private:

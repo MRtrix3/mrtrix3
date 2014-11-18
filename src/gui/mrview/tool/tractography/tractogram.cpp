@@ -373,7 +373,7 @@ namespace MR
             while (num_tracks--) {
               file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
-              const Point<float> colour (Math::abs (tangent[0]), Math::abs (tangent[1]), Math::abs (tangent[2]));
+              const Point<float> colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
               buffer.push_back (Point<float>());
               for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
                 *i = colour;

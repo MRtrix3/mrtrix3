@@ -13,7 +13,7 @@
 #include "dwi/tractography/mapping/voxel.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/mapping/writer.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "stats/cfe.h"
 
 #include <sys/stat.h>
@@ -64,7 +64,7 @@ void write_fixel_output (const std::string filename,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
   Image::BufferSparse<FixelMetric> output_buffer (filename, header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+  auto output_voxel = output_buffer.voxel();
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
     output_voxel.value().set_size (mask_vox.value().size());
@@ -77,70 +77,6 @@ void write_fixel_output (const std::string filename,
   }
 }
 
-
-/**
- * Process each track (represented as a set of fixels). For each track tangent dixel, identify the closest fixel, build connectivity matrix
- */
-class TrackProcessor {
-
-  public:
-    TrackProcessor (Image::BufferScratch<int32_t>& FOD_fixel_indexer,
-                    const std::vector<Point<value_type> >& FOD_fixel_directions,
-                    std::vector<uint16_t>& fixel_TDI,
-                    std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity,
-                    value_type angular_threshold):
-                    fixel_indexer (FOD_fixel_indexer) ,
-                    fixel_directions (FOD_fixel_directions),
-                    fixel_TDI (fixel_TDI),
-                    fixel_connectivity (fixel_connectivity) {
-      angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
-    }
-
-    bool operator () (MR::DWI::Tractography::Mapping::SetVoxelDir& in)
-    {
-      // For each voxel tract tangent, assign to a fixel
-      std::vector<int32_t> tract_fixel_indices;
-      for (MR::DWI::Tractography::Mapping::SetVoxelDir::const_iterator i = in.begin(); i != in.end(); ++i) {
-        Image::Nav::set_pos (fixel_indexer, *i);
-        fixel_indexer[3] = 0;
-        int32_t first_index = fixel_indexer.value();
-        if (first_index >= 0) {
-          fixel_indexer[3] = 1;
-          int32_t last_index = first_index + fixel_indexer.value();
-          int32_t closest_fixel_index = -1;
-          value_type largest_dp = 0.0;
-          Point<value_type> dir (i->get_dir());
-          dir.normalise();
-          for (int32_t j = first_index; j < last_index; ++j) {
-            value_type dp = Math::abs (dir.dot (fixel_directions[j]));
-            if (dp > largest_dp) {
-              largest_dp = dp;
-              closest_fixel_index = j;
-            }
-          }
-          if (largest_dp > angular_threshold_dp) {
-            tract_fixel_indices.push_back (closest_fixel_index);
-            fixel_TDI[closest_fixel_index]++;
-          }
-        }
-      }
-
-      for (size_t i = 0; i < tract_fixel_indices.size(); i++) {
-        for (size_t j = i + 1; j < tract_fixel_indices.size(); j++) {
-          fixel_connectivity[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
-          fixel_connectivity[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
-        }
-      }
-      return true;
-    }
-
-  private:
-    Image::BufferScratch<int32_t>::voxel_type fixel_indexer;
-    const std::vector<Point<value_type> >& fixel_directions;
-    std::vector<uint16_t>& fixel_TDI;
-    std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity;
-    value_type angular_threshold_dp;
-};
 
 
 
@@ -224,7 +160,7 @@ void run ()
       DWI::Tractography::Mapping::TrackMapperBase mapper (index_header);
       mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
       mapper.set_use_precise_mapping (true);
-      TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold );
+      Stats::CFE::TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold );
       Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
     }
 
@@ -257,7 +193,7 @@ void run ()
       while (it != fixel_connectivity[fixel].end()) {
         Stats::CFE::connectivity weighted_connectivity;
         float C = 0.75;
-        weighted_connectivity.value = Math::pow (it->second.value , C);
+        weighted_connectivity.value = std::pow (it->second.value , C);
         weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (it->first, weighted_connectivity));
         ++it;
       }
@@ -270,15 +206,15 @@ void run ()
       const value_type gaussian_const2 = 2.0 * stdev * stdev;
       value_type gaussian_const1 = 1.0;
 
-        gaussian_const1 = 1.0 / (stdev *  Math::sqrt (2.0 * M_PI));
+        gaussian_const1 = 1.0 / (stdev *  std::sqrt (2.0 * M_PI));
         for (int32_t f = 0; f < num_fixels; ++f) {
           std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[f].begin();
           while (it != fixel_connectivity[f].end()) {
             value_type connectivity = it->second.value;
-            value_type distance = Math::sqrt (Math::pow2 (fixel_positions[f][0] - fixel_positions[it->first][0]) +
+            value_type distance = std::sqrt (Math::pow2 (fixel_positions[f][0] - fixel_positions[it->first][0]) +
                                               Math::pow2 (fixel_positions[f][1] - fixel_positions[it->first][1]) +
                                               Math::pow2 (fixel_positions[f][2] - fixel_positions[it->first][2]));
-            value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
+            value_type weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
             if (weight > connectivity_threshold)
               fixel_smoothing_weights[f].insert (std::pair<int32_t, value_type> (it->first, weight));
              ++it;

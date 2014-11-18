@@ -38,7 +38,7 @@
 #include "dwi/tractography/mapping/writer.h"
 #include "math/stats/permutation.h"
 #include "math/stats/glm.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 #include <sys/stat.h>
@@ -105,44 +105,25 @@ void usage ()
 typedef float value_type;
 
 
-void write_fixel_output (const std::string filename,
-                         const Math::Vector<value_type> data,
+template <class VectorType>
+void write_fixel_output (const std::string& filename,
+                         const VectorType data,
                          const Image::Header& header,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
-  Image::BufferSparse<FixelMetric> output_buffer (filename, header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+  Image::BufferSparse<FixelMetric> output (filename, header);
+  auto output_voxel = output.voxel();
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
     output_voxel.value().set_size (mask_vox.value().size());
     indexer_vox[3] = 0;
     int32_t index = indexer_vox.value();
     for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
-      output_voxel.value()[f] = mask_vox.value()[f];
-      output_voxel.value()[f].value = data[index];
+     output_voxel.value()[f] = mask_vox.value()[f];
+     output_voxel.value()[f].value = data[index];
     }
   }
 }
-
-void write_fixel_output (const std::string filename,
-                         const std::vector<value_type> data,
-                         const Image::Header& header,
-                         Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
-                         Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
-  Image::BufferSparse<FixelMetric> output_buffer (filename, header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
-  Image::LoopInOrder loop (mask_vox);
-  for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
-    output_voxel.value().set_size (mask_vox.value().size());
-    indexer_vox[3] = 0;
-    int32_t index = indexer_vox.value();
-    for (size_t f = 0; f != mask_vox.value().size(); ++f, ++index) {
-      output_voxel.value()[f] = mask_vox.value()[f];
-      output_voxel.value()[f].value = data[index];
-    }
-  }
-}
-
 
 class PermutationStack {
   public:
@@ -160,7 +141,7 @@ class PermutationStack {
     }
 
     size_t next () {
-      Thread::Mutex::Lock lock (permutation_mutex);
+      std::lock_guard<std::mutex> lock (permutation_mutex);
       size_t index = current_permutation++;
       if (index < permutations.size())
         ++progress;
@@ -176,7 +157,7 @@ class PermutationStack {
     size_t current_permutation;
     ProgressBar progress;
     std::vector <std::vector<size_t> > permutations;
-    Thread::Mutex permutation_mutex;
+    std::mutex permutation_mutex;
 };
 
 
@@ -202,7 +183,7 @@ class Stack {
       index (0) {}
 
     size_t next () {
-      Thread::Mutex::Lock lock (permutation_mutex);
+      std::lock_guard<std::mutex> lock (permutation_mutex);
       if (index < num_noise_realisation)
         ++progress;
       return index++;
@@ -213,7 +194,7 @@ class Stack {
   protected:
     ProgressBar progress;
     size_t index;
-    Thread::Mutex permutation_mutex;
+    std::mutex permutation_mutex;
 };
 
 
@@ -276,7 +257,7 @@ class Processor {
     void write_fixel_output (const std::string filename,
                              const std::vector<value_type>& data) {
       Image::BufferSparse<FixelMetric> output_buffer (filename, input_header);
-      Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output_buffer);
+      auto output_voxel = output_buffer.voxel();
       Image::LoopInOrder loop (template_vox);
       Image::check_dimensions (output_voxel, template_vox);
       for (loop.start (template_vox, indexer_vox, output_voxel); loop.ok(); loop.next (template_vox, indexer_vox, output_voxel)) {
@@ -419,7 +400,7 @@ void run ()
 
   Image::Header input_header (argument[1]);
   Image::BufferSparse<FixelMetric> mask (input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type mask_vox (mask);
+  auto mask_vox = mask.voxel();
 
   // Create a image to store fixel indices of a 1D vector
   Image::Header index_header (input_header);
@@ -427,7 +408,7 @@ void run ()
   index_header.dim(3) = 2;
   index_header.datatype() = DataType::Int32;
   Image::BufferScratch<int32_t> indexer (index_header);
-  Image::BufferScratch<int32_t>::voxel_type indexer_vox (indexer);
+  auto indexer_vox = indexer.voxel();
   Image::LoopInOrder loop4D (indexer_vox);
   for (loop4D.start (indexer_vox); loop4D.ok(); loop4D.next (indexer_vox))
     indexer_vox.value() = -1;
@@ -441,7 +422,7 @@ void run ()
   int32_t actual_positives = 0;
 
   Image::BufferSparse<FixelMetric> template_buffer (argument[1]);
-  Image::BufferSparse<FixelMetric>::voxel_type template_vox (template_buffer);
+  auto template_vox = template_buffer.voxel();
 
   Image::Transform transform (template_vox);
   Image::LoopInOrder loop (template_vox);
@@ -487,7 +468,7 @@ void run ()
   { // Normalise connectivity matrix and threshold
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-      std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+      auto it = fixel_connectivity[fixel].begin();
       while (it != fixel_connectivity[fixel].end()) {
        value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
        if (connectivity < connectivity_threshold)  {
@@ -512,7 +493,7 @@ void run ()
     ProgressBar progress ("loading input images...", num_subjects);
     for (size_t subject = 0; subject < num_subjects; subject++) {
       Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
-      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
+      auto fixel_vox = fixel.voxel();
       Image::check_dimensions (fixel, template_vox, 0, 3);
 
       for (loop.start (fixel_vox, indexer_vox); loop.ok(); loop.next (fixel_vox, indexer_vox)) {
@@ -526,7 +507,7 @@ void run ()
            value_type largest_dp = 0.0;
            int index_of_closest_fixel = -1;
            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-             value_type dp = Math::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
+             value_type dp = std::abs (fixel_directions[i].dot(fixel_vox.value()[f].dir));
              if (dp > largest_dp) {
                largest_dp = dp;
                index_of_closest_fixel = f;
@@ -559,15 +540,15 @@ void run ()
         std::vector<std::map<int32_t, value_type> > fixel_smoothing_weights (num_fixels);
         float stdev = smooth[s] / 2.3548;
         const value_type gaussian_const2 = 2.0 * stdev * stdev;
-        value_type gaussian_const1 = 1.0 / (stdev *  Math::sqrt (2.0 * M_PI));
+        value_type gaussian_const1 = 1.0 / (stdev *  std::sqrt (2.0 * M_PI));
         for (int32_t f = 0; f < num_fixels; ++f) {
-          std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[f].begin();
+          auto it = fixel_connectivity[f].begin();
           while (it != fixel_connectivity[f].end()) {
             value_type connectivity = it->second.value;
-            value_type distance = Math::sqrt (Math::pow2 (fixel_positions[f][0] - fixel_positions[it->first][0]) +
-                                              Math::pow2 (fixel_positions[f][1] - fixel_positions[it->first][1]) +
-                                              Math::pow2 (fixel_positions[f][2] - fixel_positions[it->first][2]));
-            value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
+            value_type distance = std::sqrt (std::pow (fixel_positions[f][0] - fixel_positions[it->first][0], 2) +
+                                             std::pow (fixel_positions[f][1] - fixel_positions[it->first][1], 2) +
+                                             std::pow (fixel_positions[f][2] - fixel_positions[it->first][2], 2));
+            value_type weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
             if (weight > connectivity_threshold)
               fixel_smoothing_weights[f].insert (std::pair<int32_t, value_type> (it->first, weight));
             ++it;
@@ -577,11 +558,11 @@ void run ()
         if (smooth[s] > 0.0) {
           for (int32_t i = 0; i < num_fixels; ++i) {
             value_type sum = 0.0;
-            for (std::map<int32_t, value_type>::iterator it = fixel_smoothing_weights[i].begin();
+            for (auto it = fixel_smoothing_weights[i].begin();
                  it != fixel_smoothing_weights[i].end(); ++it)
               sum += it->second;
             value_type norm_factor = 1.0 / sum;
-            for (std::map<int32_t, value_type>::iterator it = fixel_smoothing_weights[i].begin();
+            for (auto it = fixel_smoothing_weights[i].begin();
                    it != fixel_smoothing_weights[i].end(); ++it)
               it->second *= norm_factor;
           }
@@ -590,7 +571,7 @@ void run ()
         // Smooth healthy and pathology data for each subject
         for (size_t subject = 0; subject < num_subjects; ++subject) {
           for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-            std::map<int32_t, value_type>::const_iterator it = fixel_smoothing_weights[fixel].begin();
+            auto it = fixel_smoothing_weights[fixel].begin();
             for (; it != fixel_smoothing_weights[fixel].end(); ++it) {
               input_control_data (fixel, subject) += control_data (it->first, subject) * it->second;
               input_path_data (fixel, subject) += path_data (it->first, subject) * it->second;
@@ -677,10 +658,10 @@ void run ()
         // Here we pre-exponentiate each connectivity value to speed up the CFE
         std::vector<std::map<int32_t, Stats::CFE::connectivity> > weighted_fixel_connectivity (num_fixels);
         for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-          std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+          auto it = fixel_connectivity[fixel].begin();
           while (it != fixel_connectivity[fixel].end()) {
             Stats::CFE::connectivity weighted_connectivity;
-            weighted_connectivity.value = Math::pow (it->second.value , C[c]);
+            weighted_connectivity.value = std::pow (it->second.value , C[c]);
             weighted_fixel_connectivity[fixel].insert (std::pair<int32_t, Stats::CFE::connectivity> (it->first, weighted_connectivity));
             ++it;
           }
@@ -717,9 +698,7 @@ void run ()
                                      max_statistics, template_buffer, indexer, TPRates,
                                      num_permutations_with_a_false_positive,
                                      input_header, template_vox, indexer_vox, weighted_fixel_connectivity, dh, E[e], H[h]);
-
-                Thread::Array< Processor > thread_list (processor);
-                Thread::Exec threads (thread_list, "threads");
+                auto threads = Thread::run (Thread::multi (processor), "threads");
               }
 
 

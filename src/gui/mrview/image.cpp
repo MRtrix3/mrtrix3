@@ -246,7 +246,7 @@ namespace MR
               for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
                 for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
                   cfloat val = vox.value();
-                  float mag = Math::abs (val.real());
+                  float mag = std::abs (val.real());
                   data[3*(vox[x]+vox[y]*xdim) + n] = mag;
                   if (std::isfinite (mag)) {
                     if (mag < value_min) value_min = mag;
@@ -328,7 +328,7 @@ namespace MR
 
         update_levels();
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (std::isnan (display_midpoint) || std::isnan (display_range))
           reset_windowing();
 
         gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
@@ -451,7 +451,7 @@ namespace MR
 
         update_levels();
 
-        if (isnan (display_midpoint) || isnan (display_range))
+        if (std::isnan (display_midpoint) || std::isnan (display_range))
           reset_windowing();
 
       }
@@ -499,7 +499,7 @@ namespace MR
         inline void Image::copy_texture_3D (GLenum format)
       {
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
-        typename MR::Image::Buffer<ValueType>::voxel_type V (buffer_tmp);
+        auto V = buffer_tmp.voxel();
         GLenum type = GLtype<ValueType>();
         int N = ( format == gl::RED ? 1 : 3 );
         Ptr<ValueType,true> data (new ValueType [N * V.dim(0) * V.dim(1)]);
@@ -539,7 +539,7 @@ namespace MR
               ValueType* p = data + n;
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-                  ValueType val = *p = Math::abs (ValueType (V.value()));
+                  ValueType val = *p = std::abs (ValueType (V.value()));
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
@@ -571,7 +571,7 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        MR::Image::Buffer<cfloat>::voxel_type V (buffer);
+        auto V = buffer.voxel();
         Ptr<float,true> data (new float [2 * V.dim (0) * V.dim (1)]);
 
         ProgressBar progress ("loading image data...", V.dim (2));

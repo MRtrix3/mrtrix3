@@ -1,4 +1,5 @@
 #include "dwi/tractography/SIFT/sift.h"
+#include "math/math.h"
 
 namespace MR {
 namespace DWI {
@@ -26,7 +27,7 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
 
   + Option ("FOD_int_thresh", "FOD integral threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
                               "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
-    + Argument ("value").type_float (0.0, 0.0, 2.0 * M_PI);
+    + Argument ("value").type_float (0.0, 0.0, 2.0 * Math::pi);
 
 
 

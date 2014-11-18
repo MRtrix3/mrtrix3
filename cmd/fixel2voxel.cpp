@@ -69,7 +69,7 @@ void run ()
 {
   Image::Header H_in (argument[0]);
   Image::BufferSparse<FixelMetric> fixel_data (H_in);
-  Image::BufferSparse<FixelMetric>::voxel_type voxel (fixel_data);
+  auto voxel = fixel_data.voxel();
 
   const int op = argument[1];
 
@@ -91,10 +91,11 @@ void run ()
   }
 
   Image::Buffer<float> out_data (argument[2], H_out);
-  Image::Buffer<float>::voxel_type out (out_data);
+
+  auto out = out_data.voxel();
 
   Image::LoopInOrder loop (voxel, "converting sparse fixel data to scalar image... ");
-  for (loop.start (voxel, out); loop.ok(); loop.next (voxel, out)) {
+  for (auto i = loop (voxel, out); i; ++i) {
     switch (op) {
       case 0: // sum
         {
@@ -106,7 +107,7 @@ void run ()
         break;
       case 1: // count
         out.value() = voxel.value().size();
-        break; 
+        break;
       case 2: // split
         for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
           if (out[3] < voxel.value().size())

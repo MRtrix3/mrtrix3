@@ -137,7 +137,7 @@ void run ()
           float largest_dp = 0.0;
           int32_t closest_fixel_index = -1;
           for (size_t f = 0; f != input_fixel.value().size(); ++f) {
-            float dp = Math::abs (dir.dot (input_fixel.value()[f].dir));
+            float dp = std::abs (dir.dot (input_fixel.value()[f].dir));
             if (dp > largest_dp) {
               largest_dp = dp;
               closest_fixel_index = f;

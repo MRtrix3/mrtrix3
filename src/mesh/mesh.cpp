@@ -92,7 +92,7 @@ namespace MR
       // Create some memory to work with:
       // Stores a flag for each voxel as encoded in enum vox_mesh_t
       Image::BufferScratch<uint8_t> init_seg_data (H);
-      Image::BufferScratch<uint8_t>::voxel_type init_seg (init_seg_data);
+      auto init_seg  = init_seg_data.voxel();
 
       // For every voxel, stores those polygons that may intersect the voxel
       typedef std::map< Point<int>, std::vector<size_t> > Vox2Poly;
@@ -107,7 +107,7 @@ namespace MR
         load_polygon_vertices (this_poly_verts, poly_index);
         for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
           for (size_t axis = 0; axis != 3; ++axis) {
-            const int this_axis_voxel = Math::round((*v)[axis]);
+            const int this_axis_voxel = std::round((*v)[axis]);
             lower_bound[axis] = std::min (lower_bound[axis], this_axis_voxel);
             upper_bound[axis] = std::max (upper_bound[axis], this_axis_voxel);
           }
@@ -185,7 +185,7 @@ namespace MR
 
       // Find those voxels that remain unassigned, and set them to INSIDE
       Image::Loop loop;
-      for (loop.start (init_seg); loop.ok(); loop.next (init_seg)) {
+      for (auto l = loop (init_seg); l; ++l) {
         if (init_seg.value() == vox_mesh_t (UNDEFINED))
           init_seg.value() = vox_mesh_t (INSIDE);
       }
@@ -194,9 +194,9 @@ namespace MR
 
       // Generate the initial estimated PVE image
       Image::BufferScratch<float> pve_est_data (H);
-      Image::BufferScratch<float>::voxel_type pve_est (pve_est_data);
+      auto pve_est = pve_est_data.voxel();
 
-      for (loop.start (init_seg, pve_est); loop.ok(); loop.next (init_seg, pve_est)) {
+      for (auto l = loop (init_seg, pve_est); l; ++l) {
         switch (init_seg.value()) {
           case vox_mesh_t (UNDEFINED):   throw Exception ("Code error: poor filling of initial mesh estimate"); break;
           case vox_mesh_t (ON_MESH):     pve_est.value() = 0.5; break;
@@ -405,7 +405,7 @@ namespace MR
     {
 
       for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-        if (isnan ((*i)[0]) || isnan ((*i)[1]) || isnan ((*i)[2]))
+        if (std::isnan ((*i)[0]) || std::isnan ((*i)[1]) || std::isnan ((*i)[2]))
           throw Exception ("NaN values in mesh vertex data");
       }
 

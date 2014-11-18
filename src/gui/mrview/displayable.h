@@ -99,7 +99,7 @@ namespace MR
 
           void adjust_windowing (float brightness, float contrast) {
             display_midpoint -= 0.0005f * display_range * brightness;
-            display_range *= Math::exp (-0.002f * contrast);
+            display_range *= std::exp (-0.002f * contrast);
             emit scalingChanged();
           }
 

@@ -165,7 +165,7 @@ void run() {
   // Load Mask
   Image::Header header (argument[3]);
   Image::Buffer<value_type> mask_data (header);
-  Image::Buffer<value_type>::voxel_type mask_vox (mask_data);
+  auto mask_vox = mask_data.voxel();
 
   Image::Filter::Connector connector (do_26_connectivity);
   std::vector<std::vector<int> > mask_indices = connector.precompute_adjacency (mask_vox);
@@ -179,9 +179,9 @@ void run() {
     ProgressBar progress("loading images...", subjects.size());
     for (size_t subject = 0; subject < subjects.size(); subject++) {
       LogLevelLatch log_level (0);
-      Image::BufferPreload<value_type> fod_data (subjects[subject], Image::Stride::contiguous_along_axis (3));
-      Image::check_dimensions (fod_data, mask_vox, 0, 3);
-      Image::BufferPreload<value_type>::voxel_type input_vox (fod_data);
+      Image::BufferPreload<value_type> input_buffer (subjects[subject], Image::Stride::contiguous_along_axis (3));
+      Image::check_dimensions (input_buffer, mask_vox, 0, 3);
+      auto input_vox = input_buffer.voxel();
       int index = 0;
       std::vector<std::vector<int> >::iterator it;
       for (it = mask_indices.begin(); it != mask_indices.end(); ++it) {

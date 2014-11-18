@@ -25,7 +25,6 @@
 
 #include "math/vector.h"
 #include "math/stats/permutation.h"
-#include "thread/queue.h"
 
 namespace MR
 {
@@ -48,7 +47,7 @@ namespace MR
             }
 
           size_t next () {
-            Thread::Mutex::Lock lock (permutation_mutex);
+            std::lock_guard<std::mutex> lock (permutation_mutex);
             size_t index = current_permutation++;
             if (index < permutations.size())
               ++progress;
@@ -64,7 +63,7 @@ namespace MR
           size_t current_permutation;
           ProgressBar progress;
           std::vector <std::vector<size_t> > permutations;
-          Thread::Mutex permutation_mutex;
+          std::mutex permutation_mutex;
       };
 
 
@@ -240,8 +239,7 @@ namespace MR
             {
               PreProcessor<StatsType, EnhancementType> preprocessor (preprocessor_permutations, stats_calculator, enhancer,
                                                                      empirical_statistic, global_enhanced_count);
-              Thread::Array< PreProcessor<StatsType, EnhancementType> > preprocessor_thread_list (preprocessor);
-              Thread::Exec preprocessor_threads (preprocessor_thread_list, "preprocessor threads");
+              auto preprocessor_threads = Thread::run (Thread::multi (preprocessor), "preprocessor threads");
             }
             for (size_t i = 0; i < empirical_statistic.size(); ++i) {
               if (global_enhanced_count[i] > 0)
@@ -313,8 +311,7 @@ namespace MR
                                                                default_enhanced_statistics, default_enhanced_statistics_neg,
                                                                perm_dist_pos, perm_dist_neg,
                                                                global_uncorrected_pvalue_count, global_uncorrected_pvalue_count_neg);
-              Thread::Array< Processor<StatsType, EnhancementType> > thread_list (processor);
-              Thread::Exec threads (thread_list, "permutation threads");
+              auto threads = Thread::run (Thread::multi (processor), "permutation threads");
             }
 
             for (size_t i = 0; i < stats_calculator.num_elements(); ++i) {

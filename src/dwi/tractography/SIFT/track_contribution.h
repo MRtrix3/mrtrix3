@@ -49,7 +49,7 @@ namespace MR
       {
         public:
           Track_fixel_contribution (const uint32_t fixel_index, const float length) {
-            const uint32_t length_as_int = std::min (uint32_t(255), uint32_t(Math::round (scale_to_storage * length)));
+            const uint32_t length_as_int = std::min (uint32_t(255), uint32_t(std::round (scale_to_storage * length)));
             data = (fixel_index & 0x00FFFFFF) | (length_as_int << 24);
           }
 
@@ -64,7 +64,7 @@ namespace MR
           {
             // Allow summing of multiple contributions to a fixel, UNLESS it would cause truncation, in which
             //   case keep them separate
-            const uint32_t increment = Math::round (scale_to_storage * length);
+            const uint32_t increment = std::round (scale_to_storage * length);
             const uint32_t existing = (data & 0xFF000000) >> 24;
             if (existing + increment > 255)
               return false;
@@ -75,7 +75,7 @@ namespace MR
 
           static void set_scaling (const Image::Info& in)
           {
-            const float max_length = Math::sqrt (Math::pow2 (in.vox(0)) + Math::pow2 (in.vox(1)) + Math::pow2 (in.vox(2)));
+            const float max_length = std::sqrt (Math::pow2 (in.vox(0)) + Math::pow2 (in.vox(1)) + Math::pow2 (in.vox(2)));
             // TODO Newer mapping performs chordal approximation of length
             // Should technically take this into account when setting scaling
             scale_to_storage = 255.0 / max_length;

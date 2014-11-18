@@ -59,7 +59,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return Math::round<int> (image()->interp.scanner2voxel (focus())[anatomical_plane]);
+              return std::round (image()->interp.scanner2voxel (focus())[anatomical_plane]);
           }
 
           Mode::Base* get_current_mode () const { return mode; }

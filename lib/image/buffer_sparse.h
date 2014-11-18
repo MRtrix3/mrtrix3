@@ -70,6 +70,7 @@ namespace MR
         typedef SparseDataType sparse_data_type;
         typedef Image::Sparse::Voxel<sparse_data_type> voxel_type;
 
+        voxel_type voxel() { return voxel_type (*this); }
 
 
       protected:

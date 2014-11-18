@@ -365,9 +365,9 @@ namespace MR
             pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
             if (overlay_lock_to_grid_box->isChecked()) {
               Point<> p = image.interp.scanner2voxel (pos);
-              p[0] = Math::round (p[0]);
-              p[1] = Math::round (p[1]);
-              p[2] = Math::round (p[2]);
+              p[0] = std::round (p[0]);
+              p[1] = std::round (p[1]);
+              p[2] = std::round (p[2]);
               pos = image.interp.voxel2scanner (p);
             }
 
@@ -388,9 +388,9 @@ namespace MR
             y_dir = image.interp.image2scanner_dir (y_dir);
 
             Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
-            int nx = Math::ceil (x_width.norm() / x_dir.norm());
+            int nx = std::ceil (x_width.norm() / x_dir.norm());
             Point<> y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
-            int ny = Math::ceil (y_width.norm() / y_dir.norm());
+            int ny = std::ceil (y_width.norm() / y_dir.norm());
 
             Math::Vector<float> values (Math::SH::NforL (settings->lmax));
             Math::Vector<float> r_del_daz;
@@ -455,9 +455,9 @@ namespace MR
         {
           Point<> p = image.interp.scanner2voxel (pos);
           if (!interpolation_box->isChecked()) {
-            p[0] = Math::round (p[0]);
-            p[1] = Math::round (p[1]);
-            p[2] = Math::round (p[2]);
+            p[0] = std::round (p[0]);
+            p[1] = std::round (p[1]);
+            p[2] = std::round (p[2]);
           }
           image.interp.voxel (p);
           values.zero();

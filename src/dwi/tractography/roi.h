@@ -59,7 +59,7 @@ namespace MR
               Image::BufferScratch<bool> (info, description),
               transform (this->info())
           {
-            Image::BufferScratch<bool>::voxel_type this_vox (*this);
+            auto this_vox = voxel();
             Image::copy (D, this_vox);
           }
           Image::Transform transform;
@@ -93,31 +93,31 @@ namespace MR
           std::string shape () const { return (mask ? "image" : "sphere"); }
 
           std::string parameters () const {
-            return (mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius));
+            return mask ? mask->name() : str(pos[0]) + "," + str(pos[1]) + "," + str(pos[2]) + "," + str(radius);
           }
 
           bool contains (const Point<>& p) const
           {
 
             if (mask) {
-              Mask::voxel_type voxel (*mask);
+              auto vox = mask->voxel();
               Point<> v = mask->transform.scanner2voxel (p);
-              voxel[0] = Math::round (v[0]);
-              voxel[1] = Math::round (v[1]);
-              voxel[2] = Math::round (v[2]);
-              if (!Image::Nav::within_bounds (voxel))
+              vox[0] = std::round (v[0]);
+              vox[1] = std::round (v[1]);
+              vox[2] = std::round (v[2]);
+              if (!Image::Nav::within_bounds (vox))
                 return false;
-              return (voxel.value());
+              return vox.value();
             }
 
-            return ((pos-p).norm2() <= radius2);
+            return (pos-p).norm2() <= radius2;
 
           }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const ROI& roi)
           {
             stream << roi.shape() << " (" << roi.parameters() << ")";
-            return (stream);
+            return stream;
           }
 
 
@@ -145,7 +145,7 @@ namespace MR
           bool contains (const Point<>& p) const {
             for (size_t n = 0; n < R.size(); ++n)
               if (R[n].contains (p)) return (true);
-            return (false);
+            return false;
           }
 
           void contains (const Point<>& p, std::vector<bool>& retval) const {
@@ -159,7 +159,7 @@ namespace MR
             stream << *i;
             ++i;
             for (; i != R.R.end(); ++i) stream << ", " << *i;
-            return (stream); 
+            return stream; 
           }
 
         private:

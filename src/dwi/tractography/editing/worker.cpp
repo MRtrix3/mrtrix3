@@ -178,7 +178,7 @@ namespace MR {
             throw Exception ("Cannot apply length threshold; step size information is incomplete");
 
           if (maxlength)
-            max_num_points = Math::round (maxlength / step_size) + 1;
+            max_num_points = std::round (maxlength / step_size) + 1;
           if (minlength)
             min_num_points = std::max (2, round (minlength/step_size) + 1);
 

@@ -78,8 +78,8 @@ namespace MR
       }
 
       Point<> F = model_to_screen (focus);
-      F[0] = Math::round (F[0] - x_position()) - 0.5f;
-      F[1] = Math::round (F[1] - y_position()) + 0.5f;
+      F[0] = std::round (F[0] - x_position()) - 0.5f;
+      F[1] = std::round (F[1] - y_position()) + 0.5f;
 
       F[0] = 2.0f * F[0] / width() - 1.0f;
       F[1] = 2.0f * F[1] / height() - 1.0f;
@@ -118,9 +118,9 @@ namespace MR
       std::sort (labels.begin(), labels.end());
       for (size_t i = 2; i < labels.size(); ++i) {
         float pos[] = { labels[i].dir[0], labels[i].dir[1] };
-        float dist = std::min (width()/Math::abs (pos[0]), height()/Math::abs (pos[1])) / 2.0;
-        int x = Math::round (width() /2.0 + pos[0]*dist);
-        int y = Math::round (height() /2.0 + pos[1]*dist);
+        float dist = std::min (width()/std::abs (pos[0]), height()/std::abs (pos[1])) / 2.0;
+        int x = std::round (width() /2.0 + pos[0]*dist);
+        int y = std::round (height() /2.0 + pos[1]*dist);
         render_text_inset (x, y, std::string (labels[i].label));
       }
       done_render_text();

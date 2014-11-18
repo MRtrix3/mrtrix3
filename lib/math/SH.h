@@ -65,28 +65,28 @@ namespace MR
 
       inline size_t LforN (int N)
       {
-        return N ? 2 * floor<size_t> ( (sqrt (float (1+8*N))-3.0) /4.0) : 0;
+        return N ? 2 * std::floor<size_t> ( (std::sqrt (float (1+8*N))-3.0) /4.0) : 0;
       }
 
       template <typename ValueType>
-        Math::Matrix<ValueType>& init_transform (Math::Matrix<ValueType>& SHT, const Math::Matrix<ValueType>& dirs, int lmax)
+        Matrix<ValueType>& init_transform (Matrix<ValueType>& SHT, const Matrix<ValueType>& dirs, int lmax)
         {
           if (dirs.columns() != 2) throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
           SHT.allocate (dirs.rows(), NforL (lmax));
           VLA_MAX (AL, ValueType, lmax+1, 64);
           for (size_t i = 0; i < dirs.rows(); i++) {
-            ValueType x = cos (dirs (i,1));
+            ValueType x = std::cos (dirs (i,1));
             Legendre::Plm_sph (AL, lmax, 0, x);
             for (int l = 0; l <= lmax; l+=2) SHT (i,index (l,0)) = AL[l];
             for (int m = 1; m <= lmax; m++) {
               Legendre::Plm_sph (AL, lmax, m, x);
               for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-                SHT (i,index (l, m)) = M_SQRT2 * AL[l]*cos (m*dirs (i,0));
-                SHT (i,index (l,-m)) = M_SQRT2 * AL[l]*sin (m*dirs (i,0));
+                SHT (i,index (l, m)) = Math::sqrt2 * AL[l]*std::cos (m*dirs (i,0));
+                SHT (i,index (l,-m)) = Math::sqrt2 * AL[l]*std::sin (m*dirs (i,0));
 #else
-                SHT (i,index (l, m)) = AL[l]*cos (m*dirs (i,0));
-                SHT (i,index (l,-m)) = AL[l]*sin (m*dirs (i,0));
+                SHT (i,index (l, m)) = AL[l]*std::cos (m*dirs (i,0));
+                SHT (i,index (l,-m)) = AL[l]*std::sin (m*dirs (i,0));
 #endif
               }
             }
@@ -96,9 +96,9 @@ namespace MR
 
 
       template <typename ValueType>
-        Math::Matrix<ValueType> init_transform (const Math::Matrix<ValueType>& dirs, int lmax)
+        Matrix<ValueType> init_transform (const Matrix<ValueType>& dirs, int lmax)
         {
-          Math::Matrix<ValueType> SHT;
+          Matrix<ValueType> SHT;
           init_transform (SHT, dirs, lmax);
           return SHT;
         }
@@ -107,13 +107,13 @@ namespace MR
 
 
       template <typename ValueType>
-        void scale_degrees_forward (Math::Matrix<ValueType>& SH2amp_mapping, const Math::Vector<ValueType>& coefs) 
+        void scale_degrees_forward (Matrix<ValueType>& SH2amp_mapping, const Vector<ValueType>& coefs) 
         {
           size_t l = 0, nl = 1;
           for (size_t col = 0; col < SH2amp_mapping.columns(); ++col) {
             if (col >= nl) {
               l++;
-              nl = Math::SH::NforL (2*l);
+              nl = NforL (2*l);
             }
             SH2amp_mapping.column(col) *= coefs[l];
           }
@@ -122,22 +122,22 @@ namespace MR
 
 
       template <typename ValueType>
-        void scale_degrees_inverse (Math::Matrix<ValueType>& amp2SH_mapping, const Math::Vector<ValueType>& coefs) 
+        void scale_degrees_inverse (Matrix<ValueType>& amp2SH_mapping, const Vector<ValueType>& coefs) 
         {
           size_t l = 0, nl = 1;
           for (size_t row = 0; row < amp2SH_mapping.rows(); ++row) {
             if (row >= nl) {
               l++;
-              nl = Math::SH::NforL (2*l);
+              nl = NforL (2*l);
             }
             amp2SH_mapping.row(row) *= coefs[l];
           }
         }
 
       template <typename ValueType>
-        Math::Vector<ValueType> invert (const Math::Vector<ValueType>& coefs)
+        Vector<ValueType> invert (const Vector<ValueType>& coefs)
         {
-          Math::Vector<ValueType> ret (coefs.size());
+          Vector<ValueType> ret (coefs.size());
           for (size_t n = 0; n < coefs.size(); ++n)
             ret[n] = ( coefs[n] ? 1.0 / coefs[n] : 0.0 );
           return ret;
@@ -147,19 +147,19 @@ namespace MR
       template <typename ValueType>
         class Transform {
           public:
-            Transform (const Math::Matrix<ValueType>& dirs, int lmax) :
+            Transform (const Matrix<ValueType>& dirs, int lmax) :
               SHT (init_transform (dirs, lmax)), 
-              iSHT (Math::pinv (SHT)) { }
+              iSHT (pinv (SHT)) { }
 
-            void set_filter (const Math::Vector<ValueType>& filter) {
+            void set_filter (const Vector<ValueType>& filter) {
               scale_degrees_forward (SHT, invert (filter));
               scale_degrees_inverse (iSHT, filter);
             }
-            void A2SH (Math::Vector<ValueType>& SH, const Math::Vector<ValueType>& amplitudes) const {
-              Math::mult (SH, iSHT, amplitudes);
+            void A2SH (Vector<ValueType>& sh, const Vector<ValueType>& amplitudes) const {
+              mult (sh, iSHT, amplitudes);
             }
-            void SH2A (Math::Vector<ValueType>& amplitudes, const Math::Vector<ValueType>& SH) const {
-              Math::mult (amplitudes, SHT, SH);
+            void SH2A (Vector<ValueType>& amplitudes, const Vector<ValueType>& sh) const {
+              mult (amplitudes, SHT, sh);
             }
 
             size_t n_SH () const {
@@ -169,15 +169,15 @@ namespace MR
               return SHT.rows();
             }
 
-            const Math::Matrix<ValueType>& mat_A2SH () const {
+            const Matrix<ValueType>& mat_A2SH () const {
               return iSHT;
             }
-            const Math::Matrix<ValueType>& mat_SH2A () const {
+            const Matrix<ValueType>& mat_SH2A () const {
               return SHT;
             }
 
           protected:
-            Math::Matrix<ValueType> SHT, iSHT;
+            Matrix<ValueType> SHT, iSHT;
         };
 
 
@@ -193,11 +193,11 @@ namespace MR
           ValueType c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, ValueType (cos_elevation));
-            ValueType c = c0 * cos_azimuth - s0 * sin_azimuth;  // cos(m*azimuth)
-            ValueType s = s0 * cos_azimuth + c0 * sin_azimuth;  // sin(m*azimuth)
+            ValueType c = c0 * cos_azimuth - s0 * sin_azimuth;  // std::cos(m*azimuth)
+            ValueType s = s0 * cos_azimuth + c0 * sin_azimuth;  // std::sin(m*azimuth)
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-              amplitude += AL[l] * M_SQRT2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
+              amplitude += AL[l] * Math::sqrt2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
 #else
               amplitude += AL[l] * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
 #endif
@@ -211,13 +211,13 @@ namespace MR
       template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType& coefs, ValueType cos_elevation, ValueType azimuth, int lmax)
         {
-          return value (coefs, cos_elevation, Math::cos(azimuth), Math::sin(azimuth), lmax);
+          return value (coefs, cos_elevation, std::cos(azimuth), std::sin(azimuth), lmax);
         }
 
       template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType& coefs, const Point<ValueType>& unit_dir, int lmax)
         {
-          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
           ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           return value (coefs, unit_dir[2], cp, sp, lmax);
@@ -226,7 +226,7 @@ namespace MR
       template <typename ValueType, typename CoefType>
         inline ValueType value (const CoefType* coefs, const Point<ValueType>& unit_dir, int lmax)
         {
-          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
           ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           return value (coefs, unit_dir[2], cp, sp, lmax);
@@ -234,10 +234,10 @@ namespace MR
 
 
       template <typename ValueType>
-        inline Math::Vector<ValueType>& delta (Math::Vector<ValueType>& delta_vec, const Point<ValueType>& unit_dir, int lmax)
+        inline Vector<ValueType>& delta (Vector<ValueType>& delta_vec, const Point<ValueType>& unit_dir, int lmax)
         {
           delta_vec.allocate (NforL (lmax));
-          ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+          ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
           ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
           ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           VLA_MAX (AL, ValueType, lmax+1, 64);
@@ -251,8 +251,8 @@ namespace MR
             ValueType s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-              delta_vec[index (l,m)]  = AL[l] * M_SQRT2 * c;
-              delta_vec[index (l,-m)] = AL[l] * M_SQRT2 * s;
+              delta_vec[index (l,m)]  = AL[l] * Math::sqrt2 * c;
+              delta_vec[index (l,-m)] = AL[l] * Math::sqrt2 * s;
 #else
               delta_vec[index (l,m)]  = AL[l] * 2.0 * c;
               delta_vec[index (l,-m)] = AL[l] * 2.0 * s;
@@ -267,71 +267,124 @@ namespace MR
 
 
       template <typename ValueType>
-        inline Math::Vector<ValueType>& SH2RH (Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
+        inline Vector<ValueType>& SH2RH (Vector<ValueType>& RH, const Vector<ValueType>& sh)
         {
-          RH.allocate (SH.size());
-          int lmax = 2*SH.size() +1;
+          RH.allocate (sh.size());
+          int lmax = 2*sh.size() +1;
           VLA_MAX (AL, ValueType, lmax+1, 64);
           Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
-          for (size_t l = 0; l < SH.size(); l++)
-            RH[l] = SH[l]/ AL[2*l];
+          for (size_t l = 0; l < sh.size(); l++)
+            RH[l] = sh[l]/ AL[2*l];
           return RH;
         }
 
       template <typename ValueType>
-        inline Math::Vector<ValueType> SH2RH (const Math::Vector<ValueType>& SH)
+        inline Vector<ValueType> SH2RH (const Vector<ValueType>& sh)
         {
-          Math::Vector<ValueType> RH (SH.size());
-          int lmax = 2*SH.size() +1;
+          Vector<ValueType> RH (sh.size());
+          int lmax = 2*sh.size() +1;
           ValueType AL [lmax+1];
           Legendre::Plm_sph (AL, lmax, 0, ValueType (1.0));
-          for (size_t l = 0; l < SH.size(); l++)
-            RH[l] = SH[l]/ AL[2*l];
+          for (size_t l = 0; l < sh.size(); l++)
+            RH[l] = sh[l]/ AL[2*l];
           return RH;
         }
 
 
 
       template <typename ValueType>
-        inline Math::Vector<ValueType>& sconv (Math::Vector<ValueType>& C, const Math::Vector<ValueType>& RH, const Math::Vector<ValueType>& SH)
+        inline Vector<ValueType>& sconv (Vector<ValueType>& C, const Vector<ValueType>& RH, const Vector<ValueType>& sh)
         {
-          assert (SH.size() >= NforL (2* (RH.size()-1)));
+          assert (sh.size() >= NforL (2* (RH.size()-1)));
           C.allocate (NforL (2* (RH.size()-1)));
           for (int i = 0; i < int (RH.size()); ++i) {
             int l = 2*i;
             for (int m = -l; m <= l; ++m)
-              C[index (l,m)] = RH[i] * SH[index (l,m)];
+              C[index (l,m)] = RH[i] * sh[index (l,m)];
           }
           return C;
         }
 
 
-      template <typename ValueType>
-        Point<ValueType> S2C (ValueType az, ValueType el)
-        {
-          return Point<ValueType> (
-              sin (el) * cos (az),
-              sin (el) * sin (az),
-              cos (el));
-        }
+      namespace {
+        template <typename> struct __dummy { typedef int type; };
+      }
 
-      template <typename ValueType>
-        void S2C (Math::Matrix<ValueType>& az_el, Math::Matrix<ValueType>& cartesian)
+
+      template <class VectorType1, class VectorType2>
+        inline void s2c (const VectorType1& az_el_r, VectorType2&& xyz)
         {
-          cartesian.allocate (az_el.rows(), 3);
-          for (size_t dir = 0; dir < az_el.rows(); ++dir) {
-            cartesian(dir, 0) = sin (az_el (dir, 1)) * cos (az_el (dir, 0));
-            cartesian(dir, 1) = sin (az_el (dir, 1)) * sin (az_el (dir, 0));
-            cartesian(dir, 2) = cos (az_el (dir, 1));
+          if (az_el_r.size() == 3) {
+            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
+          }
+          else {
+            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = cos (az_el_r[1]);
           }
         }
 
 
       template <typename ValueType>
+        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>& cartesian)
+        {
+          cartesian.allocate (az_el.rows(), 3);
+          for (size_t dir = 0; dir < az_el.rows(); ++dir) 
+            s2c (az_el.row (dir), cartesian.row (dir));
+        }
+      template <typename ValueType>
+        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>&& cartesian) {
+          S2C (az_el, cartesian);
+        }
+
+      //! convert matrix of spherical coordinates to cartesian coordinates
+      template <typename ValueType>
+        inline Math::Matrix<ValueType> S2C (const Matrix<ValueType>& az_el)
+        {
+          Math::Matrix<ValueType> tmp;
+          Math::SH::S2C (az_el, tmp);
+          return tmp;
+        }
+
+
+
+      template <class VectorType1, class VectorType2>
+        inline void c2s (const VectorType1& xyz, VectorType2&& az_el_r)
+        {
+          typename std::remove_reference<decltype(az_el_r[0])>::type r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
+          az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
+          az_el_r[1] = std::acos (xyz[2] / r);
+          if (az_el_r.size() == 3) 
+            az_el_r[2] = r;
+        }
+
+      template <typename ValueType>
+        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>& az_el, bool include_r = false)
+        {
+          az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
+          for (size_t dir = 0; dir < cartesian.rows(); ++dir) 
+            c2s (cartesian.row (dir), az_el.row (dir));
+        }
+      template <typename ValueType>
+        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>&& az_el, bool include_r = false) {
+          C2S (cartesian, az_el, include_r);
+        }
+
+      template <typename ValueType>
+        inline Math::Matrix<ValueType> C2S (const Matrix<ValueType>& cartesian, bool include_r = false)
+        {
+          Math::Matrix<ValueType> az_el;
+          Math::SH::C2S (cartesian, az_el, include_r);
+          return az_el;
+        }
+
+      template <typename ValueType>
         class Rotate
         {
           public:
-            Rotate (Point<ValueType>& axis, ValueType angle, int l_max, const Math::Matrix<ValueType>& directions) :
+            Rotate (Point<ValueType>& axis, ValueType angle, int l_max, const Matrix<ValueType>& directions) :
               lmax (l_max) {
                 Versor<ValueType> Q (angle, axis);
                 ValueType rotation_data [9];
@@ -343,7 +396,8 @@ namespace MR
                 Matrix<ValueType> D_rot (nSH, directions.rows());
                 for (size_t i = 0; i < directions.rows(); ++i) {
                   Vector<ValueType> V (D.column (i));
-                  Point<ValueType> dir = S2C (directions (i,0), directions (i,1));
+                  Point<ValueType> dir;
+                  S2C (directions.row(i), dir);
                   delta (V, dir, lmax);
 
                   Point<ValueType> dir_rot;
@@ -377,14 +431,14 @@ namespace MR
                 }
               }
 
-            Math::Vector<ValueType>& operator() (Math::Vector<ValueType>& SH_rot, const Math::Vector<ValueType>& SH) const {
-              SH_rot.allocate (SH);
-              SH_rot[0] = SH[0];
+            Vector<ValueType>& operator() (Vector<ValueType>& SH_rot, const Vector<ValueType>& sh) const {
+              SH_rot.allocate (sh);
+              SH_rot[0] = sh[0];
               size_t n = 1;
               for (size_t l = 0; l < M.size(); ++l) {
                 const size_t nSH_l = M[l]->rows();
                 Vector<ValueType> R = SH_rot.sub (n, n+nSH_l);
-                const Vector<ValueType> S = SH.sub (n, n+nSH_l);
+                const Vector<ValueType> S = sh.sub (n, n+nSH_l);
                 mult (R, *M[l], S);
                 n += nSH_l;
               }
@@ -401,25 +455,25 @@ namespace MR
 
 
       template <typename ValueType>
-        inline Math::Vector<ValueType>& FA2SH (
-            Math::Vector<ValueType>& SH, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
+        inline Vector<ValueType>& FA2SH (
+            Vector<ValueType>& sh, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
       {
         ValueType a = FA/sqrt (3.0 - 2.0*FA*FA);
         ValueType ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
 
-        Math::Vector<ValueType> sigs (precision);
-        Math::Matrix<ValueType> SHT (precision, lmax/2+1);
+        Vector<ValueType> sigs (precision);
+        Matrix<ValueType> SHT (precision, lmax/2+1);
         VLA_MAX (AL, ValueType, lmax+1, 64);
 
         for (int i = 0; i < precision; i++) {
-          ValueType el = i*M_PI/ (2.0* (precision-1));
-          sigs[i] = exp (-bvalue* (ev1*cos (el) *cos (el) + ev2*sin (el) *sin (el)));
-          Legendre::Plm_sph (AL, lmax, 0, cos (el));
+          ValueType el = i*Math::pi / (2.0* (precision-1));
+          sigs[i] = exp (-bvalue* (ev1*std::cos (el) *std::cos (el) + ev2*std::sin (el) *std::sin (el)));
+          Legendre::Plm_sph (AL, lmax, 0, std::cos (el));
           for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
         }
 
-        Math::Matrix<ValueType> SHinv (SHT.columns(), SHT.rows());
-        return Math::mult (SH, pinv (SHinv, SHT), sigs);
+        Matrix<ValueType> SHinv (SHT.columns(), SHT.rows());
+        return mult (sh, pinv (SHinv, SHT), sigs);
       }
 
 
@@ -434,7 +488,7 @@ namespace MR
       };
 
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-#define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
+#define SH_NON_M0_SCALE_FACTOR (m ? Math::sqrt2 : 1.0)*
 #else
 #define SH_NON_M0_SCALE_FACTOR
 #endif
@@ -460,13 +514,13 @@ namespace MR
             lmax = up_to_lmax;
             ndir = num_dir;
             nAL = NforL_mpos (lmax);
-            inc = M_PI/ (ndir-1);
+            inc = Math::pi / (ndir-1);
             AL.resize (ndir*nAL);
             VLA_MAX (buf, value_type, lmax+1, 64);
 
             for (int n = 0; n < ndir; n++) {
               typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
-              value_type cos_el = Math::cos (n*inc);
+              value_type cos_el = std::cos (n*inc);
               for (int m = 0; m <= lmax; m++) {
                 Legendre::Plm_sph (buf, lmax, m, cos_el);
                 for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
@@ -518,8 +572,8 @@ namespace MR
           template <class ValueContainer>
             ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
               PrecomputedFraction<ValueType> f;
-              set (f, Math::acos (unit_dir[2]));
-              ValueType rxy = Math::sqrt ( Math::pow2(unit_dir[1]) + Math::pow2(unit_dir[0]) );
+              set (f, std::acos (unit_dir[2]));
+              ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
               ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
               ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
               ValueType v = 0.0;
@@ -549,14 +603,14 @@ namespace MR
 
 
       template <typename ValueType>
-        inline ValueType get_peak (const ValueType* SH, int lmax, Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = NULL)
+        inline ValueType get_peak (const ValueType* sh, int lmax, Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = NULL)
         {
           assert (unit_init_dir.valid());
           for (int i = 0; i < 50; i++) {
             ValueType az = atan2 (unit_init_dir[1], unit_init_dir[0]);
             ValueType el = acos (unit_init_dir[2]);
             ValueType amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
-            derivatives (SH, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
+            derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
 
             ValueType del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
             ValueType daz = dSH_daz/del;
@@ -572,7 +626,7 @@ namespace MR
             del *= dt;
             daz *= dt;
 
-            unit_init_dir += Point<ValueType> (del*cos (az) *cos (el) - daz*sin (az), del*sin (az) *cos (el) + daz*cos (az), -del*sin (el));
+            unit_init_dir += Point<ValueType> (del*std::cos (az) *std::cos (el) - daz*std::sin (az), del*std::sin (az) *std::cos (el) + daz*std::cos (az), -del*std::sin (el));
             unit_init_dir.normalise();
 
             if (dt < ANGLE_TOLERANCE) return amplitude;
@@ -591,12 +645,12 @@ namespace MR
 
       template <typename ValueType>
         inline void derivatives (
-            const ValueType* SH, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
+            const ValueType* sh, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
             ValueType& dSH_del, ValueType& dSH_daz, ValueType& d2SH_del2, ValueType& d2SH_deldaz,
             ValueType& d2SH_daz2, PrecomputedAL<ValueType>* precomputer)
         {
-          ValueType sel = sin (elevation);
-          ValueType cel = cos (elevation);
+          ValueType sel = std::sin (elevation);
+          ValueType cel = std::cos (elevation);
           bool atpole = sel < 1e-4;
 
           dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
@@ -616,9 +670,9 @@ namespace MR
             }
           }
 
-          amplitude = SH[0] * AL[0];
+          amplitude = sh[0] * AL[0];
           for (int l = 2; l <= (int) lmax; l+=2) {
-            const ValueType& v (SH[index (l,0)]);
+            const ValueType& v (sh[index (l,0)]);
             amplitude += v * AL[index_mpos (l,0)];
             dSH_del += v * sqrt (ValueType (l* (l+1))) * AL[index_mpos (l,1)];
             d2SH_del2 += v * (sqrt (ValueType (l* (l+1) * (l-1) * (l+2))) * AL[index_mpos (l,2)] - l* (l+1) * AL[index_mpos (l,0)]) /2.0;
@@ -626,15 +680,15 @@ namespace MR
 
           for (int m = 1; m <= lmax; m++) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
-            ValueType caz = M_SQRT2 * cos (m*azimuth);
-            ValueType saz = M_SQRT2 * sin (m*azimuth);
+            ValueType caz = Math::sqrt2 * std::cos (m*azimuth);
+            ValueType saz = Math::sqrt2 * std::sin (m*azimuth);
 #else
-            ValueType caz = cos (m*azimuth);
-            ValueType saz = sin (m*azimuth);
+            ValueType caz = std::cos (m*azimuth);
+            ValueType saz = std::sin (m*azimuth);
 #endif
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-              const ValueType& vp (SH[index (l,m)]);
-              const ValueType& vm (SH[index (l,-m)]);
+              const ValueType& vp (sh[index (l,m)]);
+              const ValueType& vm (sh[index (l,-m)]);
               amplitude += (vp*caz + vm*saz) * AL[index_mpos (l,m)];
 
               ValueType tmp = sqrt (ValueType ( (l+m) * (l-m+1))) * AL[index_mpos (l,m-1)];
@@ -716,22 +770,35 @@ namespace MR
           }
 
 
-          Math::Vector<ValueType>& operator() (Math::Vector<ValueType>& SH, const Point<ValueType>& dir) const
+          Vector<ValueType>& operator() (Vector<ValueType>& sh, const Point<ValueType>& dir) const
           {
-            SH.allocate(RH.size());
-            Math::Vector<ValueType> delta;
-            Math::SH::delta (delta, dir, lmax);
-            Math::SH::sconv (SH, RH, delta);
-            return SH;
+            sh.allocate(RH.size());
+            Vector<ValueType> delta_coefs;
+            delta (delta_coefs, dir, lmax);
+            sconv (sh, RH, delta_coefs);
+            return sh;
           }
 
 
         private:
           const size_t lmax;
-          Math::Vector<ValueType> RH;
+          Vector<ValueType> RH;
 
       };
 
+
+      template <class Infotype>
+        void check (const Infotype& info) {
+          if (info.datatype().is_complex()) 
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - contains complex data");
+          if (!info.datatype().is_floating_point()) 
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - data type is not floating-point");
+          if (info.ndim() < 4)
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - not 4D");
+          size_t l = LforN (info.dim(3));
+          if (l%1 || NforL (l) != size_t (info.dim(3)))
+            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
+        }
 
     }
   }

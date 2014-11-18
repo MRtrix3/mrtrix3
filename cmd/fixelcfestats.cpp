@@ -20,8 +20,7 @@
  */
 #include "command.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "image/loop.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
@@ -107,7 +106,7 @@ void usage ()
   + Option ("nonstationary", "do adjustment for non-stationarity")
 
   + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
-  +   Argument ("num").type_integer (1, 5000, 100000);
+  + Argument ("num").type_integer (1, 5000, 100000);
 
   REFERENCES = "If using the -nonstationary option: \n"
                "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
@@ -124,7 +123,7 @@ void write_fixel_output (const std::string& filename,
                          Image::BufferSparse<FixelMetric>::voxel_type& mask_vox,
                          Image::BufferScratch<int32_t>::voxel_type& indexer_vox) {
   Image::BufferSparse<FixelMetric> output (filename, header);
-  Image::BufferSparse<FixelMetric>::voxel_type output_voxel (output);
+  auto output_voxel = output.voxel();
   Image::LoopInOrder loop (mask_vox);
   for (loop.start (mask_vox, indexer_vox, output_voxel); loop.ok(); loop.next (mask_vox, indexer_vox, output_voxel)) {
     output_voxel.value().set_size (mask_vox.value().size());
@@ -140,7 +139,6 @@ void write_fixel_output (const std::string& filename,
 
 
 void run() {
-
 
   Options opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
@@ -223,14 +221,14 @@ void run() {
 
   Image::Header input_header (argument[1]);
   Image::BufferSparse<FixelMetric> mask (input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type mask_vox (mask);
+  auto mask_vox = mask.voxel();
 
   // Create an image to store the fixel indices, if we had a fixel scratch buffer this would be cleaner
   Image::Header index_header (input_header);
   index_header.set_ndim(4);
   index_header.dim(3) = 2;
   Image::BufferScratch<int32_t> fixel_indexer (index_header);
-  Image::BufferScratch<int32_t>::voxel_type indexer_vox (fixel_indexer);
+  auto indexer_vox = fixel_indexer.voxel();
   Image::LoopInOrder loop4D (indexer_vox);
   for (loop4D.start (indexer_vox); loop4D.ok(); loop4D.next (indexer_vox))
     indexer_vox.value() = -1;
@@ -294,27 +292,27 @@ void run() {
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  Math::sqrt (2.0 * M_PI));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
   }
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (unsigned int fixel = 0; fixel < num_fixels; ++fixel) {
-      std::map<int32_t, Stats::CFE::connectivity>::iterator it = connectivity_matrix[fixel].begin();
+      auto it = connectivity_matrix[fixel].begin();
       while (it != connectivity_matrix[fixel].end()) {
         value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
         if (connectivity < connectivity_threshold)  {
           connectivity_matrix[fixel].erase (it++);
         } else {
           if (do_smoothing) {
-            value_type distance = Math::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
+            value_type distance = std::sqrt (Math::pow2 (positions[fixel][0] - positions[it->first][0]) +
                                               Math::pow2 (positions[fixel][1] - positions[it->first][1]) +
                                               Math::pow2 (positions[fixel][2] - positions[it->first][2]));
-            value_type smoothing_weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
+            value_type smoothing_weight = connectivity * gaussian_const1 * std::exp (-Math::pow2 (distance) / gaussian_const2);
             if (smoothing_weight > connectivity_threshold)
               smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (it->first, smoothing_weight));
           }
           // Here we pre-exponentiate each connectivity value by C
-          it->second.value = Math::pow (connectivity, cfe_c);
+          it->second.value = std::pow (connectivity, cfe_c);
           ++it;
         }
       }
@@ -330,10 +328,10 @@ void run() {
   // Normalise smoothing weights
   for (size_t fixel = 0; fixel < num_fixels; ++fixel) {
     value_type sum = 0.0;
-    for (std::map<int32_t, value_type>::iterator it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
+    for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
       sum += it->second;
     value_type norm_factor = 1.0 / sum;
-    for (std::map<int32_t, value_type>::iterator it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
+    for (auto it = smoothing_weights[fixel].begin(); it != smoothing_weights[fixel].end(); ++it)
       it->second *= norm_factor;
   }
 
@@ -344,7 +342,7 @@ void run() {
     for (size_t subject = 0; subject < filenames.size(); subject++) {
       LogLevelLatch log_level (0);
       Image::BufferSparse<FixelMetric> fixel (filenames[subject]);
-      Image::BufferSparse<FixelMetric>::voxel_type fixel_vox (fixel);
+      auto fixel_vox  = fixel.voxel();
       Image::check_dimensions (fixel, mask, 0, 3);
       std::vector<value_type> temp_fixel_data (num_fixels, 0.0);
 
@@ -359,7 +357,7 @@ void run() {
            value_type largest_dp = 0.0;
            int index_of_closest_fixel = -1;
            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-             value_type dp = Math::abs (directions[i].dot(fixel_vox.value()[f].dir));
+             value_type dp = std::abs (directions[i].dot(fixel_vox.value()[f].dir));
              if (dp > largest_dp) {
                largest_dp = dp;
                index_of_closest_fixel = f;

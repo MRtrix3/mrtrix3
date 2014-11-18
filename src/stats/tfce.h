@@ -27,7 +27,7 @@
 #include "math/matrix.h"
 #include "math/stats/permutation.h"
 #include "image/filter/connected_components.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 namespace MR
 {
@@ -39,6 +39,8 @@ namespace MR
       typedef float value_type;
 
 
+      /** \addtogroup Statistics
+      @{ */
 
       class Enhancer {
         public:
@@ -68,10 +70,7 @@ namespace MR
           const value_type dh, E, H;
       };
 
-
-
       //! @}
-
     }
   }
 }

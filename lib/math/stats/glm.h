@@ -94,7 +94,7 @@ namespace MR
             for (size_t n = 0; n < contrasts.rows(); ++n) {
               Math::Vector<ValueType> pinv_XtX_c;
               Math::mult (pinv_XtX_c, XtX, contrasts.row(n));
-              scaled_contrasts.row(n) *= Math::sqrt (ValueType(degrees_of_freedom) / Math::dot (contrasts.row(n), pinv_XtX_c));
+              scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / Math::dot (contrasts.row(n), pinv_XtX_c));
             }
 
             return scaled_contrasts;

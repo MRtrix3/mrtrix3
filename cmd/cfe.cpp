@@ -210,26 +210,26 @@ void run ()
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
    do_smoothing = true;
-   gaussian_const1 = 1.0 / (smooth_std_dev *  Math::sqrt (2.0 * M_PI));
+   gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
   }
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
     for (int32_t fixel = 0; fixel < num_fixels; ++fixel) {
-      std::map<int32_t, Stats::CFE::connectivity>::iterator it = fixel_connectivity[fixel].begin();
+      auto it = fixel_connectivity[fixel].begin();
       while (it != fixel_connectivity[fixel].end()) {
        value_type connectivity = it->second.value / value_type (fixel_TDI[fixel]);
        if (connectivity < connectivity_threshold)  {
          fixel_connectivity[fixel].erase (it++);
        } else {
          if (do_smoothing) {
-           value_type distance = Math::sqrt (Math::pow2 (fixel_positions[fixel][0] - fixel_positions[it->first][0]) +
-                                             Math::pow2 (fixel_positions[fixel][1] - fixel_positions[it->first][1]) +
-                                             Math::pow2 (fixel_positions[fixel][2] - fixel_positions[it->first][2]));
-           value_type weight = connectivity * gaussian_const1 * Math::exp (-Math::pow2 (distance) / gaussian_const2);
+           value_type distance = std::sqrt (std::pow (fixel_positions[fixel][0] - fixel_positions[it->first][0], 2) +
+                                            std::pow (fixel_positions[fixel][1] - fixel_positions[it->first][1], 2) +
+                                            std::pow (fixel_positions[fixel][2] - fixel_positions[it->first][2], 2));
+           value_type weight = connectivity * gaussian_const1 * std::exp (-std::pow (distance, 2) / gaussian_const2);
            if (weight > connectivity_threshold)
              fixel_smoothing_weights[fixel].insert (std::pair<int32_t, value_type> (it->first, weight));
          }
-         it->second.value = Math::pow (connectivity, cfe_C);
+         it->second.value = std::pow (connectivity, cfe_C);
          ++it;
        }
       }
@@ -251,10 +251,10 @@ void run ()
       for (int32_t i = 0; i < num_fixels; ++i) {
         progress++;
         value_type sum = 0.0;
-        for (std::map<int32_t, value_type>::iterator it = fixel_smoothing_weights[i].begin(); it != fixel_smoothing_weights[i].end(); ++it)
+        for (auto it = fixel_smoothing_weights[i].begin(); it != fixel_smoothing_weights[i].end(); ++it)
           sum += it->second;
         value_type norm_factor = 1.0 / sum;
-        for (std::map<int32_t, value_type>::iterator it = fixel_smoothing_weights[i].begin(); it != fixel_smoothing_weights[i].end(); ++it)
+        for (auto it = fixel_smoothing_weights[i].begin(); it != fixel_smoothing_weights[i].end(); ++it)
           it->second *= norm_factor;
       }
     }

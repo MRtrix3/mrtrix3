@@ -106,7 +106,7 @@ void run() {
 
       Math::Vector<double> v_transformed(3);
       Math::mult (v_transformed, jacobian_matrix, v);
-      output_vox.value()[f].value = Math::log (Math::determinant (jacobian_matrix) / Math::norm (v_transformed));
+      output_vox.value()[f].value = std::log (Math::determinant (jacobian_matrix) / Math::norm (v_transformed));
     }
   }
 }

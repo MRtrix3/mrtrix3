@@ -95,6 +95,9 @@ void run ()
 
   File::Dicom::QuickScan reader;
 
+  if (get_options("all").size())
+    print (File::Dicom::Element::print_header());
+
   if (reader.read (argument[0], get_options ("all").size(), get_options ("csa").size(), true))
     throw Exception ("error reading file \"" + reader.filename + "\"");
 
