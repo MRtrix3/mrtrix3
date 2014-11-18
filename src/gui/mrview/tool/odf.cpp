@@ -216,54 +216,58 @@ namespace MR
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (interpolation_slot(int)));
-            box_layout->addWidget (interpolation_box, 1, 0, 1, 2);
+            box_layout->addWidget (interpolation_box, 0, 2, 1, 2);
 
             show_axes_box = new QCheckBox ("show axes");
             show_axes_box->setChecked (true);
             connect (show_axes_box, SIGNAL (stateChanged(int)), this, SLOT (show_axes_slot(int)));
-            box_layout->addWidget (show_axes_box, 2, 0, 1, 2);
+            box_layout->addWidget (show_axes_box, 1, 0, 1, 2);
 
             colour_by_direction_box = new QCheckBox ("colour by direction");
             colour_by_direction_box->setChecked (true);
             connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 3, 0, 1, 2);
+            box_layout->addWidget (colour_by_direction_box, 1, 2, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 4, 0, 1, 2);
+            box_layout->addWidget (use_lighting_box, 2, 0, 1, 2);
 
 
 
             hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
             hide_negative_lobes_box->setChecked (true);
             connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
-            box_layout->addWidget (hide_negative_lobes_box, 5, 0, 1, 2);
+            box_layout->addWidget (hide_negative_lobes_box, 2, 2, 1, 2);
 
 
-            box_layout->addWidget (new QLabel ("lmax"), 6, 0);
+            QLabel* label = new QLabel ("lmax");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 3, 0);
             lmax_selector = new QSpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
-            box_layout->addWidget (lmax_selector, 6, 1);
+            box_layout->addWidget (lmax_selector, 3, 1);
 
-            box_layout->addWidget (new QLabel ("detail"), 7, 0);
+            label = new QLabel ("detail");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 3, 2);
             level_of_detail_selector = new QSpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (7);
             level_of_detail_selector->setSingleStep (1);
             level_of_detail_selector->setValue (4);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
-            box_layout->addWidget (level_of_detail_selector, 7, 1);
+            box_layout->addWidget (level_of_detail_selector, 3, 3);
 
 
             QPushButton *lighting_settings_button = new QPushButton ("lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 8, 0, 1, 2);
+            box_layout->addWidget (lighting_settings_button, 5, 0, 1, 4);
 
 
 
@@ -275,33 +279,39 @@ namespace MR
             box_layout = new GridLayout;
             overlay_frame->setLayout (box_layout);
 
-            box_layout->addWidget (new QLabel ("scale"), 0, 0, 1, 1);
+            label = new QLabel ("scale");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 0, 0);
             overlay_scale = new AdjustButton (this, 1.0);
             overlay_scale->setValue (1.0);
             overlay_scale->setMin (0.0);
             connect (overlay_scale, SIGNAL (valueChanged()), this, SLOT (overlay_scale_slot()));
-            box_layout->addWidget (overlay_scale, 0, 1, 1, 1);
+            box_layout->addWidget (overlay_scale, 0, 1);
 
-            box_layout->addWidget (new QLabel ("detail"), 1, 0, 1,1);
+            label = new QLabel ("detail");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 0, 2);
             overlay_level_of_detail_selector = new QSpinBox (this);
             overlay_level_of_detail_selector->setMinimum (1);
             overlay_level_of_detail_selector->setMaximum (6);
             overlay_level_of_detail_selector->setSingleStep (1);
             overlay_level_of_detail_selector->setValue (3);
             connect (overlay_level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(overlay_update_slot(int)));
-            box_layout->addWidget (overlay_level_of_detail_selector, 1, 1, 1, 1);
-
-            box_layout->addWidget (new QLabel ("grid"), 2, 0, 1, 1);
-            overlay_grid_selector = new QComboBox (this);
-            overlay_grid_selector->addItem ("overlay");
-            overlay_grid_selector->addItem ("main");
-            connect (overlay_grid_selector, SIGNAL (activated(int)), this, SLOT(overlay_update_slot(int)));
-            box_layout->addWidget (overlay_grid_selector, 2, 1, 1, 1);
+            box_layout->addWidget (overlay_level_of_detail_selector, 0, 3);
 
             overlay_lock_to_grid_box = new QCheckBox ("lock to grid");
             overlay_lock_to_grid_box->setChecked (true);
             connect (overlay_lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (overlay_update_slot(int)));
-            box_layout->addWidget (overlay_lock_to_grid_box, 3, 0, 1, 2);
+            box_layout->addWidget (overlay_lock_to_grid_box, 1, 0, 1, 2);
+
+            label = new QLabel ("grid");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 1, 2);
+            overlay_grid_selector = new QComboBox (this);
+            overlay_grid_selector->addItem ("overlay");
+            overlay_grid_selector->addItem ("main");
+            connect (overlay_grid_selector, SIGNAL (activated(int)), this, SLOT(overlay_update_slot(int)));
+            box_layout->addWidget (overlay_grid_selector, 1, 3);
 
             splitter->setStretchFactor (0, 1);
             splitter->setStretchFactor (1, 0);
