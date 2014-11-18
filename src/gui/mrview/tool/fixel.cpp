@@ -271,7 +271,7 @@ namespace MR
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               buffer_dir.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
-              buffer_val.push_back (fixel_vox.value()[f].amplitude / value_max);
+              buffer_val.push_back (fixel_vox.value()[f].amplitude);
               buffer_val.push_back (fixel_vox.value()[f].value / value_max);
             }
           }
