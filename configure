@@ -956,10 +956,9 @@ class GLWidget : public QGLWidget {
   protected:
     void initializeGL () { 
       std::cout << glGetString (GL_VERSION) << "\\n";
-      exit (0); 
     }
 
-    void paintGL () { }
+    void paintGL () { qApp->quit(); }
     void resizeGL (int width, int height) { }
 };
 
