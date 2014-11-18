@@ -151,9 +151,9 @@ namespace MR
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
             __Multi (__Multi&& m) = default;
-            template <class X> bool operator() (const X& x) { assert (0); return false; }
-            template <class X> bool operator() (X& x) { assert (0); return false; }
-            template <class X, class Y> bool operator() (const X& x, Y& y) { assert (0); return false; }
+            template <class X> bool operator() (const X&) { assert (0); return false; }
+            template <class X> bool operator() (X&) { assert (0); return false; }
+            template <class X, class Y> bool operator() (const X&, Y&) { assert (0); return false; }
             typename std::remove_reference<Functor>::type& functor;
             size_t num;
         };

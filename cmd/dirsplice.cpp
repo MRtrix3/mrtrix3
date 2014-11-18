@@ -98,7 +98,7 @@ void run ()
       auto& d = dirs[b][s++];
       if (x >= d.rows()) break;
 
-      merged_dirs[n++].push_back ({ d(x,0), d(x,1), d(x,2), bvalue[b] });
+      merged_dirs[n++].push_back ({ { d(x,0), d(x,1), d(x,2), bvalue[b] } });
 
       if (s >= num_subsets) { 
         s = 0;

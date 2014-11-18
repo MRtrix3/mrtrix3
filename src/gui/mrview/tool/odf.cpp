@@ -77,11 +77,19 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const {
+              return QModelIndex(); 
+            }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const {
+              (void) parent;  // to suppress warnings about unused parameters
+              return items.size();
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const {
+              (void) parent; // to suppress warnings about unused parameters
+              return 1;
+            }
 
             size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
               VecPtr<MR::Image::Header> hlist;
@@ -109,7 +117,10 @@ namespace MR
               return hlist.size();
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { 
+              (void ) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
             void remove_item (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
@@ -328,7 +339,7 @@ namespace MR
 
 
 
-        void ODF::draw (const Projection& projection, bool is_3D, int axis, int slice)
+        void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
           if (is_3D) 
             return;
@@ -418,14 +429,16 @@ namespace MR
 
 
 
-        void ODF::showEvent (QShowEvent* event) 
+        void ODF::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           onFocusChanged();
         }
 
 
-        void ODF::closeEvent (QCloseEvent* event) { window.disconnect (this); }
+        void ODF::closeEvent (QCloseEvent*) {
+          window.disconnect (this); 
+        }
 
         void ODF::onFocusChanged () 
         {
@@ -501,7 +514,8 @@ namespace MR
 
 
 
-        void ODF::lock_orientation_to_image_slot (int unused) {
+        void ODF::lock_orientation_to_image_slot (int)
+        {
           if (lock_orientation_to_image_box->isChecked()) {
             const Projection* proj = window.get_current_mode()->get_current_projection();
             if (!proj) return;
@@ -509,7 +523,7 @@ namespace MR
           }
         }
 
-        void ODF::colour_by_direction_slot (int unused) 
+        void ODF::colour_by_direction_slot (int) 
         { 
           render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); 
           Image* settings = get_image();
@@ -520,7 +534,7 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::hide_negative_lobes_slot (int unused) 
+        void ODF::hide_negative_lobes_slot (int) 
         {
           render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); 
           Image* settings = get_image();
@@ -531,14 +545,14 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::use_lighting_slot (int unused) 
+        void ODF::use_lighting_slot (int) 
         { 
           render_frame->set_use_lighting (use_lighting_box->isChecked()); 
           if (overlay_frame->isChecked())
             window.updateGL();
         }
 
-        void ODF::interpolation_slot (int unused) 
+        void ODF::interpolation_slot (int) 
         { 
           onFocusChanged();
           if (overlay_frame->isChecked())
@@ -546,15 +560,17 @@ namespace MR
         }
 
 
-        void ODF::show_axes_slot (int unused) {
+        void ODF::show_axes_slot (int) 
+        {
           render_frame->set_show_axes (show_axes_box->isChecked()); 
         }
 
-        void ODF::level_of_detail_slot (int value) { 
+        void ODF::level_of_detail_slot (int) 
+        { 
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF::lmax_slot (int value) 
+        void ODF::lmax_slot (int) 
         { 
           render_frame->set_lmax (lmax_selector->value()); 
           Image* settings = get_image();
@@ -565,11 +581,12 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::update_slot (int unused) {
+        void ODF::update_slot (int) 
+        {
           window.updateGL();
         }
 
-        void ODF::lighting_settings_slot (bool unused)
+        void ODF::lighting_settings_slot (bool)
         {
           if (!lighting_dialog)
             lighting_dialog = new Dialog::Lighting (&window, "Advanced Lighting", *render_frame->lighting);
@@ -598,7 +615,7 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::overlay_update_slot (int value) 
+        void ODF::overlay_update_slot (int) 
         {
           if (overlay_frame->isChecked()) 
             window.updateGL();

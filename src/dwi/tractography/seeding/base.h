@@ -112,8 +112,8 @@ namespace MR
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Point<float>& p) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
-          virtual bool get_seed (Point<float>& p, Point<float>& d) { return get_seed (p); }
+          virtual bool get_seed (Point<float>&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
+          virtual bool get_seed (Point<float>& p, Point<float>&) { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;

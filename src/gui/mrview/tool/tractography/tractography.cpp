@@ -213,7 +213,7 @@ namespace MR
         Tractography::~Tractography () {}
 
 
-        void Tractography::draw (const Projection& transform, bool is_3D, int axis, int slice)
+        void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {

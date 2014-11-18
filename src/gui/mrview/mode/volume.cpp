@@ -37,7 +37,7 @@ namespace MR
       namespace Mode
       {
 
-        std::string Volume::Shader::vertex_shader_source (const Displayable& object) 
+        std::string Volume::Shader::vertex_shader_source (const Displayable&) 
         {
           std::string source = 
             "layout(location=0) in vec3 vertpos;\n"

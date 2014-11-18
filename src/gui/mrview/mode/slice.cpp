@@ -33,7 +33,7 @@ namespace MR
       {
 
 
-        std::string Slice::Shader::vertex_shader_source (const Displayable& object) 
+        std::string Slice::Shader::vertex_shader_source (const Displayable&) 
         {
           return
             "layout(location = 0) in vec3 vertpos;\n"

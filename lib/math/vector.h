@@ -633,12 +633,8 @@ namespace MR
           View () {
             assert (0);
           }
-          View (const Vector<ValueType>& V) {
-            assert (0);
-          }
-          template <typename U> View (const Vector<U>& V) {
-            assert (0);
-          }
+          View (const Vector<ValueType>&) { assert (0); }
+          template <typename U> View (const Vector<U>&) { assert (0); }
 
           View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
             GSLVector<ValueType>::size = nelements;

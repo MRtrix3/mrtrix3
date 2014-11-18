@@ -413,7 +413,7 @@ namespace MR
       template <class InfoType> 
         inline List contiguous_along_axis (size_t axis, const InfoType& info) 
         {
-          return get_nearest_match (contiguous_along_axis(3), Image::Stride::get (info));
+          return get_nearest_match (contiguous_along_axis (axis), Image::Stride::get (info));
         }
 
       //! convenience function for use with Image::BufferPreload

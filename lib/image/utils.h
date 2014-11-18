@@ -105,7 +105,7 @@ namespace MR
 
     //! return whether the InfoType contains complex data
     template <class InfoType> 
-      inline bool is_complex (const InfoType& in)
+      inline bool is_complex (const InfoType&)
     {
       typedef typename InfoType::value_type T;
       return is_complex__<T> ();

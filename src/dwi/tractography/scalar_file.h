@@ -146,7 +146,7 @@ namespace MR
             return (value_type (NAN));
           }
 
-          ScalarReader (const ScalarReader& R) { assert (0); }
+          ScalarReader (const ScalarReader&) = delete;
 
       };
 
@@ -251,7 +251,7 @@ namespace MR
           }
 
 
-          ScalarWriter (const ScalarWriter& W) : buffer_size (0) { assert (0); }
+          ScalarWriter (const ScalarWriter&) = delete;
 
       };
 

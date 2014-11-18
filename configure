@@ -1052,7 +1052,7 @@ if R_module:
 
 # add debugging or profiling flags if requested:
 
-cpp_flags += [ '-Wall', '-Wno-unused-function', '-Wno-unused-parameter' ]
+cpp_flags += [ '-Wall' ]
 
 if profile:
   cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]

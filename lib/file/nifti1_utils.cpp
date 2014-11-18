@@ -117,7 +117,7 @@ namespace MR
           H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
           if (H.dim (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.dim(i) = abs (H.dim (i));
+            H.dim(i) = std::abs (H.dim (i));
           }
           if (!H.dim (i))
             H.dim(i) = 1;
@@ -309,8 +309,8 @@ namespace MR
         // while preserving original strides as much as possible
         ssize_t max_spatial_stride = 0;
         for (size_t n = 0; n < 3; ++n)
-          if (abs(H.stride(n)) > max_spatial_stride)
-            max_spatial_stride = abs(H.stride(n));
+          if (std::abs(H.stride(n)) > max_spatial_stride)
+            max_spatial_stride = std::abs(H.stride(n));
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
         Image::Stride::symbolise (H);

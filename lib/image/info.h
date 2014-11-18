@@ -213,7 +213,7 @@ namespace MR
         }
       private: 
         template <class InfoType> 
-          ConstInfo& operator= (const InfoType& H) { assert (0); return *this; }
+          ConstInfo& operator= (const InfoType&) { assert (0); return *this; }
         using Info::set_ndim;
         using Info::clear;
         using Info::sanitise;

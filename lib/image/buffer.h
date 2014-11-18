@@ -23,6 +23,8 @@
 #ifndef __image_buffer_h__
 #define __image_buffer_h__
 
+#include <functional>
+
 #include "debug.h"
 #include "get_set.h"
 #include "image/header.h"
@@ -243,105 +245,105 @@ namespace MR
         }
 
       protected:
-        template <class Set> 
-          Buffer& operator= (const Set& H) { assert (0); return *this; }
+        template <class InfoType> 
+          Buffer& operator= (const InfoType&) { assert (0); return *this; }
 
-        value_type (*get_func) (const void* data, size_t i);
-        void (*put_func) (value_type val, void* data, size_t i);
+        std::function<value_type(const void*,size_t)> get_func;
+        std::function<void(value_type,void*,size_t)> put_func;
 
         void set_get_put_functions () {
           switch (datatype() ()) {
             case DataType::Bit:
-              get_func = &__get<value_type,bool>;
-              put_func = &__put<value_type,bool>;
+              get_func = __get<value_type,bool>;
+              put_func = __put<value_type,bool>;
               return;
             case DataType::Int8:
-              get_func = &__get<value_type,int8_t>;
-              put_func = &__put<value_type,int8_t>;
+              get_func = __get<value_type,int8_t>;
+              put_func = __put<value_type,int8_t>;
               return;
             case DataType::UInt8:
-              get_func = &__get<value_type,uint8_t>;
-              put_func = &__put<value_type,uint8_t>;
+              get_func = __get<value_type,uint8_t>;
+              put_func = __put<value_type,uint8_t>;
               return;
             case DataType::Int16LE:
-              get_func = &__getLE<value_type,int16_t>;
-              put_func = &__putLE<value_type,int16_t>;
+              get_func = __getLE<value_type,int16_t>;
+              put_func = __putLE<value_type,int16_t>;
               return;
             case DataType::UInt16LE:
-              get_func = &__getLE<value_type,uint16_t>;
-              put_func = &__putLE<value_type,uint16_t>;
+              get_func = __getLE<value_type,uint16_t>;
+              put_func = __putLE<value_type,uint16_t>;
               return;
             case DataType::Int16BE:
-              get_func = &__getBE<value_type,int16_t>;
-              put_func = &__putBE<value_type,int16_t>;
+              get_func = __getBE<value_type,int16_t>;
+              put_func = __putBE<value_type,int16_t>;
               return;
             case DataType::UInt16BE:
-              get_func = &__getBE<value_type,uint16_t>;
-              put_func = &__putBE<value_type,uint16_t>;
+              get_func = __getBE<value_type,uint16_t>;
+              put_func = __putBE<value_type,uint16_t>;
               return;
             case DataType::Int32LE:
-              get_func = &__getLE<value_type,int32_t>;
-              put_func = &__putLE<value_type,int32_t>;
+              get_func = __getLE<value_type,int32_t>;
+              put_func = __putLE<value_type,int32_t>;
               return;
             case DataType::UInt32LE:
-              get_func = &__getLE<value_type,uint32_t>;
-              put_func = &__putLE<value_type,uint32_t>;
+              get_func = __getLE<value_type,uint32_t>;
+              put_func = __putLE<value_type,uint32_t>;
               return;
             case DataType::Int32BE:
-              get_func = &__getBE<value_type,int32_t>;
-              put_func = &__putBE<value_type,int32_t>;
+              get_func = __getBE<value_type,int32_t>;
+              put_func = __putBE<value_type,int32_t>;
               return;
             case DataType::UInt32BE:
-              get_func = &__getBE<value_type,uint32_t>;
-              put_func = &__putBE<value_type,uint32_t>;
+              get_func = __getBE<value_type,uint32_t>;
+              put_func = __putBE<value_type,uint32_t>;
               return;
             case DataType::Int64LE:
-              get_func = &__getLE<value_type,int64_t>;
-              put_func = &__putLE<value_type,int64_t>;
+              get_func = __getLE<value_type,int64_t>;
+              put_func = __putLE<value_type,int64_t>;
               return;
             case DataType::UInt64LE:
-              get_func = &__getLE<value_type,uint64_t>;
-              put_func = &__putLE<value_type,uint64_t>;
+              get_func = __getLE<value_type,uint64_t>;
+              put_func = __putLE<value_type,uint64_t>;
               return;
             case DataType::Int64BE:
-              get_func = &__getBE<value_type,int64_t>;
-              put_func = &__putBE<value_type,int64_t>;
+              get_func = __getBE<value_type,int64_t>;
+              put_func = __putBE<value_type,int64_t>;
               return;
             case DataType::UInt64BE:
-              get_func = &__getBE<value_type,uint64_t>;
-              put_func = &__putBE<value_type,uint64_t>;
+              get_func = __getBE<value_type,uint64_t>;
+              put_func = __putBE<value_type,uint64_t>;
               return;
             case DataType::Float32LE:
-              get_func = &__getLE<value_type,float>;
-              put_func = &__putLE<value_type,float>;
+              get_func = __getLE<value_type,float>;
+              put_func = __putLE<value_type,float>;
               return;
             case DataType::Float32BE:
-              get_func = &__getBE<value_type,float>;
-              put_func = &__putBE<value_type,float>;
+              get_func = __getBE<value_type,float>;
+              put_func = __putBE<value_type,float>;
               return;
             case DataType::Float64LE:
-              get_func = &__getLE<value_type,double>;
-              put_func = &__putLE<value_type,double>;
+              get_func = __getLE<value_type,double>;
+              put_func = __putLE<value_type,double>;
               return;
             case DataType::Float64BE:
-              get_func = &__getBE<value_type,double>;
-              put_func = &__putBE<value_type,double>;
+              get_func = __getBE<value_type,double>;
+              put_func = __putBE<value_type,double>;
               return;
             case DataType::CFloat32LE:
-              get_func = &__getLE<value_type,cfloat>;
-              put_func = &__putLE<value_type,cfloat>;
+              get_func = __getLE<value_type,cfloat>;
+              put_func = __putLE<value_type,cfloat>;
               return;
             case DataType::CFloat32BE:
-              get_func = &__getBE<value_type,cfloat>;
-              put_func = &__putBE<value_type,cfloat>;
+              get_func = __getBE<value_type,cfloat>;
+              put_func = __putBE<value_type,cfloat>;
               return;
             case DataType::CFloat64LE:
-              get_func = &__getLE<value_type,cdouble>;
-              put_func = &__putLE<value_type,cdouble>;
+              get_func = __getLE<value_type,cdouble>;
+              put_func = __putLE<value_type,cdouble>;
               return;
             case DataType::CFloat64BE:
-              get_func = &__getBE<value_type,cdouble>;
-              put_func = &__putBE<value_type,cdouble>;
+              get_func = __getBE<value_type,cdouble>;
+              put_func = __putBE<value_type,cdouble>;
               return;
             default:
               throw Exception ("invalid data type in image header");

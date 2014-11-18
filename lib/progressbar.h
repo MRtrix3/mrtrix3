@@ -130,7 +130,7 @@ namespace MR
         }
       }
 
-      void operator++ (int unused) {
+      void operator++ (int) {
         ++ (*this);
       }
 
@@ -223,7 +223,7 @@ namespace MR
         }
       }
 
-      void operator++ (int unused) {
+      void operator++ (int) {
         ++ (*this);
       }
 
