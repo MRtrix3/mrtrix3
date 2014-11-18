@@ -339,7 +339,7 @@ namespace MR
           if (!settings)
             return;
 
-          MRView::Image& image (settings->image);
+          MRView::Image& image (overlay_grid_selector->currentIndex() ? *window.image() : settings->image);
 
           if (overlay_frame->isChecked()) {
 
@@ -398,7 +398,7 @@ namespace MR
             for (int y = -ny; y <= ny; ++y) {
               for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
-                get_values (values, image, p);
+                get_values (values, settings->image, p);
                 if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
@@ -469,7 +469,7 @@ namespace MR
 
         void ODF::image_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (this, "Select overlay images to open");
+          std::vector<std::string> list = Dialog::File::get_images (&window, "Select overlay images to open");
           if (list.empty())
             return;
 
