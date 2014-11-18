@@ -1,22 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+   Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 23/05/09.
+   Written by J-Donald Tournier, 23/05/09.
 
-    This file is part of MRtrix.
+   This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   MRtrix is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   MRtrix is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -24,6 +24,7 @@
 #define __image_buffer_h__
 
 #include <functional>
+#include <type_traits>
 
 #include "debug.h"
 #include "get_set.h"
@@ -44,123 +45,91 @@ namespace MR
 
     namespace
     {
-      template <typename value_type, typename S> 
-        value_type __get (const void* data, size_t i) 
-        {
-          return value_type (MR::get<S> (data, i)); 
+
+      // rounding to be applied during conversion:
+
+      // any -> floating-point
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_floating_point<TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type* = nullptr) {
+          return in;
         }
 
-      template <typename value_type, typename S> 
-        value_type __getLE (const void* data, size_t i) 
-        { 
-          return value_type (MR::getLE<S> (data, i)); 
+      // integer -> integer
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_integral<TypeIN>::value>::type* = nullptr) {
+          return in;
         }
 
-      template <typename value_type, typename S> 
-        value_type __getBE (const void* data, size_t i) 
-        {
-          return value_type (MR::getBE<S> (data, i)); 
+      // floating-point -> integer
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_integral<TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_floating_point<TypeIN>::value>::type* = nullptr) {
+          return std::isfinite (in) ? std::round (in) : TypeOUT (0);
+        }
+
+      // complex -> complex
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_same<std::complex<typename TypeIN::value_type>, TypeIN>::value>::type* = nullptr) {
+          return TypeOUT (in);
+        }
+
+      // real -> complex
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_same<std::complex<typename TypeOUT::value_type>, TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_arithmetic<TypeIN>::value>::type* = nullptr) {
+          return round_func<typename TypeOUT::value_type> (in);
+        }
+
+      // complex -> real
+      template <typename TypeOUT, typename TypeIN>
+        inline typename std::enable_if<std::is_arithmetic<TypeOUT>::value, TypeOUT>::type 
+        round_func (TypeIN in, typename std::enable_if<std::is_same<std::complex<typename TypeIN::value_type>, TypeIN>::value>::type* = nullptr) {
+          return round_func<TypeOUT> (in.real());
         }
 
 
-      template <typename value_type, typename S> 
-        void __put (value_type val, void* data, size_t i) 
-        {
-          return MR::put<S> (S (val), data, i); 
+
+
+      // for single-byte types:
+
+      template <typename RAMType, typename DiskType> 
+        RAMType __get (const void* data, size_t i) {
+          return round_func<RAMType> (MR::get<DiskType> (data, i)); 
         }
 
-      template <typename value_type, typename S> 
-        void __putLE (value_type val, void* data, size_t i) 
-        {
-          return MR::putLE<S> (S (val), data, i);
+      template <typename RAMType, typename DiskType> 
+        void __put (RAMType val, void* data, size_t i) {
+          return MR::put<DiskType> (round_func<DiskType> (val), data, i); 
         }
 
-      template <typename value_type, typename S> 
-        void __putBE (value_type val, void* data, size_t i) 
-        {
-          return MR::putBE<S> (S (val), data, i); 
+      // for little-endian multi-byte types:
+
+      template <typename RAMType, typename DiskType> 
+        RAMType __getLE (const void* data, size_t i) {
+          return round_func<RAMType> (MR::getLE<DiskType> (data, i)); 
+        }
+
+      template <typename RAMType, typename DiskType> 
+        void __putLE (RAMType val, void* data, size_t i) {
+          return MR::putLE<DiskType> (round_func<DiskType> (val), data, i); 
         }
 
 
+      // for big-endian multi-byte types:
 
-      // needed to round floating-point values and map non-finite values (NaN, Inf) to zero for integer types:
-      template <typename value_out_type, typename value_type> 
-        inline value_out_type round_finite (value_type val) 
-        { 
-          return std::isfinite (val) ? 
-            value_out_type(std::round (val)) : 
-            value_out_type (0); 
+      template <typename RAMType, typename DiskType> 
+        RAMType __getBE (const void* data, size_t i) {
+          return round_func<RAMType> (MR::getBE<DiskType> (data, i)); 
         }
 
-      template <typename value_out_type, typename value_type> 
-        inline value_out_type no_round (value_type val) 
-        {
-          return val; 
+      template <typename RAMType, typename DiskType> 
+        void __putBE (RAMType val, void* data, size_t i) {
+          return MR::putBE<DiskType> (round_func<DiskType> (val), data, i); 
         }
 
-      // specialisations for conversion between real types and complex types, and integer types and floating-point types:
-
-#define GET_FUNC_BO_REAL(type,round_func) \
-      template <> type __getLE<type,float> (const void* data, size_t i) { return round_func<type> (MR::getLE<float>(data, i)); } \
-      template <> type __getBE<type,float> (const void* data, size_t i) { return round_func<type> (MR::getBE<float>(data, i)); } \
-      template <> type __getLE<type,double> (const void* data, size_t i) { return round_func<type> (MR::getLE<double>(data, i)); } \
-      template <> type __getBE<type,double> (const void* data, size_t i) { return round_func<type> (MR::getBE<double>(data, i)); } 
-
-#define GET_PUT_FUNC_REAL(type,round_func) \
-      GET_FUNC_BO_REAL(type,round_func) \
-      template <> void __put<float,type> (float val, void* data, size_t i) { return MR::put<type> (round_func<type> (val), data, i); } \
-      template <> void __put<double,type> (double val, void* data, size_t i) { return MR::put<type> (round_func<type> (val), data, i); }
-
-#define GET_PUT_FUNC_BO_REAL(type,round_func) \
-      GET_FUNC_BO_REAL(type,round_func) \
-      template <> void __putLE<float,type> (float val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val), data, i); } \
-      template <> void __putBE<float,type> (float val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val), data, i); } \
-      template <> void __putLE<double,type> (double val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val), data, i); } \
-      template <> void __putBE<double,type> (double val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val), data, i); } 
-
-#define GET_FUNC_BO_COMPLEX(type,round_func) \
-      template <> type __getLE<type,cfloat> (const void* data, size_t i) { return round_func<type> (MR::getLE<cfloat>(data, i).real()); } \
-      template <> type __getBE<type,cfloat> (const void* data, size_t i) { return round_func<type> (MR::getBE<cfloat>(data, i).real()); } \
-      template <> type __getLE<type,cdouble> (const void* data, size_t i) { return round_func<type> (MR::getLE<cdouble>(data, i).real()); } \
-      template <> type __getBE<type,cdouble> (const void* data, size_t i) { return round_func<type> (MR::getBE<cdouble>(data, i).real()); } 
-
-#define GET_PUT_FUNC_COMPLEX(type,round_func) \
-      GET_FUNC_BO_COMPLEX(type,round_func) \
-      template <> void __put<cfloat,type> (cfloat val, void* data, size_t i) { return MR::put<type> (round_func<type> (val.real()), data, i); } \
-      template <> void __put<cdouble,type> (cdouble val, void* data, size_t i) { return MR::put<type> (round_func<type> (val.real()), data, i); }
-
-#define GET_PUT_FUNC_BO_COMPLEX(type,round_func) \
-      GET_FUNC_BO_COMPLEX(type,round_func) \
-      template <> void __putLE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val.real()), data, i); } \
-      template <> void __putBE<cfloat,type> (cfloat val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val.real()), data, i); } \
-      template <> void __putLE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putLE<type> (round_func<type> (val.real()), data, i); } \
-      template <> void __putBE<cdouble,type> (cdouble val, void* data, size_t i) { return MR::putBE<type> (round_func<type> (val.real()), data, i); }
-
-#define GET_PUT_FUNC(type,round_func) \
-      GET_PUT_FUNC_REAL(type,round_func); \
-      GET_PUT_FUNC_COMPLEX(type,round_func); 
-
-#define GET_PUT_FUNC_BO(type,round_func) \
-      GET_PUT_FUNC_BO_REAL(type,round_func); \
-      GET_PUT_FUNC_BO_COMPLEX(type,round_func); 
-
-
-      // conversion to/from integer types that don't require byte-swapping:
-      GET_PUT_FUNC(bool,round_finite);
-      GET_PUT_FUNC(int8_t,round_finite);
-      GET_PUT_FUNC(uint8_t,round_finite);
-
-      // conversion to/from integer types that do require byte-swapping:
-      GET_PUT_FUNC_BO(int16_t,round_finite);
-      GET_PUT_FUNC_BO(uint16_t,round_finite);
-      GET_PUT_FUNC_BO(int32_t,round_finite);
-      GET_PUT_FUNC_BO(uint32_t,round_finite);
-      GET_PUT_FUNC_BO(int64_t,round_finite);
-      GET_PUT_FUNC_BO(uint64_t,round_finite);
-
-      // conversion between non-integer real & complex types:
-      GET_PUT_FUNC_BO_COMPLEX(float32,no_round);
-      GET_PUT_FUNC_BO_COMPLEX(float64,no_round);
     }
 
     // \endcond
@@ -252,6 +221,7 @@ namespace MR
         std::function<void(value_type,void*,size_t)> put_func;
 
         void set_get_put_functions () {
+
           switch (datatype() ()) {
             case DataType::Bit:
               get_func = __get<value_type,bool>;
