@@ -482,14 +482,18 @@ void MapWriter<value_type>::receive_tod (const Cont& in)
         assert (v_counts);
         if (factor < (*v_counts).value()) {
           (*v_counts).value() = factor;
-          set_tod (i->get_tod() * factor);
+          Math::Vector<float> tod (i->get_tod());
+          tod *= factor;
+          set_tod (tod);
         }
         break;
       case V_MAX:
         assert (v_counts);
         if (factor > (*v_counts).value()) {
           (*v_counts).value() = factor;
-          set_tod (i->get_tod() * factor);
+          Math::Vector<float> tod (i->get_tod());
+          tod *= factor;
+          set_tod (tod);
         }
         break;
       case V_MEAN:
