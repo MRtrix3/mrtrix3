@@ -633,12 +633,8 @@ namespace MR
           View () {
             assert (0);
           }
-          View (const Vector<ValueType>& V) {
-            assert (0);
-          }
-          template <typename U> View (const Vector<U>& V) {
-            assert (0);
-          }
+          View (const Vector<ValueType>&) { assert (0); }
+          template <typename U> View (const Vector<U>&) { assert (0); }
 
           View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
             GSLVector<ValueType>::size = nelements;
@@ -695,13 +691,25 @@ namespace MR
       return norm_diff2 (x.ptr(), y.ptr(), x.size(), x.stride(), y.stride());
     }
 
-    //! compute the mean of the elements of a vector
-    template <typename ValueType> inline ValueType mean (const ValueType* V, size_t size = 3, size_t stride = 1)
+    //! compute the sum of the elements of a vector
+    template <typename ValueType> inline ValueType sum (const ValueType* V, size_t size = 3, size_t stride = 1)
     {
       ValueType n = 0.0;
       for (size_t i = 0; i < size; i++)
         n += V[i*stride];
-      return n/size;
+      return n;
+    }
+
+    //! compute the sum of the elements of a vector
+    template <typename ValueType> inline ValueType sum (const Vector<ValueType>& V)
+    {
+      return sum (V.ptr(), V.size(), V.stride());
+    }
+
+    //! compute the mean of the elements of a vector
+    template <typename ValueType> inline ValueType mean (const ValueType* V, size_t size = 3, size_t stride = 1)
+    {
+      return sum(V, size, stride)/size;
     }
 
     //! compute the mean of the elements of a vector
@@ -789,11 +797,11 @@ namespace MR
     //! find the maximum absolute value of any elements within a vector
     template <typename ValueType> inline ValueType absmax (const Vector<ValueType>& V, size_t& i)
     {
-      ValueType val (abs (V[0]));
+      ValueType val (std::abs (V[0]));
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
-        if (val < abs (V[j])) {
-          val = abs (V[j]);
+        if (val < std::abs (V[j])) {
+          val = std::abs (V[j]);
           i = j;
         }
       }

@@ -71,14 +71,14 @@ namespace MR
       void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
       {
 
-        Image::BufferScratch<float>::voxel_type mask (proc_mask);
+        auto mask = proc_mask;
 
         App::Options opt = App::get_options ("proc_mask");
         if (opt.size()) {
 
           // User-specified processing mask
           Image::Buffer<float> in_image (opt[0][0]);
-          Image::Buffer<float>::voxel_type image (in_image);
+          auto image = in_image.voxel();
           if (!Image::dimensions_match (mask, image, 0, 3))
             throw Exception ("Dimensions of processing mask image provided using -proc_mask option must match relevant fixel image");
           Image::copy_with_progress_message ("Copying processing mask to memory... ", image, mask, 0, 3);
@@ -95,16 +95,16 @@ namespace MR
             info_5tt.set_ndim (4);
             info_5tt.dim(3) = 5;
             act_5tt = new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch");
-            Image::BufferScratch<float>::voxel_type v_5tt (*act_5tt);
+            auto v_5tt = act_5tt->voxel();
 
             // Test to see if the image has already been re-gridded to match the fixel image
             // If it has, can do a direct import
             if (Image::dimensions_match (v_5tt, in_anat, 0, 3)) {
               INFO ("5TT image dimensions match fixel image - importing directly");
-              Image::Buffer<float>::voxel_type v_anat (in_anat);
+              auto v_anat = in_anat.voxel();
               Image::copy (v_anat, v_5tt);
             } else {
-              Image::ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 1, 0, 3);
+              Image::ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
               ResampleFunctor<Set> functor (in_dwi, in_anat, *act_5tt);
               threaded_loop.run (functor);
             }
@@ -112,18 +112,17 @@ namespace MR
             // Once all of the 5TT data has been read in, use it to derive the processing mask
             Image::LoopInOrder loop (v_5tt, 0, 3);
             v_5tt[3] = 2; // Access the WM fraction
-            for (loop.start (v_5tt, mask); loop.ok(); loop.next (v_5tt, mask))
+            for (auto l = loop (v_5tt, mask); l; ++l)
               mask.value() = Math::pow2<float> (v_5tt.value()); // Processing mask value is the square of the WM fraction
 
           } else {
 
-            typename Set::voxel_type dwi (in_dwi);
-            typedef typename Set::voxel_type::value_type value_type;
-            Image::LoopInOrder loop (dwi, "Creating homogeneous processing mask...", 0, 3);
-            dwi[3] = 0;
-            for (loop.start (dwi, mask); loop.ok(); loop.next (dwi, mask))
+            auto dwi = in_dwi.voxel();
+            auto f = [] (decltype(dwi)& dwi, decltype(mask)& mask) {
+              typedef typename std::remove_reference<decltype(in_dwi)>::type::value_type value_type;
               mask.value() = (dwi.value() && std::isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
-
+            };
+            Image::ThreadedLoop ("Creating homogeneous processing mask...", dwi, 0, 3).run (f, dwi, mask);
           }
 
         }
@@ -173,7 +172,7 @@ namespace MR
 
         Image::voxel_assign (v_dwi, pos);
         Image::voxel_assign (v_out, pos);
-        typedef typename Set::voxel_type::value_type value_type;
+        typedef typename decltype(v_dwi)::value_type value_type;
         if (v_dwi.value() && std::isfinite (static_cast<value_type> (v_dwi.value()))) {
 
           const ACT::Tissues tissues = ACT2pve (pos);

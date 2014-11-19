@@ -37,7 +37,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
@@ -339,7 +339,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
   if (dec) {
     Point<float> sum_decs (0.0, 0.0, 0.0);
     for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
-      sum_decs += Point<float> (Math::abs(i->get_mean_dir()[0]), Math::abs(i->get_mean_dir()[1]), Math::abs(i->get_mean_dir()[2])) * i->get_integral();
+      sum_decs += Point<float> (std::abs(i->get_mean_dir()[0]), std::abs(i->get_mean_dir()[1]), std::abs(i->get_mean_dir()[2])) * i->get_integral();
     Image::Nav::set_pos (*dec, in.vox);
     (*dec)[3] = 0; dec->value() = sum_decs[0];
     (*dec)[3] = 1; dec->value() = sum_decs[1];
@@ -366,7 +366,7 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
       }
       const float mean_variance = sum_variance   / double(dirs.size() - 1);
       const float mean_square   = sum_of_squares / double(dirs.size());
-      const float value = Math::sqrt (mean_variance / mean_square);
+      const float value = std::sqrt (mean_variance / mean_square);
       Image::Nav::set_value_at_pos (*gfa, in.vox, value);
     }
   }
@@ -439,15 +439,10 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 void run ()
 {
   Image::Header H (argument[0]);
+  Math::SH::check (H);
   Image::Buffer<float> fod_data (H);
 
-  if (fod_data.ndim() != 4)
-    throw Exception ("input FOD image should contain 4 dimensions");
-
   const size_t lmax = Math::SH::LforN (fod_data.dim(3));
-
-  if (Math::SH::NforL (lmax) != size_t(fod_data.dim(3)))
-    throw Exception ("Input image does not appear to contain an SH series per voxel");
 
   const DWI::Directions::Set dirs (1281);
   Segmented_FOD_receiver receiver (H, dirs);
@@ -506,7 +501,7 @@ void run ()
   if (!output_count)
     throw Exception ("Nothing to do; please specify at least one output image type");
 
-  FMLS::FODQueueWriter<Image::Buffer<float>::voxel_type> writer (fod_data);
+  FMLS::FODQueueWriter<decltype(fod_data)::voxel_type> writer (fod_data);
 
   opt = get_options ("mask");
   Ptr<Image::Buffer<bool> > mask_buffer_ptr;

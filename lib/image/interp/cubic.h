@@ -126,7 +126,7 @@ namespace MR
             if (out_of_bounds)
               return out_of_bounds_value;
 
-            ssize_t c[] = { ssize_t (Math::floor (P[0])-1), ssize_t (Math::floor (P[1])-1), ssize_t (Math::floor (P[2])-1) };
+            ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
             value_type r[4];
             for (ssize_t z = 0; z < 4; ++z) {
               (*this)[2] = check (c[2] + z, dim (2)-1);

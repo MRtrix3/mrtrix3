@@ -112,7 +112,7 @@ namespace MR
               return (Qt::ItemIsEnabled | Qt::ItemIsSelectable);
             }
 
-            QVariant headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
+            QVariant headerData (int, Qt::Orientation orientation, int role = Qt::DisplayRole) const {
               if (orientation == Qt::Horizontal && role == Qt::DisplayRole)
                 return ("Name");
               return (QVariant());
@@ -145,6 +145,7 @@ namespace MR
             }
 
             int columnCount (const QModelIndex& parent = QModelIndex()) const {
+              (void) parent; // to suppress warnings about unused parameters
               return (1);
             }
             Item* rootItem;

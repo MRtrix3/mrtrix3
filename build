@@ -11,7 +11,7 @@ dependencies = False
 verbose = False
 targets = []
 
-global todo, headers, object_deps, file_flags, thread_cflags, thread_ldflags, lock, print_lock, stop
+global todo, headers, object_deps, file_flags, lock, print_lock, stop
 global include_paths
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
 lock = threading.Lock()
@@ -19,13 +19,9 @@ print_lock = threading.Lock()
 stop = False
 error_stream = None
 
+logfile = open ('build.log', 'w')
 
 
-def disp (msg):
-  print_lock.acquire()
-  sys.stdout.write (msg)
-  print_lock.release()
-  
 
 def pipe_errors_to_less_handler():
   global error_stream
@@ -52,9 +48,23 @@ if sys.stderr.isatty():
 
 
 
+def disp (msg):
+  print_lock.acquire()
+  logfile.write (msg)
+  sys.stdout.write (msg)
+  print_lock.release()
+  
+def log (msg):
+  print_lock.acquire()
+  logfile.write (msg)
+  if verbose:
+    sys.stderr.write (msg)
+  print_lock.release()
+
 def error (msg):
   global error_stream
   print_lock.acquire()
+  logfile.write (msg)
   if error_stream is not None:
     error_stream += msg
   else:
@@ -62,6 +72,9 @@ def error (msg):
   print_lock.release()
   
 
+
+def split_path (filename):
+  return filename.replace ('\\', '/').split ('/')
 
 
 
@@ -97,22 +110,20 @@ def get_real_name (path):
   else: return (path)
 
 while os.path.abspath (os.path.dirname (get_real_name (build_script))) != os.path.abspath (mrtrix_dir):
-  if verbose and not separate_project:
-    sys.stderr.write ('compiling separate project against:' + os.linesep)
+  if not separate_project:
+    log ('compiling separate project against:' + os.linesep)
   separate_project = True
   build_script = os.path.normpath (os.path.join (mrtrix_dir, get_real_name (build_script)))
   mrtrix_dir = os.path.dirname (build_script)
   include_paths += [ os.path.join (mrtrix_dir, misc_dir) ]
   if os.path.exists (os.path.join (mrtrix_dir, other_dir)):
     include_paths += [ os.path.join (mrtrix_dir, other_dir) ]
-  if verbose: 
-    sys.stderr.write ('    ' + mrtrix_dir + os.linesep)
+  log ('    ' + mrtrix_dir + os.linesep)
 
 if separate_project:
   config_file = os.path.join (mrtrix_dir, config_file)
 
-  if verbose:
-    sys.stderr.write (os.linesep);
+  log (os.linesep);
 
 
 
@@ -162,8 +173,7 @@ OPTIONS:
 
 # load configuration file:
 try:
-  if verbose:
-    sys.stderr.write ('reading configuration from "' + config_file + '"...' + os.linesep)
+  log ('reading configuration from "' + config_file + '"...' + os.linesep)
   exec (codecs.open (config_file, mode='r', encoding='utf-8').read())
 except IOError:
   sys.stderr.write ('''no configuration file found!
@@ -273,11 +283,11 @@ class Entry:
     self.action = 'LB'
     if len(exe_suffix) > 0: cc_file = self.name[:-len(exe_suffix)]
     else: cc_file = self.name
-    cc_file = os.path.join (cmd_dir, os.sep.join (cc_file.split(os.sep)[1:])) + cpp_suffix
+    cc_file = os.path.join (cmd_dir, os.sep.join (split_path(cc_file)[1:])) + cpp_suffix
     self.deps = list_cmd_deps(cc_file)
 
     skip = False
-    flags = copy.copy (gsl_ldflags+ thread_ldflags)
+    flags = copy.copy (gsl_ldflags)
     if 'Q' in file_flags[cc_file]: flags += qt_ldflags
 
     if not skip: 
@@ -305,7 +315,7 @@ class Entry:
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
     self.deps = set([ cc_file ])
-    flags = copy.copy (gsl_cflags + thread_cflags)
+    flags = copy.copy (gsl_cflags)
 
     if is_moc (cc_file):
       src_header = cc_file[:-len(moc_cpp_suffix)] + h_suffix
@@ -396,10 +406,10 @@ def default_targets():
   return targets
 
 def is_executable (target):
-  return target.split (os.sep)[0] == bin_dir and not is_moc (target)
+  return split_path (target)[0] == bin_dir and not is_moc (target)
 
 def is_library (target):
-  return target.endswith (lib_suffix) and target.split(os.sep)[-1].startswith (lib_prefix)
+  return target.endswith (lib_suffix) and split_path(target)[-1].startswith (lib_prefix)
 
 def is_object (target):
   return target.endswith (obj_suffix)
@@ -429,8 +439,7 @@ def fillin (template, keyvalue):
 
 def execute (message, cmd):
   disp (message + os.linesep)
-  if verbose: 
-    disp (' '.join(cmd) + os.linesep)
+  log (' '.join(cmd) + os.linesep)
 
   try: 
     process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=environ)
@@ -467,6 +476,8 @@ def print_deps (current_file, indent=''):
 
 
 def is_GUI_target (current_file):
+  if 'gui' in split_path (current_file):
+    return True
   if current_file in file_flags: 
     if 'Q' in file_flags[current_file]: 
       return True
@@ -487,10 +498,11 @@ def list_headers (current_file):
     if current_file not in file_flags: 
       file_flags[current_file] = ''
 
+    if 'gui' in split_path (current_file):
+      if 'Q' not in file_flags[current_file]:
+        file_flags[current_file] += 'Q'
     if not os.path.exists (current_file):
       if os.path.basename(current_file) == 'icons'+cpp_suffix: 
-        if 'Q' not in file_flags[current_file]:
-          file_flags[current_file] += 'Q'
         return headers[current_file]
       sys.stderr.write ('ERROR: cannot find file "' + current_file + '"' + os.linesep)
       sys.exit(1)
@@ -510,9 +522,6 @@ def list_headers (current_file):
             else:
               sys.stderr.write ('ERROR: cannot find header file \"' + line + '\" (from file \"' + current_file + '\")' + os.linesep)
               sys.exit(1)
-          elif line.startswith ('<Q'):
-            if 'Q' not in file_flags[current_file]:
-              file_flags[current_file] += 'Q'
         elif line == 'Q_OBJECT':
           if 'M' not in file_flags[current_file]:
             file_flags[current_file] += 'M'
@@ -756,8 +765,7 @@ def clean_cmd ():
 
 
 def get_git_version (folder):
-  if verbose:
-    sys.stderr.write ('''
+  log ('''
 getting git version in folder "''' + folder + '"... ')
 
   try: 
@@ -765,14 +773,13 @@ getting git version in folder "''' + folder + '"... ')
     ( git_version, stderr ) = process.communicate()
     if process.returncode == 0:
       git_version = git_version.decode("utf-8").strip()
-      if verbose:
-        sys.stderr.write (git_version + '\n')
+      log (git_version + '\n')
       return git_version
   except:
     pass
 
-  if verbose:
-    sys.stderr.write ('not found\n')
+
+  log ('not found\n')
   return 'unknown'
 
 
@@ -787,8 +794,8 @@ def update_git_version (folder, git_version_file, macro_name):
     pass
     
   if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
-    if verbose:
-      sys.stderr.write ('version file "' + git_version_file + '" is out of date - updating\n')
+
+    log ('version file "' + git_version_file + '" is out of date - updating\n')
     with open (git_version_file, 'w') as fd:
       fd.write (version_file_contents)
 
@@ -833,8 +840,8 @@ if separate_project:
 
 
 
-if verbose:
-  sys.stderr.write ('''
+
+log ('''
 compiling TODO list...
 ''')
 
@@ -862,8 +869,8 @@ if nogui:
 
 
 
-if verbose:
-  sys.stderr.write ('building targets: ' + ' '.join (targets) + os.linesep)
+
+log ('building targets: ' + ' '.join (targets) + os.linesep)
 
 
 if dependencies:
@@ -880,8 +887,8 @@ todo = {}
 for item in todo_tmp.keys():
   if todo_tmp[item].action != 'NA' and todo_tmp[item].need_rebuild():
     todo[item] = todo_tmp[item]
-if verbose: 
-  sys.stderr.write ('TODO list contains ' + str(len(todo)) + ''' items
+
+log ('TODO list contains ' + str(len(todo)) + ''' items
 
 ''')
 
@@ -897,8 +904,7 @@ except:
   try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
   except: num_processors = 1
   
-if verbose:
-  sys.stderr.write ('''
+log ('''
 
 launching ''' + str(num_processors) + ''' threads
 

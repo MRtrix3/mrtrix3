@@ -110,7 +110,7 @@ namespace MR
                   return false;
                 if (S.stride(b) == 0)
                   return true;
-                return abs (S.stride (a)) < abs (S.stride (b));
+                return std::abs (S.stride (a)) < std::abs (S.stride (b));
               }
             private:
               const InfoType& S;
@@ -227,14 +227,14 @@ namespace MR
             if (!info.stride (i)) continue;
             for (size_t j = i+1; j < info.ndim(); ++j) {
               if (!info.stride (j)) continue;
-              if (abs (info.stride (i)) == abs (info.stride (j))) info.stride (j) = 0;
+              if (std::abs (info.stride (i)) == std::abs (info.stride (j))) info.stride (j) = 0;
             }
           }
 
           size_t max = 0;
           for (size_t i = 0; i < info.ndim(); ++i)
-            if (size_t (abs (info.stride (i))) > max)
-              max = abs (info.stride (i));
+            if (size_t (std::abs (info.stride (i))) > max)
+              max = std::abs (info.stride (i));
 
           for (size_t i = 0; i < info.ndim(); ++i) {
             if (info.stride (i)) continue;
@@ -381,7 +381,7 @@ namespace MR
 
           for (size_t i = 0; i < out.size(); ++i) 
             if (out[i]) 
-              if (Math::abs (out[i]) != Math::abs (in[i])) 
+              if (std::abs (out[i]) != std::abs (in[i])) 
                 return sanitise (in, out);
 
           sanitise (in);
@@ -413,7 +413,7 @@ namespace MR
       template <class InfoType> 
         inline List contiguous_along_axis (size_t axis, const InfoType& info) 
         {
-          return get_nearest_match (contiguous_along_axis(3), Image::Stride::get (info));
+          return get_nearest_match (contiguous_along_axis (axis), Image::Stride::get (info));
         }
 
       //! convenience function for use with Image::BufferPreload

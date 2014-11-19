@@ -27,12 +27,10 @@
 #include "file/path.h"
 #include "point.h"
 
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 #include "image/voxel.h"
 
 #include "math/rng.h"
-
-#include "thread/mutex.h"
 
 
 
@@ -74,13 +72,9 @@ namespace MR
       template <typename T>
       uint32_t get_count (T& data)
       {
-        typename T::voxel_type v (data);
+        auto vox = data.voxel();
         uint32_t count = 0;
-        Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v)) {
-          if (v.value())
-            ++count;
-        }
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) ++count; }, vox);
         return count;
       }
 
@@ -88,11 +82,9 @@ namespace MR
       template <typename T>
       float get_volume (T& data)
       {
-        typename T::voxel_type v (data);
-        float volume = 0;
-        Image::Loop loop;
-        for (loop.start (v); loop.ok(); loop.next (v))
-          volume += v.value();
+        auto vox = data.voxel();
+        float volume = 0.0f;
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { volume += v.value(); }, vox);
         return volume;
       }
 
@@ -120,8 +112,8 @@ namespace MR
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Point<float>& p) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
-          virtual bool get_seed (Point<float>& p, Point<float>& d) { return get_seed (p); }
+          virtual bool get_seed (Point<float>&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
+          virtual bool get_seed (Point<float>& p, Point<float>&) { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;
@@ -135,7 +127,7 @@ namespace MR
           uint32_t count;
           // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
           Math::RNG rng;
-          Thread::Mutex mutex;
+          std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 
         private:

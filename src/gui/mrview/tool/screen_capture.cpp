@@ -163,28 +163,28 @@ namespace MR
         void ScreenCapture::on_screen_capture ()
         {
 
-          if (isnan (rotation_axis_x->value()))
+          if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
-          if (isnan (rotation_axis_y->value()))
+          if (std::isnan (rotation_axis_y->value()))
             rotation_axis_y->setValue (0.0);
-          if (isnan (rotation_axis_z->value()))
+          if (std::isnan (rotation_axis_z->value()))
             rotation_axis_z->setValue (0.0);
-          if (isnan (degrees_button->value()))
+          if (std::isnan (degrees_button->value()))
             degrees_button->setValue (0.0);
 
-          if (isnan (translate_x->value()))
+          if (std::isnan (translate_x->value()))
             translate_x->setValue(0.0);
-          if (isnan (translate_y->value()))
+          if (std::isnan (translate_y->value()))
             translate_y->setValue(0.0);
-          if (isnan (translate_z->value()))
+          if (std::isnan (translate_z->value()))
             translate_z->setValue(0.0);
 
-          if (isnan (FOV_multipler->value()))
+          if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
-          float radians = degrees_button->value() * (M_PI / 180.0) / frames->value();
+          float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           int first_index = start_index->value();
@@ -201,8 +201,8 @@ namespace MR
             axis[1] = rotation_axis_y->value();
             axis[2] = rotation_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
-            rotation *= orientation;
-            this->window.set_orientation (rotation);
+            orientation *= rotation;
+            this->window.set_orientation (orientation);
 
             // Translation
             Point<float> focus (this->window.focus());
@@ -217,10 +217,11 @@ namespace MR
             window.set_target (target);
 
             // FOV
-            window.set_FOV (window.FOV() * (Math::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));
+            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));
 
             start_index->setValue (i + 1);
             this->window.updateGL();
+            qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
           }
         }
 

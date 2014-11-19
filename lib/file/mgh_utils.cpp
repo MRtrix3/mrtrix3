@@ -123,7 +123,7 @@ namespace MR
         if (get<float> (&MGHO.tr, is_BE) != 0.0f)
           H.comments().push_back ("TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
         if (get<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          H.comments().push_back ("Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / M_PI) + "deg");
+          H.comments().push_back ("Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
         if (get<float> (&MGHO.te, is_BE) != 0.0f)
           H.comments().push_back ("TE: "   + str (get<float> (&MGHO.te, is_BE)) + "ms");
         if (get<float> (&MGHO.ti, is_BE) != 0.0f)

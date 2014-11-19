@@ -639,6 +639,7 @@ namespace MR
       {
         mode = NULL;
         delete glarea;
+        delete glrefresh_timer;
         delete [] colourmap_actions;
       }
 
@@ -708,7 +709,7 @@ namespace MR
 
         try {
           MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          MR::Image::Buffer<cfloat>::voxel_type vox (dest);
+          auto vox = dest.voxel();
           MR::Image::copy_with_progress (image()->voxel(), vox);
         }
         catch (Exception& E) {
@@ -1290,7 +1291,7 @@ namespace MR
       }
 
 
-      inline void Window::mouseReleaseEventGL (QMouseEvent* event)
+      inline void Window::mouseReleaseEventGL (QMouseEvent*)
       {
         assert (mode);
         mode->mouse_release_event();
@@ -1312,7 +1313,7 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * Math::exp (-event->delta()/1200.0));
+                set_FOV (FOV() * std::exp (-event->delta()/1200.0));
                 updateGL();
                 event->accept();
                 return;

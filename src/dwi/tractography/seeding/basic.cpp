@@ -52,12 +52,12 @@ namespace MR
         SeedMask::~SeedMask()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
         bool SeedMask::get_seed (Point<float>& p)
         {
-          Mask::voxel_type seed (*mask);
+          auto seed = mask->voxel();
           do {
             seed[0] = rng.uniform_int (mask->dim(0));
             seed[1] = rng.uniform_int (mask->dim(1));
@@ -75,7 +75,7 @@ namespace MR
         Random_per_voxel::~Random_per_voxel()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
 
@@ -85,12 +85,12 @@ namespace MR
           if (expired)
             return false;
 
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
 
           if (vox[2] < 0 || ++inc == num) {
             inc = 0;
             ++vox[2];
-            Mask::voxel_type v (*mask);
+            auto v = mask->voxel();
             Image::Nav::set_pos (v, vox);
 
             while (v[0] != v.dim(0) && !v.value()) {
@@ -125,7 +125,7 @@ namespace MR
         Grid_per_voxel::~Grid_per_voxel()
         {
           delete mask;
-          mask = NULL;
+          mask = nullptr;
         }
 
         bool Grid_per_voxel::get_seed (Point<float>& p)
@@ -134,7 +134,7 @@ namespace MR
           if (expired)
             return false;
 
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
 
           if (++pos[2] >= os) {
             pos[2] = 0;
@@ -144,7 +144,7 @@ namespace MR
                 pos[0] = 0;
                 ++vox[2];
 
-                Mask::voxel_type v (*mask);
+                auto v = mask->voxel();
                 Image::Nav::set_pos (v, vox);
 
                 while (v[0] != v.dim(0) && !v.value()) {
@@ -178,12 +178,11 @@ namespace MR
         {
 
           Image::Buffer<float> data (in);
-          Image::Buffer<float>::voxel_type vox (data);
+          auto vox = data.voxel();
           std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
           std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
-          Image::Loop loop (0,3);
-          for (loop.start (vox); loop.ok(); loop.next (vox)) {
+          for (auto i = Image::Loop (0,3) (vox); i; ++i) {
             const float value = vox.value();
             if (value) {
               if (value < 0.0)
@@ -217,7 +216,7 @@ namespace MR
               new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
           }
 
-          Image::Adapter::Subset< Image::Buffer<float>::voxel_type > sub (vox, bottom, top);
+          Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
 
           image = new FloatImage (sub, new_info, in);
 
@@ -241,7 +240,7 @@ namespace MR
           } while (interp.value() < selector);
           p = interp.voxel2scanner (pos);
 #else
-          FloatImage::voxel_type seed (*image);
+          auto seed = image->voxel();
           float selector;
           do {
             seed[0] = rng.uniform_int (image->dim(0));

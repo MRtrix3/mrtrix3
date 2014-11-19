@@ -24,8 +24,7 @@
 #define __dwi_tractography_tracking_exec_h__
 
 
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/directions/set.h"
 
@@ -103,11 +102,20 @@ namespace MR
                   step_size = to<float> (properties["step_size"]);
                 size_t upsample_ratio = 1;
                 if (std::isfinite(step_size) && !step_size)
-                  upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
+                  upsample_ratio = std::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
 
                 TckMapper mapper (H, dirs);
                 mapper.set_upsample_ratio (upsample_ratio);
 
+                Thread::run_queue (
+                    Thread::multi (tracker), 
+                    GeneratedTrack(), 
+                    writer, 
+                    Streamline<value_type>(), 
+                    Thread::multi (mapper), 
+                    SetDixel(), 
+                    *seeder);
+/*
                 Thread::Queue<GeneratedTrack>           tracking_output_queue;
                 Thread::Queue< Streamline<value_type> > writer_output_queue;
                 Thread::Queue<Mapping::SetDixel>        dixel_queue;
@@ -124,7 +132,7 @@ namespace MR
                 Thread::Exec writer_thread   (q_writer,      "writer");
                 Thread::Exec mapper_threads  (mapper_array,  "mappers");
                 Thread::Exec seeder_thread   (q_seeder,      "seeder");
-
+*/
               }
 
             }

@@ -29,15 +29,15 @@ namespace MR
           if (!strides[i]) continue;
           for (size_t j = i+1; j < strides.size(); ++j) {
             if (!strides[j]) continue;
-            if (abs (strides[i]) == abs (strides[j])) 
+            if (std::abs (strides[i]) == std::abs (strides[j])) 
               strides[j] = 0;
           }
         }
 
         ssize_t max = 0;
         for (size_t i = 0; i < strides.size(); ++i)
-          if (ref[i] && abs (strides[i]) > max)
-            max = abs (strides[i]);
+          if (ref[i] && std::abs (strides[i]) > max)
+            max = std::abs (strides[i]);
 
         assert (max > 0);
 

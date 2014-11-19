@@ -69,7 +69,7 @@ void run ()
 {
 
   Image::Buffer<float> data_in (argument[0]);
-  Image::Buffer<float>::voxel_type voxel_in (data_in);
+  auto voxel_in = data_in.voxel();
 
   std::vector<std::vector<int> > bounds(data_in.ndim(), std::vector<int> (2) );
   for (size_t axis = 0; axis < data_in.ndim(); axis++) {
@@ -82,17 +82,16 @@ void run ()
 
     Image::Buffer<bool> data_mask (opt[0][0]);
     Image::check_dimensions (data_in, data_mask, 0, 3);
-    Image::Buffer<bool>::voxel_type voxel_mask (data_mask);
+    auto voxel_mask = data_mask.voxel();
 
     for (size_t axis = 0; axis != 3; ++axis) {
       bounds[axis][0] = data_in.dim (axis);
       bounds[axis][1] = 0;
     }
 
-    Image::Loop loop_mask;
     // Note that even though only 3 dimensions are cropped when using a mask, the bounds
     // are computed by checking the extent for all dimensions (for example a 4D AFD mask)
-    for (loop_mask.start (voxel_mask); loop_mask.ok(); loop_mask.next (voxel_mask)) {
+    for (auto i = Image::Loop() (voxel_mask); i; ++i) {
       if (voxel_mask.value()) {
         for (size_t axis = 0; axis != 3; ++axis) {
           bounds[axis][0] = std::min (bounds[axis][0], int (voxel_mask[axis]));
@@ -131,13 +130,13 @@ void run ()
     size[axis] = bounds[axis][1] - from[axis] + 1;
   }
 
-  Image::Adapter::Subset<Image::Buffer<float>::voxel_type> cropped (voxel_in, from, size);
+  Image::Adapter::Subset<decltype(voxel_in)> cropped (voxel_in, from, size);
 
   Image::Header H_out (data_in);
   H_out.info() = cropped.info();
   Image::Buffer<float> data_out (argument[1], H_out);
-  Image::Buffer<float>::voxel_type voxel_out (data_out);
-  Image::copy_with_progress_message ("cropping image...", cropped, voxel_out);
+  auto out = data_out.voxel();
+  Image::copy_with_progress_message ("cropping image...", cropped, out);
 
 }
 

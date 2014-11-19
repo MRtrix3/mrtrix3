@@ -141,7 +141,7 @@ void usage ()
 void run () {
 
   Image::BufferPreload<bool> input_data (argument[0]);
-  Image::BufferPreload<bool>::voxel_type input_voxel (input_data);
+  auto input_voxel = input_data.voxel();
 
   const size_t filter_index = argument[1];
 
@@ -159,7 +159,7 @@ void run () {
   Image::Stride::set_from_command_line (header);
 
   Image::Buffer<bool> output_data (argument[2], header);
-  Image::Buffer<bool>::voxel_type output_voxel (output_data);
+  auto output_voxel = output_data.voxel();
 
   filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "... ");
 

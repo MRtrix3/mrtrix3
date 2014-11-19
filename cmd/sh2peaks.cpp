@@ -22,8 +22,7 @@
 #include "command.h"
 #include "math/SH.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "image/loop.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
@@ -142,8 +141,8 @@ class DataLoader
 
         item.data.allocate (sh.dim(3));
 
-        Image::Loop inner (3); // iterates over SH coefficients
-        for (inner.start (sh); inner.ok(); inner.next (sh))
+        // iterates over SH coefficients
+        for (auto l = Image::Loop(3) (sh); l; ++l)
           item.data[sh[3]] = sh.value();
 
         if (mask)
@@ -190,8 +189,7 @@ class Processor
       dirs_vox[2] = item.pos[2];
 
       if (check_input (item)) {
-        Image::Loop inner (3);
-        for (inner.start (dirs_vox); inner.ok(); inner.next (dirs_vox))
+        for (auto l = Image::Loop(3) (dirs_vox); l; ++l)
           dirs_vox.value() = NAN;
         return true;
       }
@@ -203,7 +201,7 @@ class Processor
         p.a = Math::SH::get_peak (item.data.ptr(), lmax, p.v);
         if (std::isfinite (p.a)) {
           for (size_t j = 0; j < all_peaks.size(); j++) {
-            if (Math::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
+            if (std::abs (p.v.dot (all_peaks[j].v)) > DOT_THRESHOLD) {
               p.a = NAN;
               break;
             }
@@ -229,7 +227,7 @@ class Processor
 
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = Math::abs (p.dot (all_peaks[n].v));
+            value_type f = std::abs (p.dot (all_peaks[n].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -241,7 +239,7 @@ class Processor
         for (int i = 0; i < npeaks; i++) {
           value_type mdot = 0.0;
           for (size_t n = 0; n < all_peaks.size(); n++) {
-            value_type f = Math::abs (all_peaks[n].v.dot (true_peaks[i].v));
+            value_type f = std::abs (all_peaks[n].v.dot (true_peaks[i].v));
             if (f > mdot) {
               mdot = f;
               peaks_out[i] = all_peaks[n];
@@ -281,13 +279,13 @@ class Processor
         (*ipeaks_vox)[1] = item.pos[1];
         (*ipeaks_vox)[2] = item.pos[2];
         (*ipeaks_vox)[3] = 0;
-        if (isnan (value_type (ipeaks_vox->value())))
+        if (std::isnan (value_type (ipeaks_vox->value())))
           return true;
       }
 
       bool no_peaks = true;
       for (size_t i = 0; i < item.data.size(); i++) {
-        if (isnan (item.data[i]))
+        if (std::isnan (item.data[i]))
           return true;
         if (no_peaks)
           if (i && item.data[i] != 0.0) 
@@ -307,11 +305,7 @@ extern value_type default_directions [];
 void run ()
 {
   Image::Buffer<value_type> SH_data (argument[0]);
-  if (SH_data.datatype().is_complex()) 
-    throw Exception ("cannot operate on complex data");
-
-  if (SH_data.ndim() != 4)
-    throw Exception ("spherical harmonic image should contain 4 dimensions");
+  Math::SH::check (SH_data);
 
   Options opt = get_options ("mask");
 
@@ -336,7 +330,7 @@ void run ()
   opt = get_options ("direction");
   std::vector<Direction> true_peaks;
   for (size_t n = 0; n < opt.size(); ++n) {
-    Direction p (M_PI*to<float> (opt[n][0]) /180.0, M_PI*float (opt[n][1]) /180.0);
+    Direction p (Math::pi*to<float> (opt[n][0]) /180.0, Math::pi*float (opt[n][1]) /180.0);
     true_peaks.push_back (p);
   }
   if (true_peaks.size()) 

@@ -130,7 +130,7 @@ void run () {
   }
 
   Image::Header header (argument[3]);
-  float vox = Math::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.0f/3.0f);
+  float vox = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.0f/3.0f);
   Options opt = get_options ("vox");
   if (opt.size()) 
     vox = opt[0][0];
@@ -195,9 +195,8 @@ void run () {
   header.DW_scheme().clear();
 
   Image::Buffer<bool> roi_buffer (argument[4], header);
-  Image::Buffer<bool>::voxel_type roi (roi_buffer);
-  Image::LoopInOrder loop (roi);
-  for (loop.start (roi); loop.ok(); loop.next (roi))
+  auto roi = roi_buffer.voxel();
+  for (auto i = Image::LoopInOrder (roi) (roi); i; ++i)
     roi.value() = true;
 
 }

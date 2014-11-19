@@ -52,19 +52,19 @@ void run ()
 {
   Image::Header input_header1 (argument[0]);
   Image::BufferSparse<FixelMetric> input_data1 (input_header1);
-  Image::BufferSparse<FixelMetric>::voxel_type input_vox1 (input_data1);
+  auto input_vox1 = input_data1.voxel();
 
   Image::Header input_header2 (argument[1]);
   Image::BufferSparse<FixelMetric> input_data2 (input_header2);
-  Image::BufferSparse<FixelMetric>::voxel_type input_vox2 (input_data2);
+  auto input_vox2 = input_data2.voxel();
 
   Image::check_dimensions(input_header1, input_header2);
 
   Image::BufferSparse<FixelMetric> output_data (argument[2], input_header1);
-  Image::BufferSparse<FixelMetric>::voxel_type output_vox (output_data);
+  auto output_vox = output_data.voxel();
 
   Image::LoopInOrder loop (input_data1, "multiplying fixel images...");
-  for (loop.start (input_vox1, input_vox2, output_vox); loop.ok(); loop.next (input_vox1, input_vox2, output_vox)) {
+  for (auto i = loop (input_vox1, input_vox2, output_vox); i; ++i) {
     if (input_vox1.value().size() != input_vox2.value().size())
       throw Exception ("the fixel images do not have corresponding fixels in all voxels");
     output_vox.value().set_size (input_vox1.value().size());

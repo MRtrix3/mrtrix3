@@ -363,23 +363,26 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Element& item)
       {
+        //return "TYPE  GROUP ELEMENT VR  SIZE  OFFSET  NAME                               CONTENTS";
+
         const std::string& name (item.tag_name());
+        stream << printf ("[DCM] %04X %04X %c%c % 8u % 8llu ", item.group, item.element, 
+            reinterpret_cast<const char*> (&item.VR)[1], reinterpret_cast<const char*> (&item.VR)[0],
+            ( item.size == LENGTH_UNDEFINED ? uint32_t(0) : item.size ), item.offset (item.start));
 
-        stream << "[DCM] ";
-        size_t indent = item.level() + ( item.VR == VR_SQ ? 0 : 1 );
+        std::string tmp;
+        size_t indent = item.level() - ( item.VR == VR_SQ ? 1 : 0 );
         for (size_t i = 0; i < indent; i++) 
-          stream << "  ";
+          tmp += "  ";
         if (item.VR == VR_SQ) 
-          stream << "+ ";
+          tmp += "> ";
         else if (item.group == GROUP_SEQUENCE && item.element == ELEMENT_SEQUENCE_ITEM) 
-          stream << "- ";
+          tmp += "- ";
         else 
-          stream << "  ";
-        stream << printf ("%02X %02X ", item.group, item.element)  
-            + reinterpret_cast<const char*> (&item.VR)[1] + reinterpret_cast<const char*> (&item.VR)[0] + " " 
-            + str ( item.size == LENGTH_UNDEFINED ? 0 : item.size ) + " " 
-            + str (item.offset (item.start)) + " " + ( name.size() ? name.substr (2) : "unknown" ) + " ";
-
+          tmp += "  ";
+        tmp += ( name.size() ? name.substr(2) : "unknown" );
+        tmp.resize (40, ' ');
+        stream << tmp + ' ';
 
         switch (item.type()) {
           case Element::INT: 
@@ -403,8 +406,6 @@ namespace MR {
             if (item.group != GROUP_SEQUENCE || item.element != ELEMENT_SEQUENCE_ITEM)
               stream << "unknown data type";
         }
-        if (item.group%2) 
-          stream << " [ PRIVATE ]";
 
         stream << "\n";
 

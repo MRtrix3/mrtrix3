@@ -56,17 +56,22 @@ namespace MR
 
       // Note that this function does not take into account grouping of subjects and therefore generated
       // permutations are not guaranteed to be unique wrt the computed test statistic.
-      // If the number of subjects is large then the likelyhood of generating duplicates is low.
+      // If the number of subjects is large then the likelihood of generating duplicates is low.
       inline void generate_permutations (const size_t num_perms,
                                          const size_t num_subjects,
-                                         std::vector<std::vector<size_t> >& permutations)
+                                         std::vector<std::vector<size_t> >& permutations,
+                                         bool include_default)
       {
         permutations.clear();
         std::vector<size_t> default_labelling (num_subjects);
         for (size_t i = 0; i < num_subjects; ++i)
-          default_labelling[i] = i; 
-        permutations.push_back (default_labelling);
-        for (size_t p = 1; p < num_perms; ++p) {
+          default_labelling[i] = i;
+        size_t p = 0;
+        if (include_default) {
+          permutations.push_back (default_labelling);
+          ++p;
+        }
+        for (;p < num_perms; ++p) {
           std::vector<size_t> permuted_labelling (default_labelling);
           do {
             std::random_shuffle (permuted_labelling.begin(), permuted_labelling.end());

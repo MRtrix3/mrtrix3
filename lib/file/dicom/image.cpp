@@ -410,7 +410,7 @@ namespace MR {
           }
 
           if (!slicegap_warning_issued) {
-            if (Math::abs (current_slice_separation - frames[n]->slice_thickness) > 1e-4) {
+            if (std::abs (current_slice_separation - frames[n]->slice_thickness) > 1e-4) {
               WARN ("slice gap detected");
               slicegap_warning_issued = true;
               slice_separation = current_slice_separation;
@@ -418,7 +418,7 @@ namespace MR {
           }
 
           if (!slicesep_warning_issued) {
-            if (Math::abs (current_slice_separation - slice_separation) > 1e-4) {
+            if (std::abs (current_slice_separation - slice_separation) > 1e-4) {
               slicesep_warning_issued = true;
               WARN ("slice separation is not constant");
             }

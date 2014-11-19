@@ -26,7 +26,7 @@
 #define __dwi_tractography_sift_types_h__
 
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 namespace MR

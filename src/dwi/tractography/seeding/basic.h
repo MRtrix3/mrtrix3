@@ -61,7 +61,7 @@ namespace MR
                   throw Exception ("Could not parse seed \"" + in + "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
                 pos.set (F[0], F[1], F[2]);
                 rad = F[3];
-                volume = 4.0*M_PI*Math::pow3(rad)/3.0;
+                volume = 4.0*Math::pi*Math::pow3(rad)/3.0;
               }
 
             virtual bool get_seed (Point<float>& p);

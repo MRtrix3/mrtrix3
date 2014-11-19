@@ -124,13 +124,14 @@ namespace MR
     provided as a linear array. It is a template class, and takes the
     corresponding buffer class as its template argument. For convenience, you
     can use the relevant Image::Buffer \c voxel_type member, which is a \c
-    typedef to the correct type.
+    typedef to the correct type, or the voxel() method, which returns a fully
+    formed \c voxel_type object (ideal for use with \c auto).
 
     The location of the voxel is set using its operator[] methods, and the
     voxel value is accessed using its value() methods. For example:
     \code
     // create an Image::Voxel pointing to buffer:
-    Image::Buffer<float>::voxel_type vox (buffer);
+    auto vox = buffer.voxel();
 
     // set position to voxel at [ 12 3 55 ]:
     vox[0] = 12;
@@ -209,12 +210,12 @@ namespace MR
       Image::Buffer<float> buffer_out (argument[1], header);
 
       // create Image::Voxel classes to access the data:
-      Image::Buffer<float>::voxel_type vox_in (buffer_in);
-      Image::Buffer<float>::voxel_type vox_out (buffer_out);
+      auto vox_in = buffer_in.voxel();
+      auto vox_out = buffer_out.voxel();
       
       // create a Median3D adapter for the input voxel:
       std::vector<int> extent (1,3);
-      Adapter::Median3D<InputVoxelType> median_adapter (vox_in, extent);
+      Adapter::Median3D<decltype(vox_in)> median_adapter (vox_in, extent);
 
       // perform the processing using a simple multi-threaded copy:
       Image::threaded_copy_with_progress_message ("median filtering...", median_adapter, vox_out);

@@ -186,7 +186,7 @@ void run ()
   opt = get_options ("path"); if (opt.size()) modifier.set_path_mask (opt[0][0]);
   opt = get_options ("none"); if (opt.size()) modifier.set_none_mask (opt[0][0]);
 
-  Image::ThreadedLoop loop ("Modifying ACT 5TT image... ", H, 2, 0, 3);
+  Image::ThreadedLoop loop ("Modifying ACT 5TT image... ", H, 0, 3, 2);
   loop.run (modifier);
 
 }

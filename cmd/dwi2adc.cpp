@@ -66,13 +66,13 @@ class DWI2ADC {
       Image::voxel_assign (adc_vox, pos);
       for (dwi_vox[dwi_axis] = 0; dwi_vox[dwi_axis] < dwi_vox.dim(dwi_axis); ++dwi_vox[dwi_axis]) {
         value_type val = dwi_vox.value();
-        dwi[dwi_vox[dwi_axis]] = val ? Math::log (val) : 1.0e-12;
+        dwi[dwi_vox[dwi_axis]] = val ? std::log (val) : 1.0e-12;
       }
 
       Math::mult (adc, binv, dwi);
 
       adc_vox[3] = 0;
-      adc_vox.value() = Math::exp (adc[0]);
+      adc_vox.value() = std::exp (adc[0]);
       adc_vox[3] = 1;
       adc_vox.value() = adc[1];
     }
@@ -111,10 +111,10 @@ void run () {
 
   OutputBufferType adc_buffer (argument[1], header);
 
-  InputBufferType::voxel_type dwi_vox (dwi_buffer);
-  OutputBufferType::voxel_type adc_vox (adc_buffer);
+  auto dwi_vox = dwi_buffer.voxel();
+  auto adc_vox = adc_buffer.voxel();
 
-  Image::ThreadedLoop ("computing ADC values...", dwi_vox, 1, 0, 3)
+  Image::ThreadedLoop ("computing ADC values...", dwi_vox, 0, 3)
     .run (DWI2ADC (dwi_vox, adc_vox, binv, dwi_axis));
 }
 

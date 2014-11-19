@@ -101,8 +101,7 @@ class SDeconvFunctor {
 void run() {
 
   Image::Header input_SH_header (argument[0]);
-  if (input_SH_header.ndim() != 4)
-    throw Exception ("input SH image should contain 4 dimensions");
+  Math::SH::check (input_SH_header);
   Image::BufferPreload<value_type> input_buf (input_SH_header, Image::Stride::contiguous_along_axis (3));
 
   Math::Vector<value_type> responseSH;
@@ -122,6 +121,6 @@ void run() {
   Image::Buffer<value_type> output_SH_buf (argument[2], output_SH_header);
 
   SDeconvFunctor sconv (input_buf, output_SH_buf, mask_buf, responseRH);
-  Image::ThreadedLoop loop ("performing convolution...", input_buf, 2, 0, 3);
+  Image::ThreadedLoop loop ("performing convolution...", input_buf, 0, 3, 2);
   loop.run (sconv);
 }

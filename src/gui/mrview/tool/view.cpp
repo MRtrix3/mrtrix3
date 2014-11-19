@@ -30,17 +30,17 @@
 
 #define FOV_RATE_MULTIPLIER 0.01f
 #define MRTRIX_MIN_ALPHA 1.0e-3f
-#define MRTRIX_ALPHA_MULT (-MR::Math::log (MRTRIX_MIN_ALPHA)/1000.0f)
+#define MRTRIX_ALPHA_MULT (-std::log (MRTRIX_MIN_ALPHA)/1000.0f)
 
 
 namespace {
 
   inline float get_alpha_from_slider (float slider_value) {
-    return MRTRIX_MIN_ALPHA * MR::Math::exp (MRTRIX_ALPHA_MULT * float (slider_value));
+    return MRTRIX_MIN_ALPHA * std::exp (MRTRIX_ALPHA_MULT * float (slider_value));
   }
 
   inline float get_slider_value_from_alpha (float alpha) {
-    return MR::Math::log (alpha/MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT;
+    return std::log (alpha/MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT;
   }
 
 }
@@ -88,13 +88,25 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return planes.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const 
+            {
+              (void) parent; // to suppress warnings about unused parameters
+              return planes.size();
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return 1;
+            }
 
             void remove (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
@@ -381,7 +393,7 @@ namespace MR
 
 
 
-        void View::showEvent (QShowEvent* event) 
+        void View::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
@@ -402,7 +414,7 @@ namespace MR
 
 
 
-        void View::closeEvent (QCloseEvent* event) 
+        void View::closeEvent (QCloseEvent*) 
         {
           window.disconnect (this);
         }

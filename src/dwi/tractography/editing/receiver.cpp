@@ -94,8 +94,8 @@ void Receiver::print()
 {
   const float input_fraction = in_count ? (total_count / float(in_count)) : 0.0;
   const float output_fraction = number ? (count / float(number)) : 0.0;
-  fprintf (stderr, "\r%8zu read, %8zu written    [%3d%%]",
-           total_count, count, int(100.0 * std::max(input_fraction, output_fraction)));
+  fprintf (stderr, "\r%8lu read, %8lu written    [%3d%%]",
+           (long unsigned int)total_count, (long unsigned int)count, int(100.0 * std::max(input_fraction, output_fraction)));
 }
 
 

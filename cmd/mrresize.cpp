@@ -69,7 +69,7 @@ void usage ()
 void run () {
 
   Image::Buffer<float> input_data (argument[0]);
-  Image::Buffer<float>::voxel_type input_vox (input_data);
+  auto input_vox = input_data.voxel();
 
   Image::Filter::Resize resize_filter (input_vox);
 
@@ -114,7 +114,7 @@ void run () {
   header.info() = resize_filter.info();
   header.datatype() = DataType::from_command_line (header.datatype());
   Image::Buffer<float> output_data (argument[1], header);
-  Image::Buffer<float>::voxel_type output_vox (output_data);
+  auto output_vox = output_data.voxel();
 
   resize_filter (input_vox, output_vox);
 }

@@ -55,7 +55,7 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<value_type> input_data (argument[0]);
-       * Buffer<value_type>::voxel_type input_voxel (input_data);
+       * auto input_voxel = input_data.voxel();
        *
        * Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
        *
@@ -64,7 +64,7 @@ namespace MR
        * mask_header.info() = filter.info();
        *
        * Buffer<bool> mask_data (mask_header, argument[1]);
-       * Buffer<bool>::voxel_type mask_voxel (mask_data);
+       * auto mask_voxel = mask_data.voxel();
        *
        * filter(input_voxel, mask_voxel);
        *
@@ -95,7 +95,7 @@ namespace MR
 
               // Generate a 'master' scratch buffer mask, to which all shells will contribute
               BufferScratch<bool> mask_data (info, "DWI mask");
-              BufferScratch<bool>::voxel_type mask_voxel (mask_data);
+              auto mask_voxel = mask_data.voxel();
 
               Ptr<ProgressBar> progress;
               if (message.size())
@@ -106,10 +106,10 @@ namespace MR
               for (size_t s = 0; s != shells.count(); ++s) {
                 const DWI::Shell shell (shells[s]);
 
-                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(Math::round(shell.get_mean()))) + " image");
-                typename BufferScratch<value_type>::voxel_type shell_voxel (shell_data);
+                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
+                auto shell_voxel = shell_data.voxel();
 
-                for (loop.start (input, shell_voxel); loop.ok(); loop.next (input, shell_voxel)) {
+                for (auto l = loop (input, shell_voxel); l; ++l) {
                   value_type mean = 0;
                   for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
                     input[3] = *v;
@@ -123,13 +123,13 @@ namespace MR
                 // Threshold the mean intensity image for this shell
                 OptimalThreshold threshold_filter (shell_data);
                 BufferScratch<bool> shell_mask_data (threshold_filter);
-                BufferScratch<bool>::voxel_type shell_mask_voxel (shell_mask_data);
+                auto shell_mask_voxel = shell_mask_data.voxel();
                 threshold_filter (shell_voxel, shell_mask_voxel);
                 if (progress)
                   ++(*progress);
 
                 // Add this mask to the master
-                for (loop.start (mask_voxel, shell_mask_voxel); loop.ok(); loop.next (mask_voxel, shell_mask_voxel)) {
+                for (auto l = loop (mask_voxel, shell_mask_voxel); l; ++l) {
                   if (shell_mask_voxel.value())
                     mask_voxel.value() = true;
                 }
@@ -141,7 +141,7 @@ namespace MR
               // The following operations apply to the mask as combined from all shells
 
               BufferScratch<bool> temp_data (info, "temporary mask");
-              BufferScratch<bool>::voxel_type temp_voxel (temp_data);
+              auto temp_voxel = temp_data.voxel();
               Median median_filter (mask_voxel);
               median_filter (mask_voxel, temp_voxel);
               if (progress)
@@ -153,7 +153,7 @@ namespace MR
               if (progress)
                 ++(*progress);
 
-              for (loop.start (temp_voxel); loop.ok(); loop.next (temp_voxel))
+              for (auto l = loop (temp_voxel); l; ++l) 
                 temp_voxel.value() = !temp_voxel.value();
               if (progress)
                 ++(*progress);
@@ -162,7 +162,7 @@ namespace MR
               if (progress)
                 ++(*progress);
 
-              for (loop.start (temp_voxel, output); loop.ok(); loop.next (temp_voxel, output))
+              for (auto l = loop (temp_voxel, output); l; ++l) 
                 output.value() = !temp_voxel.value();
           }
 

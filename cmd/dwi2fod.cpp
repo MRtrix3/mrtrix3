@@ -1,9 +1,7 @@
 #include "command.h"
 #include "ptr.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
@@ -43,9 +41,8 @@ void usage ()
     + Argument ("dwi",
         "the input diffusion-weighted image.").type_image_in()
     + Argument ("response",
-        "the diffusion-weighted signal response function for a single fibre population, "
-        "either as a comma-separated vector of floating-point values, or a text file "
-        "containing the coefficients.").type_file_in()
+        "a text file containing the diffusion-weighted signal response function "
+        "coefficients for a single fibre population, ").type_file_in()
     + Argument ("SH",
         "the output spherical harmonics coefficients image.").type_image_out();
 
@@ -176,11 +173,11 @@ void run ()
   Image::Stride::set_from_command_line (header);
   OutputBufferType FOD_buffer (argument[2], header);
 
-  InputBufferType::voxel_type dwi_vox (dwi_buffer);
-  OutputBufferType::voxel_type FOD_vox (FOD_buffer);
+  auto dwi_vox = dwi_buffer.voxel();
+  auto FOD_vox = FOD_buffer.voxel();
 
   Processor processor (dwi_vox, FOD_vox, mask_vox, shared);
-  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 1, 0, 3);
+  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 0, 3);
   loop.run (processor);
 }
 

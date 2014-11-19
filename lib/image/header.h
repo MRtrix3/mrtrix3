@@ -278,7 +278,7 @@ namespace MR
         }
 
       private:
-        template <class Set> void operator= (const Set& set) { assert (0); }
+        template <class InfoType> void operator= (const InfoType&) { assert (0); }
         using Header::set_ndim;
         using Header::clear;
         using Header::sanitise;

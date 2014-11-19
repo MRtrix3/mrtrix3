@@ -78,15 +78,15 @@ void run ()
   Image::Stride::set (H_out, Image::Stride::contiguous_along_axis (3, fast_csf));
   Image::Buffer<float> out (argument[4], H_out);
 
-  Image::Buffer<float>::voxel_type v_out      (out);
-  Image::Buffer<float>::voxel_type v_fast_csf (fast_csf);
-  Image::Buffer<float>::voxel_type v_fast_gm  (fast_gm);
-  Image::Buffer<float>::voxel_type v_fast_wm  (fast_wm);
-  Image::Buffer<float>::voxel_type v_first    (first);
+  auto v_out = out.voxel();
+  auto v_fast_csf = fast_csf.voxel();
+  auto v_fast_gm = fast_gm.voxel();
+  auto v_fast_wm = fast_wm.voxel();
+  auto v_first = first.voxel();
 
   // Run LargestConnectedComponent on WM fraction to remove some BET / FAST errors
   Image::BufferScratch<float> wm_fixed (fast_wm);
-  Image::BufferScratch<float>::voxel_type v_wm_fixed (wm_fixed);
+  auto v_wm_fixed = wm_fixed.voxel();
   {
     Image::Filter::LargestConnectedComponent lcc (v_fast_wm);
     lcc.set_message ("cleaning up white matter fraction image...");
@@ -94,7 +94,7 @@ void run ()
   }
 
   Image::Loop loop ("concatenating images...", 0, 3);
-  for (loop.start (v_out); loop.ok(); loop.next (v_out)) {
+  for (auto l = loop (v_out); l; ++l) {
 
     for (size_t axis = 0; axis != 3; ++axis)
       v_fast_csf[axis] = v_fast_gm[axis] = v_wm_fixed[axis] = v_first[axis] = v_out[axis];

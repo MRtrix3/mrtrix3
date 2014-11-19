@@ -51,7 +51,7 @@ namespace MR
             list[n].value = min + step * (n + 0.5);
 
           MR::Image::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
-          for (loop.start (D); loop.ok(); loop.next (D)) {
+          for (auto l = loop (D); l; ++l) {
             value_type val = D.value();
             if (std::isfinite (val) && val != 0.0) {
               size_t pos = size_t ( (val-min) /step);

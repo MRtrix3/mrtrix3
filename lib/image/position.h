@@ -203,11 +203,11 @@ namespace MR
           S.move_pos (axis,-1);
           return (p);
         }
-        ssize_t operator++ (int notused)   {
+        ssize_t operator++ (int)   {
           S.move_pos (axis,1);
           return (S.get_pos (axis));
         }
-        ssize_t operator-- (int notused)   {
+        ssize_t operator-- (int)   {
           S.move_pos (axis,-1);
           return (S.get_pos (axis));
         }

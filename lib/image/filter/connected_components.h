@@ -48,11 +48,9 @@ namespace MR
         public:
           uint32_t label;
           uint32_t size;
-
           bool operator< (const cluster& j) const {
             return size < j.size;
           }
-
       };
 
 
@@ -66,13 +64,16 @@ namespace MR
 
         public:
           Connector (bool do_26_connectivity) :
-            do_26_connectivity_ (do_26_connectivity) {}
+            do_26_connectivity (do_26_connectivity),
+            dim_to_ignore (4, false) {
+              dim_to_ignore[3] = true;
+          }
 
 
           // Perform connected components on the mask.
           const std::vector<std::vector<int> >& run (std::vector<cluster>& clusters,
-                                                      std::vector<uint32_t>& labels) const {
-            labels.resize (adjacent_indices_.size(), 0);
+                                                     std::vector<uint32_t>& labels) const {
+            labels.resize (adjacent_indices.size(), 0);
             uint32_t current_label = 1;
             for (uint32_t i = 0; i < labels.size(); i++) {
               // this node has not been already clustered
@@ -87,7 +88,7 @@ namespace MR
             }
             if (clusters.size() > std::numeric_limits<uint32_t>::max())
               throw Exception ("The number of clusters is larger than can be labelled with an unsigned 32bit integer.");
-            return mask_indices_;
+            return mask_indices;
           }
 
 
@@ -96,7 +97,7 @@ namespace MR
                     std::vector<uint32_t>& labels,
                     const std::vector<float>& data,
                     const float threshold) const {
-            labels.resize (adjacent_indices_.size(), 0);
+            labels.resize (adjacent_indices.size(), 0);
             uint32_t current_label = 1;
             for (uint32_t i = 0; i < labels.size(); i++) {
               // this node has not been already clustered and is above threshold
@@ -114,69 +115,45 @@ namespace MR
           }
 
 
-          void set_directions (Math::Matrix<float>& dirs_az_el, float angular_threshold) {
-            angular_threshold = angular_threshold * M_PI / 180.0;
-            Math::Matrix<float> vert (dirs_az_el.rows(), 3);
-            for (size_t d = 0; d < dirs_az_el.rows(); d++) {
-              vert(d,0) = sin(dirs_az_el(d,1)) * cos(dirs_az_el(d,0));
-              vert(d,1) = sin(dirs_az_el(d,1)) * sin(dirs_az_el(d,0));
-              vert(d,2) = cos(dirs_az_el(d,1));
+          void set_dim_to_ignore (std::vector<bool>& ignore_dim) {
+            for (size_t d = 0; d < ignore_dim.size(); ++d) {
+              dim_to_ignore[d] = ignore_dim[d];
             }
-            dir_adjacency_matrix_.resize(dirs_az_el.rows(), dirs_az_el.rows(), 0.0);
-            for (size_t m = 0; m < dirs_az_el.rows(); m++) {
-              for (size_t n = m + 1; n < dirs_az_el.rows(); n++) {
-                float angle = Math::acos(Math::dot(vert.row(m), vert.row(n)));
-                if (angle > M_PI_2)
-                  angle = M_PI - angle;
-                if (angle < angular_threshold) {
-                  dir_adjacency_matrix_ (m,n) = 1;
-                  dir_adjacency_matrix_ (n,m) = 1;
-                } else {
-                  dir_adjacency_matrix_ (m,n) = 0;
-                  dir_adjacency_matrix_ (n,m) = 0;
-                }
-              }
-            }
-          }
-
-          void set_dim_to_ignore (std::vector<bool>& dim_to_ignore) {
-        	  dim_to_ignore_ = dim_to_ignore;
           }
 
 
           template <class MaskVoxelType>
           const std::vector<std::vector<int> >& precompute_adjacency (MaskVoxelType& mask) {
 
-            ProgressBar progress ("Precomputing voxel adjacency from mask...");
-            if (!dim_to_ignore_.size())
-              dim_to_ignore_.resize (mask.ndim(), false);
             Image::BufferScratch<uint32_t> index_data (mask);
-            Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
+            auto index_image = index_data.voxel();
+
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask);
-            for (loop.start (mask, index_image); loop.ok(); loop.next (mask, index_image)) {
-              progress++;
+            for (auto l = loop (mask, index_image); l; ++l) {
               if (mask.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
-                index_image.value() = mask_indices_.size();
+                index_image.value() = mask_indices.size();
                 std::vector<int> index (mask.ndim());
                 for (size_t dim = 0; dim < mask.ndim(); dim++)
                   index[dim] = mask[dim];
-                mask_indices_.push_back (index);
+                mask_indices.push_back (index);
               } else {
                 index_image.value() = 0;
               }
             }
-            // Here we pre-compute the offsets for our neighbours in 3D space
-            std::vector< Point<int> > neighbour_offsets;
-            Point<int> offset;
+            // Here we pre-compute the offsets for our neighbours in 4D space
+            std::vector< std::vector<int> > neighbour_offsets;
+            std::vector<int> offset (4);
             for (offset[0] = -1; offset[0] <= 1; offset[0]++) {
               for (offset[1] = -1; offset[1] <= 1; offset[1]++) {
                 for (offset[2] = -1; offset[2] <= 1; offset[2]++) {
-                  if (offset.norm2() && (do_26_connectivity_ || offset.norm() == 1)) {
-                    for (size_t dim = 0; dim != 3; ++dim)
-                      if (Math::abs (offset[dim]) && dim_to_ignore_[dim])
-                        continue;
+                  for (offset[3] = -1; offset[3] <= 1; offset[3]++) {
+                    if (!do_26_connectivity && ((abs(offset[0]) + abs(offset[1]) + abs(offset[2]) + abs(offset[3])) > 1))
+                      continue;
+                    if ((abs(offset[0]) && dim_to_ignore[0]) || (abs(offset[1]) && dim_to_ignore[1]) ||
+                        (abs(offset[2]) && dim_to_ignore[2]) || (abs(offset[3]) && dim_to_ignore[3]))
+                      continue;
                     neighbour_offsets.push_back (offset);
                   }
                 }
@@ -184,53 +161,27 @@ namespace MR
             }
             // 2nd pass, define adjacency
             MaskVoxelType mask_neigh (mask);
-            for (std::vector<std::vector<int> >::const_iterator it = mask_indices_.begin(); it != mask_indices_.end(); ++it) {
-              progress++;
+            for (std::vector<std::vector<int> >::const_iterator it = mask_indices.begin(); it != mask_indices.end(); ++it) {
               std::vector<uint32_t> neighbour_indices;
-              if (mask.ndim() == 4)
-                mask_neigh[3] = (*it)[3];
-              for (std::vector< Point<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
-                for (size_t dim = 0; dim < 3; dim++)
+              for (std::vector< std::vector<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
+                for (size_t dim = 0; dim < mask.ndim(); dim++)
                   mask_neigh[dim] = (*it)[dim] + (*offset)[dim];
                 if (Image::Nav::within_bounds (mask_neigh)) {
                   if (mask_neigh.value() >= 0.5)
                     neighbour_indices.push_back (Image::Nav::get_value_at_pos (index_image, mask_neigh));
                 }
               }
-              // here we handle the 4th dimension
-              if (mask.ndim() == 4 && !dim_to_ignore_[3]) {
-                Image::Nav::set_pos (mask_neigh, *it);
-                if (dir_adjacency_matrix_.is_set()) {
-                  for (int i = 0; i < mask.dim(3); i++) {
-                    if (dir_adjacency_matrix_((*it)[3], i)) {
-                      mask_neigh[3] = i;
-                      if (mask_neigh.value() > 0.5)
-                        neighbour_indices.push_back (Image::Nav::get_value_at_pos (index_image, mask_neigh));
-                    }
-                  }
-                } else {
-                  if ((*it)[3] > 0) {  // boundary check
-                    mask_neigh[3] = (*it)[3] - 1;
-                    if (mask_neigh.value() > 0.5)
-                      neighbour_indices.push_back (Image::Nav::get_value_at_pos (index_image, mask_neigh));
-                  }
-                  if ((*it)[3] + 1 < mask.dim (3)) { // boundary check
-                    mask_neigh[3] = (*it)[3] + 1;
-                    if (mask_neigh.value() > 0.5)
-                      neighbour_indices.push_back (Image::Nav::get_value_at_pos (index_image, mask_neigh));
-                  }
-                }
-              }
-              adjacent_indices_.push_back(neighbour_indices);
+              adjacent_indices.push_back (neighbour_indices);
             }
-            return mask_indices_;
+
+            return mask_indices;
           }
 
 
           bool next_neighbour (uint32_t& node, std::vector<uint32_t>& labels) const {
-            for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
-              if (labels[adjacent_indices_[node][n]] == 0) {
-                node = adjacent_indices_[node][n];
+            for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
+              if (labels[adjacent_indices[node][n]] == 0) {
+                node = adjacent_indices[node][n];
                 return true;
               }
             }
@@ -242,9 +193,9 @@ namespace MR
                                std::vector<uint32_t>& labels,
                                const std::vector<float>& data,
                                const float threshold) const {
-            for (size_t n = 0; n < adjacent_indices_[node].size(); n++) {
-              if (labels[adjacent_indices_[node][n]] == 0 && data[adjacent_indices_[node][n]] > threshold) {
-                node = adjacent_indices_[node][n];
+            for (size_t n = 0; n < adjacent_indices[node].size(); n++) {
+              if (labels[adjacent_indices[node][n]] == 0 && data[adjacent_indices[node][n]] > threshold) {
+                node = adjacent_indices[node][n];
                 return true;
               }
             }
@@ -301,11 +252,10 @@ namespace MR
           }
 
 
-          bool do_26_connectivity_;
-          std::vector<bool> dim_to_ignore_;
-          std::vector<std::vector<int> > mask_indices_;
-          std::vector<std::vector<uint32_t> > adjacent_indices_;
-          Math::Matrix<float> dir_adjacency_matrix_;
+          bool do_26_connectivity;
+          std::vector<bool> dim_to_ignore;
+          std::vector<std::vector<int> > mask_indices;
+          std::vector<std::vector<uint32_t> > adjacent_indices;
       };
 
 
@@ -317,27 +267,19 @@ namespace MR
       /*! Label all connected components within a binary mask of n-dimensions.
        *  This filter will label each component in order of increasing component size
        *
-       * Unless otherwise specified this filter will assume that for all dimensions
-       * voxels are contiguous (in space, time or whatever you feel like). Therefore by
-       * default, neighbours are defined as having contiguous indices. Alternatively
-       * an adjacency matrix (that is symmetric) can be used to define neighbouring indices.
-       * For example this can be used for defining adjacent neighbours in the orientation domain
-       * (if the 4th dimension relates to different directions). This could also be used
-       * to perform connected components within each 3D volume of a 4D image by setting
-       * a zero adjacency matrix for the 4th dimension.
-       *
        * Typical usage:
        * \code
        * Image::BufferPreload<bool> src_data (argument[0]);
-       * Image::BufferPreload<bool>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::ConnectedComponents filter (src);
        *
        * Image::Header header (src_data);
        * header.info() = filter.info();
        *
        * Image::Buffer<uint32_t> dest_data (argument[1], src_data);
-       * Image::Buffer<uint32_t>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
+       * filter.precompute_adjacency (src);
        * filter (src, dest);
        *
        * \endcode
@@ -348,59 +290,59 @@ namespace MR
 
         template <class InfoType>
         ConnectedComponents (const InfoType& in) :
-            Base (in),
-            largest_only_ (false),
-            angular_threshold_(15.0),
-            do_26_connectivity_ (false)
+          Base (in),
+          largest_only (false),
+          do_26_connectivity (false)
         {
           if (this->ndim() > 4)
             throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
           datatype_ = DataType::UInt32;
-          dim_to_ignore_.resize (this->ndim(), false);
-          if (this->ndim() == 4) // Ignore 4D unless explicitly instructed to, or directions provided
-            dim_to_ignore_[3] = true;
+          dim_to_ignore.resize (this->ndim(), false);
+          if (this->ndim() == 4) // Ignore 4D unless explicitly instructed to
+            dim_to_ignore[3] = true;
         }
 
 
         template <class InputVoxelType, class OutputVoxelType>
         void operator() (InputVoxelType& in, OutputVoxelType& out) {
-          std::vector<cluster> clusters;
-          std::vector<uint32_t> labels;
+
+
+          Connector connector (do_26_connectivity);
+
+          if (dim_to_ignore.size())
+            connector.set_dim_to_ignore (dim_to_ignore);
+
+          connector.precompute_adjacency (in);
 
           Ptr<ProgressBar> progress;
-          if (message.size())
+          if (message.size()) {
             progress = new ProgressBar (message);
-
-          Connector connector (do_26_connectivity_);
-          if (dim_to_ignore_.size())
-            connector.set_dim_to_ignore(dim_to_ignore_);
-          if (directions_.is_set())
-            connector.set_directions (directions_, angular_threshold_);
-          {
-            LogLevelLatch level(0);
-            connector.precompute_adjacency(in);
+            ++(*progress);
           }
-          if (progress) ++(*progress);
+
+          std::vector<cluster> clusters;
+          std::vector<uint32_t> labels;
           std::vector<std::vector<int> > mask_indices = connector.run (clusters, labels);
-          if (progress) ++(*progress);
+
+          if (progress)
+            ++(*progress);
           std::sort (clusters.begin(), clusters.end(), compare_clusters);
-          if (progress) ++(*progress);
+          if (progress)
+            ++(*progress);
 
           std::vector<int> label_lookup (clusters.size(), 0);
           for (uint32_t c = 0; c < clusters.size(); c++)
             label_lookup[clusters[c].label - 1] = c + 1;
 
-          Image::LoopInOrder loop(out);
-          for (loop.start(out); loop.ok(); loop.next(out))
+          Image::LoopInOrder loop (out);
+          for (auto l = loop (out); l; ++l) 
             out.value() = 0;
 
           for (uint32_t i = 0; i < mask_indices.size(); i++) {
-            for (size_t dim = 0; dim < out.ndim(); dim++)
-              out[dim] = mask_indices[i][dim];
-            if (largest_only_) {
-              if (label_lookup[labels[i] - 1] == 1) {
+            Image::Nav::set_pos (out, mask_indices[i]);
+            if (largest_only) {
+              if (label_lookup[labels[i] - 1] == 1)
                 out.value() = 1;
-              }
             } else {
               out.value() = label_lookup[labels[i] - 1];
             }
@@ -410,33 +352,24 @@ namespace MR
 
         void set_ignore_dim (size_t dim, bool ignore) {
           assert (dim < this->ndim());
-          dim_to_ignore_[dim] = ignore;
+          dim_to_ignore[dim] = ignore;
         }
 
 
-        void set_directions (Math::Matrix<float>& dirs_el_az, float angular_threshold) {
-          assert (this->ndim() == 4);
-          directions_ = dirs_el_az;
-          angular_threshold_ = angular_threshold;
-          dim_to_ignore_[3] = false;
+        void set_largest_only (bool value) {
+          largest_only = value;
         }
 
 
-        void set_largest_only (bool largest_only) {
-          largest_only_ = largest_only;
-        }
-
-        void set_26_connectivity (bool do_26_connectivity) {
-          do_26_connectivity_ = do_26_connectivity;
+        void set_26_connectivity (bool value) {
+          do_26_connectivity = value;
         }
 
 
         protected:
-          std::vector<bool> dim_to_ignore_;
-          bool largest_only_;
-          Math::Matrix<float> directions_;
-          float angular_threshold_;
-          bool do_26_connectivity_;
+          std::vector<bool> dim_to_ignore;
+          bool largest_only;
+          bool do_26_connectivity;
       };
       //! @}
     }

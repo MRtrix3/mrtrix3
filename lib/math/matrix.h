@@ -476,13 +476,13 @@ namespace MR
 
         //! exponentiate each element of the matrix by \a power
         Matrix& pow (ValueType power) throw () {
-          LOOP (operator() (i,j) = Math::pow (operator() (i,j), power));
+          LOOP (operator() (i,j) = std::pow (operator() (i,j), power));
           return *this;
         }
 
         //! square each element of the matrix
         Matrix& sqrt () throw () {
-          LOOP (operator() (i,j) = Math::sqrt (operator() (i,j)));
+          LOOP (operator() (i,j) = std::sqrt (operator() (i,j)));
           return *this;
         }
 
@@ -707,12 +707,9 @@ namespace MR
           View () {
             assert (0);
           }
-          View (const Matrix<ValueType>& M) {
-            assert (0);
-          }
-          template <typename U> View (const Matrix<U>& M) {
-            assert (0);
-          }
+          View (const Matrix<ValueType>&) { assert (0); }
+          template <typename U> View (const Matrix<U>&) { assert (0); }
+
           View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
             Matrix<ValueType>::size1 = nrows;
             Matrix<ValueType>::size2 = ncolumns;
@@ -1152,7 +1149,7 @@ namespace MR
     template <typename ValueType> 
       inline Matrix<ValueType> transpose (const Matrix<ValueType>& B)
       {
-        Math::Matrix<ValueType> A;
+        Matrix<ValueType> A;
         return transpose (A, B);
       }
     /** @} */

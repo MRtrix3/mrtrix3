@@ -42,7 +42,7 @@ namespace MR
         GMWMI_5TT_Wrapper (anat_path),
         ACT::GMWMI_finder (anat_data),
         init_seeder (in, rng),
-        perturb_max_step (4.0f * Math::pow (anat_data.vox(0) * anat_data.vox(1) * anat_data.vox(2), (1.0f/3.0f)))
+        perturb_max_step (4.0f * std::pow (anat_data.vox(0) * anat_data.vox(1) * anat_data.vox(2), (1.0f/3.0f)))
       {
         volume = init_seeder.vol();
       }

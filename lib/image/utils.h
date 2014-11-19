@@ -105,7 +105,7 @@ namespace MR
 
     //! return whether the InfoType contains complex data
     template <class InfoType> 
-      inline bool is_complex (const InfoType& in)
+      inline bool is_complex (const InfoType&)
     {
       typedef typename InfoType::value_type T;
       return is_complex__<T> ();
@@ -170,6 +170,65 @@ namespace MR
         while (in.dim(n-1) <= 1 && n > from_axis) --n;
         in.set_ndim (n);
       }
+
+
+    //! \cond skip
+    namespace {
+
+      template <class VoxelType>
+        struct __assign_pos_axis_range
+        {
+          template <class VoxelType2>
+            void operator() (VoxelType2& out) const {
+              const size_t max_axis = std::min (to_axis, std::min (ref.ndim(), out.ndim()));
+              for (size_t n = from_axis; n < max_axis; ++n)
+                out[n] = ref[n];
+            }
+          const VoxelType& ref;
+          const size_t from_axis, to_axis;
+        };
+
+
+      template <class VoxelType, typename IntType>
+        struct __assign_pos_axes
+        {
+          template <class VoxelType2>
+            void operator() (VoxelType2& out) const {
+              for (auto a : axes) 
+                out[a] = ref[a];
+            }
+          const VoxelType& ref;
+          const std::vector<IntType> axes;
+        };
+    }
+
+    //! \endcond
+
+
+    //! returns a functor to set the position in ref to other voxels
+    template <class VoxelType>
+      inline __assign_pos_axis_range<VoxelType> 
+      assign_pos (const VoxelType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
+      {
+        return { reference, from_axis, to_axis };
+      }
+
+    //! returns a functor to set the position in ref to other voxels
+    template <class VoxelType, typename IntType>
+      inline __assign_pos_axes<VoxelType, IntType> 
+      assign_pos (const VoxelType& reference, const std::vector<IntType>& axes) 
+      {
+        return { reference, axes };
+      }
+
+    //! returns a functor to set the position in ref to other voxels
+    template <class VoxelType, typename IntType>
+      inline __assign_pos_axes<VoxelType, IntType> 
+      assign_pos (const VoxelType& reference, const std::vector<IntType>&& axes) 
+      {
+        return assign_pos (reference, axes);
+      }
+
 
   }
 }

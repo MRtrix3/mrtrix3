@@ -323,7 +323,7 @@ void run ()
   else
     eig = new Math::Eigen::Symm<double> (3);
 
-  Image::Buffer<float>::voxel_type dt (dt_data);
+  auto dt = dt_data.voxel();
 
   ProgressBar progress ("computing tensor metrics...", Image::voxel_count (dt, 0, 3));
 

@@ -85,7 +85,7 @@ namespace MR
                 is_valid (that.is_valid) { }
 
             bool set (const float cg, const float sg, const float w, const float c, const float p) {
-              if (isnan (cg) || isnan (sg) || isnan (w) || isnan (c) || isnan (p)) {
+              if (std::isnan (cg) || std::isnan (sg) || std::isnan (w) || std::isnan (c) || std::isnan (p)) {
                 cgm = sgm = wm = csf = path = 0.0;
                 return ((is_valid = false));
               }
