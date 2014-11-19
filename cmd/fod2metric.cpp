@@ -70,8 +70,12 @@ const OptionGroup ScalarOutputOptions = OptionGroup ("Scalar output image option
             "compute the number of discrete fibre populations in each voxel")
     + Argument ("image").type_image_out()
 
-  + Option ("dec",
-            "compute a directionally-encoded colour map of fibre population densities")
+  + Option ("dec_unit",
+            "compute a directionally-encoded colour map (unit direction for all voxels)")
+    + Argument ("image").type_image_out()
+
+  + Option ("dec_afd",
+            "compute a directionally-encoded colour map, weighted by AFD")
     + Argument ("image").type_image_out()
 
   + Option ("gfa",
@@ -174,7 +178,8 @@ class Segmented_FOD_receiver
     void set_afd_output        (const std::string&);
     void set_complexity_output (const std::string&);
     void set_count_output      (const std::string&);
-    void set_dec_output        (const std::string&);
+    void set_dec_unit_output   (const std::string&);
+    void set_dec_afd_output    (const std::string&);
     void set_gfa_output        (const std::string&);
     void set_pseudo_fod_output (const std::string&);
     void set_sf_output         (const std::string&);
@@ -186,6 +191,7 @@ class Segmented_FOD_receiver
 
     bool operator() (const FOD_lobes&);
 
+    size_t num_outputs() const;
 
 
   private:
@@ -199,8 +205,10 @@ class Segmented_FOD_receiver
     Ptr< Image::Buffer<float>::voxel_type > complexity;
     Ptr< Image::Buffer<uint8_t> > count_data;
     Ptr< Image::Buffer<uint8_t>::voxel_type > count;
-    Ptr< Image::Buffer<float> > dec_data;
-    Ptr< Image::Buffer<float>::voxel_type > dec;
+    Ptr< Image::Buffer<float> > dec_unit_data;
+    Ptr< Image::Buffer<float>::voxel_type > dec_unit;
+    Ptr< Image::Buffer<float> > dec_afd_data;
+    Ptr< Image::Buffer<float>::voxel_type > dec_afd;
     Ptr< Image::Buffer<float> > gfa_data;
     Ptr< Image::Buffer<float>::voxel_type > gfa;
     Ptr< Image::Buffer<float> > pseudo_fod_data;
@@ -245,14 +253,24 @@ void Segmented_FOD_receiver::set_count_output (const std::string& path)
   count = new Image::Buffer<uint8_t>::voxel_type (*count_data);
 }
 
-void Segmented_FOD_receiver::set_dec_output (const std::string& path)
+void Segmented_FOD_receiver::set_dec_unit_output (const std::string& path)
 {
-  assert (!dec_data);
+  assert (!dec_unit_data);
   Image::Header H_dec (H);
   H_dec.set_ndim (4);
   H_dec.dim(3) = 3;
-  dec_data = new Image::Buffer<float> (path, H_dec);
-  dec = new Image::Buffer<float>::voxel_type (*dec_data);
+  dec_unit_data = new Image::Buffer<float> (path, H_dec);
+  dec_unit = new Image::Buffer<float>::voxel_type (*dec_unit_data);
+}
+
+void Segmented_FOD_receiver::set_dec_afd_output (const std::string& path)
+{
+  assert (!dec_afd_data);
+  Image::Header H_dec (H);
+  H_dec.set_ndim (4);
+  H_dec.dim(3) = 3;
+  dec_afd_data = new Image::Buffer<float> (path, H_dec);
+  dec_afd = new Image::Buffer<float>::voxel_type (*dec_afd_data);
 }
 
 void Segmented_FOD_receiver::set_gfa_output (const std::string& path)
@@ -336,14 +354,29 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
   if (count)
     Image::Nav::set_value_at_pos (*count, in.vox, in.size());
 
-  if (dec) {
+  if (dec_unit) {
     Point<float> sum_decs (0.0, 0.0, 0.0);
     for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i)
       sum_decs += Point<float> (Math::abs(i->get_mean_dir()[0]), Math::abs(i->get_mean_dir()[1]), Math::abs(i->get_mean_dir()[2])) * i->get_integral();
-    Image::Nav::set_pos (*dec, in.vox);
-    (*dec)[3] = 0; dec->value() = sum_decs[0];
-    (*dec)[3] = 1; dec->value() = sum_decs[1];
-    (*dec)[3] = 2; dec->value() = sum_decs[2];
+    sum_decs.normalise();
+    Image::Nav::set_pos (*dec_unit, in.vox);
+    (*dec_unit)[3] = 0; dec_unit->value() = sum_decs[0];
+    (*dec_unit)[3] = 1; dec_unit->value() = sum_decs[1];
+    (*dec_unit)[3] = 2; dec_unit->value() = sum_decs[2];
+  }
+
+  if (dec_unit) {
+    Point<float> sum_decs (0.0, 0.0, 0.0);
+    float sum_afd = 0.0;
+    for (FOD_lobes::const_iterator i = in.begin(); i != in.end(); ++i) {
+      sum_decs += Point<float> (Math::abs(i->get_mean_dir()[0]), Math::abs(i->get_mean_dir()[1]), Math::abs(i->get_mean_dir()[2])) * i->get_integral();
+      sum_afd += i->get_integral();
+    }
+    const Point<float> dec = sum_decs * sum_afd / sum_decs.norm();
+    Image::Nav::set_pos (*dec_afd, in.vox);
+    (*dec_afd)[3] = 0; dec_afd->value() = dec[0];
+    (*dec_afd)[3] = 1; dec_afd->value() = dec[1];
+    (*dec_afd)[3] = 2; dec_afd->value() = dec[2];
   }
 
   if (gfa) {
@@ -434,6 +467,25 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 
 
 
+size_t Segmented_FOD_receiver::num_outputs() const
+{
+  size_t count = 0;
+  if (afd_data) ++count;
+  if (complexity_data) ++count;
+  if (count_data) ++count;
+  if (dec_unit_data) ++count;
+  if (dec_afd_data) ++count;
+  if (gfa_data) ++count;
+  if (pseudo_fod_data) ++count;
+  if (sf_data) ++count;
+
+  if (fixel_afd_data) ++count;
+  if (fixel_peak_data) ++count;
+  if (fixel_disp_data) ++count;
+  return count;
+}
+
+
 
 
 void run ()
@@ -452,58 +504,19 @@ void run ()
   const DWI::Directions::Set dirs (1281);
   Segmented_FOD_receiver receiver (H, dirs);
 
-  size_t output_count = 0;
-  Options opt = get_options ("afd");
-  if (opt.size()) {
-    receiver.set_afd_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("complexity");
-  if (opt.size()) {
-    receiver.set_complexity_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("count");
-  if (opt.size()) {
-    receiver.set_count_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("dec");
-  if (opt.size()) {
-    receiver.set_dec_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("gfa");
-  if (opt.size()) {
-    receiver.set_gfa_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("pseudo_fod");
-  if (opt.size()) {
-    receiver.set_pseudo_fod_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("sf");
-  if (opt.size()) {
-    receiver.set_sf_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("fixel_afd");
-  if (opt.size()) {
-    receiver.set_fixel_afd_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("fixel_peak");
-  if (opt.size()) {
-    receiver.set_fixel_peak_output (opt[0][0]);
-    ++output_count;
-  }
-  opt = get_options ("fixel_disp");
-  if (opt.size()) {
-    receiver.set_fixel_disp_output (opt[0][0]);
-    ++output_count;
-  }
-  if (!output_count)
+  Options
+  opt = get_options ("afd");        if (opt.size()) receiver.set_afd_output (opt[0][0]);
+  opt = get_options ("complexity"); if (opt.size()) receiver.set_complexity_output (opt[0][0]);
+  opt = get_options ("count");      if (opt.size()) receiver.set_count_output (opt[0][0]);
+  opt = get_options ("dec_unit");   if (opt.size()) receiver.set_dec_unit_output (opt[0][0]);
+  opt = get_options ("dec_afd");    if (opt.size()) receiver.set_dec_afd_output (opt[0][0]);
+  opt = get_options ("gfa");        if (opt.size()) receiver.set_gfa_output (opt[0][0]);
+  opt = get_options ("pseudo_fod"); if (opt.size()) receiver.set_pseudo_fod_output (opt[0][0]);
+  opt = get_options ("sf");         if (opt.size()) receiver.set_sf_output (opt[0][0]);
+  opt = get_options ("fixel_afd");  if (opt.size()) receiver.set_fixel_afd_output (opt[0][0]);
+  opt = get_options ("fixel_peak"); if (opt.size()) receiver.set_fixel_peak_output (opt[0][0]);
+  opt = get_options ("fixel_disp"); if (opt.size()) receiver.set_fixel_disp_output (opt[0][0]);
+  if (!receiver.num_outputs())
     throw Exception ("Nothing to do; please specify at least one output image type");
 
   FMLS::FODQueueWriter<Image::Buffer<float>::voxel_type> writer (fod_data);
