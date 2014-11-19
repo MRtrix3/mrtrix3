@@ -38,12 +38,10 @@ namespace MR
 
 
       Image::Image (const MR::Image::Header& image_header) :
-        Displayable (image_header.name()),
+        Volume (image_header),
         buffer (image_header),
-        interp (buffer),
-        interpolation (gl::LINEAR),
-        texture_mode_3D_unchanged (false),
-        position (header().ndim())
+        interp (buffer),        
+        position (image_header.ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
         set_colourmap (guess_colourmap ());
@@ -52,11 +50,9 @@ namespace MR
 
 
       Image::Image (Window& window, const MR::Image::Header& image_header) :
-        Displayable (window, image_header.name()),
+        Volume (window, image_header),
         buffer (image_header),
-        interp (buffer),
-        interpolation (gl::LINEAR),
-        texture_mode_3D_unchanged (false),
+        interp (buffer),        
         position (image_header.ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
@@ -92,37 +88,6 @@ namespace MR
 
 
 
-
-      inline void Image::draw_vertices (const Point<float>* vertices)
-      {
-        if (!vertex_buffer || !vertex_array_object) {
-          assert (!vertex_buffer);
-          assert (!vertex_array_object);
-
-          vertex_buffer.gen();
-          vertex_array_object.gen();
-
-          vertex_buffer.bind (gl::ARRAY_BUFFER);
-          vertex_array_object.bind();
-
-          gl::EnableVertexAttribArray (0);
-          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 2*sizeof(Point<float>), (void*)0);
-
-          gl::EnableVertexAttribArray (1);
-          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 2*sizeof(Point<float>), (void*)(sizeof(Point<float>)));
-        }
-        else {
-          vertex_buffer.bind (gl::ARRAY_BUFFER);
-          vertex_array_object.bind();
-        }
-
-        draw_slice_vertices (vertices);
-      }
-
-
-
-
-
       void Image::render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice)
       {
         update_texture2D (plane, slice);
@@ -134,31 +99,30 @@ namespace MR
         Point<> p, q;
         p[plane] = slice;
 
-        Point<float> vertices[8];
         p[x] = -0.5;
         p[y] = -0.5;
-        vertices[0] = interp.voxel2scanner (p);
+        vertices[0] = _transform.voxel2scanner (p);
         vertices[1].set (0.0, 0.0, 0.0);
 
         p[x] = -0.5;
         p[y] = ydim;
-        vertices[2] = interp.voxel2scanner (p);
+        vertices[2] = _transform.voxel2scanner (p);
         vertices[3].set (0.0, 1.0, 0.0);
 
         p[x] = xdim;
         p[y] = ydim;
-        vertices[4] = interp.voxel2scanner (p);
+        vertices[4] = _transform.voxel2scanner (p);
         vertices[5].set (1.0, 1.0, 0.0);
 
         p[x] = xdim;
         p[y] = -0.5;
-        vertices[6] = interp.voxel2scanner (p);
+        vertices[6] = _transform.voxel2scanner (p);
         vertices[7].set (1.0, 0.0, 0.0);
 
 
         start (shader_program);
         projection.set (shader_program);
-        draw_vertices (vertices);
+        draw_vertices ();
         stop (shader_program);
       }
 
@@ -167,16 +131,10 @@ namespace MR
       void Image::render3D (Displayable::Shader& shader_program, const Projection& projection, float depth) 
       {
         update_texture3D();
-
-        start (shader_program, windowing_scale_3D);
-        projection.set (shader_program);
-
-        Point<> vertices[8];
-        set_vertices_for_slice_render (vertices, interp, projection, depth);
-        draw_vertices (vertices);
-
-        stop (shader_program);
+        Volume::render (shader_program, projection, depth);
       }
+
+
 
 
 
@@ -201,20 +159,19 @@ namespace MR
         ssize_t xdim = header().dim (x), ydim = header().dim (y);
 
         type = gl::FLOAT;
-        Ptr<float,true> data;
+        std::vector<float> data;
+        auto& vox (voxel());
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") {
 
-          data = new float [3*xdim*ydim];
+          data.resize (3*xdim*ydim, 0.0f);
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          memset (data, 0, 3*xdim*ydim*sizeof (float));
           if (position[plane] >= 0 && position[plane] < header().dim (plane)) {
             // copy data:
-            VoxelType& vox (voxel());
             vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
@@ -247,16 +204,15 @@ namespace MR
         }
         else if (cmap_name == "Complex") {
 
-          data = new float [2*xdim*ydim];
+          data.resize (2*xdim*ydim);
           format = gl::RG;
           internal_format = gl::RG32F;
 
           if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
-            memset (data, 0, 2*xdim*ydim*sizeof (float));
+            for (auto& d : data) d = 0.0f;
           }
           else {
             // copy data:
-            VoxelType& vox (voxel());
             vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
@@ -278,16 +234,15 @@ namespace MR
         }
         else {
 
-          data = new float [xdim*ydim];
+          data.resize (xdim*ydim);
           format = gl::RED;
           internal_format = gl::R32F;
 
           if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
-            memset (data, 0, xdim*ydim*sizeof (float));
+            for (auto& d : data) d = 0.0f;
           }
           else {
             // copy data:
-            VoxelType& vox (voxel());
             vox[plane] = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
@@ -308,12 +263,9 @@ namespace MR
         if ((value_max - value_min) < 2.0*std::numeric_limits<float>::epsilon()) 
           value_min = value_max - 1.0;
 
-        update_levels();
+        set_min_max (value_min, value_max);
 
-        if (std::isnan (display_midpoint) || std::isnan (display_range))
-          reset_windowing();
-
-        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, data);
+        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, reinterpret_cast<void*> (&data[0]));
       }
 
 
@@ -324,24 +276,15 @@ namespace MR
 
       void Image::update_texture3D ()
       {
-        if (!texture3D) { // allocate:
-          texture3D.gen (gl::TEXTURE_3D);
-          texture3D.bind();
-        }
-        else 
-          texture3D.bind();
-        texture3D.set_interp (interpolation);
-
-        if (volume_unchanged() && texture_mode_3D_unchanged)
+        bind();
+        if (volume_unchanged() && !texture_mode_changed) 
           return;
-
+        
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") format = gl::RGB;
         else if (cmap_name == "Complex") format = gl::RG;
         else format = gl::RED;
-
-        GLenum type;
 
         if (cmap_name == "Complex") {
           internal_format = gl::RG32F;
@@ -386,115 +329,63 @@ namespace MR
           }
         }
 
-
-        texture_mode_3D_unchanged = true;
-
-        gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
-
-        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format,
-            header().dim(0), header().dim(1), header().dim(2),
-            0, format, type, NULL);
-
-        value_min = std::numeric_limits<float>::infinity();
-        value_max = -std::numeric_limits<float>::infinity();
+        allocate();
+        texture_mode_changed = false;
 
         if (format != gl::RG) {
           switch (header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
-              copy_texture_3D<uint8_t> (format);
+              copy_texture_3D<uint8_t> ();
               break;
             case DataType::Int8:
-              copy_texture_3D<int8_t> (format);
+              copy_texture_3D<int8_t> ();
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
-              copy_texture_3D<uint16_t> (format);
+              copy_texture_3D<uint16_t> ();
               break;
             case DataType::Int16LE:
             case DataType::Int16BE:
-              copy_texture_3D<int16_t> (format);
+              copy_texture_3D<int16_t> ();
               break;
             case DataType::UInt32LE:
             case DataType::UInt32BE:
-              copy_texture_3D<uint32_t> (format);
+              copy_texture_3D<uint32_t> ();
               break;
             case DataType::Int32LE:
             case DataType::Int32BE:
-              copy_texture_3D<int32_t> (format);
+              copy_texture_3D<int32_t> ();
               break;
             default:
-              copy_texture_3D<float> (format);
+              copy_texture_3D<float> ();
               break;
           }
         }
         else 
           copy_texture_3D_complex();
 
-        update_levels();
-
-        if (std::isnan (display_midpoint) || std::isnan (display_range))
-          reset_windowing();
-
-      }
-
-      template <> inline GLenum Image::GLtype<int8_t> () const
-      {
-        return gl::BYTE;
-      }
-      template <> inline GLenum Image::GLtype<uint8_t> () const
-      {
-        return gl::UNSIGNED_BYTE;
-      }
-      template <> inline GLenum Image::GLtype<int16_t> () const
-      {
-        return gl::SHORT;
-      }
-      template <> inline GLenum Image::GLtype<uint16_t> () const
-      {
-        return gl::UNSIGNED_SHORT;
-      }
-      template <> inline GLenum Image::GLtype<int32_t> () const
-      {
-        return gl::INT;
-      }
-      template <> inline GLenum Image::GLtype<uint32_t> () const
-      {
-        return gl::UNSIGNED_INT;
-      }
-      template <> inline GLenum Image::GLtype<float> () const
-      {
-        return gl::FLOAT;
-      }
-
-      template <typename ValueType> inline float Image::scale_factor_3D () const
-      {
-        return std::numeric_limits<ValueType>::max();
-      }
-      template <> inline float Image::scale_factor_3D<float> () const
-      {
-        return 1.0f;
+        set_min_max (value_min, value_max);
       }
 
 
       template <typename ValueType>
-        inline void Image::copy_texture_3D (GLenum format)
+        inline void Image::copy_texture_3D ()
       {
         MR::Image::Buffer<ValueType> buffer_tmp (buffer);
         auto V = buffer_tmp.voxel();
-        GLenum type = GLtype<ValueType>();
         int N = ( format == gl::RED ? 1 : 3 );
-        Ptr<ValueType,true> data (new ValueType [N * V.dim(0) * V.dim(1)]);
+        std::vector<ValueType> data (N * V.dim(0) * V.dim(1));
 
         ProgressBar progress ("loading image data...", V.dim(2));
 
         for (size_t n = 3; n < V.ndim(); ++n) 
-          V[n] = interp[n];
+          V[n] = position[n];
 
         for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
           if (format == gl::RED) {
-            ValueType* p = data;
+            auto p = data.begin();
 
             for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
               for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
@@ -510,7 +401,8 @@ namespace MR
           }
           else {
 
-            memset (data, 0, 3*V.dim(0)*V.dim(1)*sizeof (ValueType));
+            for (auto& d : data) d = 0.0f;
+
             for (size_t n = 0; n < 3; ++n) {
               if (V.ndim() > 3) {
                 if (V.dim(3) > int(position[3] + n))
@@ -518,7 +410,7 @@ namespace MR
                 else break;
               }
 
-              ValueType* p = data + n;
+              auto p = data.begin() + n;
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
                   ValueType val = *p = std::abs (ValueType (V.value()));
@@ -538,15 +430,10 @@ namespace MR
 
           }
 
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0,
-              0, 0, V[2],
-              V.dim(0), V.dim(1), 1,
-              format, type, data);
-
+          upload_data ({ 0, 0, V[2] }, { V.dim(0), V.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
           ++progress;
         }
 
-        windowing_scale_3D = scale_factor_3D<ValueType>();
       }
 
 
@@ -554,15 +441,15 @@ namespace MR
       inline void Image::copy_texture_3D_complex ()
       {
         auto V = buffer.voxel();
-        Ptr<float,true> data (new float [2 * V.dim (0) * V.dim (1)]);
+        std::vector<float> data (2 * V.dim (0) * V.dim (1));
 
         ProgressBar progress ("loading image data...", V.dim (2));
 
         for (size_t n = 3; n < V.ndim(); ++n) 
-          V[n] = interp[n];
+          V[n] = position[n];
 
         for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
-          float* p = data;
+          auto p = data.begin();
 
           for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
             for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
@@ -577,14 +464,9 @@ namespace MR
             }
           }
 
-          gl::TexSubImage3D (gl::TEXTURE_3D, 0,
-              0, 0, V[2],
-              V.dim (0), V.dim (1), 1,
-              gl::RG, gl::FLOAT, data);
+          upload_data ({ 0, 0, V[2] }, { V.dim(0), V.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
           ++progress;
         }
-
-        windowing_scale_3D = scale_factor_3D<float>();
       }
 
 
@@ -592,7 +474,7 @@ namespace MR
       inline bool Image::volume_unchanged ()
       {
         bool is_unchanged = true;
-        for (size_t i = 3; i < interp.ndim(); ++i) {
+        for (size_t i = 3; i < buffer.ndim(); ++i) {
           if (interp[i] != position[i]) {
             is_unchanged = false;
             position[i] = interp[i];

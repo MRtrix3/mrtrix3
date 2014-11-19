@@ -401,10 +401,9 @@ namespace MR
 
         menu = new QMenu ("Display mode", this);
 #define MODE(classname, specifier, name, description) \
-        menu->addAction (new Action<classname> (mode_group, #name, #description, n++));
+        menu->addAction (new Mode::Action<Mode::classname> (mode_group, #name, #description, n++));
 #define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
         {
-          using namespace Mode;
           size_t n = 1;
 #include "gui/mrview/mode/list.h"
         }

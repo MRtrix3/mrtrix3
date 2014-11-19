@@ -298,7 +298,7 @@ namespace MR
         }
 
 
-        void ROI::update_slot (int unused) {
+        void ROI::update_slot (int) {
           updateGL();
         }
 
@@ -315,7 +315,7 @@ namespace MR
 
 
 
-        void ROI::opacity_changed (int unused)
+        void ROI::opacity_changed (int)
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {

@@ -152,7 +152,7 @@ namespace MR
 
             Point<> voxel_at (const Point<>& pos) const {
               if (!image()) return Point<>();
-              return image()->interp.scanner2voxel (pos);
+              return image()->transform().scanner2voxel (pos);
             }
 
             void draw_crosshairs (const Projection& with_projection) const {

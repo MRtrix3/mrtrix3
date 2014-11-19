@@ -273,8 +273,6 @@ namespace MR
           float value_min, value_max;
           uint32_t flags_;
 
-          static const char* vertex_shader_source;
-
           void set_bit (uint32_t& field, uint32_t bit, bool value) {
             if (value) field |= bit;
             else field &= ~bit;
@@ -304,35 +302,6 @@ namespace MR
       };
 
 
-      namespace {
-        inline Point<> div (const Point<>& a, const Point<>& b) {
-          return Point<> (a[0]/b[0], a[1]/b[1], a[2]/b[2]);
-        }
-      }
-
-
-
-      template <class InterpType> 
-        void set_vertices_for_slice_render (Point<> vertices[8], const InterpType& interp, const Projection& projection, float depth) 
-        {
-          vertices[0] = projection.screen_to_model (projection.x_position(), projection.y_position()+projection.height(), depth);
-          vertices[2] = projection.screen_to_model (projection.x_position(), projection.y_position(), depth);
-          vertices[4] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position(), depth);
-          vertices[6] = projection.screen_to_model (projection.x_position()+projection.width(), projection.y_position()+projection.height(), depth);
-
-          Point<> dim (interp.dim(0), interp.dim(1), interp.dim(2));
-          vertices[1] = div (interp.scanner2voxel (vertices[0]) + Point<> (0.5, 0.5, 0.5), dim);
-          vertices[3] = div (interp.scanner2voxel (vertices[2]) + Point<> (0.5, 0.5, 0.5), dim);
-          vertices[5] = div (interp.scanner2voxel (vertices[4]) + Point<> (0.5, 0.5, 0.5), dim);
-          vertices[7] = div (interp.scanner2voxel (vertices[6]) + Point<> (0.5, 0.5, 0.5), dim);
-        }
-
-
-      inline void draw_slice_vertices (const Point<> vertices[8]) 
-      {
-        gl::BufferData (gl::ARRAY_BUFFER, 8*sizeof(Point<float>), &vertices[0][0], gl::STREAM_DRAW);
-        gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
-      }
 
 
     }
