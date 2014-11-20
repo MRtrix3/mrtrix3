@@ -259,7 +259,7 @@ namespace MR
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
-          GLubyte colour[3];
+          std::array<GLubyte,3> colour;
           size_t colourmap;
           bool show;
 

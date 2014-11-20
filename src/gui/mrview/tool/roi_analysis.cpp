@@ -23,6 +23,7 @@
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_analysis.h"
+#include "gui/mrview/volume.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
@@ -36,10 +37,30 @@ namespace MR
       namespace Tool
       {
 
-        class Item : public Image {
+        class Item : public Volume {
           public:
-            Item (const MR::Image::Header& H) : Image (H) { }
-            Mode::Slice::Shader slice_shader; 
+            template <class InfoType>
+              Item (const InfoType& info) : Volume (info) { }
+            class Shader : public Mode::Slice::Shader {
+              public:
+                virtual std::string fragment_shader_source (const Displayable&) {
+                  return 
+                    "uniform vec3 colourmap_colour;\n"
+                    "uniform float alpha;\n"
+                    "uniform sampler3D tex;\n"
+                    "in vec3 texcoord;\n"
+                    "out vec4 color;\n"
+                    "void main() {\n"
+                    "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
+                    "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
+                    "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
+                    "  float value = texture (tex, texcoord.stp).a;\n"
+                    "  if (value < 0.5) discard;\n"
+                    "  color.rgb = colourmap_colour;\n"
+                    "  color.a = alpha;\n"
+                    "}"; 
+                }
+            } shader;
         };
 
 
@@ -51,7 +72,7 @@ namespace MR
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (VecPtr<MR::Image::Header>& list);
+            void load (VecPtr<MR::Image::Header>& list);
 
             Item* get_image (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()]);
@@ -59,17 +80,14 @@ namespace MR
         };
 
 
-        void ROI::Model::add_items (VecPtr<MR::Image::Header>& list)
+        void ROI::Model::load (VecPtr<MR::Image::Header>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Item* overlay = new Item (*list[i]);
-            overlay->set_allowed_features (true, true, false);
-            if (!overlay->colourmap) 
-              overlay->colourmap = 1;
-            overlay->alpha = 1.0f;
-            overlay->set_use_transparency (true);
-            items.push_back (overlay);
+            Item* roi = new Item (*list[i]);
+            roi->alpha = 1.0f;
+            roi->colour = { 255, 255, 0 };
+            items.push_back (roi);
           }
           endInsertRows();
         }
@@ -172,21 +190,21 @@ namespace MR
         void ROI::new_slot ()
         {
           TRACE;
-          //add_images (list);
+          //load (list);
         }
 
 
 
         void ROI::open_slot ()
         {
-          std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
-          if (overlay_names.empty())
+          std::vector<std::string> names = Dialog::File::get_images (this, "Select overlay images to open");
+          if (names.empty())
             return;
           VecPtr<MR::Image::Header> list;
-          for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (new MR::Image::Header (overlay_names[n]));
+          for (size_t n = 0; n < names.size(); ++n)
+            list.push_back (new MR::Image::Header (names[n]));
 
-          add_images (list);
+          load (list);
         }
 
 
@@ -199,10 +217,10 @@ namespace MR
 
 
 
-        void ROI::add_images (VecPtr<MR::Image::Header>& list) 
+        void ROI::load (VecPtr<MR::Image::Header>& list) 
         {
           size_t previous_size = list_model->rowCount();
-          list_model->add_items (list);
+          list_model->load (list);
 
           QModelIndex first = list_model->index (previous_size, 0, QModelIndex());
           QModelIndex last = list_model->index (list_model->rowCount()-1, 0, QModelIndex());
@@ -372,7 +390,7 @@ namespace MR
             VecPtr<MR::Image::Header> list;
             try { list.push_back (new MR::Image::Header (args)); }
             catch (Exception& e) { e.display(); }
-            add_images (list);
+            load (list);
             return true;
           }
 

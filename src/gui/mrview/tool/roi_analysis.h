@@ -74,7 +74,7 @@ namespace MR
                window.updateGL();
              }
              
-             void add_images (VecPtr<MR::Image::Header>& list); 
+             void load (VecPtr<MR::Image::Header>& list); 
         };
 
 
