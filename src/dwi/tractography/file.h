@@ -170,8 +170,7 @@ namespace MR
               WARN ("Streamline weights file contains more entries than .tck file");
           }
 
-          //! copy construction explicitly disabled
-          Reader (const Reader& R) : current_index (0) { assert (0); }
+          Reader (const Reader&) = delete;
 
       };
 
@@ -310,10 +309,7 @@ namespace MR
 
 
           //! copy construction explicitly disabled
-          WriterUnbuffered (const WriterUnbuffered& W) :
-            barrier_addr (0) { 
-              assert (0); 
-            }
+          WriterUnbuffered (const WriterUnbuffered&) = delete;
       };
 
 

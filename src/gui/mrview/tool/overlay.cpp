@@ -228,7 +228,7 @@ namespace MR
         }
 
 
-        void Overlay::draw (const Projection& projection, bool is_3D, int axis, int slice)
+        void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
 
           if (!is_3D) {
@@ -285,7 +285,7 @@ namespace MR
         }
 
 
-        void Overlay::update_slot (int unused)
+        void Overlay::update_slot (int)
         {
           updateGL();
         }
@@ -312,7 +312,7 @@ namespace MR
         }
 
 
-        void Overlay::lower_threshold_changed (int unused)
+        void Overlay::lower_threshold_changed (int)
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -325,7 +325,7 @@ namespace MR
         }
 
 
-        void Overlay::upper_threshold_changed (int unused)
+        void Overlay::upper_threshold_changed (int)
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
@@ -366,7 +366,7 @@ namespace MR
         }
 
 
-        void Overlay::opacity_changed (int unused)
+        void Overlay::opacity_changed (int)
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {

@@ -154,7 +154,7 @@ namespace MR
         for (size_t i = 0; i < measured.size(); i++) {
           assert (measured[i] > 0.0);
 
-          T actual_pos = abs (actual[i]);
+          T actual_pos = std::abs (actual[i]);
           T nm = one_over_noise_squared * measured[i];
           T nms = nm * actual_pos;
           T F0 = Bessel::I0_scaled (nms);
@@ -164,7 +164,7 @@ namespace MR
           dP_dactual[i] = -nm_a - nm * F1_F0;
           if (actual[i] < 0.0) dP_dactual[i] = -dP_dactual[i];
           dP_dN += 0.5 * pow2 (m_a) - measured[i] * actual_pos * F1_F0;
-          lnP += 0.5 * nm_a * m_a - log (nm * F0);
+          lnP += 0.5 * nm_a * m_a - std::log (nm * F0);
           assert (std::isfinite (dP_dN));
           assert (std::isfinite (lnP));
         }

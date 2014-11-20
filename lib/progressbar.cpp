@@ -49,7 +49,7 @@ namespace MR
 
     void display_func_cmdline (ProgressInfo& p)
     {
-      if (p.as_percentage)
+      if (p.multiplier)
         PROGRESS_PRINT "\33[2K\r%s: [%3zu%%] %s", App::NAME.c_str(), size_t (p.value), p.text.c_str());
       else
         PROGRESS_PRINT "\33[2K\r%s: [%s] %s", App::NAME.c_str(), busy[p.value%6], p.text.c_str());
@@ -58,15 +58,15 @@ namespace MR
 
     void done_func_cmdline (ProgressInfo& p)
     {
-      if (p.as_percentage)
+      if (p.multiplier)
         PROGRESS_PRINT "\33[2K\r%s: [%3u%%] %s\n", App::NAME.c_str(), 100, p.text.c_str());
       else
         PROGRESS_PRINT "\33[2K\r%s: [done] %s\n", App::NAME.c_str(), p.text.c_str());
     }
   }
 
-  void (*ProgressBar::display_func) (ProgressInfo& p) = display_func_cmdline;
-  void (*ProgressBar::done_func) (ProgressInfo& p) = done_func_cmdline;
+  void (*ProgressInfo::display_func) (ProgressInfo& p) = display_func_cmdline;
+  void (*ProgressInfo::done_func) (ProgressInfo& p) = done_func_cmdline;
 
 
 }

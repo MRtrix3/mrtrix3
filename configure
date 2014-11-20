@@ -80,18 +80,18 @@ the compiler, use:
 
 The following environment variables can be set:
 
-CXX             The compiler command-line to use. The default is "g++" ("clang" on MacOSX)
+CXX             The compiler command to use. The default is "g++" ("clang" on MacOSX)
 
 CXX_ARGS        The arguments expected by the compiler. The default is:
                 "-c CFLAGS SRC -o OBJECT"
 
-LD              The linker command-line to use. The default is:
+LD              The linker command to use. The default is:
                 "g++" ("clang++" on MacOSX)
 
-LD_ARGS         The linker command-line to use. The default is:
+LD_ARGS         The arguments expected by the linker. The default is:
                 "LDFLAGS OBJECTS -o EXECUTABLE"
 
-LDLIB_ARGS      The linker command-line to use for generating a shared library.
+LDLIB_ARGS      The arguments expected by the linker for generating a shared library.
                 The default is:
                 "-shared LDLIB_FLAGS OBJECTS -o LIB"
 
@@ -956,10 +956,9 @@ class GLWidget : public QGLWidget {
   protected:
     void initializeGL () { 
       std::cout << glGetString (GL_VERSION) << "\\n";
-      exit (0); 
     }
 
-    void paintGL () { }
+    void paintGL () { qApp->quit(); }
     void resizeGL (int width, int height) { }
 };
 
@@ -1052,7 +1051,7 @@ if R_module:
 
 # add debugging or profiling flags if requested:
 
-cpp_flags += [ '-Wall', '-Wno-unused-function', '-Wno-unused-parameter' ]
+cpp_flags += [ '-Wall' ]
 
 if profile:
   cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]

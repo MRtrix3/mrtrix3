@@ -139,7 +139,7 @@ namespace MR
 
 
 
-      Lighting::Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting, bool include_object_color) :
+      Lighting::Lighting (QWidget*, const std::string& message, GL::Lighting& lighting, bool include_object_color) :
         settings (new LightingSettings (this, lighting, include_object_color)) {
           setWindowTitle (QString (message.c_str()));
           setModal (false);

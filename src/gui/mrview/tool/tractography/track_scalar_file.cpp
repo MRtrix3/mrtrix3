@@ -254,7 +254,7 @@ namespace MR
         }
 
 
-        void TrackScalarFile::threshold_lower_changed (int unused)
+        void TrackScalarFile::threshold_lower_changed (int)
         {
           if (tractogram) {
             threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -264,7 +264,7 @@ namespace MR
         }
 
 
-        void TrackScalarFile::threshold_upper_changed (int unused)
+        void TrackScalarFile::threshold_upper_changed (int)
         {
           if (tractogram) {
             threshold_upper->setEnabled (threshold_upper_box->isChecked());

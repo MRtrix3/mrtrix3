@@ -50,11 +50,11 @@ namespace MR
         }
 
 
-        void Base::draw (const Projection& transform, bool is_3D, int axis, int slice) { }
+        void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection& transform) { }
+        void Base::drawOverlays (const Projection&) { }
 
-        bool Base::process_batch_command (const std::string& cmd, const std::string& args) 
+        bool Base::process_batch_command (const std::string&, const std::string&) 
         {
           return false;
         }

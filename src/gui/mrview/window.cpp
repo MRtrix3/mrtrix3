@@ -1291,7 +1291,7 @@ namespace MR
       }
 
 
-      inline void Window::mouseReleaseEventGL (QMouseEvent* event)
+      inline void Window::mouseReleaseEventGL (QMouseEvent*)
       {
         assert (mode);
         mode->mouse_release_event();

@@ -122,7 +122,7 @@ done_painting:
         }
 
 
-        void Base::paint (Projection& projection) { }
+        void Base::paint (Projection&) { }
         void Base::mouse_press_event () { }
         void Base::mouse_release_event () { }
 

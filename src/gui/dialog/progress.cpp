@@ -35,7 +35,7 @@ namespace MR
         void display (ProgressInfo& p)
         {
           if (!p.data) {
-            p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.as_percentage ? 100 : 0);
+            p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
             reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
           }
           reinterpret_cast<QProgressDialog*> (p.data)->setValue (p.value);

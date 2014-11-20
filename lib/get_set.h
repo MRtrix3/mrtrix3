@@ -304,50 +304,50 @@ namespace MR
 
 
   //! \cond skip
-  //
-  template <> inline int8_t get<int8_t> (const void* address, bool is_big_endian)
+ 
+  template <> inline int8_t get<int8_t> (const void* address, bool)
   {
     return *((int8_t*) address);
   }
-  template <> inline int8_t get<int8_t> (const void* data, size_t i, bool is_big_endian)
+  template <> inline int8_t get<int8_t> (const void* data, size_t i, bool)
   {
     return  ((int8_t*) data)[i];
   }
 
-  template <> inline void put<int8_t> (const int8_t value, void* address, bool is_big_endian)
+  template <> inline void put<int8_t> (const int8_t value, void* address, bool)
   {
     *((int8_t*) address) = value;
   }
-  template <> inline void put<int8_t> (const int8_t value, void* data, size_t i, bool is_big_endian)
+  template <> inline void put<int8_t> (const int8_t value, void* data, size_t i, bool)
   {
     ((int8_t*) data)[i] = value;
   }
 
-  template <> inline uint8_t get<uint8_t> (const void* address, bool is_big_endian)
+  template <> inline uint8_t get<uint8_t> (const void* address, bool)
   {
     return *((uint8_t*) address);
   }
-  template <> inline uint8_t get<uint8_t> (const void* data, size_t i, bool is_big_endian)
+  template <> inline uint8_t get<uint8_t> (const void* data, size_t i, bool)
   {
     return  ((uint8_t*) data)[i];
   }
 
-  template <> inline void put<uint8_t> (const uint8_t value, void* address, bool is_big_endian)
+  template <> inline void put<uint8_t> (const uint8_t value, void* address, bool)
   {
     *((uint8_t*) address) = value;
   }
-  template <> inline void put<uint8_t> (const uint8_t value, void* data, size_t i, bool is_big_endian)
+  template <> inline void put<uint8_t> (const uint8_t value, void* data, size_t i, bool)
   {
     ((uint8_t*) data)[i] = value;
   }
 
 
-  template <> inline bool get<bool> (const void* data, size_t i, bool is_big_endian)
+  template <> inline bool get<bool> (const void* data, size_t i, bool)
   {
     return  (((uint8_t*) data)[i/8]) & (BITMASK >> i%8);
   }
 
-  template <> inline void put<bool> (const bool value, void* data, size_t i, bool is_big_endian)
+  template <> inline void put<bool> (const bool value, void* data, size_t i, bool)
   {
     std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (i/8));
     uint8_t prev = *at, new_value;

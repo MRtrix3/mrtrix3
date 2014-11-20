@@ -88,13 +88,25 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return planes.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const 
+            {
+              (void) parent; // to suppress warnings about unused parameters
+              return planes.size();
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return 1;
+            }
 
             void remove (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
@@ -381,7 +393,7 @@ namespace MR
 
 
 
-        void View::showEvent (QShowEvent* event) 
+        void View::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
@@ -402,7 +414,7 @@ namespace MR
 
 
 
-        void View::closeEvent (QCloseEvent* event) 
+        void View::closeEvent (QCloseEvent*) 
         {
           window.disconnect (this);
         }

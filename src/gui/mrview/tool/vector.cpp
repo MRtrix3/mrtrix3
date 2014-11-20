@@ -623,7 +623,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_lower_changed (int unused)
+        void Vector::threshold_lower_changed (int)
         {
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -634,7 +634,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_upper_changed (int unused)
+        void Vector::threshold_upper_changed (int)
         {
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());

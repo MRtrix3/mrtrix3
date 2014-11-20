@@ -87,8 +87,8 @@ namespace MR
       protected:
         Ptr<value_type,true> data_;
 
-        template <class Set>
-          BufferScratch& operator= (const Set& H) { assert (0); return *this; }
+        template <class InfoType>
+          BufferScratch& operator= (const InfoType&) { assert (0); return *this; }
 
         BufferScratch (const BufferScratch& that) : ConstInfo (that) { assert (0); }
     };
@@ -149,8 +149,8 @@ namespace MR
         size_t bytes_;
         Ptr<uint8_t,true> data_;
 
-        template <class Set>
-          BufferScratch& operator= (const Set& H) { assert (0); return *this; }
+        template <class InfoType>
+          BufferScratch& operator= (const InfoType&) { assert (0); return *this; }
 
         BufferScratch (const BufferScratch& that) : ConstInfo (that), bytes_ (that.bytes_) { assert (0); }
 

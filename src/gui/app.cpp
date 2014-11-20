@@ -37,8 +37,8 @@ namespace MR
     {
       new QApplication (MR::App::argc, MR::App::argv);
 
-      MR::ProgressBar::display_func = Dialog::ProgressBar::display;
-      MR::ProgressBar::done_func = Dialog::ProgressBar::done;
+      MR::ProgressInfo::display_func = Dialog::ProgressBar::display;
+      MR::ProgressInfo::done_func = Dialog::ProgressBar::done;
       MR::File::Dicom::select_func = Dialog::select_dicom;
       MR::Exception::display_func = Dialog::display_exception;
     }

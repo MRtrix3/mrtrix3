@@ -16,6 +16,8 @@
 # change to:
 #   double dp = NEWMAT::DotProduct(s1.GetAcqPara().PhaseEncodeVector(),s2.GetAcqPara().PhaseEncodeVector());
 
+# Seems this isn't the only issue remaining in FSL that prevents the use of eddy in image recombination (as of 5.0.7). Therefore this script uses a different volume recombination method, as described in Skare and Bammer, ISMRM 2010
+
 
 import os, shutil, sys
 
@@ -69,6 +71,11 @@ fsl_suffix = getFSLSuffix()
 working_dir = os.getcwd()
 temp_dir = makeTempDir(verbose)
 
+
+# Get the phase encode axis
+PEAxis = int(sys.argv[3])
+
+
 # Convert all input images into MRtrix format and store in temprary directory first;
 #   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
 runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(temp_dir, 'dwi1.mif') + quiet, verbose)
@@ -76,9 +83,6 @@ runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(temp_dir, 'dwi2.mif')
 
 # TODO Enhancement: If diffusion encoding is not embedded within the input files,
 #   check the directory (/ies) of the input files for bvecs / bvals pair
-
-# Get the phase encode axis
-PEAxis = int(sys.argv[3])
 
 # Move into the temporary directory
 if verbose:
@@ -96,22 +100,46 @@ if len(DWI2_dim) != 4:
 if DWI1_dim != DWI1_dim:
   errorMessage ('Dimensions of input image file pair do not match')
   
+# Eddy refuses to operate if the phase encode axis is 2
+# Therefore, use mrconvert to permute the data onto new axes, enforcing axis 1 as the PE direction;
+#   then re-permute back to the original layout after all the hard work is done
+# Hopefully this doesn't cause issues w.r.t. gradient encoding; eddy doesn't do any reorientation, and
+#   the axes are permuted back afterwards. However if gradient reorientation was to be performed,
+#   this step would need to be taken into account.
+axis_permute_option = ''
+vox_permute_option = ''
+orig_vox = getHeaderInfo ('dwi1.mif', 'vox', verbose).split()
+if PEAxis == 0:
+  axis_permute_option = ' -axes 1,0,2,3'
+  new_vox = [ orig_vox[1], orig_vox[0], orig_vox[2], orig_vox[3] ]
+  vox_permute_option = ' -vox ' + ','.join(new_vox)
+  DWI1_dim = [ DWI1_dim[1], DWI1_dim[0], DWI1_dim[2], DWI1_dim[3] ]
+elif PEAxis == 2:
+  axis_permute_option = ' -axes 0,2,1,3'
+  new_vox = [ orig_vox[0], orig_vox[2], orig_vox[1], orig_vox[3] ]
+  vox_permute_option = ' -vox ' + ','.join(new_vox)
+  DWI1_dim = [ DWI1_dim[0], DWI1_dim[2], DWI1_dim[1], DWI1_dim[3] ]
+
+
+runCommand('mrconvert dwi1.mif dwi1p.mif' + axis_permute_option + vox_permute_option + quiet, verbose)
+runCommand('mrconvert dwi2.mif dwi2p.mif' + axis_permute_option + vox_permute_option + quiet, verbose)
+
 spatial_dims = DWI1_dim[:3]
 num_volumes = DWI1_dim[3]
-  
+
 # Get the axis strides from one of the input images, so the output image can be modified to match
 stride = getHeaderInfo ('dwi1.mif', 'stride', verbose)
 stride_option = ' -stride ' + stride.replace(' ', ',')
 
 # Convert the input files as necessary for FSL tools & later commands
-runCommand('mrconvert dwi1.mif dwi1.nii -stride +1,+2,+3,+4' + quiet, verbose)
-runCommand('mrconvert dwi2.mif dwi2.nii -stride +1,+2,+3,+4' + quiet, verbose)
-runCommand('mrinfo dwi1.mif -export_grad_mrtrix grad1.b' + quiet, verbose)
-runCommand('mrinfo dwi2.mif -export_grad_mrtrix grad2.b' + quiet, verbose)
+runCommand('mrconvert dwi1p.mif dwi1.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrconvert dwi2p.mif dwi2.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('mrinfo dwi1p.mif -export_grad_mrtrix grad1.b' + quiet, verbose)
+runCommand('mrinfo dwi2p.mif -export_grad_mrtrix grad2.b' + quiet, verbose)
 runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3' + quiet, verbose)
-runCommand('dwiextract dwi1.mif -bzero dwi1b0.mif' + quiet, verbose)
-runCommand('dwiextract dwi2.mif -bzero dwi2b0.mif' + quiet, verbose)
-runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4' + quiet, verbose)
+runCommand('dwiextract dwi1p.mif -bzero dwi1b0.mif' + quiet, verbose)
+runCommand('dwiextract dwi2p.mif -bzero dwi2b0.mif' + quiet, verbose)
+runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3' + quiet + ' | mrconvert - b0all.nii -stride +1,+2,+3,+4' + quiet, verbose)
 
 # Find out how many b=0 volumes there are
 DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions', verbose)
@@ -145,13 +173,15 @@ if crop_option:
 if verbose:
   printMessage('Creating phase-encoding configuration file')
 config_file = open('config.txt', 'w')
-config_line = [ 0, 0, 0, 0.1 ]
-config_line[PEAxis] = 1
+#config_line = [ 0, 0, 0, 0.1 ]
+#config_line[PEAxis] = 1
+config_line = [ 0, 1, 0, 0.1 ]
 for line_count in xrange(0,DWI1_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
 config_file.write('\n')
-config_line[PEAxis] = -1
+#config_line[PEAxis] = -1
+config_line = [ 0, -1, 0, 0.1 ]
 for line_count in xrange(0,DWI2_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
@@ -171,15 +201,17 @@ filenames = [ 'grad1.b', 'grad2.b' ]
 with open('grad_combined.b', 'w') as outfile:
   for fname in filenames:
     with open(fname) as infile:
-        outfile.write (infile.read())
+      outfile.write (infile.read())
 
 # Generate an initial distortion-corrected volume
+# TODO The string '[ 0 0 0 1 ]' is being written to stdout somewhere here...
 runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
 runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac' + fsl_verbose, verbose)
 runCommand('mrcat dwi1_topup.' + fsl_suffix + ' dwi2_topup.' + fsl_suffix + ' - -axis 3' + quiet + ' | mrconvert - topup_combined.mif -grad grad_combined.b' + quiet, verbose)
 
 # Produce a brain mask based on this initial correction
-runCommand('dwi2mask topup_combined.mif - -grad grad_combined.b' + quiet + ' | maskfilter - dilate -' + quiet + ' | mrconvert - mask.nii -datatype float32' + quiet, verbose)
+runCommand('dwi2mask topup_combined.mif mask.mif -grad grad_combined.b' + quiet, verbose)
+runCommand('maskfilter mask.mif dilate -' + quiet + ' | mrconvert - mask_dil.nii -datatype float32' + quiet, verbose)
 
 # Create the diffusion gradient table in FSL format
 runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals' + quiet, verbose)
@@ -198,25 +230,11 @@ for volume in xrange(0,int(num_volumes)):
 with open('indices.txt', 'w') as index_file:
   index_file.write(indices);
 
-
-
 # Run eddy
-#runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=lsr' + fsl_verbose, verbose)
-
-# Convert the resulting LSR-reconstructed volume to the output image, and re-insert the diffusion encoding
-# Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
-#   gradient vectors is performed. It should be possible to get the motion parameters from the eddy
-#   text file output and modify them manually, or FMRIB may update eddy itself.
-#result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-#runCommand('mrconvert eddy_output.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals' + quiet, verbose)
-
-
-
 # Looks like least-squares reconstruction is not supported in the publicly-available eddy code
 # Instead, generate a Jacobian-modulated output image for each volume, get the field image from topup, and
 #   do a manual combination using the equation from Skare and Bammer ISMRM 2010
-
-runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac' + fsl_verbose, verbose)
+runCommand('eddy --imain=' + series_imain + ' --mask=mask_dil.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac' + fsl_verbose, verbose)
 
 # Derive the weight images
 # To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
@@ -234,7 +252,7 @@ runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -repl
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
 #   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
 # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
-runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 ' + str(PEAxis) + ' -axes 0,1,2' + quiet, verbose)
+runCommand('mrcalc field_map_flip.mif 0.1 -mult -' + quiet + ' | mrfilter - gradient -' + quiet + ' | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2' + quiet, verbose)
 runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif' + quiet, verbose)
 runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif' + quiet, verbose)
 runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif' + quiet, verbose)
@@ -245,7 +263,7 @@ runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif' + quiet, verbos
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option + quiet, verbose)
 runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option + quiet, verbose)
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max -' + quiet + ' | mrconvert - ' + result_path + ' -grad grad1.b' + quiet, verbose)
+runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max -' + quiet + ' | mrconvert - ' + result_path + ' -grad grad1.b' + axis_permute_option + vox_permute_option + quiet, verbose)
 
 
 # Move back to original directory

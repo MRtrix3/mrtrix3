@@ -187,7 +187,7 @@ namespace MR
        *  when it goes out of scope itself). If the RefPtr class is used,
        *  ALL copies of the pointer should be stored using the RefPtr class. */
       template <class _T, bool _is_array>
-      Ptr (const RefPtr<_T, _is_array>& that) : ptr(NULL) { }
+      Ptr (const RefPtr<_T, _is_array>&) : ptr(NULL) { }
 
   };
 
@@ -347,7 +347,7 @@ namespace MR
        *  when it goes out of scope itself). If the RefPtr class is used,
        *  ALL copies of the pointer should be stored using the RefPtr class. */
       template <class _T, bool _is_array>
-      RefPtr (const Ptr<_T, _is_array>& that) : ptr(NULL), count (NULL) { }
+      RefPtr (const Ptr<_T, _is_array>&) : ptr(NULL), count (NULL) { }
   };
 
 
