@@ -56,8 +56,14 @@ const char* operations[] = {
 void usage ()
 {
   DESCRIPTION
-  + "compute summary statistic (e.g. mean, min, max, ...) on image intensities either across images, or along a specified axis for a single image. "
-  + "See also 'mrcalc' to compute per-voxel operations.";
+    + "compute summary statistic on image intensities either across images, "
+    "or along a specified axis for a single image. Supported operations are:"
+
+    + "mean, sum, product, rms (root-mean-square value), var (unbiased variance), "
+    "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
+    "magmax (value with maximum absolute value, preserving its sign)."
+
+    + "See also 'mrcalc' to compute per-voxel operations.";
 
   ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ().allow_multiple()
