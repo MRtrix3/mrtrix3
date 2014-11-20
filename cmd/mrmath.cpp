@@ -48,8 +48,8 @@ const char* operations[] = {
   "std",
   "min",
   "max",
-  "absmax",
-  "magmax",
+  "absmax", // Maximum of absolute values
+  "magmax", // Value for which the magnitude is the maximum (i.e. preserves signed-ness)
   NULL
 };
 
@@ -214,7 +214,7 @@ class MagMax {
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && Math::abs(val) > max) 
+      if (std::isfinite (val) && (!std::isfinite (max) || Math::abs(val) > Math::abs (max)))
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }
