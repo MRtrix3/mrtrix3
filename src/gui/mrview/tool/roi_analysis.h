@@ -43,7 +43,7 @@ namespace MR
           public:
             ROI (Window& main_window, Dock* parent);
 
-            void draw (const Projection& projection, bool is_3D);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice);
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
           private slots:
@@ -61,8 +61,9 @@ namespace MR
             void opacity_changed (int unused);
 
           protected:
+             class Item;
              class Model;
-             QPushButton *hide_all_button, *draw_button, *erase_button;
+             QPushButton *hide_all_button, *close_button, *save_button, *draw_button, *erase_button;
              Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;

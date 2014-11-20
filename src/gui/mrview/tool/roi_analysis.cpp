@@ -37,32 +37,65 @@ namespace MR
       namespace Tool
       {
 
-        class Item : public Volume {
+            
+       namespace {
+         constexpr std::array<std::array<GLubyte,3>,6> preset_colours = {
+           255, 255, 0,
+           255, 0, 255,
+           0, 255, 255,
+           255, 0, 0,
+           0, 255, 255,
+           0, 0, 255
+         };
+       }
+
+
+        class ROI::Item : public Volume {
           public:
             template <class InfoType>
-              Item (const InfoType& info) : Volume (info) { }
-            class Shader : public Mode::Slice::Shader {
-              public:
-                virtual std::string fragment_shader_source (const Displayable&) {
-                  return 
-                    "uniform vec3 colourmap_colour;\n"
-                    "uniform float alpha;\n"
-                    "uniform sampler3D tex;\n"
-                    "in vec3 texcoord;\n"
-                    "out vec4 color;\n"
-                    "void main() {\n"
-                    "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
-                    "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
-                    "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
-                    "  float value = texture (tex, texcoord.stp).a;\n"
-                    "  if (value < 0.5) discard;\n"
-                    "  color.rgb = colourmap_colour;\n"
-                    "  color.a = alpha;\n"
-                    "}"; 
-                }
-            } shader;
+              Item (const InfoType& info) : Volume (info) {
+                type = gl::UNSIGNED_BYTE;
+                format = gl::RED;
+                internal_format = gl::R8;
+                set_allowed_features (false, true, false);
+                set_interpolate (false);
+                set_use_transparency (true);
+                set_min_max (0.0, 1.0);
+                set_windowing (-1.0f, 0.0f);
+                alpha = 1.0f;
+                colour = preset_colours[current_preset_colour++];
+                if (current_preset_colour >= 6)
+                  current_preset_colour = 0;
+                transparent_intensity = 0.4;
+                opaque_intensity = 0.6;
+                colourmap = ColourMap::index ("Colour");
+
+                bind();
+                allocate();
+              }
+
+            void load (const MR::Image::Header& header) {
+              bind();
+              MR::Image::Buffer<bool> buffer (header);
+              auto vox = buffer.voxel();
+              std::vector<GLubyte> data (vox.dim(0)*vox.dim(1));
+              ProgressBar progress ("loading ROI image \"" + header.name() + "\"...");
+              for (auto outer = MR::Image::Loop(2,3) (vox); outer; ++outer) {
+                auto p = data.begin();
+                for (auto inner = MR::Image::Loop (0,2) (vox); inner; ++inner) 
+                  *(p++) = vox.value();
+                upload_data ({ 0, 0, vox[2] }, { vox.dim(0), vox.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+                ++progress;
+              }
+            }
+
+            Mode::Slice::Shader shader;
+
+            static int current_preset_colour;
         };
 
+
+        int ROI::Item::current_preset_colour = 0;
 
 
 
@@ -74,7 +107,7 @@ namespace MR
 
             void load (VecPtr<MR::Image::Header>& list);
 
-            Item* get_image (QModelIndex& index) {
+            Item* get (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()]);
             }
         };
@@ -85,8 +118,7 @@ namespace MR
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
             Item* roi = new Item (*list[i]);
-            roi->alpha = 1.0f;
-            roi->colour = { 255, 255, 0 };
+            roi->load (*list[i]);
             items.push_back (roi);
           }
           endInsertRows();
@@ -112,17 +144,19 @@ namespace MR
             connect (button, SIGNAL (clicked()), this, SLOT (open_slot ()));
             layout->addWidget (button, 1);
 
-            button = new QPushButton (this);
-            button->setToolTip (tr ("Save ROI"));
-            button->setIcon (QIcon (":/save.svg"));
-            connect (button, SIGNAL (clicked()), this, SLOT (save_slot ()));
-            layout->addWidget (button, 1);
+            save_button = new QPushButton (this);
+            save_button->setToolTip (tr ("Save ROI"));
+            save_button->setIcon (QIcon (":/save.svg"));
+            save_button->setEnabled (false);
+            connect (save_button, SIGNAL (clicked()), this, SLOT (save_slot ()));
+            layout->addWidget (save_button, 1);
 
-            button = new QPushButton (this);
-            button->setToolTip (tr ("Close ROI"));
-            button->setIcon (QIcon (":/close.svg"));
-            connect (button, SIGNAL (clicked()), this, SLOT (close_slot ()));
-            layout->addWidget (button, 1);
+            close_button = new QPushButton (this);
+            close_button->setToolTip (tr ("Close ROI"));
+            close_button->setIcon (QIcon (":/close.svg"));
+            close_button->setEnabled (false);
+            connect (close_button, SIGNAL (clicked()), this, SLOT (close_slot ()));
+            layout->addWidget (close_button, 1);
 
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide All"));
@@ -152,6 +186,7 @@ namespace MR
             draw_button->setToolTip (tr ("Draw"));
             draw_button->setIcon (QIcon (":/draw.svg"));
             draw_button->setCheckable (true);
+            draw_button->setEnabled (false);
             connect (draw_button, SIGNAL (clicked()), this, SLOT (draw_slot ()));
             layout->addWidget (draw_button, 1);
 
@@ -159,12 +194,14 @@ namespace MR
             erase_button->setToolTip (tr ("Erase"));
             erase_button->setIcon (QIcon (":/erase.svg"));
             erase_button->setCheckable (true);
+            erase_button->setEnabled (false);
             connect (erase_button, SIGNAL (clicked()), this, SLOT (erase_slot ()));
             layout->addWidget (erase_button, 1);
 
             main_box->addLayout (layout, 0);
 
             colour_button = new QColorButton;
+            colour_button->setEnabled (false);
             main_box->addWidget (colour_button, 0);
             connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_changed()));
 
@@ -173,6 +210,7 @@ namespace MR
             opacity_slider->setRange (1,1000);
             opacity_slider->setSliderPosition (int (1000));
             connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_changed(int)));
+            opacity_slider->setEnabled (false);
             main_box->addWidget (new QLabel ("opacity"), 0);
             main_box->addWidget (opacity_slider, 0);
 
@@ -197,7 +235,7 @@ namespace MR
 
         void ROI::open_slot ()
         {
-          std::vector<std::string> names = Dialog::File::get_images (this, "Select overlay images to open");
+          std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
           VecPtr<MR::Image::Header> list;
@@ -258,9 +296,9 @@ namespace MR
         }
 
 
-        void ROI::draw (const Projection& projection, bool is_3D)
+        void ROI::draw (const Projection& projection, bool is_3D, int, int)
         {
-          /*
+          if (is_3D) return;
 
           if (!is_3D) {
             // set up OpenGL environment:
@@ -272,21 +310,15 @@ namespace MR
             gl::BlendEquation (gl::FUNC_ADD);
           }
 
-          bool need_to_update = false;
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-              Item* image = dynamic_cast<Item*>(list_model->items[i]);
-              need_to_update |= !std::isfinite (image->intensity_min());
-              image->transparent_intensity = image->opaque_intensity = image->intensity_min();
-              if (is_3D) 
-                window.get_current_mode()->overlays_for_3D.push_back (image);
-              else
-                image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
+              Item* roi = dynamic_cast<Item*>(list_model->items[i]);
+              //if (is_3D) 
+                //window.get_current_mode()->overlays_for_3D.push_back (image);
+              //else
+                roi->render (roi->shader, projection, projection.depth_of (window.focus()));
             }
           }
-
-          if (need_to_update)
-            update_selection();
 
           if (!is_3D) {
             // restore OpenGL environment:
@@ -294,7 +326,6 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
-          */
         }
 
 
@@ -324,8 +355,9 @@ namespace MR
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (list_model->get_image (indices[i]));
-            //overlay->set_colourmap (index);
+            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
+            QColor c = colour_button->color();
+            roi->colour = { GLubyte (c.red()), GLubyte (c.green()), GLubyte (c.blue()) };
           }
           updateGL();
         }
@@ -337,8 +369,8 @@ namespace MR
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (list_model->get_image (indices[i]));
-            overlay->alpha = opacity_slider->value() / 1.0e3f;
+            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
+            roi->alpha = opacity_slider->value() / 1.0e3f;
           }
           window.updateGL();
         }
@@ -353,26 +385,34 @@ namespace MR
 
         void ROI::update_selection () 
         {
-          /*
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          //colourmap_combobox->setEnabled (indices.size());
           opacity_slider->setEnabled (indices.size());
+          save_button->setEnabled (indices.size());
+          close_button->setEnabled (indices.size());
+          draw_button->setEnabled (indices.size());
+          erase_button->setEnabled (indices.size());
+          colour_button->setEnabled (indices.size());
 
           if (!indices.size())
             return;
 
           float opacity = 0.0f;
+          float color[3] = { 0.0f, 0.0f, 0.0f };
 
           for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (list_model->get_image (indices[i]));
-            opacity += overlay->alpha;
+            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
+            opacity += roi->alpha;
+            color[0] += roi->colour[0];
+            color[1] += roi->colour[1];
+            color[2] += roi->colour[2];
           }
           opacity /= indices.size();
+          colour_button->setColor (QColor (
+                std::round (color[0] / indices.size()),
+                std::round (color[1] / indices.size()),
+                std::round (color[2] / indices.size()) ));
 
-          //colourmap_combobox->setCurrentIndex (colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);
-
-          */
         }
 
 
@@ -383,10 +423,12 @@ namespace MR
 
         bool ROI::process_batch_command (const std::string& cmd, const std::string& args)
         {
+          (void)cmd;
+          (void)args;
           /*
 
-          // BATCH_COMMAND overlay.load path # Loads the specified image on the overlay tool.
-          if (cmd == "overlay.load") {
+          // BATCH_COMMAND roi.load path # Loads the specified image on the roi tool.
+          if (cmd == "roi.load") {
             VecPtr<MR::Image::Header> list;
             try { list.push_back (new MR::Image::Header (args)); }
             catch (Exception& e) { e.display(); }
@@ -394,8 +436,8 @@ namespace MR
             return true;
           }
 
-          // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
-          else if (cmd == "overlay.opacity") {
+          // BATCH_COMMAND roi.opacity value # Sets the roi opacity to floating value [0-1].
+          else if (cmd == "roi.opacity") {
             try {
               float n = to<float> (args);
               opacity_slider->setSliderPosition(int(1.e3f*n));

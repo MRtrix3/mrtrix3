@@ -72,6 +72,7 @@ namespace MR
           void render (Displayable::Shader& shader_program, const Projection& projection, float depth) {
             start (shader_program, _scale_factor);
             projection.set (shader_program);
+            _texture.bind();
             set_vertices_for_slice_render (projection, depth);
             draw_vertices ();
             stop (shader_program);
@@ -111,7 +112,7 @@ namespace MR
           }
 
 
-            inline void upload_data (const std::vector<ssize_t>& x, const std::vector<ssize_t>& size, const void* data) {
+            inline void upload_data (const std::array<ssize_t,3>& x, const std::array<ssize_t,3>& size, const void* data) {
               gl::TexSubImage3D (gl::TEXTURE_3D, 0,
                   x[0], x[1], x[2],
                   size[0], size[1], size[2],

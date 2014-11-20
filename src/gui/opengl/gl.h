@@ -43,6 +43,12 @@
 # undef foreach
 #endif
 
+#ifdef GL_DEBUG
+# undef GL_DEBUG
+# define GL_DEBUG(msg) DEBUG(msg)
+#else
+# define GL_DEBUG(msg) (void)0
+#endif
 
 namespace MR
 {
@@ -65,6 +71,7 @@ namespace MR
             if (!id) {
               tex_type = target;
               gl::GenTextures (1, &id);
+              GL_DEBUG ("created OpenGL texture ID " + str(id));
               bind();
               gl::TexParameteri (tex_type, gl::TEXTURE_BASE_LEVEL, 0);
               gl::TexParameteri (tex_type, gl::TEXTURE_MAX_LEVEL, 0);
@@ -77,8 +84,18 @@ namespace MR
             }
           }
           GLenum type () const { return tex_type; }
-          void clear () { if (id) gl::DeleteTextures (1, &id); id = 0; }
-          void bind () const { assert (id); gl::BindTexture (tex_type, id); }
+          void clear () { 
+            if (id) {
+              GL_DEBUG ("deleting OpenGL texture ID " + str(id));
+              gl::DeleteTextures (1, &id); 
+            }
+            id = 0;
+          }
+          void bind () const {
+            assert (id); 
+            GL_DEBUG ("binding OpenGL texture ID " + str(id));
+            gl::BindTexture (tex_type, id); 
+          }
           void set_interp (GLint type) const {
             bind();
             gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, type);
@@ -96,9 +113,24 @@ namespace MR
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
           operator GLuint () const { return id; }
-          void gen () { if (!id) gl::GenBuffers (1, &id); }
-          void clear () { if (id) gl::DeleteBuffers (1, &id); id = 0; }
-          void bind (GLenum target) const { assert (id); gl::BindBuffer (target, id); }
+          void gen () { 
+            if (!id) {
+              gl::GenBuffers (1, &id); 
+              GL_DEBUG ("created OpenGL vertex buffer ID " + str(id));
+            }
+          }
+          void clear () { 
+            if (id) {
+              GL_DEBUG ("deleting OpenGL vertex buffer ID " + str(id));
+              gl::DeleteBuffers (1, &id); 
+              id = 0; 
+            }
+          }
+          void bind (GLenum target) const {
+            assert (id); 
+            GL_DEBUG ("binding OpenGL vertex buffer ID " + str(id));
+            gl::BindBuffer (target, id); 
+          }
         protected:
           GLuint id;
       };
@@ -109,9 +141,23 @@ namespace MR
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
           operator GLuint () const { return id; }
-          void gen () { if (!id) gl::GenVertexArrays (1, &id); }
-          void clear () { if (id) gl::DeleteVertexArrays (1, &id); id = 0; }
-          void bind () const { assert (id); gl::BindVertexArray (id); }
+          void gen () {
+            if (!id) {
+              gl::GenVertexArrays (1, &id); 
+              GL_DEBUG ("created OpenGL vertex array ID " + str(id));
+            }
+          }
+          void clear () { 
+            if (id) {
+              GL_DEBUG ("deleting OpenGL vertex array ID " + str(id));
+              gl::DeleteVertexArrays (1, &id); id = 0; 
+            }
+          }
+          void bind () const { 
+            assert (id); 
+            GL_DEBUG ("binding OpenGL vertex array ID " + str(id));
+            gl::BindVertexArray (id);
+          }
         protected:
           GLuint id;
       };

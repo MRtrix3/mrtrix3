@@ -80,6 +80,11 @@ namespace MR
           return n;
         }
 
+        inline size_t index (const std::string& name) {
+          size_t n = 0;
+          while (maps[n].name != name) ++n;
+          return n;
+        }
 
 
         inline size_t num_special () {

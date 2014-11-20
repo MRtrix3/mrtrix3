@@ -45,20 +45,21 @@ namespace MR
             Object () : index_ (0) { }
             Object (const std::string& source) : index_ (0) { compile (source); }
             ~Object () {
-              if (index_) gl::DeleteShader (index_);
+              if (index_) {
+                GL_DEBUG ("deleting OpenGL shader ID " + str(index_));
+                gl::DeleteShader (index_);
+              }
             }
             operator GLuint () const {
               return (index_);
             }
             void compile (const std::string& source) {
               std::string code = "#version 330 core\n" + source;
-              if (MR::App::log_level > 2) {
-                std::string msg ("compiling OpenGL ");
-                msg += TYPE == gl::VERTEX_SHADER ? "vertex" : "fragment";
-                msg += " shader:\n" + code;
-                DEBUG (msg);
+              GL_DEBUG ("compiling OpenGL " + this->type() + " shader:\n" + code);
+              if (!index_) {
+                index_ = gl::CreateShader (TYPE);
+                GL_DEBUG ("created OpenGL " + this->type() + " shader ID " + str (index_));
               }
-              if (!index_) index_ = gl::CreateShader (TYPE);
               const char* p = code.c_str();
               gl::ShaderSource (index_, 1, &p, NULL);
               gl::CompileShader (index_);
@@ -66,17 +67,14 @@ namespace MR
               gl::GetShaderiv (index_, gl::COMPILE_STATUS, &status);
               if (status == gl::FALSE_) {
                 debug();
-                throw Exception (std::string ("error compiling ") +
-                                 (TYPE == gl::VERTEX_SHADER ? "vertex shader" : "fragment shader"));
+                throw Exception ("error compiling OpenGL " + this->type() + " shader ID " + str (index_));
               }
-
-
             }
+            static const std::string type() { return TYPE == gl::VERTEX_SHADER ? "vertex" : "fragment"; }
+
             void debug () {
               assert (index_);
-              print_log (false,
-                (TYPE == gl::VERTEX_SHADER ? "vertex shader" : "fragment shader"),
-                index_);
+              print_log (false, this->type() + " shader", index_);
             }
 
           protected:
@@ -93,47 +91,56 @@ namespace MR
         {
           public:
             Program () : index_ (0) { }
-            ~Program () {
-              if (index_) gl::DeleteProgram (index_);
-            }
+            ~Program () { clear(); }
+        
             void clear () {
-              if (index_) gl::DeleteProgram (index_);
+              if (index_) {
+                GL_DEBUG ("deleting OpenGL shader program " + str(index_));
+                gl::DeleteProgram (index_);
+              }
               index_ = 0;
             }
             operator GLuint () const {
-              return (index_);
+              return index_;
             }
             template <GLint TYPE> void attach (const Object<TYPE>& object) {
-              if (!index_) index_ = gl::CreateProgram();
+              if (!index_) {
+                index_ = gl::CreateProgram();
+                GL_DEBUG ("created OpenGL shader program ID " + str(index_));
+              }
               gl::AttachShader (index_, object.index_);
+              GL_DEBUG ("attached OpenGL " + Object<TYPE>::type() + " shader ID " + str(object.index_) + " to program ID " + str(index_));
             }
             template <GLint TYPE> void detach (const Object<TYPE>& object) {
               assert (index_);
               assert (object.index_);
               gl::DetachShader (index_, object.index_);
+              GL_DEBUG ("detached OpenGL " + Object<TYPE>::type() + " shader ID " + str(object.index_) + " from program ID " + str(index_));
             }
             void link () {
-              DEBUG ("linking OpenGL shader program...");
+              GL_DEBUG ("linking OpenGL shader program ID " + str(index_) + "...");
               assert (index_);
               gl::LinkProgram (index_);
               GLint status;
               gl::GetProgramiv (index_, gl::LINK_STATUS, &status);
               if (status == gl::FALSE_) {
                 debug();
-                throw Exception (std::string ("error linking shader program"));
+                throw Exception (std::string ("error linking OpenGL shader program ID " + str(index_)));
               }
             }
             void start () const {
               assert (index_);
               gl::UseProgram (index_);
+              GL_DEBUG ("using OpenGL shader program ID " + str(index_));
             }
             static void stop () {
               gl::UseProgram (0);
+              GL_DEBUG ("using default OpenGL shader program");
             }
 
             void debug () const {
               assert (index_);
-              print_log (true, "shader program", index_);
+              print_log (true, "OpenGL shader program", index_);
             }
 
             Program& operator= (Program& P) {

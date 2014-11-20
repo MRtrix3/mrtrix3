@@ -276,9 +276,9 @@ namespace MR
 
       void Image::update_texture3D ()
       {
-        bind();
         if (volume_unchanged() && !texture_mode_changed) 
           return;
+        bind();
         
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
