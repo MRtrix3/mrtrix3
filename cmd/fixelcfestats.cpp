@@ -199,7 +199,10 @@ void run() {
     std::string temp;
     while (getline (ifs, temp)) {
       std::string filename (Path::join (folder, temp));
-      if (!MR::Path::exists(filename))
+      size_t p = filename.find_last_not_of(" \t");
+      if (std::string::npos != p)
+        filename.erase(p+1);
+      if (!MR::Path::exists (filename))
         throw Exception ("input fixel image not found: " + filename);
       filenames.push_back (filename);
     }
