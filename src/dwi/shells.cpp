@@ -231,8 +231,13 @@ namespace MR
       if (smallest().is_bzero()) {
         INFO ("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " + str(smallest().count()) + " b=0 volumes");
       } else {
-        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells");
+        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells (no b=0 volumes)");
       }
+      std::string msg = "Shells: b = { ";
+      for (std::vector<Shell>::const_iterator it = shells.begin(); it != shells.end(); ++it)
+        msg += str(it->get_mean()) + "(" + str(it->count()) + ") ";
+      msg += "}";
+      DEBUG (msg);
     }
 
 

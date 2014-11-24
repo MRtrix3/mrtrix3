@@ -176,6 +176,8 @@ void run ()
   DWI::CSDeconv<float>::Shared shared (H);
 
   const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
+  if (max_lmax < 4)
+    throw Exception ("Selected b-value shell does not have an adequate number of directions (" + str(shared.dwis.size()) + ") to run dwi2response (need at least 15 for lmax=4)");
   size_t lmax = std::min (size_t(8), max_lmax);
   opt = get_options ("lmax");
   if (opt.size()) {
@@ -188,7 +190,7 @@ void run ()
   }
   shared.lmax = lmax;
 
-  Image::Buffer<float> dwi (H);
+  Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
   DWI::Directions::Set directions (1281);
 
   Math::Vector<float> response (lmax/2+1);
@@ -198,7 +200,7 @@ void run ()
     // Initialise response function
     // Use lmax = 2, get the DWI intensity mean and standard deviation within the mask and
     //   use these as the first two coefficients
-    Image::Buffer<float>::voxel_type v_dwi (dwi);
+    Image::BufferPreload<float>::voxel_type v_dwi (dwi);
     double sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
     Image::LoopInOrder loop (dwi, "initialising response function... ", 0, 3);

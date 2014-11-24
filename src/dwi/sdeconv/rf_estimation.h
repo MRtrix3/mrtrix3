@@ -32,6 +32,7 @@
 #include "file/ofstream.h"
 
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 #include "image/iterator.h"
 #include "image/nav.h"
@@ -128,7 +129,7 @@ class FODSegResult
 class FODCalcAndSeg
 {
   public:
-    FODCalcAndSeg (Image::Buffer<float>& dwi,
+    FODCalcAndSeg (Image::BufferPreload<float>& dwi,
                Image::BufferScratch<bool>& mask,
                const DWI::CSDeconv<float>::Shared& csd_shared,
                const DWI::Directions::Set& dirs,
@@ -171,7 +172,7 @@ class FODCalcAndSeg
 
 
   private:
-    Image::Buffer<float>::voxel_type in;
+    Image::BufferPreload<float>::voxel_type in;
     Image::BufferScratch<bool>::voxel_type mask;
     DWI::CSDeconv<float> csd;
     RefPtr<DWI::FMLS::Segmenter> fmls;
@@ -267,7 +268,7 @@ class ResponseEstimator
 {
 
   public:
-    ResponseEstimator (Image::Buffer<float>& dwi_data,
+    ResponseEstimator (Image::BufferPreload<float>& dwi_data,
                        const DWI::CSDeconv<float>::Shared& csd_shared,
                        const size_t lmax,
                        Response& output) :
@@ -291,7 +292,7 @@ class ResponseEstimator
 
 
   private:
-    Image::Buffer<float>::voxel_type dwi;
+    Image::BufferPreload<float>::voxel_type dwi;
     const DWI::CSDeconv<float>::Shared& shared;
     const size_t lmax;
     Response& output;
