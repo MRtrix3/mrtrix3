@@ -271,7 +271,7 @@ namespace MR
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               buffer_dir.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
-              buffer_val.push_back (fixel_vox.value()[f].amplitude);
+              buffer_val.push_back (fixel_vox.value()[f].size);
               buffer_val.push_back (fixel_vox.value()[f].value / value_max);
             }
           }
@@ -294,7 +294,7 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
-          // fixel amplitudes and values
+          // fixel sizes and values
           value_buffer.gen();
           value_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
