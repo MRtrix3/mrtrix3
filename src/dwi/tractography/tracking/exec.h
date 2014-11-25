@@ -108,6 +108,7 @@ namespace MR
 
                 TckMapper mapper (H, dirs);
                 mapper.set_upsample_ratio (upsample_ratio);
+                mapper.set_use_precise_mapping (true);
 
                 Thread::run_queue (
                     Thread::multi (tracker), 
