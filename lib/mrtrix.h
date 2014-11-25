@@ -34,6 +34,7 @@
 #include <cctype>
 #include <iostream>
 #include <vector>
+#include <array>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -74,6 +75,15 @@ namespace std
   {
     stream << "[ ";
     for (size_t n = 0; n < V.size(); n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
+  template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < N; n++) 
       stream << V[n] << " ";
     stream << "]";
     return stream;
