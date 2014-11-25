@@ -29,23 +29,21 @@ namespace MR
           if (!strides[i]) continue;
           for (size_t j = i+1; j < strides.size(); ++j) {
             if (!strides[j]) continue;
-            if (abs (strides[i]) == abs (strides[j])) 
+            if (Math::abs (strides[i]) == Math::abs (strides[j]))
               strides[j] = 0;
           }
         }
 
         ssize_t max = 0;
         for (size_t i = 0; i < strides.size(); ++i)
-          if (ref[i] && abs (strides[i]) > max)
-            max = abs (strides[i]);
+          if (Math::abs (strides[i]) > max)
+            max = Math::abs (strides[i]);
 
         assert (max > 0);
 
         for (size_t i = 0; i < strides.size(); ++i) {
-          if (!ref[i]) {
-            ++max;
-            strides[i] = strides[i]<0 ? -max : max;
-          }
+          if (!strides[i])
+            strides[i] = (Math::abs (ref[i]) + max) * (ref[i] < 0 ? -1 : 1);
         }
         symbolise (strides);
         return strides;
