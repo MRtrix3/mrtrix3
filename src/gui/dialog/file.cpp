@@ -23,7 +23,7 @@
 #include "gui/dialog/file.h"
 #include "image/format/list.h"
 
-#ifndef MRTRIX_MACOSX
+#ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
 #else 
 # define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)

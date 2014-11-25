@@ -81,7 +81,7 @@ namespace MR
         return (p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
       }
       value_type norm () const  {
-        return (sqrt (norm2()));
+        return (std::sqrt (norm2()));
       }
       Point&     normalise ()   {
         Math::normalise (p);

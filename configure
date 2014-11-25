@@ -185,17 +185,17 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11', '-pthread' ]
+cpp_flags = [ '-std=c++11' ]
 
 ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = [ '-pthread' ]
+ld_flags = [ ]
 
 if static:
   ld_flags += [ '-static' ] 
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ '-pthread' ]
+ld_lib_flags = [ ]
 
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
@@ -349,17 +349,18 @@ lib_prefix = 'lib'
 system = platform.system().lower()
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
-  cpp_flags += [ '-fPIC' ]
+  cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
-  ld_lib_flags += [ '-shared' ]
+  ld_flags += [ '-pthread' ]
+  ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
-  cpp_flags += [ '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
-  ld_flags += [ '-Wl,--allow-multiple-definition' ]
-  ld_lib_flags += [ '-shared' ]
+  ld_flags += [ '-pthread', '-Wl,--allow-multiple-definition' ]
+  ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
   cxx = [ 'clang++' ]
