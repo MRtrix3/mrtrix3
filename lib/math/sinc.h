@@ -63,15 +63,16 @@ namespace MR
             else
               indices[i] = voxel;
 
-            const value_type offset        = position - (value_type)voxel;
+            const value_type offset = position - (value_type)voxel;
+            const value_type sinc   = offset ? Math::sin (M_PI * offset) / (M_PI * offset) : 1.0;
 
-            const value_type sinc          = offset ? Math::sin (M_PI * offset) / (M_PI * offset) : 1.0;
-
+            // Hann windowing
             //const value_type hann_cos_term = M_PI * offset / (value_type(max_offset_from_kernel_centre) + 0.5);
             //const value_type hann_factor   = (fabs (hann_cos_term) < M_PI) ? 0.5 * (1.0 + Math::cos (hann_cos_term)) : 0.0;
             //const value_type this_weight   = hann_factor * sinc;
 
-            const value_type lanczos_sinc_term = fabs (M_PI * offset / (double(max_offset_from_kernel_centre) + 0.5));
+            // Lanczos windowing
+            const value_type lanczos_sinc_term = Math::abs (M_PI * offset / (double(max_offset_from_kernel_centre) + 0.5));
             value_type lanczos_factor = 0.0;
             if (lanczos_sinc_term < M_PI) {
               if (lanczos_sinc_term)
