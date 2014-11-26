@@ -48,16 +48,22 @@ const char* operations[] = {
   "std",
   "min",
   "max",
-  "absmax",
-  "magmax",
+  "absmax", // Maximum of absolute values
+  "magmax", // Value for which the magnitude is the maximum (i.e. preserves signed-ness)
   NULL
 };
 
 void usage ()
 {
   DESCRIPTION
-  + "compute summary statistic (e.g. mean, min, max, ...) on image intensities either across images, or along a specified axis for a single image. "
-  + "See also 'mrcalc' to compute per-voxel operations.";
+    + "compute summary statistic on image intensities either across images, "
+    "or along a specified axis for a single image. Supported operations are:"
+
+    + "mean, sum, product, rms (root-mean-square value), var (unbiased variance), "
+    "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
+    "magmax (value with maximum absolute value, preserving its sign)."
+
+    + "See also 'mrcalc' to compute per-voxel operations.";
 
   ARGUMENTS
   + Argument ("input", "the input image.").type_image_in ().allow_multiple()
@@ -214,7 +220,7 @@ class MagMax {
     MagMax () : max (-std::numeric_limits<value_type>::infinity()) { }
     MagMax (const int i) : max (-std::numeric_limits<value_type>::infinity()) { }
     void operator() (value_type val) { 
-      if (std::isfinite (val) && std::abs(val) > max) 
+      if (std::isfinite (val) && (!std::isfinite (max) || std::abs(val) > std::abs (max)))
         max = val;
     }
     value_type result () const { return std::isfinite (max) ? max : NAN; }

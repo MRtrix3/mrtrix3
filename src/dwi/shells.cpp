@@ -228,7 +228,14 @@ namespace MR
 
       std::sort (shells.begin(), shells.end());
 
-      INFO ("Diffusion gradient encoding data clustered into " + str(count()) + " shells with volumes counts = " + str(get_counts()) + ", b-values = " + str(get_bvalues()) + "");
+      if (smallest().is_bzero()) {
+        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells - 1) + " non-zero shells and " + str(smallest().count()) + " b=0 volumes");
+      } else {
+        INFO ("Diffusion gradient encoding data clustered into " + str(num_shells) + " shells (no b=0 volumes)");
+      }
+      DEBUG ("Shells: b = { " + 
+          str ([&]{ std::string m; for (auto& s : shells) m += str(s.get_mean()) + "(" + str(s.count()) + ") "; return m; }())
+          + "}");
     }
 
 

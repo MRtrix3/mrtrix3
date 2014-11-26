@@ -175,6 +175,8 @@ void run ()
   DWI::CSDeconv<float>::Shared shared (H);
 
   const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
+  if (max_lmax < 4)
+    throw Exception ("Selected b-value shell does not have an adequate number of directions (" + str(shared.dwis.size()) + ") to run dwi2response (need at least 15 for lmax=4)");
   size_t lmax = std::min (size_t(8), max_lmax);
   opt = get_options ("lmax");
   if (opt.size()) {
@@ -187,7 +189,7 @@ void run ()
   }
   shared.lmax = lmax;
 
-  Image::Buffer<float> dwi (H);
+  Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
   DWI::Directions::Set directions (1281);
 
   Math::Vector<float> response (lmax/2+1);
