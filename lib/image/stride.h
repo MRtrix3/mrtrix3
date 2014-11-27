@@ -241,6 +241,9 @@ namespace MR
             info.stride (i) = ++max;
           }
         }
+
+
+
       //! remove duplicate and invalid strides.
       /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
@@ -372,7 +375,16 @@ namespace MR
        * if needed.  Essentially, this function checks whether the symbolic
        * strides in \c info already match those specified in \c desired. If so,
        * these will be used as-is, otherwise a new set of strides based on \c
-       * desired will be produced. */
+       * desired will be produced, as follows. First, non-zero strides in \c
+       * desired are used as-is, then the remaining strides are taken from \c
+       * info where specified and used with higher values, followed by those
+       * strides not specified in either.
+       *
+       * Examples:
+       * - \c info: [ 1 2 3 4 ], \c desired: [ 0 0 0 1 ] => [ 2 3 4 1 ]
+       * - \c info: [ 3 -2 4 1 ], \c desired: [ 0 0 0 1 ] => [ 3 -2 4 1 ]
+       * - \c info: [ -2 4 -3 1 ], \c desired: [ 1 2 3 0 ] => [ 1 2 3 4 ]
+       *   */
       template <class InfoType> 
         List get_nearest_match (const InfoType& info, const List& desired)
         {
@@ -387,6 +399,8 @@ namespace MR
           sanitise (in);
           return in;
         }
+
+
       template <> 
         inline List get_nearest_match<List> (const List& strides, const List& desired) 
         {
@@ -413,7 +427,7 @@ namespace MR
       template <class InfoType> 
         inline List contiguous_along_axis (size_t axis, const InfoType& info) 
         {
-          return get_nearest_match (contiguous_along_axis (axis), Image::Stride::get (info));
+          return get_nearest_match (Image::Stride::get (info), contiguous_along_axis (axis));
         }
 
       //! convenience function for use with Image::BufferPreload
