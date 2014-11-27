@@ -463,11 +463,11 @@ template <class Cont>
 void MapWriter<value_type>::receive_tod (const Cont& in)
 {
   assert (type == TOD);
+  Math::Vector<float> sh_coefs;
   for (typename Cont::const_iterator i = in.begin(); i != in.end(); ++i) {
     Image::Nav::set_pos (v_buffer, *i, 0, 3);
     const float factor = get_factor (*i, in);
     const float weight = in.weight * i->get_length();
-    Math::Vector<float> sh_coefs;
     get_tod (sh_coefs);
     if (v_counts)
       Image::Nav::set_pos (*v_counts, *i, 0, 3);
