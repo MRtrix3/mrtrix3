@@ -128,8 +128,8 @@ class Mean : public OpBase
       sum = sum_volumes = 0.0;
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].amplitude * in.value()[i].value;
-          sum_volumes += in.value()[i].amplitude;
+          sum += in.value()[i].size * in.value()[i].value;
+          sum_volumes += in.value()[i].size;
         }
         out.value() = sum_volumes ? (sum / sum_volumes) : 0.0;
       } else {
@@ -157,7 +157,7 @@ class Sum : public OpBase
       sum = 0.0;
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i)
-          sum += in.value()[i].amplitude * in.value()[i].value;
+          sum += in.value()[i].size * in.value()[i].value;
         out.value() = sum;
       } else {
         for (size_t i = 0; i != in.value().size(); ++i)
@@ -215,8 +215,8 @@ class RMS : public OpBase
       sum = sum_volumes = 0.0f;
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum *= in.value()[i].amplitude * Math::pow2 (in.value()[i].value);
-          sum_volumes += in.value()[i].amplitude;
+          sum *= in.value()[i].size * Math::pow2 (in.value()[i].value);
+          sum_volumes += in.value()[i].size;
         }
         out.value() = Math::sqrt (sum / sum_volumes);
       } else {
@@ -259,14 +259,14 @@ class Var : public OpBase
       if (weighted) {
         sum = sum_volumes = 0.0f;
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].amplitude * in.value()[i].value;
-          sum_volumes += in.value()[i].amplitude;
+          sum += in.value()[i].size * in.value()[i].value;
+          sum_volumes += in.value()[i].size;
         }
         weighted_mean = sum / sum_volumes;
         sum = sum_volumes_sqr = 0.0f;
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum += in.value()[i].amplitude * Math::pow2 (weighted_mean - in.value()[i].value);
-          sum_volumes_sqr += Math::pow2 (in.value()[i].amplitude);
+          sum += in.value()[i].size * Math::pow2 (weighted_mean - in.value()[i].value);
+          sum_volumes_sqr += Math::pow2 (in.value()[i].size);
         }
         // Unbiased variance estimator in the presence of weighting
         out.value() = sum / (sum_volumes - (sum_volumes_sqr / sum_volumes));
@@ -506,7 +506,7 @@ class DEC_unit : public OpBase
       sum_dec.set (0.0f, 0.0f, 0.0f);
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i)
-          sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].amplitude;
+          sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
       } else {
         for (size_t i = 0; i != in.value().size(); ++i)
           sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value;
@@ -526,26 +526,26 @@ class DEC_scaled : public OpBase
     DEC_scaled (const bool weighted) :
         OpBase (weighted),
         sum_dec (0.0f, 0.0f, 0.0f),
-        sum_amp (0.0f),
+        sum_volume (0.0f),
         sum_value (0.0f) { }
     DEC_scaled (const DEC_scaled& that) :
         OpBase (that),
         sum_dec (0.0f, 0.0f, 0.0f),
-        sum_amp (0.0f),
+        sum_volume (0.0f),
         sum_value (0.0f) { }
     bool operator() (in_vox_type& in, out_vox_type& out)
     {
       sum_dec.set (0.0f, 0.0f, 0.0f);
       sum_value = 0.0f;
       if (weighted) {
-        sum_amp = 0.0f;
+        sum_volume = 0.0f;
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].amplitude;
-          sum_amp += in.value()[i].amplitude;
-          sum_value += in.value()[i].amplitude * in.value()[i].value;
+          sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
+          sum_volume += in.value()[i].size;
+          sum_value += in.value()[i].size * in.value()[i].value;
         }
         sum_dec.normalise();
-        sum_dec *= (sum_value / sum_amp);
+        sum_dec *= (sum_value / sum_volume);
       } else {
         for (size_t i = 0; i != in.value().size(); ++i) {
           sum_dec += Point<float> (Math::abs (in.value()[i].dir[0]), Math::abs (in.value()[i].dir[1]), Math::abs (in.value()[i].dir[2])) * in.value()[i].value;
@@ -560,7 +560,7 @@ class DEC_scaled : public OpBase
     }
   private:
     Point<float> sum_dec;
-    float sum_amp, sum_value;
+    float sum_volume, sum_value;
 };
 
 class Split : public OpBase
