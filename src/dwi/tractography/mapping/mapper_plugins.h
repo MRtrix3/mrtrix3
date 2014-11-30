@@ -123,7 +123,7 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
         TWIImagePluginBase (input_image),
         statistic (track_statistic)
     {
-      if (!(data->ndim() == 3) || (data->ndim() == 4 && data->dim(3) == 1))
+      if (!((data->ndim() == 3) || (data->ndim() == 4 && data->dim(3) == 1)))
         throw Exception ("Scalar image used for TWI must be a 3D image");
       if (data->ndim() == 4)
         interp[3] = 0;
