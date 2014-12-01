@@ -91,6 +91,12 @@ namespace MR
 
             Mode::Slice::Shader shader;
 
+            struct UndoEntry {
+              std::array<ssize_t,3> from, size;
+              GL::Texture before, after;
+            };
+            std::vector<UndoEntry> undo_list;
+
             static int current_preset_colour;
         };
 
@@ -126,7 +132,8 @@ namespace MR
 
 
         ROI::ROI (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+          Base (main_window, parent),
+          current_mode (0) { 
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -182,20 +189,26 @@ namespace MR
             layout->setContentsMargins (0, 0, 0, 0);
             layout->setSpacing (0);
 
-            draw_button = new QPushButton (this);
-            draw_button->setToolTip (tr ("Draw"));
-            draw_button->setIcon (QIcon (":/draw.svg"));
-            draw_button->setCheckable (true);
-            draw_button->setEnabled (false);
-            connect (draw_button, SIGNAL (clicked()), this, SLOT (draw_slot ()));
+            draw_button = new QToolButton (this);
+            draw_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            QAction* action = new QAction (QIcon (":/draw.svg"), tr ("Draw"), this);
+            action->setShortcut (tr ("D"));
+            action->setToolTip (tr ("Add voxels to ROI"));
+            action->setCheckable (true);
+            action->setEnabled (false);
+            connect (action, SIGNAL (triggered()), this, SLOT (draw_slot ()));
+            draw_button->setDefaultAction (action);
             layout->addWidget (draw_button, 1);
 
-            erase_button = new QPushButton (this);
-            erase_button->setToolTip (tr ("Erase"));
-            erase_button->setIcon (QIcon (":/erase.svg"));
-            erase_button->setCheckable (true);
-            erase_button->setEnabled (false);
-            connect (erase_button, SIGNAL (clicked()), this, SLOT (erase_slot ()));
+            erase_button = new QToolButton (this);
+            erase_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/erase.svg"), tr ("Erase"), this);
+            action->setShortcut (tr ("E"));
+            action->setToolTip (tr ("Remove voxels from ROI"));
+            action->setCheckable (true);
+            action->setEnabled (false);
+            connect (action, SIGNAL (triggered()), this, SLOT (erase_slot ()));
+            erase_button->setDefaultAction (action);
             layout->addWidget (erase_button, 1);
 
             main_box->addLayout (layout, 0);
@@ -263,6 +276,8 @@ namespace MR
           QModelIndex first = list_model->index (previous_size, 0, QModelIndex());
           QModelIndex last = list_model->index (list_model->rowCount()-1, 0, QModelIndex());
           list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+
+          updateGL ();
         }
 
 
@@ -280,14 +295,16 @@ namespace MR
 
         void ROI::draw_slot () 
         {
-          TRACE;
-          updateGL();
+          if (erase_button->isChecked()) erase_button->setChecked (false);
+          if (draw_button->isChecked()) grab_focus ();
+          else release_focus ();
         }
 
         void ROI::erase_slot () 
         {
-          TRACE;
-          updateGL();
+          if (draw_button->isChecked()) draw_button->setChecked (false);
+          if (erase_button->isChecked()) grab_focus ();
+          else release_focus ();
         }
 
         void ROI::hide_all_slot () 
@@ -389,12 +406,16 @@ namespace MR
           opacity_slider->setEnabled (indices.size());
           save_button->setEnabled (indices.size());
           close_button->setEnabled (indices.size());
-          draw_button->setEnabled (indices.size());
-          erase_button->setEnabled (indices.size());
+          draw_button->defaultAction()->setEnabled (indices.size());
+          erase_button->defaultAction()->setEnabled (indices.size());
           colour_button->setEnabled (indices.size());
 
-          if (!indices.size())
+          if (!indices.size()) {
+            draw_button->setChecked (false);
+            erase_button->setChecked (false);
+            release_focus();
             return;
+          }
 
           float opacity = 0.0f;
           float color[3] = { 0.0f, 0.0f, 0.0f };
@@ -416,6 +437,46 @@ namespace MR
         }
 
 
+
+
+
+
+
+        bool ROI::mouse_press_event () 
+        { 
+          if (draw_button->isChecked()) current_mode = 1;
+          else if (erase_button->isChecked()) current_mode = 2;
+          else current_mode = 0;
+
+          const Projection* proj = window.get_current_mode()->get_current_projection();
+          if (!proj) 
+            return false;
+          Point<> pos =  proj->screen_to_model (window.mouse_position(), window.target());
+
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i) {
+            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
+            Point<> vox = roi->transform().scanner2voxel (pos);
+            VAR (vox);
+          }
+
+          return true; 
+        }
+
+
+        bool ROI::mouse_move_event () 
+        { 
+          if (!current_mode) 
+            return false;
+
+          return true; 
+        }
+
+        bool ROI::mouse_release_event () 
+        { 
+          current_mode = 0; 
+          return true; 
+        }
 
 
 

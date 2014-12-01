@@ -279,8 +279,11 @@ namespace MR
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
+          Tool::Base* tool_has_focus;
+
           friend class Image;
           friend class Mode::Base;
+          friend class Tool::Base;
           friend class Window::GLArea;
       };
 

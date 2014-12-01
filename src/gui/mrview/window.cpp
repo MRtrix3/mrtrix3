@@ -186,7 +186,7 @@ namespace MR
       Window::Window() :
         glarea (new GLArea (*this)),
         glrefresh_timer (new QTimer (this)),
-        mode (NULL),
+        mode (nullptr),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
         FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::AltModifier)),
@@ -200,7 +200,8 @@ namespace MR
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position_index (2),
-        snap_to_image_axes_and_voxel (true)
+        snap_to_image_axes_and_voxel (true),
+        tool_has_focus (nullptr)
       {
 
         setDockOptions (AllowTabbedDocks);
@@ -636,7 +637,7 @@ namespace MR
 
       Window::~Window ()
       {
-        mode = NULL;
+        mode = nullptr;
         delete glarea;
         delete glrefresh_timer;
         delete [] colourmap_actions;
@@ -1237,6 +1238,14 @@ namespace MR
         if (image()) 
           mode->mouse_press_event();
 
+        if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+          if (tool_has_focus->mouse_press_event()) {
+            mouse_action = NoAction;
+            event->accept();
+            return;
+          }
+        }
+
         int group = get_mouse_mode();
 
         if (buttons_ == Qt::MidButton) 
@@ -1271,12 +1280,19 @@ namespace MR
       inline void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (mouse_action == NoAction)
-          return;
         if (!image()) 
           return;
 
         update_mouse_state (event);
+
+        if (mouse_action == NoAction) {
+          if (tool_has_focus) 
+            if (tool_has_focus->mouse_move_event()) 
+              event->accept();
+          return;
+        }
+
+
         switch (mouse_action) {
           case SetFocus: mode->set_focus_event(); break;
           case Contrast: mode->contrast_event(); break;
@@ -1294,6 +1310,11 @@ namespace MR
       {
         assert (mode);
         mode->mouse_release_event();
+
+        if (tool_has_focus && mouse_action == NoAction) 
+          if (tool_has_focus->mouse_release_event()) 
+            return;
+
         mouse_action = NoAction;
         set_cursor();
       }

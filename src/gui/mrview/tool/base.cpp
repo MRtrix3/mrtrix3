@@ -59,6 +59,9 @@ namespace MR
           return false;
         }
 
+        bool Base::mouse_press_event () { return false; }
+        bool Base::mouse_move_event () { return false; }
+        bool Base::mouse_release_event () { return false; }
       }
     }
   }

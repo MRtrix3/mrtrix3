@@ -46,6 +46,10 @@ namespace MR
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
+            virtual bool mouse_press_event ();
+            virtual bool mouse_move_event ();
+            virtual bool mouse_release_event ();
+
           private slots:
             void new_slot ();
             void open_slot ();
@@ -63,11 +67,13 @@ namespace MR
           protected:
              class Item;
              class Model;
-             QPushButton *hide_all_button, *close_button, *save_button, *draw_button, *erase_button;
+             QPushButton *hide_all_button, *close_button, *save_button;
+             QToolButton *draw_button, *erase_button;
              Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;
              QSlider *opacity_slider;
+             int current_mode;
 
              void update_selection ();
              void updateGL() { 
@@ -76,6 +82,7 @@ namespace MR
              }
              
              void load (VecPtr<MR::Image::Header>& list); 
+
         };
 
 
