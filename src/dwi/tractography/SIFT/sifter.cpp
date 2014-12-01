@@ -253,7 +253,7 @@ namespace MR
           const float cf_end_iteration = calc_cost_function();
 
           if (App::log_level)
-            fprintf (stderr, "\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
+            fprintf (stderr, "\33[2K\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
 
           if (!csv_path.empty()) {
             File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::app | std::ios_base::ate);
