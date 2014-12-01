@@ -22,39 +22,39 @@ namespace MR
 
 
 
-      List& sanitise (List& strides, const List& ref)
+      List& sanitise (List& current, const List& desired)
       {
         // remove duplicates
-        for (size_t i = 0; i < strides.size()-1; ++i) {
-          if (!strides[i]) continue;
-          for (size_t j = i+1; j < strides.size(); ++j) {
-            if (!strides[j]) continue;
-            if (Math::abs (strides[i]) == Math::abs (strides[j]))
-              strides[j] = 0;
+        for (size_t i = 0; i < current.size()-1; ++i) {
+          if (!current[i]) continue;
+          for (size_t j = i+1; j < current.size(); ++j) {
+            if (!current[j]) continue;
+            if (Math::abs (current[i]) == Math::abs (current[j]))
+              current[j] = 0;
           }
         }
 
-        ssize_t ref_max = 0;
-        for (size_t i = 0; i < ref.size(); ++i)
-          if (Math::abs (ref[i]) > ref_max)
-            ref_max = Math::abs (ref[i]);
+        ssize_t desired_max = 0;
+        for (size_t i = 0; i < desired.size(); ++i)
+          if (Math::abs (desired[i]) > desired_max)
+            desired_max = Math::abs (desired[i]);
 
         ssize_t in_max = 0;
-        for (size_t i = 0; i < strides.size(); ++i)
-          if (Math::abs (strides[i]) > in_max)
-            in_max = Math::abs (strides[i]);
-        in_max += ref_max + 1;
+        for (size_t i = 0; i < current.size(); ++i)
+          if (Math::abs (current[i]) > in_max)
+            in_max = Math::abs (current[i]);
+        in_max += desired_max + 1;
 
-        for (size_t i = 0; i < strides.size(); ++i) 
-          if (ref[i]) 
-            strides[i] = ref[i];
-          else if (strides[i])
-            strides[i] += strides[i] < 0 ? -ref_max : ref_max;
+        for (size_t i = 0; i < current.size(); ++i) 
+          if (desired[i]) 
+            current[i] = desired[i];
+          else if (current[i])
+            current[i] += current[i] < 0 ? -desired_max : desired_max;
           else 
-            strides[i] = in_max++;
+            current[i] = in_max++;
         
-        symbolise (strides);
-        return strides;
+        symbolise (current);
+        return current;
       }
 
 
