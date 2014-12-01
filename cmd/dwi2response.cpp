@@ -123,7 +123,7 @@ void usage () {
       + Argument ("image").type_image_in()
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (2, 8, 20)
+      + Argument ("value").type_integer (4, 8, 20)
 
     + Option ("sf", "output a mask highlighting the final selection of single-fibre voxels")
       + Argument ("image").type_image_out()
@@ -184,7 +184,7 @@ void run ()
     if (desired_lmax % 2)
       throw Exception ("lmax must be an even number");
     if (desired_lmax > max_lmax)
-      throw Exception ("Image data does not support estimating response function above an lmax of " + str(max_lmax));
+      throw Exception ("Image data do not support estimating response function above an lmax of " + str(max_lmax));
     lmax = desired_lmax;
   }
   shared.lmax = lmax;
