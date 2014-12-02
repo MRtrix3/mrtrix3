@@ -20,11 +20,12 @@
 
 */
 
+//#define GL_DEBUG
+
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_analysis.h"
 #include "gui/mrview/volume.h"
-#include "gui/mrview/mode/slice.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 
@@ -89,16 +90,149 @@ namespace MR
               }
             }
 
-            Mode::Slice::Shader shader;
+
+
+
+
 
             struct UndoEntry {
-              std::array<ssize_t,3> from, size;
-              GL::Texture before, after;
+
+              template <class InfoType>
+                UndoEntry (InfoType& roi, int current_axis, int current_slice) 
+              {
+                from = {0, 0, 0}; 
+                from[current_axis] = current_slice;
+                size = { roi.info().dim(0), roi.info().dim(1), roi.info().dim(2) };
+                size[current_axis] = 1;
+
+                if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
+                else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
+                else { slice_axes[0] = 0; slice_axes[1] = 1; }
+                tex_size = { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) };
+
+                if (!copy_program) {
+                  GL::Shader::Vertex vertex_shader (
+                      "layout(location = 0) in ivec3 vertpos;\n"
+                      "void main() {\n"
+                      "  gl_Position = vec4 (vertpos,1);\n"
+                      "}\n");
+                  GL::Shader::Fragment fragment_shader (
+                      "uniform isampler3D tex;\n"
+                      "uniform ivec3 position;\n"
+                      "uniform ivec2 axes;\n"
+                      "layout (location = 0) out vec3 color0;\n"
+                      "void main() {\n"
+                      "  ivec3 pos = position;\n"
+                      "  pos[axes.x] = int(gl_FragCoord.x);\n"
+                      "  pos[axes.y] = int(gl_FragCoord.y);\n"
+                      "  color0.r = texelFetch (tex, pos, 0);\n"
+                      "}\n");
+
+                  copy_program.attach (vertex_shader);
+                  copy_program.attach (fragment_shader);
+                  copy_program.link();
+                }
+
+                if (!copy_vertex_array_object) {
+                  copy_vertex_buffer.gen();
+                  copy_vertex_array_object.gen();
+
+                  copy_vertex_buffer.bind (gl::ARRAY_BUFFER);
+                  copy_vertex_array_object.bind();
+
+                  gl::EnableVertexAttribArray (0);
+                  gl::VertexAttribIPointer (0, 3, gl::INT, 3*sizeof(GLint), (void*)0);
+
+                  GLint vertices[12] = { 
+                    -1, -1, 0,
+                    -1, 1, 0,
+                    1, 1, 0,
+                    1, -1, 0,
+                  };
+                  gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STREAM_DRAW);
+                }
+                else copy_vertex_array_object.bind();
+
+                from = {0, 0, 0}; 
+                from[current_axis] = current_slice;
+
+                if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
+                else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
+                else { slice_axes[0] = 0; slice_axes[1] = 1; }
+                tex_size = { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) };
+
+
+                // set up 2D texture to store slice:
+                GL::Texture tex;
+                tex.gen (gl::TEXTURE_2D);
+                gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
+                gl::TexImage2D (gl::TEXTURE_2D, 0, gl::R8, tex_size[0], tex_size[1], 0, gl::RED, gl::UNSIGNED_BYTE, nullptr);
+
+                // set up off-screen framebuffer to map textures onto:
+                GL::FrameBuffer framebuffer;
+                framebuffer.gen();
+                tex.set_interp_on (false);
+                framebuffer.attach_color (tex, 0);
+                framebuffer.draw_buffers (0);
+                framebuffer.check();
+
+                // render slice onto framebuffer:
+                gl::Disable (gl::DEPTH_TEST);
+                gl::Disable (gl::BLEND);
+                gl::Viewport (0, 0, tex_size[0], tex_size[1]);
+                roi.texture().bind();
+                copy_program.start();
+                gl::Uniform3iv (gl::GetUniformLocation (copy_program, "position"), 1, from.data());
+                gl::Uniform2iv (gl::GetUniformLocation (copy_program, "axes"), 1, slice_axes.data());
+                gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
+                copy_program.stop();
+                framebuffer.unbind();
+
+                // retrieve texture contents to main memory:
+                before.resize (tex_size[0]*tex_size[1]);
+                gl::GetTexImage (gl::TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*)(&before[0]));
+                after = before;
+              }
+
+              template <class InfoType>
+                void edit (InfoType& roi, const Point<>& pos, int current_mode, float radius) {
+                  Point<> vox = roi.transform().scanner2voxel (pos);
+                  int rad = int (std::ceil (radius));
+                  radius *= radius;
+                  std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+                  std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
+                  a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad);
+                  a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad);
+                  b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad);
+                  b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad);
+
+                  for (int k = a[2]; k < b[2]; ++k)
+                    for (int j = a[1]; j < b[1]; ++j)
+                      for (int i = a[0]; i < b[0]; ++i)
+                        if (Math::pow2(vox[0]-i) + Math::pow2 (vox[1]-j) + Math::pow2 (vox[2]-k) < radius)
+                          after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
+
+                  roi.texture().bind();
+                  gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+                }
+
+              std::array<GLint,3> from, size;
+              std::array<GLint,2> tex_size, slice_axes;
+              std::vector<GLubyte> before, after;
+
+              static GL::Shader::Program copy_program;
+              static GL::VertexBuffer copy_vertex_buffer;
+              static GL::VertexArrayObject copy_vertex_array_object;
             };
             std::vector<UndoEntry> undo_list;
 
             static int current_preset_colour;
         };
+
+        GL::Shader::Program ROI::Item::UndoEntry::copy_program;
+        GL::VertexBuffer ROI::Item::UndoEntry::copy_vertex_buffer;
+        GL::VertexArrayObject ROI::Item::UndoEntry::copy_vertex_array_object;
+
 
 
         int ROI::Item::current_preset_colour = 0;
@@ -333,7 +467,7 @@ namespace MR
               //if (is_3D) 
                 //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
-                roi->render (roi->shader, projection, projection.depth_of (window.focus()));
+                roi->render (shader, projection, projection.depth_of (window.focus()));
             }
           }
 
@@ -404,10 +538,10 @@ namespace MR
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           opacity_slider->setEnabled (indices.size());
-          save_button->setEnabled (indices.size());
+          save_button->setEnabled (indices.size() == 1);
           close_button->setEnabled (indices.size());
-          draw_button->defaultAction()->setEnabled (indices.size());
-          erase_button->defaultAction()->setEnabled (indices.size());
+          draw_button->defaultAction()->setEnabled (indices.size() == 1);
+          erase_button->defaultAction()->setEnabled (indices.size() == 1);
           colour_button->setEnabled (indices.size());
 
           if (!indices.size()) {
@@ -442,23 +576,67 @@ namespace MR
 
 
 
+
+
         bool ROI::mouse_press_event () 
         { 
           if (draw_button->isChecked()) current_mode = 1;
           else if (erase_button->isChecked()) current_mode = 2;
           else current_mode = 0;
 
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
+            return false;
+          }
+
+
           const Projection* proj = window.get_current_mode()->get_current_projection();
           if (!proj) 
             return false;
-          Point<> pos =  proj->screen_to_model (window.mouse_position(), window.target());
+          Point<> pos =  proj->screen_to_model (window.mouse_position(), window.focus());
+          Point<> normal = proj->screen_normal();
 
-          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
-            Point<> vox = roi->transform().scanner2voxel (pos);
-            VAR (vox);
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          // figure out the closest ROI axis, and lock to it:
+          float x_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
+          float y_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 1.0, 0.0)).dot (normal));
+          float z_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 0.0, 1.0)).dot (normal));
+
+          if (x_dot_n > y_dot_n) 
+            current_axis = x_dot_n > z_dot_n ? 0 : 2;
+          else 
+            current_axis = y_dot_n > z_dot_n ? 1 : 2;
+
+          // figure out current slice in ROI:
+          current_slice = std::lround (roi->transform().scanner2voxel (pos)[current_axis]);
+
+          // floating-point version of slice location to keep it consistent on
+          // mouse move:
+          Point<> slice_axis (0.0, 0.0, 0.0);
+          slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
+          slice_axis = roi->transform().image2scanner_dir (slice_axis);
+          current_slice_loc = pos.dot (slice_axis);
+
+
+          // keep undo list bounded:
+          size_t undo_list_max_size = 8;
+          if (roi->undo_list.size() >= undo_list_max_size-1)
+            roi->undo_list.erase (roi->undo_list.begin());
+          
+          // add new entry to undo list:
+          roi->undo_list.push_back (Item::UndoEntry (*roi, current_axis, current_slice));
+
+          // grab slice data from 3D texture:
+          for (GLint j = 0; j < roi->undo_list.back().tex_size[1]; ++j) {
+            for (GLint i = 0; i < roi->undo_list.back().tex_size[0]; ++i)
+              std::cout << int(roi->undo_list.back().before[i+roi->undo_list.back().tex_size[0]*j]) << " ";
+            std::cout << "\n";
           }
+
+          roi->undo_list.back().edit (*roi, pos, current_mode, 5.0);
+
+          updateGL();
 
           return true; 
         }
@@ -468,6 +646,28 @@ namespace MR
         { 
           if (!current_mode) 
             return false;
+
+
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          if (!indices.size()) {
+            WARN ("FIXME: shouldn't be here!");
+            return false;
+          }
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+
+          const Projection* proj = window.get_current_mode()->get_current_projection();
+          if (!proj) 
+            return false;
+          Point<> pos =  proj->screen_to_model (window.mouse_position(), window.focus());
+          Point<> slice_axis (0.0, 0.0, 0.0);
+          slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
+          slice_axis = roi->transform().image2scanner_dir (slice_axis);
+          float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
+          window.set_focus (window.focus() + l * proj->screen_normal());
+
+          roi->undo_list.back().edit (*roi, pos + l * proj->screen_normal(), current_mode, 5.0);
+
+          updateGL();
 
           return true; 
         }

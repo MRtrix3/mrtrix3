@@ -41,7 +41,7 @@ namespace MR
       void Font::initGL () 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
-        INFO ("loading font into OpenGL texture...");
+        DEBUG ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
         const float max_font_width = metric.width("MM") + 2;
@@ -151,7 +151,7 @@ namespace MR
         program.attach (fragment_shader);
         program.link();
 
-        INFO ("font loaded");
+        DEBUG ("font loaded");
       }
 
 

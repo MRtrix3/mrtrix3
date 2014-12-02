@@ -25,6 +25,7 @@
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/mode/slice.h"
 #include "gui/color_button.h"
 
 namespace MR
@@ -73,7 +74,10 @@ namespace MR
              QListView* list_view;
              QColorButton* colour_button;
              QSlider *opacity_slider;
-             int current_mode;
+             int current_mode, current_axis, current_slice;
+             float current_slice_loc;
+
+             Mode::Slice::Shader shader;
 
              void update_selection ();
              void updateGL() { 
@@ -82,7 +86,6 @@ namespace MR
              }
              
              void load (VecPtr<MR::Image::Header>& list); 
-
         };
 
 

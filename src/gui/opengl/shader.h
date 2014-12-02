@@ -55,7 +55,7 @@ namespace MR
             }
             void compile (const std::string& source) {
               std::string code = "#version 330 core\n" + source;
-              GL_DEBUG ("compiling OpenGL " + this->type() + " shader:\n" + code);
+              DEBUG ("compiling OpenGL " + this->type() + " shader:\n" + code);
               if (!index_) {
                 index_ = gl::CreateShader (TYPE);
                 GL_DEBUG ("created OpenGL " + this->type() + " shader ID " + str (index_));

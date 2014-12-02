@@ -66,6 +66,9 @@ namespace MR
         public:
           Texture () : id (0) { }
           ~Texture () { clear(); }
+          Texture (const Texture&) : id (0) { }
+          Texture (Texture&& t) : id (t.id) { t.id = 0; }
+          Texture& operator= (Texture&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
           void gen (GLenum target) { 
             if (!id) {
@@ -112,6 +115,9 @@ namespace MR
         public:
           VertexBuffer () : id (0) { }
           ~VertexBuffer () { clear(); }
+          VertexBuffer (const VertexBuffer&) : id (0) { }
+          VertexBuffer (VertexBuffer&& t) : id (t.id) { t.id = 0; }
+          VertexBuffer& operator= (VertexBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
           void gen () { 
             if (!id) {
@@ -140,6 +146,9 @@ namespace MR
         public:
           VertexArrayObject () : id (0) { }
           ~VertexArrayObject () { clear(); }
+          VertexArrayObject (const VertexArrayObject&) : id (0) { }
+          VertexArrayObject (VertexArrayObject&& t) : id (t.id) { t.id = 0; }
+          VertexArrayObject& operator= (VertexArrayObject&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
           void gen () {
             if (!id) {
@@ -157,6 +166,64 @@ namespace MR
             assert (id); 
             GL_DEBUG ("binding OpenGL vertex array ID " + str(id));
             gl::BindVertexArray (id);
+          }
+        protected:
+          GLuint id;
+      };
+
+
+
+      class FrameBuffer {
+        public:
+          FrameBuffer () : id (0) { }
+          ~FrameBuffer () { clear(); }
+          FrameBuffer (const FrameBuffer&) : id (0) { }
+          FrameBuffer (FrameBuffer&& t) : id (t.id) { t.id = 0; }
+          FrameBuffer& operator= (FrameBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          operator GLuint () const { return id; }
+          void gen () { 
+            if (!id) {
+              gl::GenFramebuffers (1, &id);
+              GL_DEBUG ("created OpenGL framebuffer ID " + str(id));
+            }
+          }
+          void clear () { 
+            if (id) {
+              GL_DEBUG ("deleting OpenGL framebuffer ID " + str(id));
+              gl::DeleteFramebuffers (1, &id); 
+              unbind();
+            }
+            id = 0;
+          }
+          void bind () const {
+            assert (id); 
+            GL_DEBUG ("binding OpenGL framebuffer ID " + str(id));
+            gl::BindFramebuffer (gl::FRAMEBUFFER, id); 
+          }
+          void unbind () const {
+            GL_DEBUG ("binding default OpenGL framebuffer");
+            gl::BindFramebuffer (gl::FRAMEBUFFER, 0); 
+          }
+
+          void attach_color (Texture& tex, size_t attachment) const {
+            assert (id);
+            assert (tex);
+            bind();
+            GL_DEBUG ("texture ID " + str (tex) + " attached to framebuffer ID " + str(id) + " at color attachement " + str(attachment));
+            gl::FramebufferTexture (gl::FRAMEBUFFER, GLenum (size_t (gl::COLOR_ATTACHMENT0) + attachment), tex, 0);
+          }
+          void draw_buffers (size_t first) const {
+            GLenum list[1] = { GLenum (size_t (gl::COLOR_ATTACHMENT0) + first) };
+            gl::DrawBuffers (1 , list);
+          }
+          void draw_buffers (size_t first, size_t second) const {
+            GLenum list[2] = { GLenum (size_t(gl::COLOR_ATTACHMENT0) + first), GLenum (size_t (gl::COLOR_ATTACHMENT0) + second) };
+            gl::DrawBuffers (2 , list);
+          }
+
+          void check() const {
+            if (gl::CheckFramebufferStatus (gl::FRAMEBUFFER) != gl::FRAMEBUFFER_COMPLETE)
+              throw Exception ("FIXME: framebuffer is not complete");
           }
         protected:
           GLuint id;
