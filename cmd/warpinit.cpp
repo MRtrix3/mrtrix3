@@ -87,8 +87,7 @@ void run ()
   Image::Stride::set (header, Image::Stride::contiguous_along_axis (3));
 
   Image::Buffer<float> warp_buffer (argument[1], header);
-  Image::Buffer<float>::voxel_type warp_vox (warp_buffer);
 
-  Image::ThreadedLoop ("initialising warp image...", warp_vox, 1, 0, 3)
-    .run (write_coordinates (warp_vox), warp_vox);
+  Image::ThreadedLoop ("initialising warp image...", warp_buffer, 0, 3)
+    .run (write_coordinates (warp_buffer), warp_buffer.voxel());
 }
