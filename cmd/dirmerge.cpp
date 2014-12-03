@@ -88,7 +88,7 @@ void run ()
       auto m = DWI::Directions::load_cartesian<value_type> (argument[current++]);
       DirectionSet set;
       for (size_t r = 0; r < m.rows(); ++r)
-        set.push_back ({ m(r,0), m(r,1), m(r,2) });
+        set.push_back ({ { m(r,0), m(r,1), m(r,2) } });
       d.push_back (set);
     }
     INFO ("found b = " + str(bvalue[nb]) + ", " + 
@@ -112,7 +112,7 @@ void run ()
 
   auto push = [&](size_t b, size_t p, size_t n) 
   { 
-    merged.push_back ({ { dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2] }, b, p }); 
+    merged.push_back ({ { { dirs[b][p][n][0], dirs[b][p][n][1], dirs[b][p][n][2] } }, b, p }); 
     dirs[b][p].erase (dirs[b][p].begin()+n); 
   };
 
