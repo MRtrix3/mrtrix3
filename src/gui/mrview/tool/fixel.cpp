@@ -272,7 +272,7 @@ namespace MR
               buffer_dir.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
               buffer_val.push_back (fixel_vox.value()[f].size);
-              buffer_val.push_back (fixel_vox.value()[f].value / value_max);
+              buffer_val.push_back (fixel_vox.value()[f].value);
             }
           }
           buffer_dir.push_back (Point<float>());
