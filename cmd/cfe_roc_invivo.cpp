@@ -130,7 +130,7 @@ class PermutationStack {
     PermutationStack (const Math::Matrix<float>& permutations_matrix) :
       num_permutations (permutations_matrix.rows()),
       current_permutation (0),
-      progress ("running " + str(permutations_matrix.rows()) + " permutations...", permutations_matrix.rows()),
+      progress ("message"),
       permutations (permutations_matrix.rows())
     {
       for (size_t p = 0; p < permutations_matrix.rows(); ++p){
@@ -177,9 +177,9 @@ class FixelIndex
 
 class Stack {
   public:
-  Stack (size_t num_noise_realisation) :
+  Stack (size_t num_noise_realisation, std::string& message) :
     num_noise_realisation (num_noise_realisation),
-      progress ("running " + str(num_noise_realisation) + " noise realisations...", num_noise_realisation),
+      progress (message, num_noise_realisation),
       index (0) {}
 
     size_t next () {
@@ -439,7 +439,7 @@ void run ()
     DWI::Tractography::Mapping::TrackMapperBase mapper (index_header);
     mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
     mapper.set_use_precise_mapping (true);
-    Stats::CFE::TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, angular_threshold_dp);
+    Stats::CFE::TrackProcessor tract_processor (indexer, fixel_directions, fixel_TDI, fixel_connectivity, ANGULAR_THRESHOLD);
     Thread::run_queue (loader, DWI::Tractography::Streamline<float>(), mapper, SetVoxelDir(), tract_processor);
   }
 
@@ -620,15 +620,11 @@ void run ()
             }
           }
           average_t += sum_max_t / (float) num_tp;
-//                  std::string path_file("path_tvalue" + str(perm) + ".msf");
-//                  std::string control_file("control_tvalue" + str(perm) + ".msf");
-//                  write_fixel_output (path_file, path_statistic, input_header, template_vox, indexer_vox);
-//                  write_fixel_output (control_file, control_statistic, input_header, template_vox, indexer_vox);
           progress++;
         }
       }
-      std::cout << average_t / (float) num_permutations << std::endl;
-      std::cout << average_max_t / (float) num_permutations << std::endl;
+//      std::cout << average_t / (float) num_permutations << std::endl;
+//      std::cout << average_max_t / (float) num_permutations << std::endl;
 
 
       for (size_t c = 0; c < C.size(); ++c) {
@@ -647,7 +643,6 @@ void run ()
 
 
         for (size_t h = 0; h < H.size(); ++h) {
-
           for (size_t e = 0; e < E.size(); ++e) {
 
             CONSOLE ("starting test: effect = " + str(effect[effect_size]) + ", smoothing = " + str(smooth[s]) +
@@ -664,18 +659,32 @@ void run ()
             } else {
 
               MR::Timer timer;
+
+//              std::string path_file ("path_tvalue4.msf");
+//              std::string control_file ("control_tvalue4.msf");
+//              write_fixel_output (path_file, path_test_statistics[4], input_header, template_vox, indexer_vox);
+//              write_fixel_output (control_file, control_test_statistics[4], input_header, template_vox, indexer_vox);
+
               std::vector<value_type> max_cfe_statistics (num_permutations);
               std::vector<std::vector<value_type> > control_cfe_statistics (num_permutations, std::vector<value_type> (num_fixels, 0.0));
               std::vector<std::vector<value_type> > path_cfe_statistics (num_permutations, std::vector<value_type> (num_fixels, 0.0));
               {
-                MR::Stats::CFE::Enhancer cfe (fixel_connectivity, dh, e, h);
-                Stack stack (num_permutations);
+                MR::Stats::CFE::Enhancer cfe (weighted_fixel_connectivity, dh, E[e], H[h]);
+                std::string message ("enhancing...");
+                Stack stack (num_permutations, message);
                 EnhancerKernel processor (stack, control_test_statistics, path_test_statistics, max_statistics, cfe,
                                           max_cfe_statistics, control_cfe_statistics, path_cfe_statistics);
                 auto threads = Thread::run (Thread::multi (processor), "threads");
               }
 
               value_type max_cfe_statistic = *std::max_element (std::begin (max_cfe_statistics), std::end (max_cfe_statistics));
+
+//              std::cout << max_cfe_statistics << std::endl;
+//              std::string path_file2 ("path_cfe4.msf");
+//              std::string control_file2 ("control_cfe4.msf");
+//              write_fixel_output (path_file2, path_cfe_statistics[4], input_header, template_vox, indexer_vox);
+//              write_fixel_output (control_file2, control_cfe_statistics[4], input_header, template_vox, indexer_vox);
+
               std::vector<value_type> ROC_thresholds (num_ROC_samples);
               for (size_t t = 0; t < ROC_thresholds.size(); ++t)
                 ROC_thresholds[t] = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
@@ -684,7 +693,8 @@ void run ()
               std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
 
               {
-                Stack stack (num_permutations);
+                std::string message ("ROC thresholding...");
+                Stack stack (num_permutations, message);
                 ROCThresholdKernel processor (stack, control_cfe_statistics, path_cfe_statistics, ROC_thresholds, pathology_mask,
                                               TPRates, num_permutations_with_a_false_positive);
                 auto threads = Thread::run (Thread::multi (processor), "threads");
