@@ -226,10 +226,10 @@ namespace MR
       {
 
         const bool remove_untracked_fixels = App::get_options ("remove_untracked").size();
-        App::Options opt = App::get_options ("min_fod_integral");
-        const float min_FOD_integral = opt.size() ? float(opt[0][0]) : 0.0;
+        App::Options opt = App::get_options ("fd_thresh");
+        const float min_fibre_density = opt.size() ? float(opt[0][0]) : 0.0;
 
-        if (!remove_untracked_fixels && !min_FOD_integral)
+        if (!remove_untracked_fixels && !min_fibre_density)
           return;
 
         std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
@@ -246,7 +246,7 @@ namespace MR
             size_t new_start_index = new_fixels.size();
 
             for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
-              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
+              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
                 fixel_index_mapping [size_t (i)] = new_fixels.size();
                 new_fixels.push_back (i());
                 FOD_sum += i().get_weight() * i().get_FOD();
@@ -275,7 +275,7 @@ namespace MR
         for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           TD_sum += i->get_weight() * i->get_TD();
 
-        INFO ("After fixel removal, the proportionality coefficient is " + str(mu()));
+        INFO ("After fixel exclusion, the proportionality coefficient is " + str(mu()));
 
       }
 

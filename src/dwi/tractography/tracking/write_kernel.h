@@ -70,7 +70,7 @@ namespace MR
           ~WriteKernel ()
           {
             if (App::log_level > 0)
-              fprintf (stderr, "\r%8lu generated, %8lu selected    [100%%]\n", (long unsigned int)writer.total_count, (long unsigned int)writer.count);
+              fprintf (stderr, "\33[2K\r%8lu generated, %8lu selected    [100%%]\n", (long unsigned int)writer.total_count, (long unsigned int)writer.count);
             if (seeds) {
               (*seeds) << "\n";
               seeds->close();

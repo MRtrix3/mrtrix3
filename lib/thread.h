@@ -101,7 +101,7 @@ namespace MR
             __thread_base (name) { 
               DEBUG ("launching thread \"" + name + "\"...");
               typedef typename std::remove_reference<Functor>::type F;
-              thread = std::thread (&F::execute, std::ref (functor));
+              thread = std::thread (&F::execute, &functor);
             }
           __single_thread (const __single_thread& s) = delete;
           __single_thread (__single_thread&& s) = default;
@@ -126,8 +126,8 @@ namespace MR
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
-                  threads.push_back (std::thread (&F::execute, std::ref (f)));
-                threads.push_back (std::thread (&F::execute, std::ref (functor)));
+                  threads.push_back (std::thread (&F::execute, &f));
+                threads.push_back (std::thread (&F::execute, &functor));
               }
 
             __multi_thread (const __multi_thread& m) = delete;

@@ -194,7 +194,7 @@ namespace MR
             //length_combobox = new QComboBox;
             length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             length_combobox->addItem ("Unity");
-            length_combobox->addItem ("Fixel amplitude");
+            length_combobox->addItem ("Fixel size");
             length_combobox->addItem ("Associated value");
             hlayout->addWidget (length_combobox, 0);
             connect (length_combobox, SIGNAL (activated(int)), this, SLOT (length_type_slot(int)));

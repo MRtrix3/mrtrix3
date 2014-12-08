@@ -103,7 +103,7 @@ void run ()
   }
 
   sifter.perform_FOD_segmentation (in_dwi);
-  sifter.scale_FODs_by_GM();
+  sifter.scale_FDs_by_GM();
 
   sifter.map_streamlines (argument[0]);
 

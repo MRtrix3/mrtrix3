@@ -348,7 +348,7 @@ class SetDixel : public std::set<Dixel>, public SetVoxelExtras
       if (existing == std::set<Dixel>::end())
         std::set<Dixel>::insert (v);
       else
-        (*existing) += 1.0f;
+        (*existing) += v.get_length();
     }
     inline void insert (const Point<int>& v, const size_t d)
     {

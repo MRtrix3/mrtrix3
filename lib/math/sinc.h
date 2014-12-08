@@ -64,9 +64,9 @@ namespace MR
             else
               indices[i] = voxel;
 
-            const value_type offset        = position - (value_type)voxel;
+            const value_type offset = position - (value_type)voxel;
 
-            const value_type sinc          = offset ? std::sin (Math::pi * offset) / (Math::pi * offset) : 1.0;
+            const value_type sinc   = offset ? std::sin (Math::pi * offset) / (Math::pi * offset) : 1.0;
 
             //const value_type hann_cos_term = Math::pi * offset / (value_type(max_offset_from_kernel_centre) + 0.5);
             //const value_type hann_factor   = (std::abs (hann_cos_term) < Math::pi) ? 0.5 * (1.0 + std::cos (hann_cos_term)) : 0.0;

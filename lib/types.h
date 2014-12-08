@@ -117,5 +117,12 @@ namespace MR
 
 }
 
+namespace std 
+{
+  inline uint8_t abs (uint8_t x) { return x; }
+  inline uint16_t abs (uint16_t x) { return x; }
+  inline uint32_t abs (uint32_t x) { return x; }
+}
+
 #endif
 
