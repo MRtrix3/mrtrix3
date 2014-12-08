@@ -25,6 +25,9 @@ if __name__ == "__main__":
     FPR = average_TPR_FPR[::-1,1]
     output_file = open(argv[3], 'w')
     print argv[3]
+
+#    temp = compute_auc(average_TPR_FPR[::-1,0], FPR)
+#    print(temp)
     for realisation in all_TPR.transpose():
         TPR = realisation[::-1]
         AUC = compute_auc(TPR, FPR)

@@ -198,51 +198,27 @@ class Stack {
 };
 
 
-class Processor {
+class ROCThresholdKernel {
   public:
-    Processor (Stack& perm_stack,
-               const Math::Matrix<value_type>& design,
-               const Math::Matrix<value_type>& contrast,
-               const int32_t actual_positives,
-               const int32_t num_ROC_samples,
-               const std::vector<value_type>& truth_statistic,
-               const std::vector<std::vector<value_type> >& control_test_statistics,
-               const std::vector<std::vector<value_type> >& path_test_statistics,
-               const std::vector<value_type>& max_statistics,
-               const Image::BufferSparse<FixelMetric>& template_data,
-               const Image::BufferScratch<int32_t>& indexer_data,
-               std::vector<std::vector<uint32_t> >& global_TPRates,
-               std::vector<int32_t>& global_num_permutations_with_a_false_positive,
-               Image::Header& input_header,
-               Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
-               Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
-               const std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity,
-               const value_type dh,
-               const value_type e,
-               const value_type h):
-                 perm_stack (perm_stack),
-                 design (design),
-                 contrast (contrast),
-                 actual_positives (actual_positives),
-                 num_ROC_samples (num_ROC_samples),
-                 truth_statistic (truth_statistic),
-                 control_test_statistics (control_test_statistics),
-                 path_test_statistics (path_test_statistics),
-                 max_statistics (max_statistics),
-                 template_data (template_data),
-                 indexer_data (indexer_data),
-                 global_TPRates (global_TPRates),
-                 global_num_permutations_with_a_false_positive (global_num_permutations_with_a_false_positive),
-                 thread_TPRates (num_ROC_samples, 0.0),
-                 thread_num_permutations_with_a_false_positive (num_ROC_samples, 0),
-                 input_header (input_header),
-                 template_vox (template_vox),
-                 indexer_vox (indexer_vox),
-                 cfe (fixel_connectivity, dh, e, h){
+    ROCThresholdKernel (Stack& perm_stack,
+                        const std::vector<std::vector<value_type> > & control_cfe_statistics,
+                        const std::vector<std::vector<value_type> > & path_cfe_statistics,
+                        const std::vector<value_type>& ROC_thresholds,
+                        const std::vector<value_type>& truth_statistic,
+                        std::vector<std::vector<uint32_t> >& global_TPRates,
+                        std::vector<int32_t>& global_num_permutations_with_a_false_positive):
+                         perm_stack (perm_stack),
+                         control_cfe_statistics (control_cfe_statistics),
+                         path_cfe_statistics (path_cfe_statistics),
+                         ROC_thresholds (ROC_thresholds),
+                         truth_statistic (truth_statistic),
+                         global_TPRates (global_TPRates),
+                         global_num_permutations_with_a_false_positive (global_num_permutations_with_a_false_positive),
+                         thread_num_permutations_with_a_false_positive (ROC_thresholds.size(), 0) {
     }
 
-    ~Processor () {
-      for (size_t t = 0; t < num_ROC_samples; ++t)
+    ~ROCThresholdKernel () {
+      for (size_t t = 0; t < ROC_thresholds.size(); ++t)
         global_num_permutations_with_a_false_positive[t] += thread_num_permutations_with_a_false_positive[t];
     }
 
@@ -253,74 +229,76 @@ class Processor {
     }
 
   private:
-
-    void write_fixel_output (const std::string filename,
-                             const std::vector<value_type>& data) {
-      Image::BufferSparse<FixelMetric> output_buffer (filename, input_header);
-      auto output_voxel = output_buffer.voxel();
-      Image::LoopInOrder loop (template_vox);
-      Image::check_dimensions (output_voxel, template_vox);
-      for (loop.start (template_vox, indexer_vox, output_voxel); loop.ok(); loop.next (template_vox, indexer_vox, output_voxel)) {
-        output_voxel.value().set_size (template_vox.value().size());
-        indexer_vox[3] = 0;
-        int32_t index = indexer_vox.value();
-        for (size_t f = 0; f != template_vox.value().size(); ++f, ++index) {
-         output_voxel.value()[f] = template_vox.value()[f];
-         output_voxel.value()[f].value = data[index];
-        }
-      }
-    }
-
-
     void process_permutation (int perm) {
-
-      std::vector<value_type> cfe_control_test_statistic;
-      std::vector<value_type> cfe_path_test_statistic;
-      value_type max_cfe_statistic = cfe (max_statistics[perm], path_test_statistics[perm], cfe_path_test_statistic);
-      //write_fixel_output ("path_cfe.msf", cfe_path_test_statistic);
-
-      cfe (max_statistics[perm], control_test_statistics[perm], cfe_control_test_statistic);
-      //write_fixel_output ("control_cfe.msf", cfe_control_test_statistic);
-
-      std::vector<value_type> num_true_positives (num_ROC_samples);
-
-      for (size_t t = 0; t < num_ROC_samples; ++t) {
-        value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
+      for (size_t t = 0; t < ROC_thresholds.size(); ++t) {
         bool contains_false_positive = false;
         for (uint32_t f = 0; f < truth_statistic.size(); ++f) {
           if (truth_statistic[f] >= 1.0) {
-            if (cfe_path_test_statistic[f] > threshold)
+            if (path_cfe_statistics[perm][f] > ROC_thresholds[t])
               global_TPRates[t][perm]++;
           }
-          if (cfe_control_test_statistic[f] > threshold)
+          if (control_cfe_statistics[perm][f] > ROC_thresholds[t])
              contains_false_positive = true;
         }
-
         if (contains_false_positive)
           thread_num_permutations_with_a_false_positive[t]++;
       }
     }
 
     Stack& perm_stack;
-    const Math::Matrix<value_type>& design;
-    const Math::Matrix<value_type>& contrast;
-    const int32_t actual_positives;
-    const size_t num_ROC_samples;
+    const std::vector<std::vector<value_type> >& control_cfe_statistics;
+    const std::vector<std::vector<value_type> >& path_cfe_statistics;
+    const std::vector<value_type>& ROC_thresholds;
     const std::vector<value_type>& truth_statistic;
+    std::vector<std::vector<uint32_t> >& global_TPRates;
+    std::vector<int32_t>& global_num_permutations_with_a_false_positive;
+    std::vector<int32_t> thread_num_permutations_with_a_false_positive;
+};
+
+
+
+
+
+class EnhancerKernel {
+  public:
+    EnhancerKernel (Stack& perm_stack,
+                    const std::vector<std::vector<value_type> >& control_test_statistics,
+                    const std::vector<std::vector<value_type> >& path_test_statistics,
+                    const std::vector<value_type>& max_statistics,
+                    const MR::Stats::CFE::Enhancer& cfe,
+                    std::vector<value_type>& max_cfe_statistics,
+                    std::vector<std::vector<value_type> > & control_cfe_statistics,
+                    std::vector<std::vector<value_type> > & path_cfe_statistics):
+                      perm_stack (perm_stack),
+                      control_test_statistics (control_test_statistics),
+                      path_test_statistics (path_test_statistics),
+                      max_statistics (max_statistics),
+                      cfe (cfe),
+                      max_cfe_statistics (max_cfe_statistics),
+                      control_cfe_statistics (control_cfe_statistics),
+                      path_cfe_statistics (path_cfe_statistics) {
+    }
+
+    void execute () {
+      size_t index = 0;
+      while (( index = perm_stack.next() ) < perm_stack.num_noise_realisation)
+        process_permutation (index);
+    }
+
+  private:
+    void process_permutation (int perm) {
+      max_cfe_statistics[perm] = cfe (max_statistics[perm], path_test_statistics[perm], path_cfe_statistics[perm]);
+      cfe (max_statistics[perm], control_test_statistics[perm], control_cfe_statistics[perm]);
+    }
+
+    Stack& perm_stack;
     const std::vector<std::vector<value_type> >& control_test_statistics;
     const std::vector<std::vector<value_type> >& path_test_statistics;
     const std::vector<value_type>& max_statistics;
-    const Image::BufferSparse<FixelMetric>& template_data;
-    const Image::BufferScratch<int32_t>& indexer_data;
-    std::vector<std::vector<uint32_t> >& global_TPRates;
-    std::vector<int32_t>& global_num_permutations_with_a_false_positive;
-    std::vector<value_type> thread_TPRates;
-    std::vector<int32_t> thread_num_permutations_with_a_false_positive;
-    Image::Header input_header;
-    Image::BufferSparse<FixelMetric>::voxel_type template_vox;
-    Image::BufferScratch<int32_t>::voxel_type indexer_vox;
-    MR::Stats::CFE::Enhancer cfe;
-
+    const MR::Stats::CFE::Enhancer cfe;
+    std::vector<value_type>& max_cfe_statistics;
+    std::vector<std::vector<value_type> > & control_cfe_statistics;
+    std::vector<std::vector<value_type> > & path_cfe_statistics;
 };
 
 
@@ -686,18 +664,29 @@ void run ()
             } else {
 
               MR::Timer timer;
+              std::vector<value_type> max_cfe_statistics (num_permutations);
+              std::vector<std::vector<value_type> > control_cfe_statistics (num_permutations, std::vector<value_type> (num_fixels, 0.0));
+              std::vector<std::vector<value_type> > path_cfe_statistics (num_permutations, std::vector<value_type> (num_fixels, 0.0));
+              {
+                MR::Stats::CFE::Enhancer cfe (fixel_connectivity, dh, e, h);
+                Stack stack (num_permutations);
+                EnhancerKernel processor (stack, control_test_statistics, path_test_statistics, max_statistics, cfe,
+                                          max_cfe_statistics, control_cfe_statistics, path_cfe_statistics);
+                auto threads = Thread::run (Thread::multi (processor), "threads");
+              }
+
+              value_type max_cfe_statistic = *std::max_element (std::begin (max_cfe_statistics), std::end (max_cfe_statistics));
+              std::vector<value_type> ROC_thresholds (num_ROC_samples);
+              for (size_t t = 0; t < ROC_thresholds.size(); ++t)
+                ROC_thresholds[t] = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
 
               std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_permutations, 0));
               std::vector<int32_t> num_permutations_with_a_false_positive (num_ROC_samples, 0);
+
               {
-
-
                 Stack stack (num_permutations);
-                Processor processor (stack, design, contrast, actual_positives,
-                                     num_ROC_samples, pathology_mask, control_test_statistics, path_test_statistics,
-                                     max_statistics, template_buffer, indexer, TPRates,
-                                     num_permutations_with_a_false_positive,
-                                     input_header, template_vox, indexer_vox, weighted_fixel_connectivity, dh, E[e], H[h]);
+                ROCThresholdKernel processor (stack, control_cfe_statistics, path_cfe_statistics, ROC_thresholds, pathology_mask,
+                                              TPRates, num_permutations_with_a_false_positive);
                 auto threads = Thread::run (Thread::multi (processor), "threads");
               }
 

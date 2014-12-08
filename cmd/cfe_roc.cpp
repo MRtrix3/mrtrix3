@@ -153,9 +153,9 @@ class Stack {
 
 
 
-class Processor {
+class EnhancerKernel {
   public:
-    Processor (Stack& stack,
+    EnhancerKernel (Stack& stack,
                const int32_t actual_positives,
                const int32_t num_ROC_samples,
                const std::vector<value_type>& truth_statistic,
@@ -193,7 +193,7 @@ class Processor {
                  indexer_vox (indexer_vox),
                  indexer_data (indexer_data) {}
 
-    ~Processor () {
+    ~EnhancerKernel () {
       for (size_t t = 0; t < num_ROC_samples; ++t)
         global_num_noise_instances_with_a_false_positive[t] += thread_num_noise_instances_with_a_false_positive[t];
     }
@@ -525,7 +525,7 @@ void run ()
 
               {
                 Stack stack (num_noise_realisations);
-                Processor processor (stack, actual_positives, num_ROC_samples, truth_statistic,
+                EnhancerKernel processor (stack, actual_positives, num_ROC_samples, truth_statistic,
                                      weighted_fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive, dh, E[e], H[h],
                                      smoothed_test_statistic, smoothed_noise, max_statistics,
                                      input_header, input_fixel, input_data, indexer_vox, indexer);
