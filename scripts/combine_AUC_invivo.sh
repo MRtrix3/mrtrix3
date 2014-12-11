@@ -16,9 +16,9 @@ do
         do
           for C in 0 0.25 0.5 0.75 1;
           do
-          if [ -f /data/dave/cfe/experiment_2_sims/invivo2/results/${ROI}/IQR25/effect${effect}_s${smooth}_c${C}_h${H}_e${E} ];
+          if [ -f /data/dave/cfe/experiment_2_sims/invivo2/results_good_ROC/${ROI}/mean/effect${effect}_s${smooth}_c${C}_h${H}_e${E} ];
            then
-              echo "${ROI}, ${effect}, ${smooth}, ${E}, ${H}, ${C}, `cat /data/dave/cfe/experiment_2_sims/invivo2/results/${ROI}/IQR25/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`, `cat /data/dave/cfe/experiment_2_sims/invivo2/results/${ROI}/mean/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`, `cat /data/dave/cfe/experiment_2_sims/invivo2/results/${ROI}/IQR75/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`" >> $output
+              echo "${ROI}, ${effect}, ${smooth}, ${E}, ${H}, ${C}, `cat /data/dave/cfe/experiment_2_sims/invivo2/results_good_ROC/${ROI}/IQR25/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`, `cat /data/dave/cfe/experiment_2_sims/invivo2/results_good_ROC/${ROI}/mean/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`, `cat /data/dave/cfe/experiment_2_sims/invivo2/results_good_ROC/${ROI}/IQR75/effect${effect}_s${smooth}_c${C}_h${H}_e${E}`" >> $output
            fi;
           done;
         done;
