@@ -498,10 +498,10 @@ void run ()
             MR::Timer timer;
 
             std::string filenameTPR (argument[2]);
-            filenameTPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+            filenameTPR.append ("snr" + str(SNR[snr]) + "_s" + str(smooth[s]) +
                                 "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
-            if (Path::exists (filename)) {
+            if (Path::exists (filenameTPR)) {
               CONSOLE ("Already done!");
             } else {
 //              std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_noise_realisations, 0));
@@ -555,7 +555,7 @@ void run ()
               std::ofstream output_all;
               output_all.open (filenameTPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
-                for (size_t p = 0; p < num_permutations; ++p) {
+                for (size_t p = 0; p < num_noise_realisations; ++p) {
                   output_all << (value_type) TPRates [t][p] / (value_type) actual_positives << " ";
                 }
                 output_all << std::endl;
@@ -564,20 +564,20 @@ void run ()
 
 
               std::string filenameFPR (argument[3]);
-              filenameFPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+              filenameFPR.append ("effect" + str(SNR[snr]) + "_s" + str(smooth[s]) +
                                   "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
               std::ofstream output;
               output.open (filenameFPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all permutations
+                // average TPR across all num_noise_realisations
                 u_int32_t sum = 0.0;
-                for (size_t p = 0; p < num_permutations; ++p) {
+                for (size_t p = 0; p < num_noise_realisations; ++p) {
                   sum += TPRates [t][p];
                 }
-                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_permutations)   << " ";
+                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_noise_realisations)   << " ";
                 // FPR is defined as the fraction of realisations with a false positive
-                output << (value_type) num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
+                output << (value_type) num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
               }
               output.close();
 
@@ -586,6 +586,7 @@ void run ()
         }
       }
     }
+  }
   }
 
 }
