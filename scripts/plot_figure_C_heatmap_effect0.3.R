@@ -29,7 +29,7 @@ mf_labeller <- function(var, value){
 
 setwd('/home/dave/dev/mrtrix3/scripts/')
 ppi <- 400
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Invivo/AUC_heat_effect3_smooth10.png", width=7*ppi, height=3*ppi, res = ppi)
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Invivo/AUC_heat_effect3_smooth10.png", width=7*ppi, height=6*ppi, res = ppi)
 all_data <- read.csv('/data/dave/cfe/experiment_2_sims/invivo2/aucdata.csv');
 sub <- subset(all_data, effect == 0.3 & smoothing == 10, select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
 sub$H <- factor(sub$H)

@@ -129,21 +129,22 @@ void write_fixel_output (const std::string filename,
 
 
 
+
 class Stack {
   public:
-  Stack (size_t num_noise_realisation) :
-    num_noise_realisation (num_noise_realisation),
-      progress ("running " + str(num_noise_realisation) + " noise realisations...", num_noise_realisation),
+  Stack (size_t num_noise_realisations, std::string& message) :
+    num_noise_realisations (num_noise_realisations),
+      progress (message, num_noise_realisations),
       index (0) {}
 
     size_t next () {
       std::lock_guard<std::mutex> lock (permutation_mutex);
-      if (index < num_noise_realisation)
+      if (index < num_noise_realisations)
         ++progress;
       return index++;
     }
 
-    const size_t num_noise_realisation;
+    const size_t num_noise_realisations;
 
   protected:
     ProgressBar progress;
@@ -152,128 +153,119 @@ class Stack {
 };
 
 
-
-class EnhancerKernel {
+class ROCThresholdKernel {
   public:
-    EnhancerKernel (Stack& stack,
-               const int32_t actual_positives,
-               const int32_t num_ROC_samples,
-               const std::vector<value_type>& truth_statistic,
-               const std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity,
-               std::vector<std::vector<uint32_t> >& global_TPRates,
-               std::vector<int32_t>& global_num_noise_instances_with_a_false_positive,
-               const value_type dh,
-               const value_type e,
-               const value_type h,
-               const std::vector<std::vector<value_type> >& smoothed_test_statistic,
-               const std::vector<std::vector<value_type> >& smoothed_noise,
-               const std::vector<value_type>& max_statistics,
-               Image::Header& input_header,
-               Image::BufferSparse<FixelMetric>::voxel_type& template_vox,
-               const Image::BufferSparse<FixelMetric>& template_data,
-               Image::BufferScratch<int32_t>::voxel_type& indexer_vox,
-               const Image::BufferScratch<int32_t>& indexer_data):
-                 stack (stack),
-                 actual_positives (actual_positives),
-                 num_ROC_samples (num_ROC_samples),
-                 truth_statistic (truth_statistic),
-                 fixel_smoothing_weights (fixel_smoothing_weights),
-                 fixel_connectivity (fixel_connectivity),
-                 global_TPRates (global_TPRates),
-                 global_num_noise_instances_with_a_false_positive (global_num_noise_instances_with_a_false_positive),
-                 thread_TPRates (num_ROC_samples, 0.0),
-                 thread_num_noise_instances_with_a_false_positive (num_ROC_samples, 0),
-                 smoothed_test_statistic (smoothed_test_statistic),
-                 smoothed_noise (smoothed_noise),
-                 max_statistics (max_statistics),
-                 cfe (fixel_connectivity, dh, e, h),
-                 input_header (input_header),
-                 template_vox (template_vox),
-                 template_data (template_data),
-                 indexer_vox (indexer_vox),
-                 indexer_data (indexer_data) {}
+    ROCThresholdKernel (Stack& perm_stack,
+                        const std::vector<std::vector<value_type> > & control_cfe_statistics,
+                        const std::vector<std::vector<value_type> > & path_cfe_statistics,
+                        const std::vector<value_type>& ROC_thresholds,
+                        const std::vector<value_type>& truth_statistic,
+                        std::vector<std::vector<uint32_t> >& global_TPRates,
+                        std::vector<int32_t>& global_num_noise_instances_with_a_false_positive):
+                         perm_stack (perm_stack),
+                         control_cfe_statistics (control_cfe_statistics),
+                         path_cfe_statistics (path_cfe_statistics),
+                         ROC_thresholds (ROC_thresholds),
+                         truth_statistic (truth_statistic),
+                         global_TPRates (global_TPRates),
+                         global_num_noise_instances_with_a_false_positive (global_num_noise_instances_with_a_false_positive),
+                         thread_num_noise_instances_with_a_false_positive (ROC_thresholds.size(), 0) {
+    }
 
-    ~EnhancerKernel () {
-      for (size_t t = 0; t < num_ROC_samples; ++t)
+    ~ROCThresholdKernel () {
+      for (size_t t = 0; t < ROC_thresholds.size(); ++t)
         global_num_noise_instances_with_a_false_positive[t] += thread_num_noise_instances_with_a_false_positive[t];
     }
 
-
     void execute () {
       size_t index = 0;
-      while (( index = stack.next() ) < stack.num_noise_realisation)
-        process_noise_realisation (index);
+      while (( index = perm_stack.next() ) < perm_stack.num_noise_realisations)
+        process_noise_instance (index);
     }
 
   private:
-
-
-    void write_fixel_output (const std::string filename,
-                             const std::vector<value_type>& data) {
-      Image::BufferSparse<FixelMetric> output_buffer (filename, input_header);
-      auto output_voxel  = output_buffer.voxel();
-      Image::LoopInOrder loop (template_vox);
-      Image::check_dimensions (output_voxel, template_vox);
-      for (loop.start (template_vox, indexer_vox, output_voxel); loop.ok(); loop.next (template_vox, indexer_vox, output_voxel)) {
-        output_voxel.value().set_size (template_vox.value().size());
-        indexer_vox[3] = 0;
-        int32_t index = indexer_vox.value();
-        for (size_t f = 0; f != template_vox.value().size(); ++f, ++index) {
-         output_voxel.value()[f] = template_vox.value()[f];
-         output_voxel.value()[f].value = data[index];
-        }
-      }
-    }
-
-
-    void process_noise_realisation (size_t index) {
-
-      std::vector<value_type> cfe_test_statistic;
-      std::vector<value_type> cfe_noise;
-
-      value_type max_cfe_statistic = cfe (max_statistics[index], smoothed_test_statistic[index], cfe_test_statistic);
-      cfe (max_statistics[index], smoothed_noise[index], cfe_noise);
-
-      for (size_t t = 0; t < num_ROC_samples; ++t) {
-        value_type threshold = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
+    void process_noise_instance (int perm) {
+      for (size_t t = 0; t < ROC_thresholds.size(); ++t) {
         bool contains_false_positive = false;
         for (uint32_t f = 0; f < truth_statistic.size(); ++f) {
           if (truth_statistic[f] >= 1.0) {
-            if (cfe_test_statistic[f] > threshold)
-              global_TPRates [t][index]++;
+            if (path_cfe_statistics[perm][f] > ROC_thresholds[t])
+              global_TPRates[t][perm]++;
           }
-          if (cfe_noise[f] > threshold)
+          if (control_cfe_statistics[perm][f] > ROC_thresholds[t])
              contains_false_positive = true;
         }
-
         if (contains_false_positive)
           thread_num_noise_instances_with_a_false_positive[t]++;
-
       }
     }
 
-
-
-    Stack& stack;
-    const int32_t actual_positives;
-    const size_t num_ROC_samples;
+    Stack& perm_stack;
+    const std::vector<std::vector<value_type> >& control_cfe_statistics;
+    const std::vector<std::vector<value_type> >& path_cfe_statistics;
+    const std::vector<value_type>& ROC_thresholds;
     const std::vector<value_type>& truth_statistic;
-    const std::vector<std::map<int32_t, value_type> >& fixel_smoothing_weights;
-    const std::vector<std::map<int32_t, Stats::CFE::connectivity> >& fixel_connectivity;
     std::vector<std::vector<uint32_t> >& global_TPRates;
     std::vector<int32_t>& global_num_noise_instances_with_a_false_positive;
-    std::vector<value_type> thread_TPRates;
     std::vector<int32_t> thread_num_noise_instances_with_a_false_positive;
-    const std::vector<std::vector<value_type> >& smoothed_test_statistic;
-    const std::vector<std::vector<value_type> >& smoothed_noise;
-    const std::vector<value_type>& max_statistics;
-    MR::Stats::CFE::Enhancer cfe;
-    Image::Header input_header;
-    Image::BufferSparse<FixelMetric>::voxel_type template_vox;
-    const Image::BufferSparse<FixelMetric>& template_data;
-    Image::BufferScratch<int32_t>::voxel_type indexer_vox;
-    const Image::BufferScratch<int32_t>& indexer_data;
 };
+
+
+
+
+
+class EnhancerKernel {
+  public:
+    EnhancerKernel (Stack& perm_stack,
+                    const std::vector<std::vector<value_type> >& control_test_statistics,
+                    const std::vector<std::vector<value_type> >& path_test_statistics,
+                    const std::vector<value_type>& max_statistics,
+                    const MR::Stats::CFE::Enhancer& cfe,
+                    std::vector<value_type>& max_cfe_statistics,
+                    std::vector<std::vector<value_type> > & control_cfe_statistics,
+                    std::vector<std::vector<value_type> > & path_cfe_statistics):
+                      perm_stack (perm_stack),
+                      control_test_statistics (control_test_statistics),
+                      path_test_statistics (path_test_statistics),
+                      max_statistics (max_statistics),
+                      cfe (cfe),
+                      max_cfe_statistics (max_cfe_statistics),
+                      control_cfe_statistics (control_cfe_statistics),
+                      path_cfe_statistics (path_cfe_statistics) {
+    }
+
+    void execute () {
+      size_t index = 0;
+      while (( index = perm_stack.next() ) < perm_stack.num_noise_realisations)
+        process_noise_instance (index);
+    }
+
+  private:
+    void process_noise_instance (int perm) {
+      max_cfe_statistics[perm] = cfe (max_statistics[perm], path_test_statistics[perm], path_cfe_statistics[perm]);
+      cfe (max_statistics[perm], control_test_statistics[perm], control_cfe_statistics[perm]);
+    }
+
+    Stack& perm_stack;
+    const std::vector<std::vector<value_type> >& control_test_statistics;
+    const std::vector<std::vector<value_type> >& path_test_statistics;
+    const std::vector<value_type>& max_statistics;
+    const MR::Stats::CFE::Enhancer cfe;
+    std::vector<value_type>& max_cfe_statistics;
+    std::vector<std::vector<value_type> > & control_cfe_statistics;
+    std::vector<std::vector<value_type> > & path_cfe_statistics;
+};
+
+
+
+
+
+
+
+
+
+
+
 
 
 void run ()
@@ -520,17 +512,54 @@ void run ()
             if (Path::exists (filename)) {
               CONSOLE ("Already done!");
             } else {
+//              std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_noise_realisations, 0));
+//              std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
+//              {
+//                Stack stack (num_noise_realisations);
+//                EnhancerKernel processor (stack, actual_positives, num_ROC_samples, truth_statistic,
+//                                     weighted_fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive, dh, E[e], H[h],
+//                                     smoothed_test_statistic, smoothed_noise, max_statistics,
+//                                     input_header, input_fixel, input_data, indexer_vox, indexer);
+//                auto threads = Thread::run (Thread::multi (processor), "noise_instance threads");
+//              }
+
+              std::vector<value_type> max_cfe_statistics (num_noise_realisations);
+              std::vector<std::vector<value_type> > control_cfe_statistics (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
+              std::vector<std::vector<value_type> > path_cfe_statistics (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
+              {
+                MR::Stats::CFE::Enhancer cfe (weighted_fixel_connectivity, dh, E[e], H[h]);
+                std::string message ("enhancing...");
+                Stack stack (num_noise_realisations, message);
+                EnhancerKernel processor (stack, smoothed_noise, smoothed_test_statistic, max_statistics, cfe,
+                                          max_cfe_statistics, control_cfe_statistics, path_cfe_statistics);
+                auto threads = Thread::run (Thread::multi (processor), "threads");
+              }
+
+              value_type max_cfe_statistic = *std::max_element (std::begin (max_cfe_statistics), std::end (max_cfe_statistics));
+
+//              std::cout << max_cfe_statistics << std::endl;
+//              std::string path_file2 ("path_cfe4.msf");
+//              std::string control_file2 ("control_cfe4.msf");
+//              write_fixel_output (path_file2, path_cfe_statistics[4], input_header, template_vox, indexer_vox);
+//              write_fixel_output (control_file2, control_cfe_statistics[4], input_header, template_vox, indexer_vox);
+
+              std::vector<value_type> ROC_thresholds (num_ROC_samples);
+              for (size_t t = 0; t < ROC_thresholds.size(); ++t)
+                ROC_thresholds[t] = ((value_type) t / ((value_type) num_ROC_samples - 1.0)) * max_cfe_statistic;
+
               std::vector<std::vector<uint32_t> > TPRates (num_ROC_samples, std::vector<uint32_t> (num_noise_realisations, 0));
               std::vector<int32_t> num_noise_instances_with_a_false_positive (num_ROC_samples, 0);
 
               {
-                Stack stack (num_noise_realisations);
-                EnhancerKernel processor (stack, actual_positives, num_ROC_samples, truth_statistic,
-                                     weighted_fixel_connectivity, TPRates, num_noise_instances_with_a_false_positive, dh, E[e], H[h],
-                                     smoothed_test_statistic, smoothed_noise, max_statistics,
-                                     input_header, input_fixel, input_data, indexer_vox, indexer);
-                auto threads = Thread::run (Thread::multi (processor), "permutation threads");
+                std::string message ("ROC thresholding...");
+                Stack stack (num_noise_realisations, message);
+                ROCThresholdKernel processor (stack, control_cfe_statistics, path_cfe_statistics, ROC_thresholds, truth_statistic,
+                                              TPRates, num_noise_instances_with_a_false_positive);
+                auto threads = Thread::run (Thread::multi (processor), "threads");
               }
+
+
+
 
               // output all noise instance TPR values for variance calculations
               std::string filename_all_TPR (filename);

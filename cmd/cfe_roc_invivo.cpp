@@ -654,7 +654,7 @@ void run ()
             filenameTPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
                                 "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
-            if (MR::Path::exists(filenameTPR)) {
+            if (MR::Path::exists (filenameTPR)) {
               CONSOLE ("Already done!");
             } else {
 
