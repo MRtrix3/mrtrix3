@@ -62,7 +62,9 @@ void usage ()
 
   + Argument ("tracks", "the tractogram used to derive fixel-fixel connectivity").type_file_in ()
 
-  + Argument ("output", "the output prefix").type_file_out ();
+  + Argument ("tpr", "the output tpr prefix").type_text()
+
+  + Argument ("fpr", "the output fpr prefix").type_text();
 
   OPTIONS
   + Option ("snr", "the snr of the test statistic")
@@ -126,8 +128,6 @@ void write_fixel_output (const std::string filename,
     }
   }
 }
-
-
 
 
 class Stack {
@@ -260,14 +260,6 @@ class EnhancerKernel {
 
 
 
-
-
-
-
-
-
-
-
 void run ()
 {
   const value_type angular_threshold = 30;
@@ -284,7 +276,6 @@ void run ()
   opt = get_options("realisations");
   if (opt.size())
     num_noise_realisations = opt[0][0];
-
 
   std::vector<value_type> SNR (1);
   SNR[0] = 1.0;
@@ -506,8 +497,9 @@ void run ()
 
             MR::Timer timer;
 
-            std::string filename (argument[2]);
-            filename.append ("_s" + str(smooth[s]) + "_snr" + str(SNR[snr]) + "_h" + str(H[h]) + "_e" + str(E[e]) + "_c" + str (C[c]));
+            std::string filenameTPR (argument[2]);
+            filenameTPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+                                "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
             if (Path::exists (filename)) {
               CONSOLE ("Already done!");
@@ -559,37 +551,37 @@ void run ()
               }
 
 
-
-
               // output all noise instance TPR values for variance calculations
-              std::string filename_all_TPR (filename);
-              filename_all_TPR.append("_all_tpr");
-
               std::ofstream output_all;
-              output_all.open (filename_all_TPR.c_str());
+              output_all.open (filenameTPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
-                for (size_t p = 0; p < num_noise_realisations; ++p) {
+                for (size_t p = 0; p < num_permutations; ++p) {
                   output_all << (value_type) TPRates [t][p] / (value_type) actual_positives << " ";
                 }
                 output_all << std::endl;
               }
               output_all.close();
 
+
+              std::string filenameFPR (argument[3]);
+              filenameFPR.append ("effect" + str(effect[effect_size]) + "_s" + str(smooth[s]) +
+                                  "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
+
               std::ofstream output;
-              output.open (filename.c_str());
+              output.open (filenameFPR.c_str());
               for (size_t t = 0; t < num_ROC_samples; ++t) {
-                // average TPR across all realisations
+                // average TPR across all permutations
                 u_int32_t sum = 0.0;
-                for (size_t p = 0; p < num_noise_realisations; ++p) {
+                for (size_t p = 0; p < num_permutations; ++p) {
                   sum += TPRates [t][p];
                 }
-                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_noise_realisations)   << " ";
+                output << (value_type) sum / ((value_type) actual_positives * (value_type) num_permutations)   << " ";
                 // FPR is defined as the fraction of realisations with a false positive
-                output << (value_type) num_noise_instances_with_a_false_positive[t] / (value_type) num_noise_realisations << std::endl;
+                output << (value_type) num_permutations_with_a_false_positive[t] / (value_type) num_permutations << std::endl;
               }
               output.close();
-            }
-            std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
+
+              std::cout << "Minutes: " << timer.elapsed() / 60.0 << std::endl;
           }
         }
       }
