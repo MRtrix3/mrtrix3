@@ -334,13 +334,14 @@ namespace MR
 
       // assign arguments to their corresponding definitions:
       for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
-
-        if (n >= next && ARGUMENTS[n].flags != None) 
-          next = n + num_arg_per_multi - 1;
-
+        if (n == next) {
+          if (n) ++index;
+          if (ARGUMENTS[index].flags != None)
+            next = n + num_arg_per_multi;
+          else
+            ++next;
+        }
         argument[n].arg = &ARGUMENTS[index];
-        if (n >= next) 
-          ++index;
       }
 
       // check for multiple instances of options:
