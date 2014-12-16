@@ -51,6 +51,8 @@ namespace MR
         size_t data_offset = File::NIfTI::read (H, NH);
 
         RefPtr<Handler::Base> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
+        memcpy (dynamic_cast<Handler::GZ*>((Handler::Base*)handler)->header(), &NH, sizeof(nifti_1_header));
+        memset (dynamic_cast<Handler::GZ*>((Handler::Base*)handler)->header() + sizeof(nifti_1_header), 0, sizeof(nifti1_extender));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
         return handler;

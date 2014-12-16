@@ -75,6 +75,7 @@ namespace MR
         zf.close();
 
         RefPtr<Handler::Base> handler (new Handler::GZ (H, MGH_DATA_OFFSET));
+        memcpy (dynamic_cast<Handler::GZ*>((Handler::Base*)handler)->header(), &MGHH, sizeof(mgh_header));
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
         return handler;
