@@ -54,26 +54,28 @@ namespace MR
         class ROI::Item : public Volume {
           public:
             template <class InfoType>
-              Item (const InfoType& info) : Volume (info) {
-                type = gl::UNSIGNED_BYTE;
-                format = gl::RED;
-                internal_format = gl::R8;
-                set_allowed_features (false, true, false);
-                set_interpolate (false);
-                set_use_transparency (true);
-                set_min_max (0.0, 1.0);
-                set_windowing (-1.0f, 0.0f);
-                alpha = 1.0f;
-                colour = preset_colours[current_preset_colour++];
-                if (current_preset_colour >= 6)
-                  current_preset_colour = 0;
-                transparent_intensity = 0.4;
-                opaque_intensity = 0.6;
-                colourmap = ColourMap::index ("Colour");
+              Item (const InfoType& info) : 
+                Volume (info),
+                current_undo (-1) {
+                  type = gl::UNSIGNED_BYTE;
+                  format = gl::RED;
+                  internal_format = gl::R8;
+                  set_allowed_features (false, true, false);
+                  set_interpolate (false);
+                  set_use_transparency (true);
+                  set_min_max (0.0, 1.0);
+                  set_windowing (-1.0f, 0.0f);
+                  alpha = 1.0f;
+                  colour = preset_colours[current_preset_colour++];
+                  if (current_preset_colour >= 6)
+                    current_preset_colour = 0;
+                  transparent_intensity = 0.4;
+                  opaque_intensity = 0.6;
+                  colourmap = ColourMap::index ("Colour");
 
-                bind();
-                allocate();
-              }
+                  bind();
+                  allocate();
+                }
 
             void load (const MR::Image::Header& header) {
               bind();
@@ -97,8 +99,7 @@ namespace MR
 
             struct UndoEntry {
 
-              template <class InfoType>
-                UndoEntry (InfoType& roi, int current_axis, int current_slice) 
+              UndoEntry (Item& roi, int current_axis, int current_slice) 
               {
                 from = {0, 0, 0}; 
                 from[current_axis] = current_slice;
@@ -194,27 +195,61 @@ namespace MR
                 after = before;
               }
 
-              template <class InfoType>
-                void edit (InfoType& roi, const Point<>& pos, int current_mode, float radius) {
-                  Point<> vox = roi.transform().scanner2voxel (pos);
-                  int rad = int (std::ceil (radius));
-                  radius *= radius;
-                  std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
-                  std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
-                  a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad);
-                  a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad);
-                  b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad);
-                  b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad);
+              void draw_circle (Item& roi, const Point<>& pos, int current_mode, float radius) {
+                Point<> vox = roi.transform().scanner2voxel (pos);
+                int rad = int (std::ceil (radius));
+                radius *= radius;
+                std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+                std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
+                a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad);
+                a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad);
+                b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad);
+                b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad);
 
-                  for (int k = a[2]; k < b[2]; ++k)
-                    for (int j = a[1]; j < b[1]; ++j)
-                      for (int i = a[0]; i < b[0]; ++i)
-                        if (Math::pow2(vox[0]-i) + Math::pow2 (vox[1]-j) + Math::pow2 (vox[2]-k) < radius)
-                          after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
+                for (int k = a[2]; k < b[2]; ++k)
+                  for (int j = a[1]; j < b[1]; ++j)
+                    for (int i = a[0]; i < b[0]; ++i)
+                      if (Math::pow2(vox[0]-i) + Math::pow2 (vox[1]-j) + Math::pow2 (vox[2]-k) < radius)
+                        after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
 
-                  roi.texture().bind();
-                  gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
-                }
+                roi.texture().bind();
+                gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+              }
+
+              void draw_rectangle (Item& roi, const Point<>& from_pos, const Point<>& to_pos, int current_mode) {
+                Point<> vox = roi.transform().scanner2voxel (from_pos);
+                std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+                vox = roi.transform().scanner2voxel (to_pos);
+                std::array<int,3> b = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+
+                if (a[0] > b[0]) std::swap (a[0], b[0]);
+                if (a[1] > b[1]) std::swap (a[1], b[1]);
+                if (a[2] > b[2]) std::swap (a[2], b[2]);
+
+                a[slice_axes[0]] = std::max (0, a[slice_axes[0]]);
+                a[slice_axes[1]] = std::max (0, a[slice_axes[1]]);
+                b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0])-1, b[slice_axes[0]]);
+                b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1])-1, b[slice_axes[1]]);
+
+                after = before;
+                for (int k = a[2]; k <= b[2]; ++k)
+                  for (int j = a[1]; j <= b[1]; ++j)
+                    for (int i = a[0]; i <= b[0]; ++i)
+                      after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
+
+                roi.texture().bind();
+                gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+              }
+
+              void undo (Item& roi) {
+                roi.texture().bind();
+                gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&before[0]));
+              }
+
+              void redo (Item& roi) {
+                roi.texture().bind();
+                gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+              }
 
               std::array<GLint,3> from, size;
               std::array<GLint,2> tex_size, slice_axes;
@@ -225,7 +260,38 @@ namespace MR
               static GL::VertexArrayObject copy_vertex_array_object;
             };
             std::vector<UndoEntry> undo_list;
+            int current_undo;
 
+            bool has_undo () { return current_undo >= 0; }
+            bool has_redo () { return current_undo < int(undo_list.size()-1); }
+
+            UndoEntry& current () { return undo_list[current_undo]; }
+            void start (UndoEntry&& entry) { 
+              if (current_undo < 0) 
+                current_undo = -1;
+              while (current_undo+1 > int(undo_list.size()))
+                undo_list.erase (undo_list.end()-1);
+              undo_list.push_back (std::move (entry));
+              while (undo_list.size() > size_t (number_of_undos))
+                undo_list.erase (undo_list.begin());
+              current_undo = undo_list.size()-1;
+            }
+
+            void undo () {
+              if (has_undo()) {
+                undo_list[current_undo].undo (*this);
+                --current_undo;
+              }
+            }
+
+            void redo () {
+              if (has_redo()) {
+                ++current_undo;
+                undo_list[current_undo].redo (*this);
+              }
+            }
+
+            static int number_of_undos;
             static int current_preset_colour;
         };
 
@@ -235,6 +301,7 @@ namespace MR
 
 
 
+        int ROI::Item::number_of_undos = 0;
         int ROI::Item::current_preset_colour = 0;
 
 
@@ -267,7 +334,9 @@ namespace MR
 
         ROI::ROI (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          current_mode (0) { 
+          in_insert_mode (false) {
+            Item::number_of_undos = MR::File::Config::get_int ("NumberOfUndos", 16);
+
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -316,6 +385,7 @@ namespace MR
 
             list_model = new Model (this);
             list_view->setModel (list_model);
+            list_view->setSelectionMode (QAbstractItemView::SingleSelection);
 
             main_box->addWidget (list_view, 1);
 
@@ -330,7 +400,7 @@ namespace MR
             action->setToolTip (tr ("Add voxels to ROI"));
             action->setCheckable (true);
             action->setEnabled (false);
-            connect (action, SIGNAL (triggered()), this, SLOT (draw_slot ()));
+            connect (action, SIGNAL (toggled(bool)), this, SLOT (draw_slot ()));
             draw_button->setDefaultAction (action);
             layout->addWidget (draw_button, 1);
 
@@ -341,32 +411,99 @@ namespace MR
             action->setToolTip (tr ("Remove voxels from ROI"));
             action->setCheckable (true);
             action->setEnabled (false);
-            connect (action, SIGNAL (triggered()), this, SLOT (erase_slot ()));
+            connect (action, SIGNAL (toggled(bool)), this, SLOT (erase_slot ()));
             erase_button->setDefaultAction (action);
             layout->addWidget (erase_button, 1);
 
+            undo_button = new QToolButton (this);
+            undo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/undo.svg"), tr ("Undo"), this);
+            action->setShortcut (tr ("Ctrl+Z"));
+            action->setToolTip (tr ("Undo last edit"));
+            action->setCheckable (false);
+            action->setEnabled (false);
+            connect (action, SIGNAL (triggered()), this, SLOT (undo_slot ()));
+            undo_button->setDefaultAction (action);
+            layout->addWidget (undo_button, 1);
+
+            redo_button = new QToolButton (this);
+            redo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/redo.svg"), tr ("Redo"), this);
+            action->setShortcut (tr ("Ctrl+Y"));
+            action->setToolTip (tr ("Redo last edit"));
+            action->setCheckable (false);
+            action->setEnabled (false);
+            connect (action, SIGNAL (triggered()), this, SLOT (redo_slot ()));
+            redo_button->setDefaultAction (action);
+            layout->addWidget (redo_button, 1);
+
             main_box->addLayout (layout, 0);
+
+            layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
+
+            edit_mode_group = new QActionGroup (this);
+            edit_mode_group->setExclusive (true);
+            edit_mode_group->setEnabled (false);
+            connect (edit_mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_edit_mode (QAction*)));
+
+            brush_button = new QToolButton (this);
+            brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
+            action->setShortcut (tr ("Ctrl+B"));
+            action->setToolTip (tr ("Edit ROI using a brush"));
+            action->setCheckable (true);
+            action->setChecked (true);
+            edit_mode_group->addAction (action);
+            brush_button->setDefaultAction (action);
+            layout->addWidget (brush_button, 0);
+
+            rectangle_button = new QToolButton (this);
+            rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
+            action->setShortcut (tr ("Ctrl+R"));
+            action->setToolTip (tr ("Edit ROI using a rectangle"));
+            action->setCheckable (true);
+            edit_mode_group->addAction (action);
+            rectangle_button->setDefaultAction (action);
+            layout->addWidget (rectangle_button, 0);
+
+            brush_size_slider = new QSlider (Qt::Horizontal);
+            brush_size_slider->setToolTip (tr ("brush size"));
+            brush_size_slider->setRange (10,1000);
+            brush_size_slider->setSliderPosition (int (10));
+            brush_size_slider->setEnabled (false);
+            layout->addWidget (brush_size_slider, 1);
+
+            main_box->addLayout (layout, 0);
+
+            layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
+
 
             colour_button = new QColorButton;
             colour_button->setEnabled (false);
-            main_box->addWidget (colour_button, 0);
             connect (colour_button, SIGNAL (clicked()), this, SLOT (colour_changed()));
-
+            layout->addWidget (colour_button, 0);
 
             opacity_slider = new QSlider (Qt::Horizontal);
+            opacity_slider->setToolTip (tr("ROI opacity"));
             opacity_slider->setRange (1,1000);
             opacity_slider->setSliderPosition (int (1000));
             connect (opacity_slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_changed(int)));
             opacity_slider->setEnabled (false);
-            main_box->addWidget (new QLabel ("opacity"), 0);
-            main_box->addWidget (opacity_slider, 0);
+            layout->addWidget (opacity_slider, 1);
+
+            main_box->addLayout (layout, 0);
 
             connect (list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
 
             connect (list_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
-                     this, SLOT (toggle_shown_slot (const QModelIndex&, const QModelIndex&)));
+                this, SLOT (toggle_shown_slot (const QModelIndex&, const QModelIndex&)));
 
             update_selection();
           }
@@ -404,13 +541,8 @@ namespace MR
 
         void ROI::load (VecPtr<MR::Image::Header>& list) 
         {
-          size_t previous_size = list_model->rowCount();
           list_model->load (list);
-
-          QModelIndex first = list_model->index (previous_size, 0, QModelIndex());
-          QModelIndex last = list_model->index (list_model->rowCount()-1, 0, QModelIndex());
-          list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
-
+          list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
         }
 
@@ -429,17 +561,72 @@ namespace MR
 
         void ROI::draw_slot () 
         {
-          if (erase_button->isChecked()) erase_button->setChecked (false);
-          if (draw_button->isChecked()) grab_focus ();
+          if (draw_button->isChecked()) {
+            if (erase_button->isChecked()) 
+              erase_button->setChecked (false);
+            grab_focus ();
+          }
           else release_focus ();
         }
 
+
+
+
+
         void ROI::erase_slot () 
         {
-          if (draw_button->isChecked()) draw_button->setChecked (false);
-          if (erase_button->isChecked()) grab_focus ();
+          if (erase_button->isChecked()) {
+            if (draw_button->isChecked()) 
+              draw_button->setChecked (false);
+            grab_focus ();
+          }
           else release_focus ();
         }
+
+
+
+
+        void ROI::undo_slot () 
+        {
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
+            return;
+          }
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+
+          roi->undo();
+          update_undo_redo();
+          updateGL();
+        }
+
+
+
+
+
+        void ROI::redo_slot () 
+        {
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
+            return;
+          }
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+
+          roi->redo();
+          update_undo_redo();
+          updateGL();
+        }
+
+
+
+        void ROI::select_edit_mode (QAction*) 
+        {
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
+          brush_size_slider->setEnabled (brush_button->isChecked());
+        }
+
 
         void ROI::hide_all_slot () 
         {
@@ -465,9 +652,9 @@ namespace MR
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
               Item* roi = dynamic_cast<Item*>(list_model->items[i]);
               //if (is_3D) 
-                //window.get_current_mode()->overlays_for_3D.push_back (image);
+              //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
-                roi->render (shader, projection, projection.depth_of (window.focus()));
+              roi->render (shader, projection, projection.depth_of (window.focus()));
             }
           }
 
@@ -532,42 +719,54 @@ namespace MR
           update_selection();
         }
 
+        void ROI::update_undo_redo () 
+        {
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+
+          if (indices.size()) {
+            Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+            undo_button->defaultAction()->setEnabled (roi->has_undo());
+            redo_button->defaultAction()->setEnabled (roi->has_redo());
+          }
+          else {
+            undo_button->defaultAction()->setEnabled (false);
+            redo_button->defaultAction()->setEnabled (false);
+          }
+        }
 
 
         void ROI::update_selection () 
         {
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           opacity_slider->setEnabled (indices.size());
-          save_button->setEnabled (indices.size() == 1);
+          save_button->setEnabled (indices.size());
           close_button->setEnabled (indices.size());
-          draw_button->defaultAction()->setEnabled (indices.size() == 1);
-          erase_button->defaultAction()->setEnabled (indices.size() == 1);
+          draw_button->defaultAction()->setEnabled (indices.size());
+          erase_button->defaultAction()->setEnabled (indices.size());
           colour_button->setEnabled (indices.size());
+          edit_mode_group->setEnabled (indices.size());
+          brush_size_slider->setEnabled (indices.size() && brush_button->isChecked());
+
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
+          update_undo_redo();
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
 
           if (!indices.size()) {
-            draw_button->setChecked (false);
-            erase_button->setChecked (false);
             release_focus();
             return;
           }
 
-          float opacity = 0.0f;
-          float color[3] = { 0.0f, 0.0f, 0.0f };
-
-          for (int i = 0; i < indices.size(); ++i) {
-            Item* roi = dynamic_cast<Item*> (list_model->get (indices[i]));
-            opacity += roi->alpha;
-            color[0] += roi->colour[0];
-            color[1] += roi->colour[1];
-            color[2] += roi->colour[2];
-          }
-          opacity /= indices.size();
-          colour_button->setColor (QColor (
-                std::round (color[0] / indices.size()),
-                std::round (color[1] / indices.size()),
-                std::round (color[2] / indices.size()) ));
-
-          opacity_slider->setValue (1.0e3f * opacity);
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          colour_button->setColor (QColor (roi->colour[0], roi->colour[1], roi->colour[2]));
+          opacity_slider->setValue (1.0e3f * roi->alpha);
+          VAR (brush_button->isEnabled());
+          VAR (rectangle_button->isEnabled());
         }
 
 
@@ -580,10 +779,6 @@ namespace MR
 
         bool ROI::mouse_press_event () 
         { 
-          if (draw_button->isChecked()) current_mode = 1;
-          else if (erase_button->isChecked()) current_mode = 2;
-          else current_mode = 0;
-
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
             WARN ("FIXME: shouldn't be here!");
@@ -594,7 +789,7 @@ namespace MR
           const Projection* proj = window.get_current_mode()->get_current_projection();
           if (!proj) 
             return false;
-          Point<> pos =  proj->screen_to_model (window.mouse_position(), window.focus());
+          current_origin =  proj->screen_to_model (window.mouse_position(), window.focus());
           Point<> normal = proj->screen_normal();
 
           Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
@@ -609,32 +804,23 @@ namespace MR
             current_axis = y_dot_n > z_dot_n ? 1 : 2;
 
           // figure out current slice in ROI:
-          current_slice = std::lround (roi->transform().scanner2voxel (pos)[current_axis]);
+          current_slice = std::lround (roi->transform().scanner2voxel (current_origin)[current_axis]);
 
           // floating-point version of slice location to keep it consistent on
           // mouse move:
           Point<> slice_axis (0.0, 0.0, 0.0);
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
           slice_axis = roi->transform().image2scanner_dir (slice_axis);
-          current_slice_loc = pos.dot (slice_axis);
+          current_slice_loc = current_origin.dot (slice_axis);
 
+          roi->start (Item::UndoEntry (*roi, current_axis, current_slice));
+         
 
-          // keep undo list bounded:
-          size_t undo_list_max_size = 8;
-          if (roi->undo_list.size() >= undo_list_max_size-1)
-            roi->undo_list.erase (roi->undo_list.begin());
-          
-          // add new entry to undo list:
-          roi->undo_list.push_back (Item::UndoEntry (*roi, current_axis, current_slice));
-
-          // grab slice data from 3D texture:
-          for (GLint j = 0; j < roi->undo_list.back().tex_size[1]; ++j) {
-            for (GLint i = 0; i < roi->undo_list.back().tex_size[0]; ++i)
-              std::cout << int(roi->undo_list.back().before[i+roi->undo_list.back().tex_size[0]*j]) << " ";
-            std::cout << "\n";
-          }
-
-          roi->undo_list.back().edit (*roi, pos, current_mode, 5.0);
+          if (brush_button->isChecked())
+            roi->current().draw_circle (*roi, current_origin, draw_button->isChecked(), 0.05f * brush_size_slider->value());
+          else if (rectangle_button->isChecked())
+            roi->current().draw_rectangle (*roi, current_origin, current_origin, draw_button->isChecked()); 
+          in_insert_mode = true;
 
           updateGL();
 
@@ -644,9 +830,8 @@ namespace MR
 
         bool ROI::mouse_move_event () 
         { 
-          if (!current_mode) 
+          if (!in_insert_mode)
             return false;
-
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (!indices.size()) {
@@ -665,7 +850,10 @@ namespace MR
           float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
           window.set_focus (window.focus() + l * proj->screen_normal());
 
-          roi->undo_list.back().edit (*roi, pos + l * proj->screen_normal(), current_mode, 5.0);
+          if (brush_button->isChecked())
+            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), draw_button->isChecked(), 0.05f * brush_size_slider->value()); 
+          else if (rectangle_button->isChecked())
+            roi->current().draw_rectangle (*roi, current_origin, pos + l * proj->screen_normal(), draw_button->isChecked());
 
           updateGL();
 
@@ -674,7 +862,8 @@ namespace MR
 
         bool ROI::mouse_release_event () 
         { 
-          current_mode = 0; 
+          in_insert_mode = false;
+          update_undo_redo();
           return true; 
         }
 

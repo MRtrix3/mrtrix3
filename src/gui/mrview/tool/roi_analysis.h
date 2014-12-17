@@ -58,7 +58,10 @@ namespace MR
             void close_slot ();
             void draw_slot ();
             void erase_slot ();
+            void undo_slot ();
+            void redo_slot ();
             void hide_all_slot ();
+            void select_edit_mode (QAction*);
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void update_slot (int unused);
@@ -69,17 +72,22 @@ namespace MR
              class Item;
              class Model;
              QPushButton *hide_all_button, *close_button, *save_button;
-             QToolButton *draw_button, *erase_button;
+             QToolButton *draw_button, *erase_button, *undo_button, *redo_button;
+             QToolButton *brush_button, *rectangle_button;
+             QActionGroup *edit_mode_group;
              Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;
-             QSlider *opacity_slider;
-             int current_mode, current_axis, current_slice;
+             QSlider *opacity_slider, *brush_size_slider;
+             int current_axis, current_slice;
+             bool in_insert_mode;
+             Point<> current_origin;
              float current_slice_loc;
 
              Mode::Slice::Shader shader;
 
              void update_selection ();
+             void update_undo_redo ();
              void updateGL() { 
                window.get_current_mode()->update_overlays = true;
                window.updateGL();
