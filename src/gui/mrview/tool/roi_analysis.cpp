@@ -28,6 +28,7 @@
 #include "gui/mrview/volume.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
+#include "gui/dialog/file.h"
 
 namespace MR
 {
@@ -56,7 +57,8 @@ namespace MR
             template <class InfoType>
               Item (const InfoType& info) : 
                 Volume (info),
-                current_undo (-1) {
+                current_undo (-1),
+                saved (true) {
                   type = gl::UNSIGNED_BYTE;
                   format = gl::RED;
                   internal_format = gl::R8;
@@ -76,6 +78,13 @@ namespace MR
                   bind();
                   allocate();
                 }
+
+            void zero () {
+              bind();
+              std::vector<GLubyte> data (info().dim(0)*info().dim(1));
+              for (int n = 0; n < info().dim(2); ++n)
+                upload_data ({ 0, 0, n }, { info().dim(0), info().dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+            }
 
             void load (const MR::Image::Header& header) {
               bind();
@@ -261,12 +270,14 @@ namespace MR
             };
             std::vector<UndoEntry> undo_list;
             int current_undo;
+            bool saved;
 
             bool has_undo () { return current_undo >= 0; }
             bool has_redo () { return current_undo < int(undo_list.size()-1); }
 
             UndoEntry& current () { return undo_list[current_undo]; }
             void start (UndoEntry&& entry) { 
+              saved = false;
               if (current_undo < 0) 
                 current_undo = -1;
               while (current_undo+1 > int(undo_list.size()))
@@ -313,6 +324,7 @@ namespace MR
               ListModelBase (parent) { }
 
             void load (VecPtr<MR::Image::Header>& list);
+            void create (MR::Image::Header& image);
 
             Item* get (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()]);
@@ -328,6 +340,15 @@ namespace MR
             roi->load (*list[i]);
             items.push_back (roi);
           }
+          endInsertRows();
+        }
+
+        void ROI::Model::create (MR::Image::Header& image)
+        {
+          beginInsertRows (QModelIndex(), items.size(), items.size()+1);
+          Item* roi = new Item (image);
+          roi->zero ();
+          items.push_back (roi);
           endInsertRows();
         }
 
@@ -498,6 +519,21 @@ namespace MR
 
             main_box->addLayout (layout, 0);
 
+            lock_to_axes_button = new QPushButton (tr("Lock to ROI axes"), this);
+            lock_to_axes_button->setToolTip (tr (
+                  "ROI editing inherently operates on plane of the ROI image\n"
+                  "This can lead to confusing behaviour when the viewing plane\n"
+                  "is not aligned with the ROI axes. When this button is set,\n"
+                  "the viewing plane will automatically switch to that closest\n"
+                  "to the ROI axes for every drawing operation."));
+            lock_to_axes_button->setIcon (QIcon (":/lock.svg"));
+            lock_to_axes_button->setCheckable (true);
+            lock_to_axes_button->setChecked (true);
+            lock_to_axes_button->setEnabled (false);
+            connect (lock_to_axes_button, SIGNAL (clicked()), this, SLOT (update_slot ()));
+            main_box->addWidget (lock_to_axes_button, 1);
+
+
             connect (list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
@@ -511,8 +547,10 @@ namespace MR
 
         void ROI::new_slot ()
         {
-          TRACE;
-          //load (list);
+          assert (window.image());
+          list_model->create (window.image()->header());
+          list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
+          updateGL ();
         }
 
 
@@ -534,7 +572,27 @@ namespace MR
 
         void ROI::save_slot ()
         {
-          TRACE;
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          assert (indices.size() == 1);
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          roi->texture().bind();
+
+          std::vector<GLubyte> data (roi->info().dim(0) * roi->info().dim(1) * roi->info().dim(2));
+          gl::GetTexImage (gl::TEXTURE_3D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*) (&data[0]));
+
+          try {
+            MR::Image::Header header;
+            header.info() = roi->info();
+            std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", header.name());
+            MR::Image::Buffer<bool> buffer (name, header);
+            auto vox = buffer.voxel();
+            for (auto l = MR::Image::Loop() (vox); l; ++l) 
+              vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
+            roi->saved = true;
+          }
+          catch (Exception& E) {
+            E.display();
+          }
         }
 
 
@@ -550,11 +608,15 @@ namespace MR
 
         void ROI::close_slot ()
         {
-          QModelIndexList indexes = list_view->selectionModel()->selectedIndexes();
-          while (indexes.size()) {
-            list_model->remove_item (indexes.first());
-            indexes = list_view->selectionModel()->selectedIndexes();
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          assert (indices.size() == 1);
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          if (!roi->saved) {
+            if (QMessageBox::question (&window, tr("ROI not saved"), tr ("ROI has been modified. Do you want to save it?")) == QMessageBox::Yes)
+              save_slot();
           }
+
+          list_model->remove_item (indices.first());
           updateGL();
         }
 
@@ -622,8 +684,6 @@ namespace MR
 
         void ROI::select_edit_mode (QAction*) 
         {
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
           brush_size_slider->setEnabled (brush_button->isChecked());
         }
 
@@ -685,7 +745,7 @@ namespace MR
         }
 
 
-        void ROI::update_slot (int) {
+        void ROI::update_slot () {
           updateGL();
         }
 
@@ -737,8 +797,6 @@ namespace MR
 
         void ROI::update_selection () 
         {
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           opacity_slider->setEnabled (indices.size());
           save_button->setEnabled (indices.size());
@@ -748,25 +806,18 @@ namespace MR
           colour_button->setEnabled (indices.size());
           edit_mode_group->setEnabled (indices.size());
           brush_size_slider->setEnabled (indices.size() && brush_button->isChecked());
+          lock_to_axes_button->setEnabled (indices.size());
 
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
           update_undo_redo();
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
 
           if (!indices.size()) {
             release_focus();
             return;
           }
 
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
           Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
           colour_button->setColor (QColor (roi->colour[0], roi->colour[1], roi->colour[2]));
           opacity_slider->setValue (1.0e3f * roi->alpha);
-          VAR (brush_button->isEnabled());
-          VAR (rectangle_button->isEnabled());
         }
 
 

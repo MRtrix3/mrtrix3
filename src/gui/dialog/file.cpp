@@ -87,9 +87,18 @@ namespace MR
 
 
 
-        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
+        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name, const std::string& filter, const std::string& folder)
         {
-          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
+          QString selection;
+          if (folder.size()) {
+            if (suggested_name.size())
+              selection = MR::Path::join (folder, suggested_name).c_str();
+            else 
+              selection = folder.c_str();
+          }
+          else if (suggested_name.size())
+            selection = suggested_name.c_str();
+          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), selection, filter.c_str(), 0, FILE_DIALOG_OPTIONS);
           std::string name;
           if (qstring.size()) {
             name = qstring.toUtf8().data();

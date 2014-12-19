@@ -64,14 +64,14 @@ namespace MR
             void select_edit_mode (QAction*);
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void update_slot (int unused);
+            void update_slot ();
             void colour_changed ();
             void opacity_changed (int unused);
 
           protected:
              class Item;
              class Model;
-             QPushButton *hide_all_button, *close_button, *save_button;
+             QPushButton *hide_all_button, *close_button, *save_button, *lock_to_axes_button;
              QToolButton *draw_button, *erase_button, *undo_button, *redo_button;
              QToolButton *brush_button, *rectangle_button;
              QActionGroup *edit_mode_group;
