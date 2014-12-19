@@ -71,9 +71,12 @@ namespace MR
                   colour = preset_colours[current_preset_colour++];
                   if (current_preset_colour >= 6)
                     current_preset_colour = 0;
-                  transparent_intensity = 0.4;
-                  opaque_intensity = 0.6;
+                  transparent_intensity = 0.4f;
+                  opaque_intensity = 0.6f;
                   colourmap = ColourMap::index ("Colour");
+                  float voxsize = std::min (info.vox(0), std::min (info.vox(1), info.vox(2)));
+                  brush_size = min_brush_size = voxsize;
+                  max_brush_size = 100.0f*min_brush_size;
 
                   bind();
                   allocate();
@@ -204,21 +207,25 @@ namespace MR
                 after = before;
               }
 
-              void draw_circle (Item& roi, const Point<>& pos, int current_mode, float radius) {
+              void draw_circle (Item& roi, const Point<>& pos, int current_mode, float diameter) {
                 Point<> vox = roi.transform().scanner2voxel (pos);
-                int rad = int (std::ceil (radius));
+                roi.brush_size = diameter;
+                float radius = 0.5f * diameter;
+                int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
                 radius *= radius;
                 std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
                 std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
-                a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad);
-                a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad);
-                b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad);
-                b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad);
+                a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
+                a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
+                b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad[0]);
+                b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad[1]);
 
                 for (int k = a[2]; k < b[2]; ++k)
                   for (int j = a[1]; j < b[1]; ++j)
                     for (int i = a[0]; i < b[0]; ++i)
-                      if (Math::pow2(vox[0]-i) + Math::pow2 (vox[1]-j) + Math::pow2 (vox[2]-k) < radius)
+                      if (Math::pow2 (roi.info().vox(0) * (vox[0]-i)) + 
+                        Math::pow2 (roi.info().vox(1) * (vox[1]-j)) + 
+                        Math::pow2 (roi.info().vox(2) * (vox[2]-k)) < radius)
                         after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
 
                 roi.texture().bind();
@@ -269,8 +276,10 @@ namespace MR
               static GL::VertexArrayObject copy_vertex_array_object;
             };
             std::vector<UndoEntry> undo_list;
+
             int current_undo;
             bool saved;
+            float min_brush_size, max_brush_size, brush_size;
 
             bool has_undo () { return current_undo >= 0; }
             bool has_redo () { return current_undo < int(undo_list.size()-1); }
@@ -469,33 +478,32 @@ namespace MR
             edit_mode_group->setEnabled (false);
             connect (edit_mode_group, SIGNAL (triggered (QAction*)), this, SLOT (select_edit_mode (QAction*)));
 
-            brush_button = new QToolButton (this);
-            brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-            action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
-            action->setShortcut (tr ("Ctrl+B"));
-            action->setToolTip (tr ("Edit ROI using a brush"));
-            action->setCheckable (true);
-            action->setChecked (true);
-            edit_mode_group->addAction (action);
-            brush_button->setDefaultAction (action);
-            layout->addWidget (brush_button, 0);
-
             rectangle_button = new QToolButton (this);
             rectangle_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
             action = new QAction (QIcon (":/rectangle.svg"), tr ("Rectangle"), this);
             action->setShortcut (tr ("Ctrl+R"));
             action->setToolTip (tr ("Edit ROI using a rectangle"));
             action->setCheckable (true);
+            action->setChecked (true);
             edit_mode_group->addAction (action);
             rectangle_button->setDefaultAction (action);
-            layout->addWidget (rectangle_button, 0);
+            layout->addWidget (rectangle_button, 1);
 
-            brush_size_slider = new QSlider (Qt::Horizontal);
-            brush_size_slider->setToolTip (tr ("brush size"));
-            brush_size_slider->setRange (10,1000);
-            brush_size_slider->setSliderPosition (int (10));
-            brush_size_slider->setEnabled (false);
-            layout->addWidget (brush_size_slider, 1);
+            brush_button = new QToolButton (this);
+            brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+            action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
+            action->setShortcut (tr ("Ctrl+B"));
+            action->setToolTip (tr ("Edit ROI using a brush"));
+            action->setCheckable (true);
+            action->setChecked (false);
+            edit_mode_group->addAction (action);
+            brush_button->setDefaultAction (action);
+            layout->addWidget (brush_button, 1);
+
+            brush_size_button = new AdjustButton (this);
+            brush_size_button->setToolTip (tr ("brush size"));
+            brush_size_button->setEnabled (false);
+            layout->addWidget (brush_size_button, 1);
 
             main_box->addLayout (layout, 0);
 
@@ -684,7 +692,7 @@ namespace MR
 
         void ROI::select_edit_mode (QAction*) 
         {
-          brush_size_slider->setEnabled (brush_button->isChecked());
+          brush_size_button->setEnabled (brush_button->isChecked());
         }
 
 
@@ -805,7 +813,7 @@ namespace MR
           erase_button->defaultAction()->setEnabled (indices.size());
           colour_button->setEnabled (indices.size());
           edit_mode_group->setEnabled (indices.size());
-          brush_size_slider->setEnabled (indices.size() && brush_button->isChecked());
+          brush_size_button->setEnabled (indices.size() && brush_button->isChecked());
           lock_to_axes_button->setEnabled (indices.size());
 
           update_undo_redo();
@@ -818,6 +826,11 @@ namespace MR
           Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
           colour_button->setColor (QColor (roi->colour[0], roi->colour[1], roi->colour[2]));
           opacity_slider->setValue (1.0e3f * roi->alpha);
+
+          brush_size_button->setMin (roi->min_brush_size);
+          brush_size_button->setMax (roi->max_brush_size);
+          brush_size_button->setRate (0.1f * roi->min_brush_size);
+          brush_size_button->setValue (roi->brush_size);
         }
 
 
@@ -830,11 +843,15 @@ namespace MR
 
         bool ROI::mouse_press_event () 
         { 
+          if (window.mouse_buttons() != Qt::LeftButton || window.modifiers() != Qt::NoModifier)
+            return false;
+
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
             WARN ("FIXME: shouldn't be here!");
             return false;
           }
+
 
 
           const Projection* proj = window.get_current_mode()->get_current_projection();
@@ -843,8 +860,10 @@ namespace MR
           current_origin =  proj->screen_to_model (window.mouse_position(), window.focus());
           Point<> normal = proj->screen_normal();
 
-          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          window.set_focus (current_origin);
+
           // figure out the closest ROI axis, and lock to it:
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
           float x_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
           float y_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 1.0, 0.0)).dot (normal));
           float z_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 0.0, 1.0)).dot (normal));
@@ -864,11 +883,19 @@ namespace MR
           slice_axis = roi->transform().image2scanner_dir (slice_axis);
           current_slice_loc = current_origin.dot (slice_axis);
 
+
+          if (lock_to_axes_button->isChecked()) {
+            Math::Versor<float> orient;
+            orient.from_matrix (roi->info().transform());
+            window.set_snap_to_image (false);
+            window.set_orientation (orient);
+          }
+
           roi->start (Item::UndoEntry (*roi, current_axis, current_slice));
          
 
           if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, current_origin, draw_button->isChecked(), 0.05f * brush_size_slider->value());
+            roi->current().draw_circle (*roi, current_origin, draw_button->isChecked(), brush_size_button->value());
           else if (rectangle_button->isChecked())
             roi->current().draw_rectangle (*roi, current_origin, current_origin, draw_button->isChecked()); 
           in_insert_mode = true;
@@ -902,7 +929,7 @@ namespace MR
           window.set_focus (window.focus() + l * proj->screen_normal());
 
           if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), draw_button->isChecked(), 0.05f * brush_size_slider->value()); 
+            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), draw_button->isChecked(), brush_size_button->value()); 
           else if (rectangle_button->isChecked())
             roi->current().draw_rectangle (*roi, current_origin, pos + l * proj->screen_normal(), draw_button->isChecked());
 

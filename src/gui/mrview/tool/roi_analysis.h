@@ -27,6 +27,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/color_button.h"
+#include "gui/mrview/adjust_button.h"
 
 namespace MR
 {
@@ -78,7 +79,8 @@ namespace MR
              Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;
-             QSlider *opacity_slider, *brush_size_slider;
+             QSlider *opacity_slider;
+             AdjustButton *brush_size_button;
              int current_axis, current_slice;
              bool in_insert_mode;
              Point<> current_origin;
