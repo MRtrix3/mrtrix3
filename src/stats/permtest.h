@@ -22,6 +22,11 @@
 #define __stats_permtest_h__
 
 #include <gsl/gsl_linalg.h>
+#include <mutex>
+
+#include "progressbar.h"
+#include "ptr.h"
+#include "thread.h"
 
 #include "math/vector.h"
 #include "math/stats/permutation.h"
