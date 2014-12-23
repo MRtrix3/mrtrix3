@@ -529,7 +529,7 @@ namespace MR
 
             lock_to_axes_button = new QPushButton (tr("Lock to ROI axes"), this);
             lock_to_axes_button->setToolTip (tr (
-                  "ROI editing inherently operates on plane of the ROI image\n"
+                  "ROI editing inherently operates on a plane of the ROI image.\n"
                   "This can lead to confusing behaviour when the viewing plane\n"
                   "is not aligned with the ROI axes. When this button is set,\n"
                   "the viewing plane will automatically switch to that closest\n"
@@ -544,7 +544,9 @@ namespace MR
 
             connect (list_view->selectionModel(),
                 SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-                SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
+                SLOT (update_selection()));
+
+            connect (&window, SIGNAL (imageChanged()), this, SLOT (update_selection()));
 
             connect (list_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
                 this, SLOT (toggle_shown_slot (const QModelIndex&, const QModelIndex&)));
@@ -782,11 +784,6 @@ namespace MR
         }
 
 
-        void ROI::selection_changed_slot (const QItemSelection &, const QItemSelection &)
-        {
-          update_selection();
-        }
-
         void ROI::update_undo_redo () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -805,16 +802,25 @@ namespace MR
 
         void ROI::update_selection () 
         {
+          if (!window.image()) {
+            setEnabled (false);
+            return;
+          }
+          else 
+            setEnabled (true);
+
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          opacity_slider->setEnabled (indices.size());
-          save_button->setEnabled (indices.size());
-          close_button->setEnabled (indices.size());
-          draw_button->defaultAction()->setEnabled (indices.size());
-          erase_button->defaultAction()->setEnabled (indices.size());
-          colour_button->setEnabled (indices.size());
-          edit_mode_group->setEnabled (indices.size());
-          brush_size_button->setEnabled (indices.size() && brush_button->isChecked());
-          lock_to_axes_button->setEnabled (indices.size());
+          bool enable = window.image() && indices.size();
+
+          opacity_slider->setEnabled (enable);
+          save_button->setEnabled (enable);
+          close_button->setEnabled (enable);
+          draw_button->defaultAction()->setEnabled (enable);
+          erase_button->defaultAction()->setEnabled (enable);
+          colour_button->setEnabled (enable);
+          edit_mode_group->setEnabled (enable);
+          brush_size_button->setEnabled (enable && brush_button->isChecked());
+          lock_to_axes_button->setEnabled (enable);
 
           update_undo_redo();
 

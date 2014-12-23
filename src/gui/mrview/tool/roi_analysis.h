@@ -64,7 +64,7 @@ namespace MR
             void hide_all_slot ();
             void select_edit_mode (QAction*);
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
-            void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void update_selection ();
             void update_slot ();
             void colour_changed ();
             void opacity_changed (int unused);
@@ -88,7 +88,6 @@ namespace MR
 
              Mode::Slice::Shader shader;
 
-             void update_selection ();
              void update_undo_redo ();
              void updateGL() { 
                window.get_current_mode()->update_overlays = true;
