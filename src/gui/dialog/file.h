@@ -36,6 +36,7 @@ namespace MR
       {
 
         extern const std::string image_filter_string;
+        void check_overwrite_files_func (const std::string& name);
 
         std::string get_folder (QWidget* parent, const std::string& caption, const std::string& folder = std::string());
         std::string get_file (QWidget* parent, const std::string& caption, const std::string& filter = std::string(), const std::string& folder = std::string());

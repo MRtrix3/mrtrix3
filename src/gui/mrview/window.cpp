@@ -709,8 +709,8 @@ namespace MR
 
         try {
           MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          auto vox = dest.voxel();
-          MR::Image::copy_with_progress (image()->voxel(), vox);
+          auto src (image()->voxel());
+          MR::Image::copy_with_progress (src, dest.voxel());
         }
         catch (Exception& E) {
           E.display();

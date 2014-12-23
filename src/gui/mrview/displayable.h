@@ -269,7 +269,7 @@ namespace MR
 
 
         protected:
-          const std::string filename;
+          std::string filename;
           float value_min, value_max;
           uint32_t flags_;
 

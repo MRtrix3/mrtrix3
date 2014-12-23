@@ -55,8 +55,8 @@ namespace MR
         class ROI::Item : public Volume {
           public:
             template <class InfoType>
-              Item (const InfoType& info) : 
-                Volume (info),
+              Item (const InfoType& src) : 
+                Volume (src),
                 current_undo (-1),
                 saved (true) {
                   type = gl::UNSIGNED_BYTE;
@@ -74,9 +74,11 @@ namespace MR
                   transparent_intensity = 0.4f;
                   opaque_intensity = 0.6f;
                   colourmap = ColourMap::index ("Colour");
-                  float voxsize = std::min (info.vox(0), std::min (info.vox(1), info.vox(2)));
+                  float voxsize = std::min (src.vox(0), std::min (src.vox(1), src.vox(2)));
                   brush_size = min_brush_size = voxsize;
                   max_brush_size = 100.0f*min_brush_size;
+
+                  filename = "ROI.mif";
 
                   bind();
                   allocate();
@@ -102,8 +104,17 @@ namespace MR
                 upload_data ({ 0, 0, vox[2] }, { vox.dim(0), vox.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
                 ++progress;
               }
+              filename = header.name();
             }
 
+
+            template <class VoxelType> 
+              void save (VoxelType&& vox, GLubyte* data) {
+                for (auto l = MR::Image::Loop() (vox); l; ++l) 
+                  vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
+                saved = true;
+                filename = vox.name();
+              }
 
 
 
@@ -593,12 +604,9 @@ namespace MR
           try {
             MR::Image::Header header;
             header.info() = roi->info();
-            std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", header.name());
+            std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
             MR::Image::Buffer<bool> buffer (name, header);
-            auto vox = buffer.voxel();
-            for (auto l = MR::Image::Loop() (vox); l; ++l) 
-              vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
-            roi->saved = true;
+            roi->save (buffer.voxel(), data.data());
           }
           catch (Exception& E) {
             E.display();

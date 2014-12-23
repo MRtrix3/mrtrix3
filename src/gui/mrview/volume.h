@@ -100,7 +100,8 @@ namespace MR
 
           float scale_factor () const { return _scale_factor; }
           const GL::Texture& texture () const { return _texture; }
-          const MR::Image::ConstInfo& info () const { return _info; }
+          const MR::Image::Info& info () const { return _info; }
+          MR::Image::Info& info () { return _info; }
           const MR::Image::Transform& transform () const { return _transform; }
 
           void set_min_max (float min, float max) {
@@ -120,7 +121,7 @@ namespace MR
             }
 
         protected:
-          MR::Image::ConstInfo _info;
+          MR::Image::Info _info;
           MR::Image::Transform _transform;
           int interpolation;
           GL::Texture _texture;
