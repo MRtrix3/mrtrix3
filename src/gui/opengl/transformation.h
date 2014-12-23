@@ -60,9 +60,6 @@ namespace MR
           operator const GLfloat* () const { return v; }
           operator GLfloat* () { return v; }
 
-          GLfloat& operator[] (size_t i) { return v[i]; }
-          const GLfloat& operator[] (size_t i) const { return v[i]; }
-
           friend std::ostream& operator<< (std::ostream& stream, const vec4& v) {
             for (size_t i = 0; i < 4; ++i) 
               stream << v[i] << " ";
