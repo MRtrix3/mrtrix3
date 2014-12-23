@@ -436,7 +436,7 @@ namespace MR
 
 
 
-    App::ParsedArgument::operator int () const
+    App::ParsedArgument::operator int32_t () const
     {
       if (arg->type == Integer) {
         const int retval = to<int> (p);

@@ -121,13 +121,10 @@ namespace MR
         operator std::string () const {
           return p;
         }
-        operator int () const;
-        operator ssize_t () const {
-          return operator int ();
-        }
-        operator size_t () const {
-          return operator int ();
-        }
+        operator int32_t () const;
+        operator uint32_t () const { return operator int32_t(); }
+        operator int64_t () const { return operator int32_t(); }
+        operator uint64_t () const { return operator int32_t(); }
         operator float () const;
         operator double () const;
 
