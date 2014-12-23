@@ -92,21 +92,9 @@ namespace MR
                 Writer       writer  (shared, destination, properties);
                 Exec<Method> tracker (shared);
 
-                // Determine track upsampling ratio for mapping during dynamic seeding
-                // Doesn't have to be super-precise
-                // Ratio needs to be based on the output step size, not the actual step size
-                //   (downsampling is performed before track data is sent to mapper)
-                float step_size = 0.0;
-                if (properties.find ("output_step_size") != properties.end())
-                  step_size = to<float> (properties["output_step_size"]);
-                else
-                  step_size = to<float> (properties["step_size"]);
-                size_t upsample_ratio = 1;
-                if (std::isfinite(step_size) && !step_size)
-                  upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
-
                 TckMapper mapper (H, dirs);
-                mapper.set_upsample_ratio (upsample_ratio);
+                mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (fod_data, properties, 0.25));
+                mapper.set_use_precise_mapping (true);
 
                 Thread::Queue<GeneratedTrack>           tracking_output_queue;
                 Thread::Queue< Streamline<value_type> > writer_output_queue;
