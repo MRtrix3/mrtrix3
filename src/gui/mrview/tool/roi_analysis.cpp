@@ -149,7 +149,7 @@ namespace MR
                       "  ivec3 pos = position;\n"
                       "  pos[axes.x] = int(gl_FragCoord.x);\n"
                       "  pos[axes.y] = int(gl_FragCoord.y);\n"
-                      "  color0.r = texelFetch (tex, pos, 0);\n"
+                      "  color0.r = texelFetch (tex, pos, 0).r;\n"
                       "}\n");
 
                   copy_program.attach (vertex_shader);
