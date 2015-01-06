@@ -190,6 +190,7 @@ namespace MR
           Mapping::TrackLoader loader (file, count);
           Mapping::TrackMapperBase mapper (H, dirs);
           mapper.set_upsample_ratio (upsample_ratio);
+          mapper.set_use_precise_mapping (true);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (
               loader,
