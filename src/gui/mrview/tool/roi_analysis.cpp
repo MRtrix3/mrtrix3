@@ -22,6 +22,8 @@
 
 //#define GL_DEBUG
 
+#include <iomanip>
+
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_analysis.h"
@@ -78,7 +80,9 @@ namespace MR
                   brush_size = min_brush_size = voxsize;
                   max_brush_size = 100.0f*min_brush_size;
 
-                  filename = "ROI.mif";
+                  std::stringstream name;
+                  name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
+                  filename = name.str();
 
                   bind();
                   allocate();
@@ -324,6 +328,7 @@ namespace MR
 
             static int number_of_undos;
             static int current_preset_colour;
+            static int new_roi_counter;
         };
 
         GL::Shader::Program ROI::Item::UndoEntry::copy_program;
@@ -334,6 +339,7 @@ namespace MR
 
         int ROI::Item::number_of_undos = 0;
         int ROI::Item::current_preset_colour = 0;
+        int ROI::Item::new_roi_counter = 0;
 
 
 
@@ -566,10 +572,24 @@ namespace MR
           }
 
 
+        ROI::~ROI()
+        {
+          for (int i = 0; i != list_model->rowCount(); ++i) {
+            QModelIndex index = list_model->index (i, 0);
+            Item* roi = list_model->get (index);
+            if (!roi->saved) {
+              if (QMessageBox::question (&window, tr("ROI not saved"), tr (("Image " + roi->get_filename() + " has been modified. Do you want to save it?").c_str())) == QMessageBox::Yes)
+                save (roi);
+            }
+          }
+        }
+
+
         void ROI::new_slot ()
         {
           assert (window.image());
           list_model->create (window.image()->header());
+          list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
         }
@@ -590,12 +610,8 @@ namespace MR
 
 
 
-
-        void ROI::save_slot ()
+        void ROI::save (Item* roi)
         {
-          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
-          assert (indices.size() == 1);
-          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
           roi->texture().bind();
 
           std::vector<GLubyte> data (roi->info().dim(0) * roi->info().dim(1) * roi->info().dim(2));
@@ -605,13 +621,26 @@ namespace MR
             MR::Image::Header header;
             header.info() = roi->info();
             std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
-            MR::Image::Buffer<bool> buffer (name, header);
-            roi->save (buffer.voxel(), data.data());
+            if (name.size()) {
+              MR::Image::Buffer<bool> buffer (name, header);
+              roi->save (buffer.voxel(), data.data());
+            }
           }
           catch (Exception& E) {
             E.display();
           }
         }
+
+
+
+        void ROI::save_slot ()
+        {
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          assert (indices.size() == 1);
+          Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
+          save (roi);
+        }
+
 
 
 

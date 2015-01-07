@@ -44,6 +44,7 @@ namespace MR
 
           public:
             ROI (Window& main_window, Dock* parent);
+            ~ROI();
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
             bool process_batch_command (const std::string& cmd, const std::string& args);
@@ -95,6 +96,7 @@ namespace MR
              }
              
              void load (VecPtr<MR::Image::Header>& list); 
+             void save (Item*);
         };
 
 
