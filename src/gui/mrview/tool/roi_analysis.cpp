@@ -668,11 +668,11 @@ namespace MR
         }
 
 
-        void ROI::draw_slot () 
+        void ROI::draw_slot ()
         {
           if (draw_button->isChecked()) {
-            if (erase_button->isChecked()) 
-              erase_button->setChecked (false);
+            if (erase_button->isChecked())
+              erase_button->click();
             grab_focus ();
           }
           else release_focus ();
@@ -682,11 +682,11 @@ namespace MR
 
 
 
-        void ROI::erase_slot () 
+        void ROI::erase_slot ()
         {
           if (erase_button->isChecked()) {
-            if (draw_button->isChecked()) 
-              draw_button->setChecked (false);
+            if (draw_button->isChecked())
+              draw_button->click();
             grab_focus ();
           }
           else release_focus ();
