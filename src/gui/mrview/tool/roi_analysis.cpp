@@ -501,7 +501,7 @@ namespace MR
             action->setShortcut (tr ("Ctrl+R"));
             action->setToolTip (tr ("Edit ROI using a rectangle"));
             action->setCheckable (true);
-            action->setChecked (true);
+            action->setChecked (false);
             edit_mode_group->addAction (action);
             rectangle_button->setDefaultAction (action);
             layout->addWidget (rectangle_button, 1);
@@ -512,14 +512,14 @@ namespace MR
             action->setShortcut (tr ("Ctrl+B"));
             action->setToolTip (tr ("Edit ROI using a brush"));
             action->setCheckable (true);
-            action->setChecked (false);
+            action->setChecked (true);
             edit_mode_group->addAction (action);
             brush_button->setDefaultAction (action);
             layout->addWidget (brush_button, 1);
 
             brush_size_button = new AdjustButton (this);
             brush_size_button->setToolTip (tr ("brush size"));
-            brush_size_button->setEnabled (false);
+            brush_size_button->setEnabled (true);
             layout->addWidget (brush_size_button, 1);
 
             main_box->addLayout (layout, 0);
