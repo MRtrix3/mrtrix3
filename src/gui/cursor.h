@@ -40,6 +40,8 @@ namespace MR
         static QCursor crosshair;
         static QCursor inplane_rotate;
         static QCursor throughplane_rotate;
+        static QCursor draw;
+        static QCursor erase;
 
     };
 

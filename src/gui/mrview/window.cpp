@@ -1076,6 +1076,14 @@ namespace MR
           }
         }
 
+        if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+          QCursor* ptr = tool_has_focus->get_cursor();
+          if (ptr) {
+            glarea->setCursor (*ptr);
+            return;
+          }
+        }
+
         switch (cursor) {
           case SetFocus: glarea->setCursor (Cursor::crosshair); break;
           case Contrast: glarea->setCursor (Cursor::window); break;

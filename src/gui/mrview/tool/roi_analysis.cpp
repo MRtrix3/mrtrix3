@@ -988,6 +988,16 @@ namespace MR
           return true; 
         }
 
+        QCursor* ROI::get_cursor ()
+        {
+          if (draw_button->isChecked())
+            return &Cursor::draw;
+          if (erase_button->isChecked())
+            return &Cursor::erase;
+          return nullptr;
+        }
+
+
 
 
 

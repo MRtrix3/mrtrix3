@@ -52,6 +52,7 @@ namespace MR
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();
             virtual bool mouse_release_event ();
+            virtual QCursor* get_cursor ();
 
           private slots:
             void new_slot ();
