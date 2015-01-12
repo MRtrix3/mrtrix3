@@ -84,7 +84,7 @@ namespace MR
              AdjustButton *brush_size_button;
              int current_axis, current_slice;
              bool in_insert_mode, insert_mode_value;
-             Point<> current_origin;
+             Point<> current_origin, prev_pos;
              float current_slice_loc;
 
              Mode::Slice::Shader shader;

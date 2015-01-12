@@ -222,14 +222,50 @@ namespace MR
                 after = before;
               }
 
-              void draw_circle (Item& roi, const Point<>& pos, int current_mode, float diameter) {
+              void draw_line (Item& roi, const Point<>& prev_pos, const Point<>& pos, bool insert_mode_value) {
+                const GLubyte value = insert_mode_value ? 1 : 0;
+                Point<> p = roi.transform().scanner2voxel (prev_pos);
+                const Point<> final_pos = roi.transform().scanner2voxel (pos);
+                const Point<> dir ((final_pos - p).normalise());
+                Point<int> v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
+                const Point<int> final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
+                do {
+                  if (v[0] >= 0 && v[0] < roi.info().dim(0) && v[1] >= 0 && v[1] < roi.info().dim(1) && v[2] >= 0 && v[2] < roi.info().dim(2))
+                    after[v[0]-from[0] + size[0] * (v[1]-from[1] + size[1] * (v[2]-from[2]))] = value;
+                  if (v != final_vox) {
+                    Point<int> step (0, 0, 0);
+                    float min_multiplier = std::numeric_limits<float>::infinity();
+                    for (size_t axis = 0; axis != 3; ++axis) {
+                      float this_multiplier;
+                      if (dir[axis] > 0.0f)
+                        this_multiplier = ((v[axis]+0.5f) - p[axis]) / dir[axis];
+                      else
+                        this_multiplier = ((v[axis]-0.5f) - p[axis]) / dir[axis];
+                      if (std::isfinite (this_multiplier) && this_multiplier < min_multiplier) {
+                        min_multiplier = this_multiplier;
+                        step.set (0, 0, 0);
+                        step[axis] = (dir[axis] > 0.0f) ? 1 : -1;
+                      }
+                    }
+                    v += step;
+                    p += dir * min_multiplier;
+                  }
+                } while (v != final_vox);
+                roi.texture().bind();
+                gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+              }
+
+              void draw_circle (Item& roi, const Point<>& pos, bool insert_mode_value, float diameter) {
                 Point<> vox = roi.transform().scanner2voxel (pos);
                 roi.brush_size = diameter;
-                float radius = 0.5f * diameter;
-                int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
-                radius *= radius;
+                const float radius = 0.5f * diameter;
+                const float radius_sq = Math::pow2 (radius);
+                const GLubyte value = insert_mode_value ? 1 : 0;
+
                 std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
                 std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
+
+                int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
                 a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
                 a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
                 b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad[0]);
@@ -239,16 +275,17 @@ namespace MR
                   for (int j = a[1]; j < b[1]; ++j)
                     for (int i = a[0]; i < b[0]; ++i)
                       if (Math::pow2 (roi.info().vox(0) * (vox[0]-i)) + 
-                        Math::pow2 (roi.info().vox(1) * (vox[1]-j)) + 
-                        Math::pow2 (roi.info().vox(2) * (vox[2]-k)) < radius)
-                        after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
+                          Math::pow2 (roi.info().vox(1) * (vox[1]-j)) +
+                          Math::pow2 (roi.info().vox(2) * (vox[2]-k)) < radius_sq)
+                        after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
                 roi.texture().bind();
                 gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
               }
 
-              void draw_rectangle (Item& roi, const Point<>& from_pos, const Point<>& to_pos, int current_mode) {
+              void draw_rectangle (Item& roi, const Point<>& from_pos, const Point<>& to_pos, bool insert_mode_value) {
                 Point<> vox = roi.transform().scanner2voxel (from_pos);
+                const GLubyte value = insert_mode_value ? 1 : 0;
                 std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
                 vox = roi.transform().scanner2voxel (to_pos);
                 std::array<int,3> b = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
@@ -266,7 +303,7 @@ namespace MR
                 for (int k = a[2]; k <= b[2]; ++k)
                   for (int j = a[1]; j <= b[1]; ++j)
                     for (int i = a[0]; i <= b[0]; ++i)
-                      after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = current_mode == 1 ? 1 : 0;
+                      after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
                 roi.texture().bind();
                 gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
@@ -880,6 +917,7 @@ namespace MR
           Point<> normal = proj->screen_normal();
 
           window.set_focus (current_origin);
+          prev_pos = current_origin;
 
           // figure out the closest ROI axis, and lock to it:
           Item* roi = dynamic_cast<Item*> (list_model->get (indices[0]));
@@ -913,10 +951,14 @@ namespace MR
           roi->start (Item::UndoEntry (*roi, current_axis, current_slice));
          
 
-          if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
-          else if (rectangle_button->isChecked())
+          if (brush_button->isChecked()) {
+            if (brush_size_button->value() == brush_size_button->getMin())
+              roi->current().draw_line (*roi, prev_pos, current_origin, insert_mode_value);
+            else
+              roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
+          } else if (rectangle_button->isChecked()) {
             roi->current().draw_rectangle (*roi, current_origin, current_origin, insert_mode_value);
+          }
 
 
           updateGL();
@@ -946,14 +988,19 @@ namespace MR
           slice_axis = roi->transform().image2scanner_dir (slice_axis);
           float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
           window.set_focus (window.focus() + l * proj->screen_normal());
+          const Point<> pos_adj = pos + l * proj->screen_normal();
 
-          if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), insert_mode_value, brush_size_button->value());
-          else if (rectangle_button->isChecked())
-            roi->current().draw_rectangle (*roi, current_origin, pos + l * proj->screen_normal(), insert_mode_value);
+          if (brush_button->isChecked()) {
+            if (brush_size_button->value() == brush_size_button->getMin())
+              roi->current().draw_line (*roi, prev_pos, pos_adj, insert_mode_value);
+            else
+              roi->current().draw_circle (*roi, pos_adj, insert_mode_value, brush_size_button->value());
+          } else if (rectangle_button->isChecked()) {
+            roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);
+          }
 
           updateGL();
-
+          prev_pos = pos_adj;
           return true; 
         }
 
