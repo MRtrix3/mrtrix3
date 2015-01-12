@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 13/11/09.
+   Written by J-Donald Tournier, 2014.
 
    This file is part of MRtrix.
 
@@ -20,14 +20,24 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_h__
-#define __gui_mrview_tool_roi_analysis_h__
+#ifndef __gui_mrview_tool_roi_analysis_roi_h__
+#define __gui_mrview_tool_roi_analysis_roi_h__
+
+#include <vector>
+
+#include "ptr.h"
+#include "image/header.h"
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
+
+#include "gui/mrview/tool/roi_analysis/item.h"
+#include "gui/mrview/tool/roi_analysis/model.h"
+#include "gui/mrview/tool/roi_analysis/undoentry.h"
+
 
 namespace MR
 {
@@ -37,6 +47,7 @@ namespace MR
     {
       namespace Tool
       {
+
 
         class ROI : public Base
         {
@@ -71,13 +82,11 @@ namespace MR
             void opacity_changed (int unused);
 
           protected:
-             class Item;
-             class Model;
              QPushButton *hide_all_button, *close_button, *save_button, *lock_to_axes_button;
              QToolButton *draw_button, *undo_button, *redo_button;
              QToolButton *brush_button, *rectangle_button;
              QActionGroup *edit_mode_group;
-             Model* list_model;
+             ROI_Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;
              QSlider *opacity_slider;
@@ -96,7 +105,7 @@ namespace MR
              }
              
              void load (VecPtr<MR::Image::Header>& list); 
-             void save (Item*);
+             void save (ROI_Item*);
         };
 
 

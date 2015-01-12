@@ -2,7 +2,7 @@
 
 // place #include files in here:
 #include "gui/mrview/tool/view.h"
-#include "gui/mrview/tool/roi_analysis.h"
+#include "gui/mrview/tool/roi_analysis/roi.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf.h"
 #include "gui/mrview/tool/vector.h"
