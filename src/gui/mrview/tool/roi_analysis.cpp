@@ -671,8 +671,11 @@ namespace MR
         void ROI::draw_slot ()
         {
           if (draw_button->isChecked()) {
-            if (erase_button->isChecked())
+            if (erase_button->isChecked()) {
+              erase_button->blockSignals (true);
               erase_button->click();
+              erase_button->blockSignals (false);
+            }
             grab_focus ();
           }
           else release_focus ();
@@ -685,8 +688,11 @@ namespace MR
         void ROI::erase_slot ()
         {
           if (erase_button->isChecked()) {
-            if (draw_button->isChecked())
+            if (draw_button->isChecked()) {
+              draw_button->blockSignals (true);
               draw_button->click();
+              draw_button->blockSignals (false);
+            }
             grab_focus ();
           }
           else release_focus ();
