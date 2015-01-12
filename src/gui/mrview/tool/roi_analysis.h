@@ -60,7 +60,6 @@ namespace MR
             void save_slot ();
             void close_slot ();
             void draw_slot ();
-            void erase_slot ();
             void undo_slot ();
             void redo_slot ();
             void hide_all_slot ();
@@ -75,7 +74,7 @@ namespace MR
              class Item;
              class Model;
              QPushButton *hide_all_button, *close_button, *save_button, *lock_to_axes_button;
-             QToolButton *draw_button, *erase_button, *undo_button, *redo_button;
+             QToolButton *draw_button, *undo_button, *redo_button;
              QToolButton *brush_button, *rectangle_button;
              QActionGroup *edit_mode_group;
              Model* list_model;
@@ -84,7 +83,7 @@ namespace MR
              QSlider *opacity_slider;
              AdjustButton *brush_size_button;
              int current_axis, current_slice;
-             bool in_insert_mode;
+             bool in_insert_mode, insert_mode_value;
              Point<> current_origin;
              float current_slice_loc;
 

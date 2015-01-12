@@ -442,25 +442,14 @@ namespace MR
 
             draw_button = new QToolButton (this);
             draw_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-            QAction* action = new QAction (QIcon (":/draw.svg"), tr ("Draw"), this);
+            QAction* action = new QAction (QIcon (":/draw.svg"), tr ("Draw / erase"), this);
             action->setShortcut (tr ("D"));
-            action->setToolTip (tr ("Add voxels to ROI"));
+            action->setToolTip (tr ("Add/remove voxels to/from ROI"));
             action->setCheckable (true);
             action->setEnabled (false);
             connect (action, SIGNAL (toggled(bool)), this, SLOT (draw_slot ()));
             draw_button->setDefaultAction (action);
             layout->addWidget (draw_button, 1);
-
-            erase_button = new QToolButton (this);
-            erase_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-            action = new QAction (QIcon (":/erase.svg"), tr ("Erase"), this);
-            action->setShortcut (tr ("E"));
-            action->setToolTip (tr ("Remove voxels from ROI"));
-            action->setCheckable (true);
-            action->setEnabled (false);
-            connect (action, SIGNAL (toggled(bool)), this, SLOT (erase_slot ()));
-            erase_button->setDefaultAction (action);
-            layout->addWidget (erase_button, 1);
 
             undo_button = new QToolButton (this);
             undo_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -670,34 +659,11 @@ namespace MR
 
         void ROI::draw_slot ()
         {
-          if (draw_button->isChecked()) {
-            if (erase_button->isChecked()) {
-              erase_button->blockSignals (true);
-              erase_button->click();
-              erase_button->blockSignals (false);
-            }
+          if (draw_button->isChecked())
             grab_focus ();
-          }
-          else release_focus ();
+          else
+            release_focus ();
         }
-
-
-
-
-
-        void ROI::erase_slot ()
-        {
-          if (erase_button->isChecked()) {
-            if (draw_button->isChecked()) {
-              draw_button->blockSignals (true);
-              draw_button->click();
-              draw_button->blockSignals (false);
-            }
-            grab_focus ();
-          }
-          else release_focus ();
-        }
-
 
 
 
@@ -859,7 +825,6 @@ namespace MR
           save_button->setEnabled (enable);
           close_button->setEnabled (enable);
           draw_button->defaultAction()->setEnabled (enable);
-          erase_button->defaultAction()->setEnabled (enable);
           colour_button->setEnabled (enable);
           edit_mode_group->setEnabled (enable);
           brush_size_button->setEnabled (enable && brush_button->isChecked());
@@ -892,16 +857,21 @@ namespace MR
 
         bool ROI::mouse_press_event () 
         { 
-          if (window.mouse_buttons() != Qt::LeftButton || window.modifiers() != Qt::NoModifier)
+          if (in_insert_mode || window.modifiers() != Qt::NoModifier)
             return false;
+
+          if (window.mouse_buttons() != Qt::LeftButton && window.mouse_buttons() != Qt::RightButton)
+            return false;
+
+          in_insert_mode = true;
+          insert_mode_value = (window.mouse_buttons() == Qt::LeftButton);
+          update_cursor();
 
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) {
             WARN ("FIXME: shouldn't be here!");
             return false;
           }
-
-
 
           const Projection* proj = window.get_current_mode()->get_current_projection();
           if (!proj) 
@@ -944,10 +914,10 @@ namespace MR
          
 
           if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, current_origin, draw_button->isChecked(), brush_size_button->value());
+            roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
           else if (rectangle_button->isChecked())
-            roi->current().draw_rectangle (*roi, current_origin, current_origin, draw_button->isChecked()); 
-          in_insert_mode = true;
+            roi->current().draw_rectangle (*roi, current_origin, current_origin, insert_mode_value);
+
 
           updateGL();
 
@@ -978,9 +948,9 @@ namespace MR
           window.set_focus (window.focus() + l * proj->screen_normal());
 
           if (brush_button->isChecked())
-            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), draw_button->isChecked(), brush_size_button->value()); 
+            roi->current().draw_circle (*roi, pos + l * proj->screen_normal(), insert_mode_value, brush_size_button->value());
           else if (rectangle_button->isChecked())
-            roi->current().draw_rectangle (*roi, current_origin, pos + l * proj->screen_normal(), draw_button->isChecked());
+            roi->current().draw_rectangle (*roi, current_origin, pos + l * proj->screen_normal(), insert_mode_value);
 
           updateGL();
 
@@ -990,19 +960,20 @@ namespace MR
         bool ROI::mouse_release_event () 
         { 
           in_insert_mode = false;
+          update_cursor();
           update_undo_redo();
           return true; 
         }
 
         QCursor* ROI::get_cursor ()
         {
-          if (draw_button->isChecked())
-            return &Cursor::draw;
-          if (erase_button->isChecked())
+          if (!draw_button->isChecked())
+            return nullptr;
+          if (in_insert_mode && !insert_mode_value)
             return &Cursor::erase;
-          return nullptr;
-        }
+          return &Cursor::draw;
 
+        }
 
 
 
