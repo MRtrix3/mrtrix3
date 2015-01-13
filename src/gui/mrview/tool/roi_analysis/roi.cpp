@@ -184,6 +184,37 @@ namespace MR
           layout->setContentsMargins (0, 0, 0, 0);
           layout->setSpacing (0);
 
+          slice_copy_group = new QActionGroup (this);
+          slice_copy_group->setEnabled (false);
+          connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
+
+          layout->addWidget (new QLabel ("Copy from slice: "), 0, 0);
+
+          copy_from_above_button = new QToolButton (this);
+          copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          action = new QAction (QIcon (":/copy_from_above.svg"), tr ("Above"), this);
+          action->setToolTip (tr ("Copy data from the slice above into this slice"));
+          action->setCheckable (false);
+          action->setChecked (false);
+          slice_copy_group->addAction (action);
+          copy_from_above_button->setDefaultAction (action);
+          layout->addWidget (copy_from_above_button, 1);
+
+          copy_from_below_button = new QToolButton (this);
+          copy_from_below_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          action = new QAction (QIcon (":/copy_from_below.svg"), tr ("Below"), this);
+          action->setToolTip (tr ("Copy data from the slice below into this slice"));
+          action->setCheckable (false);
+          action->setChecked (false);
+          slice_copy_group->addAction (action);
+          copy_from_below_button->setDefaultAction (action);
+          layout->addWidget (copy_from_below_button, 1);
+
+          main_box->addLayout (layout, 0);
+
+          layout = new HBoxLayout;
+          layout->setContentsMargins (0, 0, 0, 0);
+          layout->setSpacing (0);
 
           colour_button = new QColorButton;
           colour_button->setEnabled (false);
@@ -288,6 +319,18 @@ namespace MR
         }
 
 
+        int ROI::normal2axis (const Point<>& normal, const MR::Image::Transform& transform) const
+        {
+          float x_dot_n = std::abs (transform.image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
+          float y_dot_n = std::abs (transform.image2scanner_dir (Point<> (0.0, 1.0, 0.0)).dot (normal));
+          float z_dot_n = std::abs (transform.image2scanner_dir (Point<> (0.0, 0.0, 1.0)).dot (normal));
+          if (x_dot_n > y_dot_n)
+            return x_dot_n > z_dot_n ? 0 : 2;
+          else
+            return y_dot_n > z_dot_n ? 1 : 2;
+        }
+
+
 
         void ROI::save_slot ()
         {
@@ -363,6 +406,34 @@ namespace MR
 
           roi->redo();
           update_undo_redo();
+          updateGL();
+        }
+
+
+
+        void ROI::slice_copy_slot (QAction* action)
+        {
+          QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) {
+            WARN ("FIXME: shouldn't be here!");
+            return;
+          }
+          ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
+
+          const Projection* proj = window.get_current_mode()->get_current_projection();
+          if (!proj) return;
+          const Point<> current_origin = proj->screen_to_model (window.mouse_position(), window.focus());
+          current_axis = normal2axis (proj->screen_normal(), roi->transform());
+          current_slice = std::lround (roi->transform().scanner2voxel (current_origin)[current_axis]);
+
+          roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
+
+          const int source_slice = current_slice + ((action == copy_from_above_button->defaultAction()) ? 1 : -1);
+          if (source_slice < 0 || source_slice >= roi->info().dim (current_axis))
+            return;
+
+          ROI_UndoEntry source (*roi, current_axis, source_slice);
+          roi->current().copy (*roi, source);
           updateGL();
         }
 
@@ -494,6 +565,7 @@ namespace MR
           draw_button->defaultAction()->setEnabled (enable);
           colour_button->setEnabled (enable);
           edit_mode_group->setEnabled (enable);
+          slice_copy_group->setEnabled (enable);
           brush_size_button->setEnabled (enable && brush_button->isChecked());
           lock_to_axes_button->setEnabled (enable);
 
@@ -544,21 +616,12 @@ namespace MR
           if (!proj) 
             return false;
           current_origin =  proj->screen_to_model (window.mouse_position(), window.focus());
-          Point<> normal = proj->screen_normal();
-
           window.set_focus (current_origin);
           prev_pos = current_origin;
 
           // figure out the closest ROI axis, and lock to it:
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
-          float x_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
-          float y_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 1.0, 0.0)).dot (normal));
-          float z_dot_n = std::abs (roi->transform().image2scanner_dir (Point<> (0.0, 0.0, 1.0)).dot (normal));
-
-          if (x_dot_n > y_dot_n) 
-            current_axis = x_dot_n > z_dot_n ? 0 : 2;
-          else 
-            current_axis = y_dot_n > z_dot_n ? 1 : 2;
+          current_axis = normal2axis (proj->screen_normal(), roi->transform());
 
           // figure out current slice in ROI:
           current_slice = std::lround (roi->transform().scanner2voxel (current_origin)[current_axis]);

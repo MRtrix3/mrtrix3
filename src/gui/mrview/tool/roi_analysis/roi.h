@@ -27,6 +27,7 @@
 
 #include "ptr.h"
 #include "image/header.h"
+#include "image/transform.h"
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -74,6 +75,7 @@ namespace MR
             void undo_slot ();
             void redo_slot ();
             void hide_all_slot ();
+            void slice_copy_slot (QAction*);
             void select_edit_mode (QAction*);
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void update_selection ();
@@ -85,7 +87,8 @@ namespace MR
              QPushButton *hide_all_button, *close_button, *save_button, *lock_to_axes_button;
              QToolButton *draw_button, *undo_button, *redo_button;
              QToolButton *brush_button, *rectangle_button;
-             QActionGroup *edit_mode_group;
+             QToolButton *copy_from_above_button, *copy_from_below_button;
+             QActionGroup *edit_mode_group, *slice_copy_group;
              ROI_Model* list_model;
              QListView* list_view;
              QColorButton* colour_button;
@@ -106,6 +109,8 @@ namespace MR
              
              void load (VecPtr<MR::Image::Header>& list); 
              void save (ROI_Item*);
+
+             int normal2axis (const Point<>&, const MR::Image::Transform&) const;
         };
 
 

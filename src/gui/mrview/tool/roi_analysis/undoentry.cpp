@@ -252,7 +252,11 @@ namespace MR
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
 
-
+        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) {
+          after = source.before;
+          roi.texture().bind();
+          gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+        }
 
 
 

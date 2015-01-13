@@ -54,6 +54,7 @@ namespace MR
 
           void undo (ROI_Item& roi);
           void redo (ROI_Item& roi);
+          void copy (ROI_Item& roi, ROI_UndoEntry& source);
 
           std::array<GLint,3> from, size;
           std::array<GLint,2> tex_size, slice_axes;
