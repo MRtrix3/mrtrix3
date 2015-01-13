@@ -241,6 +241,48 @@ namespace MR
 
 
 
+        void ROI_UndoEntry::draw_fill (ROI_Item& roi, const Point<> pos, bool insert_mode_value)
+        {
+          const Point<> vox = roi.transform().scanner2voxel (pos);
+          const Point<int> seed_voxel (std::lround (vox[0]), std::lround (vox[1]), std::lround (vox[2]));
+          for (int axis = 0; axis != 3; ++axis) {
+            if (seed_voxel[axis] < 0) return;
+            if (seed_voxel[axis] >= roi.info().dim (axis)) return;
+          }
+          const GLubyte fill_value = insert_mode_value ? 1 : 0;
+          const size_t seed_index = seed_voxel[0]-from[0] + size[0] * (seed_voxel[1]-from[1] + size[1] * (seed_voxel[2]-from[2]));
+          const bool existing_value = after[seed_index];
+          if (existing_value == insert_mode_value) return;
+          std::vector< Point<int> > buffer (1, seed_voxel);
+          while (buffer.size()) {
+            const Point<int> v (buffer.back());
+            buffer.pop_back();
+            for (size_t i = 0; i != 4; ++i) {
+              Point<int> adj (v);
+              switch (i) {
+                case 0: adj[slice_axes[0]] -= 1; break;
+                case 1: adj[slice_axes[0]] += 1; break;
+                case 2: adj[slice_axes[1]] -= 1; break;
+                case 3: adj[slice_axes[1]] += 1; break;
+              }
+              if (adj[0] >= 0 && adj[0] < roi.info().dim (0) && adj[1] >= 0 && adj[1] < roi.info().dim (1) && adj[2] >= 0 && adj[2] < roi.info().dim (2)) {
+                const size_t adj_index = adj[0]-from[0] + size[0] * (adj[1]-from[1] + size[1] * (adj[2]-from[2]));
+                const bool adj_value = after[adj_index];
+                if (adj_value != insert_mode_value) {
+                  after[adj_index] = fill_value;
+                  buffer.push_back (adj);
+                }
+              }
+
+            }
+          }
+          roi.texture().bind();
+          gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+        }
+
+
+
+
 
         void ROI_UndoEntry::undo (ROI_Item& roi) {
           roi.texture().bind();

@@ -162,6 +162,17 @@ namespace MR
           rectangle_button->setDefaultAction (action);
           layout->addWidget (rectangle_button, 1);
 
+          fill_button = new QToolButton (this);
+          fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
+          action = new QAction (QIcon (":/fill.svg"), tr ("Fill"), this);
+          action->setShortcut (tr ("Ctrl+F"));
+          action->setToolTip (tr ("Fill ROI slice"));
+          action->setCheckable (true);
+          action->setChecked (false);
+          edit_mode_group->addAction (action);
+          fill_button->setDefaultAction (action);
+          layout->addWidget (fill_button, 1);
+
           brush_button = new QToolButton (this);
           brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
           action = new QAction (QIcon (":/brush.svg"), tr ("Brush"), this);
@@ -651,6 +662,8 @@ namespace MR
               roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
           } else if (rectangle_button->isChecked()) {
             roi->current().draw_rectangle (*roi, current_origin, current_origin, insert_mode_value);
+          } else if (fill_button->isChecked()) {
+            roi->current().draw_fill (*roi, current_origin, insert_mode_value);
           }
 
 
@@ -690,6 +703,8 @@ namespace MR
               roi->current().draw_circle (*roi, pos_adj, insert_mode_value, brush_size_button->value());
           } else if (rectangle_button->isChecked()) {
             roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);
+          } else if (fill_button->isChecked()) {
+            // Do nothing
           }
 
           updateGL();

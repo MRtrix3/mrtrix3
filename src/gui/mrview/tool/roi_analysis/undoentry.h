@@ -51,6 +51,7 @@ namespace MR
           void draw_line (ROI_Item&, const Point<>&, const Point<>&, bool);
           void draw_circle (ROI_Item&, const Point<>&, bool, float);
           void draw_rectangle (ROI_Item&, const Point<>&, const Point<>&, bool);
+          void draw_fill (ROI_Item&, const Point<>, bool);
 
           void undo (ROI_Item& roi);
           void redo (ROI_Item& roi);
