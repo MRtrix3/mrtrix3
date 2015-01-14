@@ -38,7 +38,7 @@ sub$ROI <- factor(sub$ROI, levels = c("arcuate", "cst", "cingulum", "posterior_c
 
 print(ggplot(data=sub,  aes(x=E, y=H)) + geom_tile(aes(fill = AUC), colour = "white") 
 #      + scale_fill_gradientn(colours=c("black","blue","cyan","yellow","red"), breaks=seq(0,.8,by=0.2)) 
-      + scale_fill_gradientn(colours=c("#352a87","#3340b3","#0c5dde","#066fdf","#127cd7","#118ad2","#069ccf","#06a7c3","#15b0b4","#33b8a0","#5abd8a","#80bf79","#a5be6a","#c4bb5d","#e2b951","#fabb40","#fbce2d","#f4e11e","#f8fa0d")) 
+      + scale_fill_gradientn(colours=c("#352a87","#3340b3","#0c5dde","#066fdf","#127cd7","#118ad2","#069ccf","#06a7c3","#15b0b4","#33b8a0","#5abd8a","#80bf79","#a5be6a","#c4bb5d","#e2b951","#fabb40","#fbce2d","#f4e11e","#f8fa0d"), breaks=seq(0,.8,by=0.2)) 
       + facet_grid(ROI ~ C, labeller = mf_labeller) 
       + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.margin = unit(c(2,0,0,0),'mm'),panel.background = element_blank(), axis.line = element_line(colour = "white"))                                                                                                                                                                                                           
       + scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0)))

@@ -3,10 +3,10 @@ require(grid)
 
 mf_labeller <- function(var, value){ 
   value <- as.character(value)
-  if (var=="effect") {
-    value[value=="0.1"]   <- "Effect = 10%"
-    value[value=="0.2"]   <- "Effect = 20%"
-    value[value=="0.3"]   <- "Effect = 30%"
+  if (var=="SNR") {
+    value[value=="1"]   <- "SNR=1"
+    value[value=="2"]   <- "SNR=2"
+    value[value=="3"]   <- "SNR=3"
   }
   if (var=="smoothing") {
     value[value=="0"]   <- "Smoothing = 0mm"
@@ -33,17 +33,15 @@ mf_labeller <- function(var, value){
 
 
 
-setwd('/home/dave/dev/fixel_based_stats/scripts/')
-source('multiplot.R')
-ppi <- 400
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Invivo/AUC_arcuate_smoothing.png", width=8*ppi, height=5.2*ppi, res = ppi)
-all_data <- read.csv('/data/dave/cfe/experiment_2_sims/invivo2/aucdata.csv');
-sub <- subset(all_data, ROI == 'arcuate' & C == 0, select = c (smoothing, ROI, effect, C, E, H, IQR25, AUC, IQR75))
+ppi <- 800
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Artificial/AUC_arcuate_smoothing.png", width=8*ppi, height=5.2*ppi, res = ppi)
+all_data <- read.csv('/raid1/CFE_backup/aucdata.csv');
+sub <- subset(all_data, (SNR == 1 | SNR == 2 | SNR == 3) & ROI == 'arcuate' & C == 0.5, select = c (smoothing, ROI, SNR, C, E, H, IQR25, AUC, IQR75))
 sub$H <- factor(sub$H)
 sub$E <- factor(sub$E)
 print(ggplot(data=sub,  aes(x=E, y=H)) + geom_tile(aes(fill = AUC), colour = "white") 
-      + scale_fill_gradientn(colours=c("black","blue","cyan","yellow","red"),breaks=seq(0,0.8,by=0.2)) 
-      + facet_grid(effect ~ smoothing, labeller = mf_labeller) 
+      + scale_fill_gradientn(colours=c("#352a87","#3340b3","#0c5dde","#066fdf","#127cd7","#118ad2","#069ccf","#06a7c3","#15b0b4","#33b8a0","#5abd8a","#80bf79","#a5be6a","#c4bb5d","#e2b951","#fabb40","#fbce2d","#f4e11e","#f8fa0d"), breaks=seq(0,1,by=0.2), limits=c(0, 1)) 
+      + facet_grid(SNR ~ smoothing, labeller = mf_labeller) 
       + theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(), plot.margin = unit(c(2,0,0,0),'mm'),panel.background = element_blank(), axis.line = element_line(colour = "white"))
-      + scale_x_discrete(expand = c(0, 0)) + scale_y_discrete(expand = c(0, 0) ))
+      + scale_x_discrete(expand = c(0, 0), labels=c('','1','','2','','3','','4','','5','','6')) + scale_y_discrete(expand = c(0, 0), labels=c('','1','','2','','3','','4','','5','','6')))
 dev.off()

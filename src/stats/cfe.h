@@ -100,9 +100,7 @@ namespace MR
                 connectivity_matrix[tract_fixel_indices[i]][tract_fixel_indices[j]].value++;
                 connectivity_matrix[tract_fixel_indices[j]][tract_fixel_indices[i]].value++;
               }
-           }
-
-
+            }
             return true;
           }
 

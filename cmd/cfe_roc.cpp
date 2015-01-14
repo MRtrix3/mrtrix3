@@ -515,6 +515,13 @@ void run ()
 //                auto threads = Thread::run (Thread::multi (processor), "noise_instance threads");
 //              }
 
+
+//              std::string path_file ("path_tvalue4.msf");
+//              std::string control_file ("control_tvalue.msf");
+//              write_fixel_output (path_file, smoothed_test_statistic[4], input_header, input_fixel, indexer_vox);
+//              write_fixel_output (control_file, smoothed_noise[4], input_header, input_fixel, indexer_vox);
+
+
               std::vector<value_type> max_cfe_statistics (num_noise_realisations);
               std::vector<std::vector<value_type> > control_cfe_statistics (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
               std::vector<std::vector<value_type> > path_cfe_statistics (num_noise_realisations, std::vector<value_type> (num_fixels, 0.0));
@@ -532,8 +539,8 @@ void run ()
 //              std::cout << max_cfe_statistics << std::endl;
 //              std::string path_file2 ("path_cfe4.msf");
 //              std::string control_file2 ("control_cfe4.msf");
-//              write_fixel_output (path_file2, path_cfe_statistics[4], input_header, template_vox, indexer_vox);
-//              write_fixel_output (control_file2, control_cfe_statistics[4], input_header, template_vox, indexer_vox);
+//              write_fixel_output (path_file2, path_cfe_statistics[4], input_header, input_fixel, indexer_vox);
+//              write_fixel_output (control_file2, control_cfe_statistics[4], input_header, input_fixel, indexer_vox);
 
               std::vector<value_type> ROC_thresholds (num_ROC_samples);
               for (size_t t = 0; t < ROC_thresholds.size(); ++t)
@@ -564,7 +571,7 @@ void run ()
 
 
               std::string filenameFPR (argument[3]);
-              filenameFPR.append ("effect" + str(SNR[snr]) + "_s" + str(smooth[s]) +
+              filenameFPR.append ("snr" + str(SNR[snr]) + "_s" + str(smooth[s]) +
                                   "_c" + str (C[c]) + "_h" + str(H[h]) + "_e" + str(E[e]));
 
               std::ofstream output;
