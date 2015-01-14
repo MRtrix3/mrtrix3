@@ -253,6 +253,7 @@ namespace MR
           const size_t seed_index = seed_voxel[0]-from[0] + size[0] * (seed_voxel[1]-from[1] + size[1] * (seed_voxel[2]-from[2]));
           const bool existing_value = after[seed_index];
           if (existing_value == insert_mode_value) return;
+          after[seed_index] = fill_value;
           std::vector< Point<int> > buffer (1, seed_voxel);
           while (buffer.size()) {
             const Point<int> v (buffer.back());
