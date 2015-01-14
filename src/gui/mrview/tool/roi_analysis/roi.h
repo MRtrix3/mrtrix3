@@ -84,7 +84,7 @@ namespace MR
             void opacity_changed (int unused);
 
           protected:
-             QPushButton *hide_all_button, *close_button, *save_button, *lock_to_axes_button;
+             QPushButton *hide_all_button, *close_button, *save_button;
              QToolButton *draw_button, *undo_button, *redo_button;
              QToolButton *brush_button, *rectangle_button, *fill_button;
              QToolButton *copy_from_above_button, *copy_from_below_button;

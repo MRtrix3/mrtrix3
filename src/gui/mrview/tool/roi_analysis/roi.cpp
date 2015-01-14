@@ -242,21 +242,6 @@ namespace MR
 
           main_box->addLayout (layout, 0);
 
-          lock_to_axes_button = new QPushButton (tr("Lock to ROI axes"), this);
-          lock_to_axes_button->setToolTip (tr (
-                "ROI editing inherently operates on a plane of the ROI image.\n"
-                "This can lead to confusing behaviour when the viewing plane\n"
-                "is not aligned with the ROI axes. When this button is set,\n"
-                "the viewing plane will automatically switch to that closest\n"
-                "to the ROI axes for every drawing operation."));
-          lock_to_axes_button->setIcon (QIcon (":/lock.svg"));
-          lock_to_axes_button->setCheckable (true);
-          lock_to_axes_button->setChecked (true);
-          lock_to_axes_button->setEnabled (false);
-          connect (lock_to_axes_button, SIGNAL (clicked()), this, SLOT (update_slot ()));
-          main_box->addWidget (lock_to_axes_button, 1);
-
-
           connect (list_view->selectionModel(),
               SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
               SLOT (update_selection()));
@@ -578,7 +563,6 @@ namespace MR
           edit_mode_group->setEnabled (enable);
           slice_copy_group->setEnabled (enable);
           brush_size_button->setEnabled (enable && brush_button->isChecked());
-          lock_to_axes_button->setEnabled (enable);
 
           update_undo_redo();
 
@@ -644,13 +628,10 @@ namespace MR
           slice_axis = roi->transform().image2scanner_dir (slice_axis);
           current_slice_loc = current_origin.dot (slice_axis);
 
-
-          if (lock_to_axes_button->isChecked()) {
-            Math::Versor<float> orient;
-            orient.from_matrix (roi->info().transform());
-            window.set_snap_to_image (false);
-            window.set_orientation (orient);
-          }
+          Math::Versor<float> orient;
+          orient.from_matrix (roi->info().transform());
+          window.set_snap_to_image (false);
+          window.set_orientation (orient);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
          
