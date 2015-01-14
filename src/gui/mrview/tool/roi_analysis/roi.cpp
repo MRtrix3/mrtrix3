@@ -142,9 +142,10 @@ namespace MR
 
           main_box->addLayout (layout, 0);
 
-          layout = new HBoxLayout;
-          layout->setContentsMargins (0, 0, 0, 0);
-          layout->setSpacing (0);
+          QGroupBox* group_box = new QGroupBox ("Draw mode");
+
+          GridLayout* grid_layout = new GridLayout;
+          group_box->setLayout (grid_layout);
 
           edit_mode_group = new QActionGroup (this);
           edit_mode_group->setExclusive (true);
@@ -160,7 +161,7 @@ namespace MR
           action->setChecked (false);
           edit_mode_group->addAction (action);
           rectangle_button->setDefaultAction (action);
-          layout->addWidget (rectangle_button, 1);
+          grid_layout->addWidget (rectangle_button, 0, 0, 1, 1);
 
           fill_button = new QToolButton (this);
           fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -171,7 +172,11 @@ namespace MR
           action->setChecked (false);
           edit_mode_group->addAction (action);
           fill_button->setDefaultAction (action);
-          layout->addWidget (fill_button, 1);
+          grid_layout->addWidget (fill_button, 0, 1, 1, 1);
+
+          layout = new HBoxLayout;
+          layout->setContentsMargins (0, 0, 0, 0);
+          layout->setSpacing (0);
 
           brush_button = new QToolButton (this);
           brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -185,11 +190,13 @@ namespace MR
           layout->addWidget (brush_button, 1);
 
           brush_size_button = new AdjustButton (this);
-          brush_size_button->setToolTip (tr ("brush size"));
+          brush_size_button->setToolTip (tr ("Brush size (in mm)"));
           brush_size_button->setEnabled (true);
           layout->addWidget (brush_size_button, 1);
 
-          main_box->addLayout (layout, 0);
+          grid_layout->addLayout (layout, 1, 0, 1, 2);
+
+          main_box->addWidget (group_box, 0);
 
           layout = new HBoxLayout;
           layout->setContentsMargins (0, 0, 0, 0);
