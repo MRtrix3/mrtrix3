@@ -89,11 +89,10 @@ namespace MR
 
           if (vox[2] < 0 || ++inc == num) {
             inc = 0;
-            ++vox[2];
             Mask::voxel_type v (*mask);
             Image::Nav::set_pos (v, vox);
 
-            while (v[0] != v.dim(0) && !v.value()) {
+            do {
               if (++v[2] == v.dim(2)) {
                 v[2] = 0;
                 if (++v[1] == v.dim(1)) {
@@ -101,7 +100,7 @@ namespace MR
                   ++v[0];
                 }
               }
-            }
+            } while (v[0] != v.dim(0) && !v.value());
 
             if (v[0] == v.dim(0)) {
               expired = true;
@@ -142,12 +141,11 @@ namespace MR
               pos[1] = 0;
               if (++pos[0] >= os) {
                 pos[0] = 0;
-                ++vox[2];
 
                 Mask::voxel_type v (*mask);
                 Image::Nav::set_pos (v, vox);
 
-                while (v[0] != v.dim(0) && !v.value()) {
+                do {
                   if (++v[2] == v.dim(2)) {
                     v[2] = 0;
                     if (++v[1] == v.dim(1)) {
@@ -155,12 +153,12 @@ namespace MR
                       ++v[0];
                     }
                   }
-                }
+                } while (v[0] != v.dim(0) && !v.value());
                 if (v[0] == v.dim(0)) {
                   expired = true;
                   return false;
                 }
-                vox[0] = v[0]; vox[1] = v[1], vox[2] = v[2];
+                vox[0] = v[0]; vox[1] = v[1]; vox[2] = v[2];
               }
             }
           }
