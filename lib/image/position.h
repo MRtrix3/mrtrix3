@@ -194,22 +194,22 @@ namespace MR
           return (S.get_pos (axis));
         }
         ssize_t operator++ ()              {
-          ssize_t p = S.get_pos (axis);
           S.move_pos (axis,1);
-          return (p);
+          return (S.get_pos (axis));
         }
         ssize_t operator-- ()              {
-          ssize_t p = S.get_pos (axis);
           S.move_pos (axis,-1);
-          return (p);
+          return (S.get_pos (axis));
         }
         ssize_t operator++ (int notused)   {
+          const ssize_t p = S.get_pos (axis);
           S.move_pos (axis,1);
-          return (S.get_pos (axis));
+          return (p);
         }
         ssize_t operator-- (int notused)   {
+          const ssize_t p = S.get_pos (axis);
           S.move_pos (axis,-1);
-          return (S.get_pos (axis));
+          return (p);
         }
         ssize_t operator+= (ssize_t increment) {
           S.move_pos (axis, increment);
