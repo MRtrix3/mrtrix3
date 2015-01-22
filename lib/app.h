@@ -133,10 +133,12 @@ namespace MR
         operator std::string () const {
           return p;
         }
-        operator int32_t () const;
-        operator uint32_t () const { return operator int32_t(); }
-        operator int64_t () const { return operator int32_t(); }
-        operator uint64_t () const { return operator int32_t(); }
+        operator int () const;
+        operator unsigned int () const { return operator int(); }
+        operator long int () const { return operator int(); }
+        operator long unsigned int () const { return operator int(); }
+        operator long long int () const { return operator int(); }
+        operator long long unsigned int () const { return operator int(); }
         operator float () const;
         operator double () const;
 
