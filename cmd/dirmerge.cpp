@@ -197,6 +197,8 @@ void run ()
     n = find_lowest_energy_direction (b, nPE);
     if (dirs[b][nPE].size()) 
       push (b, nPE, n);
+    else 
+      WARN ("no directions remaining in b=" + str (bvalue[b]) + " shell for PE direction " + str(n) + " - PE directions will not cycle through perfectly");
 
     // update PE direction
     ++nPE;
