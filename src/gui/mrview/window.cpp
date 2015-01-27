@@ -82,7 +82,7 @@ namespace MR
 
       // GLArea definitions:
       
-      inline Window::GLArea::GLArea (Window& parent) :
+      Window::GLArea::GLArea (Window& parent) :
         QGLWidget (GL::core_format(), &parent),
         main (parent) {
           setCursor (Cursor::crosshair);
@@ -1031,7 +1031,7 @@ namespace MR
       }
 
 
-      inline void Window::set_image_menu ()
+      void Window::set_image_menu ()
       {
         int N = image_group->actions().size();
         next_image_action->setEnabled (N>1);
@@ -1045,7 +1045,7 @@ namespace MR
         updateGL();
       }
 
-      inline int Window::get_mouse_mode ()
+      int Window::get_mouse_mode ()
       {
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
           if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
@@ -1063,7 +1063,7 @@ namespace MR
       }
 
 
-      inline void Window::set_cursor ()
+      void Window::set_cursor ()
       {
         MouseAction cursor = mouse_action;
 
@@ -1097,7 +1097,7 @@ namespace MR
 
 
 
-      inline void Window::set_mode_features ()
+      void Window::set_mode_features ()
       {
         mode_action_group->actions()[0]->setEnabled (mode->features & Mode::FocusContrast);
         mode_action_group->actions()[1]->setEnabled (mode->features & Mode::MoveTarget);
@@ -1112,7 +1112,7 @@ namespace MR
       }
 
 
-      inline void Window::set_image_navigation_menu ()
+      void Window::set_image_navigation_menu ()
       {
         bool show_next_volume (false), show_prev_volume (false);
         bool show_next_volume_group (false), show_prev_volume_group (false);
@@ -1177,7 +1177,7 @@ namespace MR
       }
 
 
-      inline void Window::paintGL ()
+      void Window::paintGL ()
       {
         gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
@@ -1188,7 +1188,7 @@ namespace MR
       }
 
 
-      inline void Window::initGL ()
+      void Window::initGL ()
       {
         GL::init ();
 
@@ -1205,7 +1205,7 @@ namespace MR
       }
 
 
-      template <class Event> inline void Window::grab_mouse_state (Event* event)
+      template <class Event> void Window::grab_mouse_state (Event* event)
       {
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
@@ -1215,7 +1215,7 @@ namespace MR
       }
 
 
-      template <class Event> inline void Window::update_mouse_state (Event* event)
+      template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
         mouse_position_ = event->pos();
@@ -1238,7 +1238,7 @@ namespace MR
       }
 
 
-      inline void Window::mousePressEventGL (QMouseEvent* event)
+      void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
 
@@ -1285,7 +1285,7 @@ namespace MR
       }
 
 
-      inline void Window::mouseMoveEventGL (QMouseEvent* event)
+      void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
         if (!image()) 
@@ -1314,7 +1314,7 @@ namespace MR
       }
 
 
-      inline void Window::mouseReleaseEventGL (QMouseEvent*)
+      void Window::mouseReleaseEventGL (QMouseEvent*)
       {
         assert (mode);
         mode->mouse_release_event();
@@ -1328,7 +1328,7 @@ namespace MR
       }
 
 
-      inline void Window::wheelEventGL (QWheelEvent* event)
+      void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
 
