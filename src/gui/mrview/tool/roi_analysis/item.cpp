@@ -90,7 +90,7 @@ namespace MR
           bind();
           std::vector<GLubyte> data (info().dim(0)*info().dim(1));
           for (int n = 0; n < info().dim(2); ++n)
-            upload_data ({ 0, 0, n }, { info().dim(0), info().dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+            upload_data ({ { 0, 0, n } }, { { info().dim(0), info().dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
         }
 
 
@@ -105,7 +105,7 @@ namespace MR
             auto p = data.begin();
             for (auto inner = MR::Image::Loop (0,2) (vox); inner; ++inner)
               *(p++) = vox.value();
-            upload_data ({ 0, 0, vox[2] }, { vox.dim(0), vox.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+            upload_data ({ { 0, 0, vox[2] } }, { { vox.dim(0), vox.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
             ++progress;
           }
           filename = header.name();

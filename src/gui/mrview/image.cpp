@@ -368,19 +368,27 @@ namespace MR
         set_min_max (value_min, value_max);
       }
 
+      // required to shut up clang's compiler warnings about std::abs() when
+      // instantiating Image::copy_texture_3D() with unsigned types:
+      template <typename ValueType> 
+        inline ValueType abs_if_signed (ValueType x, typename std::enable_if<!std::is_unsigned<ValueType>::value>::type* = nullptr) { return std::abs(x); }
+
+      template <typename ValueType> 
+        inline ValueType abs_if_signed (ValueType x, typename std::enable_if<std::is_unsigned<ValueType>::value>::type* = nullptr) { return x; }
+
 
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
-      {
-        MR::Image::Buffer<ValueType> buffer_tmp (buffer);
-        auto V = buffer_tmp.voxel();
-        int N = ( format == gl::RED ? 1 : 3 );
-        std::vector<ValueType> data (N * V.dim(0) * V.dim(1));
+        {
+          MR::Image::Buffer<ValueType> buffer_tmp (buffer);
+          auto V = buffer_tmp.voxel();
+          int N = ( format == gl::RED ? 1 : 3 );
+          std::vector<ValueType> data (N * V.dim(0) * V.dim(1));
 
-        ProgressBar progress ("loading image data...", V.dim(2));
+          ProgressBar progress ("loading image data...", V.dim(2));
 
-        for (size_t n = 3; n < V.ndim(); ++n) 
-          V[n] = position[n];
+          for (size_t n = 3; n < V.ndim(); ++n) 
+            V[n] = position[n];
 
         for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
@@ -413,7 +421,7 @@ namespace MR
               auto p = data.begin() + n;
               for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
                 for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-                  ValueType val = *p = std::abs (ValueType (V.value()));
+                  ValueType val = *p = abs_if_signed (ValueType (V.value()));
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
@@ -430,7 +438,7 @@ namespace MR
 
           }
 
-          upload_data ({ 0, 0, V[2] }, { V.dim(0), V.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+          upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
           ++progress;
         }
 
@@ -464,7 +472,7 @@ namespace MR
             }
           }
 
-          upload_data ({ 0, 0, V[2] }, { V.dim(0), V.dim(1), 1 }, reinterpret_cast<void*> (&data[0]));
+          upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
           ++progress;
         }
       }

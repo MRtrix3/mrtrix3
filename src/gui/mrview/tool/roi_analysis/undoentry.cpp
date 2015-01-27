@@ -46,15 +46,15 @@ namespace MR
 
         ROI_UndoEntry::ROI_UndoEntry (ROI_Item& roi, int current_axis, int current_slice)
         {
-          from = {0, 0, 0};
+          from = { { 0, 0, 0 } };
           from[current_axis] = current_slice;
-          size = { roi.info().dim(0), roi.info().dim(1), roi.info().dim(2) };
+          size = { { roi.info().dim(0), roi.info().dim(1), roi.info().dim(2) } };
           size[current_axis] = 1;
 
           if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
           else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
-          tex_size = { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) };
+          tex_size = { { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) } };
 
           if (!copy_program) {
             GL::Shader::Vertex vertex_shader (
@@ -99,13 +99,13 @@ namespace MR
           }
           else copy_vertex_array_object.bind();
 
-          from = {0, 0, 0};
+          from = { { 0, 0, 0 } };
           from[current_axis] = current_slice;
 
           if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
           else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
-          tex_size = { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) };
+          tex_size = { { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) } };
 
 
           // set up 2D texture to store slice:
@@ -188,8 +188,8 @@ namespace MR
           const float radius_sq = Math::pow2 (radius);
           const GLubyte value = insert_mode_value ? 1 : 0;
 
-          std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
-          std::array<int,3> b = { a[0]+1, a[1]+1, a[2]+1 };
+          std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
+          std::array<int,3> b = { { a[0]+1, a[1]+1, a[2]+1 } };
 
           int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
@@ -216,9 +216,9 @@ namespace MR
         {
           Point<> vox = roi.transform().scanner2voxel (from_pos);
           const GLubyte value = insert_mode_value ? 1 : 0;
-          std::array<int,3> a = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+          std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           vox = roi.transform().scanner2voxel (to_pos);
-          std::array<int,3> b = { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) };
+          std::array<int,3> b = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
 
           if (a[0] > b[0]) std::swap (a[0], b[0]);
           if (a[1] > b[1]) std::swap (a[1], b[1]);

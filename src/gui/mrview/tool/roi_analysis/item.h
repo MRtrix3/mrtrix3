@@ -47,19 +47,19 @@ namespace MR
 
 
        namespace {
-         constexpr std::array<std::array<GLubyte,3>,6> preset_colours = {
-           255, 255, 0,
-           255, 0, 255,
-           0, 255, 255,
-           255, 0, 0,
-           0, 255, 255,
-           0, 0, 255
-         };
+         constexpr std::array<std::array<GLubyte,3>,6> preset_colours = { {
+           { { 255, 255, 0 } },
+           { { 255, 0, 255 } },
+           { { 0, 255, 255 } },
+           { { 255, 0, 0 } },
+           { { 0, 255, 255 } },
+           { { 0, 0, 25 } }
+         } };
        }
 
 
 
-        class ROI_Item : public Volume {
+       class ROI_Item : public Volume {
           public:
             ROI_Item (const MR::Image::Info&);
 
