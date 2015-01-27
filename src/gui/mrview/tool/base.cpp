@@ -62,6 +62,7 @@ namespace MR
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }
         bool Base::mouse_release_event () { return false; }
+        QCursor* Base::get_cursor () { return nullptr; }
       }
     }
   }

@@ -59,10 +59,15 @@ namespace MR
 
             virtual QSize sizeHint () const;
 
-            void grab_focus () { window.tool_has_focus = this; }
-            void release_focus () { 
-              if (window.tool_has_focus == this) 
-                window.tool_has_focus = nullptr; 
+            void grab_focus () {
+              window.tool_has_focus = this;
+              window.set_cursor();
+            }
+            void release_focus () {
+              if (window.tool_has_focus == this) {
+                window.tool_has_focus = nullptr;
+                window.set_cursor();
+              }
             }
 
             class HBoxLayout : public QHBoxLayout {
@@ -116,6 +121,8 @@ namespace MR
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();
             virtual bool mouse_release_event ();
+            virtual QCursor* get_cursor ();
+            void update_cursor() { window.set_cursor(); }
         };
 
 

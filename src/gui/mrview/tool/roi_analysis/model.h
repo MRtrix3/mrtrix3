@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 13/11/09.
+   Written by J-Donald Tournier, 2014.
 
    This file is part of MRtrix.
 
@@ -20,33 +20,49 @@
 
 */
 
-#ifndef __cursor_h__
-#define __cursor_h__
+#ifndef __gui_mrview_tool_roi_analysis_model_h__
+#define __gui_mrview_tool_roi_analysis_model_h__
 
-#include "gui/opengl/gl.h"
+#include "ptr.h"
+#include "image/header.h"
+#include "gui/mrview/tool/list_model_base.h"
+#include "gui/mrview/tool/roi_analysis/item.h"
+
 
 namespace MR
 {
   namespace GUI
   {
-    class Cursor
+    namespace MRView
     {
-      public:
-        Cursor ();
+      namespace Tool
+      {
 
-        static QCursor pan_crosshair;
-        static QCursor forward_backward;
-        static QCursor window;
-        static QCursor crosshair;
-        static QCursor inplane_rotate;
-        static QCursor throughplane_rotate;
-        static QCursor draw;
-        static QCursor erase;
+            
 
-    };
 
+        class ROI_Model : public ListModelBase
+        {
+          public:
+            ROI_Model (QObject* parent) : 
+              ListModelBase (parent) { }
+
+            void load (VecPtr<MR::Image::Header>& list);
+            void create (MR::Image::Header& image);
+
+            ROI_Item* get (QModelIndex& index) {
+              return dynamic_cast<ROI_Item*>(items[index.row()]);
+            }
+        };
+
+
+
+
+      }
+    }
   }
 }
 
 #endif
+
 
