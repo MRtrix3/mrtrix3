@@ -26,6 +26,7 @@
 #include "math/matrix.h"
 #include "point.h"
 #include "dwi/directions/file.h"
+#include "dwi/gradient.h"
 
 
 
@@ -34,11 +35,11 @@ using namespace App;
 
 void usage () {
 
-DESCRIPTION
-  + "report statistics on a direction set";
+  DESCRIPTION
+    + "report statistics on a direction set";
 
-ARGUMENTS
-  + Argument ("dirs", "the text file containing the directions.").type_file_in();
+  ARGUMENTS
+    + Argument ("dirs", "the text file containing the directions.").type_file_in();
 }
 
 
@@ -48,12 +49,8 @@ typedef double value_type;
 
 
 
-void run () 
+void report (const std::string& title, const Math::Matrix<value_type>& directions) 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
-
-  value_type energy_bipolar = 0.0;
-  value_type energy_unipolar = 0.0;
   std::vector<value_type> NN_bipolar (directions.rows(), 0.0);
   std::vector<value_type> NN_unipolar (directions.rows(), 0.0);
 
@@ -62,7 +59,7 @@ void run ()
 
   for (size_t i = 0; i < directions.rows()-1; ++i) {
     for (size_t j = i+1; j < directions.rows(); ++j) {
-      value_type cos_angle = Math::dot (directions.row(i), directions.row(j));
+      value_type cos_angle = Math::dot (directions.row(i).sub(0,3), directions.row(j).sub(0,3));
       NN_unipolar[i] = std::max (NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max (NN_unipolar[j], cos_angle);
       cos_angle = std::abs(cos_angle);
@@ -75,7 +72,6 @@ void run ()
         Math::pow2 (directions(i,2) - directions(j,2));
       E = value_type (1.0) / E;
 
-      energy_unipolar += E;
       E_unipolar[i] += E;
       E_unipolar[j] += E;
 
@@ -85,15 +81,12 @@ void run ()
         Math::pow2 (directions(i,2) + directions(j,2));
       E += value_type (1.0) / E2;
 
-      energy_bipolar += E;
       E_bipolar[i] += E;
       E_bipolar[j] += E;
 
     }
   }
 
-  energy_bipolar *= 2.0;
-  energy_unipolar *= 2.0;
 
 
 
@@ -129,16 +122,42 @@ void run ()
 
 
 
-  print ("Scheme \"" + str(argument[0]) + "\" contains " + str(directions.rows()) + " directions\n\n");
+  print (title + " [ " + str(directions.rows()) + " directions ]\n\n");
 
-  print ("Bipolar electrostatic repulsion model:\n");
+  print ("  Bipolar electrostatic repulsion model:\n");
   report_NN (NN_bipolar);
   report_E (E_bipolar);
 
-  print ("\nUnipolar electrostatic repulsion model:\n");
+  print ("\n  Unipolar electrostatic repulsion model:\n");
   report_NN (NN_unipolar);
   report_E (E_unipolar);
 
   print ("\n");
+}
+
+
+
+void run () 
+{
+  try {
+    Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+    report (str(argument[0]), directions);
+  }
+  catch (Exception& E) {
+    Math::Matrix<value_type> directions (str(argument[0]));
+    DWI::normalise_grad (directions);
+    if (directions.columns() < 3) 
+      throw Exception ("unexpected matrix size for DW scheme \"" + str(argument[0]) + "\"");
+
+    print (str(argument[0]) + " [ " + str(directions.rows()) + " volumes ]\n");
+    DWI::Shells shells (directions);
+
+    for (size_t n = 0; n < shells.count(); ++n) {
+      Math::Matrix<value_type> subset (shells[n].count(), 3);
+      for (size_t i = 0; i < subset.rows(); ++i)
+        subset.row(i) = directions.row(shells[n].get_volumes()[i]).sub(0,3);
+      report ("\nb = " + str(shells[n].get_mean()), subset);
+    }
+  }
 }
 
