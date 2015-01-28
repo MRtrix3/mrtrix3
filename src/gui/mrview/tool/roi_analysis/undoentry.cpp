@@ -54,7 +54,7 @@ namespace MR
           if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
           else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
-          tex_size = { { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) } };
+          tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
           if (!copy_program) {
             GL::Shader::Vertex vertex_shader (
@@ -99,15 +99,6 @@ namespace MR
           }
           else copy_vertex_array_object.bind();
 
-          from = { { 0, 0, 0 } };
-          from[current_axis] = current_slice;
-
-          if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
-          else if (current_axis == 1) { slice_axes[0] = 0; slice_axes[1] = 2; }
-          else { slice_axes[0] = 0; slice_axes[1] = 1; }
-          tex_size = { { roi.info().dim(slice_axes[0]), roi.info().dim(slice_axes[1]) } };
-
-
           // set up 2D texture to store slice:
           GL::Texture tex;
           tex.gen (gl::TEXTURE_2D);
@@ -136,6 +127,7 @@ namespace MR
 
           // retrieve texture contents to main memory:
           before.resize (tex_size[0]*tex_size[1]);
+          gl::PixelStorei (GL_PACK_ALIGNMENT, 1);
           gl::GetTexImage (gl::TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*)(&before[0]));
           after = before;
         }
