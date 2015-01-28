@@ -126,23 +126,22 @@ void run () {
     bipolar = false;
 
   Math::RNG    rng;
-  Math::Vector<double> v (2*ndirs-3);
+  Math::Vector<double> v (2*ndirs);
 
-  v[0] = asin (2.0 * rng.uniform() - 1.0);
-  for (size_t n = 1; n < 2*ndirs-3; n+=2) {
+  for (size_t n = 0; n < 2*ndirs; n+=2) {
     v[n] =  Math::pi * (2.0 * rng.uniform() - 1.0);
-    v[n+1] = asin (2.0 * rng.uniform() - 1.0);
+    v[n+1] = std::asin (2.0 * rng.uniform() - 1.0);
   }
 
   gsl_multimin_function_fdf fdf;
 
   fdf.f = energy_f;
   fdf.df = energy_df;
-  fdf.fdf = &energy_fdf;
-  fdf.n = 2*ndirs-3;
+  fdf.fdf = energy_fdf;
+  fdf.n = 2*ndirs;
 
   gsl_multimin_fdfminimizer* minimizer =
-  gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs-3);
+    gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs);
 
 
   {
@@ -154,6 +153,9 @@ void run () {
       for (size_t iter = 0; iter < niter; iter++) {
 
         int status = gsl_multimin_fdfminimizer_iterate (minimizer);
+
+        //for (size_t n = 0; n < 2*ndirs; ++n) 
+          //std::cout << gsl_vector_get (minimizer->x, n) << " " << gsl_vector_get (minimizer->gradient, n) << "\n";
 
         if (iter%10 == 0)
           INFO ("[ " + str (iter) + " ] (pow = " + str (-power*2.0) + ") E = " + str (minimizer->f)
@@ -173,13 +175,9 @@ void run () {
 
 
   Math::Matrix<double> directions (ndirs, 2);
-  directions (0,0) = 0.0;
-  directions (0,1) = 0.0;
-  directions (1,0) = 0.0;
-  directions (1,1) = gsl_vector_get (minimizer->x, 0);
-  for (size_t n = 2; n < ndirs; n++) {
-    double az = gsl_vector_get (minimizer->x, 2*n-3);
-    double el = gsl_vector_get (minimizer->x, 2*n-2);
+  for (size_t n = 0; n < ndirs; n++) {
+    double az = gsl_vector_get (minimizer->x, 2*n);
+    double el = gsl_vector_get (minimizer->x, 2*n+1);
     range (az, el);
     directions (n, 0) = az;
     directions (n, 1) = el;
@@ -226,33 +224,35 @@ inline void SinCos::init_deriv ()
 
 inline double SinCos::daz (const SinCos& B) const
 {
-  return (multiplier * (cos_az*sin_el*B.sin_az*B.sin_el - sin_az*sin_el*B.cos_az*B.sin_el));
+  return multiplier * (cos_az*sin_el*B.sin_az*B.sin_el - sin_az*sin_el*B.cos_az*B.sin_el);
 }
 
 inline double SinCos::del (const SinCos& B) const
 {
-  return (multiplier * (cos_az*cos_el*B.cos_az*B.sin_el + sin_az*cos_el*B.sin_az*B.sin_el - sin_el*B.cos_el));
+  return multiplier * (cos_az*cos_el*B.cos_az*B.sin_el + sin_az*cos_el*B.sin_az*B.sin_el - sin_el*B.cos_el);
 }
 
 inline double SinCos::rdel (const SinCos& B) const
 {
-  return (multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el));
+  return multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el);
 }
 
 inline SinCos::SinCos (const gsl_vector* v, size_t index)
 {
-  double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
-  double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
-  cos_az = cos (az);
-  sin_az = sin (az);
-  cos_el = cos (el);
-  sin_el = sin (el);
+  //double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
+  //double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
+  double az = gsl_vector_get (v, 2*index);
+  double el = gsl_vector_get (v, 2*index+1);
+  cos_az = std::cos (az);
+  sin_az = std::sin (az);
+  cos_el = std::cos (el);
+  sin_el = std::sin (el);
 }
 
 inline double SinCos::f (const SinCos& B)
 {
   dist (B);
-  return (energy());
+  return energy();
 }
 
 inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
@@ -260,21 +260,17 @@ inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
   dist (B);
   init_deriv ();
   double d = daz (B);
-  if (i) {
-    *gsl_vector_ptr (deriv, 2*i-2) -= del (B);
-    if (i > 1) *gsl_vector_ptr (deriv, 2*i-3) -= d;
-  }
-  if (j) {
-    *gsl_vector_ptr (deriv, 2*j-2) -= rdel (B);
-    if (j > 1) *gsl_vector_ptr (deriv, 2*j-3) += d;
-  }
+  *gsl_vector_ptr (deriv, 2*i) -= d;
+  *gsl_vector_ptr (deriv, 2*i+1) -= del (B);
+  *gsl_vector_ptr (deriv, 2*j) += d;
+  *gsl_vector_ptr (deriv, 2*j+1) -= rdel (B);
 }
 
 
 inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
 {
   df (B, deriv, i, j);
-  return (energy());
+  return energy();
 }
 
 
@@ -284,9 +280,9 @@ double energy_f (const gsl_vector* x, void* params)
   for (size_t i = 0; i < ndirs; i++) {
     SinCos I (x, i);
     for (size_t j = i+1; j < ndirs; j++)
-      E += 2.0 *I.f (SinCos (x, j));
+      E += 2.0 * I.f (SinCos (x, j));
   }
-  return (E);
+  return E;
 }
 
 
