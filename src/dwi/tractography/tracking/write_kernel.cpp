@@ -44,7 +44,7 @@ namespace MR
             }
             writer (tck);
             if (timer && App::log_level > 0) {
-              fprintf (stderr, "\r%8zu generated, %8zu selected    [%3u%%]",
+              fprintf (stderr, "\33[2K\r%8zu generated, %8zu selected    [%3u%%]",
                   writer.total_count, writer.count,
                   (unsigned int)(100.0 * std::max (writer.total_count/float(S.max_num_attempts), writer.count/float(S.max_num_tracks))));
             }

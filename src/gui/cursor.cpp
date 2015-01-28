@@ -33,6 +33,8 @@ namespace MR
     QCursor Cursor::crosshair;
     QCursor Cursor::inplane_rotate;
     QCursor Cursor::throughplane_rotate;
+    QCursor Cursor::draw;
+    QCursor Cursor::erase;
 
     Cursor::Cursor ()
     {
@@ -42,6 +44,8 @@ namespace MR
       crosshair = QCursor (QPixmap (":/cursor_crosshairs.svg"), 8, 8);
       inplane_rotate = QCursor (QPixmap (":/cursor_rotate_inplane.svg"), 8, 8);
       throughplane_rotate = QCursor (QPixmap (":/cursor_rotate_throughplane.svg"), 8, 8);
+      draw = QCursor (QPixmap (":/cursor_draw.svg"), 8, 8);
+      erase = QCursor (QPixmap (":/cursor_erase.svg"), 8, 8);
     }
 
   }

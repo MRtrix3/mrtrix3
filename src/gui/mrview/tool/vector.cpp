@@ -194,7 +194,7 @@ namespace MR
             //length_combobox = new QComboBox;
             length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             length_combobox->addItem ("Unity");
-            length_combobox->addItem ("Fixel amplitude");
+            length_combobox->addItem ("Fixel size");
             length_combobox->addItem ("Associated value");
             hlayout->addWidget (length_combobox, 0);
             connect (length_combobox, SIGNAL (activated(int)), this, SLOT (length_type_slot(int)));
@@ -623,7 +623,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_lower_changed (int unused)
+        void Vector::threshold_lower_changed (int)
         {
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -634,7 +634,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_upper_changed (int unused)
+        void Vector::threshold_upper_changed (int)
         {
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());

@@ -31,6 +31,7 @@
 #include "image/info.h"
 #include "image/nav.h"
 #include "image/threaded_copy.h"
+#include "image/filter/base.h"
 #include "math/fft.h"
 
 namespace MR
@@ -175,6 +176,34 @@ namespace MR
       };
 
 
+
+      template <class VoxelType>
+        void fft (VoxelType&& vox, size_t axis, bool inverse = false) {
+          auto axes = Image::Stride::order (vox);
+          for (size_t n = 0; n < axes.size(); ++n) 
+            if (axis == axes[n])
+              axes.erase (axes.begin() + n);
+
+          struct Kernel {
+            Kernel (const VoxelType& v, size_t axis, bool inverse) :
+              data (v.dim (axis)), axis (axis), inverse (inverse) { }
+
+            void operator ()(VoxelType& v) {
+              for (auto l = Image::Loop (axis, axis+1) (v); l; ++l) 
+                data[v[axis]] = cdouble (v.value());
+              fft (data, inverse);
+              for (auto l = Image::Loop (axis, axis+1) (v); l; ++l) 
+                v.value() = typename std::remove_reference<VoxelType>::type::value_type (data[v[axis]]);
+            }
+            Math::FFT fft; 
+            std::vector<cdouble> data;
+            const size_t axis;
+            const bool inverse;
+          } kernel (vox, axis, inverse);
+
+          Image::ThreadedLoop ("performing in-place FFT...", vox, axes)
+            .run (kernel, vox);
+        }
 
 
 

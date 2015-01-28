@@ -167,7 +167,7 @@ namespace MR
 
           template <class BufferType>
           void perform_FOD_segmentation (BufferType&);
-          void scale_FODs_by_GM ();
+          void scale_FDs_by_GM ();
 
           void map_streamlines (const std::string&);
 
@@ -239,12 +239,12 @@ namespace MR
 
 
       template <class Fixel>
-      void ModelBase<Fixel>::scale_FODs_by_GM ()
+      void ModelBase<Fixel>::scale_FDs_by_GM ()
       {
-        if (App::get_options("no_fod_scaling").size())
+        if (App::get_options("no_fd_scaling").size())
           return;
         if (!act_5tt) {
-          INFO ("Cannot scale FOD amplitudes according to GM fraction; no ACT image data provided");
+          INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
           return;
         }
         // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
@@ -272,11 +272,10 @@ namespace MR
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
 
-        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
-
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperBase mapper (H, dirs);
-        mapper.set_upsample_ratio (upsample_ratio);
+        mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (H, properties, 0.1));
+        mapper.set_use_precise_mapping (true);
         Thread::run_queue (
             loader,
             Thread::batch (Tractography::Streamline<float>()),
@@ -352,8 +351,9 @@ namespace MR
       void ModelBase<Fixel>::output_5tt_image (const std::string& path)
       {
         if (!have_act_data())
-          throw Exception ("Cannot export 5TT image; none exists!");
-        act_5tt->voxel().save (path);
+          throw Exception ("Cannot export 5TT image; no such data present");
+        Image::BufferScratch<float>::voxel_type v (*act_5tt);
+        v.save (path);
       }
 
 

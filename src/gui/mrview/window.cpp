@@ -82,7 +82,7 @@ namespace MR
 
       // GLArea definitions:
       
-      inline Window::GLArea::GLArea (Window& parent) :
+      Window::GLArea::GLArea (Window& parent) :
         QGLWidget (GL::core_format(), &parent),
         main (parent) {
           setCursor (Cursor::crosshair);
@@ -186,7 +186,7 @@ namespace MR
       Window::Window() :
         glarea (new GLArea (*this)),
         glrefresh_timer (new QTimer (this)),
-        mode (NULL),
+        mode (nullptr),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
         FocusModifier (get_modifier ("MRViewFocusModifierKey", Qt::AltModifier)),
@@ -200,7 +200,8 @@ namespace MR
         field_of_view (100.0),
         anatomical_plane (2),
         colourbar_position_index (2),
-        snap_to_image_axes_and_voxel (true)
+        snap_to_image_axes_and_voxel (true),
+        tool_has_focus (nullptr)
       {
 
         setDockOptions (AllowTabbedDocks);
@@ -401,10 +402,9 @@ namespace MR
 
         menu = new QMenu ("Display mode", this);
 #define MODE(classname, specifier, name, description) \
-        menu->addAction (new Action<classname> (mode_group, #name, #description, n++));
+        menu->addAction (new Mode::Action<Mode::classname> (mode_group, #name, #description, n++));
 #define MODE_OPTION(classname, specifier, name, description) MODE(classname, specifier, name, description)
         {
-          using namespace Mode;
           size_t n = 1;
 #include "gui/mrview/mode/list.h"
         }
@@ -637,7 +637,7 @@ namespace MR
 
       Window::~Window ()
       {
-        mode = NULL;
+        mode = nullptr;
         delete glarea;
         delete glrefresh_timer;
         delete [] colourmap_actions;
@@ -709,8 +709,8 @@ namespace MR
 
         try {
           MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          auto vox = dest.voxel();
-          MR::Image::copy_with_progress (image()->voxel(), vox);
+          auto src (image()->voxel());
+          MR::Image::copy_with_progress (src, dest.voxel());
         }
         catch (Exception& E) {
           E.display();
@@ -1031,7 +1031,7 @@ namespace MR
       }
 
 
-      inline void Window::set_image_menu ()
+      void Window::set_image_menu ()
       {
         int N = image_group->actions().size();
         next_image_action->setEnabled (N>1);
@@ -1045,7 +1045,7 @@ namespace MR
         updateGL();
       }
 
-      inline int Window::get_mouse_mode ()
+      int Window::get_mouse_mode ()
       {
         if (mouse_action == NoAction && modifiers_ != Qt::NoModifier) {
           if (modifiers_ == FocusModifier && ( mode->features & Mode::FocusContrast )) 
@@ -1063,7 +1063,7 @@ namespace MR
       }
 
 
-      inline void Window::set_cursor ()
+      void Window::set_cursor ()
       {
         MouseAction cursor = mouse_action;
 
@@ -1073,6 +1073,14 @@ namespace MR
             case 2: cursor = Pan; break;
             case 3: cursor = Tilt; break;
             default: assert (0);
+          }
+        }
+
+        if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+          QCursor* ptr = tool_has_focus->get_cursor();
+          if (ptr) {
+            glarea->setCursor (*ptr);
+            return;
           }
         }
 
@@ -1089,7 +1097,7 @@ namespace MR
 
 
 
-      inline void Window::set_mode_features ()
+      void Window::set_mode_features ()
       {
         mode_action_group->actions()[0]->setEnabled (mode->features & Mode::FocusContrast);
         mode_action_group->actions()[1]->setEnabled (mode->features & Mode::MoveTarget);
@@ -1104,7 +1112,7 @@ namespace MR
       }
 
 
-      inline void Window::set_image_navigation_menu ()
+      void Window::set_image_navigation_menu ()
       {
         bool show_next_volume (false), show_prev_volume (false);
         bool show_next_volume_group (false), show_prev_volume_group (false);
@@ -1169,7 +1177,7 @@ namespace MR
       }
 
 
-      inline void Window::paintGL ()
+      void Window::paintGL ()
       {
         gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
@@ -1180,7 +1188,7 @@ namespace MR
       }
 
 
-      inline void Window::initGL ()
+      void Window::initGL ()
       {
         GL::init ();
 
@@ -1197,7 +1205,7 @@ namespace MR
       }
 
 
-      template <class Event> inline void Window::grab_mouse_state (Event* event)
+      template <class Event> void Window::grab_mouse_state (Event* event)
       {
         buttons_ = event->buttons();
         modifiers_ = event->modifiers() & ( FocusModifier | MoveModifier | RotateModifier );
@@ -1207,7 +1215,7 @@ namespace MR
       }
 
 
-      template <class Event> inline void Window::update_mouse_state (Event* event)
+      template <class Event> void Window::update_mouse_state (Event* event)
       {
         mouse_displacement_ = mouse_position_;
         mouse_position_ = event->pos();
@@ -1230,13 +1238,21 @@ namespace MR
       }
 
 
-      inline void Window::mousePressEventGL (QMouseEvent* event)
+      void Window::mousePressEventGL (QMouseEvent* event)
       {
         assert (mode);
 
         grab_mouse_state (event);
         if (image()) 
           mode->mouse_press_event();
+
+        if (tool_has_focus && modifiers_ == Qt::NoModifier) {
+          if (tool_has_focus->mouse_press_event()) {
+            mouse_action = NoAction;
+            event->accept();
+            return;
+          }
+        }
 
         int group = get_mouse_mode();
 
@@ -1269,15 +1285,22 @@ namespace MR
       }
 
 
-      inline void Window::mouseMoveEventGL (QMouseEvent* event)
+      void Window::mouseMoveEventGL (QMouseEvent* event)
       {
         assert (mode);
-        if (mouse_action == NoAction)
-          return;
         if (!image()) 
           return;
 
         update_mouse_state (event);
+
+        if (mouse_action == NoAction) {
+          if (tool_has_focus) 
+            if (tool_has_focus->mouse_move_event()) 
+              event->accept();
+          return;
+        }
+
+
         switch (mouse_action) {
           case SetFocus: mode->set_focus_event(); break;
           case Contrast: mode->contrast_event(); break;
@@ -1291,16 +1314,21 @@ namespace MR
       }
 
 
-      inline void Window::mouseReleaseEventGL (QMouseEvent* event)
+      void Window::mouseReleaseEventGL (QMouseEvent*)
       {
         assert (mode);
         mode->mouse_release_event();
+
+        if (tool_has_focus && mouse_action == NoAction) 
+          if (tool_has_focus->mouse_release_event()) 
+            return;
+
         mouse_action = NoAction;
         set_cursor();
       }
 
 
-      inline void Window::wheelEventGL (QWheelEvent* event)
+      void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
 

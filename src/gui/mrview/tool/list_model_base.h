@@ -75,13 +75,22 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { 
+              (void) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const { 
+              (void) parent;  // to suppress warnings about unused parameters
+              return items.size(); 
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const { 
+              (void) parent;  // to suppress warnings about unused parameters
+              return 1; 
+            }
 
             void remove_item (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());

@@ -70,6 +70,7 @@ namespace MR
               bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic = false) const;
 
           void set_data (const Math::Vector<float>& r_del_daz, int buffer_ID = 0) const {
+            (void) buffer_ID; // to silence unused-parameter warnings
             assert (r_del_daz.stride() == 1);
             surface_buffer.bind (gl::ARRAY_BUFFER);
             gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
@@ -77,6 +78,7 @@ namespace MR
           }
 
           void draw (const float* origin, int buffer_ID = 0) const {
+            (void) buffer_ID; // to silence unused-parameter warnings
             gl::Uniform3fv (origin_ID, 1, origin);
             gl::Uniform1i (reverse_ID, 0);
             gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);

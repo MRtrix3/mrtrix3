@@ -123,7 +123,7 @@ void usage () {
       + Argument ("image").type_image_in()
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (2, 8, 20)
+      + Argument ("value").type_integer (4, 8, 20)
 
     + Option ("sf", "output a mask highlighting the final selection of single-fibre voxels")
       + Argument ("image").type_image_out()
@@ -175,6 +175,8 @@ void run ()
   DWI::CSDeconv<float>::Shared shared (H);
 
   const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
+  if (max_lmax < 4)
+    throw Exception ("Selected b-value shell does not have an adequate number of directions (" + str(shared.dwis.size()) + ") to run dwi2response (need at least 15 for lmax=4)");
   size_t lmax = std::min (size_t(8), max_lmax);
   opt = get_options ("lmax");
   if (opt.size()) {
@@ -182,12 +184,12 @@ void run ()
     if (desired_lmax % 2)
       throw Exception ("lmax must be an even number");
     if (desired_lmax > max_lmax)
-      throw Exception ("Image data does not support estimating response function above an lmax of " + str(max_lmax));
+      throw Exception ("Image data do not support estimating response function above an lmax of " + str(max_lmax));
     lmax = desired_lmax;
   }
   shared.lmax = lmax;
 
-  Image::Buffer<float> dwi (H);
+  Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
   DWI::Directions::Set directions (1281);
 
   Math::Vector<float> response (lmax/2+1);

@@ -50,7 +50,7 @@ namespace MR
 
       + Option ("initcutoff",
             "set the minimum FA or FOD amplitude for initiating tracks (default "
-            "is twice the normal cutoff).")
+            "is the same as the normal cutoff).")
           + Argument ("value").type_float (0.0, 0.1, INFINITY)
 
       + Option ("trials",

@@ -64,6 +64,7 @@ namespace MR
             void interpolate_changed ();
 
           protected:
+             class Item;
              class Model;
              QPushButton* hide_all_button;
              Model* image_list_model;

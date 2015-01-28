@@ -1,0 +1,14 @@
+#!/bin/bash
+
+git clone git@github.com:jdtournier/mrtrix3-dev-doc.git && (
+  ./doxygen
+  cd mrtrix3-dev-doc && {
+    rm -rf *
+    cp -r ../dev/html/* .
+    git add .
+    git commit -a -m "automatic update of dev doc"
+    git push
+  } 
+)
+rm -rf mrtrix3-dev-doc
+

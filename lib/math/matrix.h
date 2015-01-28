@@ -709,12 +709,9 @@ namespace MR
           View () {
             assert (0);
           }
-          View (const Matrix<ValueType>& M) {
-            assert (0);
-          }
-          template <typename U> View (const Matrix<U>& M) {
-            assert (0);
-          }
+          View (const Matrix<ValueType>&) { assert (0); }
+          template <typename U> View (const Matrix<U>&) { assert (0); }
+
           View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
             Matrix<ValueType>::size1 = nrows;
             Matrix<ValueType>::size2 = ncolumns;

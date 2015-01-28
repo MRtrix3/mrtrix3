@@ -45,7 +45,8 @@ namespace MR
           slice_fixel_indices (3),
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
-          line_length_multiplier (1.0),
+          voxel_size_length_multipler (1.0),
+          user_line_length_multiplier (1.0),
           length_type (Unity),
           colour_type (CValue),
           show_colour_bar (true)
@@ -57,6 +58,7 @@ namespace MR
             colour[0] = colour[1] = colour[2] = 1;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
+            voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
             load_image();
           }
 
@@ -193,7 +195,7 @@ namespace MR
           start (fixel_shader);
           projection.set (fixel_shader);
 
-          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), line_length_multiplier);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), voxel_size_length_multipler * user_line_length_multiplier);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -257,6 +259,10 @@ namespace MR
                 value_max = fixel_vox.value()[f].value;
               if (fixel_vox.value()[f].value < value_min)
                 value_min = fixel_vox.value()[f].value;
+            }
+          }
+          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               for (size_t dim = 0; dim < 3; ++dim) {
                 slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
                 slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
@@ -265,7 +271,7 @@ namespace MR
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               buffer_dir.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
-              buffer_val.push_back (fixel_vox.value()[f].amplitude);
+              buffer_val.push_back (fixel_vox.value()[f].size);
               buffer_val.push_back (fixel_vox.value()[f].value);
             }
           }
@@ -288,7 +294,7 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
-          // fixel amplitudes and values
+          // fixel sizes and values
           value_buffer.gen();
           value_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);

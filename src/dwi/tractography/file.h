@@ -170,8 +170,7 @@ namespace MR
               WARN ("Streamline weights file contains more entries than .tck file");
           }
 
-          //! copy construction explicitly disabled
-          Reader (const Reader& R) : current_index (0) { assert (0); }
+          Reader (const Reader&) = delete;
 
       };
 
@@ -256,8 +255,7 @@ namespace MR
             if (weights_name.size())
               throw Exception ("Cannot change output streamline weights file path");
             weights_name = path;
-            if (!App::overwrite_files && Path::exists (name))
-              throw Exception ("error creating file \"" + weights_name + "\": file exists (use -force option to force overwrite)");
+            App::check_overwrite (name);
             File::OFStream out (weights_name, std::ios::out | std::ios::binary | std::ios::trunc);
           }
 
@@ -310,10 +308,7 @@ namespace MR
 
 
           //! copy construction explicitly disabled
-          WriterUnbuffered (const WriterUnbuffered& W) :
-            barrier_addr (0) { 
-              assert (0); 
-            }
+          WriterUnbuffered (const WriterUnbuffered&) = delete;
       };
 
 

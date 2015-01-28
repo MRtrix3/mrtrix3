@@ -72,7 +72,7 @@ void usage ()
 
 
   ARGUMENTS
-    + Argument ("SH", "the input image of SH coefficients.").allow_multiple().type_image_in();
+    + Argument ("SH", "the input image(s) of SH coefficients.").allow_multiple().type_image_in();
 
 
   OPTIONS

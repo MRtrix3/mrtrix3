@@ -101,7 +101,7 @@ namespace MR
             __thread_base (name) { 
               DEBUG ("launching thread \"" + name + "\"...");
               typedef typename std::remove_reference<Functor>::type F;
-              thread = std::thread (&F::execute, std::ref (functor));
+              thread = std::thread (&F::execute, &functor);
             }
           __single_thread (const __single_thread& s) = delete;
           __single_thread (__single_thread&& s) = default;
@@ -126,8 +126,8 @@ namespace MR
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
-                  threads.push_back (std::thread (&F::execute, std::ref (f)));
-                threads.push_back (std::thread (&F::execute, std::ref (functor)));
+                  threads.push_back (std::thread (&F::execute, &f));
+                threads.push_back (std::thread (&F::execute, &functor));
               }
 
             __multi_thread (const __multi_thread& m) = delete;
@@ -151,9 +151,9 @@ namespace MR
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
             __Multi (__Multi&& m) = default;
-            template <class X> bool operator() (const X& x) { assert (0); return false; }
-            template <class X> bool operator() (X& x) { assert (0); return false; }
-            template <class X, class Y> bool operator() (const X& x, Y& y) { assert (0); return false; }
+            template <class X> bool operator() (const X&) { assert (0); return false; }
+            template <class X> bool operator() (X&) { assert (0); return false; }
+            template <class X, class Y> bool operator() (const X&, Y&) { assert (0); return false; }
             typename std::remove_reference<Functor>::type& functor;
             size_t num;
         };
