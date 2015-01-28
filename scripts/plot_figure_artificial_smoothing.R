@@ -34,7 +34,7 @@ mf_labeller <- function(var, value){
 
 
 ppi <- 800
-png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Artificial/AUC_arcuate_smoothing.png", width=8*ppi, height=5.2*ppi, res = ppi)
+png("/home/dave/Gdrive/Documents/JournalPapers/CFE/Figures/Artificial/AUC_arcuate_smoothing.png", width=7*ppi, height=4.55*ppi, res = ppi)
 all_data <- read.csv('/raid1/CFE_backup/aucdata.csv');
 sub <- subset(all_data, (SNR == 1 | SNR == 2 | SNR == 3) & ROI == 'arcuate' & C == 0.5, select = c (smoothing, ROI, SNR, C, E, H, IQR25, AUC, IQR75))
 sub$H <- factor(sub$H)
