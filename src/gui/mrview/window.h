@@ -30,9 +30,6 @@ namespace MR
 
 
 
-
-
-
       class Window : public QMainWindow
       {
           Q_OBJECT
@@ -59,7 +56,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return std::round (image()->interp.scanner2voxel (focus())[anatomical_plane]);
+              return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
           }
 
           Mode::Base* get_current_mode () const { return mode; }
@@ -279,8 +276,11 @@ namespace MR
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
+          Tool::Base* tool_has_focus;
+
           friend class Image;
           friend class Mode::Base;
+          friend class Tool::Base;
           friend class Window::GLArea;
       };
 

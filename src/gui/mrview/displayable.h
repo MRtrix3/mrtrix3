@@ -23,9 +23,11 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
+#include "point.h"
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
+#include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -223,6 +225,8 @@ namespace MR
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              source += "uniform vec3 " + with_prefix + "colourmap_colour;\n";
             return source;
           }
 
@@ -243,6 +247,9 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+                  colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
           void stop (Shader& shader_program) {
@@ -252,6 +259,7 @@ namespace MR
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
+          std::array<GLubyte,3> colour;
           size_t colourmap;
           bool show;
 
@@ -261,11 +269,9 @@ namespace MR
 
 
         protected:
-          const std::string filename;
+          std::string filename;
           float value_min, value_max;
           uint32_t flags_;
-
-          static const char* vertex_shader_source;
 
           void set_bit (uint32_t& field, uint32_t bit, bool value) {
             if (value) field |= bit;
@@ -294,6 +300,9 @@ namespace MR
           }
 
       };
+
+
+
 
     }
   }

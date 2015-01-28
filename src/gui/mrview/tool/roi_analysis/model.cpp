@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 13/11/09.
+   Written by J-Donald Tournier, 2014.
 
    This file is part of MRtrix.
 
@@ -20,10 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_h__
-#define __gui_mrview_tool_roi_analysis_h__
+#include "gui/mrview/tool/roi_analysis/model.h"
 
-#include "gui/mrview/tool/base.h"
 
 namespace MR
 {
@@ -33,25 +31,40 @@ namespace MR
     {
       namespace Tool
       {
+            
 
-        class ROI : public Base
+
+
+
+        void ROI_Model::load (VecPtr<MR::Image::Header>& list)
         {
-            Q_OBJECT
+          beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
+          for (size_t i = 0; i < list.size(); ++i) {
+            ROI_Item* roi = new ROI_Item (*list[i]);
+            roi->load (*list[i]);
+            items.push_back (roi);
+          }
+          endInsertRows();
+        }
 
-          public:
-            ROI (Window& parent, const QString& name);
+        void ROI_Model::create (MR::Image::Header& image)
+        {
+          beginInsertRows (QModelIndex(), items.size(), items.size()+1);
+          ROI_Item* roi = new ROI_Item (image);
+          roi->zero ();
+          items.push_back (roi);
+          endInsertRows();
+        }
 
-          private slots:
-            void slot ();
 
-        };
+
+
 
       }
     }
   }
 }
 
-#endif
 
 
 

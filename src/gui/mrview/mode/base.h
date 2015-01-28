@@ -152,7 +152,7 @@ namespace MR
 
             Point<> voxel_at (const Point<>& pos) const {
               if (!image()) return Point<>();
-              return image()->interp.scanner2voxel (pos);
+              return image()->transform().scanner2voxel (pos);
             }
 
             void draw_crosshairs (const Projection& with_projection) const {
@@ -167,8 +167,6 @@ namespace MR
 
             int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
-
-            void project_target_onto_current_slice();
 
             bool in_paint () const { return painting; } 
             void updateGL () { window.updateGL(); } 

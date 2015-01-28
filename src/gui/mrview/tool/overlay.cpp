@@ -36,13 +36,13 @@ namespace MR
       namespace Tool
       {
 
-        class Item : public Image {
+
+
+        class Overlay::Item : public Image {
           public:
             Item (const MR::Image::Header& H) : Image (H) { }
             Mode::Slice::Shader slice_shader; 
         };
-
-
 
 
         class Overlay::Model : public ListModelBase
@@ -244,7 +244,7 @@ namespace MR
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
-              Item* image = dynamic_cast<Item*>(image_list_model->items[i]);
+              Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i]);
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 

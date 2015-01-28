@@ -26,6 +26,7 @@
 #include <string.h>
 
 #include "mrtrix.h"
+#include "file/path.h"
 #include "args.h"
 
 
@@ -50,12 +51,23 @@ namespace MR
     extern int log_level;
     extern std::string NAME;
     extern bool overwrite_files;
+    extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;
 
     extern int argc;
     extern char** argv;
 
 
+
+    inline void check_overwrite (const std::string& name) 
+    {
+      if (Path::exists (name) && !overwrite_files) {
+        if (check_overwrite_files_func)
+          check_overwrite_files_func (name);
+        else 
+          throw Exception ("output file \"" + name + "\" already exists (use -force option to force overwrite)");
+      }
+    }
 
 
 
@@ -122,12 +134,11 @@ namespace MR
           return p;
         }
         operator int () const;
-        operator ssize_t () const {
-          return operator int ();
-        }
-        operator size_t () const {
-          return operator int ();
-        }
+        operator unsigned int () const { return operator int(); }
+        operator long int () const { return operator int(); }
+        operator long unsigned int () const { return operator int(); }
+        operator long long int () const { return operator int(); }
+        operator long long unsigned int () const { return operator int(); }
         operator float () const;
         operator double () const;
 

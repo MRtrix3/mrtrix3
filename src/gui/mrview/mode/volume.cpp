@@ -428,7 +428,7 @@ namespace MR
           image()->update_texture3D();
           image()->set_use_transparency (true);
 
-          image()->start (volume_shader, image()->scaling_3D());
+          image()->start (volume_shader, image()->scale_factor());
           gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, "M"), 1, gl::FALSE_, M);
           gl::Uniform3fv (gl::GetUniformLocation (volume_shader, "ray"), 1, ray);
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "image_sampler"), 0);
@@ -476,7 +476,7 @@ namespace MR
             gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, gl::FALSE_, overlay_M);
             gl::Uniform3fv (gl::GetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
 
-            overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
+            overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scale_factor(), "overlay"+str(n)+"_");
           }
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);

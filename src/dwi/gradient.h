@@ -54,11 +54,8 @@ namespace MR
           throw Exception ("invalid gradient matrix dimensions");
         for (size_t i = 0; i < grad.rows(); i++) {
           ValueType norm = Math::norm (grad.row (i).sub (0,3));
-          if (norm) {
+          if (norm) 
             grad.row (i).sub (0,3) /= norm;
-          } else {
-            grad (i,3) = 0;
-          }
         }
         return grad;
       }

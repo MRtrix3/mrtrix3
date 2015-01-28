@@ -533,13 +533,13 @@ namespace MR
         //! return a subvector of the vector
         View sub (size_t from, size_t to, size_t skip) throw () {
           assert (from <= to && to <= size());
-          return View (ptr() + from*stride(), ceil<size_t> ( (to-from) /float (skip)), stride() *skip);
+          return View (ptr() + from*stride(), size_t (std::ceil ( (to-from) /float (skip))), stride() *skip);
         }
 
         //! return a subvector of the vector
         const View sub (size_t from, size_t to, size_t skip) const throw () {
           assert (from <= to && to <= size());
-          return View (ptr() + from*stride(), ceil<size_t> ( (to-from) /float (skip)), stride() *skip);
+          return View (ptr() + from*stride(), size (std::ceil ( (to-from) /float (skip))), stride() *skip);
         }
 
         //! write the vector \a V to \a stream as text

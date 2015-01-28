@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 13/11/09.
+   Written by J-Donald Tournier, 2014.
 
    This file is part of MRtrix.
 
@@ -20,9 +20,14 @@
 
 */
 
-#include "mrtrix.h"
-#include "gui/mrview/window.h"
-#include "gui/mrview/tool/roi_analysis.h"
+#ifndef __gui_mrview_tool_roi_analysis_model_h__
+#define __gui_mrview_tool_roi_analysis_model_h__
+
+#include "ptr.h"
+#include "image/header.h"
+#include "gui/mrview/tool/list_model_base.h"
+#include "gui/mrview/tool/roi_analysis/item.h"
+
 
 namespace MR
 {
@@ -32,15 +37,25 @@ namespace MR
     {
       namespace Tool
       {
-        ROI::ROI (Window& parent, const QString& name) :
-          Base (parent, name) { 
-            setWidget (new QLabel ("ROI analysis", this));
-          }
 
-        void ROI::slot ()
+            
+
+
+        class ROI_Model : public ListModelBase
         {
-          TEST;
-        }
+          public:
+            ROI_Model (QObject* parent) : 
+              ListModelBase (parent) { }
+
+            void load (VecPtr<MR::Image::Header>& list);
+            void create (MR::Image::Header& image);
+
+            ROI_Item* get (QModelIndex& index) {
+              return dynamic_cast<ROI_Item*>(items[index.row()]);
+            }
+        };
+
+
 
 
       }
@@ -48,6 +63,6 @@ namespace MR
   }
 }
 
-
+#endif
 
 

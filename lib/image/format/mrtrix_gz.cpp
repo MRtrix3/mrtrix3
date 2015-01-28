@@ -57,7 +57,16 @@ namespace MR
         if (fname != H.name())
           throw Exception ("GZip-compressed MRtrix format images must have image data within the same file as the header");
 
+        std::stringstream header;
+        header << "mrtrix image\n";
+        write_mrtrix_header (H, header);
+        offset = header.str().size() + size_t(24);
+        offset += ((4 - (offset % 4)) % 4);
+        header << "file: . " << offset << "\nEND\n";
+
         RefPtr<Handler::Base> handler (new Handler::GZ (H, offset));
+        memcpy (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header(), header.str().c_str(), header.str().size());
+        memset (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header() + header.str().size(), 0, offset - header.str().size());
         handler->files.push_back (File::Entry (H.name(), offset));
 
         return handler;

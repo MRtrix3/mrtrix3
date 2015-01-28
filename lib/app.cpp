@@ -72,7 +72,6 @@ namespace MR
 
 
     std::string NAME;
-    bool overwrite_files = false;
     std::vector<ParsedArgument> argument;
     std::vector<ParsedOption> option;
     int log_level = 1;
@@ -81,8 +80,8 @@ namespace MR
     int argc = 0;
     char** argv = NULL;
 
-
-
+    bool overwrite_files = false;
+    void (*check_overwrite_files_func) (const std::string& name) = nullptr;
 
     namespace
     {
@@ -334,13 +333,14 @@ namespace MR
 
       // assign arguments to their corresponding definitions:
       for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
-
-        if (n >= next && ARGUMENTS[n].flags != None) 
-          next = n + num_arg_per_multi - 1;
-
+        if (n == next) {
+          if (n) ++index;
+          if (ARGUMENTS[index].flags != None)
+            next = n + num_arg_per_multi;
+          else
+            ++next;
+        }
         argument[n].arg = &ARGUMENTS[index];
-        if (n >= next) 
-          ++index;
       }
 
       // check for multiple instances of options:
@@ -369,8 +369,8 @@ namespace MR
       for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i < argument.end(); i++) {
         if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
           throw Exception ("required input file \"" + str(*i) + "\" not found");
-        if (!overwrite_files && (i->arg->type == ArgFileOut) && Path::exists (std::string(*i)))
-          throw Exception ("output file \"" + std::string(*i) + "\" already exists (use -force option to force overwrite)");
+        if (i->arg->type == ArgFileOut)
+          check_overwrite (std::string(*i));
       }
       for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
         for (size_t j = 0; j != i->opt->size(); ++j) {
@@ -378,8 +378,8 @@ namespace MR
           const char* const name = i->args[j];
           if ((arg.type == ArgFileIn) && !Path::exists (name))
             throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
-          if (!overwrite_files && (arg.type == ArgFileOut) && Path::exists (name))
-            throw Exception ("output file \"" + str(name) + "\" already exists (required for option \"-" + std::string(i->opt->id) + "\" - use -force option to force overwrite)");
+          if (arg.type == ArgFileOut)
+           check_overwrite (name);
         }
       }
     }

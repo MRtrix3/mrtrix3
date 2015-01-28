@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_init_h__
-#define __gui_init_h__
+#ifndef __gui_app_h__
+#define __gui_app_h__
 
 #include "gui/opengl/gl.h"
 

@@ -71,6 +71,11 @@ namespace MR
     { 
       int fid = open (filename.c_str(), O_CREAT | O_RDWR | ( App::overwrite_files ? O_TRUNC : O_EXCL ), 0666);
       if (fid < 0) {
+        if (App::check_overwrite_files_func && errno == EEXIST) 
+          App::check_overwrite_files_func (filename);
+        fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
+      }
+      if (fid < 0) {
         std::string mesg ("error creating file \"" + filename + "\": " + strerror (errno));
         if (errno == EEXIST) 
           mesg += " (use -force option to force overwrite)";
@@ -175,12 +180,6 @@ namespace MR
       DEBUG ("deleting folder \"" + folder + "\"...");
       if (::rmdir (folder.c_str()))
         throw Exception ("error deleting folder \"" + folder + "\": " + strerror (errno));
-    }
-
-    inline void output_file_check (const std::string& file)
-    {
-      if (!App::overwrite_files && Path::exists (file))
-        throw Exception ("cannot write to file \"" + file + "\": file exists (use -force option to force overwrite)");
     }
 
 

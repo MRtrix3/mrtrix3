@@ -22,6 +22,7 @@ icons.cpp
 /lib/version.h
 /src/project_version.h
 /bin/
+/dev/
 .cproject
 .project
 .settings

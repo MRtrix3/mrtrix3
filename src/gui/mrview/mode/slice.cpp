@@ -65,14 +65,14 @@ namespace MR
             "  if (isnan(amplitude) || isinf(amplitude)) discard;\n";
 
           if (object.use_discard_lower())
-            source += "if (amplitude < lower) discard;\n";
+            source += "  if (amplitude < lower) discard;\n";
 
           if (object.use_discard_upper())
-            source += "if (amplitude > upper) discard;\n";
+            source += "  if (amplitude > upper) discard;\n";
 
           if (object.use_transparency())
-            source += "if (amplitude < alpha_offset) discard;\n"
-              "float alpha = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
+            source += "  if (amplitude < alpha_offset) discard;\n"
+              "  color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n";
 
           if (!ColourMap::maps[object.colourmap].special) {
             source += "  amplitude = clamp (";
@@ -83,8 +83,6 @@ namespace MR
 
           source += ColourMap::maps[object.colourmap].mapping;
 
-          if (object.use_transparency())
-            source += "color.a = alpha;\n";
           source += "}\n";
 
           return source;

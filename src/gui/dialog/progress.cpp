@@ -35,6 +35,7 @@ namespace MR
         void display (ProgressInfo& p)
         {
           if (!p.data) {
+            INFO (App::NAME + ": " + p.text);
             p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
             reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
           }
@@ -44,6 +45,7 @@ namespace MR
 
         void done (ProgressInfo& p)
         {
+          INFO (App::NAME + ": " + p.text + " [done]");
           delete reinterpret_cast<QProgressDialog*> (p.data);
           p.data = NULL;
         }
