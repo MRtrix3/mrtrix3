@@ -226,20 +226,13 @@ bool Segmented_FOD_receiver::operator() (const FOD_lobes& in)
 void run ()
 {
   Image::Header H (argument[0]);
+  Math::SH::check (H);
   Image::Buffer<float> fod_data (H);
-
-  if (fod_data.ndim() != 4)
-    throw Exception ("input FOD image should contain 4 dimensions");
-
-  const size_t lmax = Math::SH::LforN (fod_data.dim(3));
-
-  if (Math::SH::NforL (lmax) != size_t(fod_data.dim(3)))
-    throw Exception ("Input image does not appear to contain an SH series per voxel");
 
   Segmented_FOD_receiver receiver (H);
 
   Options
-  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output (opt[0][0]);
+  opt = get_options ("afd");  if (opt.size()) receiver.set_afd_output  (opt[0][0]);
   opt = get_options ("peak"); if (opt.size()) receiver.set_peak_output (opt[0][0]);
   opt = get_options ("disp"); if (opt.size()) receiver.set_disp_output (opt[0][0]);
   if (!receiver.num_outputs())
@@ -257,7 +250,7 @@ void run ()
   }
 
   const DWI::Directions::Set dirs (1281);
-  Segmenter fmls (dirs, lmax);
+  Segmenter fmls (dirs, Math::SH::LforN (H.dim(3)));
   load_fmls_thresholds (fmls);
 
   Thread::run_queue (writer, SH_coefs(), Thread::multi (fmls), FOD_lobes(), receiver);

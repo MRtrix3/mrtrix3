@@ -27,6 +27,8 @@
 
 #include "image/buffer.h"
 
+#include "math/SH.h"
+
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
@@ -92,6 +94,7 @@ void run ()
   const bool out_debug = opt.size();
 
   Image::Buffer<float> in_dwi (argument[1]);
+  Math::SH::check (in_dwi);
   DWI::Directions::FastLookupSet dirs (1281);
 
   SIFTer sifter (in_dwi, dirs);

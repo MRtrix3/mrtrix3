@@ -156,32 +156,24 @@ class TWIFODImagePlugin : public TWIImagePluginBase
   public:
     TWIFODImagePlugin (const std::string& input_image) :
         TWIImagePluginBase (input_image),
-        sh_coeffs (NULL),
+        N (data->dim(3)),
+        sh_coeffs (new float[N]),
         precomputer (new Math::SH::PrecomputedAL<float> ())
     {
-      if (data->ndim() != 4)
-        throw Exception ("Image used for TWI with FOD_AMP contrast be a 4D image");
-      lmax = Math::SH::LforN (data->dim (3));
-      N = Math::SH::NforL (lmax);
-      if (int(N) != data->dim (3))
-        throw Exception ("Image used for TWI with FOD_AMP contrast be an SH image");
-      sh_coeffs = new float[N];
-      precomputer->init (lmax);
+      Math::SH::check (*data);
+      precomputer->init (Math::SH::LforN (N));
     }
 
     TWIFODImagePlugin (const TWIFODImagePlugin& that) :
         TWIImagePluginBase (that),
-        lmax (that.lmax),
         N (that.N),
         sh_coeffs (new float[N]),
         precomputer (that.precomputer) { }
 
     ~TWIFODImagePlugin()
     {
-      if (sh_coeffs) {
-        delete[] sh_coeffs;
-        sh_coeffs = NULL;
-      }
+      delete[] sh_coeffs;
+      sh_coeffs = NULL;
     }
 
 
@@ -189,7 +181,7 @@ class TWIFODImagePlugin : public TWIImagePluginBase
 
 
   private:
-    size_t lmax, N;
+    const size_t N;
     float* sh_coeffs;
     RefPtr< Math::SH::PrecomputedAL<float> > precomputer;
 
