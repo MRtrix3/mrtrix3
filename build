@@ -19,7 +19,7 @@ print_lock = threading.Lock()
 stop = False
 error_stream = None
 
-logfile = open ('build.log', 'w')
+logfile = open ('build.log', 'wb')
 
 
 
@@ -30,7 +30,7 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write (error_stream.encode (errors='ignore'))
+        fid.write (error_stream.encode ('utf-8', 'ignore'))
         fid.close()
         os.system ("less " + name)
       except Exception as e:
@@ -38,6 +38,8 @@ def pipe_errors_to_less_handler():
       os.unlink (name)
     except Exception as e:
       sys.stderr.write (str (e))
+    except:
+      raise
 
 
 
@@ -50,13 +52,13 @@ if sys.stderr.isatty():
 
 def disp (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   sys.stdout.write (msg)
   print_lock.release()
   
 def log (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   if verbose:
     sys.stderr.write (msg)
   print_lock.release()
@@ -64,7 +66,7 @@ def log (msg):
 def error (msg):
   global error_stream
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   if error_stream is not None:
     error_stream += msg
   else:
@@ -447,12 +449,12 @@ def execute (message, cmd):
     if process.returncode != 0:
       if error_stream is not None:
         disp ('ERROR: ' + message + os.linesep)
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode ('utf-8', 'ignore'))
       return 1
     if len(stdout):
-      error ('STDOUT: ' + message + '\n' + stdout.decode (errors='ignore'))
+      error ('STDOUT: ' + message + '\n' + stdout.decode ('utf-8', 'ignore'))
     if len(stderr):
-      error ('STDERR: ' + message + '\n' + stderr.decode (errors='ignore'))
+      error ('STDERR: ' + message + '\n' + stderr.decode ('utf-8', 'ignore'))
 
   except OSError:
     error (cmd[0] + ': command not found')
@@ -639,7 +641,7 @@ def gen_command_html_help ():
     if process.wait() != 0:
       sys.stderr.write ('ERROR: unable to execute', binaries[n], ' - aborting' + os.linesep)
       return 1
-    H = process.stdout.read().decode (errors='ignore')
+    H = process.stdout.read().decode ('utf-8', 'ignore')
     H = H.splitlines()
 
     with codecs.open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), mode='w', encoding='utf-8') as fid:
@@ -772,7 +774,7 @@ getting git version in folder "''' + folder + '"... ')
     process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ( git_version, stderr ) = process.communicate()
     if process.returncode == 0:
-      git_version = git_version.decode("utf-8").strip()
+      git_version = git_version.decode('utf-8', 'ignore').strip()
       log (git_version + '\n')
       return git_version
   except:
@@ -849,6 +851,8 @@ try: [ Entry(item) for item in targets ]
 except Exception as e: 
   sys.stderr.write ('ERROR: ' + str(e) + os.linesep)
   sys.exit (1)
+except:
+  raise
 
 
 
