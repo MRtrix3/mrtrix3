@@ -304,15 +304,16 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
   
-    if raise_on_non_zero_exit_code and process.returncode != 0: 
-      raise exception (stderr)
-
   except OSError as error: 
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
   except:
     print ('Unexpected error:', str(sys.exc_info()))
     raise
+  else:
+    if raise_on_non_zero_exit_code and process.returncode != 0: 
+      raise exception (stderr)
+
 
   return (process.returncode, stdout, stderr)
 
