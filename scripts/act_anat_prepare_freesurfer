@@ -17,20 +17,19 @@
 # aseg.auto_noCCseg.mgz
 
 
-import os, shutil, sys
+import os, sys
+import lib.app
 
 from lib.binaryInPath import binaryInPath
-from lib.delTempDir   import delTempDir
 from lib.errorMessage import errorMessage
-from lib.loadOptions  import loadOptions
-from lib.makeTempDir  import makeTempDir
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
-num_args = 2
-
-if len(sys.argv) < num_args+1:
-  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <input freesurfer parcellated image> <output image>')
+numArgs = 2
+if len(sys.argv) <= numArgs:
+  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input freesurfer parcellated image> <output image> (options)\n')
+  exit(0)
+lib.app.initialise(numArgs)
 
 config_file_name = 'FreeSurfer2ACT.txt'
 
@@ -46,41 +45,26 @@ config_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data', 
 if not os.path.isfile(config_path):
   errorMessage('Could not find config file for converting FreeSurfer parcellation output to tissues\n(Expected location: ' + config_path + ')')
 
-(quiet, verbose) = loadOptions(num_args)
-
-working_dir = os.getcwd()
-temp_dir = makeTempDir(verbose)
-
-
 # Initial conversion from FreeSurfer parcellation to five principal tissue types
-runCommand('labelconfig ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(temp_dir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut + quiet, verbose)
+runCommand('labelconfig ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(lib.app.tempDir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut)
 
-if verbose:
-  printMessage('Changing to temporary directory (' + temp_dir + ')')
-os.chdir(temp_dir)
+lib.app.gotoTempDir()
 
 # Use mrcrop to reduce file size
-runCommand('mrthreshold indices_precrop.mif - -abs 0.5' + quiet + ' | mrcrop indices_precrop.mif indices.mif -mask -' + quiet, verbose)
+runCommand('mrthreshold indices_precrop.mif - -abs 0.5 | mrcrop indices_precrop.mif indices.mif -mask -')
 
 # Convert into the 5TT format for ACT
-runCommand('mrcalc indices.mif 1 -eq cgm.mif'  + quiet, verbose)
-runCommand('mrcalc indices.mif 2 -eq sgm.mif'  + quiet, verbose)
-runCommand('mrcalc indices.mif 3 -eq  wm.mif'  + quiet, verbose)
-runCommand('mrcalc indices.mif 4 -eq csf.mif'  + quiet, verbose)
-runCommand('mrcalc indices.mif 5 -eq path.mif' + quiet, verbose)
+runCommand('mrcalc indices.mif 1 -eq cgm.mif')
+runCommand('mrcalc indices.mif 2 -eq sgm.mif')
+runCommand('mrcalc indices.mif 3 -eq  wm.mif')
+runCommand('mrcalc indices.mif 4 -eq csf.mif')
+runCommand('mrcalc indices.mif 5 -eq path.mif')
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]
-runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3' + quiet + ' | mrconvert - ' + result_path + ' -datatype float32' + quiet, verbose)
+runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - ' + result_path + ' -datatype float32')
 
-# Move back to original directory
-if verbose:
-  printMessage('Changing back to original directory (' + working_dir + ')')
-os.chdir(working_dir)
+# Move the final result image to where it should be
+lib.app.moveFileToDest(result_path, sys.argv[2])
 
-# Get the final file from the temporary directory & put it in the correct location
-if verbose:
-  printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, result_path), sys.argv[2])
+lib.app.terminate()
 
-# Don't leave a trace
-delTempDir(temp_dir, verbose)
 
