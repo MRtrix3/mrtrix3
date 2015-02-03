@@ -1,0 +1,69 @@
+#!/bin/bash
+
+cat <<EOF
+                                  WARNING
+================================================================================
+By default, configure will generate a configuration suitable for building
+executables to run on your native CPU. This will result in code that may not
+run on other (older) systems with different instruction sets, resulting in
+'illegal instruction' runtime errors. If you intend to run MRtrix3 on a variety
+of different systems with a range of CPUs, it is safest to specify a generic
+architecture when building MRtrix3, before running this script. For example,
+assuming a 64-bit build is required:
+
+$ ARCH='x86-64' ./configure
+$ ./build
+$ ./package_mrtrix [-withdeps]
+
+For a 32-bit build, ARCH='i686' or similar should suffice. 
+
+
+           Installation on systems without necessary dependencies 
+================================================================================
+
+You can supply the -withdeps option to also collate system libraries. This will
+also include your system\'s libaries into the main MRtrix library folder,
+allowing you to install onto a target system without the necessary
+dependencies. This is particularly useful to installation on HPC systems and other
+centrally managed systems that often run older distributions, and where users
+have little or no control over the installation of required packages.
+
+EOF
+
+echo -n "Press enter to proceed (or Ctrl-C to abort)..."
+read
+
+( 
+  echo - collating MRtrix3 executables and library...
+  set -e
+  mkdir -p _package/mrtrix3/
+  cp -r bin/ _package/mrtrix3/
+  mkdir -p _package/mrtrix3/lib
+  cp lib/libmrtrix* _package/mrtrix3/lib/
+  
+  [ ${1:-"x"} == "-withdeps" ] && (
+    echo - collating dependent system libraries...
+    cp $(for n in bin/*; do ldd $n ; done | awk '{print $3}' | sort | uniq | grep -v mrtrix | xargs) _package/mrtrix3/lib/
+  )
+
+  cd _package 
+  echo - compressing files into mrtrix3.tar.bz2...
+  tar cfj ../mrtrix3.tar.bz2 mrtrix3
+)
+
+echo - deleting temporary files...
+rm -rf _package/
+
+cat <<EOF
+
+You can now copy the mrtrix3.tar.bz2 file over to your target systems and
+extract it locally using:
+
+$ tar xfj mrtrix3.tar.bz2
+
+At this point, you only need to add the mrtrix3/bin folder to your PATH to use
+MRtrix3.
+EOF
+
+)
+
