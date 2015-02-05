@@ -1,6 +1,22 @@
 #!/bin/bash
 
 cat <<EOF
+This script collates all the executables and runtime dependencies needed for
+MRtrix3, and creates a BZ2 compressed archive suitable for deployment on other
+systems. It takes all executables found in the bin/ folder and the MRtrix3
+library from the lib/ folder. It is up to the user to ./configure and ./build
+the software first. 
+
+          Installation on systems without necessary dependencies 
+================================================================================
+
+If the -withdeps option is also supplied, this script will also attempt to
+collate system libraries from the current system, allowing you to install onto
+a target system without the necessary dependencies. This is particularly useful
+for  installation on HPC systems and other centrally managed systems that often
+run older distributions, and where users have little or no control over the
+installation of required packages.
+
                                   WARNING
 ================================================================================
 By default, configure will generate a configuration suitable for building
@@ -17,17 +33,6 @@ $ ./package_mrtrix [-withdeps]
 
 For a 32-bit build, ARCH='i686' or similar should suffice. 
 
-
-           Installation on systems without necessary dependencies 
-================================================================================
-
-You can supply the -withdeps option to also collate system libraries. This will
-also include your system\'s libaries into the main MRtrix library folder,
-allowing you to install onto a target system without the necessary
-dependencies. This is particularly useful to installation on HPC systems and other
-centrally managed systems that often run older distributions, and where users
-have little or no control over the installation of required packages.
-
 EOF
 
 echo -n "Press enter to proceed (or Ctrl-C to abort)..."
@@ -43,7 +48,31 @@ read
   
   [ ${1:-"x"} == "-withdeps" ] && (
     echo - collating dependent system libraries...
-    cp $(for n in bin/*; do ldd $n ; done | awk '{print $3}' | sort | uniq | grep -v mrtrix | xargs) _package/mrtrix3/lib/
+    LDD_PATTERN='^[[:space:]]*[[:graph:]]*[[:space:]]*=>[[:space:]]*\([[:graph:]]*\)[[:space:]]*([[:graph:]]*)$'
+    LIBS_REQUIRED=$(for n in bin/*; do objdump -p $n | grep NEEDED | grep -v 'mrtrix\|libGL\|libEGL' | awk '{print $2}' ; done | sort | uniq | xargs | sed -e 's/ /\\|/g')
+    LIBS=$(for n in bin/*; do ldd $n | sed -n 's/'"$LDD_PATTERN"'/\1/p' ; done | sort | uniq | grep $LIBS_REQUIRED | xargs)
+    echo '    libraries identified:' 
+    for n in $LIBS; do echo '        '$n; done
+    cp $LIBS _package/mrtrix3/lib/
+    
+    QTCORE=$(for n in $LIBS; do echo $n; done | grep 'libQt.*Core')
+    [[ $QTCORE ]] && ( # sort out Qt:
+      QTPLUGDIR=$(strings $QTCORE | sed -n 's/qt_plugpath=\(.*\)$/\1/p')
+      echo '    Qt plugins in' $QTPLUGDIR
+      QTLIBS_REQUIRED=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 objdump -p | grep NEEDED | awk '{print $2}' | sort | uniq )
+      QTLIBS=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 ldd | sed -n 's/'"$LDD_PATTERN"'/\1/p' | sort | uniq | grep $(echo $QTLIBS_REQUIRED | sed 's/ /\\|/g') | grep -v 'libGL\|libEGL' )
+      echo '    additional libraries required for Qt:'
+      for n in $QTLIBS; do echo '        '$n; done
+
+      cp $QTLIBS _package/mrtrix3/lib/
+      cp -r $QTPLUGDIR _package/mrtrix3/lib/
+      cat > _package/mrtrix3/bin/qt.conf << EOF
+[Paths]
+Prefix = ../lib
+EOF
+      
+    )
+
   )
 
   cd _package 
@@ -61,9 +90,7 @@ extract it locally using:
 
 $ tar xfj mrtrix3.tar.bz2
 
-At this point, you only need to add the mrtrix3/bin folder to your PATH to use
-MRtrix3.
+You should also add the mrtrix3/bin folder to your PATH to finalise the
+installation.
 EOF
-
-)
 
