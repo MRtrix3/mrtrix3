@@ -2,15 +2,15 @@
 
 cat <<EOF
 This script collates all the executables and runtime dependencies needed for
-MRtrix3, and creates a BZ2 compressed archive suitable for deployment on other
+MRtrix3, and creates a GZ compressed archive suitable for deployment on other
 systems. It takes all executables found in the bin/ folder and the MRtrix3
 library from the lib/ folder. It is up to the user to ./configure and ./build
 the software first. 
 
-          Installation on systems without necessary dependencies 
+       Stand-alone installation on systems without necessary dependencies 
 ================================================================================
 
-If the -withdeps option is also supplied, this script will also attempt to
+If the -standalone option is also supplied, this script will also attempt to
 collate system libraries from the current system, allowing you to install onto
 a target system without the necessary dependencies. This is particularly useful
 for  installation on HPC systems and other centrally managed systems that often
@@ -29,7 +29,7 @@ assuming a 64-bit build is required:
 
 $ ARCH='x86-64' ./configure
 $ ./build
-$ ./package_mrtrix [-withdeps]
+$ ./package_mrtrix [-standalone]
 
 For a 32-bit build, ARCH='i686' or similar should suffice. 
 
@@ -46,11 +46,23 @@ read
   mkdir -p _package/mrtrix3/lib
   cp lib/libmrtrix* _package/mrtrix3/lib/
   
-  [ ${1:-"x"} == "-withdeps" ] && (
+  [ ${1:-"x"} == "-standalone" ] && (
+    mv _package/mrtrix3/{bin,exe}
+    cat > _package/mrtrix3/launcher <<"EOF"
+#!/bin/bash
+PREFIX="$(dirname $0)/.."
+COMMAND="$(basename $0)"
+"$PREFIX"/lib/ld-*.so* "$PREFIX"/exe/"$COMMAND" "$@"
+EOF
+    chmod a+x _package/mrtrix3/launcher
+    mkdir _package/mrtrix3/bin
+    ( 
+      cd _package/mrtrix3/bin
+      for n in ../exe/*; do ln -s ../launcher $(basename $n); done
+    )
+
     echo - collating dependent system libraries...
-    LDD_PATTERN='^[[:space:]]*[[:graph:]]*[[:space:]]*=>[[:space:]]*\([[:graph:]]*\)[[:space:]]*([[:graph:]]*)$'
-    LIBS_REQUIRED=$(for n in bin/*; do objdump -p $n | grep NEEDED | grep -v 'mrtrix\|libGL\|libEGL' | awk '{print $2}' ; done | sort | uniq | xargs | sed -e 's/ /\\|/g')
-    LIBS=$(for n in bin/*; do ldd $n | sed -n 's/'"$LDD_PATTERN"'/\1/p' ; done | sort | uniq | grep $LIBS_REQUIRED | xargs)
+    LIBS=$(for n in bin/*; do ldd $n; done | sed 's/(.*)$//g' | sed 's/^.*=>//g' | sort | uniq | grep -v 'mrtrix\|vdso\|libGL.so\|libEGL.so\|nvidia\|fglrx' | xargs)
     echo '    libraries identified:' 
     for n in $LIBS; do echo '        '$n; done
     cp $LIBS _package/mrtrix3/lib/
@@ -59,25 +71,26 @@ read
     [[ $QTCORE ]] && ( # sort out Qt:
       QTPLUGDIR=$(strings $QTCORE | sed -n 's/qt_plugpath=\(.*\)$/\1/p')
       echo '    Qt plugins in' $QTPLUGDIR
-      QTLIBS_REQUIRED=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 objdump -p | grep NEEDED | awk '{print $2}' | sort | uniq )
-      QTLIBS=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 ldd | sed -n 's/'"$LDD_PATTERN"'/\1/p' | sort | uniq | grep $(echo $QTLIBS_REQUIRED | sed 's/ /\\|/g') | grep -v 'libGL\|libEGL' )
+      LDD_PATTERN='^[[:space:]]*[[:graph:]]*[[:space:]]*=>[[:space:]]*\([[:graph:]]*\)[[:space:]]*([[:graph:]]*)$'
+      QTLIBS=$(find $QTPLUGDIR -name '*.so' -print0 | xargs -n 1 -0 ldd | sed -n 's/'"$LDD_PATTERN"'/\1/p' | sort | uniq | grep -v 'libGL.so\|libEGL.so\|nvidia\|fglrx' )
       echo '    additional libraries required for Qt:'
       for n in $QTLIBS; do echo '        '$n; done
 
       cp $QTLIBS _package/mrtrix3/lib/
       cp -r $QTPLUGDIR _package/mrtrix3/lib/
-      cat > _package/mrtrix3/bin/qt.conf << EOF
+      cat > _package/mrtrix3/lib/qt.conf << EOF
 [Paths]
-Prefix = ../lib
+Prefix = .
 EOF
+
       
     )
 
   )
 
   cd _package 
-  echo - compressing files into mrtrix3.tar.bz2...
-  tar cfj ../mrtrix3.tar.bz2 mrtrix3
+  echo - compressing files into mrtrix3.tar.gz
+  tar cfz ../mrtrix3.tar.gz mrtrix3
 )
 
 echo - deleting temporary files...
@@ -85,10 +98,10 @@ rm -rf _package/
 
 cat <<EOF
 
-You can now copy the mrtrix3.tar.bz2 file over to your target systems and
+You can now copy the mrtrix3.tar.gz file over to your target systems and
 extract it locally using:
 
-$ tar xfj mrtrix3.tar.bz2
+$ tar xfz mrtrix3.tar.gz
 
 You should also add the mrtrix3/bin folder to your PATH to finalise the
 installation.
