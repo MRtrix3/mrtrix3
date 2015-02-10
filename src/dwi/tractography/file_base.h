@@ -127,7 +127,7 @@ namespace MR
           }
 
 
-          size_t count, total_count;
+          uint64_t count, total_count;
 
 
         protected:

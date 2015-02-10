@@ -67,15 +67,10 @@ namespace MR
       /*! only used when progress is shown as a percentage */
       size_t current_val;
 
-      //! next value to trigger a UI update
-      /*! when progress is shown as a percentage, \c next_val.i is the value of
-       * \c current_val that will trigger the next update. Otherwise, \c
-       * next_val.d is the time interval (from the start of the progressbar)
-       * that will trigger the next update. */
-      union {
-        size_t i;
-        double d;
-      } next_val;
+      //! the value of \c current_val that will trigger the next update. 
+      size_t next_percent;
+       //! the time (from the start of the progressbar) that will trigger the next update. 
+      double next_time;
 
       //! the factor to convert from absolute value to percentage
       /*! if zero, the progressbar is used as a busy indicator */
@@ -90,21 +85,58 @@ namespace MR
       void set_max (size_t target) {
         if (target) {
           multiplier = 0.01 * target;
-          next_val.i = multiplier;
-          if (!next_val.i)
-            next_val.i = 1;
+          next_percent = multiplier;
+          if (!next_percent)
+            next_percent = 1;
         }
         else {
           multiplier = 0.0;
-          next_val.d = BUSY_INTERVAL;
+          next_time = BUSY_INTERVAL;
           timer.start();
         }
         display_now();
       }
 
       void set_text (const std::string& new_text) {
-        text = new_text;
+        if (new_text.size())
+          text = new_text;
       };
+
+      //! update text displayed and optionally increment counter
+      /*! This expects a function, functor or lambda function that should
+       * return the string to replace the text. This function will only be
+       * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
+       * the percentage value to show has changed. The reason for passing a
+       * function rather than the text itself is to avoid the overhead of
+       * forming the string in cases where this is sufficiently expensive to
+       * impact performance if invoked every iteration. By passing a function,
+       * this operation is only performed when strictly necessary. */
+      template <class TextFunc> 
+        inline void update (TextFunc&& text_func, const bool increment = true) {
+          double time = timer.elapsed();
+          if (increment && multiplier) {
+            ++current_val;
+            if (current_val >= next_percent) {
+              set_text (text_func());
+              value = next_percent / multiplier;
+              next_percent = std::ceil ((value+1.0) * multiplier);
+              next_time = time;
+              display_now();
+              return;
+            }
+          }
+          if (time >= next_time) {
+            set_text (text_func());
+            if (multiplier)
+              next_time = time + BUSY_INTERVAL;
+            else {
+              value = time / BUSY_INTERVAL;
+              do { next_time += BUSY_INTERVAL; }
+              while (next_time <= time);
+            }
+            display_now();
+          }
+        }
 
       void display_now () {
         display_func (*this);
@@ -114,20 +146,20 @@ namespace MR
       void operator++ () {
         if (multiplier) {
           ++current_val;
-          if (current_val >= next_val.i) {
-            value = next_val.i / multiplier;
-            next_val.i = std::ceil ((value+1.0) * multiplier);
+          if (current_val >= next_percent) {
+            value = next_percent / multiplier;
+            next_percent = std::ceil ((value+1.0) * multiplier);
             display_now();
           }
         }
         else {
           double time = timer.elapsed();
-          if (time >= next_val.d) {
+          if (time >= next_time) {
             value = time / BUSY_INTERVAL;
             do {
-              next_val.d += BUSY_INTERVAL;
+              next_time += BUSY_INTERVAL;
             }
-            while (next_val.d <= time);
+            while (next_time <= time);
             display_now();
           }
         }
@@ -216,6 +248,24 @@ namespace MR
         if (show && prog)
           prog->set_text (new_text);
       };
+
+      //! update text displayed and optionally increment counter
+      /*! This expects a function, functor or lambda function that should
+       * return the string to replace the text. This function will only be
+       * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
+       * the percentage value to show has changed. The reason for passing a
+       * function rather than the text itself is to avoid the overhead of
+       * forming the string in cases where this is sufficiently expensive to
+       * impact performance if invoked every iteration. By passing a function,
+       * this operation is only performed when strictly necessary. */
+      template <class TextFunc>
+        void update (TextFunc&& text_func, bool increment = true) {
+          if (show) {
+            if (!prog) 
+              prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
+            prog->update (std::forward<TextFunc> (text_func), increment);
+          }
+        }
 
       //! increment the current value by one.
       void operator++ () {
