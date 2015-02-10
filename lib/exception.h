@@ -26,8 +26,13 @@
 #include <cerrno>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "types.h"
+
+#ifdef MRTRIX_AS_R_LIBRARY
+# include "wrap_r.h"
+#endif
 
 namespace MR
 {
@@ -51,6 +56,19 @@ namespace MR
 
 
 
+  //! \cond skip
+  
+  // for internal use only
+  
+  inline void __print_stderr (const std::string& text) 
+  {
+#ifdef MRTRIX_AS_R_LIBRARY
+    REprintf (text.c_str());
+#else
+    std::cerr << text;
+#endif
+  }
+  //! \endcond
 
   //! display error, warning, debug, etc. message to user 
   /*! types are: 0: error; 1: warning; 2: additional information; 3:

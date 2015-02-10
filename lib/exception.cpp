@@ -23,6 +23,7 @@
 #include "app.h"
 #include "exception.h"
 #include "file/config.h"
+#include "debug.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
 # include "wrap_r.h"
@@ -38,6 +39,8 @@ namespace MR
       for (size_t n = 0; n < E.description.size(); ++n) 
         report_to_user_func (E.description[n], log_level);
   }
+
+  off_t __stderr_offset = 0;
 
 
   namespace {
@@ -55,11 +58,7 @@ namespace MR
 
     inline const char* console_color (int type = -1) 
     {
-      //CONF option: TerminalColor
-      //CONF default: 1
-      //CONF use colors in the terminal 
-      static bool use_colour = File::Config::get_bool ("TerminalColor", true);
-      if (!use_colour) return "";
+      if (!App::terminal_use_colour) return "";
       switch (type) {
         case -1: return "\033[0m";
         case 0: return "\033[01;31m";
@@ -74,11 +73,8 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-#ifdef MRTRIX_AS_R_LIBRARY
-    REprintf ("%s: %s%s\n", App::NAME.c_str(), console_prefix (type), msg.c_str());
-#else
-    std::cerr << App::NAME << ": " << console_color(type) << console_prefix (type) << msg << console_color() << "\n";
-#endif
+    __print_stderr (printf ("%s: %s%s%s%s\n", App::NAME.c_str(), console_color(type), console_prefix (type), msg.c_str(), console_color()));
+    __stderr_offset = 0;
     if (type == 1 && App::fail_on_warn)
       throw Exception ("terminating due to request to fail on warning");
   }

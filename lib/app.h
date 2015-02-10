@@ -53,9 +53,11 @@ namespace MR
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;
+    extern bool terminal_use_colour;
 
     extern int argc;
     extern char** argv;
+    extern bool stderr_to_file;
 
 
 

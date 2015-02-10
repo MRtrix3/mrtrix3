@@ -99,13 +99,16 @@ namespace MR
           next_val.d = BUSY_INTERVAL;
           timer.start();
         }
-        display_func (*this);
+        display_now();
       }
 
       void set_text (const std::string& new_text) {
         text = new_text;
-        display_func (*this);
       };
+
+      void display_now () {
+        display_func (*this);
+      }
 
       //! increment the current value by one.
       void operator++ () {
@@ -114,7 +117,7 @@ namespace MR
           if (current_val >= next_val.i) {
             value = next_val.i / multiplier;
             next_val.i = std::ceil ((value+1.0) * multiplier);
-            display_func (*this);
+            display_now();
           }
         }
         else {
@@ -125,7 +128,7 @@ namespace MR
               next_val.d += BUSY_INTERVAL;
             }
             while (next_val.d <= time);
-            display_func (*this);
+            display_now();
           }
         }
       }
