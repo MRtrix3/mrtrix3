@@ -103,14 +103,6 @@ namespace MR
       };
 
       //! update text displayed and optionally increment counter
-      /*! This expects a function, functor or lambda function that should
-       * return the string to replace the text. This function will only be
-       * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
-       * the percentage value to show has changed. The reason for passing a
-       * function rather than the text itself is to avoid the overhead of
-       * forming the string in cases where this is sufficiently expensive to
-       * impact performance if invoked every iteration. By passing a function,
-       * this operation is only performed when strictly necessary. */
       template <class TextFunc> 
         inline void update (TextFunc&& text_func, const bool increment = true) {
           double time = timer.elapsed();
@@ -156,9 +148,7 @@ namespace MR
           double time = timer.elapsed();
           if (time >= next_time) {
             value = time / BUSY_INTERVAL;
-            do {
-              next_time += BUSY_INTERVAL;
-            }
+            do { next_time += BUSY_INTERVAL; }
             while (next_time <= time);
             display_now();
           }
@@ -251,13 +241,25 @@ namespace MR
 
       //! update text displayed and optionally increment counter
       /*! This expects a function, functor or lambda function that should
-       * return the string to replace the text. This function will only be
+       * return a std::string to replace the text. This functor will only be
        * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
-       * the percentage value to show has changed. The reason for passing a
-       * function rather than the text itself is to avoid the overhead of
+       * the percentage value to display has changed. The reason for passing a
+       * functor rather than the text itself is to minimise the overhead of
        * forming the string in cases where this is sufficiently expensive to
        * impact performance if invoked every iteration. By passing a function,
-       * this operation is only performed when strictly necessary. */
+       * this operation is only performed when strictly necessary. 
+       *
+       * The simplest way to use this method is using C++11 lambda functions,
+       * for example:
+       * \code
+       * progress.update ([&](){ return "current energy = " + str(energy_value); });
+       * \endcode
+       *
+       * \note due to this lazy update, the text is not guaranteed to be up to
+       * date by the time processing is finished. If this is important, you
+       * should also use the set_text() method to set the final text displayed
+       * before the ProgressBar's done() function is called (typically in the
+       * destructor when it goes out of scope).*/
       template <class TextFunc>
         void update (TextFunc&& text_func, bool increment = true) {
           if (show) {
