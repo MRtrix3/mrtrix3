@@ -52,12 +52,12 @@ namespace MR
         __print_stderr (text.c_str());
         if (done)
           __stderr_offset = 0;
-        else 
-          __print_stderr ("\n");
       }
       else {
-        __print_stderr ("\33[2K\r");
+        __stderr_offset = done ? 0 : 1;
+        __print_stderr ("\r");
         __print_stderr (text.c_str());
+        __print_stderr ("\033[0K");
       }
     }
 
