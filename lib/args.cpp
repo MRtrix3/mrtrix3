@@ -174,9 +174,13 @@ namespace MR
         + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
         + bold ("COPYRIGHT") + "\n" 
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
-        + (REFERENCES ? (  bold ("REFERENCES") + "\n"
-                         + paragraph ("", REFERENCES, HELP_PURPOSE_INDENT) + "\n")
-                      : "");
+        + [&](){ 
+          if (REFERENCES.size() == 0) return std::string();
+          std::string s = bold ("REFERENCES") + "\n";
+          for (size_t n = 0; n < REFERENCES.size(); ++n) 
+            s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
+          return s;
+        }();
     }
 
 

@@ -42,10 +42,11 @@ void usage ()
     "Alternatively the threshold can be defined manually by the user "
     "or using a histogram-based analysis to cut out the background.";
 
-  REFERENCES = "If not using the -abs option:\n"
-               "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
-               "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
-               "NeuroImage, 2009, 44, 99-111";
+  REFERENCES 
+    + "If not using the -abs option:\n"
+    "Ridgway, G. R.; Omar, R.; Ourselin, S.; Hill, D. L.; Warren, J. D. & Fox, N. C. "
+    "Issues with threshold masking in voxel-based morphometry of atrophied brains. "
+    "NeuroImage, 2009, 44, 99-111";
 
   ARGUMENTS
   + Argument ("input", "the input image to be thresholded.").type_image_in ()

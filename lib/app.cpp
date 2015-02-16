@@ -50,6 +50,7 @@ namespace MR
     Description DESCRIPTION;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
+    Description REFERENCES;
     bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
@@ -68,7 +69,6 @@ namespace MR
       "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
       "This is free software; see the source for copying conditions.\n"
       "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
-    const char* REFERENCES = NULL;
 
 
     std::string NAME;
@@ -270,8 +270,11 @@ namespace MR
       for (size_t i = 0; i < __standard_options.size(); ++i) 
         s += format_option (__standard_options[i]);
 
-      if (REFERENCES) 
-        s += std::string ("#### References\n\n") + REFERENCES + "\n\n";
+      if (REFERENCES.size()) { 
+        s += std::string ("#### References\n\n");
+        for (size_t i = 0; i < REFERENCES.size(); ++i)
+          s += std::string(REFERENCES[i]) + "\n\n";
+      }
       s += std::string("---\n\nMRtrix ") + MRTRIX_GIT_VERSION + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR 
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";

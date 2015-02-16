@@ -81,10 +81,11 @@ void usage ()
   DESCRIPTION
   + "use a fast-marching level-set method to segment fibre orientation distributions, and save parameters of interest as fixel images";
 
-  REFERENCES = "Reference for the FOD segmentation method:\n"
-               "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-               "NeuroImage, 2013, 67, 298-312 (Appendix 2)\n\n";
+  REFERENCES 
+    + "Reference for the FOD segmentation method:\n"
+    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312 (Appendix 2)";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ();

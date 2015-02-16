@@ -106,9 +106,10 @@ void usage () {
   DESCRIPTION 
     + "generate an appropriate response function from the image data for spherical deconvolution";
 
-  REFERENCES = "Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. "
-               "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. "
-               "NeuroImage, 2014, 86, 67-80";
+  REFERENCES 
+    + "Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. "
+    "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. "
+    "NeuroImage, 2014, 86, 67-80";
 
   ARGUMENTS
     + Argument ("dwi_in",       "the input diffusion-weighted images").type_image_in()

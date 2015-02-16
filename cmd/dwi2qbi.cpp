@@ -45,9 +45,10 @@ void usage ()
   + Argument ("dwi", "the input diffusion-weighted image.").type_image_in()
   + Argument ("SH", "the output spherical harmonics coefficients image.").type_image_out();
 
-  REFERENCES = "Hess, C. P.; Mukherjee, P.; Han, E. T.; Xu, D. & Vigneron, D. B. "
-               "Q-ball reconstruction of multimodal fiber orientations using the spherical harmonic basis. "
-               "Magnetic Resonance in Medicine, 2006, 56, 104-117";
+  REFERENCES 
+    + "Hess, C. P.; Mukherjee, P.; Han, E. T.; Xu, D. & Vigneron, D. B. "
+    "Q-ball reconstruction of multimodal fiber orientations using the spherical harmonic basis. "
+    "Magnetic Resonance in Medicine, 2006, 56, 104-117";
 
   OPTIONS
   + DWI::GradOption
