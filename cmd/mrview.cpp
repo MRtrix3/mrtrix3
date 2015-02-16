@@ -1,6 +1,5 @@
-#include "command.h"
-#include "progressbar.h"
 #include "gui/app.h"
+#include "progressbar.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/list.h"
@@ -77,9 +76,6 @@ void usage ()
 
 void run ()
 {
-  MR::App::build_date = __DATE__; 
-  GUI::App app;
-
   GUI::MRView::Window window;
   window.show();
 
