@@ -225,14 +225,21 @@ namespace MR
       }
       s += "\n\n";
 
+      auto indent_newlines = [](std::string text) {
+        size_t index = 0; 
+        while ((index = text.find("\n", index)) != std::string::npos ) 
+          text.replace (index, 1, "<br>");
+        return text;
+      };
+
       // Argument description:
-      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-        s += std::string("- *") + ARGUMENTS[i].id + "*: " + ARGUMENTS[i].desc + "\n";
-      }
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) 
+        s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+      
 
       s += "\n## Description\n\n";
       for (size_t i = 0; i < DESCRIPTION.size(); ++i) 
-        s += std::string(DESCRIPTION[i]) + "\n\n";
+        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
 
 
       std::vector<std::string> group_names;
@@ -241,12 +248,11 @@ namespace MR
           group_names.push_back (OPTIONS[i].name);
       }
 
-
       auto format_option = [&](const Option& opt) {
         std::string f = std::string ("+ **-") + opt.id;
         for (size_t a = 0; a < opt.size(); ++a)
           f += std::string (" ") + opt[a].id;
-        f += std::string("**<br>") + opt.desc + "\n\n";
+        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
         return f;
       };
 
@@ -273,7 +279,7 @@ namespace MR
       if (REFERENCES.size()) { 
         s += std::string ("#### References\n\n");
         for (size_t i = 0; i < REFERENCES.size(); ++i)
-          s += std::string(REFERENCES[i]) + "\n\n";
+          s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
       s += std::string("---\n\nMRtrix ") + MRTRIX_GIT_VERSION + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR 
