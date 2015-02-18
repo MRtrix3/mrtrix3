@@ -6,6 +6,32 @@ import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexi
 config_file = 'config.default'
 
 
+bcolors = {
+    "HEADER" : '\033[95m',
+    "BLUE" : '\033[94m',
+    "candidate" : '\033[94m',
+    "GREEN" : '\033[92m',
+    "Linking" : '\033[92m',
+    "In function" : '\033[92m',
+    "WARNING" : '\033[93m',
+    "Warning" : '\033[93m',
+    "warning" : '\033[93m',
+    "required from" : '\033[93m',
+    "In instantiation of" : '\033[93m',
+    "In member" : '\033[93m',
+    "ERROR" : '\033[91m',
+    "error" : '\033[91m',
+    "failed" : '\033[91m',
+    "ENDC" : '\033[0m',
+    "BOLD" : '\033[1m',
+    "note" : '\033[4m',
+    "UNDERLINE" : '\033[4m'}
+
+def colorize(s):
+    for st in bcolors.keys():
+        s = (bcolors[st]+st+bcolors["ENDC"]).join(s.split(st))
+    return s    
+
 system = None
 dependencies = False
 verbose = False
@@ -30,9 +56,9 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write (error_stream.encode ('utf-8', 'ignore'))
+        fid.write (colorize(error_stream.encode ('utf-8', 'ignore')))
         fid.close()
-        os.system ("less " + name)
+        os.system ("less -R " + name)
       except Exception as e:
         sys.stderr.write (str (e))
       os.unlink (name)
