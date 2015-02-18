@@ -80,6 +80,23 @@ def split_path (filename):
 
 
 
+def get_git_lib_version (folder):
+  log ('''
+getting short git version in folder "''' + folder + '"... ')
+
+  try: 
+    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=0', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ( git_version, stderr ) = process.communicate()
+    if process.returncode == 0:
+      git_version = git_version.decode('utf-8', 'ignore').strip()
+      log (git_version + '\n')
+      return git_version
+  except:
+    pass
+  log ('not found\n')
+  return None
+
+
 # common definitions:
 
 bin_dir = 'bin'
@@ -200,6 +217,12 @@ if separate_project:
 
 
 # get version info:
+
+lib_version = get_git_lib_version (mrtrix_dir)
+if lib_version is not None:
+  if lib_version.find('-') > 0:
+    lib_version = lib_version[0:lib_version.find('-')]
+  libname += '-' + lib_version
 
 if ld_enabled:
   libname += config_suffix
