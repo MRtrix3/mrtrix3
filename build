@@ -7,30 +7,31 @@ config_file = 'config.default'
 
 
 bcolors = {
-    "HEADER" : '\033[95m',
-    "BLUE" : '\033[94m',
     "candidate" : '\033[94m',
-    "GREEN" : '\033[92m',
-    "Linking" : '\033[92m',
-    "In function" : '\033[92m',
-    "WARNING" : '\033[93m',
-    "Warning" : '\033[93m',
-    "warning" : '\033[93m',
-    "required from" : '\033[93m',
-    "In instantiation of" : '\033[93m',
-    "In member" : '\033[93m',
-    "ERROR" : '\033[91m',
-    "error" : '\033[91m',
+    "Linking" : '\033[01;32m',
+    "In function" : '\033[01;32m',
+    "WARNING" : '\033[95m',
+    "Warning" : '\033[95m',
+    "warning" : '\033[95m',
+    "required from" : '\033[94m',
+    "In instantiation of" : '\033[01;32m',
+    "In member" : '\033[01;32m',
+    "ERROR" : '\033[01;95m',
+    "error" : '\033[01;31m',
     "failed" : '\033[91m',
-    "ENDC" : '\033[0m',
-    "BOLD" : '\033[1m',
-    "note" : '\033[4m',
-    "UNDERLINE" : '\033[4m'}
+    "note" : '\033[94m'}
 
 def colorize(s):
+  out = ''
+  for l in s.splitlines():
     for st in bcolors.keys():
-        s = (bcolors[st]+st+bcolors["ENDC"]).join(s.split(st))
-    return s    
+      if st in l:
+        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+        break
+    out += l + '\n'
+  return out
+
+
 
 system = None
 dependencies = False
@@ -56,7 +57,7 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write (colorize(error_stream.encode ('utf-8', 'ignore')))
+        fid.write (colorize(error_stream).encode ('utf-8', 'ignore'))
         fid.close()
         os.system ("less -R " + name)
       except Exception as e:
