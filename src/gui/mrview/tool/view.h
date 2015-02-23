@@ -90,6 +90,11 @@ namespace MR
             void clip_planes_remove_slot ();
             void clip_planes_clear_slot ();
 
+            void light_box_rows_slot (int value);
+            void light_box_columns_slot (int value);
+            void light_box_slice_inc_slot ();
+            void light_box_show_grid_slot (bool value);
+
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
             QSpinBox **voxel_pos;
@@ -98,17 +103,21 @@ namespace MR
             AdjustButton *lower_threshold, *upper_threshold;
             QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
             QComboBox *plane_combobox;
-            QGroupBox *transparency_box, *threshold_box, *clip_box;
+            QGroupBox *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;
             QMenu *clip_planes_option_menu, *clip_planes_reset_submenu;
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
+            AdjustButton* light_box_slice_inc;
+            QSpinBox *light_box_rows, *light_box_cols;
+            QCheckBox *light_box_show_grid;
 
             class ClipPlaneModel;
             ClipPlaneModel* clip_planes_model;
             QListView* clip_planes_list_view;
 
+            void init_lightbox_gui (QLayout* parent);
             void set_transparency_from_image ();
 
         };

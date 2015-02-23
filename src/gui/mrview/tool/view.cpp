@@ -25,6 +25,8 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/volume.h"
+#include "gui/mrview/mode/lightbox_gui.h"
+#include "gui/mrview/mode/lightbox.h"
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
@@ -386,10 +388,48 @@ namespace MR
 
           clip_planes_option_menu->addSeparator();
 
+          // Light box view options
+          init_lightbox_gui (main_box);
+
           main_box->addStretch ();
         }
 
+        void View::init_lightbox_gui (QLayout* parent)
+        {
+          using LightBoxEditButton = MRView::Mode::LightBoxViewControls::LightBoxEditButton;
 
+          light_box_slice_inc = new AdjustButton(this);
+          light_box_rows = new LightBoxEditButton(this);
+          light_box_cols = new LightBoxEditButton(this);
+
+          lightbox_box = new QGroupBox ("Light box");
+          parent->addWidget (lightbox_box);
+          GridLayout* grid_layout = new GridLayout;
+          lightbox_box->setLayout(grid_layout);
+
+          grid_layout->addWidget(new QLabel (tr("Slice increment (mm):")), 0, 1);
+          grid_layout->addWidget(light_box_slice_inc, 0, 2);
+
+
+          grid_layout->addWidget(new QLabel (tr("Rows:")), 1, 1);
+          grid_layout->addWidget(light_box_rows, 1, 2);
+
+          grid_layout->addWidget (new QLabel (tr("Columns:")), 2, 1);
+          grid_layout->addWidget(light_box_cols, 2, 2);
+
+          light_box_show_grid = new QCheckBox(tr("Show grid"), this);
+          grid_layout->addWidget(light_box_show_grid, 3, 0, 1, 2);
+
+          connect(light_box_rows, SIGNAL (valueChanged(int)), this, SLOT (light_box_rows_slot(int)));
+          connect(light_box_cols, SIGNAL (valueChanged(int)), this, SLOT (light_box_columns_slot(int)));
+          connect(light_box_slice_inc, SIGNAL (valueChanged()), this, SLOT (light_box_slice_inc_slot()));
+          connect(light_box_show_grid, SIGNAL (toggled(bool)), this, SLOT (light_box_show_grid_slot(bool)));
+
+          light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
+          light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
+          light_box_slice_inc->setValue(Mode::LightBox::get_slice_increment());
+          light_box_show_grid->setChecked(Mode::LightBox::get_show_grid());
+        }
 
 
 
@@ -480,6 +520,7 @@ namespace MR
           transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
           threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
           clip_box->setEnabled (window.get_current_mode()->features & Mode::ShaderClipping);
+          lightbox_box->setEnabled (dynamic_cast<Mode::LightBox *>(window.get_current_mode()));
         }
 
 
@@ -753,6 +794,39 @@ namespace MR
         void View::clip_planes_toggle_shown_slot ()
         {
           window.updateGL();
+        }
+
+
+        void View::light_box_rows_slot (int value)
+        {
+          Mode::LightBox* lBox = dynamic_cast<Mode::LightBox*>(window.get_current_mode());
+
+          if(lBox)
+            lBox->set_rows(value);
+        }
+
+        void View::light_box_columns_slot (int value)
+        {
+          Mode::LightBox* lBox = dynamic_cast<Mode::LightBox*>(window.get_current_mode());
+
+          if(lBox)
+            lBox->set_cols(value);
+        }
+
+        void View::light_box_slice_inc_slot ()
+        {
+          Mode::LightBox* lBox = dynamic_cast<Mode::LightBox*>(window.get_current_mode());
+
+          if(lBox)
+            lBox->set_slice_increment(light_box_slice_inc->value());
+        }
+
+        void View::light_box_show_grid_slot (bool value)
+        {
+          Mode::LightBox* lBox = dynamic_cast<Mode::LightBox*>(window.get_current_mode());
+
+          if(lBox)
+            lBox->set_show_grid(value);
         }
 
       }
