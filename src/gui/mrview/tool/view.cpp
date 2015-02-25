@@ -517,10 +517,10 @@ namespace MR
 
         void View::onModeChanged () 
         {
-          transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          clip_box->setEnabled (window.get_current_mode()->features & Mode::ShaderClipping);
-          lightbox_box->setEnabled (dynamic_cast<Mode::LightBox *>(window.get_current_mode()));
+          transparency_box->setVisible (window.get_current_mode()->features & Mode::ShaderTransparency);
+          threshold_box->setVisible (window.get_current_mode()->features & Mode::ShaderTransparency);
+          clip_box->setVisible (window.get_current_mode()->features & Mode::ShaderClipping);
+          lightbox_box->setVisible (dynamic_cast<Mode::LightBox *>(window.get_current_mode()));
         }
 
 
