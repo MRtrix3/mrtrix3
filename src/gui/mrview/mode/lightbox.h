@@ -36,6 +36,7 @@ namespace Mode
 
 class LightBox : public Slice
 {
+    Q_OBJECT
     using proj_focusdelta = std::pair<Projection,float>;
 public:
     LightBox(Window &parent);
@@ -43,6 +44,7 @@ public:
     void paint(Projection& with_projection) override;
     void mouse_press_event() override;
     void set_focus_event() override;
+    void image_changed_event() override;
     const Projection* get_current_projection() const override {
         return &slices_proj_focusdelta[current_slice_index].first; }
 
@@ -78,6 +80,8 @@ private:
     GL::VertexBuffer frame_VB;
     GL::VertexArrayObject frame_VAO;
     GL::Shader::Program frame_program;
+signals:
+    void slice_increment_reset();
 };
 
 }

@@ -402,6 +402,8 @@ namespace MR
           light_box_rows = new LightBoxEditButton(this);
           light_box_cols = new LightBoxEditButton(this);
 
+          light_box_slice_inc->setMinimumWidth(100);
+
           lightbox_box = new QGroupBox ("Light box");
           parent->addWidget (lightbox_box);
           GridLayout* grid_layout = new GridLayout;
@@ -425,12 +427,17 @@ namespace MR
           connect(light_box_slice_inc, SIGNAL (valueChanged()), this, SLOT (light_box_slice_inc_slot()));
           connect(light_box_show_grid, SIGNAL (toggled(bool)), this, SLOT (light_box_show_grid_slot(bool)));
 
+          reset_light_box_gui_controls();
+        }
+
+        void View::reset_light_box_gui_controls()
+        {
           light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
           light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
           light_box_slice_inc->setValue(Mode::LightBox::get_slice_increment());
+          light_box_slice_inc->setRate(Mode::LightBox::get_slice_increment() / 5.f);
           light_box_show_grid->setChecked(Mode::LightBox::get_show_grid());
         }
-
 
 
         void View::showEvent (QShowEvent*) 
@@ -521,6 +528,18 @@ namespace MR
           threshold_box->setVisible (window.get_current_mode()->features & Mode::ShaderTransparency);
           clip_box->setVisible (window.get_current_mode()->features & Mode::ShaderClipping);
           lightbox_box->setVisible (dynamic_cast<Mode::LightBox *>(window.get_current_mode()));
+          connect_mode_specific_slots ();
+        }
+
+
+
+
+
+        inline void View::connect_mode_specific_slots ()
+        {
+          Mode::LightBox* lBox = dynamic_cast<Mode::LightBox *>(window.get_current_mode());
+          if(lBox)
+              connect (lBox, SIGNAL (slice_increment_reset()), this, SLOT (light_box_slice_inc_reset_slot()));
         }
 
 
@@ -827,6 +846,11 @@ namespace MR
 
           if(lBox)
             lBox->set_show_grid(value);
+        }
+
+        void View::light_box_slice_inc_reset_slot()
+        {
+          reset_light_box_gui_controls();
         }
 
       }

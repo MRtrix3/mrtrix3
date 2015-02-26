@@ -79,6 +79,7 @@ namespace MR
             virtual void panthrough_event ();
             virtual void tilt_event ();
             virtual void rotate_event ();
+            virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
 
             void paintGL ();

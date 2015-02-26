@@ -94,6 +94,7 @@ namespace MR
             void light_box_columns_slot (int value);
             void light_box_slice_inc_slot ();
             void light_box_show_grid_slot (bool value);
+            void light_box_slice_inc_reset_slot ();
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z; 
@@ -117,7 +118,9 @@ namespace MR
             ClipPlaneModel* clip_planes_model;
             QListView* clip_planes_list_view;
 
+            void connect_mode_specific_slots ();
             void init_lightbox_gui (QLayout* parent);
+            void reset_light_box_gui_controls ();
             void set_transparency_from_image ();
 
         };

@@ -990,6 +990,7 @@ namespace MR
         size_t cmap_index = image()->colourmap;
         colourmap_group->actions()[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
+        mode->image_changed_event();
         setWindowTitle (image()->interp.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (

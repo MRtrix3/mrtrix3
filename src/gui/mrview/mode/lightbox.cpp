@@ -34,7 +34,7 @@ namespace Mode
 bool LightBox::show_grid_lines(true);
 size_t LightBox::n_rows(3);
 size_t LightBox::n_cols(4);
-float LightBox::slice_focus_increment(5.f);
+float LightBox::slice_focus_increment(1.f);
 
 LightBox::LightBox(Window &parent) :
     Slice(parent),
@@ -42,7 +42,7 @@ LightBox::LightBox(Window &parent) :
     current_slice_index((n_rows*n_cols) / 2),
     slices_proj_focusdelta(n_rows*n_cols, proj_focusdelta(projection, 0.f))
 {
-    set_focus(window.focus());
+    image_changed_event();
 }
 
 
@@ -270,6 +270,20 @@ void LightBox::set_focus_event()
     Base::set_focus_event();
     mouse_press_event();
 }
+
+void LightBox::image_changed_event()
+{
+    Base::image_changed_event();
+
+    if(image())
+    {
+        const auto& header = image()->header();
+        float slice_inc = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.f/3.f);
+        set_slice_increment(slice_inc);
+        emit slice_increment_reset();
+    }
+}
+
 
 }
 }
