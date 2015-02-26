@@ -52,7 +52,7 @@ namespace MR
 
           protected:
             void setup_draw (int axis, Projection& with_projection);
-            void draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection);
+            virtual void draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection);
             void draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection);
         };
 

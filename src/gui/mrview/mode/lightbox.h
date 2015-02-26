@@ -57,6 +57,10 @@ public:
     void set_cols(size_t cols);
     void set_slice_increment(float inc);
     void set_show_grid(bool show_grid);
+
+protected:
+    void draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection) override;
+
 private:
     static size_t slice_index(size_t row, size_t col) {
         assert(row < n_rows && col < n_cols);
