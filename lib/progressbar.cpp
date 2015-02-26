@@ -23,6 +23,12 @@
 #include "app.h"
 #include "progressbar.h"
 
+#ifdef MRTRIX_WINDOWS
+# define CLEAR_LINE_CODE "\015\033[0K"
+#else
+# define CLEAR_LINE_CODE "\033[0K"
+#endif
+
 namespace MR
 {
 
@@ -57,7 +63,7 @@ namespace MR
         __stderr_offset = done ? 0 : 1;
         __print_stderr ("\r");
         __print_stderr (text.c_str());
-        __print_stderr ("\033[0K");
+        __print_stderr (CLEAR_LINE_CODE);
       }
     }
 

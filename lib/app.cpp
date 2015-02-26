@@ -471,7 +471,13 @@ namespace MR
       //CONF option: TerminalColor
       //CONF default: 1 
       //CONF use colors in the terminal 
-      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", true); 
+      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
+#ifdef MRTRIX_WINDOWS
+          false
+#else
+          true
+#endif
+          ); 
 
       load_standard_options();
 
