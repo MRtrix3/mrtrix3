@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/app.h"
+#include "gui/gui.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "math/SH.h"

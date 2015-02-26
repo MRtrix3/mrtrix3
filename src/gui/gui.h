@@ -23,6 +23,7 @@
 #ifndef __gui_app_h__
 #define __gui_app_h__
 
+#include "app.h"
 #include "progressbar.h"
 #include "file/config.h"
 #include "gui/opengl/gl.h"
