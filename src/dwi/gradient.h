@@ -190,7 +190,7 @@ namespace MR
         if (!grad.rows())
           return grad;
 
-        if (grad.columns() != 4)
+        if (grad.columns() < 4)
           throw Exception ("unexpected diffusion encoding matrix dimensions");
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
