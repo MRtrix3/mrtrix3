@@ -24,6 +24,7 @@
 #define __mrtrix_thread_h__
 
 #include <thread>
+#include <future>
 #include <mutex>
 
 #include "debug.h"
@@ -101,19 +102,19 @@ namespace MR
             __thread_base (name) { 
               DEBUG ("launching thread \"" + name + "\"...");
               typedef typename std::remove_reference<Functor>::type F;
-              thread = std::thread (&F::execute, &functor);
+              thread = std::async (std::launch::async, &F::execute, &functor);
             }
           __single_thread (const __single_thread& s) = delete;
           __single_thread (__single_thread&& s) = default;
 
           ~__single_thread () { 
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
-            thread.join(); 
+            thread.get(); 
             DEBUG ("thread \"" + name + "\" completed OK");
           }
 
         protected:
-          std::thread thread;
+          std::future<void> thread;
       };
 
 
@@ -126,8 +127,8 @@ namespace MR
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
-                  threads.push_back (std::thread (&F::execute, &f));
-                threads.push_back (std::thread (&F::execute, &functor));
+                  threads.push_back (std::async (std::launch::async, &F::execute, &f));
+                threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
 
             __multi_thread (const __multi_thread& m) = delete;
@@ -136,11 +137,11 @@ namespace MR
             ~__multi_thread () { 
               DEBUG ("waiting for completion of threads \"" + name + "\"...");
               for (auto& t : threads) 
-                t.join();
+                t.get();
               DEBUG ("threads \"" + name + "\" completed OK");
             }
           protected:
-            std::vector<std::thread> threads;
+            std::vector<std::future<void>> threads;
             std::vector<typename std::remove_reference<Functor>::type> functors;
 
         };
