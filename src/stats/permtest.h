@@ -205,7 +205,7 @@ namespace MR
                     (*perm_dist_neg)[index] = 0.0;
                     for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
                       enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
-                      if (enhanced_statistics[i] > perm_dist_pos[index])
+                      if (enhanced_statistics[i] > perm_dist_neg[index])
                         (*perm_dist_neg)[index] = enhanced_statistics[i];
                     }
                   }
