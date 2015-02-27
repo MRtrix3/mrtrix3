@@ -3,8 +3,14 @@
 The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/jdtournier/mrtrix3/wiki),
 including a detailed decription of the installation procedure. The official website for MRtrix is hosted on <a href="https://plus.google.com/110975114527807720518" rel="publisher">Google+</a>.
 
+## Getting help 
 
-## Quick install:
+Support and general discussion is hosted on the [MRtrix3 Google+ Community
+page](https://plus.google.com/u/0/communities/111072048088633408015). Please
+address all MRtrix3-related queries there. You will need to create a Google+
+account if you don't already have one.
+
+## Quick install
 
 1. Install dependencies by whichever means your system uses. 
    These include: Python (>=2.6), a C++ compiler, POSIX threads, 
@@ -21,11 +27,11 @@ including a detailed decription of the installation procedure. The official webs
 
     * Bash shell:
 
-            $ export PATH=/<edit as appropriate>/mrtrix-0.3/bin:$PATH
+            $ export PATH=/<edit as appropriate>/mrtrix3/bin:$PATH
  
     * C shell:
 
-            $ setenv PATH /<edit as appropriate>/mrtrix-0.3/bin:$PATH
+            $ setenv PATH /<edit as appropriate>/mrtrix3/bin:$PATH
 
 4. Test installation: 
 

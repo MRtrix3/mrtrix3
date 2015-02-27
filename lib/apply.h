@@ -85,7 +85,7 @@ namespace MR {
   template <class F, class T>
     inline void apply (F && f, T && t) 
     {
-      Apply<::std::tuple_size<
+      Apply< ::std::tuple_size<
         typename ::std::decay<T>::type
         >::value-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
     }

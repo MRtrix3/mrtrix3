@@ -168,9 +168,7 @@ class MapWriter : public MapWriterBase
 
       // With TOD, hijack the counts buffer in voxel statistic min/max mode
       //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-      // No need to track counts for mean voxel-wise statistic in a DEC image;
-      //   can just normalise the DEC to a unit vector
-      if ((type != DEC && voxel_statistic == V_MEAN) ||
+      if ((voxel_statistic == V_MEAN) ||
           (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
           (type == DEC && voxel_statistic == V_SUM))
       {
@@ -225,10 +223,10 @@ class MapWriter : public MapWriterBase
                 v_buffer.value() /= float(v_counts->value());
             }
           } else if (type == DEC) {
-            for (auto l = loop (v_buffer); l; ++l) {
+            for (auto l = loop (v_buffer, *v_counts); l; ++l) {
               Point<value_type> value (get_dec());
               if (value.norm2()) {
-                value *= (1.0 / value.norm());
+                value /= v_counts->value();
                 set_dec (value);
               }
             }
@@ -414,8 +412,8 @@ void MapWriter<value_type>::receive_dec (const Cont& in)
         break;
       case V_MEAN:
         set_dec (current_value + (scaled_colour * weight));
-        //Image::Nav::set_pos (*v_counts, *i);
-        //(*v_counts).value() += weight;
+        Image::Nav::set_pos (*v_counts, *i);
+        (*v_counts).value() += weight;
         break;
       case V_MAX:
         if (scaled_colour.norm2() > current_value.norm2())

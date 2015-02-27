@@ -46,13 +46,15 @@ void usage ()
   DESCRIPTION
   + "Voxel-based analysis using permutation testing and threshold-free cluster enhancement.";
 
-  REFERENCES = "If not using the -threshold command-line option: \n"
-               "Smith, S. M. & Nichols, T. E. "
-               "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
-               "NeuroImage, 2009, 44, 83-98 \n\n"
-               "If using the -nonstationary option: \n"
-               "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
-               "Neuroimage, 2011, 54(3), 2006-19\n" ;
+  REFERENCES 
+   + "* If not using the -threshold command-line option:\n"
+   "Smith, S. M. & Nichols, T. E. "
+   "Threshold-free cluster enhancement: Addressing problems of smoothing, threshold dependence and localisation in cluster inference. "
+   "NeuroImage, 2009, 44, 83-98"
+
+   + "* If using the -nonstationary option:"
+   "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
+   "Neuroimage, 2011, 54(3), 2006-19\n" ;
 
 
   ARGUMENTS

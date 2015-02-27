@@ -73,6 +73,8 @@ namespace MR
       if (fid < 0) {
         if (App::check_overwrite_files_func && errno == EEXIST) 
           App::check_overwrite_files_func (filename);
+        else 
+          throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
         fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
       }
       if (fid < 0) {

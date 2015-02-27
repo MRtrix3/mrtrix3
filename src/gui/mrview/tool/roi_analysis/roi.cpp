@@ -305,6 +305,7 @@ namespace MR
           roi->texture().bind();
 
           std::vector<GLubyte> data (roi->info().dim(0) * roi->info().dim(1) * roi->info().dim(2));
+          gl::PixelStorei (GL_PACK_ALIGNMENT, 1);
           gl::GetTexImage (gl::TEXTURE_3D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*) (&data[0]));
 
           try {

@@ -1,6 +1,5 @@
-#include "command.h"
+#include "gui/gui.h"
 #include "progressbar.h"
-#include "gui/app.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/list.h"
@@ -51,9 +50,10 @@ void usage ()
   + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool"
   ;
 
-  REFERENCES = "Tournier, J.-D.; Calamante, F. & Connelly, A. "
-               "MRtrix: Diffusion tractography in crossing fiber regions. "
-               "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
+  REFERENCES 
+    + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "MRtrix: Diffusion tractography in crossing fiber regions. "
+    "Int. J. Imaging Syst. Technol., 2012, 22, 53-66";
 
   ARGUMENTS
     + Argument ("image", "an image to be loaded.")
@@ -77,9 +77,6 @@ void usage ()
 
 void run ()
 {
-  MR::App::build_date = __DATE__; 
-  GUI::App app;
-
   GUI::MRView::Window window;
   window.show();
 

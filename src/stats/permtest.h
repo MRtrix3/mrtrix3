@@ -21,6 +21,8 @@
 #ifndef __stats_permtest_h__
 #define __stats_permtest_h__
 
+#include <mutex>
+
 #include <gsl/gsl_linalg.h>
 #include <mutex>
 
@@ -30,6 +32,8 @@
 
 #include "math/vector.h"
 #include "math/stats/permutation.h"
+
+#include "thread_queue.h"
 
 namespace MR
 {

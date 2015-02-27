@@ -796,7 +796,7 @@ namespace MR
           if (info.ndim() < 4)
             throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - not 4D");
           size_t l = LforN (info.dim(3));
-          if (l%1 || NforL (l) != size_t (info.dim(3)))
+          if (l%2 || NforL (l) != size_t (info.dim(3)))
             throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
         }
 
