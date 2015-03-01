@@ -24,6 +24,7 @@
 #define __gui_mrview_tool_view_h__
 
 #include "gui/mrview/tool/base.h"
+#include "gui/mrview/mode/base.h"
 
 namespace MR
 {
@@ -46,7 +47,7 @@ namespace MR
             std::string name;
         };
 
-        class View : public Base
+        class View : public Base, public Mode::ModeGuiVisitor
         {
           Q_OBJECT
           public:
@@ -56,6 +57,8 @@ namespace MR
 
             std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+
+            void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 
           protected:
             virtual void showEvent (QShowEvent* event);
@@ -90,14 +93,10 @@ namespace MR
             void clip_planes_remove_slot ();
             void clip_planes_clear_slot ();
 
-            void light_box_rows_slot (int value);
-            void light_box_columns_slot (int value);
-            void light_box_slice_inc_slot ();
-            void light_box_show_grid_slot (bool value);
             void light_box_slice_inc_reset_slot ();
 
           private:
-            AdjustButton *focus_x, *focus_y, *focus_z; 
+            AdjustButton *focus_x, *focus_y, *focus_z;
             QSpinBox **voxel_pos;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;

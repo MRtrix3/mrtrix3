@@ -56,6 +56,24 @@ namespace MR
         const int ShaderLighting = 0x40000000;
         const int ShaderClipping = 0x80000008;
 
+
+
+        class Slice;
+        class Ortho;
+        class Volume;
+        class LightBox;
+        class ModeGuiVisitor
+        {
+          public:
+            virtual void update_base_mode_gui(const Base&) {}
+            virtual void update_slice_mode_gui(const Slice&) {}
+            virtual void update_ortho_mode_gui(const Ortho&) {}
+            virtual void update_volume_mode_gui(const Volume&) {}
+            virtual void update_lightbox_mode_gui(const LightBox&) {}
+        };
+
+
+
         class Base : public QObject
         {
           public:
@@ -81,6 +99,9 @@ namespace MR
             virtual void rotate_event ();
             virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
+
+            virtual void request_update_mode_gui(ModeGuiVisitor& visitor) const {
+              visitor.update_base_mode_gui(*this); }
 
             void paintGL ();
 

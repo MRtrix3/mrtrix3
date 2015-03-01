@@ -46,7 +46,10 @@ public:
     void set_focus_event() override;
     void image_changed_event() override;
     const Projection* get_current_projection() const override {
-        return &slices_proj_focusdelta[current_slice_index].first; }
+      return &slices_proj_focusdelta[current_slice_index].first; }
+
+    void request_update_mode_gui(ModeGuiVisitor& visitor) const override {
+      visitor.update_lightbox_mode_gui(*this); }
 
     static size_t get_rows() { return n_rows; }
     static size_t get_cols() { return n_cols; }
@@ -58,8 +61,15 @@ public:
     void set_slice_increment(float inc);
     void set_show_grid(bool show_grid);
 
+public slots:
+    void nrows_slot(int value) { set_rows(static_cast<size_t>(value)); }
+    void ncolumns_slot(int value) { set_cols(static_cast<size_t>(value));}
+    void slice_inc_slot(float value) { set_slice_increment(value);}
+    void show_grid_slot (bool value) { set_show_grid(value); }
+
 protected:
-    void draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection) override;
+    void draw_plane_primitive(int axis, Displayable::Shader& shader_program,
+                              Projection& with_projection) override;
 
 private:
     static size_t slice_index(size_t row, size_t col) {
