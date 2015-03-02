@@ -108,7 +108,7 @@ void usage ()
   + Option ("nperms_nonstationary", "the number of permutations used when precomputing the empirical statistic image for nonstationary correction (Default: 5000)")
   + Argument ("num").type_integer (1, 5000, 100000);
 
-  REFERENCES = "If using the -nonstationary option: \n"
+  REFERENCES + "If using the -nonstationary option: \n"
                "Salimi-Khorshidi, G. Smith, S.M. Nichols, T.E. Adjusting the effect of nonstationarity in cluster-based and TFCE inference. \n"
                "Neuroimage, 2011, 54(3), 2006-19\n" ;
 
