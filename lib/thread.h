@@ -107,10 +107,17 @@ namespace MR
           __single_thread (const __single_thread& s) = delete;
           __single_thread (__single_thread&& s) = default;
 
-          ~__single_thread () { 
+          void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
             thread.get(); 
             DEBUG ("thread \"" + name + "\" completed OK");
+          }
+
+          ~__single_thread () {
+            if (thread.valid()) {
+              try { wait(); }
+              catch (Exception& E) { E.display(); }
+            }
           }
 
         protected:
@@ -134,11 +141,26 @@ namespace MR
             __multi_thread (const __multi_thread& m) = delete;
             __multi_thread (__multi_thread&& m) = default;
 
-            ~__multi_thread () { 
+            void wait () noexcept (false) {
               DEBUG ("waiting for completion of threads \"" + name + "\"...");
-              for (auto& t : threads) 
-                t.get();
+              bool exception_thrown = false;
+              for (auto& t : threads) {
+                if (!t.valid()) 
+                  continue;
+                try { t.get(); }
+                catch (Exception& E) { 
+                  exception_thrown = true;
+                  E.display(); 
+                }
+              }
+              if (exception_thrown) 
+                throw Exception ("exception thrown from one or more threads \"" + name + "\"");
               DEBUG ("threads \"" + name + "\" completed OK");
+            }
+
+            ~__multi_thread () {
+              try { wait(); }
+              catch (Exception& E) { E.display(); }
             }
           protected:
             std::vector<std::future<void>> threads;
@@ -259,11 +281,42 @@ namespace MR
      * auto my_threads = Thread::run (Thread::multi (func), "my function");
      * ...
      * \endcode
+     *
+     * \par Exception handling
+     *
+     * Proper handling of exceptions in a multi-threaded context is
+     * non-trivial, and in general you should take every precaution to prevent
+     * threads from throwing exceptions. This means you should perform all
+     * error checking within a single-threaded context, before starting
+     * processing-intensive threads, so as to minimise the chances of anything
+     * going wrong at that stage. 
+     *
+     * In this implementation, the wait() function can be used to wait until
+     * all threads have completed, at which point any exceptions thrown will be
+     * displayed, and a futher exception re-thrown to allow the main
+     * application to catch the error (this could be the same exception that
+     * was originally thrown if a single thread was run). This means the
+     * application will continue processing if any the remaining threads
+     * remain active, and it may be a while before the application itself is
+     * allowed to handle the error appropriately. If this is behaviour is not
+     * appropriate, and you expect exceptions to be thrown occasionally, you
+     * should take steps to handle these yourself (e.g. by setting / checking
+     * some flag within your threads, etc.).
+     *
+     * \note while the wait() function will also be invoked in the destructor,
+     * any exceptions thrown will be caught and \e not re-thrown (throwing in
+     * the destructor is considered bad practice). This is to prevent undefined
+     * behaviour (i.e. crashes) when multiple thread objects are launched
+     * within the same scope, each of which might throw. In these cases, it is
+     * best to explicitly call wait() for each of the objects returned by
+     * Thread::run(), rather than relying on the destructor alone (note
+     * Thread::Queue already does this). 
+     *
      */
     template <class Functor>
       inline typename __run<Functor>::type run (Functor&& functor, const std::string& name = "unnamed") 
       {
-        return __run<typename std::remove_reference<Functor>::type>() (functor, name); 
+        return __run<typename std::remove_reference<Functor>::type>() (functor, name);
       }
 
     /** @} */
