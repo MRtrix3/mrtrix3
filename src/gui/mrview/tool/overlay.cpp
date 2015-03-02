@@ -511,6 +511,18 @@ namespace MR
             return true;
           }
 
+          else if (cmd == "overlay.colourmap") {
+            try {
+              int n = to<int> (args);
+              if (n < 0 || !ColourMap::maps[n].name)
+                throw Exception ("invalid overlay colourmap index \"" + args + "\" requested in batch command");
+              colourmap_combobox->setCurrentIndex (n);
+              colourmap_changed(n);
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
           return false;
         }
 
