@@ -43,7 +43,7 @@ namespace MR
 
       RefPtr<Handler::Base> PAR::read (Header& H) const
       {
-        if (!Path::has_suffix (H.name(), ".PAR")){
+        if (!Path::has_suffix (H.name(), ".PAR") && !Path::has_suffix (H.name(), ".par")){
           return RefPtr<Handler::Base>();
         }
 
