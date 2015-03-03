@@ -58,7 +58,8 @@ namespace MR
           DEBUG(kv.key() + ":\t" + kv.value());
         }
 
-        if (kv.version() != "V4.2"){
+        // if (kv.version() != "V4.2"){
+        if (!kv.valid_version()){
           WARN("par/rec version " + kv.version() + " not supported");
           return RefPtr<Handler::Base>();
         }

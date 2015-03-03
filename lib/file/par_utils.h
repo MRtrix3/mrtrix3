@@ -67,8 +67,11 @@ namespace MR
           const std::string& name () const throw ()  {
             return (filename);
           }
-          const bool& is_general () const throw ()   {
+          const bool is_general () const throw ()   {
             return (general_information);
+          }
+          const bool valid_version() const throw () {
+            return (std::find(understood_versions.begin(), understood_versions.end(), ver) != understood_versions.end());
           }
 
         private:
@@ -78,6 +81,10 @@ namespace MR
         protected:
           std::string K, V, filename, ver;
           std::ifstream in;
+          const std::vector<std::string> understood_versions {
+            "V4",
+            "V4.1",
+            "V4.2"};
       };
 
       // Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& order);

@@ -132,10 +132,6 @@ namespace MR
 
 
 
-          //  else if (sbuf.size()){
-          //   WARN(sbuf);
-          // }
-
       // size_t read (Image::Header& H, const par_header& NH) {
       //   bool is_BE = false;
       //   size_t data_offset; // = (size_t) get<float32> (&NH.vox_offset, is_BE);
