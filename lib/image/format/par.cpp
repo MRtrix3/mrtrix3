@@ -31,7 +31,11 @@
 #include "image/header.h"
 #include "image/handler/default.h"
 #include "get_set.h"
+    
+#include "file/par_utils.h"
 
+#include "image/format/mrtrix_utils.h"
+// #include "file/key_value.h"
 
 
 namespace MR
@@ -40,6 +44,7 @@ namespace MR
   {
     namespace Format
     {
+      // File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".REC");
 
       RefPtr<Handler::Base> PAR::read (Header& H) const
       {
@@ -47,15 +52,27 @@ namespace MR
           return RefPtr<Handler::Base>();
         }
 
+        MR::File::PAR::KeyValue kv (H.name());
+
+        while (kv.next_general()){
+          DEBUG(kv.key() + ":\t" + kv.value());
+        }
+
+        if (kv.version() != "V4.2"){
+          WARN("par/rec version " + kv.version() + " not supported");
+          return RefPtr<Handler::Base>();
+        }
+        INFO("par/rec version: " + kv.version());
+
+        while (kv.next_image()){
+          DEBUG(kv.key() + ":\t" + kv.value());
+        }
+
         File::MMap fmap (H.name());
-
-        // if (memcmp (fmap.address(), "PAR#", 4))
-          // throw Exception ("file \"" + H.name() + "\" is not in PAR format (unrecognised magic number)");
-
-        size_t data_offset = 0;
-
-        if (!data_offset)
-          throw Exception ("no data field found in PAR image \"" + H.name() + "\"");
+        std::cerr << fmap << std::endl;
+        size_t data_offset = 0; // File::PAR::read (H, * ( (const par_header*) fmap.address()));
+        // size_t data_offset = 0;
+        throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
 
         RefPtr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
