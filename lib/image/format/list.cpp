@@ -38,6 +38,7 @@ namespace MR
       Format::MRtrix        mrtrix_handler;
       Format::MRtrix_GZ     mrtrix_gz_handler;
       Format::MRI           mri_handler;
+      Format::PAR           par_handler;
       Format::NIfTI         nifti_handler;
       Format::NIfTI_GZ      nifti_gz_handler;
       Format::Analyse       analyse_handler;
@@ -60,6 +61,7 @@ namespace MR
         &nifti_gz_handler,
         &analyse_handler,
         &mri_handler,
+        &par_handler,
         &xds_handler,
         &mgh_handler,
         &mgz_handler,
@@ -79,6 +81,7 @@ namespace MR
         ".bfloat",
         ".bshort",
         ".mri",
+        ".par",
         ".mgh",
         ".mgz",
         ".mgh.gz",
