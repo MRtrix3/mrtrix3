@@ -144,6 +144,18 @@ namespace MR
         // std::transform(strVect.begin(), strVect.end(), flVect.begin(), 
                        // [](const std::string &arg) { return std::stof(arg); });
 
+        INFO("Patient position:      " + PH["Patient position"]);
+        INFO("Preparation direction: " + PH["Preparation direction"]);
+        INFO("FOV (ap,fh,rl) [mm]:   " + PH["FOV (ap,fh,rl) [mm]"]);
+
+
+        // NIBABEL:        
+        // "It seems that everyone agrees that Philips stores REC data in little-endian
+        // format - see https://github.com/nipy/nibabel/issues/274
+
+        // Philips XML header files, and some previous experience, suggest that the REC
+        // data is always stored as 8 or 16 bit unsigned integers - see
+        // https://github.com/nipy/nibabel/issues/275"
 
         File::MMap fmap (H.name());
         std::cerr << fmap << std::endl;
