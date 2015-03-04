@@ -58,12 +58,15 @@ for line in lines:
 
 with open (sys.argv[2], 'w') as f:
   f.write ('mrtrix image\ndim: ' + mat_size[0] + ',' + mat_size[1])
-  try:
-    nslices
-    f.write (',' + str(nslices))
-  except:
-    pass
-
+  if len(mat_size) > 2:
+    f.write (',' + str(mat_size[2]))
+  else:
+    try:
+      nslices
+      f.write (',' + str(nslices))
+    except:
+      pass
+  
   try:
     nacq
     f.write (',' + str(nacq))
@@ -71,11 +74,14 @@ with open (sys.argv[2], 'w') as f:
     pass
 
   f.write ('\nvox: ' + str(res[0]) + ',' + str(res[1]));
-  try:
-    slicethick
-    f.write (',' + str(slicethick))
-  except:
-    pass
+  if len(res) > 2: 
+    f.write (',' + str(res[2]));
+  else:
+    try:
+      slicethick
+      f.write (',' + str(slicethick))
+    except:
+      pass
   try:
     nacq
     f.write (',')
