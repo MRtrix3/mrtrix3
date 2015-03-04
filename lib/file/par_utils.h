@@ -29,6 +29,12 @@
 #include <fstream>
 #include "mrtrix.h"
 
+#include <sstream>
+#include <vector>
+#include <iterator>
+
+// #include <regex>
+
 namespace MR
 {
   namespace Image
@@ -38,22 +44,24 @@ namespace MR
   namespace File
   {
     namespace PAR
-    {
-
+    {       
       class KeyValue
       {
+        // KeyValue: use KeyValue.next_general() to extract general information followed by KeyValue.next_image() for image lines
         public:
           KeyValue () { }
-          KeyValue (const std::string& file, const char* first_line = NULL) {
+          KeyValue (const std::string& file, const char* first_line = nullptr) {
             open (file, first_line);
           }
 
-          void  open (const std::string& file, const char* first_line = NULL);
+          void  open (const std::string& file, const char* first_line = nullptr);
           bool  next_general ();
           bool  next_image ();
+          bool  next_image_information ();
           void  close () {
             in.close();
           }
+          // std::vector<T> split_image_line(const std::string&);
           
           const std::string& version() const throw () {
             return (ver);
@@ -75,7 +83,8 @@ namespace MR
           }
 
         private:
-          std::string trim(std::string const& str);
+          std::string trim(std::string const& str, char leading_char = '.'); 
+
           bool general_information = true;
 
         protected:
@@ -93,6 +102,8 @@ namespace MR
       // size_t read (Image::Header& H, const par_header& PH);
       // void check (Image::Header& H, bool single_file);
       // void write (par_header& PH, const Image::Header& H, bool single_file);
+
+
 
     }
   }

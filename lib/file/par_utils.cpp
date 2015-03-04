@@ -35,13 +35,15 @@ namespace MR
   {
     namespace PAR
     {
-      std::string KeyValue::trim(std::string const& str)
+
+      std::string KeyValue::trim(std::string const& str, char leading_char)
       {
         if (str.empty())
             return str;
-        if (str[0] == '.')
-          return trim(str.substr(1, str.find_last_not_of(' ')));
         std::string whitespaces (" \t\f\v\n\r");
+        if (str[0] == leading_char){ 
+            return trim(str.substr(1, str.find_last_not_of(whitespaces)));
+        }
         size_t first = str.find_first_not_of(whitespaces);
         size_t last  = str.find_last_not_of(whitespaces);
         return str.substr(first, last-first+1);
@@ -76,14 +78,12 @@ namespace MR
             throw Exception ("error reading PAR file \"" + filename + "\": " + strerror (errno));
 
             if (sbuf.find("IMAGE INFORMATION") != std::string::npos){
-              DEBUG ("general_information = false: after line (\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
               general_information = false;
-              return true;
+              return false;
             }
             if (!ver.size() && (sbuf.find("image export tool")!= std::string::npos) ){
               ver = KeyValue::trim(sbuf.substr (sbuf.find_last_of("image export tool") ) );
-              DEBUG("par/rec version: " + ver);
-              return true;
+              continue;
             }
 
           sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
@@ -107,9 +107,41 @@ namespace MR
         return false;
       }
 
-      bool KeyValue::next_image ()
+      bool KeyValue::next_image_information ()
       {
-        while (in.good() && !general_information ) {
+        if (general_information)
+          return false;
+
+        while (in.good()){
+          std::string sbuf;
+          getline (in, sbuf);
+
+          if (sbuf.find("IMAGE INFORMATION") != std::string::npos)
+            return false;
+
+          sbuf =  KeyValue::trim(sbuf,'#');
+
+          size_t l_bracket = sbuf.find_last_of("(");
+          size_t r_bracket = sbuf.find_last_of(")");
+          if (!sbuf.size() || r_bracket== std::string::npos || l_bracket== std::string::npos || r_bracket != sbuf.size()-1)
+            continue;
+          if (l_bracket-r_bracket == 0){
+            INFO("malformed key/value entry(\"" + sbuf + "\") in file \"" + filename + "\" - ignored");
+            continue;
+          }
+          K = KeyValue::trim( sbuf.substr(0,l_bracket-1));
+          V = KeyValue::trim( sbuf.substr(l_bracket+1,r_bracket-1-l_bracket));
+          return true;
+        }
+        return false;
+      }
+
+      bool KeyValue::next_image ()
+      { 
+        if (general_information)
+          return false;
+
+        while (in.good()) {
           std::string sbuf;
           getline (in, sbuf);
           if (in.bad()) 
