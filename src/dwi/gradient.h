@@ -43,7 +43,8 @@ namespace MR
 
   namespace DWI
   {
-    extern const App::OptionGroup GradOption;
+    extern const App::OptionGroup GradImportOptions;
+    extern const App::OptionGroup GradExportOptions;
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
@@ -214,6 +215,10 @@ namespace MR
       }
 
 
+    //! process GradExportOptions command-line options
+    /*! this checks for the \c -export_grad_mrtrix & \c -export_grad_fsl
+     * options, and exports the DW schemes if and as requested. */
+    void export_grad_commandline (const Image::Header& header);
 
 
     //CONF option: BValueScaling

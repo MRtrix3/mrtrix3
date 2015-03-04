@@ -45,7 +45,7 @@ void usage ()
     + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS 
-    + DWI::GradOption;
+    + DWI::GradImportOptions;
 }
 
 

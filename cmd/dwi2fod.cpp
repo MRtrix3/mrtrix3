@@ -48,7 +48,7 @@ void usage ()
         "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
-    + DWI::GradOption
+    + DWI::GradImportOptions
     + DWI::ShellOption
     + DWI::CSD_options
     + Image::Stride::StrideOption;

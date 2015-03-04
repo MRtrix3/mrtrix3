@@ -117,7 +117,7 @@ void usage () {
 
   OPTIONS
 
-    + DWI::GradOption
+    + DWI::GradImportOptions
     + DWI::ShellOption
 
     + Option ("mask", "provide an initial mask image")
