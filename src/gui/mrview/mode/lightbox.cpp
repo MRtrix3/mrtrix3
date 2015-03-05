@@ -33,7 +33,7 @@ namespace Mode
 
 bool LightBox::show_grid_lines(true);
 size_t LightBox::n_rows(3);
-size_t LightBox::n_cols(4);
+size_t LightBox::n_cols(5);
 float LightBox::slice_focus_increment(1.f);
 
 LightBox::LightBox(Window &parent) :
