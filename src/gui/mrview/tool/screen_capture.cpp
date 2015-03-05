@@ -145,10 +145,13 @@ namespace MR
           frames->setValue (1);
           capture_grid_layout->addWidget (frames, 1, 1);
 
-          QPushButton* capture = new QPushButton ("Go", this);
-          connect (capture, SIGNAL (clicked()), this, SLOT (on_screen_capture()));
+          QPushButton* preview = new QPushButton ("Preview", this);
+          connect (preview, SIGNAL (clicked()), this, SLOT (on_screen_preview()));
+          capture_grid_layout->addWidget (preview, 2, 0, 1, 2);
 
-          capture_grid_layout->addWidget (capture, 2, 0, 1, 2);
+          QPushButton* capture = new QPushButton ("Record", this);
+          connect (capture, SIGNAL (clicked()), this, SLOT (on_screen_capture()));
+          capture_grid_layout->addWidget (capture, 3, 0, 1, 2);
 
           main_box->addStretch ();
 
@@ -159,8 +162,12 @@ namespace MR
 
 
 
+        void ScreenCapture::on_screen_preview () { run (false); }
 
-        void ScreenCapture::on_screen_capture ()
+        void ScreenCapture::on_screen_capture () { run (true); }
+
+
+        void ScreenCapture::run (bool with_capture) 
         {
 
           if (std::isnan (rotation_axis_x->value()))
@@ -192,7 +199,8 @@ namespace MR
 
 
           for (; i < first_index + frames->value(); ++i) {
-            this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+            if (with_capture) 
+              this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
 
             // Rotation
             Math::Versor<float> orientation (this->window.orientation());

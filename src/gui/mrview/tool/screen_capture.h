@@ -49,6 +49,7 @@ namespace MR
 
           private slots:
             void on_screen_capture ();
+            void on_screen_preview ();
             void select_output_folder_slot();
             void on_output_update ();
 
@@ -68,6 +69,8 @@ namespace MR
             QPushButton *folder_button;
             int axis;
             QDir* directory;
+
+            void run (bool with_capture);
 
         };
 
