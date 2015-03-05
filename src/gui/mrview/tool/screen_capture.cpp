@@ -97,6 +97,25 @@ namespace MR
           translate_z->setValue (0.0);
           translate_z->setRate (0.1);
 
+          QGroupBox* volume_group_box = new QGroupBox ("Volume");
+          GridLayout* volume_layout = new GridLayout;
+          volume_layout->setContentsMargins (5, 5, 5, 5);
+          volume_layout->setSpacing (5);
+          main_box->addWidget (volume_group_box);
+          volume_group_box->setLayout (volume_layout);
+
+          volume_layout->addWidget (new QLabel ("Axis"), 0, 0);
+          volume_axis = new QSpinBox (this);
+          volume_axis->setMinimum (3);
+          volume_axis->setValue (3);
+          volume_layout->addWidget (volume_axis, 0, 1);
+
+          volume_layout->addWidget (new QLabel ("Target"), 1, 0);
+          target_volume = new AdjustButton (this);
+          volume_layout->addWidget (target_volume, 1, 1);
+          target_volume->setValue (0.0);
+          target_volume->setRate (0.1);
+
           QGroupBox* FOV_group_box = new QGroupBox ("FOV");
           GridLayout* FOV_layout = new GridLayout;
           FOV_layout->setContentsMargins (5, 5, 5, 5);
@@ -169,6 +188,10 @@ namespace MR
 
         void ScreenCapture::run (bool with_capture) 
         {
+          if (!window.image())
+            return;
+
+          Image::VoxelType& vox (window.image()->interp);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -186,12 +209,23 @@ namespace MR
           if (std::isnan (translate_z->value()))
             translate_z->setValue(0.0);
 
+          if (std::isnan (target_volume->value()))
+            target_volume->setValue(0.0);
+
+          if (volume_axis->value() >= ssize_t (vox.ndim()))
+            volume_axis->setValue (vox.ndim()-1);
+
+          if (target_volume->value() >= vox.dim(volume_axis->value()))
+            target_volume->setValue (vox.dim(volume_axis->value())-1);
+
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
           float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
+          float volume = vox[volume_axis->value()];
+          float volume_inc = (target_volume->value() - volume) / frames->value();
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           int first_index = start_index->value();
@@ -223,6 +257,10 @@ namespace MR
             target[1] += translate_y->value() / frames->value();
             target[2] += translate_z->value() / frames->value();
             window.set_target (target);
+
+            // Volume
+            volume += volume_inc;
+            window.set_image_volume (volume_axis->value(), std::round (volume));
 
             // FOV
             window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));

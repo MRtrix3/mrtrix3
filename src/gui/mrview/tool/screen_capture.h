@@ -62,9 +62,11 @@ namespace MR
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
+            AdjustButton *target_volume;
             AdjustButton *FOV_multipler;
             QSpinBox *start_index;
             QSpinBox *frames;
+            QSpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;

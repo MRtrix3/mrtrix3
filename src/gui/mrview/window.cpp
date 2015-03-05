@@ -941,10 +941,7 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        assert (image());
-        ++image()->interp[3];
-        set_image_navigation_menu();
-        updateGL();
+        set_image_volume (3, image()->interp[3]+1);
       }
 
 
@@ -952,10 +949,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        assert (image());
-        --image()->interp[3];
-        set_image_navigation_menu();
-        updateGL();
+        set_image_volume (3, image()->interp[3]-1);
       }
 
 
@@ -963,10 +957,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        assert (image());
-        ++image()->interp[4];
-        set_image_navigation_menu();
-        updateGL();
+        set_image_volume (4, image()->interp[4]+1);
       }
 
 
@@ -974,10 +965,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        assert (image());
-        --image()->interp[4];
-        set_image_navigation_menu();
-        updateGL();
+        set_image_volume (4, image()->interp[4]-1);
       }
 
 
