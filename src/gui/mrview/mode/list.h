@@ -4,6 +4,7 @@
 #include "gui/mrview/mode/slice.h"
 #include "gui/mrview/mode/ortho.h"
 #include "gui/mrview/mode/volume.h"
+#include "gui/mrview/mode/lightbox.h"
 
 #else 
 
@@ -18,6 +19,7 @@ Use the MODE_OPTION variant if your mode supplies its own command-line options. 
 MODE_OPTION (Slice, slice, single slice, display a single slice)
 MODE (Ortho, ortho, OrthoView, axial-coronal-sagittal display)
 MODE (Volume, volume, Volume, volumetric render)
+MODE (LightBox, lightbox, LightBox, light-box display)
 
 #endif
 
