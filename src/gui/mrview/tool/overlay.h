@@ -66,13 +66,26 @@ namespace MR
           protected:
              class Item;
              class Model;
+             class InterpolateCheckBox : public QCheckBox
+             {
+               public:
+                 InterpolateCheckBox(const QString& text, QWidget *parent = nullptr)
+                   : QCheckBox(text, parent) {}
+               protected:
+                 // We don't want a click to cycle to a partially checked state
+                 // So explicitly specify the allowed clickable states
+                 void nextCheckState () override { checkState() == Qt::Unchecked ?
+                         setCheckState(Qt::Checked) : setCheckState(Qt::Unchecked);
+                 }
+             };
+
              QPushButton* hide_all_button;
              Model* image_list_model;
              QListView* image_list_view;
              QComboBox* colourmap_combobox;
              AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
              QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
-             QCheckBox* interpolate_check_box;
+             InterpolateCheckBox* interpolate_check_box;
              QSlider *opacity_slider;
 
              void update_selection ();

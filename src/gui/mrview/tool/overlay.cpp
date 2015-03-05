@@ -166,7 +166,7 @@ namespace MR
             main_box->addWidget (new QLabel ("opacity"), 0);
             main_box->addWidget (opacity_slider, 0);
 
-            interpolate_check_box = new QCheckBox (tr ("interpolate"));
+            interpolate_check_box = new InterpolateCheckBox (tr ("interpolate"));
             interpolate_check_box->setTristate (true);
             interpolate_check_box->setCheckState (Qt::Checked);
             connect (interpolate_check_box, SIGNAL (clicked ()), this, SLOT (interpolate_changed ()));
