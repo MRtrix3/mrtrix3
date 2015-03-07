@@ -33,6 +33,7 @@
 #include "get_set.h"
     
 #include "file/par_utils.h"
+#include "file/par.h" // not used yet
 
 #include "image/format/mrtrix_utils.h"
 #include <tuple>
@@ -49,6 +50,13 @@ namespace MR
   {
     namespace Format
     {
+
+
+      // if (map.count(key) == 1)
+      //   return map.at(key);
+      // else 
+      //   return nullptr;
+
       template<typename T>
       std::vector<T> split_image_line(const std::string& line) {
           std::istringstream is(line);
@@ -82,15 +90,9 @@ namespace MR
           if ( ! res.second )
             WARN("ParHeader key " +  kv.key() + " defined multiple times. Using: " + (res.first)->second);
         }
-        PH.insert(std::make_pair("version", kv.version()));
 
         for (auto& item: PH) {
           DEBUG(item.first + ":" + item.second);
-        }
-
-        if (!kv.valid_version()){
-          WARN("par/rec file " + H.name() + " claims to be of version '" + 
-            kv.version() + "' which is not supported. You've got to ask yourself one question: Do I feel lucky?");
         }
 
         size_t cnt=0;
@@ -105,49 +107,123 @@ namespace MR
             }
           }
           image_info.insert(std::make_pair(kv.key(), std::make_tuple(cnt, cnt+extent, type)));
-          cnt++;
-        }
-        // image_info.insert(std::make_pair("volume number", std::make_tuple(-1, -1, "integer")));
-        DEBUG("image column info:");
-        for (auto& item: image_info) {
-          DEBUG(item.first + ": columns "  + 
-            str(std::get<0>(item.second)) + "-"  +
-            str(std::get<1>(item.second)-1) + " " +
-            std::get<2>(item.second)); 
+          cnt+=extent;
         }
 
+        // check version
+        { 
+        if (!kv.valid_version())
+          WARN("par/rec file " + H.name() + " claims to be of version '" + 
+            kv.version() + "' which is not supported. You've got to ask yourself one question: Do I feel lucky?");
+          size_t number_of_columns=0; 
+          for (auto& item:image_info)
+            number_of_columns = std::max(number_of_columns,std::get<1>(item.second));
+          std::string version;
+          if (number_of_columns <= 41)
+            version = "V4";
+          else if (number_of_columns <= 48)
+            version = "V4.1";
+          else
+            version = "V4.2";
+          if (kv.version() != version)
+            WARN("number of columns in " + H.name() + " does not match version number: " + kv.version() + " (" + version + ")");
+        }
+
+        PH.insert(std::make_pair("version", kv.version()));
+
+        // define what information we need for unique identifier
+        std::vector<std::string> vUID;
+        if (std::stoi(PH["Max. number of echoes"]) > 1)
+          vUID.push_back("echo number");
+        if (std::stoi(PH["Max. number of slices/locations"]) > 1)
+          vUID.push_back("slice number");
+        if (std::stoi(PH["Max. number of cardiac phases"]) > 1)
+          vUID.push_back("cardiac phase number");
+        if (std::stoi(PH["Max. number of dynamics"]) > 1)
+          vUID.push_back("dynamic scan number");
+        // 4.1
+        if ((kv.version()=="V4.1" || kv.version()=="V4.2") && (std::stoi(PH["Max. number of diffusion values"]) > 1))
+          vUID.push_back("gradient orientation number (imagekey!)");
+        if ((kv.version()=="V4.1" || kv.version()=="V4.2") && (std::stoi(PH["Max. number of diffusion values"]) > 1))
+          vUID.push_back("diffusion b value number    (imagekey!)");
+        // 4.2
+        if (kv.version()=="V4.2" && (std::stoi(PH["Number of label types   <0=no ASL>"]) > 1))
+          vUID.push_back("label type (ASL)            (imagekey!)");
+        vUID.push_back("image_type_mr");
+
+        if (vUID.size()>1)
+          WARN("Multiple volumes in file " + H.name() + ". Uid category indices required.");
+
+        // parse image information and save it in images
+        std::map<std::string, size_t> uid_tester;
         std::vector<std::string> vec;
-        std::map<std::string, size_t> image_number_counter;
+        std::string uid; // minimum unique identifier for each slice
+        std::string uid_cat;
+        std::for_each(vUID.begin(), vUID.end(), [&](const std::string &piece){ uid_cat += piece; uid_cat += ";"; });
+        uid_cat.pop_back();
+        std::vector<std::vector<int> > uid_indices;
         while (kv.next_image()){
           vec = split_image_line<std::string>(kv.value());
-          image_number_counter[vec[0]]++;
 
           for (auto& item: image_info) {
+            // stop_col - start_col >1 --> item spans multiple columns
             size_t start_col = std::get<0>(item.second);
             size_t stop_col =  std::get<1>(item.second);
-            // TODO how to handle multiple rows in a nicer way?
             std::string s;
             std::for_each(vec.begin()+start_col, vec.begin()+stop_col, [&](const std::string &piece){ s += piece; s += " "; });
-            images[item.first].push_back(s);
+            images[item.first].push_back(s.substr(0, s.size()-1));
           }
-          // calculate volume numbers inferred from slice number
-          // std::string volume_number = std::count (images["slice number"].begin(), images["slice number"].end(), vec[0]);
-          images["volume number"].push_back(str(image_number_counter[vec[0]]));
+          uid.clear();
+          for (auto& k : vUID)    
+            uid += images[k].back() + " ";
+          uid.pop_back();
+          INFO(uid);
+          ++uid_tester[uid];
+          if (uid_tester[uid] > 1){
+            WARN("uid not unique: " + uid_cat + ": " + uid);
+          }
+          uid_indices.push_back(split_image_line<int>(uid));
         }
-        // TODO check slice_numbers against "Max. number of slices/locations" ... see _truncation_checks
+
+        INFO("uid categories: " + uid_cat);
+
+
+        // TODO: user defined volume slicing via uid
+
+        // 
+        // #include "math/matrix.h"
+        // Math::Matrix<int>  mat (nrows, vUID.size());
+
+        // TODO truncation_checks: check slice_numbers against "Max. number of slices/locations" 
+        // TODO dynamics with arbitrary start?
+        // bool sorted_by_slice = false;
         
-        // for (auto& item: images)
-          // DEBUG(item.first + ": " +str(item.second));
 
         // convert strVec to float:
         // std::vector<float> flVect(strVect.size());
         // std::transform(strVect.begin(), strVect.end(), flVect.begin(), 
                        // [](const std::string &arg) { return std::stof(arg); });
 
-        INFO("Patient position:      " + PH["Patient position"]);
-        INFO("Preparation direction: " + PH["Preparation direction"]);
-        INFO("FOV (ap,fh,rl) [mm]:   " + PH["FOV (ap,fh,rl) [mm]"]);
-
+        // show some info about the data
+        {
+          std::vector<std::string> v = {"Patient position", 
+                                        "Preparation direction", 
+                                        "FOV (ap,fh,rl) [mm]",
+                                        "Technique",
+                                        "Protocol name",
+                                        "Dynamic scan      <0=no 1=yes> ?",
+                                        "Diffusion         <0=no 1=yes> ?"};
+          auto it = std::max_element(v.begin(), v.end(), [](const std::string& x, const std::string& y) {  return x.size() < y.size(); });
+          size_t padding = (*it).size();
+          for (auto& k : v){
+            if (PH.find(k) != PH.end()){
+              INFO(k.insert(k.size(), padding - k.size(), ' ') + ": " + PH[k]);            
+            }
+            else{
+              WARN("PAR header lacks '" + k +"' field." );
+            }
+          }
+        }
 
         // NIBABEL:        
         // "It seems that everyone agrees that Philips stores REC data in little-endian
@@ -157,8 +233,14 @@ namespace MR
         // data is always stored as 8 or 16 bit unsigned integers - see
         // https://github.com/nipy/nibabel/issues/275"
 
+
+        // PV = pixel value in REC file, FP = floating point value, DV = displayed value on console
+        // RS = rescale slope,           RI = rescale intercept,    SS = scale slope
+        // DV = PV * RS + RI             FP = DV / (RS * SS)
+
+
         File::MMap fmap (H.name());
-        std::cerr << fmap << std::endl;
+        // std::cerr << fmap << std::endl;
         size_t data_offset = 0; // File::PAR::read (H, * ( (const par_header*) fmap.address()));
         // size_t data_offset = 0;
         throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
