@@ -39,6 +39,7 @@
 #include <tuple>
 
 #include <iterator>
+#include <set>
 #include <algorithm>
 // #include <string>
 
@@ -56,6 +57,17 @@ namespace MR
       //   return map.at(key);
       // else 
       //   return nullptr;
+      template<typename T>
+      std::set<size_t> get_matching_indices(const std::vector<T>& v, const T& criterion){
+        std::set<size_t> indices;
+        auto it = std::find_if(std::begin(v), std::end(v), [&](T i){return i == criterion;});
+        while (it != std::end(v)) {
+          // indices.emplace_back(std::distance(std::begin(v), it));
+          indices.insert(std::distance(std::begin(v), it));
+          it = std::find_if(std::next(it), std::end(v), [&](T i){return i == criterion;});
+        }
+        return indices;
+      }
 
       template<typename T>
       std::vector<T> split_image_line(const std::string& line) {
@@ -161,6 +173,7 @@ namespace MR
         std::string uid_cat;
         std::for_each(vUID.begin(), vUID.end(), [&](const std::string &piece){ uid_cat += piece; uid_cat += ";"; });
         uid_cat.pop_back();
+        INFO("uid categories: " + uid_cat);
         std::vector<std::vector<int> > uid_indices;
         while (kv.next_image()){
           vec = split_image_line<std::string>(kv.value());
@@ -177,22 +190,26 @@ namespace MR
           for (auto& k : vUID)    
             uid += images[k].back() + " ";
           uid.pop_back();
-          INFO(uid);
+          INFO("uid: " + uid);
           ++uid_tester[uid];
           if (uid_tester[uid] > 1){
             WARN("uid not unique: " + uid_cat + ": " + uid);
           }
           uid_indices.push_back(split_image_line<int>(uid));
         }
-
         INFO("uid categories: " + uid_cat);
 
-
         // TODO: user defined volume slicing via uid
+        std::set<size_t>  a = get_matching_indices(images[vUID[2]],std::string(images[vUID[2]][0]));
+        std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
 
-        // 
-        // #include "math/matrix.h"
-        // Math::Matrix<int>  mat (nrows, vUID.size());
+        std::set<size_t>  uni;
+        std::set_intersection (a.begin(), a.end(),
+                   b.begin(), b.end(),
+                   std::inserter(uni, uni.begin()));
+        std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
+        std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
+        std::cerr << std::endl;
 
         // TODO truncation_checks: check slice_numbers against "Max. number of slices/locations" 
         // TODO dynamics with arbitrary start?
