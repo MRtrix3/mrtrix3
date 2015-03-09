@@ -41,6 +41,8 @@
 #include <iterator>
 #include <set>
 #include <algorithm>
+#include <memory>
+// #include <unordered_map>
 // #include <string>
 
 
@@ -51,7 +53,20 @@ namespace MR
   {
     namespace Format
     {
+      // template<typename T, typename... Args>
+      // T intersect(T first, Args... args) {
+      //   return first + intersect(args...);
+      // }
+      // std::set<size_t>  a = get_matching_indices(images[vUID[2]],std::string(images[vUID[2]][0]));
+      // std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
 
+      // std::set<size_t>  uni;
+      // std::set_intersection (a.begin(), a.end(),
+      //            b.begin(), b.end(),
+      //            std::inserter(uni, uni.begin()));
+      // std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
+      // std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
+      // std::cerr << std::endl;
 
       // if (map.count(key) == 1)
       //   return map.at(key);
@@ -86,16 +101,20 @@ namespace MR
       // TOOD ParImages: use different types?      
       // TOOD ParImages: use array?      
 
+      // todo check file existence
       RefPtr<Handler::Base> PAR::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".PAR") && !Path::has_suffix (H.name(), ".par")){
           return RefPtr<Handler::Base>();
         }
+        std::string rec_file = H.name().substr(0,H.name().size()-4)+".REC";
+
         MR::File::PAR::KeyValue kv (H.name());
         
         ParHeader PH;             // General information
         ParImageInfo image_info;  // image column info
         ParImages images;         // columns
+        std::vector<std::pair<size_t,size_t>> slice_data_block_positions; 
         
         while (kv.next_general()){
           std::pair<ParHeader::iterator, bool> res = PH.insert(std::make_pair(kv.key(), kv.value()));
@@ -120,6 +139,27 @@ namespace MR
           }
           image_info.insert(std::make_pair(kv.key(), std::make_tuple(cnt, cnt+extent, type)));
           cnt+=extent;
+        }
+
+        // show some info about the data
+        {
+          std::vector<std::string> v = {"Patient position", 
+                                        "Preparation direction", 
+                                        "FOV (ap,fh,rl) [mm]",
+                                        "Technique",
+                                        "Protocol name",
+                                        "Dynamic scan      <0=no 1=yes> ?",
+                                        "Diffusion         <0=no 1=yes> ?"};
+          auto it = std::max_element(v.begin(), v.end(), [](const std::string& x, const std::string& y) {  return x.size() < y.size(); });
+          size_t padding = (*it).size();
+          for (auto& k : v){
+            if (PH.find(k) != PH.end()){
+              INFO(k.insert(k.size(), padding - k.size(), ' ') + ": " + PH[k]);            
+            }
+            else{
+              WARN("PAR header lacks '" + k +"' field." );
+            }
+          }
         }
 
         // check version
@@ -173,8 +213,9 @@ namespace MR
         std::string uid_cat;
         std::for_each(vUID.begin(), vUID.end(), [&](const std::string &piece){ uid_cat += piece; uid_cat += ";"; });
         uid_cat.pop_back();
-        INFO("uid categories: " + uid_cat);
+        // INFO("uid categories: " + uid_cat);
         std::vector<std::vector<int> > uid_indices;
+        size_t slice_data_block_start=0;
         while (kv.next_image()){
           vec = split_image_line<std::string>(kv.value());
 
@@ -186,34 +227,96 @@ namespace MR
             std::for_each(vec.begin()+start_col, vec.begin()+stop_col, [&](const std::string &piece){ s += piece; s += " "; });
             images[item.first].push_back(s.substr(0, s.size()-1));
           }
+          // slice_data_block_positions
+          {
+            // image = reshape(data(1+idx.*(x.*y):(idx+1).*x.*y),x,y);
+            // size_t idx = std::stoi(images["index in REC file (in images)"].back());
+            std::vector<size_t> xy = split_image_line<size_t>(images["recon resolution (x y)"].back());
+            // size_t start = idx*(xy[0] *xy[1]);
+            // size_t stop = (idx+1)*(xy[0] *xy[1]);
+            size_t stop = slice_data_block_start + (xy[0] *xy[1]);
+            slice_data_block_positions.push_back(std::pair<size_t,size_t>(slice_data_block_start,stop));
+            slice_data_block_start = stop;
+          }
+
+
           uid.clear();
           for (auto& k : vUID)    
             uid += images[k].back() + " ";
           uid.pop_back();
-          INFO("uid: " + uid);
+          // INFO("uid: " + uid);
           ++uid_tester[uid];
           if (uid_tester[uid] > 1){
             WARN("uid not unique: " + uid_cat + ": " + uid);
           }
           uid_indices.push_back(split_image_line<int>(uid));
         }
+        kv.close();
         INFO("uid categories: " + uid_cat);
 
-        // TODO: user defined volume slicing via uid
-        std::set<size_t>  a = get_matching_indices(images[vUID[2]],std::string(images[vUID[2]][0]));
-        std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
+        // TODO separate uid code from image parsing
 
-        std::set<size_t>  uni;
-        std::set_intersection (a.begin(), a.end(),
-                   b.begin(), b.end(),
-                   std::inserter(uni, uni.begin()));
-        std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
-        std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
-        std::cerr << std::endl;
+        // TODO: combine type values
+
+        // TODO: user defined volume slicing via \a categories and \a values. here we choose an arbitrary volume
+        std::vector<size_t>  chosen_slices;
+        if (vUID.size() == 1) {
+          chosen_slices.reserve(images[vUID[0]].size());
+          std::iota(chosen_slices.begin(), chosen_slices.end(), 0);
+        }
+        else {         
+          std::vector<std::string>  categories; // which categories in have to be unique (the remaining one can have any value)
+          std::vector<std::string>  values;     // the value corresponding to categories
+
+          // TODO: change this to user defined values
+          categories.insert(categories.end(), vUID.begin()+1, vUID.end());
+          for (auto cat : categories)
+            values.push_back(images[cat][0]);
+          VAR(categories);
+          VAR(values);
+
+
+          std::vector<std::set<size_t>> matching_lines_per_categ;
+          for (size_t i=0; i< categories.size(); i++) {
+            matching_lines_per_categ.push_back(std::set<size_t>(get_matching_indices(images[categories[i]],values[i]))); // TODO use pointers
+          }
+          std::map<size_t,size_t> intersect_counter;
+          for (auto& lines: matching_lines_per_categ){
+            for (auto& line :lines)
+              intersect_counter[line] += 1;
+          }
+
+          for (auto& item: intersect_counter) {
+            if (item.second == matching_lines_per_categ.size())
+              chosen_slices.push_back(item.first);
+          }
+
+
+          // std::set<size_t>  uni;
+          // std::set<size_t>  a = get_matching_indices(images[vUID[0]],std::string(images[vUID[0]][0]));
+          // std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
+          // std::set_intersection (a.begin(), a.end(),
+          //            b.begin(), b.end(),
+          //            std::inserter(uni, uni.begin()));
+          // std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
+          // std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
+          // std::cerr << std::endl;
+        }
+
+        { INFO("selected slices:");
+          std::vector<std::string> image_info = {"image offcentre (ap,fh,rl in mm )"};
+          image_info.insert(image_info.end(),vUID.begin(),vUID.end());
+          // ,"slice number","echo number","dynamic scan number","image_type_mr"};
+          for (auto& slice : chosen_slices){
+            std::string s;
+            for (auto& cat: image_info)
+              s += cat +": " + images[cat][slice] + "\t";
+            INFO(s + " (" + str(slice_data_block_positions[slice].first) + "," +str(slice_data_block_positions[slice].second) +")");
+          }
+        }
 
         // TODO truncation_checks: check slice_numbers against "Max. number of slices/locations" 
         // TODO dynamics with arbitrary start?
-        // bool sorted_by_slice = false;
         
 
         // convert strVec to float:
@@ -221,26 +324,6 @@ namespace MR
         // std::transform(strVect.begin(), strVect.end(), flVect.begin(), 
                        // [](const std::string &arg) { return std::stof(arg); });
 
-        // show some info about the data
-        {
-          std::vector<std::string> v = {"Patient position", 
-                                        "Preparation direction", 
-                                        "FOV (ap,fh,rl) [mm]",
-                                        "Technique",
-                                        "Protocol name",
-                                        "Dynamic scan      <0=no 1=yes> ?",
-                                        "Diffusion         <0=no 1=yes> ?"};
-          auto it = std::max_element(v.begin(), v.end(), [](const std::string& x, const std::string& y) {  return x.size() < y.size(); });
-          size_t padding = (*it).size();
-          for (auto& k : v){
-            if (PH.find(k) != PH.end()){
-              INFO(k.insert(k.size(), padding - k.size(), ' ') + ": " + PH[k]);            
-            }
-            else{
-              WARN("PAR header lacks '" + k +"' field." );
-            }
-          }
-        }
 
         // NIBABEL:        
         // "It seems that everyone agrees that Philips stores REC data in little-endian
@@ -255,14 +338,24 @@ namespace MR
         // RS = rescale slope,           RI = rescale intercept,    SS = scale slope
         // DV = PV * RS + RI             FP = DV / (RS * SS)
 
-
-        File::MMap fmap (H.name());
+        File::MMap fmap (rec_file);
         // std::cerr << fmap << std::endl;
-        size_t data_offset = 0; // File::PAR::read (H, * ( (const par_header*) fmap.address()));
-        // size_t data_offset = 0;
-        throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
+
+        // File::PAR::read (H, * ( (const par_header*) fmap.address()));
+
+        // How to load the image data for non-contiguous data blocks?
+        // e.g. (0,4096), (36864,40960), (73728,77824), ...
+        // lib/image/handler/mosaic.cpp
+        // Mosaic::load
 
         RefPtr<Handler::Base> handler (new Handler::Default (H));
+
+        throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
+        size_t data_offset = 0;
+        // for (size_t n = 0; n < chosen_slices.size(); ++n)
+          // handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data))
+
+
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
         return handler;
