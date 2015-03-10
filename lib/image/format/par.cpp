@@ -287,16 +287,22 @@ namespace MR
           }
           
           // loop over iDim
+          // for iDi
           size_t iDim = 0;
-          for (int i=0; i<vUID.size();i++){
+          categories.clear();
+          chosen_values.clear();
+
+          for (size_t i=0; i<vUID.size();i++){
             if (i == iDim) continue;
+            categories.push_back(vUID[i]);
+            chosen_values.push_back(*possible_values[i].begin());
           }
-          categories.insert(categories.end(), vUID.begin()+1, vUID.end()); // TODO volume dimension only from first element in vUID
+          // categories.insert(categories.end(), vUID.begin()+1, vUID.end()); // TODO volume dimension only from first element in vUID
           // for (auto& cat : categories){
           //   values.push_back(std::set<std::string> (images[cat].begin(),images[cat].end())); // TODO remove me
           // }
-          for (auto& val: values)
-            chosen_values.push_back(*val.begin()); 
+          // for (auto& val: values)
+            // chosen_values.push_back(*val.begin()); 
         
           VAR(categories);
           VAR(chosen_values);
