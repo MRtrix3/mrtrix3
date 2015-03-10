@@ -89,6 +89,66 @@ namespace MR
           std::istringstream is(line);
           return std::vector<T>(std::istream_iterator<T>(is), std::istream_iterator<T>());
       }
+      struct SortStringByLengthFirst
+      {
+          bool operator () (const std::string & p_lhs, const std::string & p_rhs)
+          {
+              const size_t lhsLength = p_lhs.length() ;
+              const size_t rhsLength = p_rhs.length() ;
+
+              if(lhsLength == rhsLength)
+              {
+                  return (p_lhs < p_rhs) ; // when two strings have the same
+                                           // length, defaults to the normal
+                                           // string comparison
+              }
+
+              return (lhsLength < rhsLength) ; // compares with the length
+          }
+      } ;
+
+      // loop over /a nDim range loops with size /a size
+      class NestedLoop {
+          size_t nDim;
+          size_t p;
+          bool first_iteration = true;
+          std::vector<size_t> size;
+          std::vector<size_t> max;
+          std::vector<size_t> indx;
+        public:
+          std::vector<size_t> get_indices() {
+            return std::vector<size_t> (indx.begin(),indx.end()-1);
+          }
+          size_t operator() () {
+            if (first_iteration){
+              first_iteration = false;
+              return true;
+            }
+            if(indx[nDim]!=0) return false;
+            // increment index
+            indx[0]++;
+            while(indx[p]==max[p]) {
+              indx[p]=0;
+              indx[++p]++; //increase p by 1, and increase the next (p+1)th index
+              if (nDim == 1 && p == 1) { return false; }
+              if(indx[p]!=max[p]) {
+                p=0; // break
+              } 
+              if (p == nDim-1) {
+                return false;
+              }
+            }
+            return true;
+          }
+          void init (const size_t& x, const std::vector<size_t>& s) {
+            nDim = x;
+            size = s;
+            size.push_back(0);
+            p = 0; //Used to increment all of the indicies correctly, at the end of each loop.
+            indx.assign(nDim+1,0);
+            max = size;
+          }
+      };
 
       typedef double ComputeType;
 
@@ -206,7 +266,7 @@ namespace MR
         vUID.push_back("image_type_mr");
 
         if (vUID.size()>1)
-          WARN("Multiple volumes in file " + H.name() + "All but one discarded.");
+          INFO("Multiple volumes in file " + H.name() );
 
         // parse image information and save it in images
         std::map<std::string, size_t> uid_tester;
@@ -272,76 +332,118 @@ namespace MR
           chosen_slices.reserve(images[vUID[0]].size());
           std::iota(chosen_slices.begin(), chosen_slices.end(), 0);
           dimension_size.push_back(chosen_slices.size());
+
+          H.set_ndim (3);
+          H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
+          H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
+          H.dim(2) = chosen_slices.size();
+          // untested
         }
         else {         
-          // TODO: loop over all volumes
 
-          std::vector<std::string>  categories;     // which categories have to be unique (the remaining one can have any value)
-          std::vector<std::string>  chosen_values;  // the value corresponding to categories
-          std::vector<std::set<std::string>>     possible_values;
-
+          // std::vector<std::string>  categories;     // which categories have to be unique (the remaining one can have any value)
+          // std::vector<std::string>  chosen_values;  // the value corresponding to categories
+          // std::vector<std::set<std::string>>     possible_values;
+          std::vector<std::vector<std::string>>     possible_values;
+          // std::vector<size_t>                       possible_value_index(vUID.size(),0);
           for (auto& cat : vUID){
-            possible_values.push_back(std::set<std::string> (images[cat].begin(),images[cat].end()));
-            dimension_size.push_back(possible_values.back().size());
+          //   auto comp = [](const std::string& a, const std::string& b) -> bool { 
+          //     if (a.length() == b.length()) 
+          //       return (a < b);
+          //     else 
+          //       return a.length() < b.length(); };
+          //   auto tmp_set = std::set <std::string, decltype(comp)> (images[cat].begin(),images[cat].end());
+            auto tmp_set = std::set<std::string, SortStringByLengthFirst> (images[cat].begin(),images[cat].end());
+            possible_values.push_back(std::vector<std::string>(tmp_set.begin(),tmp_set.end()));
+            dimension_size.push_back(tmp_set.size());
             INFO(cat + " dim: " + str(dimension_size.back()));
           }
+
+          H.set_ndim (2+dimension_size.size());
+          H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
+          H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
+          for (size_t iDim = 0; iDim<dimension_size.size(); iDim++){
+            H.dim(iDim+2) = dimension_size[iDim];
+            H.vox(iDim+2) = 1;
+          }
+          std::map<std::string,size_t> line_lookup;
+          {
+            for (size_t i=0; i<images["recon resolution (x y)"].size(); ++i){
+              std::string s;
+              for (auto& cat: vUID){
+                s += images[cat][i]+",";
+              }
+              line_lookup[s] = i;
+            }
+          }
+
+          NestedLoop nested_loop;
+          nested_loop.init(dimension_size.size(),dimension_size);
+          while(nested_loop()){
+            std::string t;
+            for (size_t idx=0; idx<vUID.size();idx++)// : std::vector<size_t>(nested_loop.get_indices()))
+              t += possible_values[idx][nested_loop.get_indices()[idx]] + "," ;
+            if (line_lookup.find(t) == line_lookup.end()){
+              // throw Exception("we assumed that the n-D volume is dense");
+              WARN("we assumed that the n-D volume is dense. hack: we use slice 0 instead"); //fixme TODO
+              chosen_slices.push_back(0);
+            } else {
+            chosen_slices.push_back(line_lookup[t]);
+            }
+          }
           
-          // loop over iDim
-          // for iDi
-          size_t iDim = 0;
-          categories.clear();
-          chosen_values.clear();
+          // // loop over iDim
+          // for (size_t iDim = 0; iDim<vUID.size(); iDim++){
+          //   for (size_t iVal = 0; iVal<dimension_size[iDim]; iVal++){
+          //     // size_t iDim = 0;
+          //     categories.clear();
+          //     chosen_values.clear();
+          //     possible_value_index[iDim]++;
 
-          for (size_t i=0; i<vUID.size();i++){
-            if (i == iDim) continue;
-            categories.push_back(vUID[i]);
-            chosen_values.push_back(*possible_values[i].begin());
-          }
-          // categories.insert(categories.end(), vUID.begin()+1, vUID.end()); // TODO volume dimension only from first element in vUID
-          // for (auto& cat : categories){
-          //   values.push_back(std::set<std::string> (images[cat].begin(),images[cat].end())); // TODO remove me
+          //     for (size_t i=0; i<vUID.size();i++){
+          //       if (i == iDim) continue;
+          //       categories.push_back(vUID[i]);
+          //       chosen_values.push_back(possible_values[i][iVal]);
+          //     }
+          //     VAR(vUID[iDim]);
+          //     VAR(categories);
+          //     VAR(chosen_values);
+          //     H.comments().push_back("categories:" + str(categories) + ", values:" + str(chosen_values));
+
+          //     std::vector<std::set<size_t>> matching_lines_per_categ;
+          //     for (size_t i=0; i< categories.size(); i++) {
+          //       matching_lines_per_categ.push_back(std::set<size_t>(get_matching_indices(images[categories[i]],chosen_values[i]))); // TODO use pointers
+          //     }
+          //     std::map<size_t,size_t> intersect_counter;
+          //     for (auto& lines: matching_lines_per_categ){
+          //       for (auto& line :lines)
+          //         intersect_counter[line] += 1;
+          //     }
+
+          //     for (auto& item: intersect_counter) {
+          //       if (item.second == matching_lines_per_categ.size())
+          //         chosen_slices.push_back(item.first);
+          //     }
+          //   }
+
+
+            // std::set<size_t>  uni;
+            // std::set<size_t>  a = get_matching_indices(images[vUID[0]],std::string(images[vUID[0]][0]));
+            // std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
+            // std::set_intersection (a.begin(), a.end(),
+            //            b.begin(), b.end(),
+            //            std::inserter(uni, uni.begin()));
+            // std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
+            // std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
+            // std::cerr << std::endl;
+
+          // H.dim(iDim+2) = dimension_size[iDim];
+          
           // }
-          // for (auto& val: values)
-            // chosen_values.push_back(*val.begin()); 
-        
-          VAR(categories);
-          VAR(chosen_values);
-          H.comments().push_back("categories:" + str(categories));
-          H.comments().push_back("values:" + str(chosen_values));
-
-
-          std::vector<std::set<size_t>> matching_lines_per_categ;
-          for (size_t i=0; i< categories.size(); i++) {
-            matching_lines_per_categ.push_back(std::set<size_t>(get_matching_indices(images[categories[i]],chosen_values[i]))); // TODO use pointers
-          }
-          std::map<size_t,size_t> intersect_counter;
-          for (auto& lines: matching_lines_per_categ){
-            for (auto& line :lines)
-              intersect_counter[line] += 1;
-          }
-
-          for (auto& item: intersect_counter) {
-            if (item.second == matching_lines_per_categ.size())
-              chosen_slices.push_back(item.first);
-          }
-          // std::set<size_t>  uni;
-          // std::set<size_t>  a = get_matching_indices(images[vUID[0]],std::string(images[vUID[0]][0]));
-          // std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
-          // std::set_intersection (a.begin(), a.end(),
-          //            b.begin(), b.end(),
-          //            std::inserter(uni, uni.begin()));
-          // std::cerr << vUID[2] + "="  + images[vUID[2]][0] + ", " + vUID[1] + "="  + images[vUID[1]][0] + " has indices ";
-          // std::copy(uni.begin(), uni.end(), std::ostream_iterator<size_t>(std::cerr, " "));
-          // std::cerr << std::endl;
         }
 
-        H.set_ndim (3);
-        H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
-        H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
-        H.dim(2) = chosen_slices.size();
         H.vox(0) = 1;
         H.vox(1) = 1;
-        H.vox(2) = 1;
         H.datatype() = DataType::UInt16;
         H.datatype().set_byte_order_native();
         for (auto& item: PH)
@@ -367,6 +469,7 @@ namespace MR
           // ,"slice number","echo number","dynamic scan number","image_type_mr"};
           for (auto& slice : chosen_slices){
             std::string s;
+            // s += images
             for (auto& cat: image_info)
               s += cat +": " + images[cat][slice] + "\t";
             INFO(s + " (" + str(slice_data_block_positions[slice]) + ")");
