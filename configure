@@ -10,7 +10,6 @@ noshared = False
 static = False
 verbose = False
 R_module = False
-eigen = True
 profile_name = None
 sh_basis_def = None
 
@@ -585,6 +584,53 @@ ld_lib_flags += zlib_ldflags
 
 
 
+# Eigen3 flags:
+
+report('checking for Eigen 3 library: ')
+if 'EIGEN_CFLAGS' in os.environ.keys(): 
+  eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
+else:
+  try:
+    eigen_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1])
+  except:
+    log('error running on pkg-config --cflags eigen3\n\n')
+
+try:
+  eigen_version = compile ('''
+#include <Eigen/Core>
+#include <iostream>
+
+int main (int argc, char* argv[]) {
+  std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
+  return 0;
+}
+''', cpp_flags + eigen_cflags, ld_flags)
+
+  cpp_flags += eigen_cflags
+  report (eigen_version + '\n')
+except CompileError:
+  error ('''compiler error!
+
+Use the EIGEN_CFLAGS environment variable to set the path to
+the Eigen3 include files and to set any required flags
+For example:
+     EIGEN_CFLAGS=-I/usr/include/eigen3 ./configure''')
+except LinkError:
+  error ('''linker error!
+
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
+except RuntimeError:
+  error ('''runtime error!
+
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
+except:
+  error ('Eigen3 implementation not found!')
+
+
+
+
 
 
 # GSL flags:
@@ -1044,15 +1090,6 @@ WARNING: no OpenGL implementation found.
   if system == "darwin":
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')
-
-if eigen:
-    report('checking for Eigen 3 library: ')
-    try:
-        eigen_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1])
-        cpp_flags += eigen_cflags
-        report(eigen_cflags[0])
-    except:
-        log('error running on pkg-config --cflags eigen3\n\n')
 
 
 # output R module:
