@@ -254,6 +254,11 @@ namespace MR
         kv.close();
         INFO("uid categories: " + uid_cat);
 
+        if (!std::all_of(images["recon resolution (x y)"].begin()+1,images["recon resolution (x y)"].end(),
+          [&](const std::string & r) {return r==images["recon resolution (x y)"].front();}))
+          throw Exception ("recon resolution (x y) not the same for all slices");
+        
+
         // TODO separate uid code from image parsing
 
         // TODO: combine type values
@@ -274,6 +279,8 @@ namespace MR
             values.push_back(images[cat][0]);
           VAR(categories);
           VAR(values);
+          H.comments().push_back("categories:" + str(categories));
+          H.comments().push_back("values:" + str(values));
 
 
           std::vector<std::set<size_t>> matching_lines_per_categ;
@@ -291,6 +298,28 @@ namespace MR
               chosen_slices.push_back(item.first);
           }
 
+          H.set_ndim (3);
+          H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
+          H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
+          H.dim(2) = chosen_slices.size();
+          H.vox(0) = 1;
+          H.vox(1) = 1;
+          H.vox(2) = 1;
+          H.datatype() = DataType::UInt16;
+          H.datatype().set_byte_order_native();
+          for (auto& item: PH)
+            H[item.first] = item.second;
+
+          // H.intensity_offset();
+          // H.intensity_scale();
+
+          // H.transform().allocate (4,4);
+          // H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
+          // H.transform()(3,3) = 1.0;
+          // int count = 0;
+          // for (int row = 0; row < 3; ++row)
+          //   for (int col = 0; col < 4; ++col)
+          //     H.transform() (row,col) = transform[count++];
 
           // std::set<size_t>  uni;
           // std::set<size_t>  a = get_matching_indices(images[vUID[0]],std::string(images[vUID[0]][0]));
@@ -303,6 +332,8 @@ namespace MR
           // std::cerr << std::endl;
         }
 
+        RefPtr<Handler::Base> handler (new Handler::Default (H));
+
         { INFO("selected slices:");
           std::vector<std::string> image_info = {"image offcentre (ap,fh,rl in mm )"};
           image_info.insert(image_info.end(),vUID.begin(),vUID.end());
@@ -312,6 +343,7 @@ namespace MR
             for (auto& cat: image_info)
               s += cat +": " + images[cat][slice] + "\t";
             INFO(s + " (" + str(slice_data_block_positions[slice].first) + "," +str(slice_data_block_positions[slice].second) +")");
+            handler->files.push_back (File::Entry (rec_file, 2*slice_data_block_positions[slice].first));
           }
         }
 
@@ -338,7 +370,7 @@ namespace MR
         // RS = rescale slope,           RI = rescale intercept,    SS = scale slope
         // DV = PV * RS + RI             FP = DV / (RS * SS)
 
-        File::MMap fmap (rec_file);
+        // File::MMap fmap (rec_file);
         // std::cerr << fmap << std::endl;
 
         // File::PAR::read (H, * ( (const par_header*) fmap.address()));
@@ -348,15 +380,18 @@ namespace MR
         // lib/image/handler/mosaic.cpp
         // Mosaic::load
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        // RefPtr<Handler::Base> handler (new Handler::Default (H));
 
-        throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
-        size_t data_offset = 0;
+        // for (auto& data_block_position : slice_data_block_positions){
+        //   size_t data_offset = data_block_position.first;
+        //   handler->files.push_back (File::Entry (rec_file, data_offset));
+        // }
+
+        // throw Exception ("par/rec not yet implemented... \"" + H.name() + "\"");
         // for (size_t n = 0; n < chosen_slices.size(); ++n)
           // handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data))
 
 
-        handler->files.push_back (File::Entry (H.name(), data_offset));
 
         return handler;
       }
