@@ -98,6 +98,8 @@ namespace MR
       typedef std::tuple<size_t, size_t, std::string>         ParCol;
       typedef std::map<std::string, ParCol>                   ParImageInfo;
       typedef std::map<std::string, std::vector<std::string>> ParImages; 
+      size_t data_type_size = 2;
+
       // TOOD ParImages: use different types?      
       // TOOD ParImages: use array?      
 
@@ -114,7 +116,7 @@ namespace MR
         ParHeader PH;             // General information
         ParImageInfo image_info;  // image column info
         ParImages images;         // columns
-        std::vector<std::pair<size_t,size_t>> slice_data_block_positions; 
+        std::vector<size_t> slice_data_block_positions; 
         
         while (kv.next_general()){
           std::pair<ParHeader::iterator, bool> res = PH.insert(std::make_pair(kv.key(), kv.value()));
@@ -204,7 +206,7 @@ namespace MR
         vUID.push_back("image_type_mr");
 
         if (vUID.size()>1)
-          WARN("Multiple volumes in file " + H.name() + ". Uid category indices required.");
+          WARN("Multiple volumes in file " + H.name() + "All but one discarded.");
 
         // parse image information and save it in images
         std::map<std::string, size_t> uid_tester;
@@ -227,18 +229,15 @@ namespace MR
             std::for_each(vec.begin()+start_col, vec.begin()+stop_col, [&](const std::string &piece){ s += piece; s += " "; });
             images[item.first].push_back(s.substr(0, s.size()-1));
           }
-          // slice_data_block_positions
           {
-            // image = reshape(data(1+idx.*(x.*y):(idx+1).*x.*y),x,y);
-            // size_t idx = std::stoi(images["index in REC file (in images)"].back());
             std::vector<size_t> xy = split_image_line<size_t>(images["recon resolution (x y)"].back());
+            // size_t idx = std::stoi(images["index in REC file (in images)"].back());
             // size_t start = idx*(xy[0] *xy[1]);
             // size_t stop = (idx+1)*(xy[0] *xy[1]);
-            size_t stop = slice_data_block_start + (xy[0] *xy[1]);
-            slice_data_block_positions.push_back(std::pair<size_t,size_t>(slice_data_block_start,stop));
-            slice_data_block_start = stop;
+            // size_t stop = slice_data_block_start + (xy[0] *xy[1]);
+            slice_data_block_positions.push_back(slice_data_block_start);
+            slice_data_block_start += data_type_size * (xy[0] *xy[1]);
           }
-
 
           uid.clear();
           for (auto& k : vUID)    
@@ -251,41 +250,63 @@ namespace MR
           }
           uid_indices.push_back(split_image_line<int>(uid));
         }
+        // finished reading image lines
         kv.close();
         INFO("uid categories: " + uid_cat);
 
+        // sanity checks
         if (!std::all_of(images["recon resolution (x y)"].begin()+1,images["recon resolution (x y)"].end(),
           [&](const std::string & r) {return r==images["recon resolution (x y)"].front();}))
           throw Exception ("recon resolution (x y) not the same for all slices");
+        // TODO truncation_checks: check slice_numbers against "Max. number of slices/locations" 
+        // TODO dynamics with arbitrary start?
         
 
         // TODO separate uid code from image parsing
-
-        // TODO: combine type values
+        // TODO: combine type values: complex float ?
 
         // TODO: user defined volume slicing via \a categories and \a values. here we choose an arbitrary volume
         std::vector<size_t>  chosen_slices;
+        std::vector<size_t>  dimension_size;
         if (vUID.size() == 1) {
           chosen_slices.reserve(images[vUID[0]].size());
           std::iota(chosen_slices.begin(), chosen_slices.end(), 0);
+          dimension_size.push_back(chosen_slices.size());
         }
         else {         
-          std::vector<std::string>  categories; // which categories in have to be unique (the remaining one can have any value)
-          std::vector<std::string>  values;     // the value corresponding to categories
+          // TODO: loop over all volumes
 
-          // TODO: change this to user defined values
-          categories.insert(categories.end(), vUID.begin()+1, vUID.end());
-          for (auto cat : categories)
-            values.push_back(images[cat][0]);
+          std::vector<std::string>  categories;     // which categories have to be unique (the remaining one can have any value)
+          std::vector<std::string>  chosen_values;  // the value corresponding to categories
+          std::vector<std::set<std::string>>     possible_values;
+
+          for (auto& cat : vUID){
+            possible_values.push_back(std::set<std::string> (images[cat].begin(),images[cat].end()));
+            dimension_size.push_back(possible_values.back().size());
+            INFO(cat + " dim: " + str(dimension_size.back()));
+          }
+          
+          // loop over iDim
+          size_t iDim = 0;
+          for (int i=0; i<vUID.size();i++){
+            if (i == iDim) continue;
+          }
+          categories.insert(categories.end(), vUID.begin()+1, vUID.end()); // TODO volume dimension only from first element in vUID
+          // for (auto& cat : categories){
+          //   values.push_back(std::set<std::string> (images[cat].begin(),images[cat].end())); // TODO remove me
+          // }
+          for (auto& val: values)
+            chosen_values.push_back(*val.begin()); 
+        
           VAR(categories);
-          VAR(values);
+          VAR(chosen_values);
           H.comments().push_back("categories:" + str(categories));
-          H.comments().push_back("values:" + str(values));
+          H.comments().push_back("values:" + str(chosen_values));
 
 
           std::vector<std::set<size_t>> matching_lines_per_categ;
           for (size_t i=0; i< categories.size(); i++) {
-            matching_lines_per_categ.push_back(std::set<size_t>(get_matching_indices(images[categories[i]],values[i]))); // TODO use pointers
+            matching_lines_per_categ.push_back(std::set<size_t>(get_matching_indices(images[categories[i]],chosen_values[i]))); // TODO use pointers
           }
           std::map<size_t,size_t> intersect_counter;
           for (auto& lines: matching_lines_per_categ){
@@ -297,30 +318,6 @@ namespace MR
             if (item.second == matching_lines_per_categ.size())
               chosen_slices.push_back(item.first);
           }
-
-          H.set_ndim (3);
-          H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
-          H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
-          H.dim(2) = chosen_slices.size();
-          H.vox(0) = 1;
-          H.vox(1) = 1;
-          H.vox(2) = 1;
-          H.datatype() = DataType::UInt16;
-          H.datatype().set_byte_order_native();
-          for (auto& item: PH)
-            H[item.first] = item.second;
-
-          // H.intensity_offset();
-          // H.intensity_scale();
-
-          // H.transform().allocate (4,4);
-          // H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
-          // H.transform()(3,3) = 1.0;
-          // int count = 0;
-          // for (int row = 0; row < 3; ++row)
-          //   for (int col = 0; col < 4; ++col)
-          //     H.transform() (row,col) = transform[count++];
-
           // std::set<size_t>  uni;
           // std::set<size_t>  a = get_matching_indices(images[vUID[0]],std::string(images[vUID[0]][0]));
           // std::set<size_t>  b = get_matching_indices(images[vUID[1]],std::string(images[vUID[1]][0]));
@@ -332,9 +329,33 @@ namespace MR
           // std::cerr << std::endl;
         }
 
+        H.set_ndim (3);
+        H.dim(0) = split_image_line<size_t>(images["recon resolution (x y)"].back())[1];
+        H.dim(1) = split_image_line<size_t>(images["recon resolution (x y)"].back())[0];
+        H.dim(2) = chosen_slices.size();
+        H.vox(0) = 1;
+        H.vox(1) = 1;
+        H.vox(2) = 1;
+        H.datatype() = DataType::UInt16;
+        H.datatype().set_byte_order_native();
+        for (auto& item: PH)
+          H[item.first] = item.second;
+
+        // H.intensity_offset();
+        // H.intensity_scale();
+
+        // H.transform().allocate (4,4);
+        // H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
+        // H.transform()(3,3) = 1.0;
+        // int count = 0;
+        // for (int row = 0; row < 3; ++row)
+        //   for (int col = 0; col < 4; ++col)
+        //     H.transform() (row,col) = transform[count++];
+
         RefPtr<Handler::Base> handler (new Handler::Default (H));
 
-        { INFO("selected slices:");
+        { 
+          INFO("selected slices:");
           std::vector<std::string> image_info = {"image offcentre (ap,fh,rl in mm )"};
           image_info.insert(image_info.end(),vUID.begin(),vUID.end());
           // ,"slice number","echo number","dynamic scan number","image_type_mr"};
@@ -342,14 +363,10 @@ namespace MR
             std::string s;
             for (auto& cat: image_info)
               s += cat +": " + images[cat][slice] + "\t";
-            INFO(s + " (" + str(slice_data_block_positions[slice].first) + "," +str(slice_data_block_positions[slice].second) +")");
-            handler->files.push_back (File::Entry (rec_file, 2*slice_data_block_positions[slice].first));
+            INFO(s + " (" + str(slice_data_block_positions[slice]) + ")");
+            handler->files.push_back (File::Entry (rec_file, slice_data_block_positions[slice]));
           }
         }
-
-        // TODO truncation_checks: check slice_numbers against "Max. number of slices/locations" 
-        // TODO dynamics with arbitrary start?
-        
 
         // convert strVec to float:
         // std::vector<float> flVect(strVect.size());
@@ -392,7 +409,7 @@ namespace MR
           // handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data))
 
 
-
+        WARN("PAR/REC voxel size, scaling, intercept and image transformation not yet implemented.");
         return handler;
       }
 
