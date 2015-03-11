@@ -82,6 +82,14 @@ namespace MR
               static_cast<Image*> (list[n])->set_windowing (min, max);
           }
 
+          void set_image_volume (size_t axis, ssize_t index)
+          {
+            assert (image());
+            image()->interp[axis] = index;
+            set_image_navigation_menu();
+            updateGL();
+          }
+
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
           bool show_comments () const { return show_comments_action->isChecked(); }
           bool show_voxel_info () const { return show_voxel_info_action->isChecked(); }

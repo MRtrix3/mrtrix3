@@ -77,7 +77,7 @@ void usage ()
       "tensor elements (default = 5000). This only applies to the non-linear methods.")
     + Argument ("term").type_float (0.0, 5000.0, 1e12)
 
-    + DWI::GradOption;
+    + DWI::GradImportOptions;
 
 
 }

@@ -276,9 +276,11 @@ namespace MR
 
       void Image::update_texture3D ()
       {
-        if (volume_unchanged() && !texture_mode_changed) 
-          return;
+        // Binding also guarantees texture interpolation is updated
         bind();
+
+        if (volume_unchanged() && !texture_mode_changed)
+          return;
         
         std::string cmap_name = ColourMap::maps[colourmap].name;
 

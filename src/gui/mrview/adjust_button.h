@@ -62,6 +62,7 @@ namespace MR
 
         signals:
           void valueChanged ();
+          void valueChanged (float val);
 
         protected slots:
           void onSetValue ();

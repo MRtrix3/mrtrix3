@@ -130,7 +130,7 @@ void usage ()
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
-    + DWI::GradOption
+    + DWI::GradImportOptions
 
     + DataType::options ()
 
