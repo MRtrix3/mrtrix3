@@ -33,7 +33,7 @@
 #include "get_set.h"
     
 #include "file/par_utils.h"
-#include "file/par.h" // not used yet
+// #include "file/par.h" // not used yet
 
 #include "image/format/mrtrix_utils.h"
 #include <tuple>
