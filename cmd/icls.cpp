@@ -63,9 +63,12 @@ void run ()
   Math::Vector<double> x;
   Timer timer;
   size_t niter = icls_solver (x, b);
+  VAR (timer.elapsed());
   if (niter > icls_problem.max_niter) 
     WARN ("failed to converge");
-  VAR (timer.elapsed());
+  Math::Vector<double> c;
+  Math::mult (c, A, x);
+  VAR (Math::min(c));
   VAR (niter);
   std::cout << x << std::endl;
 }
