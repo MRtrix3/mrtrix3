@@ -110,9 +110,8 @@ namespace MR
       //! increment the current value by one.
       void operator++ () {
         if (multiplier) {
-          ++current_val;
-          if (current_val >= next_val.i) {
-            value = next_val.i / multiplier;
+          if (++current_val >= next_val.i) {
+            value = current_val / multiplier;
             next_val.i = std::ceil ((value+1.0) * multiplier);
             display_func (*this);
           }

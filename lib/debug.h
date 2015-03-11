@@ -24,8 +24,14 @@
 #ifndef __debug_h__
 #define __debug_h__
 
-#include "mrtrix.h"
-#include "app.h"
+#include <iostream>
+#include <string.h>
+
+namespace MR {
+  namespace App { 
+    extern std::string NAME;
+  } 
+}
 
 /** \defgroup debug Debugging 
  * \brief functions and macros provided to ease debugging. */

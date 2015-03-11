@@ -166,7 +166,7 @@ namespace MR
             main_box->addWidget (new QLabel ("opacity"), 0);
             main_box->addWidget (opacity_slider, 0);
 
-            interpolate_check_box = new QCheckBox (tr ("interpolate"));
+            interpolate_check_box = new InterpolateCheckBox (tr ("interpolate"));
             interpolate_check_box->setTristate (true);
             interpolate_check_box->setCheckState (Qt::Checked);
             connect (interpolate_check_box, SIGNAL (clicked ()), this, SLOT (interpolate_changed ()));
@@ -506,6 +506,19 @@ namespace MR
             try {
               float n = to<float> (args);
               opacity_slider->setSliderPosition(int(1.e3f*n));
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+
+          // BATCH_COMMAND overlay.colourmap index # Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
+          else if (cmd == "overlay.colourmap") {
+            try {
+              int n = to<int> (args);
+              if (n < 0 || !ColourMap::maps[n].name)
+                throw Exception ("invalid overlay colourmap index \"" + args + "\" requested in batch command");
+              colourmap_combobox->setCurrentIndex (n);
+              colourmap_changed(n);
             }
             catch (Exception& e) { e.display(); }
             return true;

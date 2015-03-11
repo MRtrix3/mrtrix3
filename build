@@ -6,6 +6,33 @@ import platform, sys, os, time, threading, subprocess, copy, codecs, glob, atexi
 config_file = 'config.default'
 
 
+bcolors = {
+    "candidate" : '\033[94m',
+    "Linking" : '\033[01;32m',
+    "In function" : '\033[01;32m',
+    "WARNING" : '\033[95m',
+    "Warning" : '\033[95m',
+    "warning" : '\033[95m',
+    "required from" : '\033[94m',
+    "In instantiation of" : '\033[01;32m',
+    "In member" : '\033[01;32m',
+    "ERROR" : '\033[01;95m',
+    "error" : '\033[01;31m',
+    "failed" : '\033[91m',
+    "note" : '\033[94m'}
+
+def colorize(s):
+  out = ''
+  for l in s.splitlines():
+    for st in bcolors.keys():
+      if st in l:
+        l = l.replace (st, bcolors[st] + st) + '\033[0m'
+        break
+    out += l + '\n'
+  return out
+
+
+
 system = None
 dependencies = False
 verbose = False
@@ -19,7 +46,7 @@ print_lock = threading.Lock()
 stop = False
 error_stream = None
 
-logfile = open ('build.log', 'w')
+logfile = open ('build.log', 'wb')
 
 
 
@@ -30,14 +57,16 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write (error_stream.encode (errors='ignore'))
+        fid.write (colorize(error_stream).encode ('utf-8', 'ignore'))
         fid.close()
-        os.system ("less " + name)
+        os.system ("less -R " + name)
       except Exception as e:
         sys.stderr.write (str (e))
       os.unlink (name)
     except Exception as e:
       sys.stderr.write (str (e))
+    except:
+      raise
 
 
 
@@ -50,13 +79,13 @@ if sys.stderr.isatty():
 
 def disp (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   sys.stdout.write (msg)
   print_lock.release()
   
 def log (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   if verbose:
     sys.stderr.write (msg)
   print_lock.release()
@@ -64,7 +93,7 @@ def log (msg):
 def error (msg):
   global error_stream
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode ('utf-8', 'ignore'))
   if error_stream is not None:
     error_stream += msg
   else:
@@ -76,6 +105,23 @@ def error (msg):
 def split_path (filename):
   return filename.replace ('\\', '/').split ('/')
 
+
+
+def get_git_lib_version (folder):
+  log ('''
+getting short git version in folder "''' + folder + '"... ')
+
+  try: 
+    process = subprocess.Popen ([ 'git', 'describe', '--abbrev=0', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    ( git_version, stderr ) = process.communicate()
+    if process.returncode == 0:
+      git_version = git_version.decode('utf-8', 'ignore').strip()
+      log (git_version + '\n')
+      return git_version
+  except:
+    pass
+  log ('not found\n')
+  return None
 
 
 # common definitions:
@@ -198,6 +244,12 @@ if separate_project:
 
 
 # get version info:
+
+lib_version = get_git_lib_version (mrtrix_dir)
+if lib_version is not None:
+  if lib_version.find('-') > 0:
+    lib_version = lib_version[0:lib_version.find('-')]
+  libname += '-' + lib_version
 
 if ld_enabled:
   libname += config_suffix
@@ -447,12 +499,12 @@ def execute (message, cmd):
     if process.returncode != 0:
       if error_stream is not None:
         disp ('ERROR: ' + message + os.linesep)
-      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
+      error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode ('utf-8', 'ignore'))
       return 1
     if len(stdout):
-      error ('STDOUT: ' + message + '\n' + stdout.decode (errors='ignore'))
+      error ('STDOUT: ' + message + '\n' + stdout.decode ('utf-8', 'ignore'))
     if len(stderr):
-      error ('STDERR: ' + message + '\n' + stderr.decode (errors='ignore'))
+      error ('STDERR: ' + message + '\n' + stderr.decode ('utf-8', 'ignore'))
 
   except OSError:
     error (cmd[0] + ': command not found')
@@ -639,7 +691,7 @@ def gen_command_html_help ():
     if process.wait() != 0:
       sys.stderr.write ('ERROR: unable to execute', binaries[n], ' - aborting' + os.linesep)
       return 1
-    H = process.stdout.read().decode (errors='ignore')
+    H = process.stdout.read().decode ('utf-8', 'ignore')
     H = H.splitlines()
 
     with codecs.open (os.path.join (doc_dir, 'commands', binaries[n] + '.html'), mode='w', encoding='utf-8') as fid:
@@ -772,7 +824,7 @@ getting git version in folder "''' + folder + '"... ')
     process = subprocess.Popen ([ 'git', 'describe', '--abbrev=8', '--dirty', '--always' ], cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     ( git_version, stderr ) = process.communicate()
     if process.returncode == 0:
-      git_version = git_version.decode("utf-8").strip()
+      git_version = git_version.decode('utf-8', 'ignore').strip()
       log (git_version + '\n')
       return git_version
   except:
@@ -849,6 +901,8 @@ try: [ Entry(item) for item in targets ]
 except Exception as e: 
   sys.stderr.write ('ERROR: ' + str(e) + os.linesep)
   sys.exit (1)
+except:
+  raise
 
 
 

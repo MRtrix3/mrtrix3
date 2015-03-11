@@ -49,6 +49,7 @@ namespace MR
 
           private slots:
             void on_screen_capture ();
+            void on_screen_preview ();
             void select_output_folder_slot();
             void on_output_update ();
 
@@ -61,13 +62,17 @@ namespace MR
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
+            AdjustButton *target_volume;
             AdjustButton *FOV_multipler;
             QSpinBox *start_index;
             QSpinBox *frames;
+            QSpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
             QDir* directory;
+
+            void run (bool with_capture);
 
         };
 

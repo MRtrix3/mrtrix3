@@ -36,11 +36,12 @@ using namespace App;
 
 
 void usage () {
+
 DESCRIPTION
   + "apply generic voxel-wise mathematical operations to images."
 
   + "This command will only compute per-voxel operations. "
-  "Use 'mrcalc' to compute summary statistics across images or "
+  "Use 'mrmath' to compute summary statistics across images or "
   "along image axes."
   
   + "This command uses a stack-based syntax, with operators "

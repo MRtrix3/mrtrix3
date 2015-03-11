@@ -20,9 +20,8 @@
 
 */
 
-#include "command.h"
+#include "gui/gui.h"
 #include "progressbar.h"
-#include "gui/app.h"
 #include "file/path.h"
 #include "math/SH.h"
 #include "gui/shview/icons.h"
@@ -57,7 +56,6 @@ void usage ()
 
 void run ()
 {
-  GUI::App app;
   GUI::DWI::Window window (get_options ("response").size());
 
   if (argument.size())

@@ -84,7 +84,7 @@ void usage ()
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
   +   Argument ("noise").type_image_in()
 
-  + DWI::GradOption
+  + DWI::GradImportOptions
   + DWI::ShellOption
   + Image::Stride::StrideOption;
 }

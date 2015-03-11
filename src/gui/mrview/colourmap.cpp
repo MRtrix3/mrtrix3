@@ -246,8 +246,8 @@ namespace MR
           program.stop();
 
           frame_program.start();
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / projection.width());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / projection.height());
           gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 

@@ -109,22 +109,25 @@ namespace MR
           draw_plane (plane(), slice_shader, with_projection);
         }
 
-
-        void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
+        void Slice::setup_draw (int axis, Projection& with_projection)
         {
-          // info for projection:
-          float fov = FOV() / (float) (with_projection.width()+with_projection.height());
-          float depth = std::max (std::max (image()->header().dim(0), image()->header().dim(1)), image()->header().dim(2));
+            // info for projection:
+            float fov = FOV() / (float) (with_projection.width()+with_projection.height());
+            float depth = std::max (std::max (image()->header().dim(0), image()->header().dim(1)), image()->header().dim(2));
 
-          // set up projection & modelview matrices:
-          GL::mat4 P = GL::ortho (
-              -with_projection.width()*fov, with_projection.width()*fov,
-              -with_projection.height()*fov, with_projection.height()*fov,
-              -depth, depth);
-          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
-          GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
-          with_projection.set (MV, P);
+            // set up projection & modelview matrices:
+            GL::mat4 P = GL::ortho (
+                -with_projection.width()*fov, with_projection.width()*fov,
+                -with_projection.height()*fov, with_projection.height()*fov,
+                -depth, depth);
+            GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
+            GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
+            with_projection.set (MV, P);
+        }
 
+        // Draw without setting up matrices/no crosshairs/no orientation labels
+        void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
+        {
           // render image:
           if (snap_to_image())
             image()->render2D (shader_program, with_projection, axis, slice (axis));
@@ -132,9 +135,15 @@ namespace MR
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
 
           render_tools (with_projection, false, axis, slice (axis));
+        }
 
-          draw_crosshairs (with_projection);
-          draw_orientation_labels (with_projection);
+
+        void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
+        {
+            setup_draw (axis, with_projection);
+            draw_plane_primitive (axis, shader_program, with_projection);
+            draw_crosshairs (with_projection);
+            draw_orientation_labels (with_projection);
         }
 
 
