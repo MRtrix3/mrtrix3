@@ -191,10 +191,8 @@ class Processor {
     void operator () (const Image::Iterator& pos) {
       if (!load_data(pos))
         return;
-      try {
-        solver (fodf, dwi);
-      } 
-      catch (Exception& E) {
+      size_t niter = solver (fodf, dwi);
+      if (niter >= shared.problem.max_niter) {
         INFO ("failed to converge for voxel " + str(pos));
         //dwi.save("d" + str(pos) + ".txt",16);
       }

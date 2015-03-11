@@ -53,18 +53,13 @@ namespace MR
             Problem () { }
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
-                ValueType min_norm_regularisation = 1.e-8,
-                ValueType tolerance = ValueType(1.0e-10), 
-                size_t max_iterations = 1000,
-                ValueType min_quadratic_constraint_factor = ValueType(1.0), 
-                ValueType max_quadratic_constraint_factor = ValueType(1.0e8)) :
+                ValueType min_norm_regularisation = 0.0,
+                ValueType tolerance = 0.0,
+                size_t max_iterations = 0) :
               H (problem_matrix),
               chol_HtH (H.columns(), H.columns()), 
-              mu_min (min_quadratic_constraint_factor),
-              mu_max (max_quadratic_constraint_factor),
-              tol (tolerance), 
-              tol2 (pow2 (tolerance)), 
-              max_niter (max_iterations) {
+              tol (tolerance ? tolerance : 1.0e-10), 
+              max_niter (max_iterations ? max_iterations : 10*problem_matrix.columns()) {
 
                 // form quadratic problem matrix H'*H:
                 rankN_update (chol_HtH, H, CblasTrans, CblasLower);
@@ -90,7 +85,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType mu_min, mu_max, tol, tol2;
+            ValueType tol;
             size_t max_niter;
         };
 
@@ -101,143 +96,114 @@ namespace MR
         class Solver {
           public:
             Solver (const Problem<ValueType>& problem) :
-              iter(0),
               P (problem),
-              HtH_muBtB (P.chol_HtH.rows(), P.chol_HtH.columns()),
-              Bk (P.B.rows(), P.B.columns()),
-              dx (HtH_muBtB.rows()),
-              d (HtH_muBtB.rows()),
+              BtB (P.chol_HtH.rows(), P.chol_HtH.columns()),
+              B_active (P.B.rows(), P.B.columns()),
+              y_u (BtB.rows()),
               c (P.B.rows()),
+              c_u (P.B.rows()),
               lambda (c.size()),
-              lambda_k (lambda.size()),
-              p (HtH_muBtB.rows()) { }
+              l (lambda.size()),
+              active (lambda.size(), false) { }
 
-            int operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
+            size_t operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
-#ifdef DEBUG_ICLS
-              std::ofstream y_stream ("y.txt");
-              std::ofstream lambda_stream ("l.txt");
-              std::ofstream c_stream ("n.txt");
-              std::ofstream mu_stream ("mu.txt");
-              std::ofstream t_stream ("t.txt");
-#endif
+              // compute unconstrained solution:
+              mult (y_u, ValueType (1.0), CblasTrans, P.b2d, b);
+              // compute constraint violaions for unconstrained solution:
+              mult (c_u, P.B, y_u);
 
-
-              ValueType mu = P.chol_HtH.rows() * P.mu_min;
+              // set all Lagrangian multipliers to zero:
               lambda = 0.0;
-              mult (d, ValueType (1.0), CblasTrans, P.b2d, b);
-              size_t num_under_tol = 0;
-
-              dx = x = d;
+              // set active set empty:
+              std::fill (active.begin(), active.end(), false);
 
               // initial estimate of constraint values:
-              mult (c, P.B, x);
-              ValueType min_c_prev = Math::min (c);
-              
-              iter = 0;
-              for (; iter < P.max_niter; ++iter) {
-#ifdef DEBUG_ICLS
-                y_stream << x << std::endl;
-                lambda_stream << lambda << std::endl;
-                c_stream << c << std::endl;
-#endif
+              c = c_u;
+              // initial estimate of solution:
+              x = y_u;
 
-                // form matrix of active constraints and corresponding lambdas:
-                Bk.allocate (P.B);
-                lambda_k.allocate (P.B.rows());
-                size_t idx = 0;
-                for (size_t n = 0; n < c.size(); ++n) {
-                  if (c[n] - mu*lambda[n] <= 0.0) {
-                    Bk.row (idx) = P.B.row (n);
-                    lambda_k[idx] = lambda[n];
-                    ++idx;
+              size_t min_c_index;
+              size_t niter = 0;
+
+              while (min (c, min_c_index) < -P.tol) {
+                active[min_c_index] = true;
+
+                while (1) {
+                  // form submatrix of active constraints:
+                  B_active.allocate (P.B);
+                  l.allocate (P.B.rows());
+                  size_t num_active = 0;
+                  for (size_t n = 0; n < active.size(); ++n) {
+                    if (active[n]) {
+                      B_active.row (num_active) = P.B.row (n);
+                      l[num_active] = -c_u[n];
+                      ++num_active;
+                    }
                   }
-                }
+                  B_active.resize (num_active, P.B.columns());
+                  l.resize (num_active);
 
-                if (idx) {
-                  Bk.resize (idx, P.B.columns());
-                  lambda_k.resize (idx);
+                  BtB.allocate (num_active, num_active);
+                  // solve for l in B*B'l = -c_u by Cholesky decomposition:
+                  rankN_update (BtB, B_active, CblasNoTrans, CblasLower);
+                  Cholesky::decomp (BtB);
+                  Cholesky::solve (l, BtB);
 
-                  // update problem matrix (which is identity after preconditioning)
-                  // with the scaled constraint matrix:
-                  rankN_update (HtH_muBtB, Bk, CblasTrans, CblasLower, mu);
-                  HtH_muBtB.diagonal() += 1.0;
-
-                  // add constraints to RHS:
-                  mult (x, ValueType (1.0), CblasTrans, Bk, lambda_k);
-                  x += d;
-
-                  // solve for x by Cholesky decomposition:
-                  Cholesky::decomp (HtH_muBtB);
-                  Cholesky::solve (x, HtH_muBtB);
-                }
-                else {
-                  // no active constraints
-                  x = d;
-                  if (iter == 0) { // unconstrained solution does not violate constraints
-                    solve_triangular (x, P.chol_HtH);
-                    return iter;
+                  // update lambda values in full vector 
+                  // and identify worst offender if any lambda < 0
+                  // by projection from previous onto feasible 
+                  // subset (i.e. l>=0):
+                  ValueType s_min = std::numeric_limits<ValueType>::infinity();
+                  size_t s_min_index = 0;
+                  size_t a = 0;
+                  for (size_t n = 0; n < active.size(); ++n) {
+                    if (active[n]) {
+                      if (l[a] < 0.0) {
+                        ValueType s = lambda[n] / (lambda[n] - l[a]);
+                        if (s < s_min) {
+                          s_min = s;
+                          s_min_index = n;
+                        }
+                      }
+                      lambda[n] = l[a];
+                      ++a;
+                    }
+                    else
+                      lambda[n] = 0.0;
                   }
-                  HtH_muBtB.identity();
+
+                  // if no lambda < 0, proceed:
+                  if (!std::isfinite (s_min))
+                    break;
+
+                  // remove worst offending lambda from active set:
+                  active[s_min_index] = false;
                 }
 
-                // check for convergence:
-                dx -= x;
-                ValueType t = norm2 (dx) / norm2 (x);
-#ifdef DEBUG_ICLS
-                t_stream << t << std::endl;
-#endif
-                if (t < P.tol) {
-                  ++num_under_tol;
-                  if (t < P.tol2 || num_under_tol > 10) {
-                    // project back to unconditioned domain:
-                    solve_triangular (x, P.chol_HtH);
-                    return iter;
-                  }
-                }
-                else 
-                  num_under_tol = 0;
 
+                // update solution vector:
+                mult (x, ValueType(1.0), CblasTrans, B_active, l);
+                x += y_u;
 
-                // compute constraint values:
+                ++niter;
+                if (niter > P.max_niter) 
+                  break;
+
+                // compute constraint values at updated solution:
                 mult (c, P.B, x);
-
-                for (size_t n = 0; n < lambda.size(); ++n) 
-                  lambda[n] = std::max (ValueType(0.0), lambda[n] - mu * c[n]);
-
-                ValueType min_c = -Math::min(c);
-
-                if (min_c < 0.0 || min_c / min_c_prev > 2.0) {
-                  mu *= 0.7;
-                }
-                else {
-                  if (min_c < min_c_prev) 
-                    mu *= 1.2;
-                  min_c_prev = min_c;
-                }
-                mu = std::max (std::min (mu, P.mu_max), P.mu_min);
-#ifdef DEBUG_ICLS
-                mu_stream << mu << std::endl;
-#endif
-
-                dx = x;
               }
 
               // project back to unconditioned domain:
               solve_triangular (x, P.chol_HtH);
-              throw Exception ("constrained least-squares failed to converge");
-            }
-
-            size_t iterations () const {
-              return iter;
+              return niter;
             }
 
           protected:
-            size_t iter;
             const Problem<ValueType>& P;
-            Matrix<ValueType> HtH_muBtB, Bk;
-            Vector<ValueType> dx, d, c, lambda, lambda_k;
-            Permutation p;
+            Matrix<ValueType> BtB, B_active;
+            Vector<ValueType> y_u, c, c_u, lambda, l;
+            std::vector<bool> active;
         };
 
 
