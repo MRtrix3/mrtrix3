@@ -263,7 +263,7 @@ namespace MR
         // 4.2
         if (kv.version()=="V4.2" && (std::stoi(PH["Number of label types   <0=no ASL>"]) > 1))
           vUID.push_back("label type (ASL)            (imagekey!)");
-        vUID.push_back("image_type_mr");
+        vUID.push_back("image_type_mr"); // TODO: process and remove last dimension
 
         if (vUID.size()>1)
           INFO("Multiple volumes in file " + H.name() );
