@@ -10,6 +10,7 @@ noshared = False
 static = False
 verbose = False
 R_module = False
+eigen = True
 profile_name = None
 sh_basis_def = None
 
@@ -1018,6 +1019,14 @@ WARNING: no OpenGL implementation found.
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')
 
+if eigen:
+    report('checking for Eigen 3 library: ')
+    try:
+        eigen_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1])
+        cpp_flags += eigen_cflags
+        report(eigen_cflags[0])
+    except:
+        log('error running on pkg-config --cflags eigen3\n\n')
 
 
 # output R module:
