@@ -24,7 +24,8 @@ void usage () {
   DESCRIPTION
     + "Multi-shell, multi-tissue CSD";
 
-  REFERENCES = "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A; Sijbers, J "
+  REFERENCES 
+    + "Jeurissen, B; Tournier, J-D; Dhollander, T; Connelly, A; Sijbers, J "
     "Multi-tissue constrained spherical deconvolution for improved analysis of multi-shell diffusion MRI data "
     "NeuroImage, in press, DOI: 10.1016/j.neuroimage.2014.07.061";
 
@@ -48,7 +49,7 @@ void usage () {
                 "supplied as a text file containing the [ az el ] pairs for the directions.")
     + Argument ("file").type_file_in()
 
-    + DWI::GradOption;
+    + DWI::GradImportOptions;
 }
 
 typedef double value_type;

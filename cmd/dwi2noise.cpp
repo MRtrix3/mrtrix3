@@ -59,7 +59,7 @@ void usage ()
             "diffusion-weighted images up to lmax = 8.")
   +   Argument ("order").type_integer (0, 8, 8)
 
-  + DWI::GradOption
+  + DWI::GradImportOptions
   + DWI::ShellOption;
 
 }
