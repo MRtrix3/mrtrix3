@@ -23,7 +23,7 @@
 #include "command.h"
 #include "timer.h"
 
-#define DEBUG_ICLS
+#define MRTRIX_ICLS_DEBUG
 #include "math/constrained_least_squares.h"
 
 
@@ -57,7 +57,7 @@ void run ()
   Math::Vector<double> b;
   b.load (argument[2]);
 
-  Math::ICLS::Problem<double> icls_problem (H, A, 1.0e-10, 1.0e-6);
+  Math::ICLS::Problem<double> icls_problem (H, A, 0.0, 1e-10);//, 1.0e-10, 1.0e-6);
   Math::ICLS::Solver<double> icls_solver (icls_problem);
 
   Math::Vector<double> x;

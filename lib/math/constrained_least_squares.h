@@ -119,11 +119,16 @@ namespace MR
               c (P.B.rows()),
               c_u (P.B.rows()),
               lambda (c.size()),
+              lambda_prev (c.size()),
               l (lambda.size()),
               active (lambda.size(), false) { }
 
             size_t operator() (Vector<ValueType>& x, const Vector<ValueType>& b) 
             {
+#ifdef MRTRIX_ICLS_DEBUG
+              std::ofstream l_stream ("l.txt");
+              std::ofstream n_stream ("n.txt");
+#endif
               // compute unconstrained solution:
               mult (y_u, ValueType (1.0), CblasTrans, P.b2d, b);
               // compute constraint violaions for unconstrained solution:
@@ -131,6 +136,7 @@ namespace MR
 
               // set all Lagrangian multipliers to zero:
               lambda = 0.0;
+              lambda_prev = 0.0;
               // set active set empty:
               std::fill (active.begin(), active.end(), false);
 
@@ -178,7 +184,7 @@ namespace MR
                   for (size_t n = 0; n < active.size(); ++n) {
                     if (active[n]) {
                       if (l[a] < 0.0) {
-                        ValueType s = lambda[n] / (lambda[n] - l[a]);
+                        ValueType s = lambda_prev[n] / (lambda_prev[n] - l[a]);
                         if (s < s_min) {
                           s_min = s;
                           s_min_index = n;
@@ -194,6 +200,9 @@ namespace MR
                   // if no lambda < 0, proceed:
                   if (!std::isfinite (s_min))
                     break;
+#ifdef MRTRIX_ICLS_DEBUG
+                l_stream << lambda << "\n";
+#endif
 
                   // remove worst offending lambda from active set, 
                   // and re-estimate remaining lambdas:
@@ -202,10 +211,19 @@ namespace MR
                   active[s_min_index] = false;
                 }
 
+                // store feasible subset of lambdas:
+                lambda_prev = lambda;
+
 
                 // update solution vector:
                 mult (x, ValueType(1.0), CblasTrans, B_active, l);
                 x += y_u;
+#ifdef MRTRIX_ICLS_DEBUG
+                l_stream << lambda << "\n";
+                for (auto a : active)
+                  n_stream << a << " ";
+                n_stream << "\n";
+#endif
 
                 ++niter;
                 if (!active_set_changed || niter > P.max_niter) 
@@ -223,7 +241,7 @@ namespace MR
           protected:
             const Problem<ValueType>& P;
             Matrix<ValueType> BtB, B_active;
-            Vector<ValueType> y_u, c, c_u, lambda, l;
+            Vector<ValueType> y_u, c, c_u, lambda, lambda_prev, l;
             std::vector<bool> active;
         };
 
