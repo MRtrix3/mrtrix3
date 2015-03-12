@@ -1071,6 +1071,9 @@ namespace MR
 
         auto t1 = run (__job<Source>::get (source, source_functor), "source");
         auto t2 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
       }
 
 
@@ -1150,6 +1153,10 @@ namespace MR
         auto t1 = run (__job<Source>::get (source, source_functor), "source");
         auto t2 = run (__job<Pipe>::get (pipe, pipe_functor), "pipe");
         auto t3 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
+        t3.wait();
       }
 
 
@@ -1195,6 +1202,11 @@ namespace MR
         auto t2 = run (__job<Pipe1>::get (pipe1, pipe1_functor), "pipe1");
         auto t3 = run (__job<Pipe2>::get (pipe2, pipe2_functor), "pipe2");
         auto t4 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
+        t3.wait();
+        t4.wait();
       }
 
 
