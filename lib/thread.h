@@ -57,41 +57,50 @@ namespace MR
         __Backend();
         ~__Backend();
 
-        size_t refcount;
+        static void register_thread () { 
+          if (!backend)
+              backend = new __Backend;
+          std::lock_guard<std::mutex> (__Backend::get_lock());
+          ++backend->refcount; 
+        }
+        static void unregister_thread () {
+          std::lock_guard<std::mutex> (__Backend::get_lock());
+          --backend->refcount;
+          if (!backend->refcount) {
+            delete backend;
+            backend = nullptr;
+          }
+        }
 
-        std::mutex mutex;
+        static std::mutex& get_lock () {
+          return backend->mutex;
+        }
+
+
         static void thread_print_func (const std::string& msg);
         static void thread_report_to_user_func (const std::string& msg, int type);
 
         static void (*previous_print_func) (const std::string& msg);
         static void (*previous_report_to_user_func) (const std::string& msg, int type);
+
+      protected:
+        size_t refcount;
+        std::mutex mutex;
+
+        static __Backend* backend;
     };
 
-    extern __Backend* __backend;
 
     namespace {
 
       class __thread_base {
         public:
-          __thread_base (const std::string& name = "unnamed") : name (name) { init(); }
-          ~__thread_base () { done(); }
+          __thread_base (const std::string& name = "unnamed") : name (name) { __Backend::register_thread(); }
+          ~__thread_base () { __Backend::unregister_thread(); }
 
 
         protected:
           const std::string name;
-
-          void init() {
-            if (!__backend)
-              __backend = new __Backend;
-            ++__backend->refcount;
-          }
-          void done() {
-            --__backend->refcount;
-            if (!__backend->refcount) {
-              delete __backend;
-              __backend = nullptr;
-            }
-          }
       };
 
 
