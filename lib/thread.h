@@ -296,7 +296,7 @@ namespace MR
      * displayed, and a futher exception re-thrown to allow the main
      * application to catch the error (this could be the same exception that
      * was originally thrown if a single thread was run). This means the
-     * application will continue processing if any the remaining threads
+     * application will continue processing if any of the remaining threads
      * remain active, and it may be a while before the application itself is
      * allowed to handle the error appropriately. If this is behaviour is not
      * appropriate, and you expect exceptions to be thrown occasionally, you
