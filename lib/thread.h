@@ -167,9 +167,18 @@ namespace MR
               DEBUG ("threads \"" + name + "\" completed OK");
             }
 
+            bool any_valid () const {
+              for (auto& t : threads) 
+                if (t.valid()) 
+                  return true;
+              return false;
+            }
+
             ~__multi_thread () {
-              try { wait(); }
-              catch (Exception& E) { E.display(); }
+              if (any_valid()) {
+                try { wait(); }
+                catch (Exception& E) { E.display(); }
+              }
             }
           protected:
             std::vector<std::future<void>> threads;
