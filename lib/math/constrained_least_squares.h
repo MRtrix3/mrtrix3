@@ -51,14 +51,30 @@ namespace MR
         class Problem {
           public:
             Problem () { }
+            //! set up constrained least-squares problem
+            /*! the problem is to solve norm(\e Hx - \e b) subject to \e Ax >=
+             * 0. This sets up a class to be re-used and shared across threads,
+             * assuming the matrices \e H & \e A don't change, but the vector
+             * \e b does. 
+             *  
+             *  - \a problem_matrix: \e H
+             *  - \a constraint_matrix: \e A
+             *  - \a min_norm_regularisation: used to stabilise the estimation
+             *  of the Lagrangian multipliers to handle cases where they become
+             *  degenerate (otherwise leads to errors in the Cholesky
+             *  decomposition). Default is zero, set it to a small value such
+             *  as 1e-10 to help with these kinds of problem.
+             *  - \a max_iterations: the maximum number of iterations to run.
+             *  If zero (default), this number is set to 10x the size of \e x.
+             */
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
                 ValueType min_norm_regularisation = 0.0,
-                ValueType tolerance = 0.0,
-                size_t max_iterations = 0) :
+                size_t max_iterations = 0,
+                ValueType tolerance = 0.0) :
               H (problem_matrix),
               chol_HtH (H.columns(), H.columns()), 
-              tol (tolerance ? tolerance : 1.0e-10), 
+              tol (tolerance),
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.columns()) {
 
                 // form quadratic problem matrix H'*H:
@@ -127,6 +143,7 @@ namespace MR
               size_t niter = 0;
 
               while (min (c, min_c_index) < -P.tol) {
+                bool active_set_changed = !active[min_c_index];
                 active[min_c_index] = true;
 
                 while (1) {
@@ -147,6 +164,7 @@ namespace MR
                   BtB.allocate (num_active, num_active);
                   // solve for l in B*B'l = -c_u by Cholesky decomposition:
                   rankN_update (BtB, B_active, CblasNoTrans, CblasLower);
+                  BtB.diagonal() += 1.0e-10;
                   Cholesky::decomp (BtB);
                   Cholesky::solve (l, BtB);
 
@@ -177,7 +195,10 @@ namespace MR
                   if (!std::isfinite (s_min))
                     break;
 
-                  // remove worst offending lambda from active set:
+                  // remove worst offending lambda from active set, 
+                  // and re-estimate remaining lambdas:
+                  if (active[s_min_index])
+                    active_set_changed = true;
                   active[s_min_index] = false;
                 }
 
@@ -187,7 +208,7 @@ namespace MR
                 x += y_u;
 
                 ++niter;
-                if (niter > P.max_niter) 
+                if (!active_set_changed || niter > P.max_niter) 
                   break;
 
                 // compute constraint values at updated solution:

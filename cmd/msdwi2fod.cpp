@@ -158,7 +158,7 @@ class Shared {
     }
     //A.save("A.txt",16);
     //C.save("C.txt",16);
-    problem = Math::ICLS::Problem<value_type> (C, A);
+    problem = Math::ICLS::Problem<value_type> (C, A, 1.0e-10, 1.0e-6);
   };
 
   public:
