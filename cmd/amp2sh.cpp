@@ -93,14 +93,16 @@ typedef float value_type;
 
 class Amp2SHCommon {
   public:
-    Amp2SHCommon (const Math::Matrix<value_type>& dirs, size_t lmax, 
-        const std::vector<size_t>& bzeros, const std::vector<size_t>& dwis, bool normalise_to_bzero) :
-      SHT (dirs, lmax),
+    Amp2SHCommon (const Math::Matrix<value_type>& sh2amp,
+        const std::vector<size_t>& bzeros, 
+        const std::vector<size_t>& dwis, 
+        bool normalise_to_bzero) :
+      amp2sh (Math::pinv (sh2amp)),
       bzeros (bzeros),
       dwis (dwis),
       normalise (normalise_to_bzero) { }
 
-  Math::SH::Transform<value_type> SHT;
+  Math::Matrix<value_type> amp2sh;
   const std::vector<size_t>& bzeros;
   const std::vector<size_t>& dwis;
   bool normalise;
@@ -113,8 +115,8 @@ class Amp2SH {
   public:
     Amp2SH (const Amp2SHCommon& common) : 
       C (common), 
-      a (C.SHT.n_amp()), 
-      c (C.SHT.n_SH())
+      a (common.amp2sh.columns()),
+      c (common.amp2sh.rows())
   { }
 
     template <class SHVoxelType, class AmpVoxelType>
@@ -129,12 +131,12 @@ class Amp2SH {
           norm = C.bzeros.size() / norm;
         }
 
-        for (size_t n = 0; n < C.SHT.n_amp(); n++) {
+        for (size_t n = 0; n < a.size(); n++) {
           amp[3] = C.dwis.size() ? C.dwis[n] : n;
           a[n] = amp.value() * norm;
         }
 
-        C.SHT.A2SH (c, a);
+        mult (c, C.amp2sh, a);
 
         for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
           SH.value() = c[SH[3]];
@@ -159,7 +161,8 @@ void run ()
   Options opt = get_options ("directions");
   if (opt.size()) {
     dirs.load(opt[0][0]);
-  } else {
+  }
+  else {
     if (header["directions"].size()) {
       std::vector<value_type> dir_vector;
       std::vector<std::string > lines = split (header["directions"], "\n", true);
@@ -172,32 +175,20 @@ void run ()
         dirs(i / 2, 0) = dir_vector[i];
         dirs(i / 2, 1) = dir_vector[i + 1];
       }
-    } else {
+    }
+    else {
       Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (amp_data);
-      DWI::Shells shells (grad);
-      shells.select_shells (true, true);
-      if (shells.smallest().is_bzero())
-        bzeros = shells.smallest().get_volumes();
-      dwis = shells.largest().get_volumes();
-      DWI::gen_direction_matrix (dirs, grad, dwis);
+      DWI::get_gradient_table_and_directions (amp_data, grad, dirs, dwis, bzeros);
     }
   }
 
-
-  opt = get_options ("lmax");
-  int lmax = opt.size() ? opt[0][0] : Math::SH::LforN (dirs.rows());
-  if (lmax > int (Math::SH::LforN (dirs.rows()))) {
-    INFO ("warning: not enough data to estimate spherical harmonic components up to order " + str (lmax));
-    lmax = Math::SH::LforN (dirs.rows());
-  }
-  INFO ("calculating even spherical harmonic components up to order " + str (lmax));
-
+  Math::Matrix<value_type> sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
 
   bool normalise = get_options ("normalise").size();
   if (normalise && !bzeros.size())
     throw Exception ("the normalise option is only available if the input data contains b=0 images.");
 
-  header.dim (3) = Math::SH::NforL (lmax);
+  header.dim (3) = sh2amp.columns();
   header.datatype() = DataType::Float32;
   Image::Stride::set_from_command_line (header);
   Image::Buffer<value_type> SH_data (argument[1], header);
@@ -205,7 +196,7 @@ void run ()
   auto amp_vox = amp_data.voxel();
   auto SH_vox = SH_data.voxel();
 
-  Amp2SHCommon common (dirs, lmax, bzeros, dwis, normalise);
+  Amp2SHCommon common (sh2amp, bzeros, dwis, normalise);
   Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox)
     .run (Amp2SH (common), SH_vox, amp_vox);
 }

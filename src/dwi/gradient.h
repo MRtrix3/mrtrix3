@@ -97,12 +97,7 @@ namespace MR
         Math::Matrix<double> A;
         Math::SH::init_transform (A, g, lmax);
 
-        Math::Matrix<double> V (A.columns(), A.columns());
-        Math::Vector<double> S (A.columns());
-        Math::Vector<double> work (A.columns());
-
-        gsl_linalg_SV_decomp (A.gsl(), V.gsl(), S.gsl(), work.gsl());
-        return S[0] / S[S.size()-1];
+        return Math::cond (A);
       }
 
 
@@ -272,28 +267,79 @@ namespace MR
       }
 
 
-    //! \brief get the matrix mapping SH coefficients to directions
+    //! \brief get the matrix mapping SH coefficients to amplitudes
     /*! Computes the matrix mapping SH coefficients to the directions specified
-     * in the DW_scheme of \a header, up to a given lmax. By default, this is
-     * read from the -lmax command-line option (if \a lmax_from_command_line is
-     * true), or otherwise computed from the number of DW directions in the
-     * DW_scheme, up to a maximum value of \a max_lmax (defaults to 8). If \a
-     * lmax is specified, this is the value used, unless overriden by the
-     * command-line (if \a lmax_from_command_line is true).
+     * in \a directions (in spherical coordinates), up to a given lmax. By
+     * default, this is computed from the number of DW directions, up to a
+     * maximum value of \a default_lmax (defaults to 8), or the value specified
+     * using c -lmax command-line option (if \a lmax_from_command_line is
+     * true). If the resulting DW scheme is ill-posed (condition number less
+     * than \a max_cond, default 2), lmax will be reduced until it becomes
+     * sufficiently well conditioned (unless overridden on the command-line).
      *
      * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
      * check for the -grad option as required. */
     template <typename ValueType>
-      inline Math::Matrix<ValueType> get_SH2amp_mapping (
+      inline Math::Matrix<ValueType> compute_SH2amp_mapping (
+          const Math::Matrix<ValueType>& directions,
+          bool lmax_from_command_line = true, 
+          int default_lmax = 8, 
+          ValueType max_cond = 2.0)
+      {
+        int lmax = -1;
+        int lmax_from_ndir = Math::SH::LforN (directions.rows());
+        bool lmax_set_from_commandline = false;
+        if (lmax_from_command_line) {
+          App::Options opt = App::get_options ("lmax");
+          if (opt.size()) {
+            lmax_set_from_commandline = true;
+            lmax = to<int> (opt[0][0]);
+            if (lmax > lmax_from_ndir) {
+              WARN ("not enough directions for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_ndir));
+              lmax = lmax_from_ndir;
+            }
+          }
+        }
+
+        if (lmax < 0) {
+          lmax = lmax_from_ndir;
+          if (lmax > default_lmax)
+            lmax = default_lmax;
+        }
+
+        INFO ("computing SH transform using lmax = " + str (lmax));
+
+        Math::Matrix<ValueType> SH;
+        int lmax_prev = lmax;
+        do {
+          Math::SH::init_transform (SH, directions, lmax);
+          double cond = Math::cond (SH);
+          if (cond < 2.0) break;
+          WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");
+          if (lmax_set_from_commandline) break;
+          if (lmax <= 2)
+            throw Exception ("DW directions do not support even lmax = 2!");
+          lmax -= 2;
+        } while (lmax > 0);
+        if (lmax_prev != lmax)
+          WARN ("reducing lmax to " + str(lmax) + " to improve conditioning");
+
+        return SH;
+      }
+
+    //! \brief get the gradient table and matrix of directions to use in single-shell DWI processing
+    /*! Tries to find the DW gradient table using get_valid_DW_scheme(),
+     * identifies which shell corresponds to the b=0 and DWI volumes using the
+     * Shells class (which will process any corresponding command-line
+     * options), and generates the direction matrix in spherical coordinates.
+     * */
+    template <typename ValueType>
+      inline void get_gradient_table_and_directions (
           const Image::Header& header, 
           Math::Matrix<ValueType>& grad,
           Math::Matrix<ValueType>& directions,
           std::vector<size_t>& dwis, 
-          std::vector<size_t>& bzeros, 
-          bool lmax_from_command_line = true, 
-          int lmax = -1, 
-          int max_lmax = 8, 
-          ValueType bvalue_threshold = NAN)
+          std::vector<size_t>& bzeros)
       {
         grad = get_valid_DW_scheme<ValueType> (header);
 
@@ -303,46 +349,44 @@ namespace MR
           bzeros = shells.smallest().get_volumes();
         dwis = shells.largest().get_volumes();
 
-        if (lmax_from_command_line) {
-          App::Options opt = App::get_options ("lmax");
-          if (opt.size()) {
-            lmax = to<int> (opt[0][0]);
-            int lmax_from_DW = Math::SH::LforN (dwis.size());
-            if (lmax > lmax_from_DW) {
-              WARN ("not enough directions in DW scheme for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_DW));
-              lmax = lmax_from_DW;
-            }
-          }
-        }
-
-        if (lmax < 0) {
-          lmax = Math::SH::LforN (dwis.size());
-          if (lmax > max_lmax)
-            lmax = max_lmax;
-        }
-
-        INFO ("computing SH transform using lmax = " + str (lmax));
-
         gen_direction_matrix (directions, grad, dwis);
-
-        Math::Matrix<ValueType> SH;
-        Math::SH::init_transform (SH, directions, lmax);
-
-        return SH;
       }
 
 
+    //! \brief get the matrix mapping SH coefficients to directions
+    /*! uses get_gradient_table_and_directions() to get the directions, and
+     * feeds this to get_SH2amp_mapping() to generate the SH->amplitude matrix.
+     * See these functions for a description of the corresponding arguments.
+     * */
+    template <typename ValueType>
+      inline Math::Matrix<ValueType> get_SH2amp_mapping (
+          const Image::Header& header, 
+          Math::Matrix<ValueType>& grad,
+          Math::Matrix<ValueType>& directions,
+          std::vector<size_t>& dwis, 
+          std::vector<size_t>& bzeros, 
+          bool lmax_from_command_line = true, 
+          int default_lmax = 8)
+      {
+        get_gradient_table_and_directions (header, grad, directions, dwis, bzeros);
+        return compute_SH2amp_mapping (directions, lmax_from_command_line, default_lmax);
+      }
+
+
+    //! \brief get the matrix mapping SH coefficients to directions
+    /*! uses get_gradient_table_and_directions() to get the directions, and
+     * feeds this to get_SH2amp_mapping() to generate the SH->amplitude matrix.
+     * See these functions for a description of the corresponding arguments.
+     * */
     template <typename ValueType>
       inline Math::Matrix<ValueType> get_SH2amp_mapping (
           const Image::Header& header, 
           bool lmax_from_command_line = true, 
-          int lmax = -1, 
-          int max_lmax = 8, 
-          ValueType bvalue_threshold = NAN)
+          int default_lmax = 8)
       {
         std::vector<size_t> dwis, bzeros;
         Math::Matrix<ValueType> grad, directions;
-        return get_SH2amp_mapping (header, grad, directions, dwis, bzeros, lmax_from_command_line, lmax, max_lmax, bvalue_threshold);
+        return get_SH2amp_mapping (header, grad, directions, dwis, bzeros, lmax_from_command_line, default_lmax);
       }
 
 
