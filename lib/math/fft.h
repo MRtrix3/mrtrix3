@@ -35,7 +35,11 @@ namespace MR
     class FFT
     {
       public:
-        FFT () : wavetable (NULL), workspace (NULL), length (0) { }
+        FFT () : wavetable (nullptr), workspace (nullptr), length (0) { }
+        FFT (const FFT& f) : wavetable (nullptr), workspace (nullptr), length (0) { }
+        FFT (FFT&& f) : wavetable (nullptr), workspace (nullptr), length (0) { }
+        FFT& operator= (const FFT& f) { return *this; }
+        FFT& operator= (const FFT&& f) { return *this; }
         ~FFT () {
           if (wavetable) gsl_fft_complex_wavetable_free (wavetable);
           if (workspace) gsl_fft_complex_workspace_free (workspace);
@@ -45,11 +49,11 @@ namespace MR
           if (length != array.size()) {
             if (wavetable) {
               gsl_fft_complex_wavetable_free (wavetable);
-              wavetable = NULL;
+              wavetable = nullptr;
             }
             if (workspace) {
               gsl_fft_complex_workspace_free (workspace);
-              workspace = NULL;
+              workspace = nullptr;
             }
 
             length = array.size();
