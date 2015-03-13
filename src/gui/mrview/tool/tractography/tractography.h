@@ -55,7 +55,7 @@ namespace MR
             virtual ~Tractography ();
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
-            void drawOverlays (const Projection& transform);
+            void drawOverlays (const Projection& transform) override;
             bool crop_to_slab () const { return (do_crop_to_slab && not_3D); }
             bool process_batch_command (const std::string& cmd, const std::string& args);
 

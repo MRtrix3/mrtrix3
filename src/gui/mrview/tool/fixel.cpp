@@ -48,8 +48,7 @@ namespace MR
           voxel_size_length_multipler (1.0),
           user_line_length_multiplier (1.0),
           length_type (Unity),
-          colour_type (CValue),
-          show_colour_bar (true)
+          colour_type (CValue)
           {
             set_allowed_features (true, true, false);
             colourmap = 1;
@@ -74,14 +73,12 @@ namespace MR
                "layout (location = 5) in float next_value;\n"
                "uniform mat4 MVP;\n"
                "uniform float length_mult;\n"
+               "uniform vec3 colourmap_colour;\n"
                "flat out float value_out;\n"
                "out vec3 fragmentColour;\n";
 
            switch (color_type) {
              case Direction: break;
-             case Manual:
-               source += "uniform vec3 const_colour;\n";
-               break;
              case CValue:
                source += "uniform float offset, scale;\n";
                break;
@@ -108,10 +105,6 @@ namespace MR
            }
 
            switch (color_type) {
-             case Manual:
-               source +=
-                   "  fragmentColour = const_colour;\n";
-               break;
              case CValue:
                if (!ColourMap::maps[colourmap].special) {
                  source += "  float amplitude = clamp (";
@@ -202,8 +195,9 @@ namespace MR
           if (use_discard_upper())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
 
-          if (colour_type == Manual)
-            gl::Uniform3fv (gl::GetUniformLocation (fixel_shader, "const_colour"), 1, colour);
+          if (ColourMap::maps[colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (fixel_shader, "colourmap_colour"),
+                colour[0]/255.0f, colour[1]/255.0f, colour[2]/255.0f);
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);

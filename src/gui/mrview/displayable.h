@@ -52,6 +52,15 @@ namespace MR
       const uint32_t TransparencyEnabled = 0x00400000;
       const uint32_t LightingEnabled = 0x00800000;
 
+      class Image;
+      namespace Tool { class Fixel; }
+      class DisplayableVisitor
+      {
+        public:
+          virtual void render_image_colourbar(const Image&, const Projection&) {}
+          virtual void render_fixel_colourbar(const Tool::Fixel&, const Projection&) {}
+      };
+
       class Displayable : public QAction
       {
         Q_OBJECT
@@ -61,6 +70,8 @@ namespace MR
           Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
+
+          virtual void request_render_colourbar(DisplayableVisitor&, const Projection&) {}
 
           const std::string& get_filename () const {
             return filename;
@@ -116,6 +127,9 @@ namespace MR
             flags_ = cmap;
           }
 
+          void set_colour (std::array<GLubyte,3> &c) {
+            colour = c;
+          }
 
           void set_use_discard_lower (bool yesno) {
             if (!discard_lower_enabled()) return;
@@ -262,6 +276,7 @@ namespace MR
           std::array<GLubyte,3> colour;
           size_t colourmap;
           bool show;
+          bool show_colour_bar;
 
 
         signals:

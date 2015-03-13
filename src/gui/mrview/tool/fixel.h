@@ -40,7 +40,7 @@ namespace MR
       namespace Tool
       {
 
-        enum FixelColourType { CValue, Direction, Manual };
+        enum FixelColourType { CValue, Direction };
         enum FixelLengthType { Unity, Amplitude, LValue };
 
         class Fixel : public Displayable {
@@ -68,13 +68,10 @@ namespace MR
                   colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
               }
 
-              void load_image ();
+              void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
+              { if(show_colour_bar) visitor.render_fixel_colourbar(*this, projection); }
 
-              void set_colour (float c[3]) {
-                colour[0] = c[0];
-                colour[1] = c[1];
-                colour[2] = c[2];
-              }
+              void load_image ();
 
               void set_line_length_multiplier (float value) {
                 user_line_length_multiplier = value;
@@ -100,10 +97,6 @@ namespace MR
                 return colour_type;
               }
 
-              void set_show_colour_bar (bool value) {
-                show_colour_bar = value;
-              }
-
 
             private:
               std::string filename;
@@ -120,12 +113,10 @@ namespace MR
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;
-              float colour[3];
               float voxel_size_length_multipler;
               float user_line_length_multiplier;
               FixelLengthType length_type;
               FixelColourType colour_type;
-              bool show_colour_bar;
         };
 
       }
