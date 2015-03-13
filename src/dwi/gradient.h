@@ -85,6 +85,26 @@ namespace MR
         return dirs;
       }
 
+    template <typename ValueType>
+      ValueType condition_number_for_lmax (const Math::Matrix<ValueType>& dirs, int lmax) 
+      {
+        Math::Matrix<double> g;
+        if (dirs.columns() == 2) // spherical coordinates:
+          g = dirs;
+        else // Cartesian to spherical:
+          g = Math::SH::C2S(dirs).sub(0, dirs.rows(), 0, 2);
+
+        Math::Matrix<double> A;
+        Math::SH::init_transform (A, g, lmax);
+
+        Math::Matrix<double> V (A.columns(), A.columns());
+        Math::Vector<double> S (A.columns());
+        Math::Vector<double> work (A.columns());
+
+        gsl_linalg_SV_decomp (A.gsl(), V.gsl(), S.gsl(), work.gsl());
+        return S[0] / S[S.size()-1];
+      }
+
 
 
     //! load and rectify FSL-style bvecs/bvals DW encoding files
