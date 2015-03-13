@@ -60,11 +60,11 @@ namespace MR
         static void register_thread () { 
           if (!backend)
               backend = new __Backend;
-          std::lock_guard<std::mutex> (__Backend::get_lock());
+          std::lock_guard<std::mutex> (get_lock());
           ++backend->refcount; 
         }
         static void unregister_thread () {
-          std::lock_guard<std::mutex> (__Backend::get_lock());
+          std::lock_guard<std::mutex> (get_lock());
           --backend->refcount;
           if (!backend->refcount) {
             delete backend;
