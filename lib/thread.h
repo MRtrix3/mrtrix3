@@ -59,12 +59,12 @@ namespace MR
 
         static void register_thread () { 
           if (!backend)
-              backend = new __Backend;
-          std::lock_guard<std::mutex> (get_lock());
+            backend = new __Backend;
+          std::lock_guard<std::mutex> lock (get_lock());
           ++backend->refcount; 
         }
         static void unregister_thread () {
-          std::lock_guard<std::mutex> (get_lock());
+          std::lock_guard<std::mutex> lock (get_lock());
           --backend->refcount;
           if (!backend->refcount) {
             delete backend;
@@ -96,6 +96,8 @@ namespace MR
       class __thread_base {
         public:
           __thread_base (const std::string& name = "unnamed") : name (name) { __Backend::register_thread(); }
+          __thread_base (const __thread_base&) = delete;
+          __thread_base (__thread_base&&) = default;
           ~__thread_base () { __Backend::unregister_thread(); }
 
 
@@ -113,8 +115,8 @@ namespace MR
               typedef typename std::remove_reference<Functor>::type F;
               thread = std::async (std::launch::async, &F::execute, &functor);
             }
-          __single_thread (const __single_thread& s) = delete;
-          __single_thread (__single_thread&& s) = default;
+          __single_thread (const __single_thread&) = delete;
+          __single_thread (__single_thread&&) = default;
 
           void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
