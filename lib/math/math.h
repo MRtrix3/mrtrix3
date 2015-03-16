@@ -81,7 +81,7 @@ namespace MR
      */
     template <typename I, typename T> inline I floor (const T x) throw ()
     {
-      return static_cast<I> (floor (x));
+      return static_cast<I> (std::floor (x));
     }
     //! template function with cast to different type
     /** example:
@@ -92,7 +92,7 @@ namespace MR
      */
     template <typename I, typename T> inline I ceil (const T x) throw ()
     {
-      return static_cast<I> (ceil (x));
+      return static_cast<I> (std::ceil (x));
     }
 
     //! swap values in arrays
