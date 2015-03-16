@@ -59,28 +59,34 @@ namespace MR
              *  
              *  - \a problem_matrix: \e H
              *  - \a constraint_matrix: \e A
-             *  - \a min_norm_regularisation: used to stabilise the estimation
-             *  of the Lagrangian multipliers to handle cases where they become
-             *  degenerate (otherwise leads to errors in the Cholesky
-             *  decomposition). Default is zero, set it to a small value such
-             *  as 1e-10 to help with these kinds of problem.
+             *  - \a solution_min_norm_regularisation: an additional minimum
+             *  norm constraint that will be added to the problem cost
+             *  function, to stablise ill-posed problems.
+             *  - \a solution_min_norm_regularisation: used to
+             *  stabilise the estimation of the Lagrangian multipliers to
+             *  handle cases where they become degenerate (otherwise leads to
+             *  errors in the Cholesky decomposition). Default is zero, set it
+             *  to a small value such as 1e-10 to help with these kinds of
+             *  problem.
              *  - \a max_iterations: the maximum number of iterations to run.
              *  If zero (default), this number is set to 10x the size of \e x.
              */
             Problem (const Matrix<ValueType>& problem_matrix, 
                 const Matrix<ValueType>& constraint_matrix, 
-                ValueType min_norm_regularisation = 0.0,
+                ValueType solution_min_norm_regularisation = 0.0,
+                ValueType constraint_min_norm_regularisation = 0.0,
                 size_t max_iterations = 0,
                 ValueType tolerance = 0.0) :
               H (problem_matrix),
               chol_HtH (H.columns(), H.columns()), 
+              lambda_min_norm (constraint_min_norm_regularisation),
               tol (tolerance),
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.columns()) {
 
                 // form quadratic problem matrix H'*H:
                 rankN_update (chol_HtH, H, CblasTrans, CblasLower);
                 // add minimum norm constraint:
-                chol_HtH.diagonal() += min_norm_regularisation;
+                chol_HtH.diagonal() += solution_min_norm_regularisation * max (chol_HtH.diagonal());
                 // get Cholesky decomposition:
                 Cholesky::decomp (chol_HtH);
 
@@ -101,7 +107,7 @@ namespace MR
               }
 
             Matrix<ValueType> H, chol_HtH, B, b2d;
-            ValueType tol;
+            ValueType lambda_min_norm, tol;
             size_t max_niter;
         };
 
@@ -170,7 +176,7 @@ namespace MR
                   BtB.allocate (num_active, num_active);
                   // solve for l in B*B'l = -c_u by Cholesky decomposition:
                   rankN_update (BtB, B_active, CblasNoTrans, CblasLower);
-                  BtB.diagonal() += 1.0e-10;
+                  BtB.diagonal() += P.lambda_min_norm;
                   Cholesky::decomp (BtB);
                   Cholesky::solve (l, BtB);
 

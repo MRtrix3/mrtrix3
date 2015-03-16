@@ -156,9 +156,9 @@ class Shared {
       A.sub(b_m,b_m+m[i],b_n,b_n+n[i]) = SHT300.sub(0,m[i],0,n[i]);
       b_m+=m[i]; b_n+=n[i];
     }
-    A.save ("A.txt",16);
-    C.save ("H.txt",16);
-    problem = Math::ICLS::Problem<value_type> (C, A, 1.0e-10, 1.0e-6);
+    //A.save ("A.txt",16);
+    //C.save ("H.txt",16);
+    problem = Math::ICLS::Problem<value_type> (C, A, 1.0e-10, 1.0e-10);
   };
 
   public:
@@ -194,7 +194,7 @@ class Processor {
       size_t niter = solver (fodf, dwi);
       if (niter >= shared.problem.max_niter) {
         INFO ("failed to converge for voxel " + str(pos));
-        dwi.save("d" + str(pos) + ".txt",16);
+        //dwi.save("d" + str(pos) + ".txt",16);
       }
       write_back (pos);
     }
@@ -317,7 +317,7 @@ void run () {
   Processor processor (shared, dwi_in_vox, mask_in_vox, scratch_vox);
   Timer timer;
   loop.run (processor);
-  VAR (timer.elapsed());
+  INFO ("processing completed in " + str(timer.elapsed()) + " seconds");
  
   /* copy from scratch buffer to output buffers */
   std::vector<ssize_t> from (4, 0);
