@@ -41,16 +41,18 @@ namespace MR
 
         class Entry {
           public:
-            Entry (const char* name, const char* mapping, const char* amplitude = NULL, bool special = false) : 
+            Entry (const char* name, const char* mapping, const char* amplitude = NULL, 
+                bool special = false, bool is_colour = false) : 
               name (name),
               mapping (mapping), 
               amplitude (amplitude ? amplitude : default_amplitude), 
-              special (special) { }
+              special (special),
+              is_colour (is_colour) { }
 
             const char* name;
             const char* mapping;
             const char* amplitude;
-            bool special;
+            bool special, is_colour;
 
             static const char* default_amplitude;
         };
@@ -78,6 +80,11 @@ namespace MR
           return n;
         }
 
+        inline size_t index (const std::string& name) {
+          size_t n = 0;
+          while (maps[n].name != name) ++n;
+          return n;
+        }
 
 
         inline size_t num_special () {

@@ -21,6 +21,7 @@
 */
 
 #include <gsl/gsl_version.h>
+#include <gsl/gsl_errno.h>
 
 #include "app.h"
 #include "debug.h"
@@ -34,12 +35,22 @@
 
 namespace MR
 {
+
+
+  void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
+  {
+    throw Exception (std::string ("GSL error: ") + reason);
+  }
+
+
+
   namespace App
   {
 
     Description DESCRIPTION;
     ArgumentList ARGUMENTS;
     OptionList OPTIONS;
+    Description REFERENCES;
     bool REQUIRES_AT_LEAST_ONE_ARGUMENT = true;
 
     OptionGroup __standard_options = OptionGroup ("Standard options")
@@ -53,16 +64,14 @@ namespace MR
                                      + Option ("help", "display this information page and exit.")
                                      + Option ("version", "display version information and exit.");
 
-    const char* AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)";
+    const char* AUTHOR = "J-Donald Tournier (jdtournier@gmail.com)";
     const char* COPYRIGHT =
       "Copyright (C) 2008 Brain Research Institute, Melbourne, Australia.\n"
       "This is free software; see the source for copying conditions.\n"
       "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
-    const char* REFERENCES = NULL;
 
 
     std::string NAME;
-    bool overwrite_files = false;
     std::vector<ParsedArgument> argument;
     std::vector<ParsedOption> option;
     int log_level = 1;
@@ -71,8 +80,8 @@ namespace MR
     int argc = 0;
     char** argv = NULL;
 
-
-
+    bool overwrite_files = false;
+    void (*check_overwrite_files_func) (const std::string& name) = nullptr;
 
     namespace
     {
@@ -182,6 +191,107 @@ namespace MR
 
 
 
+
+    std::string markdown_usage ()
+    {
+      /*
+          help_head (format)
+          + help_syntax (format)
+          + ARGUMENTS.syntax (format)
+          + DESCRIPTION.syntax (format)
+          + OPTIONS.syntax (format)
+          + __standard_options.header (format)
+          + __standard_options.contents (format)
+          + __standard_options.footer (format)
+          + help_tail (format);
+*/
+      std::string s = "## Synopsis\n\n    "
+          + std::string(NAME) + " [ options ] ";
+
+      // Syntax line:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
+
+        if (ARGUMENTS[i].flags & Optional)
+          s += "[";
+        s += std::string(" ") + ARGUMENTS[i].id;
+
+        if (ARGUMENTS[i].flags & AllowMultiple) {
+          if (! (ARGUMENTS[i].flags & Optional))
+            s += std::string(" [ ") + ARGUMENTS[i].id;
+          s += " ...";
+        }
+        if (ARGUMENTS[i].flags & (Optional | AllowMultiple))
+          s += " ]";
+      }
+      s += "\n\n";
+
+      auto indent_newlines = [](std::string text) {
+        size_t index = 0; 
+        while ((index = text.find("\n", index)) != std::string::npos ) 
+          text.replace (index, 1, "<br>");
+        return text;
+      };
+
+      // Argument description:
+      for (size_t i = 0; i < ARGUMENTS.size(); ++i) 
+        s += std::string("- *") + ARGUMENTS[i].id + "*: " + indent_newlines (ARGUMENTS[i].desc) + "\n";
+      
+
+      s += "\n## Description\n\n";
+      for (size_t i = 0; i < DESCRIPTION.size(); ++i) 
+        s += indent_newlines (DESCRIPTION[i]) + "\n\n";
+
+
+      std::vector<std::string> group_names;
+      for (size_t i = 0; i < OPTIONS.size(); ++i) {
+        if (std::find (group_names.begin(), group_names.end(), OPTIONS[i].name) == group_names.end()) 
+          group_names.push_back (OPTIONS[i].name);
+      }
+
+      auto format_option = [&](const Option& opt) {
+        std::string f = std::string ("+ **-") + opt.id;
+        for (size_t a = 0; a < opt.size(); ++a)
+          f += std::string (" ") + opt[a].id;
+        f += std::string("**<br>") + indent_newlines (opt.desc) + "\n\n";
+        return f;
+      };
+
+      s += "\n## Options\n\n";
+      for (size_t i = 0; i < group_names.size(); ++i) {
+        size_t n = i;
+        while (OPTIONS[n].name != group_names[i])
+          ++n;
+        if (OPTIONS[n].name != std::string("OPTIONS"))
+          s += std::string ("#### ") + OPTIONS[n].name + "\n\n";
+        while (n < OPTIONS.size()) {
+          if (OPTIONS[n].name == group_names[i]) {
+            for (size_t o = 0; o < OPTIONS[n].size(); ++o) 
+              s += format_option (OPTIONS[n][o]);
+          }
+          ++n;
+        }
+      }
+
+      s += "#### Standard options\n\n";
+      for (size_t i = 0; i < __standard_options.size(); ++i) 
+        s += format_option (__standard_options[i]);
+
+      if (REFERENCES.size()) { 
+        s += std::string ("#### References\n\n");
+        for (size_t i = 0; i < REFERENCES.size(); ++i)
+          s += indent_newlines (REFERENCES[i]) + "\n\n";
+      }
+      s += std::string("---\n\nMRtrix ") + MRTRIX_GIT_VERSION + ", built " + build_date + "\n\n"
+        "\n\n**Author:** " + AUTHOR 
+        + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
+
+      return s;
+    }
+
+
+
+
+
     const Option* match_option (const char* arg)
     {
       if (arg[0] == '-' && arg[1] && !isdigit (arg[1]) && arg[1] != '.') {
@@ -271,6 +381,10 @@ namespace MR
           print (full_usage ());
           throw 0;
         }
+        if (strcmp (argv[1], "__print_usage_markdown__") == 0) {
+          print (markdown_usage ());
+          throw 0;
+        }
       }
 
       sort_arguments (argc, argv);
@@ -285,17 +399,21 @@ namespace MR
       }
 
       size_t num_args_required = 0, num_command_arguments = 0;
-      bool has_optional_arguments = false;
+      size_t num_optional_arguments = 0;
 
+      ArgFlags flags = None;
       for (size_t i = 0; i < ARGUMENTS.size(); ++i) {
-        num_command_arguments++;
-        if (ARGUMENTS[i].flags & Optional)
-          has_optional_arguments = true;
-        else
-          num_args_required++;
-
-        if (ARGUMENTS[i].flags & AllowMultiple)
-          has_optional_arguments = true;
+        ++num_command_arguments;
+        if (ARGUMENTS[i].flags) {
+          if (flags && flags != ARGUMENTS[i].flags)
+            throw Exception ("FIXME: all arguments declared optional() or allow_multiple() should have matching flags in command-line syntax");
+          flags = ARGUMENTS[i].flags;
+          ++num_optional_arguments;
+          if (!(flags & Optional))
+            ++num_args_required;
+        }
+        else 
+          ++num_args_required;
       }
 
       if (!option.size() && !argument.size() && REQUIRES_AT_LEAST_ONE_ARGUMENT) {
@@ -303,33 +421,30 @@ namespace MR
         throw 0;
       }
 
-      if (has_optional_arguments && num_args_required > argument.size())
+      if (num_optional_arguments && num_args_required > argument.size())
         throw Exception ("expected at least " + str (num_args_required)
                          + " arguments (" + str (argument.size()) + " supplied)");
 
-      if (!has_optional_arguments && num_args_required != argument.size())
+      if (num_optional_arguments == 0 && num_args_required != argument.size())
         throw Exception ("expected exactly " + str (num_args_required)
                          + " arguments (" + str (argument.size()) + " supplied)");
 
-      // check for multiple instances of arguments:
-      size_t optional_argument = std::numeric_limits<size_t>::max();
-      for (size_t n = 0; n < argument.size(); n++) {
+      size_t num_extra_arguments = argument.size() - num_args_required;
+      size_t num_arg_per_multi = num_optional_arguments ? num_extra_arguments / num_optional_arguments : 0;
+      if (num_arg_per_multi*num_optional_arguments != num_extra_arguments)
+        throw Exception ("number of optional arguments provided are not equal for all arguments");
+      if (!(flags & Optional))
+        ++num_arg_per_multi;
 
-        if (n < optional_argument)
-          if (ARGUMENTS[n].flags & (Optional | AllowMultiple))
-            optional_argument = n;
-
-        size_t index = n;
-        if (n >= optional_argument) {
-          if (int (num_args_required - optional_argument) < int (argument.size()-n))
-            index = optional_argument;
+      // assign arguments to their corresponding definitions:
+      for (size_t n = 0, index = 0, next = 0; n < argument.size(); ++n) {
+        if (n == next) {
+          if (n) ++index;
+          if (ARGUMENTS[index].flags != None)
+            next = n + num_arg_per_multi;
           else
-            index = num_args_required - argument.size() + n + (ARGUMENTS[optional_argument].flags & Optional ? 1 : 0);
+            ++next;
         }
-
-        if (index >= num_command_arguments)
-          throw Exception ("too many arguments");
-
         argument[n].arg = &ARGUMENTS[index];
       }
 
@@ -359,8 +474,8 @@ namespace MR
       for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i < argument.end(); i++) {
         if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
           throw Exception ("required input file \"" + str(*i) + "\" not found");
-        if (!overwrite_files && (i->arg->type == ArgFileOut) && Path::exists (std::string(*i)))
-          throw Exception ("required output file \"" + std::string(*i) + "\" already exists (use -force option to force overwrite)");
+        if (i->arg->type == ArgFileOut)
+          check_overwrite (std::string(*i));
       }
       for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
         for (size_t j = 0; j != i->opt->size(); ++j) {
@@ -368,8 +483,8 @@ namespace MR
           const char* const name = i->args[j];
           if ((arg.type == ArgFileIn) && !Path::exists (name))
             throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
-          if (!overwrite_files && (arg.type == ArgFileOut) && Path::exists (name))
-            throw Exception ("output file \"" + str(name) + "\" already exists (required for option \"-" + std::string(i->opt->id) + "\" - use -force option to force overwrite)");
+          if (arg.type == ArgFileOut)
+           check_overwrite (name);
         }
       }
     }
@@ -395,6 +510,8 @@ namespace MR
 #endif
 
       srand (time (NULL));
+
+      gsl_set_error_handler (&mrtrix_gsl_error_handler);
     }
 
 

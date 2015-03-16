@@ -63,7 +63,9 @@ namespace MR
       + Option ("seed_gmwmi", "seed from the grey matter - white matter interface (only valid if using ACT framework)").allow_multiple()
         + Argument ("seed_image").type_image_in()
 
-      + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must NOT provide any other seeding mechanism)") // Don't allow multiple
+      + Option ("seed_dynamic", "determine seed points dynamically using the SIFT model (must not provide any other seeding mechanism). "
+                                "Note that while this seeding mechanism improves the distribution of reconstructed streamlines density, "
+                                "it should NOT be used as a substitute for the SIFT method itself.") // Don't allow multiple
         + Argument ("fod_image").type_image_in()
 
 

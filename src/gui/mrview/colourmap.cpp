@@ -52,6 +52,10 @@ namespace MR
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
 
+          Entry ("Colour", 
+              "color.rgb = 2.7213 * amplitude * colourmap_colour;\n",
+              NULL, false, true),
+
           Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
               "length (color.rgb)",
@@ -141,12 +145,15 @@ namespace MR
 
           GL::Shader::Vertex vertex_shader (source);
 
-          GL::Shader::Fragment fragment_shader (
+          std::string shader = 
               "in float amplitude;\n"
               "out vec3 color;\n"
+              "uniform vec3 colourmap_colour;\n"
               "void main () {\n"
               "  " + std::string(maps[index].mapping) +
-              "}\n");
+              "}\n";
+
+          GL::Shader::Fragment fragment_shader (shader);
 
           program.attach (vertex_shader);
           program.attach (fragment_shader);
@@ -232,12 +239,15 @@ namespace MR
           program.start();
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          if (maps[object.colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
+                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 
           frame_program.start();
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / projection.width());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / projection.height());
           gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 

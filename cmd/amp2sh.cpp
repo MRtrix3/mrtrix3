@@ -80,7 +80,7 @@ void usage ()
                           "in the amplitude image.")
   + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
 
-  + DWI::GradOption
+  + DWI::GradImportOptions
   + DWI::ShellOption
   + Image::Stride::StrideOption;
 }
@@ -202,8 +202,8 @@ void run ()
   Image::Stride::set_from_command_line (header);
   Image::Buffer<value_type> SH_data (argument[1], header);
 
-  Image::BufferPreload<value_type>::voxel_type amp_vox (amp_data);
-  Image::Buffer<value_type>::voxel_type SH_vox (SH_data);
+  auto amp_vox = amp_data.voxel();
+  auto SH_vox = SH_data.voxel();
 
   Amp2SHCommon common (dirs, lmax, bzeros, dwis, normalise);
   Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox)

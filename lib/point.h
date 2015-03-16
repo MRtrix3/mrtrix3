@@ -23,6 +23,8 @@
 #ifndef __point_h__
 #define __point_h__
 
+#include <type_traits>
+
 #include "mrtrix.h"
 #include "math/vector.h"
 
@@ -52,10 +54,10 @@ namespace MR
       }
 
       bool operator! () const {
-        return (isnan (p[0]) || isnan (p[1]) || isnan (p[2]));
+        return (std::isnan (p[0]) || std::isnan (p[1]) || std::isnan (p[2]));
       }
       bool valid ()     const {
-        return (! (isnan (p[0]) || isnan (p[1]) || isnan (p[2])));
+        return (! (std::isnan (p[0]) || std::isnan (p[1]) || std::isnan (p[2])));
       }
 
       operator value_type* () { 
@@ -80,38 +82,43 @@ namespace MR
       value_type norm2 () const {
         return (p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
       }
-      value_type norm () const  {
-        return (sqrt (norm2()));
+      template <typename U = T>
+      U norm (typename std::enable_if< std::is_floating_point<U>::value >::type* = nullptr) const {
+        return std::sqrt (norm2());
       }
-      Point&     normalise ()   {
+      template <typename U = T>
+      float norm (typename std::enable_if< std::is_integral<U>::value >::type* = nullptr) const {
+        return std::sqrt (float(norm2()));
+      }
+      Point& normalise () {
         Math::normalise (p);
         return (*this);
       }
 
-      value_type&       operator[] (int idx)                 {
+      value_type&       operator[] (int idx)       {
         return (p[idx]);
       }
-      const value_type& operator[] (int idx) const           {
+      const value_type& operator[] (int idx) const {
         return (p[idx]);
       }
 
-      bool         operator== (const Point& A) const    {
+      bool  operator== (const Point& A) const {
         return (memcmp (p, A.p, sizeof (p)) == 0);
       };
-      bool         operator!= (const Point& A) const    {
+      bool  operator!= (const Point& A) const {
         return (memcmp (p, A.p, sizeof (p)));
       };
-      Point        operator- () const                   {
+      Point operator-  ()               const {
         return (Point (-p[0], -p[1], -p[2]));
       }
-      Point operator* (value_type M) const {
+      Point operator*  (value_type M)   const {
         return (Point (p[0]*M, p[1]*M, p[2]*M));
       }
-      Point operator/ (value_type M) const {
+      Point operator/  (value_type M)   const {
         return (Point (p[0]/M, p[1]/M, p[2]/M));
       }
 
-      template <typename U> Point& operator= (const Point<U>& A)   {
+      template <typename U> Point& operator=  (const Point<U>& A)   {
         set (A[0], A[1], A[2]);
         return (*this);
       }
@@ -149,10 +156,10 @@ namespace MR
         return p[2] < a[2];
       }
 
-      value_type   dot (const Point& A) const   {
+      value_type dot   (const Point& A) const {
         return (p[0]*A[0] + p[1]*A[1] + p[2]*A[2]);
       }
-      Point        cross (const Point& A) const {
+      Point      cross (const Point& A) const {
         return (Point (p[1]*A[2]-p[2]*A[1], p[2]*A[0]-p[0]*A[2], p[0]*A[1]-p[1]*A[0]));
       }
 

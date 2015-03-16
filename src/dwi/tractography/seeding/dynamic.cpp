@@ -106,7 +106,8 @@ namespace MR
         H.info() = info();
         H.datatype() = DataType::Float32;
         Image::Buffer<float> prob_mean_data ("seed_prob_mean.mif", H), prob_sum_data ("seed_prob_sum.mif", H);
-        Image::Buffer<float>::voxel_type prob_mean (prob_mean_data), prob_sum (prob_sum_data);
+        auto prob_mean = prob_mean_data.voxel();
+        auto prob_sum = prob_sum_data.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
         for (loop.start (v, prob_mean, prob_sum); loop.ok(); loop.next (v, prob_mean, prob_sum)) {
@@ -153,7 +154,7 @@ namespace MR
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
                 const Point<float> new_v_float (transform.scanner2voxel (p));
-                const Point<int> new_v (Math::round (new_v_float[0]), Math::round (new_v_float[1]), Math::round (new_v_float[2]));
+                const Point<int> new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
             }
@@ -162,7 +163,7 @@ namespace MR
 #ifdef DYNAMIC_SEED_DEBUGGING
               write_seed (p);
 #endif
-              Thread::Mutex::Lock lock (mutex);
+              std::lock_guard<std::mutex> lock (mutex);
               total_samples += samples;
               ++total_seeds;
               return true;
@@ -197,8 +198,8 @@ namespace MR
 #ifdef DYNAMIC_SEED_DEBUGGING
       void Dynamic::write_seed (const Point<float>& p)
       {
-        static Thread::Mutex mutex;
-        Thread::Mutex::Lock lock (mutex);
+        static std::mutex mutex;
+        std::lock_guard<std::mutex> lock (mutex);
         std::vector< Point<float> > tck;
         tck.push_back (p);
         seed_output.append (tck);

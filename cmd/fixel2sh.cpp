@@ -65,7 +65,7 @@ void run ()
 
   Image::Header H_in (argument[0]);
   Image::BufferSparse<FixelMetric> fixel_data (H_in);
-  Image::BufferSparse<FixelMetric>::voxel_type fixel (fixel_data);
+  auto fixel = fixel_data.voxel();
 
   const size_t lmax = 8;
   const ssize_t n = Math::SH::NforL (lmax);
@@ -79,12 +79,12 @@ void run ()
   H_out.dim (sh_dim) = n;
 
   Image::Buffer<float> sh_data (argument[1], H_out);
-  Image::Buffer<float>::voxel_type sh (sh_data);
+  auto sh = sh_data.voxel();
   std::vector<float> values;
   Math::Vector<float> apsf_values;
 
   Image::LoopInOrder loop (fixel, "converting sparse fixel data to SH image... ");
-  for (loop.start (fixel, sh); loop.ok(); loop.next (fixel, sh)) {
+  for (auto l = loop (fixel, sh); l; ++l) {
     values.assign (n, float(0.0));
     for (size_t index = 0; index != fixel.value().size(); ++index) {
       apsf_values = aPSF (apsf_values, fixel.value()[index].dir);

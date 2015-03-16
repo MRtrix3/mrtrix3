@@ -58,14 +58,14 @@ class BufferScratchDump : public Image::BufferScratch<value_type>
 
   private:
     // Helper function to get the underlying data pointer
-    inline const char* get_data_ptr() const { return reinterpret_cast<const char*> ((const value_type*) (Image::BufferScratch<value_type>::data_)); }
+    inline const char* get_data_ptr() const { return reinterpret_cast<const char*> (Image::BufferScratch<value_type>::address(0)); }
 
 };
 
 template <>
 inline const char* BufferScratchDump<bool>::get_data_ptr() const
 {
-  return reinterpret_cast<const char*> ((const uint8_t*) (Image::BufferScratch<bool>::data_));
+  return reinterpret_cast<const char*> (Image::BufferScratch<bool>::address());
 }
 
 
@@ -98,9 +98,9 @@ void BufferScratchDump<value_type>::dump_to_file (const std::string& path, const
   Image::Stride::List stride = Image::Stride::get (H);
   Image::Stride::symbolise (stride);
 
-  out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
+  out_header << "\nlayout: " << (stride[0] >0 ? "+" : "-") << std::abs (stride[0])-1;
   for (size_t n = 1; n < H.ndim(); ++n)
-    out_header << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
+    out_header << "," << (stride[n] >0 ? "+" : "-") << std::abs (stride[n])-1;
 
   out_header << "\ndatatype: " << H.datatype().specifier();
 

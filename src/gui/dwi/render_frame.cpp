@@ -57,14 +57,23 @@ namespace MR
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
         normalise (false), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0)
+        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0),
+        glrefresh_timer (new QTimer (this))
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
         connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
+        glrefresh_timer->setSingleShot (true);
+        connect (glrefresh_timer, SIGNAL (timeout()), this, SLOT (base_updateGL()));
       }
 
+
+
+      RenderFrame::~RenderFrame()
+      {
+        delete glrefresh_timer;
+      }
 
 
 
@@ -77,6 +86,15 @@ namespace MR
         Math::Matrix<float> M (p, 3, 3);
         orientation.from_matrix (M);
         updateGL();
+      }
+
+
+
+      void RenderFrame::updateGL ()
+      {
+        if (glrefresh_timer->isActive())
+          return;
+        glrefresh_timer->start();
       }
 
 
@@ -265,8 +283,8 @@ namespace MR
             Point<> z = projection.screen_normal();
             Point<> v = x.cross (z);
             v.normalise();
-            float angle = ROTATION_INC * Math::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
-            if (angle > M_PI_2) angle = M_PI_2;
+            float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
+            if (angle > Math::pi_2) angle = Math::pi_2;
 
             Math::Versor<float> rot (angle, v);
             orientation = rot * orientation;

@@ -52,9 +52,10 @@ void usage ()
 	DESCRIPTION
 	+ "Generate a mask image appropriate for seeding streamlines on the grey matter - white matter interface";
 
-	REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-	             "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
-	             "NeuroImage, 2012, 62, 1924-1938";
+	REFERENCES 
+          + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+          "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+          "NeuroImage, 2012, 62, 1924-1938";
 
 	ARGUMENTS
 	+ Argument ("5tt_in",  "the input 5TT segmented anatomical image").type_image_in()
@@ -76,7 +77,7 @@ void run ()
   Image::Header H_in (argument[0]);
   DWI::Tractography::ACT::verify_5TT_image (H_in);
   Image::Buffer<float> image_in (H_in);
-  Image::Buffer<float>::voxel_type v_in (image_in);
+  auto v_in = image_in.voxel();
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -101,10 +102,10 @@ void run ()
     H_out.set_ndim (3);
   }
   Image::Buffer<float> image_out (argument[1], H_out);
-  Image::Buffer<float>::voxel_type v_out (image_out);
+  auto v_out = image_out.voxel();
 
   Image::LoopInOrder loop (v_out, "Determining GMWMI seeding mask...");
-  for (loop.start (v_out); loop.ok(); loop.next (v_out)) {
+  for (auto l = loop (v_out); l; ++l) {
 
     // If a mask is defined, but is false in this voxel, do not continue processing
     bool process_voxel = true;
@@ -140,9 +141,9 @@ void run ()
           v_in[axis] = v_out[axis] + 1;
         }
         const DWI::Tractography::ACT::Tissues pos (v_in);
-        gradient += Math::pow2 (multiplier * std::min (Math::abs (pos.get_gm() - neg.get_gm()), Math::abs (pos.get_wm() - neg.get_wm())));
+        gradient += Math::pow2 (multiplier * std::min (std::abs (pos.get_gm() - neg.get_gm()), std::abs (pos.get_wm() - neg.get_wm())));
       }
-      gradient = Math::sqrt (gradient);
+      gradient = std::sqrt (gradient);
       v_out.value() = gradient;
 
     } else {

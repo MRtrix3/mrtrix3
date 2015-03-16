@@ -25,40 +25,12 @@
 
 #include "debug.h"
 #include "image/loop.h"
+#include "image/utils.h"
 #include "image/iterator.h"
-#include "thread/mutex.h"
-#include "thread/exec.h"
+#include "thread.h"
 
 namespace MR
 {
-
-  class Input {
-    public:
-      template <class VoxelType>
-        void read (typename VoxelType::value_type& val, VoxelType& vox) const { val = vox.value(); }
-      template <class VoxelType>
-        void write (VoxelType& vox, const typename VoxelType::value_type& val) const { }
-  };
-
-  class InputOutput {
-    public:
-      template <class VoxelType>
-        void read (typename VoxelType::value_type& val, VoxelType& vox) const { val = vox.value(); }
-      template <class VoxelType>
-        void write (VoxelType& vox, const typename VoxelType::value_type& val) const { vox.value() = val; }
-  };
-
-  class Output {
-    public:
-      template <class VoxelType>
-        void read (typename VoxelType::value_type& val, VoxelType& vox) const { }
-      template <class VoxelType>
-        void write (VoxelType& vox, const typename VoxelType::value_type& val) const { vox.value() = val; }
-  };
-
-
-
-
   namespace Image
   {
 
@@ -76,6 +48,13 @@ namespace MR
      * @} */
 
 
+    namespace {
+      template <class Functor>
+        class __Outer;
+
+      template <int N, class Functor, class... VoxelType>
+        class __RunFunctor;
+    }
 
     /*! \addtogroup loop 
      * \{ */
@@ -127,10 +106,10 @@ namespace MR
      *
      * // the outer loop is processed sequentially in a thread-safe manner,
      * // so that each thread receives the next position in the loop:
-     * for (outer_loop.start (vox); outer_loop.ok(); outer_loop.next (vox) {
+     * for (auto i = outer_loop (vox); i; ++i) {
      *   // the inner loop is processed within each thread, with multiple threads 
      *   // running concurrently, each processing a different row of voxels:
-     *   for (inner_loop.start (vox); inner_loop.ok(); inner_loop.next (vox) 
+     *   for (auto j = inner_loop (vox); j; ++j)
      *     my_func (vox);
      * }
      * \endcode
@@ -179,7 +158,7 @@ namespace MR
      *
      * \code
      * void my_function (MyVoxelType& vox) {
-     *   vox.value() = Math::exp (vox.value());
+     *   vox.value() = std::exp (vox.value());
      * }
      *
      * ...
@@ -197,7 +176,7 @@ namespace MR
      *   public: 
      *     template <class VoxelType> 
      *       void operator() (VoxelType& vox) {
-     *         vox.value() = Math::exp (vox.value());
+     *         vox.value() = std::exp (vox.value());
      *       }
      * };
      *
@@ -206,6 +185,14 @@ namespace MR
      * AnyVoxelType vox;
      * Image::ThreadedLoop ("computing exponential in-place...", vox)
      *   .run (MyFunction(), vox);
+     * \endcode
+     *
+     * Note that a simple operation such as the previous example can be written
+     * more compactly using C++11 lambda expressions:
+     * \code
+     * MyVoxelType vox;
+     * Image::ThreadedLoop ("computing exponential in-place...", vox)
+     *   .run ([](decltype(vox)& v) { v.value() = std::exp(v.value()); }, vox);
      * \endcode
      *
      *
@@ -226,6 +213,14 @@ namespace MR
      *
      * Image::ThreadedLoop (vox1).run (MyAdd(), vox_out, vox1, vox2); 
      * \endcode 
+     *
+     * Again, such a simple operation can be written more compactly using C++11 lambda expressions:
+     * \code
+     * auto f = [](decltype(vox_out)& out, decltype(vox1)& in1, decltype(vox2)& in2) {
+     *   out.value() = in1.value() + in2.value();
+     * }
+     * Image::ThreadedLoop (vox1).run (f, vox_out, vox1, vox2);
+     * \endcode
      * 
      * 
      * This example uses a functor to computes the root-mean-square of \a vox:
@@ -257,7 +252,7 @@ namespace MR
      * Image::ThreadedLoop ("computing RMS of \"" + vox.name() + "\"...", vox)
      *     .run (RMS(SoS), vox);
      *
-     * double rms = Math::sqrt (SoS / Image::voxel_count (vox));
+     * double rms = std::sqrt (SoS / Image::voxel_count (vox));
      * \endcode
      *
      * \section threaded_loop_run_outer The run_outer() method
@@ -285,7 +280,6 @@ namespace MR
             loop (axes_out_of_thread),
             dummy (source),
             axes (axes_in_thread) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -296,19 +290,17 @@ namespace MR
             loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes)),
             dummy (source),
             axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
           ThreadedLoop (
               const InfoType& source,
-              size_t num_inner_axes = 1,
               size_t from_axis = 0,
-              size_t to_axis = std::numeric_limits<size_t>::max()) :
+              size_t to_axis = std::numeric_limits<size_t>::max(),
+              size_t num_inner_axes = 1) :
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis)),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -320,7 +312,6 @@ namespace MR
             loop (axes_out_of_thread, progress_message),
             dummy (source),
             axes (axes_in_thread) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
@@ -332,20 +323,18 @@ namespace MR
             loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-              loop.start (dummy);
             }
 
         template <class InfoType>
           ThreadedLoop (
               const std::string& progress_message,
               const InfoType& source,
-              size_t num_inner_axes = 1,
               size_t from_axis = 0,
-              size_t to_axis = std::numeric_limits<size_t>::max()) :
+              size_t to_axis = std::numeric_limits<size_t>::max(), 
+              size_t num_inner_axes = 1) :
             loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis), progress_message),
             dummy (source),
             axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-              loop.start (dummy);
             }
 
        
@@ -364,7 +353,7 @@ namespace MR
 
         //! get next position in the outer loop
         bool next (Iterator& pos) {
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           if (loop.ok()) {
             loop.set_position (dummy, pos);
             loop.next (dummy);
@@ -375,30 +364,41 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
-          void run_outer (Functor functor, const std::string& thread_label = "loop thread");
+          void run_outer (Functor&& functor)
+          {
+            if (Thread::number_of_threads() == 0) {
+              for (auto i = loop (dummy); i; ++i)
+                functor (dummy);
+              return;
+            }
 
-        //! invoke \a functor(const Iterator& pos) per voxel
-        template <class Functor> 
-          void run (Functor functor);
+            __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
+            loop.start (dummy);
+            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
+            t.wait();
+          }
 
-        //! invoke \a functor(VoxelType1& vox1) per voxel
-        template <class Functor, class VoxelType1> 
-          void run (Functor functor, VoxelType1& vox1);
 
-        //! invoke \a functor(VoxelType1& vox1, VoxelType2& vox2) per voxel
-        template <class Functor, class VoxelType1, class VoxelType2> 
-          void run (Functor functor, VoxelType1& vox1, VoxelType2& vox2);
 
-        //! invoke \a functor(VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3) per voxel
-        template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-          void run (Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3);
+
+
+        template <class Functor, class... VoxelType>
+          void run (Functor&& functor, VoxelType&&... vox)
+          {
+            __RunFunctor< 
+              sizeof...(VoxelType),
+              typename std::remove_reference<Functor>::type, 
+                       typename std::remove_reference<VoxelType>::type...
+                         > loop_thread (*this, functor, vox...);
+            run_outer (loop_thread);
+          }
 
 
       protected:
         LoopInOrder loop;
         Iterator dummy;
         const std::vector<size_t> axes;
-        Thread::Mutex mutex;
+        std::mutex mutex;
 
         static std::vector<size_t> __get_axes_in_thread (
             const std::vector<size_t>& axes_in_loop,
@@ -442,7 +442,7 @@ namespace MR
        template <class Functor>
          class __Outer {
            public:
-             __Outer (ThreadedLoop& shared_info, const Functor& functor) :
+             __Outer (ThreadedLoop& shared_info, Functor& functor) :
                shared (shared_info),
                func (functor) { }
 
@@ -454,91 +454,57 @@ namespace MR
 
            protected:
              ThreadedLoop& shared;
-             Functor func;
+             typename std::remove_reference<Functor>::type func;
          };
 
 
 
 
 
-       template <class Functor>
-         class __Run {
+
+
+       template <int N, class Functor, class... VoxelType>
+         class __RunFunctor
+         {
            public:
-             __Run (ThreadedLoop& shared_info, const Functor& functor) :
+             __RunFunctor (ThreadedLoop& shared_info, const Functor& functor, VoxelType&... voxels) :
                func (functor), 
                loop (shared_info.inner_axes()),
-               outer_axes (shared_info.outer_axes()) { }
+               outer_axes (shared_info.outer_axes()),
+               vox (voxels...) { }
+
+             void operator() (const Iterator& pos) {
+               apply (assign_pos (pos, this->outer_axes), vox);
+               for (auto i = unpack (loop, vox); i; ++i) 
+                 unpack (this->func, vox);
+             }
+
+           protected:
+             typename std::remove_reference<Functor>::type func;
+             LoopInOrder loop;
+             const std::vector<size_t>& outer_axes;
+             std::tuple<VoxelType...> vox;
+         };
+
+
+       template <class Functor, class... VoxelType>
+         class __RunFunctor<0,Functor,VoxelType...>
+         {
+           public:
+             __RunFunctor (ThreadedLoop& shared_info, const Functor& functor, VoxelType&... voxels) :
+               func (functor), 
+               loop (shared_info.inner_axes()),
+               vox (voxels...) { }
 
              void operator() (Iterator& pos) {
-               for (loop.start (pos); loop.ok(); loop.next (pos)) 
+               for (auto i = loop (pos); i; ++i)
                  func (pos);
              }
 
            protected:
-             Functor func;
+             typename std::remove_reference<Functor>::type func;
              LoopInOrder loop;
-             const std::vector<size_t>& outer_axes;
-         };
-
-
-
-       template <class Functor, class VoxelType1>
-         class __Run1 : public __Run<Functor> {
-           public:
-             __Run1 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1) :
-               __Run<Functor> (shared_info, functor),
-               vox1 (vox1) { }
-
-             void operator() (const Iterator& pos) {
-               voxel_assign (vox1, pos, this->outer_axes);
-               for (this->loop.start (vox1); this->loop.ok(); this->loop.next (vox1)) 
-                 this->func (vox1);
-             }
-
-           protected:
-             VoxelType1 vox1;
-         };
-
-
-
-       template <class Functor, class VoxelType1, class VoxelType2>
-         class __Run2 : public __Run<Functor> {
-           public:
-             __Run2 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, VoxelType2& vox2) :
-               __Run<Functor> (shared_info, functor),
-               vox1 (vox1), vox2 (vox2) { }
-
-             void operator() (const Iterator& pos) {
-               voxel_assign2 (vox1, vox2, pos, this->outer_axes);
-               for (this->loop.start (vox1, vox2); this->loop.ok(); this->loop.next (vox1, vox2)) 
-                 this->func (vox1, vox2);
-             }
-
-           protected:
-             VoxelType1 vox1;
-             VoxelType2 vox2;
-         };
-
-
-
-
-       template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3>
-         class __Run3 : public __Run<Functor> {
-           public:
-             __Run3 (ThreadedLoop& shared_info, const Functor& functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3) :
-               __Run<Functor> (shared_info, functor),
-               vox1 (vox1), vox2 (vox2), vox3 (vox3) { }
-
-             void operator() (const Iterator& pos) {
-               voxel_assign3 (vox1, vox2, vox3, pos, this->outer_axes);
-               for (this->loop.start (vox1, vox2, vox3); this->loop.ok(); this->loop.next (vox1, vox2, vox3)) 
-                 this->func (vox1, vox2, vox3);
-             }
-
-           protected:
-             VoxelType1 vox1;
-             VoxelType2 vox2;
-             VoxelType3 vox3;
+             std::tuple<VoxelType...> vox;
          };
 
 
@@ -554,96 +520,6 @@ namespace MR
 
 
 
-
-
-     template <class Functor> 
-       inline void ThreadedLoop::run_outer (Functor functor, const std::string& thread_label)
-       {
-         if (Thread::number_of_threads() == 0) {
-           for (loop.start (dummy); loop.ok(); loop.next (dummy)) 
-             functor (dummy);
-           return;
-         }
-
-         __Outer<Functor> loop_thread (*this, functor);
-         Thread::Array<__Outer<Functor> > thread_list (loop_thread);
-         Thread::Exec threads (thread_list, thread_label);
-       }
-
-
-
-
-     template <class Functor> 
-       inline void ThreadedLoop::run (Functor functor)
-       {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (loop.start (dummy); loop.ok(); loop.next (dummy)) {
-             for (inner_loop.start (dummy); inner_loop.ok(); inner_loop.next (dummy))
-               functor (dummy);
-           }
-           return;
-         }
-
-         __Run<Functor> loop_thread (*this, functor);
-         run_outer (loop_thread, "run thread");
-       }
-
-
-     template <class Functor, class VoxelType1> 
-       void ThreadedLoop::run (Functor functor, VoxelType1& vox1)
-       {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (loop.start (vox1); loop.ok(); loop.next (vox1)) {
-             for (inner_loop.start (vox1); inner_loop.ok(); inner_loop.next (vox1))
-               functor (vox1);
-           }
-           return;
-         }
-
-         __Run1<Functor, VoxelType1> 
-           loop_thread (*this, functor, vox1);
-         run_outer (loop_thread, "run thread");
-       }
-
-
-
-     template <class Functor, class VoxelType1, class VoxelType2> 
-       void ThreadedLoop::run (Functor functor, VoxelType1& vox1, VoxelType2& vox2)
-       {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (loop.start (vox1, vox2); loop.ok(); loop.next (vox1, vox2)) {
-             for (inner_loop.start (vox1, vox2); inner_loop.ok(); inner_loop.next (vox1, vox2))
-               functor (vox1, vox2);
-           }
-           return;
-         }
-
-         __Run2<Functor, VoxelType1, VoxelType2> 
-           loop_thread (*this, functor, vox1, vox2);
-         run_outer (loop_thread, "run thread");
-       }
-
-
-
-     template <class Functor, class VoxelType1, class VoxelType2, class VoxelType3> 
-       void ThreadedLoop::run (Functor functor, VoxelType1& vox1, VoxelType2& vox2, VoxelType3& vox3)
-       {
-         if (Thread::number_of_threads() == 0) {
-           LoopInOrder inner_loop (axes);
-           for (loop.start (vox1, vox2, vox3); loop.ok(); loop.next (vox1, vox2, vox3)) {
-             for (inner_loop.start (vox1, vox2, vox3); inner_loop.ok(); inner_loop.next (vox1, vox2, vox3))
-               functor (vox1, vox2, vox3);
-           }
-           return;
-         }
-
-         __Run3<Functor, VoxelType1, VoxelType2, VoxelType3> 
-           loop_thread (*this, functor, vox1, vox2, vox3);
-         run_outer (loop_thread, "run thread");
-       }
 
 
 

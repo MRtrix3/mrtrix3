@@ -20,10 +20,13 @@
 
 */
 
+#include <QMessageBox>
+
+#include "app.h"
 #include "gui/dialog/file.h"
 #include "image/format/list.h"
 
-#ifndef MRTRIX_MACOSX
+#ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
 #else 
 # define FILE_DIALOG_OPTIONS static_cast<QFileDialog::Options> (0)
@@ -85,11 +88,39 @@ namespace MR
         }
 
 
+        bool overwrite_files = false;
 
-
-        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& filter, const std::string& folder)
+        void check_overwrite_files_func (const std::string& name) 
         {
-          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), folder.size() ? QString(folder.c_str()) : QString(), filter.c_str(), 0, FILE_DIALOG_OPTIONS);
+          if (overwrite_files)
+            return;
+
+          QMessageBox::StandardButton response = QMessageBox::warning (QApplication::activeWindow(), 
+              "confirm file overwrite", ("Action will overwrite file \"" + name + "\" - proceed?").c_str(), 
+                QMessageBox::Yes | QMessageBox::YesToAll | QMessageBox::Cancel, QMessageBox::Cancel);
+          if (response == QMessageBox::Cancel)
+            throw Exception ("File overwrite cancelled by user request");
+          if (response == QMessageBox::YesToAll)
+            overwrite_files = true;
+        }
+
+
+
+        std::string get_save_name (QWidget* parent, const std::string& caption, const std::string& suggested_name, const std::string& filter, const std::string& folder)
+        {
+          overwrite_files = false;
+
+          QString selection;
+          if (folder.size()) {
+            if (suggested_name.size())
+              selection = MR::Path::join (folder, suggested_name).c_str();
+            else 
+              selection = folder.c_str();
+          }
+          else if (suggested_name.size())
+            selection = suggested_name.c_str();
+          QString qstring = QFileDialog::getSaveFileName (parent, caption.c_str(), selection, 
+              filter.c_str(), 0, FILE_DIALOG_OPTIONS | QFileDialog::DontConfirmOverwrite);
           std::string name;
           if (qstring.size()) {
             name = qstring.toUtf8().data();

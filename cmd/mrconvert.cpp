@@ -82,7 +82,8 @@ void usage ()
 
   + DataType::options()
 
-  + DWI::GradOption;
+  + DWI::GradImportOptions
+  + DWI::GradExportOptions;
 }
 
 
@@ -93,15 +94,15 @@ typedef cfloat complex_type;
 
 
 template <class InfoType>
-inline std::vector<int> set_header (
-  Image::Header& header,
-  const InfoType& input)
+inline std::vector<int> set_header (Image::Header& header, const InfoType& input)
 {
   header.info() = input.info();
 
   header.intensity_offset() = 0.0;
   header.intensity_scale() = 1.0;
 
+  if (get_options ("grad").size() || get_options ("fslgrad").size())
+    header.DW_scheme() = DWI::get_DW_scheme<float> (header);
 
   Options opt = get_options ("axes");
   std::vector<int> axes;
@@ -127,9 +128,6 @@ inline std::vector<int> set_header (
   }
 
   Image::Stride::set_from_command_line (header);
-
-  if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header.DW_scheme() = DWI::get_DW_scheme<float> (header);
 
   opt = get_options ("prs");
   if (opt.size() &&
@@ -172,7 +170,9 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
   std::vector<int> axes = set_header (header_out, in);
   header_out.datatype() = datatype;
   Image::Buffer<complex_type> buffer_out (output_filename, header_out);
-  Image::Buffer<complex_type>::voxel_type out (buffer_out);
+  DWI::export_grad_commandline (buffer_out);
+
+  auto out = buffer_out.voxel();
 
   if (axes.size()) {
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
@@ -206,7 +206,7 @@ void run ()
   Image::Header header_in (argument[0]);
 
   Image::Buffer<complex_type> buffer_in (header_in);
-  Image::Buffer<complex_type>::voxel_type in (buffer_in);
+  auto in = buffer_in.voxel();
 
   Image::Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
@@ -228,7 +228,8 @@ void run ()
         if ((int)grad.rows() != header_in.dim(3)) {
           WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
           header_out.DW_scheme().clear();
-        } else {
+        }
+        else {
           Math::Matrix<float> extract_grad (pos[3].size(), 4);
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
             extract_grad.row(dir) = grad.row((pos[3])[dir]);
@@ -245,7 +246,7 @@ void run ()
       }
     }
 
-    Image::Adapter::Extract<Image::Buffer<complex_type>::voxel_type> extract (in, pos);
+    Image::Adapter::Extract<decltype(in)> extract (in, pos);
     copy_permute (extract, header_out, argument[1]);
   }
   else

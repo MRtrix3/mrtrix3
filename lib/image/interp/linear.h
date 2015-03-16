@@ -104,7 +104,7 @@ namespace MR
               (*this)[0] = 0;
             }
             else {
-              (*this)[0] = Math::floor (pos[0]);
+              (*this)[0] = std::floor (pos[0]);
               if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
             }
             if (pos[1] < 0.0) {
@@ -112,7 +112,7 @@ namespace MR
               (*this)[1] = 0;
             }
             else {
-              (*this)[1] = Math::floor (pos[1]);
+              (*this)[1] = std::floor (pos[1]);
               if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
             }
 
@@ -121,7 +121,7 @@ namespace MR
               (*this)[2] = 0;
             }
             else {
-              (*this)[2] = Math::floor (pos[2]);
+              (*this)[2] = std::floor (pos[2]);
               if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
             }
 

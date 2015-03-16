@@ -28,8 +28,6 @@
 #include "image/filter/connected_components.h"
 #include "math/matrix.h"
 
-#include <cmath>
-
 
 using namespace MR;
 using namespace App;
@@ -70,13 +68,13 @@ void run ()
 {
   Image::Header input_header (argument[0]);
   Image::Buffer<bool> input_data (input_header);
-  Image::Buffer<bool>::voxel_type input_voxel (input_data);
+  auto input_voxel = input_data.voxel();
 
   Image::Filter::ConnectedComponents connected_filter(input_voxel);
   Image::Header header (input_data);
   header.info() = connected_filter.info();
   Image::Buffer<int> output_data (argument[1], header);
-  Image::Buffer<int>::voxel_type output_vox (output_data);
+  auto output_vox = output_data.voxel();
 
   Options opt = get_options ("axes");
   std::vector<int> axes;

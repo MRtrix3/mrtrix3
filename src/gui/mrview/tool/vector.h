@@ -27,6 +27,7 @@
 #include "gui/projection.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/combo_box_error.h"
+#include "gui/mrview/colourmap_button.h"
 
 namespace MR
 {
@@ -36,7 +37,7 @@ namespace MR
     {
       namespace Tool
       {
-        class Vector : public Base
+        class Vector : public Base, public ColourMapButtonObserver
         {
             Q_OBJECT
 
@@ -48,8 +49,14 @@ namespace MR
             virtual ~Vector ();
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
-            void drawOverlays (const Projection& transform);
+            void drawOverlays (const Projection& transform) override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
+
+            void selected_colourmap(size_t index, const ColourMapButton&) override;
+            void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;
+            void toggle_show_colour_bar(bool, const ColourMapButton&) override;
+            void toggle_invert_colourmap(bool, const ColourMapButton&) override;
+            void reset_colourmap(const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
             float line_thickness;
@@ -72,12 +79,8 @@ namespace MR
             void length_multiplier_slot ();
             void length_type_slot (int);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void show_colour_bar_slot ();
-            void select_colourmap_slot ();
             void colour_changed_slot (int);
             void on_set_scaling_slot ();
-            void reset_intensity_slot ();
-            void invert_colourmap_slot ();
             void threshold_lower_changed (int unused);
             void threshold_upper_changed (int unused);
             void threshold_lower_value_changed ();
@@ -87,11 +90,8 @@ namespace MR
             ComboBoxWithErrorMsg *colour_combobox;
 
             QGroupBox *colourmap_option_group;
-            QMenu *colourmap_menu;
-            QActionGroup *colourmap_group;
-            QAction **colourmap_actions;
             QAction *show_colour_bar, *invert_scale;
-            QToolButton *colourmap_button;
+            ColourMapButton *colourmap_button;
 
             AdjustButton *min_value, *max_value;
             AdjustButton *threshold_lower, *threshold_upper;

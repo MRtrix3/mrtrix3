@@ -37,7 +37,7 @@ namespace MR
       namespace Mode
       {
 
-        std::string Volume::Shader::vertex_shader_source (const Displayable& object) 
+        std::string Volume::Shader::vertex_shader_source (const Displayable&) 
         {
           std::string source = 
             "layout(location=0) in vec3 vertpos;\n"
@@ -85,8 +85,9 @@ namespace MR
 
           for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
             source += mode.overlays_for_3D[n]->declare_shader_variables ("overlay"+str(n)+"_") +
-              "uniform sampler3D overlay_sampler"+str(n) + ";\n"
+              "uniform sampler3D overlay_sampler"+str(n) + ";\n" +
               "uniform vec3 overlay_ray"+str(n) + ";\n"
+              "uniform vec3 overlay" + str(n) + "_colourmap_colours;\n"
               "in vec3 overlay_texcoord"+str(n) + ";\n";
           }
 
@@ -181,35 +182,40 @@ namespace MR
 
 
           // OVERLAYS:
-          for (int n = 0; n < mode.overlays_for_3D.size(); ++n) {
+          for (size_t n = 0, N = mode.overlays_for_3D.size(); n < N; ++n) {
+            const Image* image = mode.overlays_for_3D[n];
             source += 
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
               "    if (overlay_coord"+str(n) + ".s >= 0.0 && overlay_coord"+str(n) + ".s <= 1.0 &&\n"
               "        overlay_coord"+str(n) + ".t >= 0.0 && overlay_coord"+str(n) + ".t <= 1.0 &&\n"
               "        overlay_coord"+str(n) + ".p >= 0.0 && overlay_coord"+str(n) + ".p <= 1.0) {\n"
               "      color = texture (overlay_sampler"+str(n) +", overlay_coord"+str(n) +");\n"
-              "      amplitude = " + std::string (ColourMap::maps[mode.overlays_for_3D[n]->colourmap].amplitude) + ";\n"
+              "      amplitude = " + std::string (ColourMap::maps[image->colourmap].amplitude) + ";\n"
               "      if (!isnan(amplitude) && !isinf(amplitude)";
 
-            if (mode.overlays_for_3D[n]->use_discard_lower())
+            if (image->use_discard_lower())
               source += " && amplitude >= overlay"+str(n)+"_lower";
 
-            if (mode.overlays_for_3D[n]->use_discard_upper())
+            if (image->use_discard_upper())
               source += " && amplitude <= overlay"+str(n)+"_upper";
 
             source += ") {\n";
 
-            if (!ColourMap::maps[mode.overlays_for_3D[n]->colourmap].special) {
+            if (!ColourMap::maps[image->colourmap].special) {
               source += 
                 "        amplitude = clamp (";
-              if (mode.overlays_for_3D[n]->scale_inverted()) 
+              if (image->scale_inverted())
                 source += "1.0 -";
               source += 
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
+            if(!ColourMap::maps[image->colourmap].is_colour)
+              source += std::string ("        ") + ColourMap::maps[image->colourmap].mapping;
+            else
+              source += std::string ("         color.rgb = 2.7213 * amplitude * overlay"+str(n)+"_colourmap_colour;\n");
+
             source += 
-              std::string ("        ") + ColourMap::maps[mode.overlays_for_3D[n]->colourmap].mapping +
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
               "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
               "        final_color.a += color.a;\n"
@@ -428,11 +434,15 @@ namespace MR
           image()->update_texture3D();
           image()->set_use_transparency (true);
 
-          image()->start (volume_shader, image()->scaling_3D());
+          image()->start (volume_shader, image()->scale_factor());
           gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, "M"), 1, gl::FALSE_, M);
           gl::Uniform3fv (gl::GetUniformLocation (volume_shader, "ray"), 1, ray);
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "image_sampler"), 0);
           gl::Uniform1f (gl::GetUniformLocation (volume_shader, "selection_thickness"), 3.0*step_size);
+
+          if (ColourMap::maps[image()->colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (volume_shader, "colourmap_colour"),
+                image()->colour[0]/255.0f, image()->colour[1]/255.0f, image()->colour[2]/255.0f);
 
           gl::ActiveTexture (gl::TEXTURE0);
           gl::BindTexture (gl::TEXTURE_3D, image()->texture());
@@ -476,7 +486,7 @@ namespace MR
             gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, ("overlay_M"+str(n)).c_str()), 1, gl::FALSE_, overlay_M);
             gl::Uniform3fv (gl::GetUniformLocation (volume_shader, ("overlay_ray"+str(n)).c_str()), 1, overlay_ray);
 
-            overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scaling_3D(), "overlay"+str(n)+"_");
+            overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scale_factor(), "overlay"+str(n)+"_");
           }
 
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);

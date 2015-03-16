@@ -80,8 +80,7 @@ namespace MR
                 dtype != DataType::Float64LE && dtype != DataType::Float64BE)
                 throw Exception ("only supported datatype for tracks file are "
                     "Float32LE, Float32BE, Float64LE & Float64BE");
-            if (!App::overwrite_files && Path::exists (name))
-              throw Exception ("error creating file \"" + name + "\": file exists (use -force option to force overwrite)");
+            App::check_overwrite (name);
           }
 
           ~__WriterBase__()

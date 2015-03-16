@@ -89,7 +89,7 @@ namespace MR
               return false;
             do {
               value_type val = get_next_scalar();
-              if (isinf (val)) {
+              if (std::isinf (val)) {
                 in.close();
                 return false;
               }
@@ -98,7 +98,7 @@ namespace MR
                 return false;
               }
 
-              if (isnan (val))
+              if (std::isnan (val))
                 return true;
               tck_scalar.push_back (val);
             } while (in.good());
@@ -146,7 +146,7 @@ namespace MR
             return (value_type (NAN));
           }
 
-          ScalarReader (const ScalarReader& R) { assert (0); }
+          ScalarReader (const ScalarReader&) = delete;
 
       };
 
@@ -251,7 +251,7 @@ namespace MR
           }
 
 
-          ScalarWriter (const ScalarWriter& W) : buffer_size (0) { assert (0); }
+          ScalarWriter (const ScalarWriter&) = delete;
 
       };
 

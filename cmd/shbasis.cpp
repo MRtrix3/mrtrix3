@@ -72,7 +72,7 @@ void usage ()
 
 
   ARGUMENTS
-    + Argument ("SH", "the input image of SH coefficients.").allow_multiple().type_image_in();
+    + Argument ("SH", "the input image(s) of SH coefficients.").allow_multiple().type_image_in();
 
 
   OPTIONS
@@ -128,18 +128,18 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 
   // Open in read-write mode if there's a chance of modification
   typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
-  typename Image::Buffer<value_type>::voxel_type v (buffer);
+  auto v = buffer.voxel();
 
   // Need to mask out voxels where the DC term is zero
   Image::Info info_mask (H);
   info_mask.set_ndim (3);
   info_mask.datatype() = DataType::Bit;
   Image::BufferScratch<bool> mask (info_mask);
-  Image::BufferScratch<bool>::voxel_type v_mask (mask);
+  auto v_mask = mask.voxel();
   size_t voxel_count = 0;
   {
     Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
-    for (loop.start (v, v_mask); loop.ok(); loop.next (v, v_mask)) {
+    for (auto i = loop (v, v_mask); i; ++i) {
       const value_type value = v.value();
       if (value && std::isfinite (value)) {
         v_mask.value() = true;
@@ -167,7 +167,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     Image::LoopInOrder loop (v, 0, 3);
     for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
       double sum = 0.0;
-      for (loop.start (v, v_mask); loop.ok(); loop.next (v, v_mask)) {
+      for (auto i = loop (v, v_mask); i; ++i) {
         if (v_mask.value())
           sum += Math::pow2 (value_type(v.value()));
       }
@@ -254,8 +254,8 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     switch (conversion) {
       case NONE: break;
       case OLD: break;
-      case NEW: multiplier = 1.0 / M_SQRT2; break;
-      case FORCE_OLDTONEW: multiplier = 1.0 / M_SQRT2; break;
+      case NEW: multiplier = Math::sqrt1_2; break;
+      case FORCE_OLDTONEW: multiplier = Math::sqrt1_2; break;
       case FORCE_NEWTOOLD: WARN ("Refusing to convert image \"" + H.name() + "\" from new to old basis, as data appear to already be in the old non-orthonormal basis"); return;
     }
     grad_threshold *= 2.0;
@@ -265,10 +265,10 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     CONSOLE ("Image \"" + str(H.name()) + "\" appears to be in the new orthonormal basis");
     switch (conversion) {
       case NONE: break;
-      case OLD: multiplier = M_SQRT2; break;
+      case OLD: multiplier = Math::sqrt2; break;
       case NEW: break;
       case FORCE_OLDTONEW: WARN ("Refusing to convert image \"" + H.name() + "\" from old to new basis, as data appear to already be in the new orthonormal basis"); return;
-      case FORCE_NEWTOOLD: multiplier = M_SQRT2; break;
+      case FORCE_NEWTOOLD: multiplier = Math::sqrt2; break;
     }
 
   } else {
@@ -279,10 +279,10 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 
     if (conversion == FORCE_OLDTONEW) {
       WARN ("Forcing conversion of image \"" + H.name() + "\" from old to new SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this conversion!");
-      multiplier = 1.0 / M_SQRT2;
+      multiplier = Math::sqrt1_2;
     } else if (conversion == FORCE_NEWTOOLD) {
       WARN ("Forcing conversion of image \"" + H.name() + "\" from new to old SH basis on user request; however NO GUARANTEE IS PROVIDED on appropriateness of this conversion!");
-      multiplier = M_SQRT2;
+      multiplier = Math::sqrt2;
     }
 
   }
@@ -290,7 +290,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Decide whether the user needs to be warned about a poor diffusion encoding scheme
   if (regression.second)
     DEBUG ("Gradient of regression is " + str(regression.second) + "; threshold is " + str(grad_threshold));
-  if (Math::abs(regression.second) > grad_threshold) {
+  if (std::abs(regression.second) > grad_threshold) {
     WARN ("Image \"" + H.name() + "\" may have been derived from poor directional encoding, or have some other underlying data problem");
     WARN ("(m!=0 to m==0 power ratio changing by " + str(2.0*regression.second) + " per even order)");
   }
@@ -302,7 +302,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
     ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
     for (v[3] = 1; v[3] != N; ++v[3]) {
       if (!mzero_terms[v[3]]) {
-        for (loop.start (v); loop.ok(); loop.next (v))
+        for (auto i = loop (v); i; ++i) 
           v.value() *= multiplier;
       }
       ++progress;
@@ -347,21 +347,11 @@ void run ()
 
     const std::string path = *i;
     Image::Header H (path);
-    if (H.ndim() != 4) {
-      WARN ("Image \"" + H.name() + "\" is not 4D and therefore cannot be an SH image");
-      continue;
+    try {
+      Math::SH::check (H);
     }
-    const size_t lmax = Math::SH::LforN (H.dim(3));
-    if (!lmax) {
-      WARN ("Image \"" + H.name() + "\" does not contain enough volumes to be an SH image");
-      continue;
-    }
-    if (Math::SH::NforL (lmax) != size_t(H.dim(3))) {
-      WARN ("Image \"" + H.name() + "\" does not contain a number of volumes appropriate for an SH image");
-      continue;
-    }
-    if (!H.datatype().is_floating_point()) {
-      WARN ("Image \"" + H.name() + "\" does not use a floating-point data type and therefore cannot be an SH image");
+    catch (Exception& E) {
+      E.display(0);
       continue;
     }
 

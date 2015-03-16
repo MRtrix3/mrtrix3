@@ -23,24 +23,25 @@
 #include "mrtrix.h"
 #include "math/math.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/volume.h"
+#include "gui/mrview/mode/lightbox_gui.h"
+#include "gui/mrview/mode/lightbox.h"
 #include "gui/mrview/tool/view.h"
 #include "gui/mrview/adjust_button.h"
 
 #define FOV_RATE_MULTIPLIER 0.01f
 #define MRTRIX_MIN_ALPHA 1.0e-3f
-#define MRTRIX_ALPHA_MULT (-MR::Math::log (MRTRIX_MIN_ALPHA)/1000.0f)
+#define MRTRIX_ALPHA_MULT (-std::log (MRTRIX_MIN_ALPHA)/1000.0f)
 
 
 namespace {
 
   inline float get_alpha_from_slider (float slider_value) {
-    return MRTRIX_MIN_ALPHA * MR::Math::exp (MRTRIX_ALPHA_MULT * float (slider_value));
+    return MRTRIX_MIN_ALPHA * std::exp (MRTRIX_ALPHA_MULT * float (slider_value));
   }
 
   inline float get_slider_value_from_alpha (float alpha) {
-    return MR::Math::log (alpha/MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT;
+    return std::log (alpha/MRTRIX_MIN_ALPHA) / MRTRIX_ALPHA_MULT;
   }
 
 }
@@ -88,13 +89,25 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable;
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const { return QModelIndex(); }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return planes.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const 
+            {
+              (void) parent; // to suppress warnings about unused parameters
+              return planes.size();
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const 
+            { 
+              (void) parent; // to suppress warnings about unused parameters
+              return 1;
+            }
 
             void remove (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
@@ -374,14 +387,15 @@ namespace MR
 
           clip_planes_option_menu->addSeparator();
 
+          // Light box view options
+          init_lightbox_gui (main_box);
+
           main_box->addStretch ();
         }
 
 
 
-
-
-        void View::showEvent (QShowEvent* event) 
+        void View::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
@@ -402,7 +416,7 @@ namespace MR
 
 
 
-        void View::closeEvent (QCloseEvent* event) 
+        void View::closeEvent (QCloseEvent*) 
         {
           window.disconnect (this);
         }
@@ -465,10 +479,14 @@ namespace MR
 
         void View::onModeChanged () 
         {
-          transparency_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          threshold_box->setEnabled (window.get_current_mode()->features & Mode::ShaderTransparency);
-          clip_box->setEnabled (window.get_current_mode()->features & Mode::ShaderClipping);
+          const Mode::Base* mode = window.get_current_mode();
+          transparency_box->setVisible (mode->features & Mode::ShaderTransparency);
+          threshold_box->setVisible (mode->features & Mode::ShaderTransparency);
+          clip_box->setVisible (mode->features & Mode::ShaderClipping);
+          lightbox_box->setVisible (false);
+          mode->request_update_mode_gui(*this);
         }
+
 
 
 
@@ -741,6 +759,76 @@ namespace MR
         void View::clip_planes_toggle_shown_slot ()
         {
           window.updateGL();
+        }
+
+        // Light box related functions
+
+        void View::light_box_slice_inc_reset_slot()
+        {
+          reset_light_box_gui_controls();
+        }
+
+
+
+
+        void View::init_lightbox_gui (QLayout* parent)
+        {
+          using LightBoxEditButton = MRView::Mode::LightBoxViewControls::LightBoxEditButton;
+
+          light_box_slice_inc = new AdjustButton(this);
+          light_box_rows = new LightBoxEditButton(this);
+          light_box_cols = new LightBoxEditButton(this);
+
+          light_box_slice_inc->setMinimumWidth(100);
+
+          lightbox_box = new QGroupBox ("Light box");
+          parent->addWidget (lightbox_box);
+          GridLayout* grid_layout = new GridLayout;
+          lightbox_box->setLayout(grid_layout);
+
+          grid_layout->addWidget(new QLabel (tr("Slice increment (mm):")), 0, 1);
+          grid_layout->addWidget(light_box_slice_inc, 0, 2);
+
+
+          grid_layout->addWidget(new QLabel (tr("Rows:")), 1, 1);
+          grid_layout->addWidget(light_box_rows, 1, 2);
+
+          grid_layout->addWidget (new QLabel (tr("Columns:")), 2, 1);
+          grid_layout->addWidget(light_box_cols, 2, 2);
+
+          light_box_show_grid = new QCheckBox(tr("Show grid"), this);
+          grid_layout->addWidget(light_box_show_grid, 3, 0, 1, 2);
+        }
+
+
+
+
+
+        void View::reset_light_box_gui_controls()
+        {
+          light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
+          light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
+          light_box_slice_inc->setValue(Mode::LightBox::get_slice_increment());
+          light_box_slice_inc->setRate(Mode::LightBox::get_slice_increment() / 5.f);
+          light_box_show_grid->setChecked(Mode::LightBox::get_show_grid());
+        }
+
+
+
+
+        // Called in respose to a request_update_mode_gui(ModeGuiVisitor& visitor) call
+        void View::update_lightbox_mode_gui(const Mode::LightBox &mode)
+        {
+          lightbox_box->setVisible(true);
+
+          connect(&mode, SIGNAL (slice_increment_reset()), this, SLOT (light_box_slice_inc_reset_slot()));
+
+          connect(light_box_rows, SIGNAL (valueChanged(int)), &mode, SLOT (nrows_slot(int)));
+          connect(light_box_cols, SIGNAL (valueChanged(int)), &mode, SLOT (ncolumns_slot(int)));
+          connect(light_box_slice_inc, SIGNAL (valueChanged(float)), &mode, SLOT (slice_inc_slot(float)));
+          connect(light_box_show_grid, SIGNAL (toggled(bool)), &mode, SLOT (show_grid_slot(bool)));
+
+          reset_light_box_gui_controls();
         }
 
       }

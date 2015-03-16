@@ -52,10 +52,10 @@ class SDStream : public MethodBase {
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
           set_step_size (0.1);
-          dot_threshold = Math::cos (max_angle);
+          dot_threshold = std::cos (max_angle);
 
           if (rk4) {
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * M_PI))) + " mm");
+            INFO ("minimum radius of curvature = " + str(step_size / (max_angle / (0.5 * Math::pi))) + " mm");
           } else {
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }

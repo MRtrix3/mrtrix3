@@ -50,7 +50,7 @@
 
 #include "image/loop.h"
 
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 
 
@@ -123,7 +123,7 @@ namespace MR
             public:
               MappedTrackReceiver (Model& i) :
                 master (i),
-                mutex (new Thread::Mutex()),
+                mutex (new std::mutex),
                 TD_sum (0.0),
                 fixel_TDs (master.fixels.size(), 0.0) { }
               MappedTrackReceiver (const MappedTrackReceiver& that) :
@@ -135,7 +135,7 @@ namespace MR
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
-              RefPtr<Thread::Mutex> mutex;
+              RefPtr<std::mutex> mutex;
               double TD_sum;
               std::vector<double> fixel_TDs;
           };
@@ -164,7 +164,7 @@ namespace MR
         for (std::vector<TrackContribution*>::iterator i = contributions.begin(); i != contributions.end(); ++i) {
           if (*i) {
             delete *i;
-            *i = NULL;
+            *i = nullptr;
           }
         }
       }
@@ -182,14 +182,13 @@ namespace MR
           throw Exception ("Input .tck file does not specify number of streamlines (run tckfixcount on your .tck file!)");
         const track_t count = to<track_t>(properties["count"]);
 
-        contributions.assign (count, NULL);
-
-        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
+        contributions.assign (count, nullptr);
 
         {
           Mapping::TrackLoader loader (file, count);
           Mapping::TrackMapperBase mapper (H, dirs);
-          mapper.set_upsample_ratio (upsample_ratio);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (H, properties, 0.1));
+          mapper.set_use_precise_mapping (true);
           MappedTrackReceiver receiver (*this);
           Thread::run_queue (
               loader,
@@ -226,10 +225,10 @@ namespace MR
       {
 
         const bool remove_untracked_fixels = App::get_options ("remove_untracked").size();
-        App::Options opt = App::get_options ("min_fod_integral");
-        const float min_FOD_integral = opt.size() ? float(opt[0][0]) : 0.0;
+        App::Options opt = App::get_options ("fd_thresh");
+        const float min_fibre_density = opt.size() ? float(opt[0][0]) : 0.0;
 
-        if (!remove_untracked_fixels && !min_FOD_integral)
+        if (!remove_untracked_fixels && !min_fibre_density)
           return;
 
         std::vector<size_t> fixel_index_mapping (fixels.size(), 0);
@@ -240,13 +239,13 @@ namespace MR
         new_fixels.push_back (Fixel());
         FOD_sum = 0.0;
 
-        for (loop.start (v); loop.ok(); loop.next (v)) {
+        for (auto l = loop (v); l; ++l) {
           if (v.value()) {
 
             size_t new_start_index = new_fixels.size();
 
             for (typename Fixel_map<Fixel>::ConstIterator i = begin(v); i; ++i) {
-              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_FOD_integral)) {
+              if ((!remove_untracked_fixels || i().get_TD()) && (i().get_FOD() > min_fibre_density)) {
                 fixel_index_mapping [size_t (i)] = new_fixels.size();
                 new_fixels.push_back (i());
                 FOD_sum += i().get_weight() * i().get_FOD();
@@ -256,7 +255,7 @@ namespace MR
             delete v.value();
 
             if (new_fixels.size() == new_start_index)
-              v.value() = NULL;
+              v.value() = nullptr;
             else
               v.value() = new MapVoxel (new_start_index, new_fixels.size() - new_start_index);
 
@@ -275,7 +274,7 @@ namespace MR
         for (typename std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
           TD_sum += i->get_weight() * i->get_TD();
 
-        INFO ("After fixel removal, the proportionality coefficient is " + str(mu()));
+        INFO ("After fixel exclusion, the proportionality coefficient is " + str(mu()));
 
       }
 
@@ -337,7 +336,7 @@ namespace MR
       template <class Fixel>
       Model<Fixel>::MappedTrackReceiver::~MappedTrackReceiver()
       {
-        Thread::Mutex::Lock lock (*mutex);
+        std::lock_guard<std::mutex> lock (*mutex);
         master.TD_sum += TD_sum;
         for (size_t i = 0; i != fixel_TDs.size(); ++i)
           master.fixels[i] += fixel_TDs[i];

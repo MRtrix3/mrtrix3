@@ -65,20 +65,7 @@ void usage ()
 
 // It is a good idea to use typedef's to help with flexibility if types need to
 // be changed later on.
-// I often use two such types: one for the type of the values stored in the
-// dataset (I typically use float rather than double to keep RAM usage low),
-// the other for the values used in the computation itself (this often
-// needs to be higher precision to avoid rounding errors, etc).
 typedef float value_type;
-typedef float compute_type;
-
-// It is also a good idea to typedef the various Buffer's used, so they can
-// easily be changed to a different type later if that proves advantageous
-// performance-wise. It also helps keep the code shorter and cleaner. 
-typedef Image::Buffer<value_type> BufferIn;
-typedef Image::Buffer<value_type> BufferOut;
-
-
 
 // This is the functor that will be invoked per-voxel. Note this could be a
 // simple function if the operation to be performed was independent of any
@@ -86,7 +73,7 @@ typedef Image::Buffer<value_type> BufferOut;
 // member variable.
 class ExpFunctor {
   public:
-    ExpFunctor (compute_type lambda) :
+    ExpFunctor (value_type lambda) :
      lambda (lambda) { }
 
     // This is the actual operation to be performed. 
@@ -100,10 +87,8 @@ class ExpFunctor {
       }
 
   protected:
-    const compute_type lambda;
+    const value_type lambda;
 };
-
-
 
 
 
@@ -116,7 +101,7 @@ class ExpFunctor {
 void run ()
 {
   // default value for lambda:
-  compute_type lambda = 1.0;
+  value_type lambda = 1.0;
 
   // check if -lambda option has been supplied, and update lambda accordingly
   // if so:
@@ -125,7 +110,7 @@ void run ()
     lambda = opt[0][0];
 
   // create a Buffer to access the input data:
-  BufferIn buffer_in (argument[0]);
+  Image::Buffer<value_type> buffer_in (argument[0]);
 
   // get the header of the input data, and modify to suit the output dataset:
   Image::Header header (buffer_in);
@@ -133,16 +118,16 @@ void run ()
 
   // create the output Buffer to store the output data, based on the updated
   // header information:
-  BufferOut buffer_out (argument[1], header);
+  Image::Buffer<value_type> buffer_out (argument[1], header);
 
   // create the appropriate Voxel objects to access the intensities themselves:
-  BufferIn::voxel_type vox_in (buffer_in);
-  BufferIn::voxel_type vox_out (buffer_out);
+  auto vox_in = buffer_in.voxel();
+  auto vox_out = buffer_out.voxel();
 
   // create a threaded loop object that will display a progress message, and
-  // iterate over vox_in in order of increasing stride. It's typically best to
-  // make sure the loop iterates over the input dataset in RAM-contiguous order
-  // (increasing stride - the default) since this maximises memory access
+  // iterate over buffer_in in order of increasing stride. It's typically best
+  // to make sure the loop iterates over the input dataset in RAM-contiguous
+  // order (increasing stride - the default) since this maximises memory access
   // throughput.
   Image::ThreadedLoop loop ("computing exponential...", vox_in);
 
@@ -150,6 +135,13 @@ void run ()
   // the user-supplied lambda value (or default of 1), using vox_in as the
   // first argument and vox_out as the second:
   loop.run (ExpFunctor (lambda), vox_in, vox_out);
+
+
+  // note that for simple operations, it is also possible to use lambda
+  // functions, avoiding the need to declare a full-blown functor class:
+  loop.run ([&] (decltype(vox_in)& in, decltype(vox_out)& out) {
+        out.value() = std::exp (lambda * in.value());
+        }, vox_in, vox_out);
 }
 \endcode
 

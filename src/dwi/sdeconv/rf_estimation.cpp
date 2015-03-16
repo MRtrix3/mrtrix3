@@ -101,7 +101,7 @@ void SFThresholds::update (const std::vector<FODSegResult>& data, const float di
   }
   const float dispersion_mean  = dispersion_sum / double(count);
   const float integral_mean  = integral_sum / double(count);
-  const float integral_stdev = Math::sqrt ((integral_sq_sum / double(count)) - Math::pow2 (integral_mean));
+  const float integral_stdev = std::sqrt ((integral_sq_sum / double(count)) - Math::pow2 (integral_mean));
 
   min_integral = integral_mean - (integral_multiplier * integral_stdev);
   max_integral = integral_mean + (integral_multiplier * integral_stdev);
@@ -157,7 +157,7 @@ bool FODCalcAndSeg::operator() (const Image::Iterator& pos)
   // Summarise the results of FOD segmentation and store
   const FODSegResult result (lobes);
   {
-    Thread::Mutex::Lock lock (*mutex);
+    std::lock_guard<std::mutex> lock (*mutex);
     output.push_back (result);
   }
 
@@ -217,18 +217,23 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   Math::Matrix<float> dirs;
   DWI::gen_direction_matrix (dirs, rotated_grad, shared.dwis);
 
-  // Convert the DWI signal to spherical harmonics in the new reference frame
-  Math::SH::Transform<float> transform (dirs, lmax);
-  Math::Vector<float> SH;
-  transform.A2SH (SH, dwi_data);
+  try {
 
-  // Extract the m=0 components and save
-  Math::Vector<float> response (lmax/2+1);
-  for (size_t l = 0; l <= lmax; l += 2)
-    response[l/2] = SH[Math::SH::index (l, 0)];
-  {
-    Thread::Mutex::Lock lock (*mutex);
+    // Convert the DWI signal to spherical harmonics in the new reference frame
+    Math::SH::Transform<float> transform (dirs, lmax);
+    Math::Vector<float> SH;
+    transform.A2SH (SH, dwi_data);
+
+    // Extract the m=0 components and save
+    Math::Vector<float> response (lmax/2+1);
+    for (size_t l = 0; l <= lmax; l += 2)
+      response[l/2] = SH[Math::SH::index (l, 0)];
+
+    std::lock_guard<std::mutex> lock (*mutex);
     output += response;
+
+  } catch (...) {
+    WARN ("Invalid rotated-gradient SH transformation in voxel " + str(in.get_vox()));
   }
 
   return true;

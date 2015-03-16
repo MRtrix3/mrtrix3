@@ -29,6 +29,7 @@
 #include "image/stride.h"
 #include "image/value.h"
 #include "image/position.h"
+#include "image/copy.h"
 #include "image/threaded_copy.h"
 #include "image/buffer.h"
 
@@ -104,6 +105,10 @@ namespace MR
             return data_.address (offset_);
           }
 
+          size_t offset () const { 
+            return offset_;
+          }
+
           bool valid (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) const {
             to_axis = std::min (to_axis, ndim());
             for (size_t n = from_axis; n < to_axis; ++n)
@@ -120,14 +125,17 @@ namespace MR
             return stream;
           }
 
-          std::string save (const std::string& filename) const 
+          std::string save (const std::string& filename, bool use_multi_threading = true) const 
           {
             Voxel in (*this);
             Image::Header header;
             header.info() = info();
             Image::Buffer<value_type> buffer_out (filename, header);
-            typename Image::Buffer<value_type>::voxel_type out (buffer_out);
-            Image::threaded_copy (in, out);
+            auto out = buffer_out.voxel();
+            if (use_multi_threading) 
+              Image::threaded_copy (in, out);
+            else 
+              Image::copy (in, out);
             return buffer_out.__get_handler()->files[0].name;
           }
 

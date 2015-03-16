@@ -106,14 +106,16 @@ void run ()
   opt = get_options ("path"); const float path_multiplier = opt.size() ? opt[0][0] : VALUE_DEFAULT_PATH;
 
   Image::Buffer<float> out (argument[1], H_out);
-  Image::Buffer<float>::voxel_type v_in (in), v_out (out);
+  auto v_in = in.voxel();
+  auto v_out = out.voxel();
 
-  Image::LoopInOrder loop (v_out, 0, 3);
-  for (loop.start (v_in, v_out); loop.ok(); loop.next (v_in, v_out)) {
-    const DWI::Tractography::ACT::Tissues t (v_in);
+  auto f = [&] (decltype(v_in)& in, decltype(v_out)& out) {
+    const DWI::Tractography::ACT::Tissues t (in);
     const float bg = 1.0 - (t.get_cgm() + t.get_sgm() + t.get_wm() + t.get_csf() + t.get_path());
-    v_out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
-  }
+    out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) 
+      + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
+  };
+  Image::ThreadedLoop (v_out, 0, 3).run (f, v_in, v_out);
 
 }
 

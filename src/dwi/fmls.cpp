@@ -52,6 +52,9 @@ const App::OptionGroup FMLSSegmentOption = App::OptionGroup ("FOD FMLS segmenter
             "Any lobe for which the peak amplitude is smaller than this threshold will be discarded.")
     + App::Argument ("value").type_float (0.0, FMLS_PEAK_VALUE_THRESHOLD, 1e6)
 
+  + App::Option ("fmls_no_thresholds",
+            "disable all FOD lobe thresholding; every lobe with a positive FOD amplitude will be retained.")
+
   + App::Option ("fmls_peak_ratio_to_merge",
             "specify the amplitude ratio between a sample and the smallest peak amplitude of the adjoining lobes, above which the lobes will be merged. "
             "This is the relative amplitude between the smallest of two adjoining lobes, and the 'bridge' between the two lobes. "
@@ -66,17 +69,40 @@ void load_fmls_thresholds (Segmenter& segmenter)
 
   using namespace App;
 
-  Options opt = get_options ("fmls_ratio_integral_to_neg");
-  if (opt.size())
-    segmenter.set_ratio_to_negative_lobe_integral (float(opt[0][0]));
+  Options opt = get_options ("fmls_no_thresholds");
+  const bool no_thresholds = opt.size();
+  if (no_thresholds) {
+    segmenter.set_ratio_to_negative_lobe_integral (0.0f);
+    segmenter.set_ratio_to_negative_lobe_mean_peak (0.0f);
+    segmenter.set_peak_value_threshold (0.0f);
+  }
+
+  opt = get_options ("fmls_ratio_integral_to_neg");
+  if (opt.size()) {
+    if (no_thresholds) {
+      WARN ("Option -fmls_ratio_integral_to_neg ignored: -fmls_no_thresholds overrides this");
+    } else {
+      segmenter.set_ratio_to_negative_lobe_integral (float(opt[0][0]));
+    }
+  }
 
   opt = get_options ("fmls_ratio_peak_to_mean_neg");
-  if (opt.size())
-    segmenter.set_ratio_to_negative_lobe_mean_peak (float(opt[0][0]));
+  if (opt.size()) {
+    if (no_thresholds) {
+      WARN ("Option -fmls_ratio_peak_to_mean_neg ignored: -fmls_no_thresholds overrides this");
+    } else {
+      segmenter.set_ratio_to_negative_lobe_mean_peak (float(opt[0][0]));
+    }
+  }
 
   opt = get_options ("fmls_peak_value");
-  if (opt.size())
-    segmenter.set_peak_value_threshold (float(opt[0][0]));
+  if (opt.size()) {
+    if (no_thresholds) {
+      WARN ("Option -fmls_peak_value ignored: -fmls_no_thresholds overrides this");
+    } else {
+      segmenter.set_peak_value_threshold (float(opt[0][0]));
+    }
+  }
 
   opt = get_options ("fmls_peak_ratio_to_merge");
   if (opt.size())
@@ -109,8 +135,8 @@ Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
   Math::Matrix<float> az_el_pairs (dirs.size(), 2);
   for (size_t row = 0; row != dirs.size(); ++row) {
     const Point<float> d (dirs.get_dir (row));
-    az_el_pairs (row, 0) = Math::atan2 (d[1], d[0]);
-    az_el_pairs (row, 1) = Math::acos  (d[2]);
+    az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
+    az_el_pairs (row, 1) = std::acos  (d[2]);
   }
   transform = new Math::SH::Transform<float> (az_el_pairs, lmax);
 
@@ -121,7 +147,7 @@ Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
 
 class Max_abs {
   public:
-    bool operator() (const float& a, const float& b) const { return (Math::abs (a) > Math::abs (b)); }
+    bool operator() (const float& a, const float& b) const { return (std::abs (a) > std::abs (b)); }
 };
 
 bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
@@ -172,7 +198,7 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
     } else {
 
-      if (Math::abs (i->first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
+      if (std::abs (i->first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
 
         if (lobes_to_merge.find (adj_lobes.back()) == lobes_to_merge.end())
           lobes_to_merge.insert (std::make_pair (adj_lobes.back(), adj_lobes.front()));
@@ -348,9 +374,9 @@ void Segmenter::optimise_mean_dir (FOD_lobe& lobe) const
           p = -p;
         p[2] = 0.0; // Force projection onto the tangent plane
 
-        const float dp = Math::abs (mean_dir.dot (dir));
-        const float theta = (dp < 1.0) ? Math::acos (dp) : 0.0;
-        const float log_transform = theta ? (theta / Math::sin (theta)) : 1.0;
+        const float dp = std::abs (mean_dir.dot (dir));
+        const float theta = (dp < 1.0) ? std::acos (dp) : 0.0;
+        const float log_transform = theta ? (theta / std::sin (theta)) : 1.0;
         p *= log_transform;
 
         u += lobe.get_values()[d] * p;
@@ -362,7 +388,7 @@ void Segmenter::optimise_mean_dir (FOD_lobe& lobe) const
     u *= (1.0 / sum_weights);
 
     const float r = u.norm();
-    const float exp_transform = r ? (Math::sin(r) / r) : 1.0;
+    const float exp_transform = r ? (std::sin(r) / r) : 1.0;
     u *= exp_transform;
 
     // Transform the offset from the tangent plane origin to euclidean space

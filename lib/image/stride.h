@@ -110,7 +110,7 @@ namespace MR
                   return false;
                 if (S.stride(b) == 0)
                   return true;
-                return abs (S.stride (a)) < abs (S.stride (b));
+                return std::abs (S.stride (a)) < std::abs (S.stride (b));
               }
             private:
               const InfoType& S;
@@ -227,20 +227,23 @@ namespace MR
             if (!info.stride (i)) continue;
             for (size_t j = i+1; j < info.ndim(); ++j) {
               if (!info.stride (j)) continue;
-              if (abs (info.stride (i)) == abs (info.stride (j))) info.stride (j) = 0;
+              if (std::abs (info.stride (i)) == std::abs (info.stride (j))) info.stride (j) = 0;
             }
           }
 
           size_t max = 0;
           for (size_t i = 0; i < info.ndim(); ++i)
-            if (size_t (abs (info.stride (i))) > max)
-              max = abs (info.stride (i));
+            if (size_t (std::abs (info.stride (i))) > max)
+              max = std::abs (info.stride (i));
 
           for (size_t i = 0; i < info.ndim(); ++i) {
             if (info.stride (i)) continue;
             info.stride (i) = ++max;
           }
         }
+
+
+
       //! remove duplicate and invalid strides.
       /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
@@ -255,11 +258,11 @@ namespace MR
 
 
       //! remove duplicate and invalid strides.
-      /*! sanitise the strides of InfoType \a info by identifying invalid (i.e.
+      /*! sanitise the strides in \a current by identifying invalid (i.e.
        * zero) or duplicate (absolute) strides, and assigning to each a
        * suitable value. The value chosen for each sanitised stride is the
        * lowest number greater than any of the currently valid strides. */
-      List& sanitise (List& strides, const List& ref);
+      List& sanitise (List& current, const List& desired);
 
 
       //! convert strides from symbolic to actual strides
@@ -366,27 +369,44 @@ namespace MR
 
 
 
-      //! produce strides from \c info that match those specified in \c desired
+      //! produce strides from \c current that match those specified in \c desired
       /*! The strides in \c desired should be specified as symbolic strides,
        * and any zero strides will be ignored and replaced with sensible values
        * if needed.  Essentially, this function checks whether the symbolic
-       * strides in \c info already match those specified in \c desired. If so,
+       * strides in \c current already match those specified in \c desired. If so,
        * these will be used as-is, otherwise a new set of strides based on \c
-       * desired will be produced. */
+       * desired will be produced, as follows. First, non-zero strides in \c
+       * desired are used as-is, then the remaining strides are taken from \c
+       * current where specified and used with higher values, followed by those
+       * strides not specified in either.
+       *
+       * Note that strides are considered matching even if the differ in their
+       * sign - this purpose of this function is to ensure contiguity in RAM
+       * along the desired axes, and a reversal in the direction of traversal
+       * is not considered to affect this.
+       *
+       * Examples:
+       * - \c current: [ 1 2 3 4 ], \c desired: [ 0 0 0 1 ] => [ 2 3 4 1 ]
+       * - \c current: [ 3 -2 4 1 ], \c desired: [ 0 0 0 1 ] => [ 3 -2 4 1 ]
+       * - \c current: [ -2 4 -3 1 ], \c desired: [ 1 2 3 0 ] => [ 1 2 3 4 ]
+       * - \c current: [ -1 2 -3 4 ], \c desired: [ 1 2 3 0 ] => [ -1 2 -3 4 ]
+       *   */
       template <class InfoType> 
-        List get_nearest_match (const InfoType& info, const List& desired)
+        List get_nearest_match (const InfoType& current, const List& desired)
         {
-          List in (get_symbolic (info)), out (desired);
+          List in (get_symbolic (current)), out (desired);
           out.resize (in.size(), 0);
 
           for (size_t i = 0; i < out.size(); ++i) 
             if (out[i]) 
-              if (Math::abs (out[i]) != Math::abs (in[i])) 
+              if (std::abs (out[i]) != std::abs (in[i])) 
                 return sanitise (in, out);
 
           sanitise (in);
           return in;
         }
+
+
       template <> 
         inline List get_nearest_match<List> (const List& strides, const List& desired) 
         {
@@ -413,7 +433,7 @@ namespace MR
       template <class InfoType> 
         inline List contiguous_along_axis (size_t axis, const InfoType& info) 
         {
-          return get_nearest_match (contiguous_along_axis(3), Image::Stride::get (info));
+          return get_nearest_match (Image::Stride::get (info), contiguous_along_axis (axis));
         }
 
       //! convenience function for use with Image::BufferPreload

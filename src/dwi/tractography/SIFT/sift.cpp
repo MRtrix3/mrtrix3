@@ -1,4 +1,5 @@
 #include "dwi/tractography/SIFT/sift.h"
+#include "math/math.h"
 
 namespace MR {
 namespace DWI {
@@ -13,8 +14,8 @@ using namespace App;
 
 const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT model")
 
-  + Option ("no_fod_scaling", "by default, the amplitudes of FOD lobes in voxels with grey matter partial volume contamination are scaled appropriately to compensate. \n"
-                              "Provide this option to override this behaviour and not perform any scaling.")
+  + Option ("no_fd_scaling", "by default, the fibre densities in voxels with grey matter partial volume contamination are scaled appropriately to compensate. \n"
+                             "Provide this option to override this behaviour and not perform any scaling.")
 
   + Option ("no_dilate_lut", "do NOT dilate FOD lobe lookup tables; only map streamlines to FOD lobes if the precise tangent lies within the angular spread of that lobe")
 
@@ -24,9 +25,9 @@ const OptionGroup SIFTModelOption = OptionGroup ("Options affecting the SIFT mod
                                 "this improves filtering slightly, at the expense of longer computation time "
                                 "(and you can no longer do quantitative comparisons between reconstructions if this is enabled)")
 
-  + Option ("FOD_int_thresh", "FOD integral threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
-                              "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
-    + Argument ("value").type_float (0.0, 0.0, 2.0 * M_PI);
+  + Option ("fd_thresh", "fibre density threshold; exclude an FOD lobe from filtering processing if its integral is less than this amount "
+                         "(streamlines will still be mapped to it, but it will not contribute to the cost function or the filtering)")
+    + Argument ("value").type_float (0.0, 0.0, 2.0 * Math::pi);
 
 
 

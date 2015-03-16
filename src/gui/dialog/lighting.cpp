@@ -79,14 +79,14 @@ namespace MR
 
         elevation_slider = new QSlider (Qt::Horizontal);
         elevation_slider->setRange (0,1000);
-        elevation_slider->setSliderPosition (int ( (1000.0/M_PI) *acos (-info.lightpos[1]/Math::norm (info.lightpos))));
+        elevation_slider->setSliderPosition (int ( (1000.0/Math::pi) *acos (-info.lightpos[1]/Math::norm (info.lightpos))));
         connect (elevation_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
         grid_layout->addWidget (new QLabel ("Light elevation"), 5, 0);
         grid_layout->addWidget (elevation_slider, 5, 1);
 
         azimuth_slider = new QSlider (Qt::Horizontal);
         azimuth_slider->setRange (-1000,1000);
-        azimuth_slider->setSliderPosition (int ( (1000.0/M_PI) *atan2 (info.lightpos[0], info.lightpos[2])));
+        azimuth_slider->setSliderPosition (int ( (1000.0/Math::pi) *atan2 (info.lightpos[0], info.lightpos[2])));
         connect (azimuth_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
         grid_layout->addWidget (new QLabel ("Light azimuth"), 6, 0);
         grid_layout->addWidget (azimuth_slider, 6, 1);
@@ -127,8 +127,8 @@ namespace MR
 
       void LightingSettings::light_position_slot ()
       {
-        float elevation = elevation_slider->value() * (M_PI/1000.0);
-        float azimuth = azimuth_slider->value() * (M_PI/1000.0);
+        float elevation = elevation_slider->value() * (Math::pi/1000.0);
+        float azimuth = azimuth_slider->value() * (Math::pi/1000.0);
         info.lightpos[2] = sin (elevation) * cos (azimuth);
         info.lightpos[0] = sin (elevation) * sin (azimuth);
         info.lightpos[1] = -cos (elevation);
@@ -139,7 +139,7 @@ namespace MR
 
 
 
-      Lighting::Lighting (QWidget* parent, const std::string& message, GL::Lighting& lighting, bool include_object_color) :
+      Lighting::Lighting (QWidget*, const std::string& message, GL::Lighting& lighting, bool include_object_color) :
         settings (new LightingSettings (this, lighting, include_object_color)) {
           setWindowTitle (QString (message.c_str()));
           setModal (false);

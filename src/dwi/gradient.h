@@ -43,22 +43,20 @@ namespace MR
 
   namespace DWI
   {
-    extern const App::OptionGroup GradOption;
+    extern const App::OptionGroup GradImportOptions;
+    extern const App::OptionGroup GradExportOptions;
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
     template <typename ValueType> 
       Math::Matrix<ValueType>& normalise_grad (Math::Matrix<ValueType>& grad)
       {
-        if (grad.columns() != 4)
+        if (grad.columns() < 3)
           throw Exception ("invalid gradient matrix dimensions");
         for (size_t i = 0; i < grad.rows(); i++) {
           ValueType norm = Math::norm (grad.row (i).sub (0,3));
-          if (norm) {
+          if (norm) 
             grad.row (i).sub (0,3) /= norm;
-          } else {
-            grad (i,3) = 0;
-          }
         }
         return grad;
       }
@@ -75,14 +73,14 @@ namespace MR
       {
         dirs.allocate (dwi.size(),2);
         for (size_t i = 0; i < dwi.size(); i++) {
-          dirs (i,0) = Math::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
           ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
           if (z >= 1.0) 
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
-            dirs (i,1) = M_PI;
+            dirs (i,1) = Math::pi;
           else 
-            dirs (i,1) = Math::acos (z);
+            dirs (i,1) = std::acos (z);
         }
         return dirs;
       }
@@ -193,7 +191,7 @@ namespace MR
         if (!grad.rows())
           return grad;
 
-        if (grad.columns() != 4)
+        if (grad.columns() < 4)
           throw Exception ("unexpected diffusion encoding matrix dimensions");
 
         INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
@@ -217,6 +215,10 @@ namespace MR
       }
 
 
+    //! process GradExportOptions command-line options
+    /*! this checks for the \c -export_grad_mrtrix & \c -export_grad_fsl
+     * options, and exports the DW schemes if and as requested. */
+    void export_grad_commandline (const Image::Header& header);
 
 
     //CONF option: BValueScaling

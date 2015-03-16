@@ -32,6 +32,7 @@
 #include "file/ofstream.h"
 
 #include "image/buffer.h"
+#include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 #include "image/iterator.h"
 #include "image/nav.h"
@@ -43,7 +44,7 @@
 #include "math/SH.h"
 #include "math/vector.h"
 
-#include "thread/mutex.h"
+#include "thread.h"
 
 #include "dwi/fmls.h"
 #include "dwi/gradient.h"
@@ -128,7 +129,7 @@ class FODSegResult
 class FODCalcAndSeg
 {
   public:
-    FODCalcAndSeg (Image::Buffer<float>& dwi,
+    FODCalcAndSeg (Image::BufferPreload<float>& dwi,
                Image::BufferScratch<bool>& mask,
                const DWI::CSDeconv<float>::Shared& csd_shared,
                const DWI::Directions::Set& dirs,
@@ -140,7 +141,7 @@ class FODCalcAndSeg
         fmls (new DWI::FMLS::Segmenter (dirs, lmax)),
         lmax (lmax),
         output (output),
-        mutex (new Thread::Mutex())
+        mutex (new std::mutex)
     {
       // TODO Still unhappy with the segmentation of small FOD lobes in this context
       // One possibility would be to NOT throw out negative lobes, use no thresholds, and instead
@@ -171,14 +172,14 @@ class FODCalcAndSeg
 
 
   private:
-    Image::Buffer<float>::voxel_type in;
+    Image::BufferPreload<float>::voxel_type in;
     Image::BufferScratch<bool>::voxel_type mask;
     DWI::CSDeconv<float> csd;
     RefPtr<DWI::FMLS::Segmenter> fmls;
     const size_t lmax;
     std::vector<FODSegResult>& output;
 
-    RefPtr<Thread::Mutex> mutex;
+    RefPtr<std::mutex> mutex;
 
 };
 
@@ -267,7 +268,7 @@ class ResponseEstimator
 {
 
   public:
-    ResponseEstimator (Image::Buffer<float>& dwi_data,
+    ResponseEstimator (Image::BufferPreload<float>& dwi_data,
                        const DWI::CSDeconv<float>::Shared& csd_shared,
                        const size_t lmax,
                        Response& output) :
@@ -276,7 +277,7 @@ class ResponseEstimator
         lmax (lmax),
         output (output),
         rng (),
-        mutex (new Thread::Mutex()) { }
+        mutex (new std::mutex()) { }
 
     ResponseEstimator (const ResponseEstimator& that) :
         dwi (that.dwi),
@@ -291,14 +292,14 @@ class ResponseEstimator
 
 
   private:
-    Image::Buffer<float>::voxel_type dwi;
+    Image::BufferPreload<float>::voxel_type dwi;
     const DWI::CSDeconv<float>::Shared& shared;
     const size_t lmax;
     Response& output;
 
     mutable Math::RNG rng;
 
-    RefPtr<Thread::Mutex> mutex;
+    RefPtr<std::mutex> mutex;
 
     Math::Matrix<float> gen_rotation_matrix (const Point<float>&) const;
 

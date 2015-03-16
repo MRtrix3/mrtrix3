@@ -123,10 +123,6 @@ namespace MR
         {
           return (get<uint32_t> (pos + sizeof (uint32_t), is_BE));
         }
-        inline uint8_t* data (uint8_t* pos)
-        {
-          return (pos + 2*sizeof (uint32_t));
-        }
         inline const uint8_t* data (const uint8_t* pos)
         {
           return (pos + 2*sizeof (uint32_t));
@@ -295,7 +291,7 @@ namespace MR
         size_t n;
         char order[4];
         for (n = 0; n < H.ndim(); ++n)
-          order[abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
+          order[std::abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
         for (; n < 4; ++n)
           order[n] = order2char (n, true);
         out.write (order, 4);

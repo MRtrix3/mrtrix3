@@ -27,7 +27,7 @@
 #include "get_set.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -128,7 +128,7 @@ void run ()
   Loader loader (argument[0]);
 
   Image::BufferPreload<value_type> data (argument[1]);
-  Image::BufferPreload<value_type>::voxel_type vox (data);
+  auto vox = data.voxel();
   Warper warper (vox);
 
   Writer writer (argument[2], loader.properties);

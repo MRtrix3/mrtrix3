@@ -23,9 +23,11 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
+#include "point.h"
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
+#include "gui/projection.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -50,6 +52,15 @@ namespace MR
       const uint32_t TransparencyEnabled = 0x00400000;
       const uint32_t LightingEnabled = 0x00800000;
 
+      class Image;
+      namespace Tool { class Fixel; }
+      class DisplayableVisitor
+      {
+        public:
+          virtual void render_image_colourbar(const Image&, const Projection&) {}
+          virtual void render_fixel_colourbar(const Tool::Fixel&, const Projection&) {}
+      };
+
       class Displayable : public QAction
       {
         Q_OBJECT
@@ -59,6 +70,8 @@ namespace MR
           Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
+
+          virtual void request_render_colourbar(DisplayableVisitor&, const Projection&) {}
 
           const std::string& get_filename () const {
             return filename;
@@ -99,7 +112,7 @@ namespace MR
 
           void adjust_windowing (float brightness, float contrast) {
             display_midpoint -= 0.0005f * display_range * brightness;
-            display_range *= Math::exp (-0.002f * contrast);
+            display_range *= std::exp (-0.002f * contrast);
             emit scalingChanged();
           }
 
@@ -114,6 +127,9 @@ namespace MR
             flags_ = cmap;
           }
 
+          void set_colour (std::array<GLubyte,3> &c) {
+            colour = c;
+          }
 
           void set_use_discard_lower (bool yesno) {
             if (!discard_lower_enabled()) return;
@@ -223,6 +239,8 @@ namespace MR
                 "uniform float " + with_prefix+"alpha_offset;\n"
                 "uniform float " + with_prefix+"alpha;\n";
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              source += "uniform vec3 " + with_prefix + "colourmap_colour;\n";
             return source;
           }
 
@@ -243,6 +261,9 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha_offset").c_str()), transparent_intensity / scaling);
               gl::Uniform1f (gl::GetUniformLocation (shader_program, (with_prefix+"alpha").c_str()), alpha);
             }
+            if (ColourMap::maps[colourmap].is_colour)
+              gl::Uniform3f (gl::GetUniformLocation (shader_program, (with_prefix+"colourmap_colour").c_str()), 
+                  colour[0]/255.0, colour[1]/255.0, colour[2]/255.0);
           }
 
           void stop (Shader& shader_program) {
@@ -252,8 +273,10 @@ namespace MR
           float lessthan, greaterthan;
           float display_midpoint, display_range;
           float transparent_intensity, opaque_intensity, alpha;
+          std::array<GLubyte,3> colour;
           size_t colourmap;
           bool show;
+          bool show_colour_bar;
 
 
         signals:
@@ -261,11 +284,9 @@ namespace MR
 
 
         protected:
-          const std::string filename;
+          std::string filename;
           float value_min, value_max;
           uint32_t flags_;
-
-          static const char* vertex_shader_source;
 
           void set_bit (uint32_t& field, uint32_t bit, bool value) {
             if (value) field |= bit;
@@ -294,6 +315,9 @@ namespace MR
           }
 
       };
+
+
+
 
     }
   }

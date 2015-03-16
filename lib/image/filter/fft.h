@@ -31,6 +31,7 @@
 #include "image/info.h"
 #include "image/nav.h"
 #include "image/threaded_copy.h"
+#include "image/filter/base.h"
 #include "math/fft.h"
 
 namespace MR
@@ -50,14 +51,14 @@ namespace MR
        * Typical usage:
        * \code
        * Buffer<complex_value_type> input_data (argument[0]);
-       * Buffer<complex_value_type>::voxel_type input_voxel (input_data);
+       * auto nput_voxel = input_data.voxel();
        *
        * Filter::FFT fft (input_data);
        * Header header (input_data);
        * header.info() = fft.info();
        *
        * Buffer<complex_value_type> output_data (header, argument[1]);
-       * Buffer<complex_value_type>::voxel_type output_voxel (output_data);
+       * auto output_voxel = output_data.voxel();
        * fft (input_voxel, output_voxel);
        *
        * \endcode
@@ -107,7 +108,7 @@ namespace MR
                 progress = new ProgressBar (message, axes_to_process.size() + 2);
 
               Image::BufferScratch<cdouble> temp_data (info());
-              Image::BufferScratch<cdouble>::voxel_type temp_voxel (temp_data);
+              auto temp_voxel = temp_data.voxel();
               Image::copy (input, temp_voxel);
               if (progress) ++(*progress);
 
@@ -119,14 +120,14 @@ namespace MR
                     break;
                   }
                 }
-                FFTKernel< Image::BufferScratch<cdouble>::voxel_type > kernel (temp_voxel, *axis, inverse);
+                FFTKernel<decltype(temp_voxel)> kernel (temp_voxel, *axis, inverse);
                 ThreadedLoop (temp_voxel, axes, 1).run (kernel);
                 if (progress) ++(*progress);
               }
 
               if (centre_zero_) {
                 Image::LoopInOrder loop (output);
-                for (loop.start (output); loop.ok(); loop.next (output)) {
+                for (auto l = loop (output); l; ++l) {
                   Image::Nav::set_pos (temp_voxel, output);
                   for (std::vector<size_t>::const_iterator flip_axis = axes_to_process.begin(); flip_axis != axes_to_process.end(); ++flip_axis)
                     temp_voxel[*flip_axis] = (temp_voxel[*flip_axis] >= (temp_voxel.dim (*flip_axis) / 2)) ?
@@ -175,6 +176,34 @@ namespace MR
       };
 
 
+
+      template <class VoxelType>
+        void fft (VoxelType&& vox, size_t axis, bool inverse = false) {
+          auto axes = Image::Stride::order (vox);
+          for (size_t n = 0; n < axes.size(); ++n) 
+            if (axis == axes[n])
+              axes.erase (axes.begin() + n);
+
+          struct Kernel {
+            Kernel (const VoxelType& v, size_t axis, bool inverse) :
+              data (v.dim (axis)), axis (axis), inverse (inverse) { }
+
+            void operator ()(VoxelType& v) {
+              for (auto l = Image::Loop (axis, axis+1) (v); l; ++l) 
+                data[v[axis]] = cdouble (v.value());
+              fft (data, inverse);
+              for (auto l = Image::Loop (axis, axis+1) (v); l; ++l) 
+                v.value() = typename std::remove_reference<VoxelType>::type::value_type (data[v[axis]]);
+            }
+            Math::FFT fft; 
+            std::vector<cdouble> data;
+            const size_t axis;
+            const bool inverse;
+          } kernel (vox, axis, inverse);
+
+          Image::ThreadedLoop ("performing in-place FFT...", vox, axes)
+            .run (kernel, vox);
+        }
 
 
 

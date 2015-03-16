@@ -54,8 +54,7 @@ namespace MR
         accessor (data)
         {
           Image::Voxel< Image::BufferScratch<MapVoxel*> > v (data);
-          Image::Loop loop;
-          for (loop.start (v); loop.ok(); loop.next (v))
+          for (auto l = Image::Loop() (v); l; ++l) 
             v.value() = NULL;
           // fixels[0] is an invaid fixel, as provided by the relevant empty constructor
           // This allows index 0 to be used as an error code, simplifying the implementation of MapVoxel and Iterator
@@ -67,9 +66,8 @@ namespace MR
 
         virtual ~Fixel_map()
         {
-          Image::Loop loop;
           VoxelAccessor v (accessor);
-          for (loop.start (v); loop.ok(); loop.next (v)) {
+          for (auto l = Image::Loop() (v); l; ++l) {
             if (v.value()) {
               delete v.value();
               v.value() = NULL;

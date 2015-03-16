@@ -30,9 +30,6 @@ namespace MR
 
 
 
-
-
-
       class Window : public QMainWindow
       {
           Q_OBJECT
@@ -59,7 +56,7 @@ namespace MR
             if (!image())
               return -1;
             else
-              return Math::round<int> (image()->interp.scanner2voxel (focus())[anatomical_plane]);
+              return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
           }
 
           Mode::Base* get_current_mode () const { return mode; }
@@ -83,6 +80,14 @@ namespace MR
             QList<QAction*> list = image_group->actions();
             for (int n = 0; n < list.size(); ++n)
               static_cast<Image*> (list[n])->set_windowing (min, max);
+          }
+
+          void set_image_volume (size_t axis, ssize_t index)
+          {
+            assert (image());
+            image()->interp[axis] = index;
+            set_image_navigation_menu();
+            updateGL();
           }
 
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
@@ -279,8 +284,11 @@ namespace MR
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
+          Tool::Base* tool_has_focus;
+
           friend class Image;
           friend class Mode::Base;
+          friend class Tool::Base;
           friend class Window::GLArea;
       };
 

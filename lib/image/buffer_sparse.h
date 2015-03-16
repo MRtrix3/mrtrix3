@@ -70,11 +70,12 @@ namespace MR
         typedef SparseDataType sparse_data_type;
         typedef Image::Sparse::Voxel<sparse_data_type> voxel_type;
 
+        voxel_type voxel() { return voxel_type (*this); }
 
 
       protected:
-        template <class Set> 
-          BufferSparse& operator= (const Set& H) { assert (0); return *this; }
+        template <class InfoType> 
+          BufferSparse& operator= (const InfoType&) { assert (0); return *this; }
 
 
         // Don't permit constructing from another BufferSparse using a different type

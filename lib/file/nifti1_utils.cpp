@@ -117,7 +117,7 @@ namespace MR
           H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
           if (H.dim (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.dim(i) = abs (H.dim (i));
+            H.dim(i) = std::abs (H.dim (i));
           }
           if (!H.dim (i))
             H.dim(i) = 1;
@@ -187,7 +187,7 @@ namespace MR
           H.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
           if (H.vox (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.vox(i) = Math::abs (H.vox (i));
+            H.vox(i) = std::abs (H.vox (i));
           }
         }
 
@@ -237,9 +237,9 @@ namespace MR
             M (3,3) = 1.0;
 
             // get voxel sizes:
-            H.vox(0) = Math::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.vox(1) = Math::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.vox(2) = Math::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.vox(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.vox(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.vox(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
             M (0,0) /= H.vox (0);
@@ -309,8 +309,8 @@ namespace MR
         // while preserving original strides as much as possible
         ssize_t max_spatial_stride = 0;
         for (size_t n = 0; n < 3; ++n)
-          if (abs(H.stride(n)) > max_spatial_stride)
-            max_spatial_stride = abs(H.stride(n));
+          if (std::abs(H.stride(n)) > max_spatial_stride)
+            max_spatial_stride = std::abs(H.stride(n));
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
         Image::Stride::symbolise (H);

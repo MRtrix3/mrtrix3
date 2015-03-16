@@ -52,7 +52,7 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::Resize resize_filter (src);
        * float scale = 0.5;
        * resize_filter.set_scale_factor (scale);
@@ -62,7 +62,7 @@ namespace MR
        * header.datatype() = src_data.datatype();
        *
        * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * resize_filter (src, dest);
        *
@@ -93,7 +93,7 @@ namespace MR
             for (size_t j = 0; j < 3; ++j) {
               if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
-              axes_[j].dim = Math::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
+              axes_[j].dim = std::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
               for (size_t i = 0; i < 3; ++i)
                 transform_(i,3) += 0.5 * (voxel_size[j] - axes_[j].vox) * transform_(i,j);
               axes_[j].vox = voxel_size[j];
@@ -129,7 +129,7 @@ namespace MR
             for (size_t d = 0; d < 3; ++d) {
               if (scale[d] <= 0.0)
                 throw Exception ("the scale factor must be larger than zero");
-              new_voxel_size[d] = (this->dim(d) * this->vox(d)) / Math::ceil (this->dim(d) * scale[d]);
+              new_voxel_size[d] = (this->dim(d) * this->vox(d)) / std::ceil (this->dim(d) * scale[d]);
             }
             set_voxel_size (new_voxel_size);
           }
@@ -159,7 +159,7 @@ namespace MR
                 Filter::Smooth smooth_filter (input);
                 smooth_filter.set_stdev (stdev);
                 BufferScratch<float> smoothed_data (input);
-                BufferScratch<float>::voxel_type smoothed_voxel (smoothed_data);
+                auto smoothed_voxel = smoothed_data.voxel();
                 {
                   LogLevelLatch log_level (0);
                   smooth_filter (input, smoothed_voxel);
@@ -175,7 +175,6 @@ namespace MR
                   reslice <Image::Interp::Cubic> (smoothed_voxel, output);
                   break;
                 case 3:
-                  FAIL ("FIXME: sinc interpolation needs a lot of work!");
                   reslice <Image::Interp::Sinc> (smoothed_voxel, output);
                   break;
                 default:
@@ -194,7 +193,6 @@ namespace MR
                     reslice <Image::Interp::Cubic> (input, output);
                     break;
                   case 3:
-                    FAIL ("FIXME: sinc interpolation needs a lot of work!");
                     reslice <Image::Interp::Sinc> (input, output);
                     break;
                   default:

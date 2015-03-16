@@ -28,6 +28,7 @@
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/rng.h"
+#include "dwi/directions/file.h"
 
 
 using namespace MR;
@@ -36,26 +37,29 @@ using namespace App;
 void usage () {
 
 DESCRIPTION
-  + "generate a set of directions evenly distributed over a hemisphere.";
+  + "generate a set of uniformly distributed directions using a bipolar electrostatic repulsion model.";
 
-REFERENCES = "Jones, D.; Horsfield, M. & Simmons, A. "
-             "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
-             "Magnetic Resonance in Medicine, 42: 515-525 (1999).\n\n"
+REFERENCES 
+  + "* Jones, D.; Horsfield, M. & Simmons, A. "
+  "Optimal strategies for measuring diffusion in anisotropic systems by magnetic resonance imaging. "
+  "Magnetic Resonance in Medicine, 42: 515-525 (1999)."
              
-             "Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
-             "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
-             "Magnetic Resonance Imaging, 18: 671-679 (2000).";
+  + "* Papadakis, N. G.; Murrills, C. D.; Hall, L. D.; Huang, C. L.-H. & Adrian Carpenter, T. "
+  "Minimal gradient encoding for robust estimation of diffusion anisotropy. "
+  "Magnetic Resonance Imaging, 18: 671-679 (2000).";
 
 ARGUMENTS
   + Argument ("ndir", "the number of directions to generate.").type_integer (6, 60, std::numeric_limits<int>::max())
   + Argument ("dirs", "the text file to write the directions to, as [ az el ] pairs.").type_file_out();
 
 OPTIONS
-  + Option ("power", "specify exponent to use for repulsion power law.")
-  + Argument ("exp").type_integer (2, 128, std::numeric_limits<int>::max())
+  + Option ("power", "specify exponent to use for repulsion power law (default: 2).")
+  + Argument ("exp").type_integer (2, 2, std::numeric_limits<int>::max())
 
-  + Option ("niter", "specify the maximum number of iterations to perform.")
-  + Argument ("num").type_integer (1, 10000, 1000000)
+  + Option ("niter", "specify the maximum number of iterations to perform (default: 10000).")
+  + Argument ("num").type_integer (1, 10000, std::numeric_limits<int>::max())
+
+  + Option ("unipolar", "optimise assuming a unipolar electrostatic repulsion model rather than the bipolar model normally assumed in DWI")
 
   + Option ("cartesian", "Output the directions in Cartesian coordinates [x y z] instead of [az el].");
 
@@ -69,6 +73,7 @@ namespace
 {
   double power = -1.0;
   size_t   ndirs = 0;
+  bool bipolar = true;
 }
 
 
@@ -106,7 +111,7 @@ void range (double& azimuth, double& elevation);
 
 void run () {
   size_t niter = 10000;
-  float target_power = 128.0;
+  float target_power = 2.0;
 
   Options opt = get_options ("power");
   if (opt.size())
@@ -118,29 +123,30 @@ void run () {
 
   ndirs = to<int> (argument[0]);
 
+  if (get_options ("unipolar").size())
+    bipolar = false;
 
   Math::RNG    rng;
-  Math::Vector<double> v (2*ndirs-3);
+  Math::Vector<double> v (2*ndirs);
 
-  v[0] = asin (2.0 * rng.uniform() - 1.0);
-  for (size_t n = 1; n < 2*ndirs-3; n+=2) {
-    v[n] =  M_PI * (2.0 * rng.uniform() - 1.0);
-    v[n+1] = asin (2.0 * rng.uniform() - 1.0);
+  for (size_t n = 0; n < 2*ndirs; n+=2) {
+    v[n] =  Math::pi * (2.0 * rng.uniform() - 1.0);
+    v[n+1] = std::asin (2.0 * rng.uniform() - 1.0);
   }
 
   gsl_multimin_function_fdf fdf;
 
   fdf.f = energy_f;
   fdf.df = energy_df;
-  fdf.fdf = &energy_fdf;
-  fdf.n = 2*ndirs-3;
+  fdf.fdf = energy_fdf;
+  fdf.n = 2*ndirs;
 
   gsl_multimin_fdfminimizer* minimizer =
-  gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs-3);
+    gsl_multimin_fdfminimizer_alloc (gsl_multimin_fdfminimizer_conjugate_fr, 2*ndirs);
 
 
   {
-    ProgressBar progress ("Optimising directions");
+    ProgressBar progress ("Optimising directions...");
     for (power = -1.0; power >= -target_power/2.0; power *= 2.0) {
       INFO ("setting power = " + str (-power*2.0));
       gsl_multimin_fdfminimizer_set (minimizer, &fdf, v.gsl(), 0.01, 1e-4);
@@ -148,6 +154,9 @@ void run () {
       for (size_t iter = 0; iter < niter; iter++) {
 
         int status = gsl_multimin_fdfminimizer_iterate (minimizer);
+
+        //for (size_t n = 0; n < 2*ndirs; ++n) 
+          //std::cout << gsl_vector_get (minimizer->x, n) << " " << gsl_vector_get (minimizer->gradient, n) << "\n";
 
         if (iter%10 == 0)
           INFO ("[ " + str (iter) + " ] (pow = " + str (-power*2.0) + ") E = " + str (minimizer->f)
@@ -158,6 +167,7 @@ void run () {
           break;
         }
 
+        progress.set_text ("Optimising directions (power " + str(-2.0*power) + ", current energy: " + str(minimizer->f, 8) + ")...");
         ++progress;
       }
       gsl_vector_memcpy (v.gsl(), minimizer->x);
@@ -166,13 +176,9 @@ void run () {
 
 
   Math::Matrix<double> directions (ndirs, 2);
-  directions (0,0) = 0.0;
-  directions (0,1) = 0.0;
-  directions (1,0) = 0.0;
-  directions (1,1) = gsl_vector_get (minimizer->x, 0);
-  for (size_t n = 2; n < ndirs; n++) {
-    double az = gsl_vector_get (minimizer->x, 2*n-3);
-    double el = gsl_vector_get (minimizer->x, 2*n-2);
+  for (size_t n = 0; n < ndirs; n++) {
+    double az = gsl_vector_get (minimizer->x, 2*n);
+    double el = gsl_vector_get (minimizer->x, 2*n+1);
     range (az, el);
     directions (n, 0) = az;
     directions (n, 1) = el;
@@ -180,18 +186,7 @@ void run () {
 
   gsl_multimin_fdfminimizer_free (minimizer);
 
-  opt = get_options ("cartesian");
-  if (opt.size()) {
-    Math::Matrix<double> cartesian (directions.rows(), 3);
-    for (unsigned int i = 0; i < cartesian.rows(); i++) {
-      cartesian(i,0) = sin(directions(i,1)) * cos(directions(i,0));
-      cartesian(i,1) = sin(directions(i,1)) * sin(directions(i,0));
-      cartesian(i,2) = cos(directions(i,1));
-    }
-    cartesian.save (argument[1]);
-  } else {
-    directions.save (argument[1]);
-  }
+  DWI::Directions::save (directions, argument[1], get_options ("cartesian").size());
 }
 
 
@@ -206,7 +201,9 @@ void run () {
 
 inline double SinCos::energy ()
 {
-  return (pow (r2_pos, power) + pow (r2_neg, power));
+  double E = pow (r2_neg, power);
+  if (bipolar) E += pow (r2_pos, power);
+  return E;
 }
 
 inline void SinCos::dist (const SinCos& B)
@@ -215,44 +212,48 @@ inline void SinCos::dist (const SinCos& B)
   double b1 = B.cos_az*B.sin_el;
   double a2 = sin_az*sin_el;
   double b2 = B.sin_az*B.sin_el;
-  r2_pos = (a1+b1) * (a1+b1) + (a2+b2) * (a2+b2) + (cos_el+B.cos_el) * (cos_el+B.cos_el);
-  r2_neg = (a1-b1) * (a1-b1) + (a2-b2) * (a2-b2) + (cos_el-B.cos_el) * (cos_el-B.cos_el);
+  r2_neg = Math::pow2(a1-b1) + Math::pow2(a2-b2) + Math::pow2(cos_el-B.cos_el);
+  r2_pos = bipolar ? Math::pow2(a1+b1) + Math::pow2(a2+b2) + Math::pow2(cos_el+B.cos_el) : 0.0;
 }
 
 inline void SinCos::init_deriv ()
 {
-  multiplier = 2.0 * power * (pow (r2_neg, power-1.0) - pow (r2_pos, power-1.0));
+  multiplier = pow (r2_neg, power-1.0);
+  if (bipolar) multiplier -= pow (r2_pos, power-1.0);
+  multiplier *= 2.0 * power;
 }
 
 inline double SinCos::daz (const SinCos& B) const
 {
-  return (multiplier * (cos_az*sin_el*B.sin_az*B.sin_el - sin_az*sin_el*B.cos_az*B.sin_el));
+  return multiplier * (cos_az*sin_el*B.sin_az*B.sin_el - sin_az*sin_el*B.cos_az*B.sin_el);
 }
 
 inline double SinCos::del (const SinCos& B) const
 {
-  return (multiplier * (cos_az*cos_el*B.cos_az*B.sin_el + sin_az*cos_el*B.sin_az*B.sin_el - sin_el*B.cos_el));
+  return multiplier * (cos_az*cos_el*B.cos_az*B.sin_el + sin_az*cos_el*B.sin_az*B.sin_el - sin_el*B.cos_el);
 }
 
 inline double SinCos::rdel (const SinCos& B) const
 {
-  return (multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el));
+  return multiplier * (B.cos_az*B.cos_el*cos_az*sin_el + B.sin_az*B.cos_el*sin_az*sin_el - B.sin_el*cos_el);
 }
 
 inline SinCos::SinCos (const gsl_vector* v, size_t index)
 {
-  double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
-  double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
-  cos_az = cos (az);
-  sin_az = sin (az);
-  cos_el = cos (el);
-  sin_el = sin (el);
+  //double az = index > 1 ? gsl_vector_get (v, 2*index-3) : 0.0;
+  //double el = index ? gsl_vector_get (v, 2*index-2) : 0.0;
+  double az = gsl_vector_get (v, 2*index);
+  double el = gsl_vector_get (v, 2*index+1);
+  cos_az = std::cos (az);
+  sin_az = std::sin (az);
+  cos_el = std::cos (el);
+  sin_el = std::sin (el);
 }
 
 inline double SinCos::f (const SinCos& B)
 {
   dist (B);
-  return (energy());
+  return energy();
 }
 
 inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
@@ -260,21 +261,17 @@ inline void SinCos::df (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
   dist (B);
   init_deriv ();
   double d = daz (B);
-  if (i) {
-    *gsl_vector_ptr (deriv, 2*i-2) -= del (B);
-    if (i > 1) *gsl_vector_ptr (deriv, 2*i-3) -= d;
-  }
-  if (j) {
-    *gsl_vector_ptr (deriv, 2*j-2) -= rdel (B);
-    if (j > 1) *gsl_vector_ptr (deriv, 2*j-3) += d;
-  }
+  *gsl_vector_ptr (deriv, 2*i) -= d;
+  *gsl_vector_ptr (deriv, 2*i+1) -= del (B);
+  *gsl_vector_ptr (deriv, 2*j) += d;
+  *gsl_vector_ptr (deriv, 2*j+1) -= rdel (B);
 }
 
 
 inline double SinCos::fdf (const SinCos& B, gsl_vector* deriv, size_t i, size_t j)
 {
   df (B, deriv, i, j);
-  return (energy());
+  return energy();
 }
 
 
@@ -284,9 +281,9 @@ double energy_f (const gsl_vector* x, void* params)
   for (size_t i = 0; i < ndirs; i++) {
     SinCos I (x, i);
     for (size_t j = i+1; j < ndirs; j++)
-      E += 2.0 *I.f (SinCos (x, j));
+      E += 2.0 * I.f (SinCos (x, j));
   }
-  return (E);
+  return E;
 }
 
 
@@ -320,14 +317,14 @@ void energy_fdf (const gsl_vector* x, void* params, double* f, gsl_vector* df)
 
 inline void range (double& azimuth, double& elevation)
 {
-  while (elevation < 0.0) elevation += 2.0*M_PI;
-  while (elevation >= 2.0*M_PI) elevation -= 2.0*M_PI;
-  if (elevation >= M_PI) {
-    elevation = 2.0*M_PI - elevation;
-    azimuth -= M_PI;
+  while (elevation < 0.0) elevation += 2.0*Math::pi;
+  while (elevation >= 2.0*Math::pi) elevation -= 2.0*Math::pi;
+  if (elevation >= Math::pi) {
+    elevation = 2.0*Math::pi - elevation;
+    azimuth -= Math::pi;
   }
-  while (azimuth < -M_PI) azimuth += 2.0*M_PI;
-  while (azimuth >= M_PI) azimuth -= 2.0*M_PI;
+  while (azimuth < -Math::pi) azimuth += 2.0*Math::pi;
+  while (azimuth >= Math::pi) azimuth -= 2.0*Math::pi;
 }
 
 

@@ -191,41 +191,41 @@ namespace MR
           assert (axis < S.ndim());
         }
         operator ssize_t () const          {
-          return (S.get_pos (axis));
+          return S.get_pos (axis);
         }
         ssize_t operator++ ()              {
-          ssize_t p = S.get_pos (axis);
           S.move_pos (axis,1);
-          return (p);
+          return S.get_pos (axis);
         }
         ssize_t operator-- ()              {
-          ssize_t p = S.get_pos (axis);
           S.move_pos (axis,-1);
-          return (p);
+          return S.get_pos (axis);
         }
-        ssize_t operator++ (int notused)   {
+        ssize_t operator++ (int)   {
+          const ssize_t p = S.get_pos (axis);
           S.move_pos (axis,1);
-          return (S.get_pos (axis));
+          return p;
         }
-        ssize_t operator-- (int notused)   {
+        ssize_t operator-- (int)   {
+          const ssize_t p = S.get_pos (axis);
           S.move_pos (axis,-1);
-          return (S.get_pos (axis));
+          return p;
         }
         ssize_t operator+= (ssize_t increment) {
           S.move_pos (axis, increment);
-          return (S.get_pos (axis));
+          return S.get_pos (axis);
         }
         ssize_t operator-= (ssize_t increment) {
           S.move_pos (axis, -increment);
-          return (S.get_pos (axis));
+          return S.get_pos (axis);
         }
         ssize_t operator= (ssize_t position)   {
           S.set_pos (axis, position);
-          return (position);
+          return position;
         }
         ssize_t operator= (const Position& position) {
           S.set_pos (axis, ssize_t (position));
-          return (ssize_t (position));
+          return ssize_t (position);
         }
         friend std::ostream& operator<< (std::ostream& stream, const Position& p) {
           stream << ssize_t (p);

@@ -89,7 +89,7 @@ namespace MR
             if (!source) return (false);
             for (source[3] = 0; source[3] < source.dim(3); ++source[3])
               values[source[3]] = source.value();
-            return (!isnan (values[0]));
+            return (!std::isnan (values[0]));
         }
 
         template <class InterpolatorType>
@@ -140,7 +140,7 @@ namespace MR
 
     Point<value_type> MethodBase::random_direction (value_type max_angle, value_type sin_max_angle)
     {
-      value_type phi = 2.0 * M_PI * rng.uniform();
+      value_type phi = 2.0 * Math::pi * rng.uniform();
       value_type theta;
       do {
         theta = max_angle * rng.uniform();
@@ -157,9 +157,7 @@ namespace MR
 
     Point<value_type> MethodBase::rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction)
     {
-      using namespace Math;
-
-      value_type n = sqrt (pow2(reference[0]) + pow2(reference[1]));
+      value_type n = std::sqrt (Math::pow2(reference[0]) + Math::pow2(reference[1]));
       if (n == 0.0)
         return (reference[2] < 0.0 ? -direction : direction);
 

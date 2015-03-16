@@ -41,7 +41,7 @@ namespace MR
       void Font::initGL () 
       {
         const int first_char = ' ', last_char = '~', default_char = '?';
-        INFO ("loading font into OpenGL texture...");
+        DEBUG ("loading font into OpenGL texture...");
 
         font_height = metric.height() + 2;
         const float max_font_width = metric.width("MM") + 2;
@@ -79,7 +79,7 @@ namespace MR
               float val = 0.0f;
               for (int x = -1; x <= 1; ++x)
                 if (col+x >= 0 && col+x < current_font_width) 
-                  val += Math::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
+                  val += std::exp (-x*x/2.0f) * pix_data[pix_idx+4*x];
               tex_data[tex_idx] = val;
             }
           }
@@ -92,7 +92,7 @@ namespace MR
               float val = 0.0f;
               for (int x = -1; x <= 1; ++x) 
                 if (row+x >= 0 && row+x < font_height) 
-                  val += Math::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
+                  val += std::exp (-x*x/2.0) * tex_data[tex_idx+2*tex_width*x];
               tex_data[tex_idx+1] = pix_data[pix_idx] ? 1.0f : 0.005f*val;
             }
           }
@@ -151,7 +151,7 @@ namespace MR
         program.attach (fragment_shader);
         program.link();
 
-        INFO ("font loaded");
+        DEBUG ("font loaded");
       }
 
 

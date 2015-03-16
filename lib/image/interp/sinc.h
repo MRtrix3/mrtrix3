@@ -99,10 +99,11 @@ namespace MR
               Sinc_y (w),
               Sinc_z (w),
               y_values (w, 0.0),
-              z_values (w, 0.0) {
-                assert (w % 2);
-                out_of_bounds = false;
-              }
+              z_values (w, 0.0)
+          {
+            assert (w % 2);
+            out_of_bounds = false;
+          }
 
           //! Set the current position to <b>voxel space</b> position \a pos
           /*! This will set the position from which the image intensity values will
@@ -161,8 +162,8 @@ namespace MR
             // Bounds testing is different for sinc interpolation than others
             // Not only due to the width of the kernel, but also the mirroring of the image data beyond the FoV
             return (round (p[0]) > -dim(0) + kernel_width) && (round (p[0]) < (2 * dim(0)) - kernel_width)
-                 && (round (p[1]) > -dim(1) + kernel_width) && (round (p[1]) < (2 * dim(1)) - kernel_width)
-                 && (round (p[2]) > -dim(2) + kernel_width) && (round (p[2]) < (2 * dim(2)) - kernel_width);
+                && (round (p[1]) > -dim(1) + kernel_width) && (round (p[1]) < (2 * dim(1)) - kernel_width)
+                && (round (p[2]) > -dim(2) + kernel_width) && (round (p[2]) < (2 * dim(2)) - kernel_width);
           }
 
       };

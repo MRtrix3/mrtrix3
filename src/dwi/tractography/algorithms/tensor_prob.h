@@ -117,7 +117,7 @@ namespace MR
 
             for (int i = new_end_idx + 1; i != int(tck.size()); ++i) {
               const Point<float> v (source.scanner2voxel (tck[i]));
-              const Point<ssize_t> lower_voxel (Math::floor (v[0]), Math::floor (v[1]), Math::floor (v[2]));
+              const Point<ssize_t> lower_voxel (std::floor (v[0]), std::floor (v[1]), std::floor (v[2]));
               unsigned int erase_count = 0;
               erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 0, 0))) ? 1 : 0;
               erase_count += (wb_set.erase (lower_voxel + Point<ssize_t> (0, 0, 1))) ? 1 : 0;
@@ -150,12 +150,12 @@ namespace MR
 
               void operator() (value_type* data) {
                 for (size_t i = 0; i < residuals.size(); ++i)
-                  log_signal[i] = data[i] > value_type (0.0) ? -Math::log (data[i]) : value_type (0.0);
+                  log_signal[i] = data[i] > value_type (0.0) ? -std::log (data[i]) : value_type (0.0);
 
                 mult (residuals, H, log_signal);
 
                 for (size_t i = 0; i < residuals.size(); ++i) {
-                  residuals[i] = Math::exp (-residuals[i]) - data[i];
+                  residuals[i] = std::exp (-residuals[i]) - data[i];
                   data[i] += rng.uniform_int (2) ? residuals[i] : -residuals[i];
                 }
               }
@@ -246,7 +246,7 @@ namespace MR
                 --(*this)[1];
                 --(*this)[2];
 
-                return !isnan (data[0]);
+                return !std::isnan (data[0]);
               }
           };
 

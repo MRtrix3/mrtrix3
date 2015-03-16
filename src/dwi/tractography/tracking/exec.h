@@ -24,8 +24,7 @@
 #define __dwi_tractography_tracking_exec_h__
 
 
-#include "thread/exec.h"
-#include "thread/queue.h"
+#include "thread_queue.h"
 
 #include "dwi/directions/set.h"
 
@@ -83,47 +82,27 @@ namespace MR
 
                 DWI::Directions::FastLookupSet dirs (1281);
                 Image::Buffer<float> fod_data (fod_path);
+                Math::SH::check (fod_data);
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, properties.seeds.get_rng(), dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
 
                 typename Method::Shared shared (diff_path, properties);
-                Image::Header H (fod_path);
 
                 Writer       writer  (shared, destination, properties);
                 Exec<Method> tracker (shared);
 
-                // Determine track upsampling ratio for mapping during dynamic seeding
-                // Doesn't have to be super-precise
-                // Ratio needs to be based on the output step size, not the actual step size
-                //   (downsampling is performed before track data is sent to mapper)
-                float step_size = 0.0;
-                if (properties.find ("output_step_size") != properties.end())
-                  step_size = to<float> (properties["output_step_size"]);
-                else
-                  step_size = to<float> (properties["step_size"]);
-                size_t upsample_ratio = 1;
-                if (std::isfinite(step_size) && !step_size)
-                  upsample_ratio = Math::ceil<size_t> (step_size / (minvalue (fod_data.vox(0), fod_data.vox(1), fod_data.vox(2)) * 0.25));
+                TckMapper mapper (fod_data, dirs);
+                mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (fod_data, properties, 0.25));
+                mapper.set_use_precise_mapping (true);
 
-                TckMapper mapper (H, dirs);
-                mapper.set_upsample_ratio (upsample_ratio);
-
-                Thread::Queue<GeneratedTrack>           tracking_output_queue;
-                Thread::Queue< Streamline<value_type> > writer_output_queue;
-                Thread::Queue<Mapping::SetDixel>        dixel_queue;
-
-                Thread::__Source<GeneratedTrack, Exec<Method> >                   q_tracker (tracking_output_queue, tracker);
-                Thread::__Pipe  <GeneratedTrack, Writer, Streamline<value_type> > q_writer  (tracking_output_queue, writer, writer_output_queue);
-                Thread::__Pipe  <Streamline<value_type> , TckMapper, SetDixel>    q_mapper  (writer_output_queue, mapper, dixel_queue);
-                Thread::__Sink  <SetDixel, Seeding::Dynamic>                      q_seeder  (dixel_queue, *seeder);
-
-                Thread::Array< Thread::__Source<GeneratedTrack, Exec<Method> > >             tracker_array (q_tracker, Thread::number_of_threads());
-                Thread::Array< Thread::__Pipe<Streamline<value_type>, TckMapper, SetDixel> > mapper_array  (q_mapper,  Thread::number_of_threads());
-
-                Thread::Exec tracker_threads (tracker_array, "trackers");
-                Thread::Exec writer_thread   (q_writer,      "writer");
-                Thread::Exec mapper_threads  (mapper_array,  "mappers");
-                Thread::Exec seeder_thread   (q_seeder,      "seeder");
+                Thread::run_queue (
+                    Thread::multi (tracker), 
+                    GeneratedTrack(), 
+                    writer, 
+                    Streamline<value_type>(), 
+                    Thread::multi (mapper), 
+                    SetDixel(), 
+                    *seeder);
 
               }
 

@@ -126,11 +126,11 @@ namespace MR
           const std::vector<std::vector<int> >& precompute_adjacency (MaskVoxelType& mask) {
 
             Image::BufferScratch<uint32_t> index_data (mask);
-            Image::BufferScratch<uint32_t>::voxel_type index_image (index_data);
+            auto index_image = index_data.voxel();
 
             // 1st pass, store mask image indices and their index in the array
             Image::LoopInOrder loop (mask);
-            for (loop.start (mask, index_image); loop.ok(); loop.next (mask, index_image)) {
+            for (auto l = loop (mask, index_image); l; ++l) {
               if (mask.value() >= 0.5) {
                 // For each voxel, store the index within mask_indices for 2nd pass
                 index_image.value() = mask_indices.size();
@@ -270,14 +270,14 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<bool> src_data (argument[0]);
-       * Image::BufferPreload<bool>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::ConnectedComponents filter (src);
        *
        * Image::Header header (src_data);
        * header.info() = filter.info();
        *
        * Image::Buffer<uint32_t> dest_data (argument[1], src_data);
-       * Image::Buffer<uint32_t>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * filter.precompute_adjacency (src);
        * filter (src, dest);
@@ -335,7 +335,7 @@ namespace MR
             label_lookup[clusters[c].label - 1] = c + 1;
 
           Image::LoopInOrder loop (out);
-          for (loop.start(out); loop.ok(); loop.next(out))
+          for (auto l = loop (out); l; ++l) 
             out.value() = 0;
 
           for (uint32_t i = 0; i < mask_indices.size(); i++) {

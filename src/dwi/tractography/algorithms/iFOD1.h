@@ -51,7 +51,7 @@ namespace MR
           SharedBase (diff_path, property_set),
           lmax (Math::SH::LforN (source_buffer.dim(3))),
           max_trials (MAX_TRIALS),
-          sin_max_angle (Math::sin (max_angle)),
+          sin_max_angle (std::sin (max_angle)),
           mean_samples (0.0),
           mean_truncations (0.0),
           max_max_truncation (0.0),
@@ -64,11 +64,11 @@ namespace MR
           set_step_size (0.1);
           if (rk4) {
             max_angle = 0.5 * max_angle_rk4;
-            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * M_PI))) + " mm");
+            INFO ("minimum radius of curvature = " + str(step_size / (max_angle_rk4 / (0.5 * Math::pi))) + " mm");
           } else {
             INFO ("minimum radius of curvature = " + str(step_size / ( 2.0 * sin (max_angle / 2.0))) + " mm");
           }
-          sin_max_angle = Math::sin (max_angle);
+          sin_max_angle = std::sin (max_angle);
 
           properties["method"] = "iFOD1";
           properties.set (lmax, "lmax");
@@ -183,7 +183,7 @@ namespace MR
         size_t nan_count = 0;
         for (size_t i = 0; i < calibrate_list.size(); ++i) {
           value_type val = FOD (rotate_direction (dir, calibrate_list[i]));
-          if (isnan (val))
+          if (std::isnan (val))
             ++nan_count;
           else if (val > max_val)
             max_val = val;
@@ -267,7 +267,7 @@ namespace MR
 
           value_type operator() (value_type el)
           {
-            return Math::SH::value (P.values, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)), P.S.lmax);
+            return Math::SH::value (P.values, Point<value_type> (std::sin (el), 0.0, std::cos(el)), P.S.lmax);
           }
 
         private:

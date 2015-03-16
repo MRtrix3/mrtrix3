@@ -56,7 +56,7 @@ namespace MR
                   lmax (Math::SH::LforN (source_buffer.dim(3))),
                   num_samples (4),
                   max_trials (MAX_TRIALS),
-                  sin_max_angle (Math::sin (max_angle)),
+                  sin_max_angle (std::sin (max_angle)),
                   mean_samples (0.0),
                   mean_truncations (0.0),
                   max_max_truncation (0.0),
@@ -69,7 +69,7 @@ namespace MR
                   throw Exception ("4th-order Runge-Kutta integration not valid for iFOD2 algorithm");
 
                 set_step_size (0.5);
-                INFO ("minimum radius of curvature = " + str(step_size / (max_angle / M_PI_2)) + " mm");
+                INFO ("minimum radius of curvature = " + str(step_size / (max_angle / Math::pi_2)) + " mm");
 
                 properties["method"] = "iFOD2";
                 properties.set (lmax, "lmax");
@@ -224,7 +224,7 @@ namespace MR
               return false;
 
 end_init:
-              half_log_prob0_seed = half_log_prob0 = 0.5 * Math::log (half_log_prob0);
+              half_log_prob0_seed = half_log_prob0 = 0.5 * std::log (half_log_prob0);
               sample_idx = S.num_samples; // Force arc calculation on first iteration
               return true;
             }
@@ -247,7 +247,7 @@ end_init:
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
                 value_type val = path_prob (calib_positions, calib_tangents);
-                if (isnan (val))
+                if (std::isnan (val))
                   ++nan_count;
                 else if (val > max_val)
                   max_val = val;
@@ -321,7 +321,7 @@ end_init:
               // Need to get the path probability contribution from the FOD at this point
               pos = tck.back();
               get_data (source);
-              half_log_prob0 = 0.5 * Math::log (FOD (dir));
+              half_log_prob0 = 0.5 * std::log (FOD (dir));
 
               // Make sure that arc is re-calculated when next() is called
               sample_idx = S.num_samples;
@@ -391,11 +391,11 @@ end_init:
               for (size_t i = 0; i < S.num_samples; ++i) {
 
                 value_type fod_amp = FOD (positions[i], tangents[i]);
-                if (isnan (fod_amp))
+                if (std::isnan (fod_amp))
                   return (NAN);
                 if (fod_amp < S.threshold)
                   return 0.0;
-                fod_amp = Math::log (fod_amp);
+                fod_amp = std::log (fod_amp);
                 if (i < S.num_samples-1) {
                   log_prob += fod_amp;
                 } else {
@@ -404,7 +404,7 @@ end_init:
                 }
               }
 
-              return Math::exp (S.fod_power * log_prob);
+              return std::exp (S.fod_power * log_prob);
             }
 
 
@@ -413,7 +413,7 @@ end_init:
             {
               value_type cos_theta = end_dir.dot (dir);
               cos_theta = std::min (cos_theta, value_type(1.0));
-              value_type theta = Math::acos (cos_theta);
+              value_type theta = std::acos (cos_theta);
 
               if (theta) {
 
@@ -423,12 +423,12 @@ end_init:
 
                 for (size_t i = 0; i < S.num_samples-1; ++i) {
                   value_type a = (theta * (i+1)) / S.num_samples;
-                  value_type cos_a = Math::cos (a);
-                  value_type sin_a = Math::sin (a);
+                  value_type cos_a = std::cos (a);
+                  value_type sin_a = std::sin (a);
                   positions[i] = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
                   tangents[i] = cos_a * dir + sin_a * curv;
                 }
-                positions[S.num_samples-1] = pos + R * (Math::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+                positions[S.num_samples-1] = pos + R * (std::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
                 tangents[S.num_samples-1]  = end_dir;
 
               } else { // straight on:
@@ -459,26 +459,26 @@ end_init:
                   tangents (P.S.num_samples)
               {
                 Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
-                init_log_prob = 0.5 * Math::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
+                init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
               }
 
                 value_type operator() (value_type el)
                 {
-                  P.get_path (positions, tangents, Point<value_type> (Math::sin (el), 0.0, Math::cos(el)));
+                  P.get_path (positions, tangents, Point<value_type> (std::sin (el), 0.0, std::cos(el)));
 
                   value_type log_prob = init_log_prob;
                   for (size_t i = 0; i < P.S.num_samples; ++i) {
                     value_type prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
                     if (prob <= 0.0)
                       return 0.0;
-                    prob = Math::log (prob);
+                    prob = std::log (prob);
                     if (i < P.S.num_samples-1)
                       log_prob += prob;
                     else
                       log_prob += 0.5*prob;
                   }
 
-                  return Math::exp (P.S.fod_power * log_prob);
+                  return std::exp (P.S.fod_power * log_prob);
                 }
 
               private:

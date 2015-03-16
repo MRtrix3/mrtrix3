@@ -77,11 +77,19 @@ namespace MR
               return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
             }
 
-            QModelIndex parent (const QModelIndex& index) const { return QModelIndex(); }
+            QModelIndex parent (const QModelIndex&) const {
+              return QModelIndex(); 
+            }
 
-            int rowCount (const QModelIndex& parent = QModelIndex()) const { return items.size(); }
+            int rowCount (const QModelIndex& parent = QModelIndex()) const {
+              (void) parent;  // to suppress warnings about unused parameters
+              return items.size();
+            }
 
-            int columnCount (const QModelIndex& parent = QModelIndex()) const { return 1; }
+            int columnCount (const QModelIndex& parent = QModelIndex()) const {
+              (void) parent; // to suppress warnings about unused parameters
+              return 1;
+            }
 
             size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
               VecPtr<MR::Image::Header> hlist;
@@ -109,7 +117,10 @@ namespace MR
               return hlist.size();
             }
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { return createIndex (row, column); }
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { 
+              (void ) parent; // to suppress warnings about unused parameters
+              return createIndex (row, column); 
+            }
 
             void remove_item (QModelIndex& index) {
               beginRemoveRows (QModelIndex(), index.row(), index.row());
@@ -216,54 +227,58 @@ namespace MR
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (interpolation_slot(int)));
-            box_layout->addWidget (interpolation_box, 1, 0, 1, 2);
+            box_layout->addWidget (interpolation_box, 0, 2, 1, 2);
 
             show_axes_box = new QCheckBox ("show axes");
             show_axes_box->setChecked (true);
             connect (show_axes_box, SIGNAL (stateChanged(int)), this, SLOT (show_axes_slot(int)));
-            box_layout->addWidget (show_axes_box, 2, 0, 1, 2);
+            box_layout->addWidget (show_axes_box, 1, 0, 1, 2);
 
             colour_by_direction_box = new QCheckBox ("colour by direction");
             colour_by_direction_box->setChecked (true);
             connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 3, 0, 1, 2);
+            box_layout->addWidget (colour_by_direction_box, 1, 2, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 4, 0, 1, 2);
+            box_layout->addWidget (use_lighting_box, 2, 0, 1, 2);
 
 
 
             hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
             hide_negative_lobes_box->setChecked (true);
             connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
-            box_layout->addWidget (hide_negative_lobes_box, 5, 0, 1, 2);
+            box_layout->addWidget (hide_negative_lobes_box, 2, 2, 1, 2);
 
 
-            box_layout->addWidget (new QLabel ("lmax"), 6, 0);
+            QLabel* label = new QLabel ("lmax");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 3, 0);
             lmax_selector = new QSpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
-            box_layout->addWidget (lmax_selector, 6, 1);
+            box_layout->addWidget (lmax_selector, 3, 1);
 
-            box_layout->addWidget (new QLabel ("detail"), 7, 0);
+            label = new QLabel ("detail");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 3, 2);
             level_of_detail_selector = new QSpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (7);
             level_of_detail_selector->setSingleStep (1);
             level_of_detail_selector->setValue (4);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
-            box_layout->addWidget (level_of_detail_selector, 7, 1);
+            box_layout->addWidget (level_of_detail_selector, 3, 3);
 
 
             QPushButton *lighting_settings_button = new QPushButton ("lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 8, 0, 1, 2);
+            box_layout->addWidget (lighting_settings_button, 5, 0, 1, 4);
 
 
 
@@ -275,33 +290,39 @@ namespace MR
             box_layout = new GridLayout;
             overlay_frame->setLayout (box_layout);
 
-            box_layout->addWidget (new QLabel ("scale"), 0, 0, 1, 1);
+            label = new QLabel ("scale");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 0, 0);
             overlay_scale = new AdjustButton (this, 1.0);
             overlay_scale->setValue (1.0);
             overlay_scale->setMin (0.0);
             connect (overlay_scale, SIGNAL (valueChanged()), this, SLOT (overlay_scale_slot()));
-            box_layout->addWidget (overlay_scale, 0, 1, 1, 1);
+            box_layout->addWidget (overlay_scale, 0, 1);
 
-            box_layout->addWidget (new QLabel ("detail"), 1, 0, 1,1);
+            label = new QLabel ("detail");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 0, 2);
             overlay_level_of_detail_selector = new QSpinBox (this);
             overlay_level_of_detail_selector->setMinimum (1);
             overlay_level_of_detail_selector->setMaximum (6);
             overlay_level_of_detail_selector->setSingleStep (1);
             overlay_level_of_detail_selector->setValue (3);
             connect (overlay_level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(overlay_update_slot(int)));
-            box_layout->addWidget (overlay_level_of_detail_selector, 1, 1, 1, 1);
-
-            box_layout->addWidget (new QLabel ("grid"), 2, 0, 1, 1);
-            overlay_grid_selector = new QComboBox (this);
-            overlay_grid_selector->addItem ("overlay");
-            overlay_grid_selector->addItem ("main");
-            connect (overlay_grid_selector, SIGNAL (activated(int)), this, SLOT(overlay_update_slot(int)));
-            box_layout->addWidget (overlay_grid_selector, 2, 1, 1, 1);
+            box_layout->addWidget (overlay_level_of_detail_selector, 0, 3);
 
             overlay_lock_to_grid_box = new QCheckBox ("lock to grid");
             overlay_lock_to_grid_box->setChecked (true);
             connect (overlay_lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (overlay_update_slot(int)));
-            box_layout->addWidget (overlay_lock_to_grid_box, 3, 0, 1, 2);
+            box_layout->addWidget (overlay_lock_to_grid_box, 1, 0, 1, 2);
+
+            label = new QLabel ("grid");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 1, 2);
+            overlay_grid_selector = new QComboBox (this);
+            overlay_grid_selector->addItem ("overlay");
+            overlay_grid_selector->addItem ("main");
+            connect (overlay_grid_selector, SIGNAL (activated(int)), this, SLOT(overlay_update_slot(int)));
+            box_layout->addWidget (overlay_grid_selector, 1, 3);
 
             splitter->setStretchFactor (0, 1);
             splitter->setStretchFactor (1, 0);
@@ -328,7 +349,7 @@ namespace MR
 
 
 
-        void ODF::draw (const Projection& projection, bool is_3D, int axis, int slice)
+        void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
           if (is_3D) 
             return;
@@ -339,7 +360,7 @@ namespace MR
           if (!settings)
             return;
 
-          MRView::Image& image (settings->image);
+          MRView::Image& image (overlay_grid_selector->currentIndex() ? *window.image() : settings->image);
 
           if (overlay_frame->isChecked()) {
 
@@ -365,9 +386,9 @@ namespace MR
             pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
             if (overlay_lock_to_grid_box->isChecked()) {
               Point<> p = image.interp.scanner2voxel (pos);
-              p[0] = Math::round (p[0]);
-              p[1] = Math::round (p[1]);
-              p[2] = Math::round (p[2]);
+              p[0] = std::round (p[0]);
+              p[1] = std::round (p[1]);
+              p[2] = std::round (p[2]);
               pos = image.interp.voxel2scanner (p);
             }
 
@@ -388,9 +409,9 @@ namespace MR
             y_dir = image.interp.image2scanner_dir (y_dir);
 
             Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
-            int nx = Math::ceil (x_width.norm() / x_dir.norm());
+            int nx = std::ceil (x_width.norm() / x_dir.norm());
             Point<> y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
-            int ny = Math::ceil (y_width.norm() / y_dir.norm());
+            int ny = std::ceil (y_width.norm() / y_dir.norm());
 
             Math::Vector<float> values (Math::SH::NforL (settings->lmax));
             Math::Vector<float> r_del_daz;
@@ -398,7 +419,7 @@ namespace MR
             for (int y = -ny; y <= ny; ++y) {
               for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
-                get_values (values, image, p);
+                get_values (values, settings->image, p);
                 if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 overlay_renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (overlay_lmax)));
@@ -418,14 +439,16 @@ namespace MR
 
 
 
-        void ODF::showEvent (QShowEvent* event) 
+        void ODF::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           onFocusChanged();
         }
 
 
-        void ODF::closeEvent (QCloseEvent* event) { window.disconnect (this); }
+        void ODF::closeEvent (QCloseEvent*) {
+          window.disconnect (this); 
+        }
 
         void ODF::onFocusChanged () 
         {
@@ -455,9 +478,9 @@ namespace MR
         {
           Point<> p = image.interp.scanner2voxel (pos);
           if (!interpolation_box->isChecked()) {
-            p[0] = Math::round (p[0]);
-            p[1] = Math::round (p[1]);
-            p[2] = Math::round (p[2]);
+            p[0] = std::round (p[0]);
+            p[1] = std::round (p[1]);
+            p[2] = std::round (p[2]);
           }
           image.interp.voxel (p);
           values.zero();
@@ -469,7 +492,7 @@ namespace MR
 
         void ODF::image_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (this, "Select overlay images to open");
+          std::vector<std::string> list = Dialog::File::get_images (&window, "Select overlay images to open");
           if (list.empty())
             return;
 
@@ -501,7 +524,8 @@ namespace MR
 
 
 
-        void ODF::lock_orientation_to_image_slot (int unused) {
+        void ODF::lock_orientation_to_image_slot (int)
+        {
           if (lock_orientation_to_image_box->isChecked()) {
             const Projection* proj = window.get_current_mode()->get_current_projection();
             if (!proj) return;
@@ -509,7 +533,7 @@ namespace MR
           }
         }
 
-        void ODF::colour_by_direction_slot (int unused) 
+        void ODF::colour_by_direction_slot (int) 
         { 
           render_frame->set_color_by_dir (colour_by_direction_box->isChecked()); 
           Image* settings = get_image();
@@ -520,7 +544,7 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::hide_negative_lobes_slot (int unused) 
+        void ODF::hide_negative_lobes_slot (int) 
         {
           render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked()); 
           Image* settings = get_image();
@@ -531,14 +555,14 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::use_lighting_slot (int unused) 
+        void ODF::use_lighting_slot (int) 
         { 
           render_frame->set_use_lighting (use_lighting_box->isChecked()); 
           if (overlay_frame->isChecked())
             window.updateGL();
         }
 
-        void ODF::interpolation_slot (int unused) 
+        void ODF::interpolation_slot (int) 
         { 
           onFocusChanged();
           if (overlay_frame->isChecked())
@@ -546,15 +570,17 @@ namespace MR
         }
 
 
-        void ODF::show_axes_slot (int unused) {
+        void ODF::show_axes_slot (int) 
+        {
           render_frame->set_show_axes (show_axes_box->isChecked()); 
         }
 
-        void ODF::level_of_detail_slot (int value) { 
+        void ODF::level_of_detail_slot (int) 
+        { 
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF::lmax_slot (int value) 
+        void ODF::lmax_slot (int) 
         { 
           render_frame->set_lmax (lmax_selector->value()); 
           Image* settings = get_image();
@@ -565,11 +591,12 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::update_slot (int unused) {
+        void ODF::update_slot (int) 
+        {
           window.updateGL();
         }
 
-        void ODF::lighting_settings_slot (bool unused)
+        void ODF::lighting_settings_slot (bool)
         {
           if (!lighting_dialog)
             lighting_dialog = new Dialog::Lighting (&window, "Advanced Lighting", *render_frame->lighting);
@@ -598,7 +625,7 @@ namespace MR
             window.updateGL();
         }
 
-        void ODF::overlay_update_slot (int value) 
+        void ODF::overlay_update_slot (int) 
         {
           if (overlay_frame->isChecked()) 
             window.updateGL();

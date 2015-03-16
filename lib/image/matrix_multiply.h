@@ -62,14 +62,14 @@ namespace MR
             Image::voxel_assign (out, pos);
 
             // load input values into matrix:
-            for (val_loop.start (in); val_loop.ok(); val_loop.next (in)) 
+            for (auto l = val_loop (in); l; ++l) 
               vals_in [in[val_axis]] = func_pre (in.value());
 
             // apply matrix:
             Math::mult (vals_out, matrix, vals_in);
 
             // write back:
-            for (val_loop.start (out); val_loop.ok(); val_loop.next (out)) 
+            for (auto l = val_loop (out); l; ++l) 
               out.value() = func_post (vals_out[out[val_axis]]);
           }
 
@@ -114,7 +114,7 @@ namespace MR
      * following will take the log on the input data before the matrix
      * multiply, and clamp the output at a pre-specified maximum value:
      * \code
-     * float take_log (float val) { return Math::log (val); }
+     * float take_log (float val) { return std::log (val); }
      * 
      * class clamp_to_max {
      *   public:

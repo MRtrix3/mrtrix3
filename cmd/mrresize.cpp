@@ -40,7 +40,7 @@ void usage ()
   + "Also note that if the image is down-sampled, the appropriate smoothing is automatically applied using Gaussian smoothing.";
 
   ARGUMENTS
-  + Argument ("input", "input image to be smoothed.").type_image_in ()
+  + Argument ("input", "input image to be resized.").type_image_in ()
   + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS
@@ -69,17 +69,20 @@ void usage ()
 void run () {
 
   Image::Buffer<float> input_data (argument[0]);
-  Image::Buffer<float>::voxel_type input_vox (input_data);
+  auto input_vox = input_data.voxel();
 
   Image::Filter::Resize resize_filter (input_vox);
+
+  size_t resize_option_count = 0;
 
   std::vector<float> scale;
   Options opt = get_options ("scale");
   if (opt.size()) {
     scale = parse_floats (opt[0][0]);
     if (scale.size() == 1)
-      scale.resize(3, scale[0]);
-    resize_filter.set_scale_factor(scale);
+      scale.resize (3, scale[0]);
+    resize_filter.set_scale_factor (scale);
+    ++resize_option_count;
   }
 
   std::vector<float> voxel_size;
@@ -88,7 +91,8 @@ void run () {
     voxel_size = parse_floats (opt[0][0]);
     if (voxel_size.size() == 1)
       voxel_size.resize (3, voxel_size[0]);
-    resize_filter.set_voxel_size(voxel_size);
+    resize_filter.set_voxel_size (voxel_size);
+    ++resize_option_count;
   }
 
   std::vector<int> image_size;
@@ -96,6 +100,7 @@ void run () {
   if (opt.size()) {
     image_size = parse_ints(opt[0][0]);
     resize_filter.set_size (image_size);
+    ++resize_option_count;
   }
 
   int interp = 2;
@@ -105,16 +110,16 @@ void run () {
     resize_filter.set_interp_type (interp);
   }
 
-  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_size.size() > 0)) == 0)
+  if (!resize_option_count)
     throw Exception ("please use either the -scale, -voxel, or -resolution option to resize the image");
-  if ( ((scale.size() > 0) + (voxel_size.size() > 0) + (image_size.size() > 0)) != 1)
+  if (resize_option_count != 1)
     throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
   Image::Header header (input_data);
   header.info() = resize_filter.info();
   header.datatype() = DataType::from_command_line (header.datatype());
   Image::Buffer<float> output_data (argument[1], header);
-  Image::Buffer<float>::voxel_type output_vox (output_data);
+  auto output_vox = output_data.voxel();
 
   resize_filter (input_vox, output_vox);
 }

@@ -18,12 +18,14 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
+
+#include <thread>
 
 #include "app.h"
-#include "thread/exec.h"
-#include "thread/mutex.h"
+#include "thread.h"
 #include "file/config.h"
+#include "thread_queue.h"
 
 namespace MR
 {
@@ -33,11 +35,11 @@ namespace MR
     namespace {
 
       size_t __number_of_threads = 0;
-      
+
     }
 
     //CONF option: NumberOfThreads
-    //CONF default: 1
+    //CONF default: nnumber of threads provided by hardware
     //CONF set the default number of CPU threads to use for multi-threading.
 
     size_t number_of_threads ()
@@ -45,21 +47,20 @@ namespace MR
       if (__number_of_threads)
         return __number_of_threads;
       const App::Options opt = App::get_options ("nthreads");
-      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", 1);
+      __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", std::thread::hardware_concurrency());
       return __number_of_threads;
     }
 
 
 
 
-    void (*Exec::Common::previous_print_func) (const std::string& msg) = NULL;
-    void (*Exec::Common::previous_report_to_user_func) (const std::string& msg, int type) = NULL;
 
-    Exec::Common::Common () :
-      refcount (0), attributes (new pthread_attr_t) {
+    void (*__Backend::previous_print_func) (const std::string& msg) = nullptr;
+    void (*__Backend::previous_report_to_user_func) (const std::string& msg, int type) = nullptr;
+
+    __Backend::__Backend () :
+      refcount (0) {
         DEBUG ("initialising threads...");
-        pthread_attr_init (attributes);
-        pthread_attr_setdetachstate (attributes, PTHREAD_CREATE_JOINABLE);
 
         previous_print_func = print;
         previous_report_to_user_func = report_to_user_func;
@@ -68,34 +69,26 @@ namespace MR
         report_to_user_func = thread_report_to_user_func;
       }
 
-    Exec::Common::~Common () 
+    __Backend::~__Backend () 
     {
       print = previous_print_func;
       report_to_user_func = previous_report_to_user_func;
-
-      DEBUG ("uninitialising threads...");
-
-      pthread_attr_destroy (attributes);
-      delete attributes;
     }
 
-    void Exec::Common::thread_print_func (const std::string& msg)
+    void __Backend::thread_print_func (const std::string& msg)
     {
-      Thread::Mutex::Lock lock (common->mutex);
+      std::lock_guard<std::mutex> lock (get_lock());
       previous_print_func (msg);
     }
 
-    void Exec::Common::thread_report_to_user_func (const std::string& msg, int type)
+    void __Backend::thread_report_to_user_func (const std::string& msg, int type)
     {
-      Thread::Mutex::Lock lock (common->mutex);
+      std::lock_guard<std::mutex> lock (get_lock());
       previous_report_to_user_func (msg, type);
     }
 
 
-    Exec::Common* Exec::common = NULL;
-
-
-
+    __Backend* __Backend::backend = nullptr;
 
   }
 }

@@ -1,9 +1,7 @@
 #include "command.h"
 #include "ptr.h"
 #include "progressbar.h"
-#include "thread/exec.h"
-#include "thread/queue.h"
-#include "image/loop.h"
+#include "image/threaded_loop.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
@@ -34,10 +32,11 @@ void usage ()
 
     + Math::SH::encoding_description;
 
-  REFERENCES = "Tournier, J.-D.; Calamante, F. & Connelly, A. "
-               "Robust determination of the fibre orientation distribution in diffusion MRI: "
-               "Non-negativity constrained super-resolved spherical deconvolution. "
-               "NeuroImage, 2007, 35, 1459-1472";
+  REFERENCES 
+   + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
+   "Robust determination of the fibre orientation distribution in diffusion MRI: "
+   "Non-negativity constrained super-resolved spherical deconvolution. "
+   "NeuroImage, 2007, 35, 1459-1472";
 
   ARGUMENTS
     + Argument ("dwi",
@@ -49,7 +48,7 @@ void usage ()
         "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
-    + DWI::GradOption
+    + DWI::GradImportOptions
     + DWI::ShellOption
     + DWI::CSD_options
     + Image::Stride::StrideOption;
@@ -175,11 +174,11 @@ void run ()
   Image::Stride::set_from_command_line (header);
   OutputBufferType FOD_buffer (argument[2], header);
 
-  InputBufferType::voxel_type dwi_vox (dwi_buffer);
-  OutputBufferType::voxel_type FOD_vox (FOD_buffer);
+  auto dwi_vox = dwi_buffer.voxel();
+  auto FOD_vox = FOD_buffer.voxel();
 
   Processor processor (dwi_vox, FOD_vox, mask_vox, shared);
-  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 1, 0, 3);
+  Image::ThreadedLoop loop ("performing constrained spherical deconvolution...", dwi_vox, 0, 3);
   loop.run (processor);
 }
 

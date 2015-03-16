@@ -50,7 +50,7 @@ namespace MR
               gl::GetShaderInfoLog (index, length, &chars, log);
 
             if (strlen (log)) 
-              MR::print ("GLSL log [" + type_name + "]: " + log + "\n");
+              FAIL ("GLSL log [" + type_name + "]: " + log);
 
             delete [] log;
           }

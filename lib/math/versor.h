@@ -48,18 +48,18 @@ namespace MR
         }
 
         Versor (value_type b, value_type c, value_type d) {
-          x[0] = sqrt (1.0 - b*b - c*c - d*d);
+          x[0] = std::sqrt (1.0 - b*b - c*c - d*d);
           x[1] = b;
           x[2] = c;
           x[3] = d;
         }
 
         Versor (value_type angle, const value_type* axis) {
-          x[0] = cos (angle/2.0);
+          x[0] = std::cos (angle/2.0);
           x[1] = axis[0];
           x[2] = axis[1];
           x[3] = axis[2];
-          value_type norm = sin (angle/2.0) / sqrt (x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
+          value_type norm = std::sin (angle/2.0) / std::sqrt (x[1]*x[1] + x[2]*x[2] + x[3]*x[3]);
           x[1] *= norm;
           x[2] *= norm;
           x[3] *= norm;
@@ -71,7 +71,7 @@ namespace MR
 
         Versor (const Vector<value_type>& param) {
           if (param.size() == 3) {
-            x[0] = sqrt (1.0 - Math::norm2 (param));
+            x[0] = std::sqrt (1.0 - Math::norm2 (param));
             x[1] = param[0];
             x[2] = param[1];
             x[3] = param[2];
@@ -88,10 +88,10 @@ namespace MR
         }
 
         operator bool () const {
-          return ! (isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]));
+          return ! (std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]));
         }
         bool operator! () const {
-          return isnan (x[0]) || isnan (x[1]) || isnan (x[2]) || isnan (x[3]);
+          return std::isnan (x[0]) || std::isnan (x[1]) || std::isnan (x[2]) || std::isnan (x[3]);
         }
 
         void invalidate ()  {
@@ -145,7 +145,7 @@ namespace MR
           const value_type sinangle2 =  Math::norm (axis);
           if (sinangle2 > 1.0)
             throw Exception ("trying to set a versor with magnitude greater than 1.");
-          x[0] = Math::sqrt(1.0 - sinangle2 * sinangle2);
+          x[0] = std::sqrt(1.0 - sinangle2 * sinangle2);
           x[1] = axis[0];
           x[2] = axis[1];
           x[3] = axis[2];
@@ -153,8 +153,8 @@ namespace MR
 
         void set (const Vector<value_type>& axis, value_type angle) {
           const value_type vector_norm = Math::norm (axis);
-          const value_type cosangle2 = Math::cos (angle / 2.0);
-          const value_type sinangle2 = Math::sin (angle / 2.0);
+          const value_type cosangle2 = std::cos (angle / 2.0);
+          const value_type sinangle2 = std::sin (angle / 2.0);
           const value_type factor = sinangle2 / vector_norm;
           x[0] = cosangle2;
           x[1] = axis[0] * factor;
@@ -193,15 +193,15 @@ namespace MR
     inline void Versor<value_type>::from_matrix (const Math::Matrix<value_type>& matrix)
     {
       x[0] = 1.0 + matrix(0,0) + matrix(1,1) + matrix(2,2);
-      x[0] = x[0] > 0.0 ? 0.5 * sqrt (x[0]) : 0.0;
-      if (fabs (x[0]) < 0.1) {
+      x[0] = x[0] > 0.0 ? 0.5 * std::sqrt (x[0]) : 0.0;
+      if (std::abs (x[0]) < 0.1) {
         x[1] = 1.0 + matrix(0,0) - matrix(1,1) - matrix(2,2);
-        x[1] = x[1] > 0.0 ? 0.5 * sqrt (x[1]) : 0.0;
-        if (fabs (x[1]) < 0.1) {
+        x[1] = x[1] > 0.0 ? 0.5 * std::sqrt (x[1]) : 0.0;
+        if (std::abs (x[1]) < 0.1) {
           x[2] = 1.0 - matrix(0,0) + matrix(1,1) - matrix(2,2);
-          x[2] = x[2] > 0.0 ? 0.5 * sqrt (x[2]) : 0.0;
-          if (fabs (x[2]) < 0.1) {
-            x[3] = 0.5 * sqrt (1.0 - matrix(0,0) - matrix(1,1) + matrix(2,2));
+          x[2] = x[2] > 0.0 ? 0.5 * std::sqrt (x[2]) : 0.0;
+          if (std::abs (x[2]) < 0.1) {
+            x[3] = 0.5 * std::sqrt (1.0 - matrix(0,0) - matrix(1,1) + matrix(2,2));
             x[0] = (matrix(1,0) - matrix(0,1)) / (4.0 * x[3]);
             x[1] = (matrix(0,2) + matrix(2,0)) / (4.0 * x[3]);
             x[2] = (matrix(2,1) + matrix(1,2)) / (4.0 * x[3]);
@@ -249,7 +249,7 @@ namespace MR
     inline void Versor<value_type>::slerp (Versor& i, float t, const Versor& y) const
     {
       double cosHalfTheta = x[0] * y[0] + x[1] * y[1] + x[2] * y[2] + x[3] * y[3];
-      if (abs(cosHalfTheta) >= 1.0) {
+      if (std::abs(cosHalfTheta) >= 1.0) {
         i[0] = x[0]; i[1] = x[1]; i[2] = x[2]; i[3] = x[3];
         return;
       }
@@ -259,17 +259,17 @@ namespace MR
         cosHalfTheta = -cosHalfTheta;
       }
 
-      double halfTheta = acos(cosHalfTheta);
-      double sinHalfTheta = sqrt(1.0 - cosHalfTheta*cosHalfTheta);
-      if (fabs(sinHalfTheta) < 0.001) {
+      double halfTheta = std::acos (cosHalfTheta);
+      double sinHalfTheta = std::sqrt(1.0 - cosHalfTheta*cosHalfTheta);
+      if (std::abs(sinHalfTheta) < 0.001) {
         i[0] = (x[0] * 0.5 + y[0] * 0.5);
         i[1] = (x[1] * 0.5 + y[1] * 0.5);
         i[2] = (x[2] * 0.5 + y[2] * 0.5);
         i[3] = (x[3] * 0.5 + y[3] * 0.5);
         return;
       }
-      double ratioA = sin((1 - t) * halfTheta) / sinHalfTheta;
-      double ratioB = sin(t * halfTheta) / sinHalfTheta;
+      double ratioA = std::sin((1 - t) * halfTheta) / sinHalfTheta;
+      double ratioB = std::sin(t * halfTheta) / sinHalfTheta;
 
       i[0] = (x[0] * ratioA + y[0] * ratioB);
       i[1] = (x[1] * ratioA + y[1] * ratioB);

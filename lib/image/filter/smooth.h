@@ -44,7 +44,7 @@ namespace MR
        * Typical usage:
        * \code
        * Image::BufferPreload<float> src_data (argument[0]);
-       * Image::BufferPreload<float>::voxel_type src (src_data);
+       * auto src = src_data.voxel();
        * Image::Filter::Smooth smooth_filter (src);
        *
        * std::vector<float> stdev (1);
@@ -56,7 +56,7 @@ namespace MR
        * header.datatype() = src_data.datatype();
        *
        * Image::Buffer<float> dest_data (argument[1], src_data);
-       * Image::Buffer<float>::voxel_type dest (dest_data);
+       * auto dest = dest_data.voxel();
        *
        * smooth_filter (src, dest);
        *
@@ -128,38 +128,38 @@ namespace MR
           }
 
 
-          template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& input, OutputVoxelType& output)
+          template <class InputVoxelType, class OutputVoxelType, typename ValueType = float>
+          void operator() (InputVoxelType& input, OutputVoxelType& output, ValueType type = 0.0f)
           {
-              RefPtr <BufferScratch<float> > in_data (new BufferScratch<float> (input));
-              RefPtr <BufferScratch<float>::voxel_type> in (new BufferScratch<float>::voxel_type (*in_data));
-              threaded_copy (input, *in);
+            RefPtr <BufferScratch<ValueType> > in_data (new BufferScratch<ValueType> (input));
+            RefPtr <typename BufferScratch<ValueType>::voxel_type> in (new typename BufferScratch<ValueType>::voxel_type (*in_data));
+            threaded_copy (input, *in);
 
-              RefPtr <BufferScratch<float> > out_data;
-              RefPtr <BufferScratch<float>::voxel_type> out;
+            RefPtr <BufferScratch<ValueType> > out_data;
+            RefPtr <typename BufferScratch<ValueType>::voxel_type> out;
 
-              Ptr<ProgressBar> progress;
-              if (message.size()) {
-                size_t axes_to_smooth = 0;
-                for (std::vector<float>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
-                  if (*i)
-                    ++axes_to_smooth;
-                progress = new ProgressBar (message, axes_to_smooth + 1);
+            Ptr<ProgressBar> progress;
+            if (message.size()) {
+              size_t axes_to_smooth = 0;
+              for (std::vector<float>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
+                if (*i)
+                  ++axes_to_smooth;
+              progress = new ProgressBar (message, axes_to_smooth + 1);
+            }
+
+            for (size_t dim = 0; dim < this->ndim(); dim++) {
+              if (stdev[dim] > 0) {
+                out_data = new BufferScratch<ValueType> (input);
+                out = new typename BufferScratch<ValueType>::voxel_type (*out_data);
+                Adapter::Gaussian1D<typename BufferScratch<ValueType>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
+                threaded_copy (gaussian, *out);
+                in_data = out_data;
+                in = out;
+                if (progress)
+                  ++(*progress);
               }
-
-              for (size_t dim = 0; dim < this->ndim(); dim++) {
-                if (stdev[dim] > 0) {
-                  out_data = new BufferScratch<float> (input);
-                  out = new BufferScratch<float>::voxel_type (*out_data);
-                  Adapter::Gaussian1D<BufferScratch<float>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
-                  threaded_copy (gaussian, *out);
-                  in_data = out_data;
-                  in = out;
-                  if (progress)
-                    ++(*progress);
-                }
-              }
-              threaded_copy (*in, output);
+            }
+            threaded_copy (*in, output);
           }
 
         protected:

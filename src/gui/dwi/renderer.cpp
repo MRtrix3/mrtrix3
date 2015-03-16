@@ -315,12 +315,6 @@ namespace MR
 
 
 
-#ifdef USE_NON_ORTHONORMAL_SH_BASIS
-# define SH_NON_M0_SCALE_FACTOR
-#else
-# define SH_NON_M0_SCALE_FACTOR (m?M_SQRT2:1.0)*
-#endif
-
 
 
       void Renderer::update_transform (const std::vector<Vertex>& vertices, int lmax)

@@ -45,10 +45,10 @@ namespace MR
           slice_fixel_indices (3),
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
-          line_length_multiplier (1.0),
+          voxel_size_length_multipler (1.0),
+          user_line_length_multiplier (1.0),
           length_type (Unity),
-          colour_type (CValue),
-          show_colour_bar (true)
+          colour_type (CValue)
           {
             set_allowed_features (true, true, false);
             colourmap = 1;
@@ -57,6 +57,7 @@ namespace MR
             colour[0] = colour[1] = colour[2] = 1;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
+            voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
             load_image();
           }
 
@@ -72,14 +73,12 @@ namespace MR
                "layout (location = 5) in float next_value;\n"
                "uniform mat4 MVP;\n"
                "uniform float length_mult;\n"
+               "uniform vec3 colourmap_colour;\n"
                "flat out float value_out;\n"
                "out vec3 fragmentColour;\n";
 
            switch (color_type) {
              case Direction: break;
-             case Manual:
-               source += "uniform vec3 const_colour;\n";
-               break;
              case CValue:
                source += "uniform float offset, scale;\n";
                break;
@@ -106,10 +105,6 @@ namespace MR
            }
 
            switch (color_type) {
-             case Manual:
-               source +=
-                   "  fragmentColour = const_colour;\n";
-               break;
              case CValue:
                if (!ColourMap::maps[colourmap].special) {
                  source += "  float amplitude = clamp (";
@@ -193,15 +188,16 @@ namespace MR
           start (fixel_shader);
           projection.set (fixel_shader);
 
-          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), line_length_multiplier);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), voxel_size_length_multipler * user_line_length_multiplier);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
           if (use_discard_upper())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
 
-          if (colour_type == Manual)
-            gl::Uniform3fv (gl::GetUniformLocation (fixel_shader, "const_colour"), 1, colour);
+          if (ColourMap::maps[colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (fixel_shader, "colourmap_colour"),
+                colour[0]/255.0f, colour[1]/255.0f, colour[2]/255.0f);
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -251,12 +247,16 @@ namespace MR
           buffer_dir.push_back(Point<float>());
           buffer_val.push_back(NAN);
           Point<float> voxel_pos;
-          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+          for (auto l = loop (fixel_vox); l; ++l) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               if (fixel_vox.value()[f].value > value_max)
                 value_max = fixel_vox.value()[f].value;
               if (fixel_vox.value()[f].value < value_min)
                 value_min = fixel_vox.value()[f].value;
+            }
+          }
+          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
               for (size_t dim = 0; dim < 3; ++dim) {
                 slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
                 slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
@@ -265,7 +265,7 @@ namespace MR
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
               buffer_dir.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
-              buffer_val.push_back (fixel_vox.value()[f].amplitude);
+              buffer_val.push_back (fixel_vox.value()[f].size);
               buffer_val.push_back (fixel_vox.value()[f].value);
             }
           }
@@ -288,7 +288,7 @@ namespace MR
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
-          // fixel amplitudes and values
+          // fixel sizes and values
           value_buffer.gen();
           value_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);

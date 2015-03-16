@@ -42,7 +42,7 @@ namespace MR
     namespace
     {
 
-      inline size_t size (const std::string& text)
+      inline int size (const std::string& text)
       {
         return text.size() - 2*std::count (text.begin(), text.end(), 0x08U);
       }
@@ -57,8 +57,8 @@ namespace MR
       std::string paragraph (
           const std::string& header,
           const std::string& text,
-          size_t header_indent,
-          size_t indent)
+          int header_indent,
+          int indent)
       {
         std::string out, line = std::string (header_indent, ' ') + header + " ";
         if (size (line) < indent)
@@ -145,9 +145,9 @@ namespace MR
 
     std::string help_head (int format) 
     {
-      std::string cmd_version = 
-          ( project_version ? std::string ("version ") + project_version + ", external module" : std::string("part") ) +
-          " of the MRtrix package\n\n";
+      std::string cmd_version = project_version ? 
+            std::string ("external module, version ") + project_version + "\n\n" : 
+            std::string ("part of the MRtrix package\n\n");
 
       if (!format) 
         return std::string (NAME) + ": " + cmd_version;
@@ -155,7 +155,7 @@ namespace MR
       std::string mrtrix_version = "MRtrix " MRTRIX_GIT_VERSION;
       std::string date (build_date);
 
-      std::string topline = mrtrix_version + std::string (40-size(mrtrix_version)-size(App::NAME)/2, ' ') + bold (App::NAME);
+      std::string topline = mrtrix_version + std::string (std::max (1, 40-size(mrtrix_version)-size(App::NAME)/2), ' ') + bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
       
       return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
@@ -174,9 +174,13 @@ namespace MR
         + paragraph ("", AUTHOR, HELP_PURPOSE_INDENT) + "\n"
         + bold ("COPYRIGHT") + "\n" 
         + paragraph ("", COPYRIGHT, HELP_PURPOSE_INDENT) + "\n"
-        + (REFERENCES ? (  bold ("REFERENCES") + "\n"
-                         + paragraph ("", REFERENCES, HELP_PURPOSE_INDENT) + "\n")
-                      : "");
+        + [&](){ 
+          if (REFERENCES.size() == 0) return std::string();
+          std::string s = bold ("REFERENCES") + "\n";
+          for (size_t n = 0; n < REFERENCES.size(); ++n) 
+            s += paragraph ("", REFERENCES[n], HELP_PURPOSE_INDENT) + "\n";
+          return s;
+        }();
     }
 
 
