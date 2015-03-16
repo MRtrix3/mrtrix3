@@ -97,7 +97,7 @@ namespace MR {
           Point_t dir = getRandDir();
           
           double dE = E->stageAdd(pos, dir);
-          double R = Math::exp(-dE) * props.density / (pGrid.getTotalCount()+1) * props.p_death / props.p_birth;
+          double R = std::exp(-dE) * props.density / (pGrid.getTotalCount()+1) * props.p_death / props.p_birth;
           if (R > rng.uniform()) {
             E->acceptChanges();
             pGrid.add(pos, dir);
@@ -125,7 +125,7 @@ namespace MR {
           Point_t pos0 = par->getPosition();
           
           double dE = E->stageRemove(par);
-          double R = Math::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
+          double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
           if (R > rng.uniform()) {
             E->acceptChanges();
             pGrid.remove(idx);
@@ -281,9 +281,9 @@ namespace MR {
               (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
             return false;
           if (mask) {
-            (*mask)[0] = Math::round(p[0]);
-            (*mask)[1] = Math::round(p[1]);
-            (*mask)[2] = Math::round(p[2]);
+            (*mask)[0] = std::round<size_t>(p[0]);
+            (*mask)[1] = std::round<size_t>(p[1]);
+            (*mask)[2] = std::round<size_t>(p[2]);
             return mask->value();
           }
           return true;

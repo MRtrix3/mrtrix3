@@ -25,7 +25,6 @@
 #define __gt_mhsampler_h__
 
 #include "ptr.h"
-#include "thread/mutex.h"
 #include "image/transform.h"
 #include "image/buffer_preload.h"
 

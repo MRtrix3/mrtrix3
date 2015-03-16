@@ -25,7 +25,7 @@
 #define __gt_spatiallock_h__
 
 #include "point.h"
-#include "thread/mutex.h"
+#include <mutex>
 
 #include <set>
 
@@ -63,7 +63,7 @@ namespace MR {
           }
           
           bool lockIfNotLocked(const Point<T>& pos) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             Point<value_type> d;
             for (typename std::set<Point<value_type> >::iterator it = lockcentres.begin(); it != lockcentres.end(); ++it) {
               d = *it - pos;
@@ -75,12 +75,12 @@ namespace MR {
           }
           
           void unlock(const Point<T>& pos) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             lockcentres.erase(pos);
           }
           
         protected:
-          Thread::Mutex mutex;
+          std::mutex mutex;
           std::set<Point<value_type> > lockcentres;
           value_type _tx, _ty, _tz;
           

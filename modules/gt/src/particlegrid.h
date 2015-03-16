@@ -24,7 +24,7 @@
 #ifndef __gt_particlegrid_h__
 #define __gt_particlegrid_h__
 
-#include "thread/mutex.h"
+#include <mutex>
 #include "image/info.h"
 #include "image/transform.h"
 #include "dwi/tractography/file.h"
@@ -50,6 +50,15 @@ namespace MR {
           
           ParticleGrid(const Image::Info& image);
           
+          ParticleGrid(const ParticleGrid& other)
+            : mutex(), pool(), list(other.list), grid(other.grid), rng(), T(other.T)
+          {
+            DEBUG("ParticleGrid copy.");    // Needed for C++11 clang compilation (?). Should not be called though.
+            n[0] = other.n[0];
+            n[1] = other.n[1];
+            n[2] = other.n[2];
+          }
+          
           ~ParticleGrid() {
             clear();
           }
@@ -74,7 +83,7 @@ namespace MR {
           
           
         protected:
-          Thread::Mutex mutex;
+          std::mutex mutex;
           ParticlePool pool;
           ParticleVectorType list;
           std::vector<ParticleVectorType> grid;
@@ -94,9 +103,9 @@ namespace MR {
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
             Point_t gpos = T.scanner2voxel(pos);
-            x = Math::round(gpos[0]);
-            y = Math::round(gpos[1]);
-            z = Math::round(gpos[2]);
+            x = Math::round<size_t>(gpos[0]);
+            y = Math::round<size_t>(gpos[1]);
+            z = Math::round<size_t>(gpos[2]);
           }
           
         protected:

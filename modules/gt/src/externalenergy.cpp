@@ -83,7 +83,7 @@ namespace MR {
             for (int l = 0; l <= lmax/2; l++)
               wmr_sh[l] = (l < props.resp_WM.columns()) ? props.resp_WM(s, l) : 0.0;
             wmr_rh = Math::SH::SH2RH(wmr_sh);
-            wmr0 = props.resp_WM(s,0) / Math::sqrt(4*M_PI);
+            wmr0 = props.resp_WM(s,0) / std::sqrt(4*M_PI);
             
             for (std::vector<size_t>::const_iterator it = shells[s].get_volumes().begin(); it != shells[s].get_volumes().end(); ++it)
             {
@@ -176,7 +176,7 @@ namespace MR {
         void ExternalEnergyComputer::add(const Point_t &pos, const Point_t &dir, const double factor)
         {
           Point_t p = T.scanner2voxel(pos);
-          Point_t v = Point_t(Math::floor(p[0]), Math::floor(p[1]), Math::floor(p[2]));
+          Point_t v = Point_t(Math::floor<float>(p[0]), Math::floor<float>(p[1]), Math::floor<float>(p[2]));
           Point_t w = Point_t(hanning(p[0]-v[0]), hanning(p[1]-v[1]), hanning(p[2]-v[2]));
           
           Math::SH::delta(d, Point<double>(dir), s.lmax);

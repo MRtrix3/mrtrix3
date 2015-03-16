@@ -31,9 +31,9 @@ namespace MR {
         ParticleGrid::ParticleGrid(const Image::Info& image)
           : T(image)
         {
-          n[0] = Math::ceil( image.dim(0) * image.vox(0) / (2*Particle::L) );
-          n[1] = Math::ceil( image.dim(1) * image.vox(1) / (2*Particle::L) );
-          n[2] = Math::ceil( image.dim(2) * image.vox(2) / (2*Particle::L) );
+          n[0] = Math::ceil<size_t>( image.dim(0) * image.vox(0) / (2*Particle::L) );
+          n[1] = Math::ceil<size_t>( image.dim(1) * image.vox(1) / (2*Particle::L) );
+          n[2] = Math::ceil<size_t>( image.dim(2) * image.vox(2) / (2*Particle::L) );
           grid.resize(n[0]*n[1]*n[2]);
           
           Image::Info info (image);
@@ -50,7 +50,7 @@ namespace MR {
           Particle* p = pool.create(pos, dir);
           unsigned int gidx = pos2idx(pos);
           grid[gidx].push_back(p);
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           list.push_back(p);
         }
         
@@ -80,7 +80,7 @@ namespace MR {
               break;
             }
           }
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           list[idx] = list.back();    // FIXME Not thread safe if last element is in use !  May corrupt datastructure,
           list.pop_back();            // but program won't crash. Ignore for now.
         }
@@ -88,7 +88,7 @@ namespace MR {
         void ParticleGrid::clear()
         {
           grid.clear();
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           for (ParticleVectorType::iterator it = list.begin(); it != list.end(); ++it)
             pool.destroy(*it);
           list.clear();
@@ -111,7 +111,7 @@ namespace MR {
         
         void ParticleGrid::exportTracks(Tractography::Writer<float> &writer)
         {
-          Thread::Mutex::Lock lock (mutex);
+          std::lock_guard<std::mutex> lock (mutex);
           // Initialise
           Particle* par;
           Particle* nextpar;

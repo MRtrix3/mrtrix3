@@ -29,7 +29,7 @@
 #include <deque>
 #include <stack>
 
-#include "thread/mutex.h"
+#include <mutex>
 
 #include "particle.h"
 
@@ -53,7 +53,7 @@ namespace MR {
            */
           Particle* create(const Point_t& pos, const Point_t& dir)
           {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             if (avail.empty()) {
               // Create new particles
               pool.resize(pool.size() + PAGESIZE);
@@ -72,13 +72,13 @@ namespace MR {
            * @brief Destroys the particle at pointer p.
            */
           void destroy(Particle* p) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             p->finalize();
             avail.push(p);
           }
           
         protected:
-          Thread::Mutex mutex;
+          std::mutex mutex;
           std::deque<Particle> pool;
           std::stack<Particle*> avail;
         };

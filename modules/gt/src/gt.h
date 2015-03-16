@@ -30,8 +30,8 @@
 
 #include <iostream>
 #include <vector>
+#include <mutex>
 
-#include "thread/mutex.h"
 #include "math/matrix.h"
 #include "math/vector.h"
 #include "progressbar.h"
@@ -43,7 +43,7 @@ namespace MR {
       namespace GT {
         
         const double M_4PI = 4 * M_PI;
-        const double M_sqrt4PI = Math::sqrt(M_4PI);
+        const double M_sqrt4PI = std::sqrt(M_4PI);
         
         
         struct Properties
@@ -81,7 +81,7 @@ namespace MR {
           {
             for (int k = 0; k != 5; k++)
               n_gen[k] = n_acc[k] = 0;
-            alpha = Math::pow(T1/T0, double(ITER_BIGSTEP)/double(n_max - n_max/FRAC_BURNIN - n_max/FRAC_PHASEOUT));
+            alpha = std::pow(T1/T0, double(ITER_BIGSTEP)/double(n_max - n_max/FRAC_BURNIN - n_max/FRAC_PHASEOUT));
           }
           
           ~Stats() {
@@ -96,7 +96,7 @@ namespace MR {
           
           
           bool next() {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             ++n_iter;
             if (n_iter % ITER_BIGSTEP == 0) {
               if ((n_iter >= n_max/FRAC_BURNIN) && (n_iter < n_max - n_max/FRAC_PHASEOUT))
@@ -119,7 +119,7 @@ namespace MR {
           }
           
           void setTint(double temp) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             Tint = temp;
           }
           
@@ -133,12 +133,12 @@ namespace MR {
           }
           
           void incEextTotal(double d) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             EextTot += d;
           }
           
           void incEintTotal(double d) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             EintTot += d;
           }          
           
@@ -166,7 +166,7 @@ namespace MR {
           }
           
           void incN(const char p, unsigned int i = 1) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             switch (p) {
               case 'b': n_gen[0] += i; break;
               case 'd': n_gen[1] += i; break;
@@ -178,7 +178,7 @@ namespace MR {
           }
           
           void incNa(const char p, unsigned int i = 1) {
-            Thread::Mutex::Lock lock (mutex);
+            std::lock_guard<std::mutex> lock (mutex);
             switch (p) {
               case 'b': n_acc[0] += i; break;
               case 'd': n_acc[1] += i; break;
@@ -204,7 +204,7 @@ namespace MR {
           
 
         protected:
-          Thread::Mutex mutex;
+          std::mutex mutex;
           double Text, Tint;
           double EextTot, EintTot;
           double alpha;

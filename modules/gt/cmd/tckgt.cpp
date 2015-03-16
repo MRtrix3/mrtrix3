@@ -29,7 +29,7 @@
 #include "math/SH.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
-#include "thread/exec.h"
+#include "thread.h"
 
 #include "particlegrid.h"
 #include "gt.h"
@@ -165,8 +165,7 @@ void usage ()
 
 
 void launch_MHS(DWI::Tractography::GT::MHSampler& mhs) {
-  Thread::Array<DWI::Tractography::GT::MHSampler> mhs_threaded (mhs);
-  Thread::Exec exec (mhs_threaded, "MH sampler");
+  Thread::run (Thread::multi(mhs), "MH sampler");
 }
 
 
