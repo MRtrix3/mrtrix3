@@ -35,6 +35,8 @@ bool LightBox::show_grid_lines(true);
 size_t LightBox::n_rows(3);
 size_t LightBox::n_cols(5);
 float LightBox::slice_focus_increment(1.f);
+float LightBox::slice_focus_inc_adjust_rate(0.2f);
+std::string LightBox::prev_image_name;
 
 LightBox::LightBox(Window &parent) :
     Slice(parent),
@@ -42,7 +44,12 @@ LightBox::LightBox(Window &parent) :
     current_slice_index((n_rows*n_cols) / 2),
     slices_proj_focusdelta(n_rows*n_cols, proj_focusdelta(projection, 0.f))
 {
-    image_changed_event();
+    Image* img = image();
+
+    if(!img || prev_image_name != img->header().name())
+        image_changed_event();
+    else
+        set_slice_increment(slice_focus_increment);
 }
 
 
@@ -285,9 +292,15 @@ void LightBox::image_changed_event()
     {
         const auto& header = image()->header();
         float slice_inc = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.f/3.f);
+        slice_focus_inc_adjust_rate = slice_inc / 5.f;
+
         set_slice_increment(slice_inc);
         emit slice_increment_reset();
+
+        prev_image_name = image()->header().name();
     }
+    else
+        prev_image_name.clear();
 }
 
 
