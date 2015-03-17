@@ -46,16 +46,33 @@ namespace MR
               ListModelBase (parent) { }
 
             void add_items (std::vector<std::string>& filenames, Vector& fixel_tool) {
-              beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
-              for (size_t i = 0; i < filenames.size(); ++i) {
-                Fixel* fixel_image = new Fixel (filenames[i], fixel_tool);
+
+              size_t old_size = items.size();
+              for (size_t i = 0, N = filenames.size(); i < N; ++i) {
+                AbstractFixel* fixel_image(nullptr);
+
+                try
+                {
+                  if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
+                    fixel_image = new Fixel (filenames[i], fixel_tool);
+                  else
+                    fixel_image = new PackedFixel (filenames[i], fixel_tool);
+                }
+                catch(InvalidImageException& e)
+                {
+                  e.display();
+                  continue;
+                }
+
                 items.push_back (fixel_image);
               }
+
+              beginInsertRows (QModelIndex(), old_size, items.size());
               endInsertRows();
             }
 
-            Fixel* get_fixel_image (QModelIndex& index) {
-              return dynamic_cast<Fixel*>(items[index.row()]);
+            AbstractFixel* get_fixel_image (QModelIndex& index) {
+              return dynamic_cast<AbstractFixel*>(items[index.row()]);
             }
         };
 
@@ -221,31 +238,42 @@ namespace MR
             return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Fixel*>(fixel_list_model->items[i])->render (transform, axis, slice);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i])->render (transform, axis, slice);
           }
         }
 
 
         void Vector::drawOverlays (const Projection& transform)
         {
+          if(hide_all_button->isChecked()) return;
+
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<Fixel*>(fixel_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i])->renderColourBar (transform);
           }
         }
 
 
         void Vector::fixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open", "MRtrix sparse format (*.msf *.msh)");
+          std::vector<std::string> list = Dialog::File::get_files (this,
+                                                                   "Select fixel images to open",
+                                                                   "MRtrix sparse format (*.msf *.msh);;"
+                                                                   "MRtrix image format (*.mif *.mih)"
+                                                                   );
           if (list.empty())
             return;
           size_t previous_size = fixel_list_model->rowCount();
           fixel_list_model->add_items (list, *this);
-          QModelIndex first = fixel_list_model->index (previous_size, 0, QModelIndex());
-          QModelIndex last = fixel_list_model->index (fixel_list_model->rowCount()-1, 0, QModelIndex());
-          fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
-          update_selection();
+
+          // Some of the images may be invalid, so it could be the case that no images were added
+          size_t new_size = fixel_list_model->rowCount();
+          if(previous_size < new_size) {
+            QModelIndex first = fixel_list_model->index (previous_size, 0, QModelIndex());
+            QModelIndex last = fixel_list_model->index (new_size -1, 0, QModelIndex());
+            fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+            update_selection();
+          }
         }
 
 
@@ -312,7 +340,7 @@ namespace MR
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
-            Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            AbstractFixel* fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[i]));
             if (colourmap_index != int (fixel->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = fixel->colourmap;
@@ -365,13 +393,13 @@ namespace MR
           length_multiplier->setValue (line_length_multiplier);
 
           // Do a better job of setting colour / length with multiple inputs
-          Fixel* first_fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
           const FixelLengthType length_type = first_fixel->get_length_type();
           const FixelColourType colour_type = first_fixel->get_colour_type();
           bool consistent_length = true, consistent_colour = true;
           size_t colour_by_value_count = (first_fixel->get_colour_type() == CValue);
           for (int i = 1; i < indices.size(); ++i) {
-            Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            AbstractFixel* fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[i]));
             if (fixel->get_length_type() != length_type)
               consistent_length = false;
             if (fixel->get_colour_type() != colour_type)

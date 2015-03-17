@@ -93,6 +93,13 @@ namespace MR
       std::vector<std::string> description;
   };
 
+  class InvalidImageException : public Exception
+  {
+    public:
+      InvalidImageException (const std::string& msg) : Exception(msg) {}
+      InvalidImageException (const Exception& previous_exception, const std::string& msg)
+        : Exception(previous_exception, msg) {}
+  };
 
   void display_exception_cmdline (const Exception& E, int log_level);
   void cmdline_print_func (const std::string& msg);
