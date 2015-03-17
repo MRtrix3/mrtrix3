@@ -98,8 +98,16 @@ namespace MR
       }
 
       void set_text (const std::string& new_text) {
-        if (new_text.size())
+        if (new_text.size()) {
+#ifdef MRTRIX_WINDOWS
+          size_t old_size = text.size();
+#endif
           text = new_text;
+#ifdef MRTRIX_WINDOWS
+          if (text.size() < old_size)
+            text.resize (old_size, ' ');
+#endif
+	}
       };
 
       //! update text displayed and optionally increment counter
