@@ -192,7 +192,7 @@ ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
 if static:
-  ld_flags += [ '-static' ] 
+  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ] 
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
@@ -585,6 +585,7 @@ if 'GSL_CFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
+    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
     
@@ -593,6 +594,7 @@ if 'GSL_LDFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
+    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
     

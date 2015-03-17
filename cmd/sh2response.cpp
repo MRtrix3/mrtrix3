@@ -67,7 +67,7 @@ void usage () {
 
   OPTIONS
 
-    + DWI::GradOption
+    + DWI::GradImportOptions
     + DWI::ShellOption
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")

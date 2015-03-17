@@ -105,15 +105,17 @@ namespace MR
 
             projection.done_render_text();
 
-            if (window.show_colourbar())
+            if (window.show_colourbar()) {
               window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index, image()->scale_inverted());
 
-            QList<QAction*> tools = window.tools()->actions();
-            for (int i = 0; i < tools.size(); ++i) {
-              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
-              if (dock)
-                dock->tool->drawOverlays (projection);
+              QList<QAction*> tools = window.tools()->actions();
+              for (int i = 0; i < tools.size(); ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  dock->tool->drawOverlays (projection);
+              }
             }
+
           }
 
 done_painting:

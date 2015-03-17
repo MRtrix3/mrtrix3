@@ -389,6 +389,7 @@ void run () {
     writer_type = DEC;
     header.set_ndim (4);
     header.dim(3) = 3;
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
@@ -404,6 +405,7 @@ void run () {
       dirs = new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0]));
     header.set_ndim (4);
     header.dim(3) = dirs->size();
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
     // Write directions to image header as diffusion encoding
     Math::Matrix<float> grad (dirs->size(), 4);
@@ -426,6 +428,7 @@ void run () {
       throw Exception ("lmax for TODI must be an even number");
     header.set_ndim (4);
     header.dim(3) = Math::SH::NforL (lmax);
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 

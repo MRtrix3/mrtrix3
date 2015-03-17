@@ -81,9 +81,9 @@ int main (int cmdline_argc, char** cmdline_argv)
     ::MR::App::init (cmdline_argc, cmdline_argv); 
     usage (); 
     ::MR::App::parse (); 
-    run (); 
+    run ();
   } 
-  catch (::MR::Exception& E) { 
+  catch (::MR::Exception& E) {
     E.display(); 
     return 1;
   } 

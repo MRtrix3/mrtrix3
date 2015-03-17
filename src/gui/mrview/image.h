@@ -59,6 +59,9 @@ namespace MR
           void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
 
+          void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
+          { if(show_colour_bar) visitor.render_image_colourbar(*this, projection); }
+
           void get_axes (int plane, int& x, int& y) {
             if (plane) {
               if (plane == 1) {

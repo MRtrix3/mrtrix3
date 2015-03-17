@@ -374,7 +374,8 @@ namespace MR
 
             __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
             loop.start (dummy);
-            Thread::run (Thread::multi (loop_thread), "loop threads");
+            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
+            t.wait();
           }
 
 

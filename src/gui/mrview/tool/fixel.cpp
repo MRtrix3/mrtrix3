@@ -33,37 +33,50 @@ namespace MR
       {
 
 
-        Fixel::Fixel (const std::string& filename, Vector& fixel_tool) :
+        AbstractFixel::AbstractFixel (const std::string& filename, Vector& fixel_tool) :
           Displayable (filename),
           filename (filename),
-          fixel_tool (fixel_tool),
           header (filename),
-          fixel_data (header),
-          fixel_vox (fixel_data),
-          header_transform (fixel_vox),
-          colourbar_position_index (4),
           slice_fixel_indices (3),
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
+          fixel_tool (fixel_tool),
+          colourbar_position_index (4),
           voxel_size_length_multipler (1.0),
           user_line_length_multiplier (1.0),
           length_type (Unity),
-          colour_type (CValue),
-          show_colour_bar (true)
-          {
-            set_allowed_features (true, true, false);
-            colourmap = 1;
-            alpha = 1.0f;
-            set_use_transparency (true);
-            colour[0] = colour[1] = colour[2] = 1;
-            value_min = std::numeric_limits<float>::infinity();
-            value_max = -std::numeric_limits<float>::infinity();
-            voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
-            load_image();
-          }
+          colour_type (CValue)
+        {
+          set_allowed_features (true, true, false);
+          colourmap = 1;
+          alpha = 1.0f;
+          set_use_transparency (true);
+          colour[0] = colour[1] = colour[2] = 1;
+          value_min = std::numeric_limits<float>::infinity();
+          value_max = -std::numeric_limits<float>::infinity();
+          voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
+        }
+
+        Fixel::Fixel (const std::string& filename, Vector& fixel_tool) :
+          AbstractFixel(filename, fixel_tool),
+          fixel_data (header),
+          fixel_vox (fixel_data),
+          header_transform (fixel_vox)
+        {
+          load_image();
+        }
+
+        PackedFixel::PackedFixel (const std::string& filename, Vector& fixel_tool) :
+          AbstractFixel (filename, fixel_tool),
+          packed_fixel_data (header),
+          packed_fixel_vox (packed_fixel_data),
+          header_transform (packed_fixel_vox)
+        {
+          load_image();
+        }
 
 
-        std::string Fixel::Shader::vertex_shader_source (const Displayable& fixel)
+        std::string AbstractFixel::Shader::vertex_shader_source (const Displayable& fixel)
         {
            std::string source =
                "layout (location = 0) in vec3 this_vertex;\n"
@@ -74,14 +87,12 @@ namespace MR
                "layout (location = 5) in float next_value;\n"
                "uniform mat4 MVP;\n"
                "uniform float length_mult;\n"
+               "uniform vec3 colourmap_colour;\n"
                "flat out float value_out;\n"
                "out vec3 fragmentColour;\n";
 
            switch (color_type) {
              case Direction: break;
-             case Manual:
-               source += "uniform vec3 const_colour;\n";
-               break;
              case CValue:
                source += "uniform float offset, scale;\n";
                break;
@@ -108,10 +119,6 @@ namespace MR
            }
 
            switch (color_type) {
-             case Manual:
-               source +=
-                   "  fragmentColour = const_colour;\n";
-               break;
              case CValue:
                if (!ColourMap::maps[colourmap].special) {
                  source += "  float amplitude = clamp (";
@@ -136,7 +143,7 @@ namespace MR
         }
 
 
-        std::string Fixel::Shader::fragment_shader_source (const Displayable& fixel)
+        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable& fixel)
         {
           std::string source =
               "in float include; \n"
@@ -165,9 +172,9 @@ namespace MR
         }
 
 
-        bool Fixel::Shader::need_update (const Displayable& object) const
+        bool AbstractFixel::Shader::need_update (const Displayable& object) const
         {
-          const Fixel& fixel (dynamic_cast<const Fixel&> (object));
+          const AbstractFixel& fixel (dynamic_cast<const AbstractFixel&> (object));
           if (color_type != fixel.colour_type)
             return true;
           if (length_type != fixel.length_type)
@@ -176,9 +183,9 @@ namespace MR
         }
 
 
-        void Fixel::Shader::update (const Displayable& object)
+        void AbstractFixel::Shader::update (const Displayable& object)
         {
-          const Fixel& fixel (dynamic_cast<const Fixel&> (object));
+          const AbstractFixel& fixel (dynamic_cast<const AbstractFixel&> (object));
           do_crop_to_slice = fixel.fixel_tool.do_crop_to_slice;
           color_type = fixel.colour_type;
           length_type = fixel.length_type;
@@ -186,7 +193,7 @@ namespace MR
         }
 
 
-        void Fixel::render (const Projection& projection, int axis, int slice)
+        void AbstractFixel::render (const Projection& projection, int axis, int slice)
         {
 
           if (fixel_tool.do_crop_to_slice && (slice < 0 || slice >= header.dim(axis)))
@@ -202,8 +209,9 @@ namespace MR
           if (use_discard_upper())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "upper"), greaterthan);
 
-          if (colour_type == Manual)
-            gl::Uniform3fv (gl::GetUniformLocation (fixel_shader, "const_colour"), 1, colour);
+          if (ColourMap::maps[colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (fixel_shader, "colourmap_colour"),
+                colour[0]/255.0f, colour[1]/255.0f, colour[2]/255.0f);
 
           if (fixel_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -239,47 +247,9 @@ namespace MR
         }
 
 
-        void Fixel::load_image ()
+        void AbstractFixel::load_image ()
         {
-          for (size_t dim = 0; dim < 3; ++dim) {
-            slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
-            slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
-            slice_fixel_counts[dim].resize (fixel_vox.dim(dim), 0);
-          }
-
-          MR::Image::LoopInOrder loop (fixel_vox);
-          std::vector<Point<float> > buffer_dir;
-          std::vector<float> buffer_val;
-          buffer_dir.push_back(Point<float>());
-          buffer_val.push_back(NAN);
-          Point<float> voxel_pos;
-          for (auto l = loop (fixel_vox); l; ++l) {
-            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-              if (fixel_vox.value()[f].value > value_max)
-                value_max = fixel_vox.value()[f].value;
-              if (fixel_vox.value()[f].value < value_min)
-                value_min = fixel_vox.value()[f].value;
-            }
-          }
-          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
-            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-              for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
-                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
-                slice_fixel_counts[dim][fixel_vox[dim]]++;
-              }
-              header_transform.voxel2scanner (fixel_vox, voxel_pos);
-              buffer_dir.push_back (voxel_pos);
-              buffer_dir.push_back (fixel_vox.value()[f].dir);
-              buffer_val.push_back (fixel_vox.value()[f].size);
-              buffer_val.push_back (fixel_vox.value()[f].value);
-            }
-          }
-          buffer_dir.push_back (Point<float>());
-          buffer_val.push_back (NAN);
-          this->set_windowing (value_min, value_max);
-          greaterthan = value_max;
-          lessthan = value_min;
+          load_image_buffer ();
 
           // voxel centres and fixel directions
           vertex_buffer.gen();
@@ -305,6 +275,117 @@ namespace MR
           gl::EnableVertexAttribArray (5);
           gl::VertexAttribPointer (5, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(2*sizeof(float)));
         }
+
+        void Fixel::load_image_buffer()
+        {
+          for (size_t dim = 0; dim < 3; ++dim) {
+            ssize_t dim_size = fixel_vox.dim(dim);
+            slice_fixel_indices[dim].resize (dim_size);
+            slice_fixel_sizes[dim].resize (dim_size);
+            slice_fixel_counts[dim].resize (dim_size, 0);
+          }
+
+          MR::Image::LoopInOrder loop (fixel_vox);
+          buffer_dir.push_back(Point<float>());
+          buffer_val.push_back(NAN);
+          Point<float> voxel_pos;
+          for (auto l = loop (fixel_vox); l; ++l) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+              if (fixel_vox.value()[f].value > value_max)
+                value_max = fixel_vox.value()[f].value;
+              if (fixel_vox.value()[f].value < value_min)
+                value_min = fixel_vox.value()[f].value;
+            }
+          }
+          for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
+            for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
+              for (size_t dim = 0; dim < 3; ++dim) {
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
+                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
+                slice_fixel_counts[dim][fixel_vox[dim]]++;
+              }
+              header_transform.voxel2scanner (fixel_vox, voxel_pos);
+              buffer_dir.push_back (voxel_pos);
+              buffer_dir.push_back (fixel_vox.value()[f].dir);
+              buffer_val.push_back (fixel_vox.value()[f].size);
+              buffer_val.push_back (fixel_vox.value()[f].value);
+            }
+          }
+
+          buffer_dir.push_back (Point<float>());
+          buffer_val.push_back (NAN);
+          this->set_windowing (value_min, value_max);
+          greaterthan = value_max;
+          lessthan = value_min;
+        }
+
+        void PackedFixel::load_image_buffer()
+        {
+          size_t ndim = packed_fixel_vox.ndim();
+
+          if (ndim != 4)
+            throw InvalidImageException ("Vector image " + filename
+                                         + " should contain 4 dimensions. Instead "
+                                         + str(ndim) + " found.");
+
+          size_t dim4_len = packed_fixel_vox.dim(3);
+
+          if (dim4_len % 3)
+            throw InvalidImageException ("Expecting 4th-dimension size of vector image "
+                                         + filename + " to be a multiple of 3. Instead "
+                                         + str(dim4_len) + " entries found.");
+
+          for (size_t dim = 0; dim < 3; ++dim) {
+            slice_fixel_indices[dim].resize (packed_fixel_vox.dim(dim));
+            slice_fixel_sizes[dim].resize (packed_fixel_vox.dim(dim));
+            slice_fixel_counts[dim].resize (packed_fixel_vox.dim(dim), 0);
+          }
+
+          MR::Image::LoopInOrder loop (packed_fixel_vox, 0, 3);
+          buffer_dir.push_back(Point<float>());
+          buffer_val.push_back(NAN);
+          Point<float> voxel_pos;
+          size_t n_fixels = dim4_len / 3;
+
+          for (auto l = loop (packed_fixel_vox); l; ++l) {
+            for (size_t f = 0; f < n_fixels; ++f) {
+              for (size_t dim = 0; dim < 3; ++dim) {
+                slice_fixel_indices[dim][packed_fixel_vox[dim]].push_back (buffer_dir.size() - 1);
+                slice_fixel_sizes[dim][packed_fixel_vox[dim]].push_back(2);
+                slice_fixel_counts[dim][packed_fixel_vox[dim]]++;
+              }
+
+              // Fetch the vector components
+              float x_comp, y_comp, z_comp;
+              packed_fixel_vox[3] = 3*f;
+              x_comp = packed_fixel_vox.value();
+              packed_fixel_vox[3]++;
+              y_comp = packed_fixel_vox.value();
+              packed_fixel_vox[3]++;
+              z_comp = packed_fixel_vox.value();
+
+              Point<> vector(x_comp, y_comp, z_comp);
+              float length = vector.norm();
+              value_min = std::min(value_min, length);
+              value_max = std::max(value_max, length);
+
+              header_transform.voxel2scanner (packed_fixel_vox, voxel_pos);
+              buffer_dir.push_back (voxel_pos);
+              buffer_dir.push_back (vector.normalise());
+
+              // Use the vector length to represent both fixel amplitude and value
+              buffer_val.push_back (length);
+              buffer_val.push_back (length);
+            }
+          }
+
+          buffer_dir.push_back (Point<float>());
+          buffer_val.push_back (NAN);
+          this->set_windowing (value_min, value_max);
+          greaterthan = value_max;
+          lessthan = value_min;
+        }
+
       }
     }
   }

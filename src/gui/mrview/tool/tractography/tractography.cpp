@@ -239,6 +239,7 @@ namespace MR
             return;
           try {
             tractogram_list_model->add_items (list, window, *this);
+            window.updateGL();
           }
           catch (Exception& E) {
             E.display();
@@ -433,7 +434,10 @@ namespace MR
           // BATCH_COMMAND tractography.load path # Load the specified tracks file into the tractography tool
           if (cmd == "tractography.load") {
             std::vector<std::string> list (1, args);
-            try { tractogram_list_model->add_items (list, window, *this); }
+            try { 
+              tractogram_list_model->add_items (list, window, *this); 
+              window.updateGL();
+            }
             catch (Exception& E) { E.display(); }
             return true;
           }

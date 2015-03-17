@@ -217,18 +217,23 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   Math::Matrix<float> dirs;
   DWI::gen_direction_matrix (dirs, rotated_grad, shared.dwis);
 
-  // Convert the DWI signal to spherical harmonics in the new reference frame
-  Math::SH::Transform<float> transform (dirs, lmax);
-  Math::Vector<float> SH;
-  transform.A2SH (SH, dwi_data);
+  try {
 
-  // Extract the m=0 components and save
-  Math::Vector<float> response (lmax/2+1);
-  for (size_t l = 0; l <= lmax; l += 2)
-    response[l/2] = SH[Math::SH::index (l, 0)];
-  {
+    // Convert the DWI signal to spherical harmonics in the new reference frame
+    Math::SH::Transform<float> transform (dirs, lmax);
+    Math::Vector<float> SH;
+    transform.A2SH (SH, dwi_data);
+
+    // Extract the m=0 components and save
+    Math::Vector<float> response (lmax/2+1);
+    for (size_t l = 0; l <= lmax; l += 2)
+      response[l/2] = SH[Math::SH::index (l, 0)];
+
     std::lock_guard<std::mutex> lock (*mutex);
     output += response;
+
+  } catch (...) {
+    WARN ("Invalid rotated-gradient SH transformation in voxel " + str(in.get_vox()));
   }
 
   return true;

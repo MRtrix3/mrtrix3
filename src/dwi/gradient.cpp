@@ -7,19 +7,19 @@ namespace MR
 
     using namespace App;
 
-    const OptionGroup GradOption = OptionGroup ("DW gradient encoding options")
+    const OptionGroup GradImportOptions = OptionGroup ("DW gradient table import options")
       + Option ("grad",
           "specify the diffusion-weighted gradient scheme used in the acquisition. "
           "The program will normally attempt to use the encoding stored in the image "
           "header. This should be supplied as a 4xN text file with each line is in "
           "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
           "applied gradient, and b gives the b-value in units of s/mm^2.")
-      + Argument ("encoding").type_file_in()
+      +   Argument ("encoding").type_file_in()
 
       + Option ("fslgrad",
           "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
-      + Argument ("bvecs").type_file_in()
-      + Argument ("bvals").type_file_in()
+      +   Argument ("bvecs").type_file_in()
+      +   Argument ("bvals").type_file_in()
 
       + Option ("bvalue_scaling",
           "specifies whether the b-values should be scaled by the square of "
@@ -27,7 +27,19 @@ namespace MR
           "multi-shell or DSI DW acquisition schemes. The default action can "
           "also be set in the MRtrix config file, under the BValueScaling entry. "
           "Valid choices are yes/no, true/false, 0/1.")
-      + Argument ("mode").type_bool (true);
+      +   Argument ("mode").type_bool (true);
+
+
+
+    const OptionGroup GradExportOptions = OptionGroup ("DW gradient table export options")
+
+      + Option ("export_grad_mrtrix", "export the diffusion-weighted gradient table to file in MRtrix format")
+      +   Argument ("path").type_file_out()
+
+      + Option ("export_grad_fsl", "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
+      +   Argument ("bvecs_path").type_file_out()
+      +   Argument ("bvals_path").type_file_out();
+
 
 
 
@@ -61,6 +73,27 @@ namespace MR
 
     }
 
+
+
+
+    void export_grad_commandline (const Image::Header& header) 
+    {
+      auto check = [](const Image::Header& h) -> const Image::Header& {
+        if (!h.DW_scheme().is_set())
+          throw Exception ("no gradient information found within image \"" + h.name() + "\"");
+        if (h.DW_scheme().rows() == 0 || h.DW_scheme().columns() < 4)
+          throw Exception ("DW scheme in header \"" + h.name() + "\" has unexpected dimensions");
+        return h;
+      };
+
+      App::Options opt = get_options ("export_grad_mrtrix");
+      if (opt.size()) 
+        check (header).DW_scheme().save (opt[0][0]);
+
+      opt = get_options ("export_grad_fsl");
+      if (opt.size()) 
+        save_bvecs_bvals (check (header), opt[0][0], opt[0][1]);
+    }
 
 
 

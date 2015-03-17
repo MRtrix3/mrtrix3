@@ -80,7 +80,7 @@ void usage ()
                           "in the amplitude image.")
   + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
 
-  + DWI::GradOption
+  + DWI::GradImportOptions
   + DWI::ShellOption
   + Image::Stride::StrideOption;
 }
