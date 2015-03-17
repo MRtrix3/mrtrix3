@@ -258,9 +258,8 @@ namespace MR
         {
           std::vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
-                                                                   "MRtrix sparse format (*.msf *.msh);;"
-                                                                   "MRtrix image format (*.mif *.mih)"
-                                                                   );
+                                                                   "MRtrix sparse format (*.msf *.msh);;" +
+                                                                   GUI::Dialog::File::image_filter_string);
           if (list.empty())
             return;
           size_t previous_size = fixel_list_model->rowCount();
