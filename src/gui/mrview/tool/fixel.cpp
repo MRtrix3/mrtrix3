@@ -42,8 +42,9 @@ namespace MR
           slice_fixel_counts (3),
           fixel_tool (fixel_tool),
           colourbar_position_index (4),
-          voxel_size_length_multipler (1.0),
-          user_line_length_multiplier (1.0),
+          voxel_size_length_multipler (1.f),
+          user_line_length_multiplier (1.f),
+          line_thickness (0.005f),
           length_type (Unity),
           colour_type (CValue)
         {
@@ -89,7 +90,7 @@ namespace MR
                "uniform float length_mult;\n"
                "uniform vec3 colourmap_colour;\n"
                "flat out float value_out;\n"
-               "out vec3 fragmentColour;\n";
+               "out vec3 vColour;\n";
 
            switch (color_type) {
              case Direction: break;
@@ -129,17 +130,44 @@ namespace MR
                source +=
                  std::string ("  vec3 color;\n") +
                  ColourMap::maps[colourmap].mapping +
-                 "  fragmentColour = color;\n";
+                 "  vColour = color;\n";
                break;
              case Direction:
                source +=
-                 "  fragmentColour = normalize (abs (dir));\n";
+                 "  vColour = normalize (abs (dir));\n";
                break;
              default:
                break;
            }
            source += "}\n";
            return source;
+        }
+
+        std::string AbstractFixel::Shader::geometry_shader_source (const Displayable&)
+        {
+          std::string source =
+                  "layout(lines) in;\n"
+                  "layout(triangle_strip, max_vertices = 4) out;\n"
+                  "uniform float line_thickness;\n"
+                  "in vec3 vColour[];\n"
+                  "out vec3 fColour;\n"
+                  "void main() {\n"
+                  "    vec4 line = gl_in[1].gl_Position - gl_in[0].gl_Position;\n"
+                  "    vec4 normal =  normalize(vec4(-line.y, line.x, 0.0, 0.0));\n"
+                  "    vec4 offset =  line_thickness * normal;\n"
+                  "    fColour = vColour[0];\n"
+                  "    gl_Position = gl_in[0].gl_Position - offset;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = gl_in[0].gl_Position + offset;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = gl_in[1].gl_Position - offset;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = gl_in[1].gl_Position + offset;\n"
+                  "    EmitVertex();\n"
+                  "    EndPrimitive();\n"
+                  "}\n";
+
+          return source;
         }
 
 
@@ -149,7 +177,7 @@ namespace MR
               "in float include; \n"
               "out vec3 color;\n"
               "flat in float value_out;\n"
-              "in vec3 fragmentColour;\n";
+              "in vec3 fColour;\n";
 
           if (fixel.use_discard_lower())
             source += "uniform float lower;\n";
@@ -165,7 +193,7 @@ namespace MR
             source += "  if (value_out > upper) discard;\n";
 
           source +=
-            std::string("  color = fragmentColour;\n");
+            std::string("  color = fColour;\n");
 
           source += "}\n";
           return source;
@@ -203,6 +231,7 @@ namespace MR
           projection.set (fixel_shader);
 
           gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), voxel_size_length_multipler * user_line_length_multiplier);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_thickness"), line_thickness);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -225,8 +254,6 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
-
-          gl::LineWidth (fixel_tool.line_thickness);
 
           vertex_array_object.bind();
 

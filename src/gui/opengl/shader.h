@@ -43,7 +43,7 @@ namespace MR
         {
           public:
             Object () : index_ (0) { }
-            Object (const std::string& source) : index_ (0) { compile (source); }
+            Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
             ~Object () {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader ID " + str(index_));
@@ -83,6 +83,7 @@ namespace MR
         };
 
         typedef Object<gl::VERTEX_SHADER> Vertex;
+        typedef Object<gl::GEOMETRY_SHADER> Geometry;
         typedef Object<gl::FRAGMENT_SHADER> Fragment;
 
 

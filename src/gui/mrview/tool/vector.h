@@ -59,7 +59,6 @@ namespace MR
             void reset_colourmap(const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
-            float line_thickness;
             bool do_crop_to_slice;
             bool not_3D;
             float line_opacity;
