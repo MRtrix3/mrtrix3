@@ -49,8 +49,8 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
     + Option ("properties", "any text properties embedded in the image header")
     + Option ("transform", "the image transform")
     + Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)");
-
+        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    + Option ("shells", "list the average b-value of each shell");
 
 
 
@@ -171,13 +171,14 @@ void run ()
   const bool properties = get_options("properties")    .size();
   const bool transform  = get_options("transform")     .size();
   const bool dwgrad     = get_options("dwgrad")        .size();
+  const bool shells     = get_options("shells")        .size();
 
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
   bool import_grad = check_option_group (DWI::GradImportOptions);
   bool export_grad = dwgrad || check_option_group (DWI::GradExportOptions);
 
   const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride
-                                  || offset || multiplier || comments || properties || transform || export_grad);
+                                  || offset || multiplier || comments || properties || transform || export_grad || shells);
 
   if (( import_grad || export_grad ) && argument.size() > 1 )
     throw Exception ("Can only import/export gradient table information if a single input image is provided");
@@ -200,6 +201,7 @@ void run ()
     if (properties) print_properties (header);
     if (transform)  std::cout << header.transform();
     if (dwgrad)     std::cout << header.DW_scheme();
+    if (shells)     { DWI::Shells shells(DWI::get_valid_DW_scheme<float>(header)); for (size_t i = 0; i < shells.count(); i++) std::cout << shells[i].get_mean() << std::endl; };
 
     DWI::export_grad_commandline (header);
 
