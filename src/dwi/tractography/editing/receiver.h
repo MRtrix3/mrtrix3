@@ -25,8 +25,9 @@
 
 
 #include <string>
+#include <cinttypes>
 
-#include "timer.h"
+#include "progressbar.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -53,13 +54,12 @@ namespace MR {
               skip (s),
               // Need to use local counts instead of writer class members due to track cropping
               count (0),
-              total_count (0) { }
+              total_count (0),
+              progress ("       0 read,        0 written") { }
 
             ~Receiver()
             {
-              print();
-              if (App::log_level > 0)
-                fprintf (stderr, "\n");
+              progress.set_text (printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count));
               if (number && (count != number))
                 WARN ("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
             }
@@ -71,14 +71,10 @@ namespace MR {
           private:
 
             Tractography::Writer<> writer;
-            const size_t in_count, number;
-            size_t skip;
-            size_t count, total_count;
-            IntervalTimer timer;
-
-            void update_cmdline();
-            void print();
-
+            const uint64_t in_count, number;
+            uint64_t skip;
+            uint64_t count, total_count;
+            ProgressBar progress;
         };
 
 
