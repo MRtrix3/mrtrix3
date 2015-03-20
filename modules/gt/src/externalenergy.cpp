@@ -28,7 +28,7 @@
 #include "math/SH.h"
 #include "image/loop.h"
 
-#include "math/lsnonneg.h"
+//#include "math/lsnonneg.h"
 
 
 namespace MR {
@@ -247,8 +247,9 @@ namespace MR {
         double ExternalEnergyComputer::calcEnergy()
         {
           Math::mult(y, 1.0, -1.0, CblasNoTrans, s.K, t);   // y = d - K t
-          Math::mult(c, 1.0, CblasTrans, s.Ak, y);          // c = Ak^T y
-          Math::solve_LS_nonneg_Hf(fk, s.H, s.Hinv, c);     // H fk = c
+          //Math::mult(c, 1.0, CblasTrans, s.Ak, y);          // c = Ak^T y
+          //Math::solve_LS_nonneg_Hf(fk, s.H, s.Hinv, c);     // H fk = c
+          nnls_solver(fk, y);
           Math::mult(y, 1.0, -1.0, CblasNoTrans, A, f);     // res = y - A f
           return Math::norm2(y) / s.nrows + s.mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
         }

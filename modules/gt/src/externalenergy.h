@@ -28,6 +28,7 @@
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
 #include "image/transform.h"
+#include "math/constrained_least_squares.h"
 
 #include "particle.h"
 #include "gt.h"
@@ -95,6 +96,12 @@ namespace MR {
               T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
               f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
           {
+            Math::Matrix eye (s.nf+1, s.nf+1);
+            for (size_t i = 0; i <= s.nf; i++)
+              eye(i,i) = 1.0;
+            nnls = Math::ICLS::Problem(s.Ak, eye);
+            nnls_solver = Math::ICLS::Solver(nnls);
+            
             resetEnergy();
           }
           
@@ -102,7 +109,13 @@ namespace MR {
             : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
               T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
               f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
-          {  }
+          {
+            Math::Matrix eye (s.nf+1, s.nf+1);
+            for (size_t i = 0; i <= s.nf; i++)
+              eye(i,i) = 1.0;
+            nnls = Math::ICLS::Problem(s.Ak, eye);
+            nnls_solver = Math::ICLS::Solver(nnls);
+          }
           
           ~ExternalEnergyComputer() { }
           
@@ -150,6 +163,9 @@ namespace MR {
           Math::Vector<double>::View f;
           const Math::Matrix<double>::View A;
           double dE;
+          
+          Math::ICLS::Problem nnls;
+          Math::ICLS::Solver nnls_solver;
           
           std::vector<Point<int> > changes_vox;
           std::vector<Math::Vector<float> > changes_tod;
