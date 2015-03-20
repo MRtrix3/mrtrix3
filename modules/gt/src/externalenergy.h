@@ -96,11 +96,10 @@ namespace MR {
               T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
               f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
           {
-            Math::Matrix eye (s.nf+1, s.nf+1);
+            Math::Matrix<double> eye (s.nf+1, s.nf+1);
             for (size_t i = 0; i <= s.nf; i++)
               eye(i,i) = 1.0;
-            nnls = Math::ICLS::Problem(s.Ak, eye);
-            nnls_solver = Math::ICLS::Solver(nnls);
+            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
             
             resetEnergy();
           }
@@ -110,11 +109,10 @@ namespace MR {
               T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
               f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
           {
-            Math::Matrix eye (s.nf+1, s.nf+1);
+            Math::Matrix<double> eye (s.nf+1, s.nf+1);
             for (size_t i = 0; i <= s.nf; i++)
               eye(i,i) = 1.0;
-            nnls = Math::ICLS::Problem(s.Ak, eye);
-            nnls_solver = Math::ICLS::Solver(nnls);
+            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
           }
           
           ~ExternalEnergyComputer() { }
@@ -164,8 +162,7 @@ namespace MR {
           const Math::Matrix<double>::View A;
           double dE;
           
-          Math::ICLS::Problem nnls;
-          Math::ICLS::Solver nnls_solver;
+          Math::ICLS::Problem<double> nnls;
           
           std::vector<Point<int> > changes_vox;
           std::vector<Math::Vector<float> > changes_tod;
