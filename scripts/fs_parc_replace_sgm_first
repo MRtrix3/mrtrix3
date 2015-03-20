@@ -25,8 +25,8 @@ from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
 numArgs = 4
-if len(sys.argv) <= num_args:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <lookup table / connectome config file> <output parcellation image> (options)\n')
+if len(sys.argv) <= numArgs:
+  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <FreeSurfer lookup table / connectome config file> <output parcellation image> (options)\n')
   exit(0)
 lib.app.initialise(numArgs)
 
