@@ -115,11 +115,10 @@ namespace MR
         inline void update (TextFunc&& text_func, const bool increment = true) {
           double time = timer.elapsed();
           if (increment && multiplier) {
-            ++current_val;
-            if (current_val >= next_percent) {
+            if (++current_val >= next_percent) {
               set_text (text_func());
-              value = next_percent / multiplier;
-              next_percent = std::ceil ((value+1.0) * multiplier);
+              value = std::round (current_val / multiplier);
+              next_percent = std::ceil ((value+1) * multiplier);
               next_time = time;
               display_now();
               return;
@@ -145,10 +144,9 @@ namespace MR
       //! increment the current value by one.
       void operator++ () {
         if (multiplier) {
-          ++current_val;
-          if (current_val >= next_percent) {
-            value = next_percent / multiplier;
-            next_percent = std::ceil ((value+1.0) * multiplier);
+          if (++current_val >= next_percent) {
+            value = std::round (current_val / multiplier);
+            next_percent = std::ceil ((value+1) * multiplier);
             display_now();
           }
         }
