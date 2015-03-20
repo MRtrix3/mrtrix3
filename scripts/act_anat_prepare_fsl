@@ -6,21 +6,20 @@
 # BET for brain extraction, FAST for tissue segmentation, FIRST for sub-cortical grey matter segmentation
 
 
-import os, shutil, sys
+import os, sys
+import lib.app
 
 from lib.binaryInPath import binaryInPath
-from lib.delTempDir   import delTempDir
 from lib.errorMessage import errorMessage
 from lib.getFSLSuffix import getFSLSuffix
-from lib.loadOptions  import loadOptions
-from lib.makeTempDir  import makeTempDir
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
-num_args = 2
-
-if len(sys.argv) < num_args+1:
-  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <input image> <output image>')
+numArgs = 2
+if len(sys.argv) <= numArgs:
+  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input image> <output image> (options)\n')
+  exit(0)
+lib.app.initialise(numArgs)
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -55,21 +54,13 @@ first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 if not os.path.isdir(first_atlas_path):
   errorMessage('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
-(quiet, verbose) = loadOptions(num_args)
-
 fsl_suffix = getFSLSuffix()
-
-working_dir = os.getcwd()
-temp_dir = makeTempDir(verbose)
-
 
 sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
 
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(temp_dir, 'T1.nii') + ' -stride +1,+2,+3' + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride +1,+2,+3')
 
-if verbose:
-  printMessage('Changing to temporary directory (' + temp_dir + ')')
-os.chdir(temp_dir)
+lib.app.gotoTempDir()
 
 
 # Use FSL command standard_space_roi to do an initial masking of the image before BET
@@ -85,19 +76,19 @@ else:
     mni_mask_dilation = 2;
 
 if mni_mask_dilation:
-  runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation) + quiet, verbose)
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV', verbose)
+  runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV')
 else:
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b', verbose)
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b')
 
 # BET
-runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R', verbose)
+runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R')
 
 # FAST
-runCommand(fast_cmd + ' T1_bet.' + fsl_suffix, verbose)
+runCommand(fast_cmd + ' T1_bet.' + fsl_suffix)
 
 # FIRST
-runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first', verbose)
+runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first')
 
 # Convert FIRST meshes to partial volume images
 pve_image_list = [ ]
@@ -105,11 +96,11 @@ for struct in sgm_structures:
   pve_image_path = 'mesh2pve_' + struct + '.nii'
   vtk_path = 'first-' + struct + '_first.vtk'
   if not os.path.exists(vtk_path):
-    errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed', temp_dir, working_dir)
-  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii' + quiet, verbose)
+    errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii')
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
-runCommand('mrmath ' + pve_cat + ' sum -' + quiet + ' | mrcalc - 1.0 -min all_sgms.nii' + quiet, verbose)
+runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
 
 # Combine all tissue types using the 5ttgen command
 # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
@@ -118,22 +109,13 @@ if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
   fast_suffix = 'nii.gz'
-runCommand('5ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif' + quiet, verbose)
+runCommand('5ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]
-runCommand('mrmath combined_precrop.mif sum - -axis 3' + quiet + ' | mrthreshold - - -abs 0.5' + quiet + ' | mrcrop combined_precrop.mif ' + result_path + ' -mask -' + quiet, verbose)
+runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif ' + result_path + ' -mask -')
 
-# Move back to original directory
-if verbose:
-  printMessage('Changing back to original directory (' + working_dir + ')')
-os.chdir(working_dir)
+lib.app.moveFileToDest(result_path, sys.argv[2])
 
-# Get the final file from the temporary directory & put it in the correct location
-if verbose:
-  printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, result_path), sys.argv[2])
-
-# Don't leave a trace
-delTempDir(temp_dir, verbose)
+lib.app.terminate()
 

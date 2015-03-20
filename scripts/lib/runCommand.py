@@ -1,17 +1,30 @@
-def runCommand(cmd, verbose):
-  import os, sys
-  if verbose:
+mrtrix_bin_list = [ ]
+
+def runCommand(cmd):
+
+  import app, os, sys
+  global mrtrix_bin_list
+  
+  if not mrtrix_bin_list:
+    mrtrix_bin_path = os.path.join(os.path.abspath(os.path.dirname(os.path.realpath(sys.argv[0]))), os.pardir, 'bin');
+    mrtrix_bin_list = [ f for f in os.listdir(mrtrix_bin_path) if not "__" in f ]
+    
+  binary_name = cmd.split()[0]
+    
+  # Automatically add the -quiet flags to any mrtrix command calls, including filling them in around the pipes
+  if binary_name in mrtrix_bin_list:
+    cmdsplit = cmd.split()
+    for index, item in enumerate(cmdsplit):
+      if item == '|':
+        cmdsplit[index] = app.mrtrixQuiet + ' |'
+        index += 1
+    cmdsplit.append(app.mrtrixQuiet)
+    cmd = ' '.join(cmdsplit)
+    
+  if app.verbosity:
   	sys.stdout.write('Command: ' + cmd + '\n')
   	sys.stdout.flush()
-# Consider changing this to a subprocess call, pipe console outputs to local variables,
-#   if the command fails then provide output from the relevant function only
-# Some issues with subprocess:
-# * Would suppress progress bars from MRtrix commands, which may be wanted with the -verbose option
-# * Ideally want to run with shell=False, for both security and compatibility; but then:
-#   - can't use wildcards etc. that rely on a shell
-#   - can't use piping in MRtrix
-#   - would have to convert command string into a python list
-#   - Technically could handle these explicitly... bit of work though.
+
   if (os.system(cmd)):
     sys.stderr.write('Command failed: ' + cmd + '\n')
     exit(1)
