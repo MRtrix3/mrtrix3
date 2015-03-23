@@ -72,7 +72,7 @@ namespace MR
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (1.0),
+          line_thickness (0.001f),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -317,7 +317,7 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          line_thickness = static_cast<float>(thickness) / 100000.0f;
           window.updateGL();
         }
 
