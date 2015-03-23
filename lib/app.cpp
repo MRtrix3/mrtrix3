@@ -20,6 +20,8 @@
 
 */
 
+#include <unistd.h>
+
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_errno.h>
 
@@ -513,7 +515,7 @@ namespace MR
       setvbuf (stdout, NULL, _IOLBF, 0);
 #endif
 
-      stderr_to_file = !( lseek (STDERR_FILENO, 0, SEEK_CUR) < 0 );
+      stderr_to_file = Path::is_file (STDERR_FILENO);
 
       argc = cmdline_argc;
       argv = cmdline_argv;
