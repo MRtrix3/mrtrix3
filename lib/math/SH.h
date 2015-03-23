@@ -43,31 +43,52 @@ namespace MR
     namespace SH
     {
 
+      /** \defgroup spherical_harmonics Spherical Harmonics
+       * \brief Classes & functions to manage spherical harmonics. */
+
+      /** \addtogroup spherical_harmonics
+       * @{ */
+
+
+      //! a string containing a description of the SH storage convention
+      /*! This can used directly in the DESCRIPTION field of a command's
+       * usage() function. */
       extern const char* encoding_description;
 
+      //! the number of (even-degree) coefficients for the given value of \a lmax
       inline size_t NforL (int lmax)
       {
         return (lmax+1) * (lmax+2) /2;
       }
+
+      //! compute the index for coefficient (l,m)
       inline size_t index (int l, int m)
       {
         return l* (l+1) /2 + m;
       }
 
+      //! same as NforL(), but consider only non-negative orders \e m
       inline size_t NforL_mpos (int lmax)
       {
         return (lmax/2+1) * (lmax/2+1);
       }
+      
+      //! same as index(), but consider only non-negative orders \e m
       inline size_t index_mpos (int l, int m)
       {
         return l*l/4 + m;
       }
 
+      //! returns the largest \e lmax given \a N parameters 
       inline size_t LforN (int N)
       {
         return N ? 2 * std::floor<size_t> ( (std::sqrt (float (1+8*N))-3.0) /4.0) : 0;
       }
 
+      //! form the SH->amplitudes matrix 
+      /*! This computes the matrix \a SHT mapping spherical harmonic
+       * coefficients up to maximum harmonic degree \a lmax onto directions \a
+       * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
       template <typename ValueType>
         Matrix<ValueType>& init_transform (Matrix<ValueType>& SHT, const Matrix<ValueType>& dirs, int lmax)
         {
@@ -95,6 +116,7 @@ namespace MR
         }
 
 
+      //! \copydoc init_transform()
       template <typename ValueType>
         Matrix<ValueType> init_transform (const Matrix<ValueType>& dirs, int lmax)
         {
@@ -106,6 +128,7 @@ namespace MR
 
 
 
+      //! scale the coefficients of each SH degree by the corresponding value in \a coefs
       template <typename ValueType>
         void scale_degrees_forward (Matrix<ValueType>& SH2amp_mapping, const Vector<ValueType>& coefs) 
         {
@@ -121,6 +144,7 @@ namespace MR
 
 
 
+      //! scale the coefficients of each SH degree by the corresponding value in \a coefs
       template <typename ValueType>
         void scale_degrees_inverse (Matrix<ValueType>& amp2SH_mapping, const Vector<ValueType>& coefs) 
         {
@@ -134,6 +158,7 @@ namespace MR
           }
         }
 
+      //! invert any non-zero coefficients in \a coefs
       template <typename ValueType>
         Vector<ValueType> invert (const Vector<ValueType>& coefs)
         {
@@ -292,6 +317,9 @@ namespace MR
 
 
 
+      //! perform spherical convolution
+      /*! perform spherical convolution of SH coefficients \a sh with response
+       * function \a RH, storing the results in vector \a C. */
       template <typename ValueType>
         inline Vector<ValueType>& sconv (Vector<ValueType>& C, const Vector<ValueType>& RH, const Vector<ValueType>& sh)
         {
@@ -311,6 +339,7 @@ namespace MR
       }
 
 
+      //! convert spherical coordinates to Cartesian coordinates
       template <class VectorType1, class VectorType2>
         inline void s2c (const VectorType1& az_el_r, VectorType2&& xyz)
         {
@@ -327,6 +356,7 @@ namespace MR
         }
 
 
+      //! convert matrix of spherical coordinates to Cartesian coordinates
       template <typename ValueType>
         inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>& cartesian)
         {
@@ -334,12 +364,14 @@ namespace MR
           for (size_t dir = 0; dir < az_el.rows(); ++dir) 
             s2c (az_el.row (dir), cartesian.row (dir));
         }
+     
+      //! convert matrix of spherical coordinates to Cartesian coordinates
       template <typename ValueType>
         inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>&& cartesian) {
           S2C (az_el, cartesian);
         }
 
-      //! convert matrix of spherical coordinates to cartesian coordinates
+      //! convert matrix of spherical coordinates to Cartesian coordinates
       template <typename ValueType>
         inline Math::Matrix<ValueType> S2C (const Matrix<ValueType>& az_el)
         {
@@ -350,6 +382,7 @@ namespace MR
 
 
 
+      //! convert Cartesian coordinates to spherical coordinates
       template <class VectorType1, class VectorType2>
         inline void c2s (const VectorType1& xyz, VectorType2&& az_el_r)
         {
@@ -360,6 +393,7 @@ namespace MR
             az_el_r[2] = r;
         }
 
+      //! convert matrix of Cartesian coordinates to spherical coordinates
       template <typename ValueType>
         inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>& az_el, bool include_r = false)
         {
@@ -367,11 +401,13 @@ namespace MR
           for (size_t dir = 0; dir < cartesian.rows(); ++dir) 
             c2s (cartesian.row (dir), az_el.row (dir));
         }
+      //! convert matrix of Cartesian coordinates to spherical coordinates
       template <typename ValueType>
         inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>&& az_el, bool include_r = false) {
           C2S (cartesian, az_el, include_r);
         }
 
+      //! convert matrix of Cartesian coordinates to spherical coordinates
       template <typename ValueType>
         inline Math::Matrix<ValueType> C2S (const Matrix<ValueType>& cartesian, bool include_r = false)
         {
@@ -454,6 +490,7 @@ namespace MR
 
 
 
+      //! compute axially-symmetric SH coefficients corresponding to specified tensor
       template <typename ValueType>
         inline Vector<ValueType>& FA2SH (
             Vector<ValueType>& sh, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
@@ -479,6 +516,7 @@ namespace MR
 
 
 
+      //! used to speed up SH calculation
       template <typename ValueType > class PrecomputedFraction
       {
         public:
@@ -493,6 +531,7 @@ namespace MR
 #define SH_NON_M0_SCALE_FACTOR
 #endif
 
+      //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
       template <typename ValueType> class PrecomputedAL
       {
         public:
@@ -602,8 +641,15 @@ namespace MR
 
 
 
+      //! estimate direction & amplitude of SH peak
+      /*! find a peak of an SH series using Gauss-Newton optimisation, modified
+       * to operate directly in spherical coordinates. The initial search
+       * direction is \a unit_init_dir. If \a precomputer is not nullptr, it
+       * will be used to speed up the calculations, at the cost of a minor
+       * reduction in accuracy. */
       template <typename ValueType>
-        inline ValueType get_peak (const ValueType* sh, int lmax, Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = NULL)
+        inline ValueType get_peak (const ValueType* sh, int lmax, 
+            Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = nullptr)
         {
           assert (unit_init_dir.valid());
           for (int i = 0; i < 50; i++) {
@@ -642,7 +688,8 @@ namespace MR
 
 
 
-
+      //! computes first and second order derivatives of SH series
+      /*! This is used primarily in the get_peaks() function. */
       template <typename ValueType>
         inline void derivatives (
             const ValueType* sh, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
@@ -722,6 +769,7 @@ namespace MR
 
 
 
+      //! a class to hold the coefficients for an apodised point-spread function.
       template <typename ValueType> class aPSF
       {
         public:
@@ -787,6 +835,7 @@ namespace MR
       };
 
 
+      //! convenience function to check if an input image can contain SH coefficients
       template <class Infotype>
         void check (const Infotype& info) {
           if (info.datatype().is_complex()) 
@@ -799,6 +848,7 @@ namespace MR
           if (l%2 || NforL (l) != size_t (info.dim(3)))
             throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
         }
+  /** @} */
 
     }
   }
