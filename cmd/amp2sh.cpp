@@ -178,7 +178,11 @@ void run ()
     }
     else {
       Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (amp_data);
-      DWI::get_gradient_table_and_directions (amp_data, grad, dirs, dwis, bzeros);
+      DWI::Shells shells (grad); 
+      shells.select_shells (true, true); 
+      bzeros = shells.smallest().get_volumes();
+      dwis = shells.largest().get_volumes();
+      dirs = DWI::gen_direction_matrix (grad, dwis);
     }
   }
 

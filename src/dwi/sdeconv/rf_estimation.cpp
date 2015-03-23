@@ -214,8 +214,7 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   }
 
   // Convert directions from Euclidean space to azimuth/elevation pairs
-  Math::Matrix<float> dirs;
-  DWI::gen_direction_matrix (dirs, rotated_grad, shared.dwis);
+  Math::Matrix<float> dirs = DWI::gen_direction_matrix (rotated_grad, shared.dwis);
 
   try {
 

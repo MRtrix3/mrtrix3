@@ -66,12 +66,11 @@ namespace MR
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
     template <typename ValueType> 
-      inline Math::Matrix<ValueType>& gen_direction_matrix (
-          Math::Matrix<ValueType>& dirs, 
+      inline Math::Matrix<ValueType> gen_direction_matrix (
           const Math::Matrix<ValueType>& grad, 
           const std::vector<size_t>& dwi)
       {
-        dirs.allocate (dwi.size(),2);
+        Math::Matrix<ValueType> dirs (dwi.size(),2);
         for (size_t i = 0; i < dwi.size(); i++) {
           dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
           ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
@@ -309,11 +308,11 @@ namespace MR
 
         INFO ("computing SH transform using lmax = " + str (lmax));
 
-        Math::Matrix<ValueType> SH;
         int lmax_prev = lmax;
+        Math::Matrix<ValueType> mapping;
         do {
-          Math::SH::init_transform (SH, directions, lmax);
-          double cond = Math::cond (SH);
+          Math::SH::init_transform (mapping, directions, lmax);
+          double cond = Math::cond (mapping);
           if (cond < 2.0) break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");
           if (lmax_set_from_commandline) break;
@@ -324,69 +323,7 @@ namespace MR
         if (lmax_prev != lmax)
           WARN ("reducing lmax to " + str(lmax) + " to improve conditioning");
 
-        return SH;
-      }
-
-    //! \brief get the gradient table and matrix of directions to use in single-shell DWI processing
-    /*! Tries to find the DW gradient table using get_valid_DW_scheme(),
-     * identifies which shell corresponds to the b=0 and DWI volumes using the
-     * Shells class (which will process any corresponding command-line
-     * options), and generates the direction matrix in spherical coordinates.
-     * */
-    template <typename ValueType>
-      inline void get_gradient_table_and_directions (
-          const Image::Header& header, 
-          Math::Matrix<ValueType>& grad,
-          Math::Matrix<ValueType>& directions,
-          std::vector<size_t>& dwis, 
-          std::vector<size_t>& bzeros)
-      {
-        grad = get_valid_DW_scheme<ValueType> (header);
-
-        DWI::Shells shells (grad);
-        shells.select_shells (true, true);
-        if (shells.smallest().is_bzero())
-          bzeros = shells.smallest().get_volumes();
-        dwis = shells.largest().get_volumes();
-
-        gen_direction_matrix (directions, grad, dwis);
-      }
-
-
-    //! \brief get the matrix mapping SH coefficients to directions
-    /*! uses get_gradient_table_and_directions() to get the directions, and
-     * feeds this to get_SH2amp_mapping() to generate the SH->amplitude matrix.
-     * See these functions for a description of the corresponding arguments.
-     * */
-    template <typename ValueType>
-      inline Math::Matrix<ValueType> get_SH2amp_mapping (
-          const Image::Header& header, 
-          Math::Matrix<ValueType>& grad,
-          Math::Matrix<ValueType>& directions,
-          std::vector<size_t>& dwis, 
-          std::vector<size_t>& bzeros, 
-          bool lmax_from_command_line = true, 
-          int default_lmax = 8)
-      {
-        get_gradient_table_and_directions (header, grad, directions, dwis, bzeros);
-        return compute_SH2amp_mapping (directions, lmax_from_command_line, default_lmax);
-      }
-
-
-    //! \brief get the matrix mapping SH coefficients to directions
-    /*! uses get_gradient_table_and_directions() to get the directions, and
-     * feeds this to get_SH2amp_mapping() to generate the SH->amplitude matrix.
-     * See these functions for a description of the corresponding arguments.
-     * */
-    template <typename ValueType>
-      inline Math::Matrix<ValueType> get_SH2amp_mapping (
-          const Image::Header& header, 
-          bool lmax_from_command_line = true, 
-          int default_lmax = 8)
-      {
-        std::vector<size_t> dwis, bzeros;
-        Math::Matrix<ValueType> grad, directions;
-        return get_SH2amp_mapping (header, grad, directions, dwis, bzeros, lmax_from_command_line, default_lmax);
+        return mapping;
       }
 
 

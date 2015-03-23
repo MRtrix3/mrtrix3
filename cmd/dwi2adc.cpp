@@ -91,7 +91,6 @@ class DWI2ADC {
 void run () {
   InputBufferType dwi_buffer (argument[0]);
   Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_buffer);
-  VAR (grad);
 
   size_t dwi_axis = 3;
   while (dwi_buffer.dim (dwi_axis) < 2) ++dwi_axis;

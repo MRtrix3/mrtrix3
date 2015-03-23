@@ -60,7 +60,7 @@ namespace MR
               // Only allow selection of one non-zero shell from command line
               shells.select_shells (false, true);
               dwis = shells.largest().get_volumes();
-              DWI::gen_direction_matrix (DW_dirs, grad, dwis);
+              DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
               lmax = lmax_data = Math::SH::LforN (dwis.size());
 
