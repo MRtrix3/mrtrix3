@@ -2,6 +2,7 @@
 *_moc.cpp
 *.so
 *.dll
+*.dylib
 *.a
 *~
 *.swp
