@@ -52,6 +52,8 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
         "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)");
 
 
+const OptionGroup GradImportOptions = DWI::GradImportOptions();
+const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
 
 
@@ -89,8 +91,8 @@ void usage ()
         "and strides as they are actually stored in the header, rather than as "
         "MRtrix interprets them.") 
     + ExtractOption
-    + DWI::GradImportOptions
-    + DWI::GradExportOptions;
+    + GradImportOptions
+    + GradExportOptions;
 
 }
 
@@ -173,8 +175,8 @@ void run ()
   const bool dwgrad     = get_options("dwgrad")        .size();
 
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
-  bool import_grad = check_option_group (DWI::GradImportOptions);
-  bool export_grad = dwgrad || check_option_group (DWI::GradExportOptions);
+  bool import_grad = check_option_group (GradImportOptions);
+  bool export_grad = dwgrad || check_option_group (GradExportOptions);
 
   const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride
                                   || offset || multiplier || comments || properties || transform || export_grad);

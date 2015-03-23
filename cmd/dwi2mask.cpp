@@ -51,7 +51,7 @@ ARGUMENTS
     .type_image_out ();
 
 OPTIONS
-  + DWI::GradImportOptions;
+  + DWI::GradImportOptions();
 }
 
 

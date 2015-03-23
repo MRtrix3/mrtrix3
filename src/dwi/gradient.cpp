@@ -7,38 +7,49 @@ namespace MR
 
     using namespace App;
 
-    const OptionGroup GradImportOptions = OptionGroup ("DW gradient table import options")
-      + Option ("grad",
-          "specify the diffusion-weighted gradient scheme used in the acquisition. "
-          "The program will normally attempt to use the encoding stored in the image "
-          "header. This should be supplied as a 4xN text file with each line is in "
-          "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
-          "applied gradient, and b gives the b-value in units of s/mm^2.")
-      +   Argument ("encoding").type_file_in()
+    OptionGroup GradImportOptions (bool include_bvalue_scaling)
+    {
+      OptionGroup group ("DW gradient table import options");
 
-      + Option ("fslgrad",
-          "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
-      +   Argument ("bvecs").type_file_in()
-      +   Argument ("bvals").type_file_in()
+      group 
+        + Option ("grad",
+            "specify the diffusion-weighted gradient scheme used in the acquisition. "
+            "The program will normally attempt to use the encoding stored in the image "
+            "header. This should be supplied as a 4xN text file with each line is in "
+            "the format [ X Y Z b ], where [ X Y Z ] describe the direction of the "
+            "applied gradient, and b gives the b-value in units of s/mm^2.")
+        +   Argument ("encoding").type_file_in()
 
-      + Option ("bvalue_scaling",
-          "specifies whether the b-values should be scaled by the square of "
-          "the corresponding DW gradient norm, as often required for "
-          "multi-shell or DSI DW acquisition schemes. The default action can "
-          "also be set in the MRtrix config file, under the BValueScaling entry. "
-          "Valid choices are yes/no, true/false, 0/1.")
-      +   Argument ("mode").type_bool (true);
+        + Option ("fslgrad",
+            "specify the diffusion-weighted gradient scheme used in the acquisition in FSL bvecs/bvals format.")
+        +   Argument ("bvecs").type_file_in()
+        +   Argument ("bvals").type_file_in();
+
+      if (include_bvalue_scaling) 
+        group 
+          + Option ("bvalue_scaling",
+              "specifies whether the b-values should be scaled by the square of "
+              "the corresponding DW gradient norm, as often required for "
+              "multi-shell or DSI DW acquisition schemes. The default action can "
+              "also be set in the MRtrix config file, under the BValueScaling entry. "
+              "Valid choices are yes/no, true/false, 0/1.")
+          +   Argument ("mode").type_bool (true);
+
+      return group;
+    }
 
 
+    OptionGroup GradExportOptions() 
+    {
+      return OptionGroup ("DW gradient table export options")
 
-    const OptionGroup GradExportOptions = OptionGroup ("DW gradient table export options")
+        + Option ("export_grad_mrtrix", "export the diffusion-weighted gradient table to file in MRtrix format")
+        +   Argument ("path").type_file_out()
 
-      + Option ("export_grad_mrtrix", "export the diffusion-weighted gradient table to file in MRtrix format")
-      +   Argument ("path").type_file_out()
-
-      + Option ("export_grad_fsl", "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
-      +   Argument ("bvecs_path").type_file_out()
-      +   Argument ("bvals_path").type_file_out();
+        + Option ("export_grad_fsl", "export the diffusion-weighted gradient table to files in FSL (bvecs / bvals) format")
+        +   Argument ("bvecs_path").type_file_out()
+        +   Argument ("bvals_path").type_file_out();
+    }
 
 
 

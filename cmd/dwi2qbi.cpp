@@ -51,7 +51,7 @@ void usage ()
     "Magnetic Resonance in Medicine, 2006, 56, 104-117";
 
   OPTIONS
-  + DWI::GradImportOptions
+  + DWI::GradImportOptions()
   + DWI::ShellOption
 
   + Option ("lmax",

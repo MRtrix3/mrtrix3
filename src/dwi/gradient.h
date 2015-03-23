@@ -43,8 +43,8 @@ namespace MR
 
   namespace DWI
   {
-    extern const App::OptionGroup GradImportOptions;
-    extern const App::OptionGroup GradExportOptions;
+    App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
+    App::OptionGroup GradExportOptions();
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
