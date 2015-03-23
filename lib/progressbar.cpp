@@ -51,10 +51,12 @@ namespace MR
     inline void __update_progress_cmdline (const std::string& text, bool done) 
     {
       if (App::stderr_to_file) {
-        if (__stderr_offset == 0 && !done)
-          __stderr_offset = lseek (STDERR_FILENO, 0, SEEK_CUR);
-        else
-          lseek (STDERR_FILENO, __stderr_offset, SEEK_SET);
+        if (!done) {
+          if (__stderr_offset == 0)
+            __stderr_offset = ftello (stderr);
+          else
+            fseeko (stderr, __stderr_offset, SEEK_SET);
+        }
         __print_stderr (text.c_str());
         if (done)
           __stderr_offset = 0;
