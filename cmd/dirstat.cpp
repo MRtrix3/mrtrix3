@@ -135,7 +135,7 @@ void report (const std::string& title, const Math::Matrix<value_type>& direction
   std::string lmax_results;
   for (size_t lmax = 2; lmax <= Math::SH::LforN (directions.rows()); lmax += 2) 
     lmax_results += " " + str(DWI::condition_number_for_lmax (directions, lmax));
-  print ("    condition numbers for lmax = " + str(2) + " -> " 
+  print ("\n  Spherical Harmonic fit:\n    condition numbers for lmax = " + str(2) + " -> " 
       + str(Math::SH::LforN (directions.rows())) + ":" + lmax_results + "\n\n");
 }
 
