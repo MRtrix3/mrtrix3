@@ -54,6 +54,7 @@ public:
     static size_t get_rows() { return n_rows; }
     static size_t get_cols() { return n_cols; }
     static float get_slice_increment() { return slice_focus_increment; }
+    static float get_slice_inc_adjust_rate() { return slice_focus_inc_adjust_rate; }
     static bool get_show_grid() { return show_grid_lines; }
 
     void set_rows(size_t rows);
@@ -84,8 +85,10 @@ private:
 
     // Want layout state to persist even after instance is destroyed
     static bool show_grid_lines;
+    static std::string prev_image_name;
     static size_t n_rows, n_cols;
     static float slice_focus_increment;
+    static float slice_focus_inc_adjust_rate;
 
     bool layout_is_dirty;
     size_t current_slice_index;

@@ -34,6 +34,7 @@
 #include "math/matrix.h"
 #include "math/vector.h"
 
+#include "file/config.h"
 
 
 // Don't expect these values to change depending on the particular command that is initialising the Shells class;
@@ -67,8 +68,11 @@ namespace MR
 
     extern const App::OptionGroup ShellOption;
 
+    inline float bzero_threshold () {
+      static const float value = File::Config::get_float ("BZeroThreshold", 10.0);
+      return value;
+    }
 
-    extern const float bzero_threshold;
 
 
     class Shell
@@ -99,7 +103,7 @@ namespace MR
         float get_min()   const { return min; }
         float get_max()   const { return max; }
 
-        bool is_bzero()   const { return (mean < bzero_threshold); }
+        bool is_bzero()   const { return (mean < bzero_threshold()); }
 
 
         bool operator< (const Shell& rhs) const { return (mean < rhs.mean); }

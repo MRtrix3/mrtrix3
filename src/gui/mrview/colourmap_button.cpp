@@ -41,7 +41,10 @@ const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
 }};
 
 
-ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs, bool use_special_colourmaps) :
+ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
+                                 bool use_shortcuts,
+                                 bool use_special_colourmaps,
+                                 bool use_customise_state_items) :
     QToolButton(parent),
     colourmap_actions(ColourMapButton::core_colourmaps_entries.size()),
     observer(obs),
@@ -51,7 +54,7 @@ ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs, 
     setIcon(QIcon(":/colourmap.svg"));
     setPopupMode(QToolButton::InstantPopup);
 
-    init_menu(false, use_special_colourmaps);
+    init_menu(use_shortcuts, use_special_colourmaps, use_customise_state_items);
 }
 
 
@@ -120,7 +123,22 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
     }
 }
 
-void ColourMapButton::init_menu(bool create_shortcuts, bool use_special)
+void ColourMapButton::init_customise_sate_menu_items()
+{
+    auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
+    show_colour_bar->setCheckable(true);
+    show_colour_bar->setChecked(true);
+    addAction(show_colour_bar);
+
+    auto invert_scale = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
+    invert_scale->setCheckable(true);
+    addAction(invert_scale);
+
+    QAction* reset_intensity = colourmap_menu->addAction(tr("Reset intensity"), this, SLOT(reset_intensity_slot()));
+    addAction(reset_intensity);
+}
+
+void ColourMapButton::init_menu(bool create_shortcuts, bool use_special, bool customise_state)
 {
     colourmap_menu = new QMenu(tr("Colourmap menu"), this);
 
@@ -135,17 +153,8 @@ void ColourMapButton::init_menu(bool create_shortcuts, bool use_special)
         colourmap_menu->addSeparator();
     }
 
-    auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
-    show_colour_bar->setCheckable(true);
-    show_colour_bar->setChecked(true);
-    addAction(show_colour_bar);
-
-    auto invert_scale = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
-    invert_scale->setCheckable(true);
-    addAction(invert_scale);
-
-    QAction* reset_intensity = colourmap_menu->addAction(tr("Reset intensity"), this, SLOT(reset_intensity_slot()));
-    addAction(reset_intensity);
+    if(customise_state)
+        init_customise_sate_menu_items();
 
     setMenu(colourmap_menu);
 }

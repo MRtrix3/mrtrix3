@@ -106,6 +106,14 @@ namespace MR
       return false;
     }
 
+    inline bool is_file (int file_descriptor)
+    {
+      struct stat buf;
+      if (!fstat (file_descriptor, &buf)) return S_ISREG (buf.st_mode);
+      throw Exception (strerror (errno));
+      return false;
+    }
+
     inline bool has_suffix (const std::string& name, const std::string& suffix)
     {
       return (name.size() < suffix.size() ?
@@ -113,6 +121,14 @@ namespace MR
               name.substr (name.size()-suffix.size()) == suffix);
     }
 
+    inline bool has_suffix(const std::string&name, const std::initializer_list<const std::string> &suffix_list)
+    {
+      bool flag(false);
+
+      for(const auto& suffix : suffix_list) { flag = flag || has_suffix(name, suffix); }
+
+      return flag;
+    }
 
     inline std::string cwd ()
     {

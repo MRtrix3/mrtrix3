@@ -20,6 +20,8 @@
 
 */
 
+#include <unistd.h>
+
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_errno.h>
 
@@ -76,6 +78,8 @@ namespace MR
     std::vector<ParsedOption> option;
     int log_level = 1;
     bool fail_on_warn = false;
+    bool stderr_to_file = false;
+    bool terminal_use_colour = true;
 
     int argc = 0;
     char** argv = NULL;
@@ -465,6 +469,17 @@ namespace MR
       }
 
       File::Config::init ();
+      
+      //CONF option: TerminalColor
+      //CONF default: 1 
+      //CONF use colors in the terminal 
+      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
+#ifdef MRTRIX_WINDOWS
+          false
+#else
+          true
+#endif
+          ); 
 
       load_standard_options();
 
@@ -499,6 +514,8 @@ namespace MR
       setvbuf (stderr, NULL, _IONBF, 0);
       setvbuf (stdout, NULL, _IOLBF, 0);
 #endif
+
+      stderr_to_file = Path::is_file (STDERR_FILENO);
 
       argc = cmdline_argc;
       argv = cmdline_argv;

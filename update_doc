@@ -41,13 +41,6 @@ folder=$(mktemp -d)
 **Commands**<br>
 ' > mrtrix3.wiki/commands/_Sidebar.md
   
-  echo 'This section provides the documentation for every command included in
-  MRtrix3. This is the same information that is displayed by each command when
-  invoked without options, or with the `-help` option.
-  
-  Use the sidebar to access the documentation for a particular command.' >\
-  mrtrix3.wiki/commands/MRtrix3-commands.md
-  
   for n in mrtrix3/bin/*; do
     $n __print_usage_markdown__ > mrtrix3.wiki/commands/list/$(basename $n).md
     echo '[['$(basename $n)']]<br>' >> mrtrix3.wiki/commands/_Sidebar.md

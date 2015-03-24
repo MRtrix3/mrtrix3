@@ -120,7 +120,7 @@ namespace MR
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
 
-          size_t current_index;
+          uint64_t current_index;
           Ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues

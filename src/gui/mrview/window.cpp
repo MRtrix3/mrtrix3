@@ -359,12 +359,12 @@ namespace MR
 
         // Colourmap menu:
 
-        colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+        colourmap_button = new ColourMapButton (this, *this, true, true, false);
+        colourmap_button->setText ("Colourmap");
+        colourmap_button->setToolButtonStyle (button_style);
+        colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
-        ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
-        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-
-        colourmap_menu->addSeparator();
+        QMenu* colourmap_menu = colourmap_button->menu();
 
         invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
         invert_scale_action->setCheckable (true);
@@ -383,14 +383,7 @@ namespace MR
         image_interpolate_action->setChecked (true);
         addAction (image_interpolate_action);
 
-        button = new QToolButton (this);
-        button->setText ("Colourmap");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Colourmap menu"));
-        button->setIcon (QIcon (":/colourmap.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (colourmap_menu);
-        toolbar->addWidget (button);
+        toolbar->addWidget (colourmap_button);
 
 
 
@@ -640,7 +633,6 @@ namespace MR
         mode = nullptr;
         delete glarea;
         delete glrefresh_timer;
-        delete [] colourmap_actions;
       }
 
 
@@ -801,19 +793,25 @@ namespace MR
       }
 
 
-
-
-      void Window::select_colourmap_slot ()
+      void Window::selected_colourmap (size_t colourmap, const ColourMapButton&)
       {
-        Image* imagep = image();
-        if (imagep) {
-          QAction* action = colourmap_group->checkedAction();
-          size_t n = 0;
-          while (action != colourmap_actions[n])
-            ++n;
-          imagep->set_colourmap (n);
-          updateGL();
-        }
+          Image* imagep = image();
+          if (imagep) {
+            imagep->set_colourmap (colourmap);
+            updateGL();
+          }
+      }
+
+
+
+      void Window::selected_custom_colour (const QColor& colour, const ColourMapButton&)
+      {
+          Image* imagep = image();
+          if (imagep) {
+            std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+            imagep->set_colour(c_colour);
+            updateGL();
+          }
       }
 
 
@@ -976,7 +974,7 @@ namespace MR
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
         size_t cmap_index = image()->colourmap;
-        colourmap_group->actions()[cmap_index]->setChecked (true);
+        colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
         setWindowTitle (image()->interp.name().c_str());
@@ -1026,7 +1024,7 @@ namespace MR
         next_image_action->setEnabled (N>1);
         prev_image_action->setEnabled (N>1);
         reset_windowing_action->setEnabled (N>0);
-        colourmap_menu->setEnabled (N>0);
+        colourmap_button->setEnabled (N>0);
         save_action->setEnabled (N>0);
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
@@ -1506,10 +1504,9 @@ namespace MR
           // BATCH_COMMAND image.colourmap index # Switch the image colourmap to that specified, as per the colourmap menu.
           else if (cmd == "image.colourmap") { 
             int n = to<int> (args) - 1;
-            if (n < 0 || n >= colourmap_group->actions().size())
+            if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
               throw Exception ("invalid image colourmap index \"" + args + "\" requested in batch command");
-            colourmap_group->actions()[n]->setChecked (true);
-            select_colourmap_slot ();
+            colourmap_button->set_colourmap_index(n);
           }
 
           // BATCH_COMMAND image.range min max # Set the image intensity range to that specified

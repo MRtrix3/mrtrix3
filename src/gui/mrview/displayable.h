@@ -53,12 +53,12 @@ namespace MR
       const uint32_t LightingEnabled = 0x00800000;
 
       class Image;
-      namespace Tool { class Fixel; }
+      namespace Tool { class AbstractFixel; }
       class DisplayableVisitor
       {
         public:
           virtual void render_image_colourbar(const Image&, const Projection&) {}
-          virtual void render_fixel_colourbar(const Tool::Fixel&, const Projection&) {}
+          virtual void render_fixel_colourbar(const Tool::AbstractFixel&, const Projection&) {}
       };
 
       class Displayable : public QAction

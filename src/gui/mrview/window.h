@@ -5,6 +5,7 @@
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmap_button.h"
 #include "gui/cursor.h"
 
 namespace MR
@@ -30,7 +31,7 @@ namespace MR
 
 
 
-      class Window : public QMainWindow
+      class Window : public QMainWindow, ColourMapButtonObserver
       {
           Q_OBJECT
 
@@ -44,6 +45,9 @@ namespace MR
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
           Qt::MouseButtons mouse_buttons () const { return buttons_; }
           Qt::KeyboardModifiers modifiers () const { return modifiers_; }
+
+          void selected_colourmap(size_t colourmap, const ColourMapButton&) override;
+          void selected_custom_colour(const QColor&colour, const ColourMapButton&) override;
 
           const Image* image () const {
             return static_cast<const Image*> (image_group->checkedAction());
@@ -132,7 +136,6 @@ namespace MR
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_plane_slot (QAction* action);
-          void select_colourmap_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
@@ -215,13 +218,13 @@ namespace MR
           int anatomical_plane, annotations, colourbar_position_index;
           bool snap_to_image_axes_and_voxel;
 
-          QMenu *image_menu,
-                *colourmap_menu;
+          QMenu *image_menu;
+
+          ColourMapButton *colourmap_button;
 
           QActionGroup *mode_group,
                        *tool_group,
                        *image_group,
-                       *colourmap_group,
                        *mode_action_group,
                        *plane_group;
 
@@ -230,7 +233,6 @@ namespace MR
                   *properties_action,
 
                   **tool_actions,
-                  **colourmap_actions,
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,

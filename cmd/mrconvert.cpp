@@ -178,14 +178,14 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
 
     if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
+      Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 0, in.ndim(), 2)
         .run (zero_non_finite(), perm, out);
     else 
       Image::threaded_copy_with_progress (perm, out, 2);
   }
   else {
     if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
+      Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 0, in.ndim(), 2)
         .run (zero_non_finite(), in, out);
     else
       Image::threaded_copy_with_progress (in, out, 2);
