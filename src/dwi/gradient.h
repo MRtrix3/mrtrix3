@@ -313,13 +313,16 @@ namespace MR
         do {
           Math::SH::init_transform (mapping, directions, lmax);
           double cond = Math::cond (mapping);
-          if (cond < 2.0) break;
+          if (cond < 10.0) 
+            break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");
-          if (lmax_set_from_commandline) break;
+          if (cond < 100.0 || lmax_set_from_commandline) 
+            break;
           if (lmax <= 2)
             throw Exception ("DW directions do not support even lmax = 2!");
           lmax -= 2;
         } while (lmax > 0);
+
         if (lmax_prev != lmax)
           WARN ("reducing lmax to " + str(lmax) + " to improve conditioning");
 
