@@ -93,6 +93,10 @@ void usage ()
         "MRtrix interprets them.") 
     + ExtractOption
     + GradImportOptions
+    + Option ("validate", 
+        "verify that DW scheme matches the image, and sanitise the information as would "
+        "normally be done within an MRtrix application (i.e. scaling of b-value by gradient "
+        "norm, normalisation of gradient vectors)")
     + GradExportOptions;
 
 }
@@ -184,6 +188,7 @@ void run ()
   const bool dwgrad      = get_options("dwgrad")        .size();
   const bool shells      = get_options("shells")        .size();
   const bool shellcounts = get_options("shellcounts")   .size();
+  const bool validate    = get_options("validate")      .size();
 
   const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride || 
       offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
@@ -191,8 +196,12 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Image::Header header (argument[i]);
-    if (import_grad) 
-      header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    if (import_grad) {
+      if (validate) 
+        header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header);
+      else 
+        header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    }
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
