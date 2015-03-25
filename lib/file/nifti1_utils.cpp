@@ -20,6 +20,7 @@
 
 */
 
+#include "version.h"
 #include "image/stride.h"
 #include "get_set.h"
 #include "file/config.h"
@@ -449,19 +450,11 @@ namespace MR
 
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
-        int pos = 0;
-        char descrip[81];
-        descrip[0] = '\0';
-        for (size_t i = 1; i < H.comments().size(); i++) {
-          if (pos >= 75) break;
-          if (i > 1) {
-            descrip[pos++] = ';';
-            descrip[pos++] = ' ';
-          }
-          strncpy (descrip + pos, H.comments() [i].c_str(), 80-pos);
-          pos += H.comments() [i].size();
-        }
-        strncpy ( (char*) &NH.descrip, descrip, 80);
+        memset ((char*) &NH.descrip, 0, 80);
+        std::string version_string = std::string("MRtrix version: ") + MRTRIX_GIT_VERSION;
+        if (App::project_version)
+          version_string += std::string(", project version: ") + App::project_version;
+        strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);
 
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
