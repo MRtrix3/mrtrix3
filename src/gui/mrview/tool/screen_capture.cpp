@@ -138,7 +138,7 @@ namespace MR
           output_grid_layout->addWidget (new QLabel ("Prefix"), 0, 0);
           prefix_textbox = new QLineEdit ("screenshot", this);
           output_grid_layout->addWidget (prefix_textbox, 0, 1);
-          connect (prefix_textbox, SIGNAL (editingFinished()), this, SLOT (on_output_update()));
+          connect (prefix_textbox, SIGNAL (textChanged(const QString&)), this, SLOT (on_output_update()));
 
           folder_button = new QPushButton ("Select output folder", this);
           folder_button->setToolTip (tr ("Output Folder"));
