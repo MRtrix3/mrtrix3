@@ -339,8 +339,10 @@ namespace MR
         }
 
         //! write to text file \a filename
-        void save (const std::string& filename) const {
+        void save (const std::string& filename, int precision = 0) const {
           File::OFStream out (filename);
+          if (precision > 0)
+            out.precision (precision);
           out << *this;
         }
 

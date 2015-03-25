@@ -150,7 +150,7 @@ namespace MR
             std::string ("part of the MRtrix package\n\n");
 
       if (!format) 
-        return std::string (NAME) + ": " + cmd_version;
+        return std::string (NAME) + ": " + cmd_version + "\n\n";
 
       std::string mrtrix_version = "MRtrix " MRTRIX_GIT_VERSION;
       std::string date (build_date);
@@ -158,7 +158,8 @@ namespace MR
       std::string topline = mrtrix_version + std::string (std::max (1, 40-size(mrtrix_version)-size(App::NAME)/2), ' ') + bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
       
-      return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;
+      return topline + "\n\n" + std::string (40-size(NAME)/2, ' ') + bold (NAME) + "\n\n" 
+        + std::string (40-size(cmd_version)/2, ' ') + cmd_version + "\n\n";
     }
 
 

@@ -20,6 +20,8 @@
 
 */
 
+#ifndef __dwi_sdeconv_rf_estimation_h__
+#define __dwi_sdeconv_rf_estimation_h__
 
 
 #include <limits>
@@ -312,4 +314,5 @@ class ResponseEstimator
 }
 }
 
+#endif
 

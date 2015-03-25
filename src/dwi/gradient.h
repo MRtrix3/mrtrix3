@@ -70,11 +70,14 @@ namespace MR
           Math::Matrix<ValueType>& dirs, 
           const Math::Matrix<ValueType>& grad, 
           const std::vector<size_t>& dwi)
-      {
-        dirs.allocate (dwi.size(),2);
-        for (size_t i = 0; i < dwi.size(); i++) {
-          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-          ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
+    {
+      const size_t N = dwi.size() ? dwi.size() : grad.rows();
+      dirs.allocate (N,2);
+      for (size_t i = 0; i < N; i++) {
+        size_t index = dwi.size() ? dwi[i] : i;
+        if (grad(index,3) > 0.0) {
+          dirs (i,0) = std::atan2 (grad (index,1), grad (index,0));
+          ValueType z = grad (index,2) / Math::norm (grad.row (index).sub (0,3));
           if (z >= 1.0) 
             dirs(i,1) = 0.0;
           else if (z <= -1.0)
@@ -82,8 +85,11 @@ namespace MR
           else 
             dirs (i,1) = std::acos (z);
         }
-        return dirs;
+        else
+          dirs(i,0) = dirs(i,1) = 0.0;
       }
+      return dirs;
+    }
 
 
 
