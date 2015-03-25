@@ -30,7 +30,6 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
-#include "version.h"
 
 #define MRTRIX_HELP_COMMAND "less"
 
@@ -153,14 +152,16 @@ namespace MR
       std::string version_string ()
       {
         std::string version = 
-          "== " + App::NAME + " " + ( project_version ? project_version : MRTRIX_GIT_VERSION ) + " ==\n" +
+          "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
           str(8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
-          " version, built " __DATE__ + ( project_version ? " against MRtrix " MRTRIX_GIT_VERSION : "" ) + ", using GSL " + gsl_version + "\n"
+          " version, built " __DATE__ 
+          + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
+          + ", using GSL " + gsl_version + "\n"
           "Author(s): " + AUTHOR + "\n" +
           COPYRIGHT + "\n";
 
@@ -285,7 +286,7 @@ namespace MR
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
-      s += std::string("---\n\nMRtrix ") + MRTRIX_GIT_VERSION + ", built " + build_date + "\n\n"
+      s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR 
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 

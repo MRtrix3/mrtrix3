@@ -1,5 +1,4 @@
 #include "app.h"
-#include "version.h"
 #include "timer.h"
 #include "file/config.h"
 #include "image/header.h"
@@ -1141,7 +1140,7 @@ namespace MR
       void Window::about_slot ()
       {
         std::string message = 
-          "<h1>MRView</h1>The MRtrix viewer, version " MRTRIX_GIT_VERSION "<br>"
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + App::mrtrix_version + "<br>"
           "<em>" + str (8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"

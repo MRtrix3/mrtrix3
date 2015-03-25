@@ -23,7 +23,6 @@
 
 #include <vector>
 
-#include "version.h"
 #include "file/gz.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
@@ -180,7 +179,7 @@ namespace MR
       void write_mrtrix_header (const Header& H, StreamType& out)
       {
 
-        out << "mrtrix_version: " << MRTRIX_GIT_VERSION;
+        out << "mrtrix_version: " << App::mrtrix_version;
         if (App::project_version)
           out << "\nproject_version: " << App::project_version;
 

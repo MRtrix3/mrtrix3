@@ -28,7 +28,6 @@
 
 #include "types.h"
 #include "point.h"
-#include "version.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "file/path.h"
@@ -93,7 +92,7 @@ namespace MR
           void create (File::OFStream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
-            out << "mrtrix_version: " << MRTRIX_GIT_VERSION << "\n";
+            out << "mrtrix_version: " << App::mrtrix_version << "\n";
             if (App::project_version)
               out << "project_version: " << App::project_version << "\n";
 

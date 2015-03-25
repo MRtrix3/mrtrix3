@@ -20,7 +20,6 @@
 
 */
 
-#include "version.h"
 #include "image/stride.h"
 #include "get_set.h"
 #include "file/config.h"
@@ -451,7 +450,7 @@ namespace MR
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
         memset ((char*) &NH.descrip, 0, 80);
-        std::string version_string = std::string("MRtrix version: ") + MRTRIX_GIT_VERSION;
+        std::string version_string = std::string("MRtrix version: ") + App::mrtrix_version;
         if (App::project_version)
           version_string += std::string(", project version: ") + App::project_version;
         strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);

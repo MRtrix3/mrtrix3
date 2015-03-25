@@ -45,6 +45,7 @@ namespace MR
     extern OptionList OPTIONS;
     extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
     extern OptionGroup __standard_options;
+    extern const char* mrtrix_version;
     extern const char* AUTHOR;
     extern const char* COPYRIGHT;
     extern Description REFERENCES;
