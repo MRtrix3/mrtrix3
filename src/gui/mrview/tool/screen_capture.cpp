@@ -212,22 +212,23 @@ namespace MR
           if (std::isnan (target_volume->value()))
             target_volume->setValue(0.0);
 
-          if (volume_axis->value() >= ssize_t (vox.ndim()))
-            volume_axis->setValue (vox.ndim()-1);
-
-          if (target_volume->value() >= vox.dim(volume_axis->value()))
-            target_volume->setValue (vox.dim(volume_axis->value())-1);
-
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
-          float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
-          float volume = vox[volume_axis->value()];
-          float volume_inc = (target_volume->value() - volume) / frames->value();
+
+          float volume = 0.0, volume_inc = 0.0;
+          if (volume_axis->value() < ssize_t (vox.ndim())) {
+            if (target_volume->value() >= vox.dim(volume_axis->value()))
+              target_volume->setValue (vox.dim(volume_axis->value())-1);
+            volume = vox[volume_axis->value()];
+            volume_inc = (target_volume->value() - volume) / frames->value();
+          }
+
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
+          float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
           int first_index = start_index->value();
           int i = first_index;
 
@@ -259,8 +260,10 @@ namespace MR
             window.set_target (target);
 
             // Volume
-            volume += volume_inc;
-            window.set_image_volume (volume_axis->value(), std::round (volume));
+            if (volume_axis->value() < ssize_t (vox.ndim())) {
+              volume += volume_inc;
+              window.set_image_volume (volume_axis->value(), std::round (volume));
+            }
 
             // FOV
             window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));
