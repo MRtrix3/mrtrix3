@@ -174,7 +174,6 @@ namespace MR
           class GLArea : public QGLWidget {
             public:
               GLArea (Window& parent);
-              QSize minimumSizeHint () const;
               QSize sizeHint () const;
 
             protected:

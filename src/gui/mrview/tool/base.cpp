@@ -35,18 +35,22 @@ namespace MR
           QFrame (parent),
           window (main_window) { 
             QFont f = font();
-            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
             setFont (f);
+            setMinimumSize (20*fontMetrics().width('M'),256);
+            QSizePolicy policy (QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
+            policy.setHorizontalStretch (0);
+            policy.setVerticalStretch (1);
+            setSizePolicy (policy);
 
             setFrameShadow (QFrame::Sunken); 
             setFrameShape (QFrame::Panel);
           }
 
 
-
         QSize Base::sizeHint () const
         {
-          return minimumSizeHint();
+          return minimumSize();
         }
 
 

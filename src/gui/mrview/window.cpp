@@ -87,15 +87,17 @@ namespace MR
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
+          setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
+          QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+          policy.setHorizontalStretch (255);
+          policy.setVerticalStretch (255);
+          setSizePolicy (policy);
         }
 
-      QSize Window::GLArea::minimumSizeHint () const {
-        return QSize (256, 256);
-      }
       QSize Window::GLArea::sizeHint () const {
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         std::vector<int> init_window_size;
@@ -203,7 +205,7 @@ namespace MR
         tool_has_focus (nullptr)
       {
 
-        setDockOptions (AllowTabbedDocks);
+        setDockOptions (AllowTabbedDocks | VerticalTabs);
         setDocumentMode (true);
 
         Options opt = get_options ("batch");
@@ -233,7 +235,7 @@ namespace MR
         QMenu* menu;
         QToolButton* button;
 
-        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
+        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
 
         // Main toolbar:
 
