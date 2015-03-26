@@ -45,7 +45,10 @@ namespace MR
         std::string Tractogram::Shader::vertex_shader_source (const Displayable&)
         {
           std::string source =
-              "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
+              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+              "uniform mat4 MVP;\n"
+              "out vec4 v_proj_vec;\n";
+
 
           switch (color_type) {
             case Direction: break;
@@ -63,7 +66,8 @@ namespace MR
 
           source +=
               "void main() { "
-              "    gl_Position = vec4(vertexPosition_modelspace, 1);\n";
+              "    gl_Position = vec4(vertexPosition_modelspace, 1);\n"
+              "    v_proj_vec = MVP * gl_Position;\n";
 
           switch (color_type) {
             case Direction: break;
@@ -78,21 +82,27 @@ namespace MR
           }
 
           source += "}\n";
-              
+
+          QTextStream out(stdout);
+          out << QString::fromStdString(source);
+
           return source;
         }
 
 
-        std::string Tractogram::Shader::geometry_shader_source (const Displayable& tractogram)
+        std::string Tractogram::Shader::geometry_shader_source (const Displayable& displayable)
         {
+          const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
+
           bool colour_by_direction = ( color_type == Direction ||
-            ( color_type == ScalarFile && scalarfile_by_direction ) );
+            (color_type == ScalarFile && scalarfile_by_direction));
 
           std::string source =
                "layout(lines_adjacency) in;\n"
                "layout(triangle_strip, max_vertices = 4) out;\n"
                "uniform mat4 MVP;\n"
                "uniform float line_thickness;\n"
+               "in vec4 v_proj_vec[];\n"
                "flat out float amp_out;\n"
                "out vec3 fColour;\n";
 
@@ -117,7 +127,7 @@ namespace MR
 
           if (do_crop_to_slab) {
             source +=
-                "out float include;\n"
+                "flat out float include;\n"
                 "uniform vec3 screen_normal;\n"
                 "uniform float crop_var;\n"
                 "uniform float slab_width;\n";
@@ -126,7 +136,7 @@ namespace MR
           source +=
               "void main() {\n"
               "   vec3 start = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, 0.5).xyz;\n"
-              "   vec3 end = mix(gl_in[2].gl_Position, gl_in[3].gl_Position, 0.5).xyz;\n";
+              "   vec3 end = mix(gl_in[1].gl_Position, gl_in[2].gl_Position, 0.5).xyz;\n";
 
           if (use_lighting || colour_by_direction)
             source +=
@@ -168,24 +178,24 @@ namespace MR
                 "    include = (dot (gl_in[1].gl_Position.xyz, screen_normal) - crop_var) / slab_width;\n";
 
           source +=
-          "    vec4 start_proj = MVP * vec4(start, 1);\n"
-          "    vec4 end_proj = MVP * vec4(end, 1);\n"
-          "    vec4 line1 = MVP * (gl_in[1].gl_Position - gl_in[0].gl_Position);\n"
-          "    vec4 line2 = MVP * (gl_in[3].gl_Position - gl_in[2].gl_Position);\n"
-          "    vec4 normal1 =  normalize(vec4(-line1.y, line1.x, 0.0, 0.0));\n"
-          "    vec4 normal2 = normalize(vec4(-line2.y, line2.x, 0.0, 0.0));\n"
-          "    vec4 thick_vec1 =  line_thickness * normal1;\n"
-          "    vec4 thick_vec2 =  line_thickness * normal2;\n"
-          "    gl_Position = start_proj - thick_vec1;\n"
-          "    EmitVertex();\n"
-          "    gl_Position = start_proj + thick_vec1;\n"
-          "    EmitVertex();\n"
-          "    gl_Position = end_proj - thick_vec2;\n"
-          "    EmitVertex();\n"
-          "    gl_Position = end_proj + thick_vec2;\n"
-          "    EmitVertex();\n"
-          "    EndPrimitive();\n"
-          "}\n";
+                  "    vec4 start_proj = mix(v_proj_vec[0], v_proj_vec[1], 0.5);\n"
+                  "    vec4 end_proj = mix(v_proj_vec[1], v_proj_vec[2], 0.5);\n"
+                  "    vec4 line1 = v_proj_vec[1] - v_proj_vec[0];\n"
+                  "    vec4 line2 = v_proj_vec[2] - v_proj_vec[1];\n"
+                  "    vec4 normal1 =  normalize(vec4(-line1.y, line1.x, 0.0, 0.0));\n"
+                  "    vec4 normal2 = normalize(vec4(-line2.y, line2.x, 0.0, 0.0));\n"
+                  "    vec4 thick_vec1 =  line_thickness * normal1;\n"
+                  "    vec4 thick_vec2 =  line_thickness * normal2;\n"
+                  "    gl_Position = start_proj - thick_vec1;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = start_proj + thick_vec1;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = end_proj - thick_vec2;\n"
+                  "    EmitVertex();\n"
+                  "    gl_Position = end_proj + thick_vec2;\n"
+                  "    EmitVertex();\n"
+                  "    EndPrimitive();\n"
+                  "}\n";
 
           QTextStream out(stdout);
           out << QString::fromStdString(source);
@@ -200,7 +210,7 @@ namespace MR
               ( color_type == ScalarFile && scalarfile_by_direction ) );
 
           std::string source =
-              "in float include; \n"
+              "flat in float include; \n"
               "out vec3 colour;\n"
               "flat in float amp_out;\n"
               "in vec3 fColour;\n";
@@ -375,7 +385,7 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
           }
 
-          for (size_t buf = 0; buf < vertex_buffers.size(); ++buf) {
+          for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
             gl::MultiDrawArrays (gl::LINE_STRIP_ADJACENCY, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
           }
@@ -463,6 +473,7 @@ namespace MR
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
             DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
             while (file (tck_scalar)) {
+              buffer.push_back (NAN);
               for (size_t i = 0; i < tck_scalar.size(); ++i) {
                 buffer.push_back (tck_scalar[i]);
                 if (tck_scalar[i] > value_max) value_max = tck_scalar[i];
@@ -487,6 +498,7 @@ namespace MR
               std::vector<GLint>& track_lengths (track_sizes[buffer_index]);
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
                 const float value = scalars[running_index];
+                buffer.push_back (NAN);
                 tck_scalar.assign (track_lengths[index], value);
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
                 if (value > value_max) value_max = value;
