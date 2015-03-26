@@ -777,11 +777,14 @@ namespace MR
                 QMainWindow::tabifyDockWidget (list.last(), tool);
               else
                 QMainWindow::tabifyDockWidget (other_tool, tool);
+              tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
               tool->show();
               tool->raise();
               return;
             }
           }
+          tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
+          tool->show();
         }
         if (action->isChecked()) {
           if (!tool->isVisible())

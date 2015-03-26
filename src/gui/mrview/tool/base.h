@@ -157,7 +157,7 @@ namespace MR
             dock->tool = new T (main_window, dock);
             dock->tool->adjustSize();
             dock->setWidget (dock->tool);
-            dock->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
+            dock->setFloating (true);
             dock->show();
             return dock;
           }
