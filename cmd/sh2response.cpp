@@ -139,8 +139,15 @@ void run ()
   for (size_t l = 0; l < response.size(); l++)
     response[l] *= AL[2*l];
 
-  File::OFStream out (argument[3]);
-  for (auto r : response)
-    out << r/count << " ";
-  out << "\n";
+  if (std::string(argument[3]) == "-") {
+    for (auto r : response)
+      std::cout << r/count << " ";
+    std::cout << "\n";
+  }
+  else {
+    File::OFStream out (argument[3]);
+    for (auto r : response)
+      out << r/count << " ";
+    out << "\n";
+  }
 }
