@@ -115,6 +115,7 @@ namespace MR
                 }
             };
 
+            void adjustSize();
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void drawOverlays (const Projection& transform);
             virtual bool process_batch_command (const std::string& cmd, const std::string& args);
@@ -154,6 +155,7 @@ namespace MR
             Dock* dock = new Dock (&main_window, text);
             main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
             dock->tool = new T (main_window, dock);
+            dock->tool->adjustSize();
             dock->setWidget (dock->tool);
             dock->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
             dock->show();
