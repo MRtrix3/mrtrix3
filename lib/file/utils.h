@@ -56,9 +56,14 @@ namespace MR
         return __tmpfile_dir;
       }
 
+      const std::string __get_tmpfile_prefix () { 
+        const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
+        if (from_env) return from_env;
+        return File::Config::get ("TmpFilePrefix", "mrtrix-tmp-"); 
+      }
 
       const std::string& tmpfile_prefix () {
-        static const std::string __tmpfile_prefix = File::Config::get ("TmpFilePrefix", "mrtrix-tmp-");
+        static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
         return __tmpfile_prefix;
       }
 
