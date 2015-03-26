@@ -318,10 +318,8 @@ namespace MR
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");
           if (cond < 100.0 || lmax_set_from_commandline) 
             break;
-          if (lmax <= 2)
-            throw Exception ("DW directions do not support even lmax = 2!");
           lmax -= 2;
-        } while (lmax > 0);
+        } while (lmax >= 0);
 
         if (lmax_prev != lmax)
           WARN ("reducing lmax to " + str(lmax) + " to improve conditioning");
