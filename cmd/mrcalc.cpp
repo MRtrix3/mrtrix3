@@ -53,16 +53,16 @@ DESCRIPTION
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
   
-  + "$ mrcalc a.mif 2 -mult r.mif"
+  + "    $ mrcalc a.mif 2 -mult r.mif"
   
-  + "performs the operation r = a x 2 for every voxel a,r in "
+  + "performs the operation r = 2*a for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
   
-  + "$ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
+  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
   
   + "performs the operation r = 9.3*exp(-a/b), and:"
   
-  + "$ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
+  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
   
   + "performs r = (a+b)/(c*d+4.2)."
   
