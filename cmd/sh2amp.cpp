@@ -90,7 +90,7 @@ void run ()
     Math::Matrix<value_type> grad;
     grad.load (argument[1]);
     DWI::Shells shells (grad);
-    DWI::gen_direction_matrix (directions, grad, shells.largest().get_volumes());
+    directions = DWI::gen_direction_matrix (grad, shells.largest().get_volumes());
   } else {
     directions.load (argument[1]);
   }

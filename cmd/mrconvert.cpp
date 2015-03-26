@@ -82,8 +82,8 @@ void usage ()
 
   + DataType::options()
 
-  + DWI::GradImportOptions
-  + DWI::GradExportOptions;
+  + DWI::GradImportOptions (false)
+  + DWI::GradExportOptions();
 }
 
 

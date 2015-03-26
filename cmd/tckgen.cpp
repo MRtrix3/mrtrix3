@@ -141,7 +141,7 @@ void usage ()
 
   + DWI::Tractography::Seeding::SeedOption
   
-  + DWI::GradImportOptions;
+  + DWI::GradImportOptions();
 
 
 };

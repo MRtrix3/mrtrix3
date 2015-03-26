@@ -53,6 +53,8 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
     + Option ("shells", "list the average b-value of each shell")
     + Option ("shellcounts", "list the number of volumes in each shell");
 
+const OptionGroup GradImportOptions = DWI::GradImportOptions();
+const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
 
 
@@ -90,8 +92,12 @@ void usage ()
         "and strides as they are actually stored in the header, rather than as "
         "MRtrix interprets them.") 
     + ExtractOption
-    + DWI::GradImportOptions
-    + DWI::GradExportOptions;
+    + GradImportOptions
+    + Option ("validate", 
+        "verify that DW scheme matches the image, and sanitise the information as would "
+        "normally be done within an MRtrix application (i.e. scaling of b-value by gradient "
+        "norm, normalisation of gradient vectors)")
+    + GradExportOptions;
 
 }
 
@@ -157,8 +163,10 @@ void print_properties (const Image::Header& header)
 void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
-  bool export_grad = check_option_group (DWI::GradExportOptions);
-  bool import_grad = check_option_group (DWI::GradImportOptions);
+
+  bool import_grad = check_option_group (GradImportOptions);
+  bool export_grad = check_option_group (GradExportOptions);
+
   if (export_grad && argument.size() > 1 )
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
 
@@ -180,6 +188,7 @@ void run ()
   const bool dwgrad      = get_options("dwgrad")        .size();
   const bool shells      = get_options("shells")        .size();
   const bool shellcounts = get_options("shellcounts")   .size();
+  const bool validate    = get_options("validate")      .size();
 
   const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride || 
       offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
@@ -187,8 +196,12 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Image::Header header (argument[i]);
-    if (import_grad)
-      header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    if (import_grad) {
+      if (validate) 
+        header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header);
+      else 
+        header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    }
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";

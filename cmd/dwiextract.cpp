@@ -49,7 +49,7 @@ void usage ()
 
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
-    + DWI::GradImportOptions
+    + DWI::GradImportOptions()
     + DWI::ShellOption;
 }
 
