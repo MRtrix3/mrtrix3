@@ -252,6 +252,14 @@ namespace MR
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);
 
+        //CONF option: BValueScaling
+        //CONF default: 1 (true)
+        //CONF specifies whether the b-values should be scaled by the squared
+        //CONF norm of the gradient vectors when loading a DW gradient scheme. 
+        //CONF This is commonly required to correctly interpret images acquired
+        //CONF on scanners that nominally only allow a single b-value, as the
+        //CONF common workaround is to scale the gradient vectors to modulate
+        //CONF the actual b-value. 
         bool scale_bvalues = true;
         App::Options opt = App::get_options ("bvalue_scaling");
         if (opt.size()) 

@@ -223,6 +223,9 @@ namespace MR
           batch_commands.push_back (opt[n][0]);
 
 
+        //CONF option: IconSize
+        //CONF default: 24
+        //CONF The size of the icons in the main MRView toolbar.
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
         { 
@@ -239,6 +242,10 @@ namespace MR
 
         // Main toolbar:
 
+        //CONF option: InitialToolBarPosition
+        //CONF default: top
+        //CONF The starting position of the MRView toolbar. Valid values are:
+        //CONF top, bottom, left, right.
         Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
         {
           std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
@@ -251,6 +258,10 @@ namespace MR
           }
         }
 
+        //CONF option: ToolbarStyle
+        //CONF default: 2
+        //CONF The style of the main toolbar buttons in MRView. See Qt's
+        //CONF documentation for Qt::ToolButtonStyle.
         Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
 
         toolbar = new QToolBar ("Main toolbar", this);
@@ -612,6 +623,10 @@ namespace MR
 
         set_image_menu ();
 
+        //CONF option: MRViewColourBarPosition
+        //CONF default: bottomright
+        //CONF The position of the colourbar within the main window in MRView.
+        //CONF Valid values are: bottomleft, bottomright, topleft, topright.
         std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
         if (cbar_pos.size()) {
           if (cbar_pos == "bottomleft") colourbar_position_index = 1;
@@ -783,6 +798,10 @@ namespace MR
               return;
             }
           }
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether Tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
           tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
           tool->show();
         }

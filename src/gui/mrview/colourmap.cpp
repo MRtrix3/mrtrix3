@@ -114,9 +114,23 @@ namespace MR
         Renderer::Renderer () : 
           current_index (0),
           current_inverted (false),
+          //CONF option: MRViewColourBarWidth
+          //CONF default: 20
+          //CONF The width of the colourbar in MRView, in pixels.
           width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
+          //CONF option: MRViewColourBarHeight
+          //CONF default: 100
+          //CONF The height of the colourbar in MRView, in pixels.
           height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
+          //CONF option: MRViewColourBarInset
+          //CONF default: 20
+          //CONF How far away from the edge of the main window to place the
+          //CONF colourbar in MRView, in pixels.
           inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)), 
+          //CONF option: MRViewColourBarTextOffset
+          //CONF default: 10
+          //CONF How far away from the colourbar to place the associated text,
+          //CONF in pixels.
           text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)) { } 
 
 

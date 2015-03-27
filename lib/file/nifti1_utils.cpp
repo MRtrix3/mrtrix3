@@ -282,7 +282,12 @@ namespace MR
         }
         else {
           H.transform().clear();
-          if (!File::Config::get_bool ("Analyse.LeftToRight", true))
+          //CONF option: Analyse.LeftToRight
+          //CONF default: 0 (false)
+          //CONF A boolean value to indicate whether images in Analyse format
+          //CONF should be assumed to be in LAS orientation (default) or RAS
+          //CONF (when this is option is turned on).
+          if (!File::Config::get_bool ("Analyse.LeftToRight", false))
             H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
             INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
@@ -320,7 +325,7 @@ namespace MR
         if (!has_nii_suffix) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", true);
+          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", false);
           if (analyse_left_to_right)
             H.stride(0) = -H.stride (0);
 
@@ -332,6 +337,13 @@ namespace MR
 
         // by default, prevent output of bitwise data in NIfTI, since most 3rd
         // party software package can't handle them
+
+        //CONF option: NIFTI.AllowBitwise
+        //CONF default: 0 (false)
+        //CONF A boolean value to indicate whether bitwise storage of binary
+        //CONF data is permitted (most 3rd party software packages don't
+        //CONF support bitwise data). If false (the default), data will be
+        //CONF stored using more widely supported unsigned 8-bit integers.
         if (H.datatype() == DataType::Bit) 
           if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
             H.datatype() = DataType::UInt8;

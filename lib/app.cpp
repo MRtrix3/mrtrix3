@@ -121,6 +121,10 @@ namespace MR
       {
         File::Config::init ();
 
+        //CONF option: HelpCommand
+        //CONF default: less
+        //CONF the command to use to display each command's help page (leave
+        //CONF empty to send directly to the terminal).
         const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
 
         if (help_display_command.size()) {
@@ -369,6 +373,10 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
+      //CONF option: FailOnWarn
+      //CONF default: 0 (false)
+      //CONF A boolean value specifying whether MRtrix applications should
+      //CONF abort as soon as any (otherwise non-fatal) warning is issued.
       if (get_options ("failonwarn").size() || File::Config::get_bool ("FailOnWarn", false))
         fail_on_warn = true;
     }
@@ -472,8 +480,8 @@ namespace MR
       File::Config::init ();
       
       //CONF option: TerminalColor
-      //CONF default: 1 
-      //CONF use colors in the terminal 
+      //CONF default: 1 (true)
+      //CONF A boolean value to indicate whether colours should be used in the terminal.
       terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
 #ifdef MRTRIX_WINDOWS
           false
