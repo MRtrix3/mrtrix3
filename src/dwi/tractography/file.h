@@ -346,7 +346,7 @@ namespace MR
            * option (TrackWriterBufferSize), or in the constructor by
            * specifying a value in bytes for \c default_buffer_capacity
            * (default is 16M). */
-          //CONF option:TrackWriterBufferSize
+          //CONF option: TrackWriterBufferSize
           //CONF default: 16777216
           //CONF The size of the write-back buffer (in bytes) to use when
           //CONF writing track files. MRtrix will store the output tracks in a
