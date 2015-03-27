@@ -42,160 +42,133 @@ namespace MR
       namespace Tool
       {
 
-        std::string Tractogram::Shader::vertex_shader_source (const Displayable&)
-        {
-          std::string source =
-              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-              "uniform mat4 MVP;\n"
-              "out vec4 v_proj_vec;\n";
-
-
-          switch (color_type) {
-            case Direction: break;
-            case Ends:
-              source += "layout (location = 1) in vec3 colour;\n"
-                        "out vec3 v_colour;\n";
-              break;
-            case Manual:
-              break;
-            case ScalarFile:
-              source += "layout (location = 1) in float amp;\n"
-                        "out float v_amp;\n";
-              break;
-          }
-
-          source +=
-              "void main() { "
-              "    gl_Position = vec4(vertexPosition_modelspace, 1);\n"
-              "    v_proj_vec = MVP * gl_Position;\n";
-
-          switch (color_type) {
-            case Direction: break;
-            case Ends:
-              source += "    v_colour = colour;\n";
-              break;
-            case Manual:
-              break;
-            case ScalarFile:
-              source += "    v_amp = amp;\n";
-              break;
-          }
-
-          source += "}\n";
-
-          QTextStream out(stdout);
-          out << QString::fromStdString(source);
-
-          return source;
-        }
-
-
-        std::string Tractogram::Shader::geometry_shader_source (const Displayable& displayable)
+        std::string Tractogram::Shader::vertex_shader_source (const Displayable& displayable)
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
 
-          bool colour_by_direction = ( color_type == Direction ||
-            (color_type == ScalarFile && scalarfile_by_direction));
+          bool colour_by_direction = (color_type == Direction ||
+           (color_type == ScalarFile && scalarfile_by_direction));
 
           std::string source =
-               "layout(lines_adjacency) in;\n"
-               "layout(triangle_strip, max_vertices = 4) out;\n"
-               "uniform mat4 MVP;\n"
-               "uniform float line_thickness;\n"
-               "in vec4 v_proj_vec[];\n"
-               "flat out float amp_out;\n"
-               "out vec3 fColour;\n";
+          "layout (location = 0) in vec3 this_vertex;\n"
+          "layout (location = 1) in vec3 prev_vertex;\n"
+          "layout (location = 2) in vec3 next_vertex;\n";
 
-          if (use_lighting)
-            source +=
-              "out vec3 tangent;\n"
-              "uniform mat4 MV;\n";
-
-          switch (color_type) {
+          switch(color_type) {
             case Direction: break;
             case Ends:
-              source += "in vec3 v_colour[];\n";
+              source += "layout (location = 3) in vec3 colour;\n";
               break;
             case Manual:
-              source += "uniform vec3 const_colour;\n";
               break;
             case ScalarFile:
-              source += "uniform float offset, scale;\n"
-                        "in float v_amp[];\n";
+              source += "layout (location = 3) in float amp;\n";
               break;
-          }
-
-          if (do_crop_to_slab) {
-            source +=
-                "flat out float include;\n"
-                "uniform vec3 screen_normal;\n"
-                "uniform float crop_var;\n"
-                "uniform float slab_width;\n";
           }
 
           source +=
-              "void main() {\n"
-              "   vec3 start = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, 0.5).xyz;\n"
-              "   vec3 end = mix(gl_in[1].gl_Position, gl_in[2].gl_Position, 0.5).xyz;\n";
+          "uniform mat4 MVP;\n"
+          "uniform float line_thickness;\n"
 
-          if (use_lighting || colour_by_direction)
+          // Uniforms won't be included in compiled shader if not referenced
+          // so we can unconditionally list all of them
+          "uniform mat4 MV;\n"
+          "uniform vec3 const_colour;\n"
+          "uniform float offset, scale;\n"
+
+          "uniform float lower;\n"
+          "uniform float upper;\n"
+
+          "uniform vec3 screen_normal;\n"
+          "uniform float crop_var;\n"
+          "uniform float slab_width;\n";
+
+          source +=
+          "out vec4 v_lower_point;\n"
+          "out vec4 v_upper_point;\n"
+          "out vec3 v_colour;\n"
+          "flat out float v_include;\n";
+
+          if(use_lighting)
+            source += "out vec3 v_tangent;\n";
+
+          // Include function
+          source +=
+          "void set_include_flag() {\n"
+          "  bool include_flag = true;\n";
+
+          if(do_crop_to_slab)
             source +=
-              "   vec3 dir;\n"
-              "   dir = end - start; \n";
-          if (colour_by_direction)
-              source += "   fColour = dir;\n";
-          if (use_lighting)
-              source += "   tangent = normalize (mat3(MV) * dir);\n";
+            "  float include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n"
+            "  include_flag = include_flag && (include > 0 && include < 1);";
+
+          if(color_type == ScalarFile) {
+            if(tractogram.use_discard_lower())
+              source += "  include_flag = include_flag && (amp < lower);\n";
+            if(tractogram.use_discard_upper())
+              source += "  include_flag = include_flag && (amp > upper);\n";
+          }
+          source +="  v_include = include_flag ? 1.0 : 0.0;\n"
+                   "}\n\n";
+
+          // Colour and lighting function
+          source +=
+          "void set_colour_and_lighting() {\n";
+
+          if(use_lighting || colour_by_direction)
+            source +=
+            "  vec3 dir = next_vertex - this_vertex;\n";
+          if(colour_by_direction)
+            source += "  v_colour = normalize (abs(dir));\n";
+          if(use_lighting)
+            source += "  v_tangent = normalize (mat3(MV) * dir);\n";
 
           switch (color_type) {
             case Ends:
-              source += std::string ("  fColour = color;\n");
+              source += "  v_colour = colour;\n";
               break;
             case Manual:
-              source +=
-                  "   fColour = const_colour;\n";
+              source += "  v_colour = const_colour;\n";
               break;
             case ScalarFile:
-              source += "   amp_out = amp;\n";
-              if (!ColourMap::maps[colourmap].special) {
+              if(!ColourMap::maps[colourmap].special) {
                 source += "   float amplitude = clamp (";
-                if (tractogram.scale_inverted())
-                  source += "1.0 -";
-                source += " scale * (amp - offset), 0.0, 1.0);\n  ";
+                if (tractogram.scale_inverted()) source += "1.0 -";
+                source += " scale * (amp - offset), 0.0, 1.0);\n";
               }
               if (!scalarfile_by_direction)
                 source +=
-                  std::string ("   vec3 color;\n") +
-                  ColourMap::maps[colourmap].mapping +
-                  "   fColour = color;\n";
+                std::string("  vec3 color;\n") +
+                ColourMap::maps[colourmap].mapping +
+                "  v_colour = color;\n";
               break;
             default:
               break;
           }
 
-          if (do_crop_to_slab)
-            source +=
-                "    include = (dot (gl_in[1].gl_Position.xyz, screen_normal) - crop_var) / slab_width;\n";
+          source += "}\n\n";
 
+
+          // Main function
           source +=
-                  "    vec4 start_proj = mix(v_proj_vec[0], v_proj_vec[1], 0.5);\n"
-                  "    vec4 end_proj = mix(v_proj_vec[1], v_proj_vec[2], 0.5);\n"
-                  "    vec4 line1 = v_proj_vec[1] - v_proj_vec[0];\n"
-                  "    vec4 line2 = v_proj_vec[2] - v_proj_vec[1];\n"
-                  "    vec4 normal1 =  normalize(vec4(-line1.y, line1.x, 0.0, 0.0));\n"
-                  "    vec4 normal2 = normalize(vec4(-line2.y, line2.x, 0.0, 0.0));\n"
-                  "    vec4 thick_vec1 =  line_thickness * normal1;\n"
-                  "    vec4 thick_vec2 =  line_thickness * normal2;\n"
-                  "    gl_Position = start_proj - thick_vec1;\n"
-                  "    EmitVertex();\n"
-                  "    gl_Position = start_proj + thick_vec1;\n"
-                  "    EmitVertex();\n"
-                  "    gl_Position = end_proj - thick_vec2;\n"
-                  "    EmitVertex();\n"
-                  "    gl_Position = end_proj + thick_vec2;\n"
-                  "    EmitVertex();\n"
-                  "    EndPrimitive();\n"
-                  "}\n";
+          "void main() {\n"
+          "  gl_Position = MVP * vec4(this_vertex, 1);\n"
+          "  set_include_flag();\n"
+
+          "  vec4 prev_point = MVP * vec4(prev_vertex, 1);\n"
+          "  vec4 end_point = MVP * vec4(next_vertex, 1);\n"
+          "  vec4 line_prev = gl_Position - prev_point;\n"
+          "  vec4 line_next = end_point - gl_Position;\n"
+          "  vec4 normal_prev =  normalize(vec4(-line_prev.y, line_prev.x, 0.0, 0.0));\n"
+          "  vec4 normal_next =  normalize(vec4(-line_next.y, line_next.x, 0.0, 0.0));\n"
+          "  vec4 normal_middle = mix(normal_prev, normal_next, 0.5);\n"
+          // The length of the normal_middle projected onto normal_prev should = thickness
+          "  float scale = line_thickness / clamp(abs(dot(normal_middle, normal_prev)), 0.02, 1.0);\n"
+          "  v_lower_point = gl_Position - (scale * normal_middle);\n"
+          "  v_upper_point = gl_Position + (scale * normal_middle);\n"
+
+          "  set_colour_and_lighting();\n"
+          "}\n";
 
           QTextStream out(stdout);
           out << QString::fromStdString(source);
@@ -204,50 +177,83 @@ namespace MR
         }
 
 
-        std::string Tractogram::Shader::fragment_shader_source (const Displayable& tractogram) 
+        std::string Tractogram::Shader::geometry_shader_source (const Displayable&)
         {
-          bool colour_by_direction = ( color_type == Direction || 
-              ( color_type == ScalarFile && scalarfile_by_direction ) );
-
           std::string source =
-              "flat in float include; \n"
-              "out vec3 colour;\n"
-              "flat in float amp_out;\n"
-              "in vec3 fColour;\n";
+          "layout(lines) in;\n"
+          "layout(triangle_strip, max_vertices = 4) out;\n"
+
+          "in vec4 v_lower_point[];\n"
+          "in vec4 v_upper_point[];\n"
+          "in vec3 v_colour[];\n"
+          "flat in float v_include[];\n";
+
+          if(use_lighting)
+           source += "in vec3 v_tangent[];\n";
+
+          source +=
+          "out vec3 fColour;\n"
+          "out vec3 g_tangent;\n"
+          "flat out float g_include;\n"
+
+          "void main() {\n"
+          "  g_include = v_include[0] + v_include[1];\n"
+          // Don't create complex primitives if not visible
+          "  if (g_include < 0.5) return;\n"
+
+          "  fColour = v_colour[0];\n";
+
+          if(use_lighting)
+            source += "  g_tangent = v_tangent[0];\n";
+
+          source +=
+          "  gl_Position = v_lower_point[0];\n"
+          "  EmitVertex();\n"
+          "  gl_Position = v_upper_point[0];\n"
+          "  EmitVertex();\n"
+
+          "  fColour = v_colour[1];\n";
+
+          if(use_lighting)
+            source += "  g_tangent = v_tangent[1];\n";
+
+          source +=
+          "  gl_Position = v_lower_point[1];\n"
+          "  EmitVertex();\n"
+          "  gl_Position = v_upper_point[1];\n"
+          "  EmitVertex();\n"
+
+          "  EndPrimitive();\n"
+          "}\n";
+
+          QTextStream out(stdout);
+          out << QString::fromStdString(source);
+
+          return source;
+        }
+
+
+        std::string Tractogram::Shader::fragment_shader_source (const Displayable&)
+        {
+          std::string source =
+            "in vec3 fColour;\n"
+            "flat in float g_include;\n"
+            "out vec3 colour;\n";
+
           if (use_lighting)
             source += 
-              "in vec3 tangent;\n"
+              "in vec3 g_tangent;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
 
-          if (color_type == ScalarFile) {
-            if (tractogram.use_discard_lower())
-              source += "uniform float lower;\n";
-            if (tractogram.use_discard_upper())
-              source += "uniform float upper;\n";
-          }
-
           source +=
-              "void main(){\n";
-
-          if (do_crop_to_slab)
-            source += "  if (include < 0 || include > 1) discard;\n";
-
-          if (color_type == ScalarFile) {
-            if (tractogram.use_discard_lower())
-              source += "  if (amp_out < lower) discard;\n";
-            if (tractogram.use_discard_upper())
-              source += "  if (amp_out > upper) discard;\n";
-          }
+              "void main() {\n"
+              "  if (g_include < 0.5) discard;\n"
+              "  colour = fColour;\n";
 
           if (use_lighting)
-            source += "  vec3 t = normalize (tangent);\n";
-
-          source +=
-            std::string("  colour = ") + (colour_by_direction ? "normalize (abs (fColour))" : "fColour" ) + ";\n";
-
-          if (use_lighting) 
-            source += 
+            source +=
+             "  vec3 t = normalize (g_tangent);\n"
              "  float l_dot_t = dot(light_pos, t);\n"
              "  vec3 l_perp = light_pos - l_dot_t * t;\n"
              "  vec3 l_perp_norm = normalize (l_perp);\n"
@@ -387,7 +393,7 @@ namespace MR
 
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
-            gl::MultiDrawArrays (gl::LINE_STRIP_ADJACENCY, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
+            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -416,10 +422,10 @@ namespace MR
           size_t tck_count = 0;
 
           while (file (tck)) {
-            starts.push_back (buffer.size());
+            starts.push_back (buffer.size() + 1);
             buffer.push_back (Point<float>());
             buffer.insert (buffer.end(), tck.begin(), tck.end());
-            sizes.push_back (tck.size());
+            sizes.push_back (tck.size()-1);
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
@@ -545,7 +551,11 @@ namespace MR
           gl::GenVertexArrays (1, &vertex_array_object);
           gl::BindVertexArray (vertex_array_object);
           gl::EnableVertexAttribArray (0);
-          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          gl::EnableVertexAttribArray (2);
+          gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
           vertex_array_objects.push_back (vertex_array_object);
           vertex_buffers.push_back (vertexbuffer);
@@ -570,8 +580,8 @@ namespace MR
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
 
           gl::BindVertexArray (vertex_array_objects[colour_buffers.size()]);
-          gl::EnableVertexAttribArray (1);
-          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::EnableVertexAttribArray (3);
+          gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
 
           colour_buffers.push_back (vertexbuffer);
           buffer.clear();
@@ -589,8 +599,8 @@ namespace MR
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], gl::STATIC_DRAW);
 
           gl::BindVertexArray (vertex_array_objects[scalar_buffers.size()]);
-          gl::EnableVertexAttribArray (1);
-          gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
+          gl::EnableVertexAttribArray (3);
+          gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
           scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
         }
