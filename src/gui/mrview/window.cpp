@@ -784,6 +784,8 @@ namespace MR
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+          if (MR::File::Config::get_int ("MRViewDockFloating", 0))
+            return;
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
             if (other_tool && other_tool != tool) {
@@ -792,8 +794,7 @@ namespace MR
                 QMainWindow::tabifyDockWidget (list.last(), tool);
               else
                 QMainWindow::tabifyDockWidget (other_tool, tool);
-              tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
-              tool->show();
+              tool->setFloating (false);
               tool->raise();
               return;
             }
