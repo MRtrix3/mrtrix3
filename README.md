@@ -37,3 +37,15 @@ account if you don't already have one.
 
         $ mrview
 
+## Keeping MRtrix3 up to date
+
+1. You can update your installation at any time by opening a terminal in the mrtrix3 folder, and typing:
+
+        git pull
+		./build
+		
+2. If this doesn't work immediately, it may be that you need to re-run the configure script:
+
+        ./configure
+
+    and re-run step 1 again.
