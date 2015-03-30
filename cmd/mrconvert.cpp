@@ -72,9 +72,6 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
-  + Option ("prs",
-            "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
-
   + Image::Stride::StrideOption
 
   + DataType::options()
@@ -125,19 +122,6 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
   }
 
   Image::Stride::set_from_command_line (header);
-
-  opt = get_options ("prs");
-  if (opt.size() &&
-      header.DW_scheme().rows() &&
-      header.DW_scheme().columns() == 4) {
-    Math::Matrix<float>& M (header.DW_scheme());
-    for (size_t row = 0; row < M.rows(); ++row) {
-      float tmp = M (row, 0);
-      M (row, 0) = M (row, 1);
-      M (row, 1) = tmp;
-      M (row, 2) = -M (row, 2);
-    }
-  }
 
   return axes;
 }
