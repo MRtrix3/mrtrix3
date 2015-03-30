@@ -524,7 +524,12 @@ namespace MR
       setvbuf (stdout, NULL, _IOLBF, 0);
 #endif
 
-      stderr_to_file = Path::is_file (STDERR_FILENO);
+      try {
+        stderr_to_file = Path::is_file (STDERR_FILENO);
+      } catch (...) {
+        DEBUG ("Unable to determine nature of stderr; assuming socket");
+        stderr_to_file = false;
+      }
 
       argc = cmdline_argc;
       argv = cmdline_argv;
