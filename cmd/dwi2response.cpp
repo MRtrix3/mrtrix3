@@ -93,7 +93,7 @@ const OptionGroup SFOption = OptionGroup ("Thresholds for single-fibre voxel sel
     + Option ("integral_multiplier", "integral of FOD lobe must not be outside some range as determined by this factor and FOD lobe integral statistics. "
                                      "The range is: (mean +- (multiplier * stdev)). "
                                      "Criterion is only applied in second pass of RF estimation.")
-      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1.0);
+      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1e6);
 
 
 
