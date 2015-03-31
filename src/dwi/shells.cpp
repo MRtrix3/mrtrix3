@@ -50,7 +50,7 @@ namespace MR
 
 
 
-    void Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
+    Shells& Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
     {
 
       // Easiest way to restrict processing to particular shells is to simply erase
@@ -162,7 +162,7 @@ namespace MR
 
       if (to_retain.full()) {
         DEBUG ("No DW shells to be removed");
-        return;
+        return *this;
       }
 
       // Erase the unwanted shells
@@ -173,12 +173,13 @@ namespace MR
       }
       shells.swap (new_shells);
 
+      return *this;
     }
 
 
 
 
-    void Shells::reject_small_shells (const size_t min_volumes)
+    Shells& Shells::reject_small_shells (const size_t min_volumes)
     {
       for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
         if (!s->is_bzero() && s->count() < min_volumes)
@@ -186,6 +187,7 @@ namespace MR
         else
           ++s;
       }
+      return *this;
     }
 
 
