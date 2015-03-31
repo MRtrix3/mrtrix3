@@ -88,10 +88,11 @@ namespace MR
                             enhancer (enhancer), global_enhanced_sum (global_enhanced_sum),
                             global_enhanced_count (global_enhanced_count), enhanced_sum (global_enhanced_sum.size(), 0.0),
                             enhanced_count (global_enhanced_sum.size(), 0.0), stats (global_enhanced_sum.size()),
-                            enhanced_stats (global_enhanced_sum.size()) {}
+                            enhanced_stats (global_enhanced_sum.size()), mutex (new std::mutex()) {}
 
             ~PreProcessor ()
             {
+              std::lock_guard<std::mutex> lock (*mutex);
               for (size_t i = 0; i < global_enhanced_sum.size(); ++i) {
                 global_enhanced_sum[i] += enhanced_sum[i];
                 global_enhanced_count[i] += enhanced_count[i];
@@ -129,6 +130,7 @@ namespace MR
             std::vector<size_t> enhanced_count;
             std::vector<value_type> stats;
             std::vector<value_type> enhanced_stats;
+            RefPtr<std::mutex> mutex;
         };
 
 
@@ -205,7 +207,7 @@ namespace MR
                     (*perm_dist_neg)[index] = 0.0;
                     for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
                       enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
-                      if (enhanced_statistics[i] > perm_dist_neg[index])
+                      if (enhanced_statistics[i] > (*perm_dist_neg)[index])
                         (*perm_dist_neg)[index] = enhanced_statistics[i];
                     }
                   }
