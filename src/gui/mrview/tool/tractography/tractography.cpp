@@ -75,6 +75,7 @@ namespace MR
           line_thickness (0.001f),
           do_crop_to_slab (true),
           use_lighting (false),
+          use_streamtube (false),
           not_3D (true),
           line_opacity (1.0),
           scalar_file_options (NULL),
@@ -156,10 +157,17 @@ namespace MR
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
 
+            QGroupBox* streamtube_group_box = new QGroupBox (tr("streamtube"));
+            streamtube_group_box->setCheckable (true);
+            streamtube_group_box->setChecked (false);
+            default_opt_grid->addWidget (streamtube_group_box, 2, 0, 1, 2);
+
+            connect (streamtube_group_box, SIGNAL (clicked (bool)), this, SLOT (on_streamtube_slot (bool)));
+
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+            default_opt_grid->addWidget (slab_group_box, 3, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -175,7 +183,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 3, 0, 1, 2);
+            default_opt_grid->addWidget (lighting_group_box, 4, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -307,6 +315,11 @@ namespace MR
           window.updateGL();
         }
 
+        void Tractography::on_streamtube_slot (bool is_checked)
+        {
+          use_streamtube = is_checked;
+          window.updateGL();
+        }
 
         void Tractography::opacity_slot (int opacity)
         {

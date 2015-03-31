@@ -84,12 +84,12 @@ namespace MR
           "uniform float slab_width;\n";
 
           source +=
-          "out vec4 v_lower_point;\n"
-          "out vec4 v_upper_point;\n"
+          "out vec4 v_dir;\n"
+          "out vec4 v_normal;\n"
           "out vec3 v_colour;\n"
           "flat out float v_include;\n";
 
-          if(use_lighting)
+          if(use_lighting || use_streamtube)
             source += "out vec3 v_tangent;\n";
 
           // Include function
@@ -115,12 +115,12 @@ namespace MR
           source +=
           "void set_colour_and_lighting() {\n";
 
-          if(use_lighting || colour_by_direction)
+          if(use_lighting || use_streamtube || colour_by_direction)
             source +=
             "  vec3 dir = next_vertex - this_vertex;\n";
           if(colour_by_direction)
             source += "  v_colour = normalize (abs(dir));\n";
-          if(use_lighting)
+          if(use_lighting || use_streamtube)
             source += "  v_tangent = normalize (mat3(MV) * dir);\n";
 
           switch (color_type) {
@@ -152,22 +152,16 @@ namespace MR
           // Main function
           source +=
           "void main() {\n"
-          "  gl_Position = MVP * vec4(this_vertex, 1);\n"
           "  set_include_flag();\n"
 
-          "  vec4 prev_point = MVP * vec4(prev_vertex, 1);\n"
-          "  vec4 end_point = MVP * vec4(next_vertex, 1);\n"
-          "  vec4 line_prev = gl_Position - prev_point;\n"
-          "  vec4 line_next = end_point - gl_Position;\n"
-          "  vec4 normal_prev =  normalize(vec4(-line_prev.y, line_prev.x, 0.0, 0.0));\n"
-          "  vec4 normal_next =  normalize(vec4(-line_next.y, line_next.x, 0.0, 0.0));\n"
-          "  vec4 normal_middle = mix(normal_prev, normal_next, 0.5);\n"
-          // The length of the normal_middle projected onto normal_prev should = thickness
-          "  float scale = line_thickness / clamp(abs(dot(normal_middle, normal_prev)), 0.02, 1.0);\n"
-          "  v_lower_point = gl_Position - (scale * normal_middle);\n"
-          "  v_upper_point = gl_Position + (scale * normal_middle);\n"
+          "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
+          "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
+
+          "  v_dir = normalize(p2-p1);\n"
+          "  v_normal = vec4(-v_dir.y, v_dir.x, 0, 0);\n"
 
           "  set_colour_and_lighting();\n"
+          "  gl_Position = p1;\n"
           "}\n";
 
           QTextStream out(stdout);
@@ -181,15 +175,20 @@ namespace MR
         {
           std::string source =
           "layout(lines) in;\n"
-          "layout(triangle_strip, max_vertices = 4) out;\n"
+          "layout(triangle_strip, max_vertices = 6) out;\n"
+          "uniform float line_thickness;\n"
 
-          "in vec4 v_lower_point[];\n"
-          "in vec4 v_upper_point[];\n"
+
+          "in vec4 v_dir[];\n"
+          "in vec4 v_normal[];\n"
           "in vec3 v_colour[];\n"
           "flat in float v_include[];\n";
 
-          if(use_lighting)
+          if(use_lighting || use_streamtube)
            source += "in vec3 v_tangent[];\n";
+
+          if(use_streamtube)
+              source += "out float g_height;\n";
 
           source +=
           "out vec3 fColour;\n"
@@ -203,26 +202,60 @@ namespace MR
 
           "  fColour = v_colour[0];\n";
 
-          if(use_lighting)
+          if(use_lighting || use_streamtube)
             source += "  g_tangent = v_tangent[0];\n";
 
+          if(use_streamtube)
+            source += "  g_height = 0.2;\n";
+
           source +=
-          "  gl_Position = v_lower_point[0];\n"
+          "  gl_Position = gl_in[0].gl_Position - line_thickness * (v_normal[0] -  v_dir[0]);\n"
           "  EmitVertex();\n"
-          "  gl_Position = v_upper_point[0];\n"
+          "  gl_Position = gl_in[0].gl_Position + line_thickness * (v_normal[0] + v_dir[0]);\n;\n";
+
+          if(use_streamtube)
+            source += "  g_height = 1.0;\n";
+
+          source +=
           "  EmitVertex();\n"
 
           "  fColour = v_colour[1];\n";
 
-          if(use_lighting)
-            source += "  g_tangent = v_tangent[1];\n";
+          if(use_lighting || use_streamtube)
+            source += "  g_tangent = mix(v_tangent[0], v_tangent[1], 0.5);\n";
+
+          if(use_streamtube)
+            source += "  g_height = 0.2;\n";
 
           source +=
-          "  gl_Position = v_lower_point[1];\n"
+          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
           "  EmitVertex();\n"
-          "  gl_Position = v_upper_point[1];\n"
-          "  EmitVertex();\n"
+          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n";
 
+          if(use_streamtube)
+            source += "  g_height = 1.0;\n";
+
+          source +=
+          "  EmitVertex();\n";
+
+          if(use_lighting || use_streamtube)
+            source += "  g_tangent = v_tangent[1];\n";
+
+          if(use_streamtube)
+            source += "  g_height = 0.2;\n";
+
+          source +=
+          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[1] -  v_dir[1]);\n"
+          "  EmitVertex();\n";
+
+          if(use_streamtube)
+            source += "  g_height = 1.0;\n";
+
+          source +=
+          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
+          "  EmitVertex();\n";
+
+          source +=
           "  EndPrimitive();\n"
           "}\n";
 
@@ -240,9 +273,14 @@ namespace MR
             "flat in float g_include;\n"
             "out vec3 colour;\n";
 
+          if (use_lighting || use_streamtube)
+            source += "in vec3 g_tangent;\n";
+
+          if (use_streamtube)
+            source += "in float g_height;\n";
+
           if (use_lighting)
             source += 
-              "in vec3 g_tangent;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
 
@@ -251,9 +289,13 @@ namespace MR
               "  if (g_include < 0.5) discard;\n"
               "  colour = fColour;\n";
 
+          if (use_streamtube)
+            source +=
+             "  colour *= g_height > 0.8 ? g_height + 0.4 : g_height + 0.2;\n";
+
           if (use_lighting)
             source +=
-             "  vec3 t = normalize (g_tangent);\n"
+             "  vec3 t = g_tangent;\n"
              "  float l_dot_t = dot(light_pos, t);\n"
              "  vec3 l_perp = light_pos - l_dot_t * t;\n"
              "  vec3 l_perp_norm = normalize (l_perp);\n"
@@ -284,6 +326,9 @@ namespace MR
               return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
+          if (use_streamtube != tractogram.tractography_tool.use_streamtube)
+            return true;
+
           return Displayable::Shader::need_update (object);
         }
 
@@ -296,6 +341,7 @@ namespace MR
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
           scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
+          use_streamtube = tractogram.tractography_tool.use_streamtube;
           color_type = tractogram.color_type;
           Displayable::Shader::update (object);
         }
@@ -422,10 +468,22 @@ namespace MR
           size_t tck_count = 0;
 
           while (file (tck)) {
-            starts.push_back (buffer.size() + 1);
+
+            size_t N = tck.size();
+            if(N < 1) continue;
+
+            starts.push_back (buffer.size());
             buffer.push_back (Point<float>());
-            buffer.insert (buffer.end(), tck.begin(), tck.end());
-            sizes.push_back (tck.size()-1);
+
+            // First element in track is nan point so skip it
+            buffer.insert (buffer.end(), ++tck.begin(), tck.end());
+
+            // Shader uses forward looking to determine track direction
+            // Therefore append a final point onto buffer end so that t_n-1, t_n and t_n+1 are collinear
+            Point<float> new_end = 2.f * tck[N-1] - tck[N-2];
+            buffer.push_back(new_end);
+
+            sizes.push_back (N-1);
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);

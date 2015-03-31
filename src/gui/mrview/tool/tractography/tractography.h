@@ -63,6 +63,7 @@ namespace MR
             float line_thickness;
             bool do_crop_to_slab;
             bool use_lighting;
+            bool use_streamtube;
             bool not_3D;
             float slab_thickness;
             float line_opacity;
@@ -78,6 +79,7 @@ namespace MR
             void hide_all_slot ();
             void on_slab_thickness_slot ();
             void on_crop_to_slab_slot (bool is_checked);
+            void on_streamtube_slot (bool is_checked);
             void on_use_lighting_slot (bool is_checked);
             void on_lighting_settings ();
             void opacity_slot (int opacity);
