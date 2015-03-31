@@ -35,19 +35,24 @@ namespace MR
           QFrame (parent),
           window (main_window) { 
             QFont f = font();
-            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
+            //CONF option: MRViewToolFontSize
+            //CONF default: 2 points less than the standard system font
+            //CONF The point size for the font to use in MRView Tools.
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
             setFont (f);
-
             setFrameShadow (QFrame::Sunken); 
             setFrameShape (QFrame::Panel);
           }
 
-
-
-        QSize Base::sizeHint () const
+        void Base::adjustSize () 
         {
-          return minimumSizeHint();
+          layout()->update();
+          layout()->activate();
+          setMinimumSize (layout()->minimumSize());
         }
+
+
+        QSize Base::sizeHint () const { return minimumSize(); }
 
 
         void Base::draw (const Projection&, bool, int, int) { }

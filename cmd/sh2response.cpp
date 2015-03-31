@@ -67,11 +67,8 @@ void usage () {
 
   OPTIONS
 
-    + DWI::GradImportOptions
-    + DWI::ShellOption
-
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (2, 8, 20);
+      + Argument ("value").type_integer (0, 8, 20);
 }
 
 
@@ -118,7 +115,7 @@ void run ()
     d.normalise();
     Math::SH::delta (delta, d, lmax);
 
-    for (int l = 0; l < lmax; l += 2) {
+    for (int l = 0; l <= lmax; l += 2) {
       value_type d_dot_s = 0.0;
       value_type d_dot_d = 0.0;
       for (int m = -l; m <= l; ++m) {
@@ -139,8 +136,15 @@ void run ()
   for (size_t l = 0; l < response.size(); l++)
     response[l] *= AL[2*l];
 
-  File::OFStream out (argument[3]);
-  for (auto r : response)
-    out << r/count << " ";
-  out << "\n";
+  if (std::string(argument[3]) == "-") {
+    for (auto r : response)
+      std::cout << r/count << " ";
+    std::cout << "\n";
+  }
+  else {
+    File::OFStream out (argument[3]);
+    for (auto r : response)
+      out << r/count << " ";
+    out << "\n";
+  }
 }

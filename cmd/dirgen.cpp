@@ -167,8 +167,7 @@ void run () {
           break;
         }
 
-        progress.set_text ("Optimising directions (power " + str(-2.0*power) + ", current energy: " + str(minimizer->f, 8) + ")...");
-        ++progress;
+        progress.update ([&]() { return "Optimising directions (power " + str(-2.0*power) + ", current energy: " + str(minimizer->f, 8) + ")..."; });
       }
       gsl_vector_memcpy (v.gsl(), minimizer->x);
     }

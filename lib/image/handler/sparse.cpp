@@ -59,6 +59,10 @@ namespace MR
 
         } else if (Base::writable) {
 
+          //CONF option: SparseDataInitialSize
+          //CONF default: 16777216
+          //CONF initial buffer size for data in MRtrix sparse image format file (in bytes).
+
           // Default = initialise 16MB, this is enough to store whole-brain fixel data at 2.5mm resolution
           const uint64_t init_sparse_data_size = File::Config::get_int ("SparseDataInitialSize", 16777216);
           const size_t new_file_size = file.start + init_sparse_data_size;

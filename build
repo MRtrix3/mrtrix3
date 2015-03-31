@@ -835,9 +835,9 @@ getting git version in folder "''' + folder + '"... ')
   return 'unknown'
 
 
-def update_git_version (folder, git_version_file, macro_name):
+def update_git_version (folder, git_version_file, contents):
   git_version = get_git_version (folder)
-  version_file_contents = '#define ' + macro_name + ' "' + git_version + '"\n'
+  version_file_contents = contents.replace ('%%%', git_version)
   current_version_file_contents = ''
   try:
     with open (git_version_file) as fd:
@@ -846,7 +846,6 @@ def update_git_version (folder, git_version_file, macro_name):
     pass
     
   if not current_version_file_contents or (version_file_contents != current_version_file_contents and git_version != 'unknown'):
-
     log ('version file "' + git_version_file + '" is out of date - updating\n')
     with open (git_version_file, 'w') as fd:
       fd.write (version_file_contents)
@@ -875,13 +874,19 @@ if len(targets) == 0:
 
 
 # get git version info:
-update_git_version (mrtrix_dir, os.path.join (mrtrix_dir, 'lib/version.h'), 'MRTRIX_GIT_VERSION')
+update_git_version (mrtrix_dir, os.path.join (mrtrix_dir, 'lib/version.cpp'), '''
+namespace MR { 
+  namespace App { 
+    const char* mrtrix_version = "%%%";
+  } 
+}
+''')
 
 if separate_project:
   if not os.path.exists (misc_dir):
     os.mkdir (misc_dir)
   git_version_file = os.path.join (misc_dir, 'project_version.h')
-  update_git_version ('.', git_version_file, 'MRTRIX_PROJECT_VERSION');
+  update_git_version ('.', git_version_file, '#define MRTRIX_PROJECT_VERSION "%%%"\n');
   if not os.path.exists (git_version_file):
     with open (git_version_file, 'w'):
       pass

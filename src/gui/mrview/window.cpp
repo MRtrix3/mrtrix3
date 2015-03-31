@@ -1,5 +1,4 @@
 #include "app.h"
-#include "version.h"
 #include "timer.h"
 #include "file/config.h"
 #include "image/header.h"
@@ -88,15 +87,17 @@ namespace MR
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
+          setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
+          QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+          policy.setHorizontalStretch (255);
+          policy.setVerticalStretch (255);
+          setSizePolicy (policy);
         }
 
-      QSize Window::GLArea::minimumSizeHint () const {
-        return QSize (256, 256);
-      }
       QSize Window::GLArea::sizeHint () const {
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         std::vector<int> init_window_size;
@@ -204,7 +205,7 @@ namespace MR
         tool_has_focus (nullptr)
       {
 
-        setDockOptions (AllowTabbedDocks);
+        setDockOptions (AllowTabbedDocks | VerticalTabs);
         setDocumentMode (true);
 
         Options opt = get_options ("batch");
@@ -222,6 +223,9 @@ namespace MR
           batch_commands.push_back (opt[n][0]);
 
 
+        //CONF option: IconSize
+        //CONF default: 24
+        //CONF The size of the icons in the main MRView toolbar.
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
         { 
@@ -234,10 +238,14 @@ namespace MR
         QMenu* menu;
         QToolButton* button;
 
-        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
+        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
 
         // Main toolbar:
 
+        //CONF option: InitialToolBarPosition
+        //CONF default: top
+        //CONF The starting position of the MRView toolbar. Valid values are:
+        //CONF top, bottom, left, right.
         Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
         {
           std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
@@ -250,6 +258,10 @@ namespace MR
           }
         }
 
+        //CONF option: ToolbarStyle
+        //CONF default: 2
+        //CONF The style of the main toolbar buttons in MRView. See Qt's
+        //CONF documentation for Qt::ToolButtonStyle.
         Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
 
         toolbar = new QToolBar ("Main toolbar", this);
@@ -359,12 +371,12 @@ namespace MR
 
         // Colourmap menu:
 
-        colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+        colourmap_button = new ColourMapButton (this, *this, true, true, false);
+        colourmap_button->setText ("Colourmap");
+        colourmap_button->setToolButtonStyle (button_style);
+        colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
-        ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
-        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-
-        colourmap_menu->addSeparator();
+        QMenu* colourmap_menu = colourmap_button->menu();
 
         invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
         invert_scale_action->setCheckable (true);
@@ -383,14 +395,7 @@ namespace MR
         image_interpolate_action->setChecked (true);
         addAction (image_interpolate_action);
 
-        button = new QToolButton (this);
-        button->setText ("Colourmap");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Colourmap menu"));
-        button->setIcon (QIcon (":/colourmap.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (colourmap_menu);
-        toolbar->addWidget (button);
+        toolbar->addWidget (colourmap_button);
 
 
 
@@ -618,6 +623,10 @@ namespace MR
 
         set_image_menu ();
 
+        //CONF option: MRViewColourBarPosition
+        //CONF default: bottomright
+        //CONF The position of the colourbar within the main window in MRView.
+        //CONF Valid values are: bottomleft, bottomright, topleft, topright.
         std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
         if (cbar_pos.size()) {
           if (cbar_pos == "bottomleft") colourbar_position_index = 1;
@@ -640,7 +649,6 @@ namespace MR
         mode = nullptr;
         delete glarea;
         delete glrefresh_timer;
-        delete [] colourmap_actions;
       }
 
 
@@ -776,6 +784,8 @@ namespace MR
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+          if (MR::File::Config::get_int ("MRViewDockFloating", 0))
+            return;
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
             if (other_tool && other_tool != tool) {
@@ -784,11 +794,17 @@ namespace MR
                 QMainWindow::tabifyDockWidget (list.last(), tool);
               else
                 QMainWindow::tabifyDockWidget (other_tool, tool);
-              tool->show();
+              tool->setFloating (false);
               tool->raise();
               return;
             }
           }
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether Tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
+          tool->show();
         }
         if (action->isChecked()) {
           if (!tool->isVisible())
@@ -801,19 +817,25 @@ namespace MR
       }
 
 
-
-
-      void Window::select_colourmap_slot ()
+      void Window::selected_colourmap (size_t colourmap, const ColourMapButton&)
       {
-        Image* imagep = image();
-        if (imagep) {
-          QAction* action = colourmap_group->checkedAction();
-          size_t n = 0;
-          while (action != colourmap_actions[n])
-            ++n;
-          imagep->set_colourmap (n);
-          updateGL();
-        }
+          Image* imagep = image();
+          if (imagep) {
+            imagep->set_colourmap (colourmap);
+            updateGL();
+          }
+      }
+
+
+
+      void Window::selected_custom_colour (const QColor& colour, const ColourMapButton&)
+      {
+          Image* imagep = image();
+          if (imagep) {
+            std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+            imagep->set_colour(c_colour);
+            updateGL();
+          }
       }
 
 
@@ -976,7 +998,7 @@ namespace MR
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
         size_t cmap_index = image()->colourmap;
-        colourmap_group->actions()[cmap_index]->setChecked (true);
+        colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
         setWindowTitle (image()->interp.name().c_str());
@@ -1026,7 +1048,7 @@ namespace MR
         next_image_action->setEnabled (N>1);
         prev_image_action->setEnabled (N>1);
         reset_windowing_action->setEnabled (N>0);
-        colourmap_menu->setEnabled (N>0);
+        colourmap_button->setEnabled (N>0);
         save_action->setEnabled (N>0);
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
@@ -1143,7 +1165,7 @@ namespace MR
       void Window::about_slot ()
       {
         std::string message = 
-          "<h1>MRView</h1>The MRtrix viewer, version " MRTRIX_GIT_VERSION "<br>"
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + App::mrtrix_version + "<br>"
           "<em>" + str (8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
@@ -1506,10 +1528,9 @@ namespace MR
           // BATCH_COMMAND image.colourmap index # Switch the image colourmap to that specified, as per the colourmap menu.
           else if (cmd == "image.colourmap") { 
             int n = to<int> (args) - 1;
-            if (n < 0 || n >= colourmap_group->actions().size())
+            if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
               throw Exception ("invalid image colourmap index \"" + args + "\" requested in batch command");
-            colourmap_group->actions()[n]->setChecked (true);
-            select_colourmap_slot ();
+            colourmap_button->set_colourmap_index(n);
           }
 
           // BATCH_COMMAND image.range min max # Set the image intensity range to that specified

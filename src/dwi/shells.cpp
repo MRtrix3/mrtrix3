@@ -1,7 +1,6 @@
 
 #include "dwi/shells.h"
 
-#include "file/config.h"
 
 
 namespace MR
@@ -22,8 +21,6 @@ namespace MR
         + Argument ("list").type_sequence_float();
 
 
-
-    const float bzero_threshold = File::Config::get_float ("BZeroThreshold", 10.0);
 
 
 
@@ -76,7 +73,7 @@ namespace MR
             throw Exception ("Cannot select shells corresponding to negative b-values");
 
           // Automatically select a b=0 shell if the requested b-value is zero
-          if (*b <= bzero_threshold) {
+          if (*b <= bzero_threshold()) {
 
             if (smallest().is_bzero()) {
               to_retain[0] = true;
@@ -254,7 +251,7 @@ namespace MR
           std::vector<size_t> neighborIdx;
           regionQuery (bvals, b, neighborIdx);
 
-          if (b > bzero_threshold && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
+          if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
 
             clusters[ii] = 0;
 

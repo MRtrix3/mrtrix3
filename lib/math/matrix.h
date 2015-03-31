@@ -1281,6 +1281,23 @@ namespace MR
         gsl_permutation_free (p);
         return det;
       }
+
+    //! compute condition number of \a A
+    /** \param A input matrix
+     * \return the condition number
+     */
+    template <typename ValueType>
+      inline double cond (const Matrix<ValueType>& A)
+      {
+        Math::Matrix<double> D = A;
+        Math::Matrix<double> V (A.columns(), A.columns());
+        Math::Vector<double> S (A.columns());
+        Math::Vector<double> work (A.columns());
+
+        gsl_linalg_SV_decomp (D.gsl(), V.gsl(), S.gsl(), work.gsl());
+        return S[0] / S[S.size()-1];
+      }
+
     /** @} */
 
 

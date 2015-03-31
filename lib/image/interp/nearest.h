@@ -44,10 +44,10 @@ namespace MR
        * and scanner().
        * For example:
        * \code
-       * Image::Voxel<float> voxel (image);
+       * auto voxel = image_buffer.voxel();
        *
        * // create an Interp::Nearest object using voxel as the parent data set:
-       * DataSet::Interp::Nearest<Image::Voxel<float> > interp (voxel);
+       * DataSet::Interp::Nearest<decltype(voxel) > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);

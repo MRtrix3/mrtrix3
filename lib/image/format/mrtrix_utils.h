@@ -111,7 +111,9 @@ namespace MR
 
         if (vox.empty())
           throw Exception ("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
-        for (size_t n = 0; n < H.ndim(); n++) {
+        if (vox.size() < 3)
+          throw Exception ("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+        for (size_t n = 0; n < std::min (vox.size(), H.ndim()); n++) {
           if (vox[n] < 0.0)
             throw Exception ("invalid voxel size for MRtrix image \"" + H.name() + "\"");
           H.vox(n) = vox[n];
@@ -177,7 +179,11 @@ namespace MR
       void write_mrtrix_header (const Header& H, StreamType& out)
       {
 
-        out << "dim: " << H.dim (0);
+        out << "mrtrix_version: " << App::mrtrix_version;
+        if (App::project_version)
+          out << "\nproject_version: " << App::project_version;
+
+        out << "\ndim: " << H.dim (0);
         for (size_t n = 1; n < H.ndim(); ++n)
           out << "," << H.dim (n);
 

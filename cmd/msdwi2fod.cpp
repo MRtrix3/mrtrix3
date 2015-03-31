@@ -49,7 +49,7 @@ void usage () {
                 "supplied as a text file containing the [ az el ] pairs for the directions.")
     + Argument ("file").type_file_in()
 
-    + DWI::GradImportOptions;
+    + DWI::GradImportOptions();
 }
 
 typedef double value_type;
@@ -83,7 +83,7 @@ class Shared {
     std::vector<size_t> dwilist;
     for (size_t i = 0; i < nsamples; i++)
       dwilist.push_back(i);
-    Math::Matrix<value_type> directions; DWI::gen_direction_matrix (directions, grad, dwilist);
+    Math::Matrix<value_type> directions = DWI::gen_direction_matrix (grad, dwilist);
     Math::Matrix<value_type> SHT; Math::SH::init_transform (SHT, directions, maxlmax);
     for (size_t i = 0; i < SHT.rows(); i++)
       for (size_t j = 0; j < SHT.columns(); j++)

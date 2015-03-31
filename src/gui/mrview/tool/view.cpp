@@ -809,7 +809,7 @@ namespace MR
           light_box_rows->setValue(static_cast<int>(Mode::LightBox::get_rows()));
           light_box_cols->setValue(static_cast<int>(Mode::LightBox::get_cols()));
           light_box_slice_inc->setValue(Mode::LightBox::get_slice_increment());
-          light_box_slice_inc->setRate(Mode::LightBox::get_slice_increment() / 5.f);
+          light_box_slice_inc->setRate(Mode::LightBox::get_slice_inc_adjust_rate());
           light_box_show_grid->setChecked(Mode::LightBox::get_show_grid());
         }
 

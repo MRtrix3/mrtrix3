@@ -72,18 +72,12 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
-  + Option ("zero",
-            "replace non-finite values with zeros.")
-
-  + Option ("prs",
-            "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
-
   + Image::Stride::StrideOption
 
   + DataType::options()
 
-  + DWI::GradImportOptions
-  + DWI::GradExportOptions;
+  + DWI::GradImportOptions (false)
+  + DWI::GradExportOptions();
 }
 
 
@@ -129,43 +123,15 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
 
   Image::Stride::set_from_command_line (header);
 
-  opt = get_options ("prs");
-  if (opt.size() &&
-      header.DW_scheme().rows() &&
-      header.DW_scheme().columns() == 4) {
-    Math::Matrix<float>& M (header.DW_scheme());
-    for (size_t row = 0; row < M.rows(); ++row) {
-      float tmp = M (row, 0);
-      M (row, 0) = M (row, 1);
-      M (row, 1) = tmp;
-      M (row, 2) = -M (row, 2);
-    }
-  }
-
   return axes;
 }
 
 
 
 
-class zero_non_finite {
-  public:
-    template <class VoxelType1, class VoxelType2>
-      void operator() (const VoxelType1& in, VoxelType2& out) 
-      {
-        complex_type val = in.value();
-        out.value() = complex_type (
-            std::isfinite (val.real()) ? val.real() : 0.0, 
-            std::isfinite (val.imag()) ? val.imag() : 0.0
-            );
-      }
-};
-
   template <class InputVoxelType>
 inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
 {
-  bool replace_nans = App::get_options ("zero").size();
-
   DataType datatype = header_out.datatype();
   std::vector<int> axes = set_header (header_out, in);
   header_out.datatype() = datatype;
@@ -176,20 +142,10 @@ inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const s
 
   if (axes.size()) {
     Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
-
-    if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
-        .run (zero_non_finite(), perm, out);
-    else 
-      Image::threaded_copy_with_progress (perm, out, 2);
+    Image::threaded_copy_with_progress (perm, out, 2);
   }
-  else {
-    if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
-        .run (zero_non_finite(), in, out);
-    else
-      Image::threaded_copy_with_progress (in, out, 2);
-  }
+  else 
+    Image::threaded_copy_with_progress (in, out, 2);
 }
 
 

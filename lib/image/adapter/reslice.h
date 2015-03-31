@@ -52,19 +52,16 @@ namespace MR
        *
        * For example:
        * \code
-       * Image::Header reference = ...;     // the reference header
-       * Image::Header header = ...;        // the actual header of the data
-       * Image::Voxel<float> data (header); // to access the corresponding data
-       *
-       * // create a Reslice object to regrid 'data' according to the
-       * // dimensions, etc. of 'reference', using cubic interpolation:
+       * Image::Buffer<float> buffer_reference (argument[0]);    // reference header
+       * Image::ConstHeader header_reference (buffer_reference); // to be used for reslicing
+       * Image::Buffer<float> buffer_data (argument[1]);         // input data to be resliced
+       * auto data = buffer_data.voxel();                        // to access the corresponding data
+       
        * Image::Adapter::Reslice<
-       *       Image::Interp::Cubic,
-       *       Image::Voxel<float> >   regridder (data, reference);
-       *
-       * // this class can be used like any other Image::Voxel class, e.g.:
-       * Image::Voxel<float> output (...);
-       * Image::copy (output, regridder);
+       *     Image::Interp::Cubic,
+       *     decltype(data)>   regridder (data, header_reference);
+       * Image::Buffer<float> buffer_out (argument[2]);          // copy data from regridder to output
+       * Image::copy (regridder, buffer_out.voxel());
        * \endcode
        *
        * It is also possible to supply an additional transform to be applied to

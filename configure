@@ -585,6 +585,7 @@ if 'GSL_CFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
+    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
     
@@ -593,6 +594,7 @@ if 'GSL_LDFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
+    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
     

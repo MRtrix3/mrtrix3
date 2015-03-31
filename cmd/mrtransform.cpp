@@ -130,7 +130,7 @@ void usage ()
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
 
-    + DWI::GradImportOptions
+    + DWI::GradImportOptions()
 
     + DataType::options ()
 
@@ -241,20 +241,15 @@ void run ()
 
     std::string name = opt[0][0];
     Image::ConstHeader template_header (name);
-
-    output_header.dim(0) = template_header.dim (0);
-    output_header.dim(1) = template_header.dim (1);
-    output_header.dim(2) = template_header.dim (2);
-
-    output_header.vox(0) = template_header.vox (0);
-    output_header.vox(1) = template_header.vox (1);
-    output_header.vox(2) = template_header.vox (2);
-
-    Image::Stride::set (output_header, template_header);
-
+    std::vector<ssize_t> strides (Image::Stride::get (input_header));
+    for (size_t i = 0; i < std::min(input_header.ndim(), template_header.ndim()); ++i) {
+       output_header.dim(i) = template_header.dim(i);
+       output_header.vox(i) = template_header.vox(i);
+       strides[i] = template_header.stride(i);
+    }
+    Image::Stride::set (output_header, strides);
     output_header.transform() = template_header.transform();
     output_header.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
-
 
     int interp = 2;
     opt = get_options ("interp");

@@ -116,17 +116,13 @@ namespace MR
 
             main_box->addWidget (image_list_view, 1);
 
-            colourmap_combobox = new QComboBox;
-            for (size_t n = 0; ColourMap::maps[n].name; ++n) 
-              colourmap_combobox->insertItem (n, ColourMap::maps[n].name);
-            main_box->addWidget (colourmap_combobox, 0);
-            connect (colourmap_combobox, SIGNAL (activated(int)), this, SLOT (colourmap_changed(int)));
-
-
-            QGroupBox* group_box = new QGroupBox ("Intensity scaling");
+            QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
             HBoxLayout* hlayout = new HBoxLayout;
             group_box->setLayout (hlayout);
+
+            colourmap_button = new ColourMapButton(this, *this);
+            hlayout->addWidget (colourmap_button);
 
             min_value = new AdjustButton (this);
             connect (min_value, SIGNAL (valueChanged()), this, SLOT (values_changed()));
@@ -137,7 +133,7 @@ namespace MR
             hlayout->addWidget (max_value);
 
 
-            QGroupBox* threshold_box = new QGroupBox ("Thresholds");
+            QGroupBox* threshold_box = new QGroupBox (tr("Thresholds"));
             main_box->addWidget (threshold_box);
             hlayout = new HBoxLayout;
             threshold_box->setLayout (hlayout);
@@ -266,7 +262,78 @@ namespace MR
         }
 
 
+        void Overlay::drawOverlays (const Projection& transform)
+        {
+          if(hide_all_button->isChecked()) return;
 
+          for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
+            // Only render the first visible colourbar
+            if (image_list_model->items[i]->show) {
+              image_list_model->items[i]->request_render_colourbar(*this, transform);
+              break;
+            }
+          }
+        }
+
+
+        void Overlay::selected_colourmap (size_t index, const ColourMapButton&)
+        {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (size_t i = 0, N = indices.size(); i < N; ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->set_colourmap (index);
+            }
+            updateGL();
+        }
+
+        void Overlay::selected_custom_colour(const QColor& colour, const ColourMapButton&)
+        {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (size_t i = 0, N = indices.size(); i < N; ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+              overlay->set_colour(c_colour);
+            }
+            updateGL();
+        }
+
+        void Overlay::toggle_show_colour_bar(bool visible, const ColourMapButton&)
+        {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (size_t i = 0, N = indices.size(); i < N; ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->show_colour_bar = visible;
+            }
+            updateGL();
+        }
+
+
+        void Overlay::toggle_invert_colourmap(bool invert, const ColourMapButton&)
+        {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (size_t i = 0, N = indices.size(); i < N; ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->set_invert_scale(invert);
+            }
+            updateGL();
+        }
+
+
+        void Overlay::reset_colourmap(const ColourMapButton&)
+        {
+            QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            for (size_t i = 0, N = indices.size(); i < N; ++i) {
+              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay->reset_windowing();
+            }
+            updateGL();
+        }
+
+
+        void Overlay::render_image_colourbar (const Image& image, const Projection& transform)
+        {
+            colourbar_renderer.render (transform, image, 4, image.scale_inverted());
+        }
 
 
         void Overlay::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2)
@@ -290,15 +357,6 @@ namespace MR
           updateGL();
         }
 
-        void Overlay::colourmap_changed (int index) 
-        {
-          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i) {
-            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
-            overlay->set_colourmap (index);
-          }
-          updateGL();
-        }
 
 
         void Overlay::values_changed ()
@@ -397,7 +455,7 @@ namespace MR
         void Overlay::update_selection () 
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
-          colourmap_combobox->setEnabled (indices.size());
+          colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
           lower_threshold_check_box->setEnabled (indices.size());
@@ -412,6 +470,7 @@ namespace MR
             min_value->setValue (NAN);
             lower_threshold->setValue (NAN);
             upper_threshold->setValue (NAN);
+            updateGL();
             return;
           }
 
@@ -452,7 +511,7 @@ namespace MR
           upper_threshold_val /= indices.size();
           opacity /= indices.size();
 
-          colourmap_combobox->setCurrentIndex (colourmap_index);
+          colourmap_button->set_colourmap_index(colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);
           if (num_interp == 0)
             interpolate_check_box->setCheckState (Qt::Unchecked);
@@ -517,8 +576,7 @@ namespace MR
               int n = to<int> (args);
               if (n < 0 || !ColourMap::maps[n].name)
                 throw Exception ("invalid overlay colourmap index \"" + args + "\" requested in batch command");
-              colourmap_combobox->setCurrentIndex (n);
-              colourmap_changed(n);
+              colourmap_button->set_colourmap_index(n);
             }
             catch (Exception& e) { e.display(); }
             return true;

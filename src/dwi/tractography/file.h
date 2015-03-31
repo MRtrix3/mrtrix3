@@ -120,7 +120,7 @@ namespace MR
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
 
-          size_t current_index;
+          uint64_t current_index;
           Ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
@@ -346,6 +346,12 @@ namespace MR
            * option (TrackWriterBufferSize), or in the constructor by
            * specifying a value in bytes for \c default_buffer_capacity
            * (default is 16M). */
+          //CONF option: TrackWriterBufferSize
+          //CONF default: 16777216
+          //CONF The size of the write-back buffer (in bytes) to use when
+          //CONF writing track files. MRtrix will store the output tracks in a
+          //CONF relatively large buffer to limit the number of write() calls,
+          //CONF avoid associated issues such as file fragmentation. 
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
             WriterUnbuffered<T> (file, properties), 
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Point<value_type>)),

@@ -53,16 +53,16 @@ DESCRIPTION
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
   
-  + "$ mrcalc a.mif 2 -mult r.mif"
+  + "    $ mrcalc a.mif 2 -mult r.mif"
   
-  + "performs the operation r = a x 2 for every voxel a,r in "
+  + "performs the operation r = 2*a for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
   
-  + "$ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
+  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
   
   + "performs the operation r = 9.3*exp(-a/b), and:"
   
-  + "$ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
+  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
   
   + "performs r = (a+b)/(c*d+4.2)."
   
@@ -219,14 +219,21 @@ class StackEntry {
       arg (entry) { }
 
     StackEntry (Evaluator* evaluator_p) : 
-      arg (NULL),
+      arg (nullptr),
       evaluator (evaluator_p) { }
 
     void load () {
       if (!arg) 
         return;
+      auto search = buffer_list.find (arg);
+      if (search != buffer_list.end()) {
+        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising buffer");
+        buffer = search->second;
+        return;
+      }
       try {
         buffer = new Image::Buffer<complex_type> (arg);
+        buffer_list.insert (std::make_pair (arg, buffer));
       }
       catch (Exception) {
         std::string a = lowercase (arg);
@@ -238,7 +245,7 @@ class StackEntry {
         else if (a == "randn") { value = 0.0; rng = new Math::RNG(); rng_gausssian = true; } 
         else                   { value =  to<complex_type> (arg); }
       }
-      arg = NULL;
+      arg = nullptr;
     }
 
     const char* arg;
@@ -250,8 +257,12 @@ class StackEntry {
 
     bool is_complex () const;
 
+    static std::map<std::string, RefPtr<Image::Buffer<complex_type>>> buffer_list;
+
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
+
+std::map<std::string, RefPtr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
 
 
 class Evaluator

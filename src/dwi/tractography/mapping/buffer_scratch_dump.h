@@ -58,14 +58,14 @@ class BufferScratchDump : public Image::BufferScratch<value_type>
 
   private:
     // Helper function to get the underlying data pointer
-    inline const char* get_data_ptr() const { return reinterpret_cast<const char*> ((const value_type*) (Image::BufferScratch<value_type>::data_)); }
+    inline const char* get_data_ptr() const { return reinterpret_cast<const char*> (Image::BufferScratch<value_type>::address(0)); }
 
 };
 
 template <>
 inline const char* BufferScratchDump<bool>::get_data_ptr() const
 {
-  return reinterpret_cast<const char*> ((const uint8_t*) (Image::BufferScratch<bool>::data_));
+  return reinterpret_cast<const char*> (Image::BufferScratch<bool>::address());
 }
 
 
