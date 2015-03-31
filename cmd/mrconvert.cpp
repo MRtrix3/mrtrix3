@@ -138,18 +138,33 @@ inline void copy_permute (Image::Header& header_in, Image::Header& header_out, c
   typedef Image::Buffer<T> buffer_type;
   typedef typename buffer_type::voxel_type voxel_type;
   typedef Image::Adapter::Extract<voxel_type> extract_type;
-  typedef Image::Adapter::PermuteAxes<extract_type> permute_type;
 
   buffer_type buffer_in (header_in);
   voxel_type in = buffer_in.voxel();
-  extract_type extract (in, pos);
-  const std::vector<int> axes = set_header (header_out, extract);
-  buffer_type buffer_out (output_filename, header_out);
-  voxel_type out = buffer_out.voxel();
-  DWI::export_grad_commandline (buffer_out);
 
-  permute_type perm (extract, axes);
-  Image::threaded_copy_with_progress (perm, out, 2);
+  if (pos.empty()) {
+
+    const std::vector<int> axes = set_header (header_out, in);
+    buffer_type buffer_out (output_filename, header_out);
+    voxel_type out = buffer_out.voxel();
+    DWI::export_grad_commandline (buffer_out);
+
+    Image::Adapter::PermuteAxes<voxel_type> perm (in, axes);
+    Image::threaded_copy_with_progress (perm, out, 2);
+
+  } else {
+
+    extract_type extract (in, pos);
+    const std::vector<int> axes = set_header (header_out, extract);
+    buffer_type buffer_out (output_filename, header_out);
+    voxel_type out = buffer_out.voxel();
+    DWI::export_grad_commandline (buffer_out);
+
+    Image::Adapter::PermuteAxes<extract_type> perm (extract, axes);
+    Image::threaded_copy_with_progress (perm, out, 2);
+
+  }
+
 }
 
 
@@ -172,32 +187,37 @@ void run ()
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
   Options opt = get_options ("coord");
-  std::vector<std::vector<int> > pos (header_in.ndim());
-  for (size_t n = 0; n < opt.size(); n++) {
-    int axis = opt[n][0];
-    if (pos[axis].size())
-      throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-    pos[axis] = parse_ints (opt[n][1], header_in.dim(axis)-1);
-    if (axis == 3 && header_in.DW_scheme().is_set()) {
-      Math::Matrix<float>& grad (header_in.DW_scheme());
-      if ((int)grad.rows() != header_in.dim(3)) {
-        WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-        header_out.DW_scheme().clear();
-      }
-      else {
-        Math::Matrix<float> extract_grad (pos[3].size(), 4);
-        for (size_t dir = 0; dir != pos[3].size(); ++dir)
-          extract_grad.row(dir) = grad.row((pos[3])[dir]);
-        header_out.DW_scheme() = extract_grad;
+  std::vector< std::vector<int> > pos;
+  if (opt.size()) {
+    pos.assign (header_in.ndim(), std::vector<int>());
+    for (size_t n = 0; n < opt.size(); n++) {
+      int axis = opt[n][0];
+      if (axis >= (int)header_in.ndim())
+        throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
+      if (pos[axis].size())
+        throw Exception ("\"coord\" option specified twice for axis " + str (axis));
+      pos[axis] = parse_ints (opt[n][1], header_in.dim(axis)-1);
+      if (axis == 3 && header_in.DW_scheme().is_set()) {
+        Math::Matrix<float>& grad (header_in.DW_scheme());
+        if ((int)grad.rows() != header_in.dim(3)) {
+          WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
+          header_out.DW_scheme().clear();
+        }
+        else {
+          Math::Matrix<float> extract_grad (pos[3].size(), 4);
+          for (size_t dir = 0; dir != pos[3].size(); ++dir)
+            extract_grad.row(dir) = grad.row((pos[3])[dir]);
+          header_out.DW_scheme() = extract_grad;
+        }
       }
     }
-  }
 
-  for (size_t n = 0; n < header_in.ndim(); ++n) {
-    if (pos[n].empty()) {
-      pos[n].resize (header_in.dim (n));
-      for (size_t i = 0; i < pos[n].size(); i++)
-        pos[n][i] = i;
+    for (size_t n = 0; n < header_in.ndim(); ++n) {
+      if (pos[n].empty()) {
+        pos[n].resize (header_in.dim (n));
+        for (size_t i = 0; i < pos[n].size(); i++)
+          pos[n][i] = i;
+      }
     }
   }
 
