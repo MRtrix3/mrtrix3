@@ -81,9 +81,7 @@ void run ()
   Math::Matrix<value_type> mapping;
   {
     Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_buffer);
-    DWI::Shells shells (grad);
-    shells.select_shells (true, true);
-    dwis = shells.largest().get_volumes();
+    dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
     auto dirs = DWI::gen_direction_matrix (grad, dwis);
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
