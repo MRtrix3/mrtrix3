@@ -81,7 +81,9 @@ namespace MR
 
           "uniform vec3 screen_normal;\n"
           "uniform float crop_var;\n"
-          "uniform float slab_width;\n";
+          "uniform float slab_width;\n"
+
+          "uniform float aspect_ratio;\n";
 
           source +=
           "out vec4 v_dir;\n"
@@ -160,6 +162,8 @@ namespace MR
           "  v_dir = normalize(p2-p1);\n"
           "  v_normal = vec4(-v_dir.y, v_dir.x, 0, 0);\n"
 
+          "  v_normal *=  1.0 + (aspect_ratio - 1.0) * abs(v_normal.y);\n"
+
           "  set_colour_and_lighting();\n"
           "  gl_Position = p1;\n"
           "}\n";
@@ -177,7 +181,6 @@ namespace MR
           "layout(lines) in;\n"
           "layout(triangle_strip, max_vertices = 6) out;\n"
           "uniform float line_thickness;\n"
-
 
           "in vec4 v_dir[];\n"
           "in vec4 v_normal[];\n"
@@ -423,6 +426,7 @@ namespace MR
           }
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), tractography_tool.line_thickness);
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
