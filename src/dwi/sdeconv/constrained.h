@@ -55,14 +55,13 @@ namespace MR
                 niter (50)
             {
               grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
-              DWI::Shells shells (grad);
               // Discard b=0 (b=0 normalisation not supported in this version)
               // Only allow selection of one non-zero shell from command line
-              shells.select_shells (false, true);
-              dwis = shells.largest().get_volumes();
+              dwis = DWI::Shells (grad).select_shells (false, true).largest().get_volumes();
               DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
-              lmax = lmax_data = Math::SH::LforN (dwis.size());
+              lmax = 8;
+              lmax_data = Math::SH::LforN (dwis.size());
 
               DWI::Directions::electrostatic_repulsion_300 (HR_dirs);
 
@@ -177,7 +176,7 @@ namespace MR
               Mt_M.allocate (M.columns(), M.columns());
               rankN_update (Mt_M, M, CblasTrans, CblasLower, value_type (1.0), value_type (0.0));
 
-              INFO ("constrained spherical deconvolution initiated successfully");
+              INFO ("constrained spherical deconvolution initialised successfully");
             }
 
             size_t nSH () const {
