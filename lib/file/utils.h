@@ -52,17 +52,23 @@ namespace MR
       }
 
       //CONF option: TmpFileDir
-      //CONF default: `.`
+      //CONF default: `/tmp` (on Unix), `.` (on Windows)
       //CONF The prefix for temporary files (as used in pipelines). By default,
       //CONF these files get written to the current folder, which may cause
       //CONF performance issues when operating over distributed file systems. 
       //CONF In this case, it may be better to specify `/tmp/` here.
       const std::string& tmpfile_dir () {
-        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", ".");
+        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", 
+#ifdef MRTRIX_WINDOWS
+            "."
+#else
+            "/tmp"
+#endif
+            );
         return __tmpfile_dir;
       }
 
-      //CONF option: MRTRIX_TMPFILE_PREFIX
+      //CONF option: TmpFilePrefix
       //CONF default: `mrtrix-tmp-`
       //CONF The prefix to use for the basename of temporary files. This will
       //CONF be used to generate a unique filename for the temporary file, by
