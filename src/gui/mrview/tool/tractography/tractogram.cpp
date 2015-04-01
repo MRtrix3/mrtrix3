@@ -168,9 +168,6 @@ namespace MR
           "  gl_Position = p1;\n"
           "}\n";
 
-          QTextStream out(stdout);
-          out << QString::fromStdString(source);
-
           return source;
         }
 
@@ -262,9 +259,6 @@ namespace MR
           "  EndPrimitive();\n"
           "}\n";
 
-          QTextStream out(stdout);
-          out << QString::fromStdString(source);
-
           return source;
         }
 
@@ -310,9 +304,6 @@ namespace MR
              "  colour += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
 
           source += "}\n";
-
-          QTextStream out(stdout);
-          out << QString::fromStdString(source);
 
           return source;
         }
