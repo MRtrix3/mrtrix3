@@ -47,6 +47,7 @@ namespace MR
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform) override;
+            int draw_tool_labels (int position, int start_line_num, const Projection&transform) const override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;

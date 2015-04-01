@@ -96,6 +96,14 @@ namespace MR
               }
               else value = "value: ?";
               projection.render_text (value, LeftEdge | BottomEdge, 2);
+
+              // Draw additional labels from tools
+              QList<QAction*> tools = window.tools()->actions();
+              for (size_t i = 0, line_num = 3, N = tools.size(); i < N; ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  line_num += dock->tool->draw_tool_labels (LeftEdge | BottomEdge, line_num, projection);
+              }
             }
 
             if (window.show_comments()) {

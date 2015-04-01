@@ -276,6 +276,40 @@ namespace MR
         }
 
 
+        int Overlay::draw_tool_labels (int position, int start_line_num, const Projection& transform) const
+        {
+          if(hide_all_button->isChecked()) return 0;
+
+          int num_of_new_lines = 0;
+
+          for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
+
+            Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
+
+            if (image && image->show) {
+              Point<> voxel (image->interp.scanner2voxel (window.focus()));
+              Image::VoxelType& imvox (image->voxel());
+              ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
+              std::string value = N > 1 ? "overlay "+ str(i+1) + " value: " : "overlay value: ";
+              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
+                vox[1] >= 0 && vox[1] < imvox.dim (1) &&
+                vox[2] >= 0 && vox[2] < imvox.dim (2)) {
+                imvox[0] = vox[0];
+                imvox[1] = vox[1];
+                imvox[2] = vox[2];
+                cfloat val = imvox.value();
+                value += str (val);
+              }
+              else value += "?";
+              transform.render_text (value, position, start_line_num + num_of_new_lines);
+              num_of_new_lines += 1;
+            }
+          }
+
+          return num_of_new_lines;
+        }
+
+
         void Overlay::selected_colourmap (size_t index, const ColourMapButton&)
         {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
