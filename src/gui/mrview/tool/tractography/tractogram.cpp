@@ -104,6 +104,13 @@ namespace MR
             "  float include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n"
             "  include_flag = include_flag && (include > 0 && include < 1);";
 
+          // Only include vertices that are within screen coordinate bounds
+          // This is only useful because geom. shader can choose to emit no primitives
+          source +=
+            " include_flag = include_flag && (gl_Position.x > -1 && gl_Position.x < 1)\n"
+            "   && (gl_Position.y > -1 && gl_Position.y < 1)\n"
+            "   && (gl_Position.z > -1 && gl_Position.z < 1);\n";
+
           if(color_type == ScalarFile) {
             if(tractogram.use_discard_lower())
               source += "  include_flag = include_flag && (amp < lower);\n";
@@ -154,10 +161,12 @@ namespace MR
           // Main function
           source +=
           "void main() {\n"
-          "  set_include_flag();\n"
 
           "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
           "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
+          "  gl_Position = p1;\n"
+
+          "  set_include_flag();\n"
 
           "  v_dir = normalize(p2-p1);\n"
           "  v_normal = vec4(-v_dir.y, v_dir.x, 0, 0);\n"
@@ -165,7 +174,6 @@ namespace MR
           "  v_normal *=  1.0 + (aspect_ratio - 1.0) * abs(v_normal.y);\n"
 
           "  set_colour_and_lighting();\n"
-          "  gl_Position = p1;\n"
           "}\n";
 
           return source;
@@ -193,12 +201,11 @@ namespace MR
           source +=
           "out vec3 fColour;\n"
           "out vec3 g_tangent;\n"
-          "flat out float g_include;\n"
 
           "void main() {\n"
-          "  g_include = v_include[0] + v_include[1];\n"
           // Don't create complex primitives if not visible
-          "  if (g_include < 0.5) return;\n"
+          // No longer need to rely on frag shader to discard
+          "  if (v_include[0] + v_include[1] < 0.5) return;\n"
 
           "  fColour = v_colour[0];\n";
 
@@ -209,7 +216,7 @@ namespace MR
             source += "  g_height = 0.2;\n";
 
           source +=
-          "  gl_Position = gl_in[0].gl_Position - line_thickness * (v_normal[0] -  v_dir[0]);\n"
+          "  gl_Position = gl_in[0].gl_Position - line_thickness * (v_normal[0] - v_dir[0]);\n"
           "  EmitVertex();\n"
           "  gl_Position = gl_in[0].gl_Position + line_thickness * (v_normal[0] + v_dir[0]);\n;\n";
 
@@ -228,15 +235,31 @@ namespace MR
             source += "  g_height = 0.2;\n";
 
           source +=
-          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
+          "  float dir_dot = dot(v_dir[0].xy, v_dir[1].xy);"
+          "  bool extra_quad = false;"
+          "  vec4 lower_end_point, upper_end_point, connecting_end_point1, connecting_end_point2;"
+          "  if(abs(dir_dot) > 0.8) {\n"
+          "    lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[1]/dir_dot - v_dir[1]);\n"
+          "    upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[1]/dir_dot + v_dir[1]);\n"
+          "  } else {\n"
+          "    lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
+          "    upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n"
+          "    connecting_end_point1 = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
+          "    connecting_end_point2 = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
+          "    extra_quad = true;\n"
+          "  }\n"
+
+          "  gl_Position = lower_end_point;\n"
           "  EmitVertex();\n"
-          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n";
+          "  gl_Position = upper_end_point;\n";
 
           if(use_streamtube)
             source += "  g_height = 1.0;\n";
 
           source +=
-          "  EmitVertex();\n";
+          "  EmitVertex();\n"
+
+          "  if(!extra_quad) { EndPrimitive(); return; }\n";
 
           if(use_lighting || use_streamtube)
             source += "  g_tangent = v_tangent[1];\n";
@@ -245,14 +268,15 @@ namespace MR
             source += "  g_height = 0.2;\n";
 
           source +=
-          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[1] -  v_dir[1]);\n"
+          "  gl_Position = connecting_end_point1;\n"
           "  EmitVertex();\n";
 
           if(use_streamtube)
             source += "  g_height = 1.0;\n";
 
+
           source +=
-          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
+          "  gl_Position = connecting_end_point2;\n"
           "  EmitVertex();\n";
 
           source +=
@@ -267,7 +291,6 @@ namespace MR
         {
           std::string source =
             "in vec3 fColour;\n"
-            "flat in float g_include;\n"
             "out vec3 colour;\n";
 
           if (use_lighting || use_streamtube)
@@ -283,7 +306,6 @@ namespace MR
 
           source +=
               "void main() {\n"
-              "  if (g_include < 0.5) discard;\n"
               "  colour = fColour;\n";
 
           if (use_streamtube)
