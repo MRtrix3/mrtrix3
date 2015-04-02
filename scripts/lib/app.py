@@ -35,7 +35,10 @@ def initialise(n):
   # Create the temporary directory
   dir_path = readMRtrixConfSetting('TmpFileDir')
   if not dir_path:
-    dir_path = '.'
+    if os.name == 'posix':
+      dir_path = '/tmp'
+    else:
+      dir_path = '.'
   prefix = readMRtrixConfSetting('TmpFilePrefix')
   if not prefix:
     prefix = os.path.basename(sys.argv[0]) + '-tmp-'
