@@ -232,7 +232,7 @@ class StackEntry {
         return;
       }
       try {
-        buffer = new Image::Buffer<complex_type> (arg);
+        buffer.reset (new Image::Buffer<complex_type> (arg));
         buffer_list.insert (std::make_pair (arg, buffer));
       }
       catch (Exception) {
@@ -249,20 +249,20 @@ class StackEntry {
     }
 
     const char* arg;
-    RefPtr<Evaluator> evaluator;
-    RefPtr<Image::Buffer<complex_type> > buffer;
+    std::shared_ptr<Evaluator> evaluator;
+    std::shared_ptr<Image::Buffer<complex_type> > buffer;
     Ptr<Math::RNG> rng;
     complex_type value;
     bool rng_gausssian;
 
     bool is_complex () const;
 
-    static std::map<std::string, RefPtr<Image::Buffer<complex_type>>> buffer_list;
+    static std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> buffer_list;
 
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
 
-std::map<std::string, RefPtr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
+std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
 
 
 class Evaluator
