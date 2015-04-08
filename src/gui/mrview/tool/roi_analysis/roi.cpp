@@ -718,36 +718,41 @@ namespace MR
 
 
 
+        void ROI::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("ROI Analysis tool options")
 
+            + Option ("roi.load", "Loads the specified image on the overlay tool.")
+            +   Argument ("image").type_image_in()
 
-        bool ROI::process_batch_command (const std::string& cmd, const std::string& args)
+            + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")
+            +   Argument ("value").type_float (0.0, 1.0, 1.0);
+        }
+
+        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          (void)cmd;
-          (void)args;
-          /*
-
-          // BATCH_COMMAND roi.load path # Loads the specified image on the roi tool.
-          if (cmd == "roi.load") {
+          if (opt.opt->is ("roi.load")) {
             VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (args)); }
+            try { list.push_back (new MR::Image::Header (opt[0])); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;
           }
 
-          // BATCH_COMMAND roi.opacity value # Sets the roi opacity to floating value [0-1].
-          else if (cmd == "roi.opacity") {
+          if (opt.opt->is ("roi.opacity")) {
             try {
-              float n = to<float> (args);
-              opacity_slider->setSliderPosition(int(1.e3f*n));
+              float value = opt[0];
+              opacity_slider->setSliderPosition(int(1.e3f*value));
             }
             catch (Exception& e) { e.display(); }
             return true;
           }
 
-          */
           return false;
         }
+
 
 
       }

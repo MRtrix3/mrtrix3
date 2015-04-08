@@ -59,7 +59,9 @@ namespace MR
             ~ROI();
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();

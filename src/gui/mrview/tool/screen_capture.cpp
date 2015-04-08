@@ -36,7 +36,7 @@ namespace MR
       {
 
 
-        ScreenCapture::ScreenCapture (Window& main_window, Dock* parent) :
+        Capture::Capture (Window& main_window, Dock* parent) :
           Base (main_window, parent)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
@@ -181,12 +181,12 @@ namespace MR
 
 
 
-        void ScreenCapture::on_screen_preview () { run (false); }
+        void Capture::on_screen_preview () { run (false); }
 
-        void ScreenCapture::on_screen_capture () { run (true); }
+        void Capture::on_screen_capture () { run (true); }
 
 
-        void ScreenCapture::run (bool with_capture) 
+        void Capture::run (bool with_capture) 
         {
           if (!window.image())
             return;
@@ -279,7 +279,7 @@ namespace MR
 
 
 
-        void ScreenCapture::select_output_folder_slot ()
+        void Capture::select_output_folder_slot ()
         {
           directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
           QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
@@ -293,35 +293,46 @@ namespace MR
 
 
 
-        void ScreenCapture::on_output_update () {
+        void Capture::on_output_update () {
           start_index->setValue (0);
         }
 
 
 
+        void Capture::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Screen Capture tool options")
 
+            + Option ("capture.folder", "Set the output folder for the screen capture tool.")
+            +   Argument ("path").type_text()
 
+            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.")
+            +   Argument ("string").type_text()
 
-        bool ScreenCapture::process_batch_command (const std::string& cmd, const std::string& args)
+            + Option ("capture.grab", "Start the screen capture process.");
+        }
+
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND capture.folder path # Set the output folder for the screen capture tool
-          if (cmd == "capture.folder") {
-            directory->setPath (args.c_str());
+          if (opt.opt->is ("capture.folder")) {
+            directory->setPath (std::string(opt[0]).c_str());
             QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
             folder_button->setText(path);
             on_output_update ();
             return true;
           }
 
-          // BATCH_COMMAND capture.prefix path # Set the output file prefix for the screen capture tool
-          if (cmd == "capture.prefix") {
-            prefix_textbox->setText (args.c_str());
+          if (opt.opt->is ("capture.prefix")) {
+            prefix_textbox->setText (std::string(opt[0]).c_str());
             on_output_update ();
             return true;
           }
 
-          // BATCH_COMMAND capture.grab # Start the screen capture process
-          if (cmd == "capture.grab") {
+          if (opt.opt->is ("capture.grab")) {
+            this->window.updateGL();
+            qApp->processEvents();
             on_screen_capture();
             return true;
           }
