@@ -85,7 +85,7 @@ namespace MR
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
               std::string value_str = "value: ";
-              cfloat value = window.snap_to_image() ?
+              cfloat value = image()->interpolate() ?
                 image()->nearest_neighbour_value(window.focus()) :
                 image()->trilinear_value(window.focus());
               if(std::isnan(std::abs(value)))

@@ -287,7 +287,7 @@ namespace MR
             Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
-              cfloat value = window.snap_to_image() ?
+              cfloat value = image->interpolate() ?
                 image->nearest_neighbour_value(window.focus()) :
                 image->trilinear_value(window.focus());
               if(std::isnan(std::abs(value)))
