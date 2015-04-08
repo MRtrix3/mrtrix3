@@ -40,6 +40,7 @@ namespace MR
       Image::Image (const MR::Image::Header& image_header) :
         Volume (image_header),
         buffer (image_header),
+        nearest_interp (buffer),
         interp (buffer),        
         position (image_header.ndim())
       {
@@ -52,6 +53,7 @@ namespace MR
       Image::Image (Window& window, const MR::Image::Header& image_header) :
         Volume (window, image_header),
         buffer (image_header),
+        nearest_interp (buffer),
         interp (buffer),        
         position (image_header.ndim())
       {
