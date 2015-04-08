@@ -73,20 +73,20 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-            RefPtr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
-            RefPtr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
+            std::shared_ptr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
+            std::shared_ptr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
             Image::copy (input, *in);
 
-            RefPtr <BufferScratch<bool> > out_data;
-            RefPtr <BufferScratch<bool>::voxel_type> out;
+            std::shared_ptr <BufferScratch<bool> > out_data;
+            std::shared_ptr <BufferScratch<bool>::voxel_type> out;
 
             Ptr<ProgressBar> progress;
             if (message.size())
               progress = new ProgressBar (message, npass_ + 1);
 
             for (unsigned int pass = 0; pass < npass_; pass++) {
-              out_data = new BufferScratch<bool> (input);
-              out = new BufferScratch<bool>::voxel_type (*out_data);
+              out_data.reset (new BufferScratch<bool> (input));
+              out.reset (new BufferScratch<bool>::voxel_type (*out_data));
               for (auto l = LoopInOrder(*in) (*in, *out); l; ++l) 
                out->value() = erode (*in);
               

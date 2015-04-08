@@ -86,7 +86,7 @@ namespace MR
             }
             catch (...) { 
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask = get_mask (spec);
+              mask.reset (get_mask (spec));
             }
           }
 
@@ -125,7 +125,7 @@ namespace MR
         private:
           Point<> pos;
           float radius, radius2;
-          RefPtr<Mask> mask;
+          std::shared_ptr<Mask> mask;
 
       };
 

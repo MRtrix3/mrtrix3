@@ -47,7 +47,6 @@ namespace MR
   };
 
   template <class, bool> class Ptr;
-  template <class, bool> class RefPtr;
 
   //! A simple smart pointer implementation
   /*! A simple pointer class that will delete the object it points to when it
@@ -92,7 +91,6 @@ namespace MR
    * occur. This is due to the fact that the size of the array is unknown, and
    * a deep copy of the full array is therefore impossible.
    *
-   * \sa RefPtr A reference-counting shared pointer
    * \sa VecPtr A %vector of pointers %to objects
    */
   template <class T, bool is_array = false> class Ptr
@@ -180,176 +178,7 @@ namespace MR
           delete ptr;
       }
 
-      //! A Ptr<> class should NEVER be constructed using a RefPtr
-      /*! This constructor is defined private to forbid its use. If it were used,
-       *  the constructing RefPtr may go out of scope, and the constructed Ptr
-       *  instance would therefore point to freed memory (and try to free it again
-       *  when it goes out of scope itself). If the RefPtr class is used,
-       *  ALL copies of the pointer should be stored using the RefPtr class. */
-      template <class _T, bool _is_array>
-      Ptr (const RefPtr<_T, _is_array>&) : ptr(NULL) { }
-
   };
-
-
-
-
-  //! A shared reference-counting smart pointer implementation
-  /*! A pointer class that will delete the object it points to in its
-   * destructor if it is the last to point to the object.  This is useful to pass
-   * pointers to different parts of the code whilst still ensuring
-   * that allocated objects are eventually destroyed when all pointers that
-   * reference it have been destroyed.  It behaves in almost all other
-   * respects like a standard pointer. For example:
-   * \code
-   * void my_function () {
-   *   RefPtr<Object> object (new Object);
-   *
-   *   object->member = something;       // member-by-pointer operator
-   *   call_by_reference (*object);      // dereference operator
-   *   call_by_pointer (object);         // get actual address of object by implicit casting
-   *   object = new Object (parameters); // delete previous object and point to new one
-   *
-   *   if (something) return; // object goes out of scope: pointer is freed in destructor
-   *
-   *   RefPtr<Object> object2 (object);  // new reference to the same pointer
-   *
-   *   // deleting or reassigning either RefPtr at this point does not free the
-   *   // object, since a reference to it still exists:
-   *   object = NULL;                    // original pointer is not freed
-   *
-   *   if (error) throw Exception ("oops"); // pointer is freed in destructor
-   *   ...
-   * } // both RefPtr go out of scope: pointer is freed in destructor
-   * \endcode
-   *
-   * \note As for the Ptr<T> class, use the \a is_array template parameter when
-   * handling arrays of objects. This ensures the array version of the \c
-   * delete operator is appropriately called when the array is freed.
-   *
-   * \sa Ptr A simple smart pointer
-   * \sa VecPtr A %vector of pointers %to objects
-   */
-  template <class T, bool is_array = false> class RefPtr
-  {
-    public:
-      explicit RefPtr (T* p = NULL) throw () : ptr (p), count (new size_t) {
-        *count = 1;
-      }
-      //! copy constructor
-      /*! The newly-created instance will point to the same location as the
-       * original. */
-      RefPtr (const RefPtr& R) throw () : ptr (R.ptr), count (R.count) {
-        ++*count;
-      }
-      //! destructor
-      /*! if non-NULL and no other RefPtr references this location, the managed
-       * object will be destroyed using the \c delete operator. */
-      ~RefPtr () {
-        if (*count == 1) {
-          dealloc();
-          delete count;
-        }
-        else --*count;
-      }
-
-      //! assignment operator
-      /*! Drops any reference to an existing object (and deletes it if it is no
-       * longer referenced by any other RefPtr), and point to the same location
-       * as \a R. */
-      RefPtr& operator= (const RefPtr& R) {
-        if (this == &R)
-          return *this;
-        if (*count == 1) {
-          dealloc();
-          delete count;
-        }
-        else --*count;
-        ptr = R.ptr;
-        count = R.count;
-        ++*count;
-        return *this;
-      }
-
-      //! assignment operator
-      /*! Drops any reference to an existing object (and deletes it if it is no
-       * longer referenced by any other RefPtr), and point to \a p. */
-      RefPtr& operator= (T* p) {
-        if (ptr == p)
-          return *this;
-        if (*count == 1) dealloc();
-        else {
-          --*count;
-          count = new size_t;
-          *count = 1;
-        }
-        ptr = p;
-        return *this;
-      }
-
-      T& operator*() const throw ()   {
-        return *ptr;
-      }
-      T* operator->() const throw ()  {
-        return ptr;
-      }
-      //! Return address of actual object
-      operator T* () const throw () {
-        return ptr;
-      }
-
-      //! required to handle pointers to derived classes
-      template <class U, bool> friend class RefPtr;
-      //! required to handle pointers to derived classes
-      template <class U> RefPtr (const RefPtr<U,is_array>& R) throw () : ptr (R.ptr), count (R.count) {
-        ++*count;
-      }
-      //! required to handle pointers to derived classes
-      template <class U> RefPtr<U,is_array>& operator= (const RefPtr<U,is_array>& R) {
-        if (this == &R)
-          return *this;
-        if (*count == 1) {
-          dealloc();
-          delete count;
-        }
-        else --*count;
-        ptr = R.ptr;
-        count = R.count;
-        ++*count;
-        return *this ;
-      }
-
-      friend std::ostream& operator<< (std::ostream& stream, const RefPtr<T,is_array>& R) {
-        stream << "(" << R.ptr << "): ";
-        if (R)
-          stream << *R.ptr;
-        else
-          stream << "null";
-        stream << " (" << *R.count << " refs, counter at " << R.count << ")";
-        return stream;
-      }
-
-    private:
-      T*      ptr;
-      size_t* count;
-
-      void dealloc () {
-        if (is_array)
-          delete [] ptr;
-        else
-          delete ptr;
-      }
-
-      //! A RefPtr<> class should NEVER be constructed using a Ptr
-      /*! This constructor is defined private to forbid its use. If it were used,
-       *  the constructing Ptr may go out of scope, and the constructed RefPtr
-       *  instance would therefore point to freed memory (and try to free it again
-       *  when it goes out of scope itself). If the RefPtr class is used,
-       *  ALL copies of the pointer should be stored using the RefPtr class. */
-      template <class _T, bool _is_array>
-      RefPtr (const Ptr<_T, _is_array>&) : ptr(NULL), count (NULL) { }
-  };
-
 
 
 
@@ -383,7 +212,6 @@ namespace MR
    * delete operator is appropriately called when the array is freed.
    *
    * \sa Ptr A simple smart pointer
-   * \sa RefPtr A reference-counting shared pointer
    */
   template <class T, bool is_array = false> class VecPtr
   {

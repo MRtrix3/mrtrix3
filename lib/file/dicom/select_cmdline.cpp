@@ -34,9 +34,9 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      std::vector< RefPtr<Series> > select_cmdline (const Tree& tree)
+      std::vector<std::shared_ptr<Series>> select_cmdline (const Tree& tree)
       {
-        std::vector< RefPtr<Series> > series;
+        std::vector<std::shared_ptr<Series>> series;
 
         if (tree.size() == 0) 
           throw Exception ("DICOM tree its empty");
@@ -63,11 +63,11 @@ namespace MR {
             if (n > (int) tree.size()) 
               fprintf (stderr, "invalid selection - try again\n");
             else
-              patient_p = tree[n];
+              patient_p = tree[n].get();
           }
         }
         else 
-          patient_p = tree[0];
+          patient_p = tree[0].get();
 
 
 
@@ -103,11 +103,11 @@ namespace MR {
             if (n > (int) patient.size()) 
               fprintf (stderr, "invalid selection - try again\n");
             else 
-              study_p = patient[n];
+              study_p = patient[n].get();
           }
         }
         else 
-          study_p = patient[0];
+          study_p = patient[0].get();
 
 
 
@@ -169,7 +169,7 @@ namespace MR {
 
 
 
-      std::vector< RefPtr<Series> > (*select_func) (const Tree& tree) = select_cmdline;
+      std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree) = select_cmdline;
 
 
 

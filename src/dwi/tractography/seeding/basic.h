@@ -187,7 +187,7 @@ namespace MR
             virtual bool get_seed (Point<float>& p);
 
           private:
-            RefPtr<FloatImage> image;
+            std::shared_ptr<FloatImage> image;
             float max;
 
         };

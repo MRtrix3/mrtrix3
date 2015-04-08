@@ -91,7 +91,7 @@ namespace MR
         mmaps.resize (files.size());
         addresses.resize (mmaps.size());
         for (size_t n = 0; n < files.size(); n++) {
-          mmaps[n] = new File::MMap (files[n], writable, !is_new, bytes_per_segment);
+          mmaps[n].reset (new File::MMap (files[n], writable, !is_new, bytes_per_segment));
           addresses[n] = mmaps[n]->address();
         }
       }

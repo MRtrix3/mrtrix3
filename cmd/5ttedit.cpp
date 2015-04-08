@@ -150,14 +150,14 @@ class Modifier
 
   private:
     Image::Buffer<float>::voxel_type v_in, v_out;
-    RefPtr< Image::Buffer<bool> > buffers[6];
+    std::shared_ptr< Image::Buffer<bool> > buffers[6];
     Ptr< Image::Buffer<bool>::voxel_type > voxels[6];
     float values[5];
 
     void load (const std::string& path, const size_t index)
     {
       assert (index <= 5);
-      buffers[index] = new Image::Buffer<bool> (path);
+      buffers[index].reset (new Image::Buffer<bool> (path));
       if (!Image::dimensions_match (v_in, *buffers[index], 0, 3))
         throw Exception ("Image " + str(path) + " does not match 5TT image dimensions");
       voxels[index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);

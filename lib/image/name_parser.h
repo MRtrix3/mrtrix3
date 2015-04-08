@@ -23,6 +23,8 @@
 #ifndef __image_name_parser_h__
 #define __image_name_parser_h__
 
+#include <memory>
+
 #include "mrtrix.h"
 #include "ptr.h"
 #include "file/path.h"
@@ -160,7 +162,7 @@ namespace MR
         ParsedName (const std::string& name, const std::vector<int>& index) : indices (index), filename (name) { }
 
         //! a class to hold a set of parsed image filenames
-        class List { //: public std::vector< RefPtr<ParsedName> > {
+        class List { 
           public:
             std::vector<int> parse_scan_check (const std::string& specifier, 
                 size_t max_num_sequences = std::numeric_limits<size_t>::max());
@@ -178,7 +180,7 @@ namespace MR
             const ParsedName& operator[] (size_t index) const { return *list[index]; }
 
           protected:
-            std::vector< RefPtr<ParsedName> > list;
+            std::vector<std::shared_ptr<ParsedName>> list;
             void count_dim (std::vector<int>& dim, size_t& current_entry, size_t current_dim) const;
             size_t max_name_size;
         };

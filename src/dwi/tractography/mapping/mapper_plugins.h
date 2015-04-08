@@ -71,7 +71,7 @@ class TODMappingPlugin
         generator (that.generator) { }
     void operator() (Math::Vector<float>& sh, const Point<float>& d) const { (*generator) (sh, d); }
   private:
-    RefPtr< Math::SH::aPSF<float> > generator;
+    std::shared_ptr< Math::SH::aPSF<float> > generator;
 };
 
 
@@ -101,7 +101,7 @@ class TWIImagePluginBase
 
 
   protected:
-    RefPtr< Image::BufferPreload<float> > data;
+    std::shared_ptr< Image::BufferPreload<float> > data;
     const input_voxel_type voxel;
     // Each instance of the class has its own interpolator for obtaining values
     //   in a thread-safe fashion
@@ -183,7 +183,7 @@ class TWIFODImagePlugin : public TWIImagePluginBase
   private:
     const size_t N;
     float* sh_coeffs;
-    RefPtr< Math::SH::PrecomputedAL<float> > precomputer;
+    std::shared_ptr< Math::SH::PrecomputedAL<float> > precomputer;
 
 };
 

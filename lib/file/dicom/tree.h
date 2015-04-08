@@ -33,11 +33,11 @@ namespace MR {
       class Series; 
       class Patient;
 
-      class Tree : public std::vector< RefPtr<Patient> > { 
+      class Tree : public std::vector<std::shared_ptr<Patient>> { 
         public:
           std::string description;
           void read (const std::string& filename);
-          RefPtr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "", 
+          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "", 
               const std::string& patient_DOB = "");
 
           void sort() {
@@ -55,7 +55,7 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item);
 
-      extern std::vector< RefPtr<Series> > (*select_func) (const Tree& tree);
+      extern std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree);
 
     }
   }

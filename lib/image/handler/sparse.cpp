@@ -83,7 +83,7 @@ namespace MR
         //   raw image data - otherwise any random data could be misinterpreted as a large
         //   pointer offset from the start of the sparse image data
         if (Base::is_new) {
-          for (std::vector< RefPtr<File::MMap> >::iterator i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
+          for (auto i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
             memset ((*i)->address(), 0x00, (*i)->size());
         }
 

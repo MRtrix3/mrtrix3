@@ -173,7 +173,7 @@ class Processor
     }
 
     void compute_FA (const std::string& name) {
-      fa_header = new Image::Header (dt.header());
+      fa_header.reset (new Image::Header (dt.header()));
       fa_header->set_ndim (3);
       fa_header->set_datatype (DataType::Float32);
       fa_header->create (name);
@@ -181,7 +181,7 @@ class Processor
     }
 
     void compute_ADC (const std::string& name) {
-      adc_header = new Image::Header (dt.header());
+      adc_header.reset (new Image::Header (dt.header()));
       adc_header->set_ndim (3);
       adc_header->set_datatype (DataType::Float32);
       adc_header->create (name);
@@ -189,7 +189,7 @@ class Processor
     }
 
     void compute_EVALS (const std::string& name) {
-      eval_header = new Image::Header (dt.header());
+      eval_header.reset (new Image::Header (dt.header()));
       eval_header->set_ndim (4);
       eval_header->set_dim (3, vals.size());
       eval_header->set_datatype (DataType::Float32);
@@ -198,7 +198,7 @@ class Processor
     }
 
     void compute_EVEC (const std::string& name) {
-      evec_header = new Image::Header (dt.header());
+      evec_header.reset (new Image::Header (dt.header()));
       evec_header->set_ndim (4);
       evec_header->set_dim (3, 3*vals.size());
       evec_header->set_datatype (DataType::Float32);
@@ -224,7 +224,7 @@ class Processor
   private:
     Iterator& next;
     Image::Voxel<value_type> dt;
-    RefPtr<Image::Header> fa_header, adc_header, evec_header, eval_header;
+    std::shared_ptr<Image::Header> fa_header, adc_header, evec_header, eval_header;
     Ptr<Image::Voxel<value_type> > fa, adc, evec, eval;
     Ptr<Math::Eigen::Symm<double> > eig;
     Ptr<Math::Eigen::SymmV<double> > eigv;

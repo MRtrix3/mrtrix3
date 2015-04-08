@@ -299,14 +299,14 @@ namespace MR
     {
       std::vector<int> index;
       if (parser.ndim() == 0) {
-        list.push_back (RefPtr<ParsedName> (new ParsedName (parser.name (index), index)));
+        list.push_back (std::shared_ptr<ParsedName> (new ParsedName (parser.name (index), index)));
         return;
       }
 
       std::string entry;
 
       while ( (entry = parser.get_next_match (index, true)).size())
-        list.push_back (RefPtr<ParsedName> (new ParsedName (entry, index)));
+        list.push_back (std::shared_ptr<ParsedName> (new ParsedName (entry, index)));
 
       if (!size())
         throw Exception ("no matching files found for image specifier \"" + parser.spec() + "\"");
@@ -339,7 +339,7 @@ namespace MR
     {
       int n;
       bool stop = false;
-      RefPtr<const ParsedName> first_entry ( list[current_entry]);
+      std::shared_ptr<const ParsedName> first_entry ( list[current_entry]);
 
       for (n = 0; current_entry < size(); n++) {
         for (size_t d = 0; d < current_dim; d++)

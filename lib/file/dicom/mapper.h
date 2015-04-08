@@ -43,7 +43,7 @@ namespace MR {
 
       class Series;
 
-      RefPtr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series);
+      std::shared_ptr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector<std::shared_ptr<Series>>& series);
       
     }
   }

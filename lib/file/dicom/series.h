@@ -34,7 +34,7 @@ namespace MR {
       class Study;
       class Image;
 
-      class Series : public std::vector< RefPtr <Image> > {
+      class Series : public std::vector<std::shared_ptr<Image>> {
         public:
           Series (Study* parent, const std::string& series_name, size_t series_number,
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "") :

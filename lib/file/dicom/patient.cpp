@@ -32,7 +32,7 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      RefPtr<Study> Patient::find (const std::string& study_name, const std::string& study_ID, 
+      std::shared_ptr<Study> Patient::find (const std::string& study_name, const std::string& study_ID, 
           const std::string& study_date, const std::string& study_time)
       {
         for (size_t n = 0; n < size(); n++) {
@@ -56,7 +56,7 @@ namespace MR {
           }
         }
 
-        push_back (RefPtr<Study> (new Study (this, study_name, study_ID, study_date, study_time)));
+        push_back (std::shared_ptr<Study> (new Study (this, study_name, study_ID, study_date, study_time)));
         return back();
       }
 

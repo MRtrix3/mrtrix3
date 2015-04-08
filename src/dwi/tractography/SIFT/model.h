@@ -135,7 +135,7 @@ namespace MR
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
-              RefPtr<std::mutex> mutex;
+              std::shared_ptr<std::mutex> mutex;
               double TD_sum;
               std::vector<double> fixel_TDs;
           };

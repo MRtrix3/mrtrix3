@@ -131,12 +131,12 @@ namespace MR
           template <class InputVoxelType, class OutputVoxelType, typename ValueType = float>
           void operator() (InputVoxelType& input, OutputVoxelType& output, ValueType type = 0.0f)
           {
-            RefPtr <BufferScratch<ValueType> > in_data (new BufferScratch<ValueType> (input));
-            RefPtr <typename BufferScratch<ValueType>::voxel_type> in (new typename BufferScratch<ValueType>::voxel_type (*in_data));
+            std::shared_ptr <BufferScratch<ValueType> > in_data (new BufferScratch<ValueType> (input));
+            std::shared_ptr <typename BufferScratch<ValueType>::voxel_type> in (new typename BufferScratch<ValueType>::voxel_type (*in_data));
             threaded_copy (input, *in);
 
-            RefPtr <BufferScratch<ValueType> > out_data;
-            RefPtr <typename BufferScratch<ValueType>::voxel_type> out;
+            std::shared_ptr <BufferScratch<ValueType> > out_data;
+            std::shared_ptr <typename BufferScratch<ValueType>::voxel_type> out;
 
             Ptr<ProgressBar> progress;
             if (message.size()) {
@@ -149,8 +149,8 @@ namespace MR
 
             for (size_t dim = 0; dim < this->ndim(); dim++) {
               if (stdev[dim] > 0) {
-                out_data = new BufferScratch<ValueType> (input);
-                out = new typename BufferScratch<ValueType>::voxel_type (*out_data);
+                out_data.reset (new BufferScratch<ValueType> (input));
+                out.reset (new typename BufferScratch<ValueType>::voxel_type (*out_data));
                 Adapter::Gaussian1D<typename BufferScratch<ValueType>::voxel_type > gaussian (*in, stdev[dim], dim, extent[dim]);
                 threaded_copy (gaussian, *out);
                 in_data = out_data;

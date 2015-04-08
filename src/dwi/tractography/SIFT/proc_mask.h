@@ -154,7 +154,7 @@ namespace MR
 
         private:
           typename Set::voxel_type v_dwi;
-          RefPtr<Image::Transform> transform_dwi;
+          std::shared_ptr<Image::Transform> transform_dwi;
           Image::Buffer<float>::voxel_type v_anat;
           Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_anat;
           Image::BufferScratch<float>::voxel_type v_out;

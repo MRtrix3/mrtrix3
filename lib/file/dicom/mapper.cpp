@@ -36,10 +36,10 @@ namespace MR {
     namespace Dicom {
 
 
-      RefPtr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector< RefPtr<Series> >& series)
+      std::shared_ptr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector<std::shared_ptr<Series>>& series)
       {
         assert (series.size() > 0);
-        RefPtr<MR::Image::Handler::Base> handler;
+        std::shared_ptr<MR::Image::Handler::Base> handler;
 
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
@@ -55,7 +55,7 @@ namespace MR {
         std::vector<Frame*> frames;
 
         // loop over series list:
-        for (std::vector< RefPtr<Series> >::const_iterator series_it = series.begin(); series_it != series.end(); ++series_it) {
+        for (std::vector< std::shared_ptr<Series> >::const_iterator series_it = series.begin(); series_it != series.end(); ++series_it) {
           Series& series (**series_it);
 
           try {
@@ -69,14 +69,14 @@ namespace MR {
           std::sort (series.begin(), series.end(), PtrComp());
 
           // loop over images in each series:
-          for (Series::const_iterator image_it = series.begin(); image_it != series.end(); ++image_it) {
+          for (auto image_it = series.begin(); image_it != series.end(); ++image_it) {
             Image& image (**image_it);
 
             // if multi-frame, loop over frames in image:
             if (image.frames.size()) {
               std::sort (image.frames.begin(), image.frames.end(), PtrComp());
-              for (std::vector< RefPtr<Frame> >::const_iterator frame_it = image.frames.begin(); frame_it != image.frames.end(); ++frame_it)
-                frames.push_back (*frame_it);
+              for (auto frame_it = image.frames.begin(); frame_it != image.frames.end(); ++frame_it)
+                frames.push_back (frame_it->get());
             }
             // otherwise add image frame:
             else 
@@ -84,7 +84,7 @@ namespace MR {
           }
         }
 
-        std::vector<size_t> dim = Frame::count (frames);
+        auto dim = Frame::count (frames);
 
         if (dim[0]*dim[1]*dim[2] > frames.size())
           throw Exception ("missing image frames for DICOM image \"" + H.name() + "\"");
@@ -177,7 +177,7 @@ namespace MR {
         // vector should be the first slice of the first volume
         {
           Math::Matrix<float> M(4,4);
-          const Frame* frame (image.frames.size() ? image.frames[0] : &static_cast<const Frame&> (image));
+          const Frame* frame (image.frames.size() ? image.frames[0].get() : &static_cast<const Frame&> (image));
 
           M(0,0) = -frame->orientation_x[0];
           M(1,0) = -frame->orientation_x[1];
@@ -234,10 +234,10 @@ namespace MR {
           for (size_t i = 0; i < 3; i++) 
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
-          handler = new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim (0), H.dim (1), H.dim (2));
+          handler.reset (new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim (0), H.dim (1), H.dim (2)));
         }
         else 
-          handler = new MR::Image::Handler::Default (H);
+          handler.reset (new MR::Image::Handler::Default (H));
 
         for (size_t n = 0; n < frames.size(); ++n) 
           handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));

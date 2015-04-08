@@ -32,14 +32,14 @@ namespace MR {
 
       class Study;
 
-      class Patient : public std::vector< RefPtr<Study> > {
+      class Patient : public std::vector<std::shared_ptr<Study>> {
         public:
           Patient (const std::string& patient_name, const std::string& patient_ID = "", 
               const std::string& patient_DOB = "") :
             name (patient_name), ID (patient_ID), DOB (patient_DOB) { }
           std::string name, ID, DOB;
 
-          RefPtr<Study> find (const std::string& study_name, const std::string& study_ID = "", 
+          std::shared_ptr<Study> find (const std::string& study_name, const std::string& study_ID = "", 
               const std::string& study_date = "", const std::string& study_time = "");
 
       };
