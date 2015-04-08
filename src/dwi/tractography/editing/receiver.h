@@ -47,9 +47,8 @@ namespace MR {
 
           public:
 
-            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t c, const size_t n, const size_t s) :
+            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t n, const size_t s) :
               writer (path, properties),
-              in_count (c),
               number (n),
               skip (s),
               // Need to use local counts instead of writer class members due to track cropping
@@ -71,7 +70,7 @@ namespace MR {
           private:
 
             Tractography::Writer<> writer;
-            const uint64_t in_count, number;
+            const uint64_t number;
             uint64_t skip;
             uint64_t count, total_count;
             ProgressBar progress;
