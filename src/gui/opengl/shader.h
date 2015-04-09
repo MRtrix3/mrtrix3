@@ -70,7 +70,7 @@ namespace MR
                 throw Exception ("error compiling OpenGL " + this->type() + " shader ID " + str (index_));
               }
             }
-            static const std::string type() { return TYPE == gl::VERTEX_SHADER ? "vertex" : "fragment"; }
+            static const std::string type() { return TYPE == gl::VERTEX_SHADER ? "vertex" : ( TYPE == gl::FRAGMENT_SHADER ? "fragment" : "geometry" ); }
 
             void debug () {
               assert (index_);
