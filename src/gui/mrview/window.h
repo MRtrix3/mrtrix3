@@ -110,6 +110,8 @@ namespace MR
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
+          static void add_commandline_options (MR::App::OptionList& options);
+
         signals:
           void focusChanged ();
           void targetChanged ();
@@ -159,7 +161,7 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_batch_command ();
+          void process_commandline_options ();
 
 
 
@@ -168,7 +170,6 @@ namespace MR
           QPoint mouse_position_, mouse_displacement_;
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
-          std::vector<std::string> batch_commands;
 
 
           class GLArea : public QGLWidget {

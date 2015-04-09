@@ -84,18 +84,14 @@ namespace MR
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
-              std::string value;
-              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
-                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
-                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
-                imvox[0] = vox[0];
-                imvox[1] = vox[1];
-                imvox[2] = vox[2];
-                cfloat val = imvox.value();
-                value = "value: " + str (val);
-              }
-              else value = "value: ?";
-              projection.render_text (value, LeftEdge | BottomEdge, 2);
+              std::string value_str = "value: ";
+              cfloat value = image()->interpolate() ?
+                image()->nearest_neighbour_value(window.focus()) :
+                image()->trilinear_value(window.focus());
+              if(std::isnan(std::abs(value)))
+                value_str += "?";
+              else value_str += str(value);
+              projection.render_text (value_str, LeftEdge | BottomEdge, 2);
 
               // Draw additional labels from tools
               QList<QAction*> tools = window.tools()->actions();

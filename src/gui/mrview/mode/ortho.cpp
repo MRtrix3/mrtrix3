@@ -48,10 +48,18 @@ namespace MR
           GLint w = width()/2;
           GLint h = height()/2;
 
+          // Depth test state may have been altered after drawing each plane
+          // so need to guarantee depth test is off for subsequent plane.
+          // Ideally, state should be restored by callee but this is safer
+
           projections[0].set_viewport (window, w, h, w, h); 
           draw_plane (0, slice_shader, projections[0]);
+
+          gl::Disable (gl::DEPTH_TEST);
           projections[1].set_viewport (window, 0, h, w, h); 
           draw_plane (1, slice_shader, projections[1]);
+
+          gl::Disable (gl::DEPTH_TEST);
           projections[2].set_viewport (window, 0, 0, w, h); 
           draw_plane (2, slice_shader, projections[2]);
 

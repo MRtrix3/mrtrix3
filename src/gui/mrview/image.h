@@ -29,6 +29,7 @@
 #include "image/voxel.h"
 #include "math/versor.h"
 #include "image/interp/linear.h"
+#include "image/interp/nearest.h"
 
 
 namespace MR
@@ -85,10 +86,19 @@ namespace MR
 
         private:
           BufferType buffer;
+          MR::Image::Interp::Nearest<VoxelType> nearest_interp;
 
         public:
           InterpVoxelType interp;
           VoxelType& voxel () { return interp; }
+          cfloat trilinear_value(const Point<float> &scanner_point) {
+            if(interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
+            return interp.value();
+          }
+          cfloat nearest_neighbour_value(const Point<float> &scanner_point) {
+            if(nearest_interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
+            return nearest_interp.value();
+          }
 
         private:
           GL::Texture texture2D[3];
