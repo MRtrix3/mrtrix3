@@ -650,17 +650,29 @@ namespace MR
         }
 
 
-        bool Vector::process_batch_command (const std::string& cmd, const std::string& args)
+        void Vector::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Vector Plot tool options")
+
+            + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
+            +   Argument ("image").type_image_in();
+        }
+
+        bool Vector::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND fixel.load path # Load the specified MRtrix sparse image file (.msf) into the fixel tool
-          if (cmd == "fixel.load") {
-            std::vector<std::string> list (1, args);
+          if (opt.opt->is ("vector.load")) {
+            std::vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }
             return true;
           }
+
           return false;
         }
+
+
 
 
 

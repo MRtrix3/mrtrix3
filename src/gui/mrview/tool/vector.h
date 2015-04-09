@@ -50,7 +50,9 @@ namespace MR
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform) override;
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;
             void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;

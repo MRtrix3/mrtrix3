@@ -429,11 +429,22 @@ namespace MR
         }
 
 
-        bool Tractography::process_batch_command (const std::string& cmd, const std::string& args)
+
+
+        void Tractography::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Tractography tool options")
+
+            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.")
+            +   Argument ("tracks").type_file_in();
+        }
+
+        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND tractography.load path # Load the specified tracks file into the tractography tool
-          if (cmd == "tractography.load") {
-            std::vector<std::string> list (1, args);
+          if (opt.opt->is ("tractography.load")) {
+            std::vector<std::string> list (1, std::string(opt[0]));
             try { 
               tractogram_list_model->add_items (list, window, *this); 
               window.updateGL();
@@ -444,6 +455,7 @@ namespace MR
 
           return false;
         }
+
 
 
       }

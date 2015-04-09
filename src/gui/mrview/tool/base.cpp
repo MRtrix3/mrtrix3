@@ -20,6 +20,7 @@
 
 */
 
+#include "app.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR
@@ -59,15 +60,14 @@ namespace MR
 
         void Base::drawOverlays (const Projection&) { }
 
-        bool Base::process_batch_command (const std::string&, const std::string&) 
-        {
-          return false;
-        }
-
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }
         bool Base::mouse_release_event () { return false; }
         QCursor* Base::get_cursor () { return nullptr; }
+
+        bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
+        void Base::add_commandline_options (MR::App::OptionList&) { }
+
       }
     }
   }

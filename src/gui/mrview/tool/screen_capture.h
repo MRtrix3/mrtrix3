@@ -39,13 +39,15 @@ namespace MR
       {
 
 
-        class ScreenCapture : public Base
+        class Capture : public Base
         {
           Q_OBJECT
           public:
-            ScreenCapture (Window& main_window, Dock* parent);
-            virtual ~ScreenCapture() {}
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+            Capture (Window& main_window, Dock* parent);
+            virtual ~Capture() {}
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
             void on_screen_capture ();

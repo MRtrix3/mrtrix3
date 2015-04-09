@@ -35,6 +35,11 @@
 
 namespace MR
 {
+  namespace App { 
+    class OptionList; 
+    class Options;
+  }
+
   namespace GUI
   {
     namespace MRView
@@ -56,6 +61,9 @@ namespace MR
           public:
             Base (Window& main_window, Dock* parent);
             Window& window;
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
             virtual QSize sizeHint () const;
 
@@ -119,7 +127,6 @@ namespace MR
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void drawOverlays (const Projection& transform);
             virtual int draw_tool_labels (int, int, const Projection&) const { return 0; }
-            virtual bool process_batch_command (const std::string& cmd, const std::string& args);
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();
             virtual bool mouse_release_event ();

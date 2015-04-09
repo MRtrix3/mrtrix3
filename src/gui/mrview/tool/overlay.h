@@ -48,7 +48,6 @@ namespace MR
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform) override;
             int draw_tool_labels (int position, int start_line_num, const Projection&transform) const override;
-            bool process_batch_command (const std::string& cmd, const std::string& args);
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;
             void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;
@@ -57,6 +56,9 @@ namespace MR
             void reset_colourmap(const ColourMapButton&) override;
 
             void render_image_colourbar(const Image& image, const Projection& transform) override;
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
             void image_open_slot ();

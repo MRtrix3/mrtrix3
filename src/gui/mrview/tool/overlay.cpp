@@ -285,23 +285,15 @@ namespace MR
           for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
 
             Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
-
             if (image && image->show) {
-              Point<> voxel (image->interp.scanner2voxel (window.focus()));
-              Image::VoxelType& imvox (image->voxel());
-              ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
-              std::string value = N > 1 ? "overlay "+ str(i+1) + " value: " : "overlay value: ";
-              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
-                vox[1] >= 0 && vox[1] < imvox.dim (1) &&
-                vox[2] >= 0 && vox[2] < imvox.dim (2)) {
-                imvox[0] = vox[0];
-                imvox[1] = vox[1];
-                imvox[2] = vox[2];
-                cfloat val = imvox.value();
-                value += str (val);
-              }
-              else value += "?";
-              transform.render_text (value, position, start_line_num + num_of_new_lines);
+              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
+              cfloat value = image->interpolate() ?
+                image->nearest_neighbour_value(window.focus()) :
+                image->trilinear_value(window.focus());
+              if(std::isnan(std::abs(value)))
+                value_str += "?";
+              else value_str += str(value);
+              transform.render_text (value_str, position, start_line_num + num_of_new_lines);
               num_of_new_lines += 1;
             }
           }
@@ -579,37 +571,47 @@ namespace MR
 
 
 
+        void Overlay::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Overlay tool options")
 
+            + Option ("overlay.load", "Loads the specified image on the overlay tool.")
+            +   Argument ("image").type_image_in()
 
+            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
+            +   Argument ("value").type_float (0.0, 1.0, 1.0)
 
-        bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
+            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
+            +   Argument ("index").type_integer();
+            
+        }
+
+        bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-
-          // BATCH_COMMAND overlay.load path # Loads the specified image on the overlay tool.
-          if (cmd == "overlay.load") {
+          if (opt.opt->is ("overlay.load")) {
             VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (args)); }
+            try { list.push_back (new MR::Image::Header (opt[0])); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;
           }
 
-          // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
-          else if (cmd == "overlay.opacity") {
+          if (opt.opt->is ("overlay.opacity")) {
             try {
-              float n = to<float> (args);
-              opacity_slider->setSliderPosition(int(1.e3f*n));
+              float value = opt[0];
+              opacity_slider->setSliderPosition(int(1.e3f*value));
             }
             catch (Exception& e) { e.display(); }
             return true;
           }
 
-          // BATCH_COMMAND overlay.colourmap index # Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
-          else if (cmd == "overlay.colourmap") {
+          if (opt.opt->is ("overlay.colourmap")) {
             try {
-              int n = to<int> (args);
+              int n = opt[0];
               if (n < 0 || !ColourMap::maps[n].name)
-                throw Exception ("invalid overlay colourmap index \"" + args + "\" requested in batch command");
+                throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -overlay.colourmap option");
               colourmap_button->set_colourmap_index(n);
             }
             catch (Exception& e) { e.display(); }
@@ -618,6 +620,8 @@ namespace MR
 
           return false;
         }
+
+
 
 
       }
