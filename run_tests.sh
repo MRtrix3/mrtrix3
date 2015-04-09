@@ -3,8 +3,14 @@
 LOGFILE=testing.log
 echo logging to \""$LOGFILE"\" 
 
-echo "ensuring build is up to date... "
+echo -n "ensuring build is up to date... "
 ./build > testing.log 2>&1
+if [ $? != 0 ]; then 
+  echo ERROR!
+  exit 1
+else
+  echo OK
+fi
 
 for n in testing/*; do
   if [ -d $n ]; then continue; fi
@@ -31,6 +37,7 @@ EOD
   ERROR!
 ##########################################
 EOD
+    exit 1
   else 
     echo OK
     cat >> testing.log <<EOD
