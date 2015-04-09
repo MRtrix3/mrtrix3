@@ -34,20 +34,31 @@ namespace MR
 
 
 
+    Mesh::Mesh (const std::string& path)
+    {
+      if (path.substr (path.size() - 4) == ".vtk")
+        load_vtk (path);
+      else
+        throw Exception ("Input mesh file not in supported format");
+    }
+
+
 
     void Mesh::transform_first_to_realspace (const Image::Header& H)
     {
-
       Image::Transform transform (H);
-
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
         (*v)[0] = ((H.dim(0)-1) * H.vox(0)) - (*v)[0];
         *v = transform.image2scanner (*v);
       }
-
     }
 
-
+    void Mesh::transform_voxel_to_realspace (const Image::Header& H)
+    {
+      Image::Transform transform (H);
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
+        *v = transform.voxel2scanner (*v);
+    }
 
     void Mesh::transform_realspace_to_voxel (const Image::Header& H)
     {
@@ -56,6 +67,15 @@ namespace MR
         *v = transform.scanner2voxel (*v);
     }
 
+
+
+    void Mesh::save (const std::string& path) const
+    {
+      if (path.substr (path.size() - 4) == ".vtk")
+        save_vtk (path);
+      else
+        throw Exception ("Output mesh file format not supported");
+    }
 
 
 
@@ -83,8 +103,14 @@ namespace MR
 
       // Compute normals for polygons
       std::vector< Point<float> > normals;
-      normals.reserve (polygons.size());
-      for (PolygonList::const_iterator p = polygons.begin(); p != polygons.end(); ++p) {
+      normals.reserve (triangles.size() + quads.size());
+      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
+        const Point<float> this_normal (((vertices[(*p)[1]] - vertices[(*p)[0]]).cross (vertices[(*p)[2]] - vertices[(*p)[1]])).normalise());
+        normals.push_back (this_normal);
+      }
+      // FIXME Should be averaging normals calculated from the three vertices?
+      //   (ine. no guarantee that the four points all lie on the same plane)
+      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
         const Point<float> this_normal (((vertices[(*p)[1]] - vertices[(*p)[0]]).cross (vertices[(*p)[2]] - vertices[(*p)[1]])).normalise());
         normals.push_back (this_normal);
       }
@@ -99,12 +125,17 @@ namespace MR
       Vox2Poly voxel2poly;
 
       // Map each polygon to the underlying voxels
-      for (size_t poly_index = 0; poly_index != polygons.size(); ++poly_index) {
+      for (size_t poly_index = 0; poly_index != num_polygons(); ++poly_index) {
+
+        const size_t num_vertices = (poly_index < triangles.size()) ? 3 : 4;
 
         // Figure out the voxel extent of this polygon in three dimensions
         Point<int> lower_bound (H.dim(0)-1, H.dim(1)-1, H.dim(2)-1), upper_bound (0, 0, 0);
         VertexList this_poly_verts;
-        load_polygon_vertices (this_poly_verts, poly_index);
+        if (num_vertices == 3)
+          load_triangle_vertices (this_poly_verts, poly_index);
+        else
+          load_quad_vertices (this_poly_verts, poly_index - triangles.size());
         for (VertexList::const_iterator v = this_poly_verts.begin(); v != this_poly_verts.end(); ++v) {
           for (size_t axis = 0; axis != 3; ++axis) {
             const int this_axis_voxel = std::round((*v)[axis]);
@@ -125,11 +156,12 @@ namespace MR
           for (voxel[1] = lower_bound[1]; voxel[1] <= upper_bound[1]; ++voxel[1]) {
             for (voxel[0] = lower_bound[0]; voxel[0] <= upper_bound[0]; ++voxel[0]) {
               std::vector<size_t> this_voxel_polys;
-#if __clang__
+//#if __clang__
+//              Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
+//#else
+//              Vox2Poly::iterator existing = voxel2poly.find (voxel);
+//#endif
               Vox2Poly::const_iterator existing = voxel2poly.find (voxel);
-#else
-              Vox2Poly::iterator existing = voxel2poly.find (voxel);
-#endif
               if (existing != voxel2poly.end()) {
                 this_voxel_polys = existing->second;
                 voxel2poly.erase (existing);
@@ -241,20 +273,66 @@ namespace MR
           for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
             const Point<float>& n (normals[*polygon_index]);
 
+            const size_t polygon_num_vertices = (*polygon_index < triangles.size()) ? 3 : 4;
             VertexList v;
-            load_polygon_vertices (v, *polygon_index);
 
-            // First: is it aligned with the normal?
-            const Point<float> poly_centre ((v[0] + v[1] + v[2]) * (1.0 / 3.0));
-            const Point<float> diff (p - poly_centre);
-            const bool is_inside = (diff.dot (n) <= 0.0);
+            bool is_inside = false;
+            float min_edge_distance = std::numeric_limits<float>::infinity();
 
-            // Second: does it project onto the polygon?
-            const Point<float> p_on_plane (p - (n * (diff.dot (n))));
+            if (polygon_num_vertices == 3) {
 
-            const float min_edge_distance = minvalue ((p_on_plane - v[0]).dot ((v[2]-v[0]).cross (n)),
-                                                      (p_on_plane - v[2]).dot ((v[1]-v[2]).cross (n)),
-                                                      (p_on_plane - v[1]).dot ((v[0]-v[1]).cross (n)));
+              load_triangle_vertices (v, *polygon_index);
+
+              // First: is it aligned with the normal?
+              const Point<float> poly_centre ((v[0] + v[1] + v[2]) * (1.0 / 3.0));
+              const Point<float> diff (p - poly_centre);
+              is_inside = (diff.dot (n) <= 0.0);
+
+              // Second: how well does it project onto this polygon?
+              const Point<float> p_on_plane (p - (n * (diff.dot (n))));
+
+              min_edge_distance = minvalue ((p_on_plane - v[0]).dot ((v[2]-v[0]).cross (n).normalise()),
+                                            (p_on_plane - v[2]).dot ((v[1]-v[2]).cross (n).normalise()),
+                                            (p_on_plane - v[1]).dot ((v[0]-v[1]).cross (n).normalise()));
+
+            } else {
+
+              load_quad_vertices (v, *polygon_index);
+
+              // This may be slightly ill-posed with a quad; no guarantee of fixed normal
+              // Proceed regardless
+
+              // First: is it aligned with the normal?
+              const Point<float> poly_centre ((v[0] + v[1] + v[2] + v[3]) * 0.25f);
+              const Point<float> diff (p - poly_centre);
+              is_inside = (diff.dot (n) <= 0.0);
+
+              // Second: how well does it project onto this polygon?
+              const Point<float> p_on_plane (p - (n * (diff.dot (n))));
+
+              for (int edge = 0; edge != 4; ++edge) {
+                // Want an appropriate vector emanating from this edge from which to test the 'on-plane' distance
+                //   (bearing in mind that there may not be a uniform normal)
+                // For this, I'm going to take a weighted average based on the relative distance between the
+                //   two points at either end of this edge
+                // Edge is between points p1 and p2; edge 0 is between points 0 and 1
+                const Point<float>& p0 ((edge-1) >= 0 ? v[edge-1] : v[3]);
+                const Point<float>& p1 (v[edge]);
+                const Point<float>& p2 ((edge+1) < 4 ? v[edge+1] : v[0]);
+                const Point<float>& p3 ((edge+2) < 4 ? v[edge+2] : v[edge-2]);
+
+                const float d1 = (p1 - p_on_plane).norm();
+                const float d2 = (p2 - p_on_plane).norm();
+                // Give more weight to the normal at the point that's closer
+                const Point<float> edge_normal = (d2*(p0-p1) + d1*(p3-p2)).normalise();
+
+                // Now, how far away is the point within the plane from this edge?
+                const float this_edge_distance = (p_on_plane - p1).dot (edge_normal);
+                min_edge_distance = std::min (min_edge_distance, this_edge_distance);
+
+              }
+
+            }
 
             if (min_edge_distance > best_min_edge_distance) {
               best_min_edge_distance = min_edge_distance;
@@ -357,7 +435,7 @@ namespace MR
             line = line.substr (ws + 1);
             const int num_elements = to<int> (line);
 
-            polygons.reserve (num_polygons);
+            //polygons.reserve (num_polygons);
             int polygon_count = 0, element_count = 0;
             while (polygon_count < num_polygons && element_count < num_elements) {
 
@@ -369,21 +447,26 @@ namespace MR
                 in.read (reinterpret_cast<char*>(&vertex_count), sizeof (int));
               }
 
-              if (vertex_count != 3)
-                throw Exception ("Could not parse file \"" + path + "\";  only suppport 3-vertex polygons");
+              if (vertex_count != 3 && vertex_count != 4)
+                throw Exception ("Could not parse file \"" + path + "\";  only suppport 3- and 4-vertex polygons");
 
-              Polygon<3> t;
+              std::vector<unsigned int> t (vertex_count, 0);
 
               if (is_ascii) {
-                line = line.substr (line.find (' ') + 1); // Strip the vertex count
-                sscanf (line.c_str(), "%u %u %u", &t[0], &t[1], &t[2]);
+                for (int index = 0; index != vertex_count; ++index) {
+                  line = line.substr (line.find (' ') + 1); // Strip the previous value
+                  sscanf (line.c_str(), "%u", &t[index]);
+                }
               } else {
-                for (size_t i = 0; i != 3; ++i)
-                  in.read (reinterpret_cast<char*>(&t[i]), sizeof (int));
+                for (int index = 0; index != vertex_count; ++index)
+                  in.read (reinterpret_cast<char*>(&t[index]), sizeof (int));
               }
-              polygons.push_back (t);
+              if (vertex_count == 3)
+                triangles.push_back (Polygon<3>(t));
+              else
+                quads.push_back (Polygon<4>(t));
               ++polygon_count;
-              element_count += 4;
+              element_count += 1 + vertex_count;
 
             }
             if (polygon_count != num_polygons || element_count != num_elements)
@@ -401,30 +484,70 @@ namespace MR
 
 
 
+
+    void Mesh::save_vtk (const std::string& path) const
+    {
+      File::OFStream out (path);
+      out << "# vtk DataFile Version 1.0\n";
+      out << "\n";
+      out << "ASCII\n";
+      out << "DATASET POLYDATA\n";
+      out << "POINTS " << str(vertices.size()) << " float\n";
+      ProgressBar progress ("writing mesh to file... ", vertices.size() + triangles.size() + quads.size());
+      for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
+        out << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
+        ++progress;
+      }
+      out << "POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n";
+      for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
+        out << "3 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
+        ++progress;
+      }
+      for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
+        out << "4 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << " " << str((*i)[3]) << "\n";
+        ++progress;
+      }
+    }
+
+
+
+
     void Mesh::verify_data() const
     {
-
       for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
         if (std::isnan ((*i)[0]) || std::isnan ((*i)[1]) || std::isnan ((*i)[2]))
           throw Exception ("NaN values in mesh vertex data");
       }
-
-
-      for (PolygonList::const_iterator i = polygons.begin(); i != polygons.end(); ++i) 
-        for (size_t j = 0; j != 3; ++j) 
+      for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i)
+        for (size_t j = 0; j != 3; ++j)
           if ((*i)[j] >= vertices.size())
             throw Exception ("Mesh vertex index exceeds number of vertices read");
-
+      for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i)
+        for (size_t j = 0; j != 4; ++j)
+          if ((*i)[j] >= vertices.size())
+            throw Exception ("Mesh vertex index exceeds number of vertices read");
     }
 
 
 
-    void Mesh::load_polygon_vertices (VertexList& output, const size_t index) const
+    void Mesh::load_triangle_vertices (VertexList& output, const size_t index) const
     {
       output.clear();
       for (size_t axis = 0; axis != 3; ++axis)
-        output.push_back (vertices[polygons[index][axis]]);
+        output.push_back (vertices[triangles[index][axis]]);
     }
+
+    void Mesh::load_quad_vertices (VertexList& output, const size_t index) const
+    {
+      output.clear();
+      for (size_t axis = 0; axis != 4; ++axis)
+        output.push_back (vertices[quads[index][axis]]);
+    }
+
+
+
+
+
 
 
 

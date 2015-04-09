@@ -90,42 +90,78 @@ namespace MR
 
     };
 
+    typedef Polygon<3> Triangle;
+    typedef std::vector<Triangle> TriangleList;
+    typedef Polygon<4> Quad;
+    typedef std::vector<Quad> QuadList;
 
-
-
-    typedef std::vector< Polygon<3> > PolygonList;
 
 
     class Mesh {
 
       public:
-        Mesh (const std::string& path)
-        {
-          if (path.substr (path.size() - 4) == ".vtk")
-            load_vtk (path);
-          else
-            throw Exception ("Input mesh file not in supported format");
+        Mesh (const std::string&);
+        Mesh() { }
+
+
+        void load (VertexList&& v, TriangleList&& p) {
+          vertices = v;
+          triangles = p;
+          quads.clear();
+        }
+        void load (const VertexList& v, const TriangleList& p) {
+          vertices = v;
+          triangles = p;
+          quads.clear();
+        }
+
+        void load (VertexList&& v, QuadList&& p) {
+          vertices = v;
+          triangles.clear();
+          quads = p;
+        }
+        void load (const VertexList& v, const QuadList& p) {
+          vertices = v;
+          triangles.clear();
+          quads = p;
         }
 
 
         void transform_first_to_realspace (const Image::Header&);
+        void transform_voxel_to_realspace (const Image::Header&);
         void transform_realspace_to_voxel (const Image::Header&);
+
+        void save (const std::string&) const;
 
         void output_pve_image (const Image::Header&, const std::string&);
 
+        size_t num_vertices() const { return vertices.size(); }
+        size_t num_triangles() const { return triangles.size(); }
+        size_t num_quads() const { return quads.size(); }
+        size_t num_polygons() const { return triangles.size() + quads.size(); }
+
+        const Vertex&   vert (const size_t i) const { return vertices[i]; }
+        const Triangle& tri  (const size_t i) const { return triangles[i]; }
+        const Quad&     quad (const size_t i) const { return quads[i]; }
+
+
+      protected:
+        VertexList vertices;
+        TriangleList triangles;
+        QuadList quads;
+
 
       private:
-        VertexList vertices;
-        PolygonList polygons;
-
-
         void load_vtk (const std::string&);
+        void save_vtk (const std::string&) const;
 
         void verify_data() const;
 
-        void load_polygon_vertices (VertexList&, const size_t) const;
+        void load_triangle_vertices (VertexList&, const size_t) const;
+        void load_quad_vertices     (VertexList&, const size_t) const;
 
     };
+
 
 
 
