@@ -370,10 +370,10 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    VecPtr<Image::Header> headers_in;
+    std::vector<std::unique_ptr<Image::Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (new Image::Header (argument[0]));
+    headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
     Image::Header header (*headers_in[0]);
 
     // Wipe any excess unary-dimensional axes
@@ -383,7 +383,7 @@ void run ()
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (new Image::Header (path));
+      headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (path)));
       const Image::Header& temp (*headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());

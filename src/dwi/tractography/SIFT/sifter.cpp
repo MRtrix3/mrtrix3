@@ -3,7 +3,7 @@
 
 #include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "timer.h"
 
 #include "dwi/tractography/file.h"

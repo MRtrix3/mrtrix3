@@ -23,7 +23,7 @@
 #ifndef __file_dicom_series_h__
 #define __file_dicom_series_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "file/dicom/image.h"
 

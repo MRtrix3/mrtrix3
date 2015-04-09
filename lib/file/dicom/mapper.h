@@ -27,7 +27,7 @@
 #ifndef __file_dicom_mapper_h__
 #define __file_dicom_mapper_h__
 
-#include "ptr.h"
+#include "memory.h"
 
 namespace MR {
 

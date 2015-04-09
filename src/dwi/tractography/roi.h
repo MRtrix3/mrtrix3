@@ -27,7 +27,6 @@
 
 #include "app.h"
 #include "point.h"
-#include "ptr.h"
 
 #include "image/voxel.h"
 #include "image/interp/linear.h"

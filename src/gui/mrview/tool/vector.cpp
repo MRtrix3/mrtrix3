@@ -64,7 +64,7 @@ namespace MR
                   continue;
                 }
 
-                items.push_back (fixel_image);
+                items.push_back (std::unique_ptr<Displayable> (fixel_image));
               }
 
               beginInsertRows (QModelIndex(), old_size, items.size());
@@ -72,7 +72,7 @@ namespace MR
             }
 
             AbstractFixel* get_fixel_image (QModelIndex& index) {
-              return dynamic_cast<AbstractFixel*>(items[index.row()]);
+              return dynamic_cast<AbstractFixel*>(items[index.row()].get());
             }
         };
 
@@ -238,7 +238,7 @@ namespace MR
             return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i])->render (transform, axis, slice);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform, axis, slice);
           }
         }
 
@@ -249,7 +249,7 @@ namespace MR
 
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->renderColourBar (transform);
           }
         }
 

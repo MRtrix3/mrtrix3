@@ -28,11 +28,8 @@
 
 #include <vector>
 
-
 #include "dwi/fixel_map.h"
-
 #include "dwi/directions/set.h"
-
 #include "dwi/tractography/SIFT/fixel.h"
 #include "dwi/tractography/SIFT/gradient_sort.h"
 #include "dwi/tractography/SIFT/model.h"

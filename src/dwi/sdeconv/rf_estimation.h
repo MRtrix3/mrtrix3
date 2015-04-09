@@ -27,7 +27,7 @@
 
 #include "exception.h"
 #include "point.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "file/ofstream.h"
 

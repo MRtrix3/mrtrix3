@@ -24,11 +24,10 @@
 #define __image_header_h__
 
 #include <map>
-#include <memory>
 
 #include "debug.h"
-#include "ptr.h"
 #include "types.h"
+#include "memory.h"
 #include "datatype.h"
 #include "image/info.h"
 #include "image/handler/base.h"

@@ -59,7 +59,7 @@ namespace MR
 
         mmap.reset (new File::MMap (files[0], writable, !is_new, bytes_per_segment));
         addresses.resize (1);
-        addresses[0] = mmap->address();
+        addresses[0].reset (mmap->address());
       }
 
 
@@ -69,7 +69,7 @@ namespace MR
           mmap.reset();
           if (is_new)
             std::cout << files[0].name << "\n";
-          addresses[0] = NULL;
+          addresses[0].release();
         }
       }
 

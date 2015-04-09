@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "point.h"
-#include "ptr.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/interp/linear.h"

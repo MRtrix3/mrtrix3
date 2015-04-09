@@ -23,8 +23,6 @@
 #ifndef __image_handler_default_h__
 #define __image_handler_default_h__
 
-#include <memory>
-
 #include "types.h"
 #include "image/handler/base.h"
 #include "file/mmap.h"

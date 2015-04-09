@@ -23,12 +23,7 @@
 #ifndef __dwi_tractography_seeding_basic_h__
 #define __dwi_tractography_seeding_basic_h__
 
-
-
-#include "ptr.h"
-
 #include "dwi/tractography/roi.h"
-
 #include "dwi/tractography/seeding/base.h"
 
 

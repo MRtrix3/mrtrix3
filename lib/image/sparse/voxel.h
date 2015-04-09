@@ -25,7 +25,6 @@
 
 #include <typeinfo>
 
-#include "ptr.h"
 #include "image/buffer.h"
 #include "image/buffer_sparse.h"
 #include "image/voxel.h"

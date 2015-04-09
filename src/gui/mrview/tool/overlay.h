@@ -106,7 +106,7 @@ namespace MR
                window.updateGL();
              }
              
-             void add_images (VecPtr<MR::Image::Header>& list);
+             void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
           private:
              ColourMap::Renderer colourbar_renderer;

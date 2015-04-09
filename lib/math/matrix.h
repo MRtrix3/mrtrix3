@@ -31,7 +31,6 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 
-#include "ptr.h"
 #include "file/ofstream.h"
 #include "math/math.h"
 #include "math/vector.h"

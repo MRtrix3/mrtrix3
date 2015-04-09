@@ -26,7 +26,7 @@
 #define __dwi_tractography_sift_proc_mask_h__
 
 #include "app.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"

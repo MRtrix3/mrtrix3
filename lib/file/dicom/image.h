@@ -25,7 +25,6 @@
 
 #include <memory>
 
-#include "ptr.h"
 #include "datatype.h"
 #include "math/vector.h"
 #include "math/matrix.h"

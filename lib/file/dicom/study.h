@@ -23,7 +23,7 @@
 #ifndef __file_dicom_study_h__
 #define __file_dicom_study_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "file/dicom/series.h"
 
 namespace MR {

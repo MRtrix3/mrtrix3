@@ -27,7 +27,6 @@
 #include <vector>
 #include <cinttypes>
 
-#include "ptr.h"
 #include "timer.h"
 #include "file/ofstream.h"
 

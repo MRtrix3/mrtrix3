@@ -39,7 +39,7 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (VecPtr<MR::Image::Header>& list);
+          void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }

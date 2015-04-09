@@ -27,7 +27,6 @@
 
 #include "app.h"
 #include "point.h"
-#include "ptr.h"
 
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
