@@ -22,7 +22,7 @@
 
 
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "image/buffer.h"
 #include "image/info.h"
@@ -84,18 +84,6 @@ class Modifier
         v_in  (input_image),
         v_out (output_image) { }
 
-    Modifier (const Modifier& that) :
-        v_in  (that.v_in),
-        v_out (that.v_out)
-    {
-      for (size_t index = 0; index != 6; ++index) {
-        if (that.buffers[index]) {
-          buffers[index] = that.buffers[index];
-          voxels [index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
-        }
-      }
-    }
-
     void set_cgm_mask  (const std::string& path) { load (path, 0); }
     void set_sgm_mask  (const std::string& path) { load (path, 1); }
     void set_wm_mask   (const std::string& path) { load (path, 2); }
@@ -119,7 +107,7 @@ class Modifier
       }
       if (!voxel_nulled) {
         unsigned int count = 0;
-        memset (values, 0x00, 5 * sizeof (float));
+        float values[5] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
         for (size_t tissue = 0; tissue != 5; ++tissue) {
           if (buffers[tissue]) {
             Image::Nav::set_pos (*voxels[tissue], pos, 0, 3);
@@ -151,8 +139,7 @@ class Modifier
   private:
     Image::Buffer<float>::voxel_type v_in, v_out;
     std::shared_ptr< Image::Buffer<bool> > buffers[6];
-    Ptr< Image::Buffer<bool>::voxel_type > voxels[6];
-    float values[5];
+    copy_ptr< Image::Buffer<bool>::voxel_type > voxels[6];
 
     void load (const std::string& path, const size_t index)
     {
@@ -160,7 +147,7 @@ class Modifier
       buffers[index].reset (new Image::Buffer<bool> (path));
       if (!Image::dimensions_match (v_in, *buffers[index], 0, 3))
         throw Exception ("Image " + str(path) + " does not match 5TT image dimensions");
-      voxels[index] = new Image::Buffer<bool>::voxel_type (*buffers[index]);
+      voxels[index].reset (new Image::Buffer<bool>::voxel_type (*buffers[index]));
     }
 
 };

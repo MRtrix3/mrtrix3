@@ -618,7 +618,7 @@ namespace MR
 
         //! read the matrix data from \a stream and assign to the matrix \a M
         friend std::istream& operator>> (std::istream& stream, Matrix& M) {
-          std::vector<std::auto_ptr<std::vector<ValueType>>> V;
+          std::vector<std::unique_ptr<std::vector<ValueType>>> V;
           std::string sbuf, entry;
 
           while (getline (stream, sbuf)) {
@@ -626,7 +626,7 @@ namespace MR
             if (sbuf.empty()) 
               continue;
 
-            V.push_back (std::auto_ptr<std::vector<ValueType>> (new std::vector<ValueType>));
+            V.push_back (std::unique_ptr<std::vector<ValueType>> (new std::vector<ValueType>));
 
             std::istringstream line (sbuf);
             while (line >> entry) 

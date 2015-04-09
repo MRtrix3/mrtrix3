@@ -37,7 +37,7 @@ namespace MR {
         is_BE = is_transfer_syntax_BE = false;
         parents.clear();
 
-        fmap = new File::MMap (filename, read_write);
+        fmap.reset (new File::MMap (filename, read_write));
 
         if (fmap->size() < 256) 
           throw Exception ("\"" + fmap->name() + "\" is too small to be a valid DICOM file");
@@ -56,7 +56,7 @@ namespace MR {
         try { set_explicit_encoding(); }
         catch (Exception) {
           throw Exception ("\"" + fmap->name() + "\" is not a valid DICOM file");
-          fmap = NULL;
+          fmap.reset();
         }
       }
 

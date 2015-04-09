@@ -23,7 +23,7 @@
 #ifndef __image_filter_dilate_h__
 #define __image_filter_dilate_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/loop.h"
@@ -82,9 +82,7 @@ namespace MR
             std::shared_ptr <BufferScratch<bool> > out_data;
             std::shared_ptr <BufferScratch<bool>::voxel_type> out;
 
-            Ptr<ProgressBar> progress;
-            if (message.size())
-              progress = new ProgressBar (message, npass_ + 1);
+            std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass_ + 1) : nullptr);
 
             for (unsigned int pass = 0; pass < npass_; pass++) {
               out_data.reset (new BufferScratch<bool> (input));

@@ -68,7 +68,7 @@ namespace MR
 
 
       template <class Set>
-      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
+      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, std::unique_ptr< Image::BufferScratch<float> >& act_5tt)
       {
 
         auto mask = proc_mask;
@@ -94,7 +94,7 @@ namespace MR
             Image::Info info_5tt (in_dwi);
             info_5tt.set_ndim (4);
             info_5tt.dim(3) = 5;
-            act_5tt = new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch");
+            act_5tt.reset (new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch"));
             auto v_5tt = act_5tt->voxel();
 
             // Test to see if the image has already been re-gridded to match the fixel image

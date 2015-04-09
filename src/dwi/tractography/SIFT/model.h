@@ -79,6 +79,7 @@ namespace MR
           {
             Track_fixel_contribution::set_scaling (dwi);
           }
+          Model (const Model& that) = delete;
 
           virtual ~Model ();
 
@@ -111,9 +112,6 @@ namespace MR
           using ModelBase<Fixel>::FOD_sum;
           using ModelBase<Fixel>::H;
           using ModelBase<Fixel>::TD_sum;
-
-
-          Model (const Model& that) : ModelBase<Fixel> (that) { assert (0); }
 
 
         private:

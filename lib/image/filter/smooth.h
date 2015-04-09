@@ -23,7 +23,7 @@
 #ifndef __image_filter_gaussian_h__
 #define __image_filter_gaussian_h__
 
-
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/threaded_copy.h"
@@ -138,13 +138,13 @@ namespace MR
             std::shared_ptr <BufferScratch<ValueType> > out_data;
             std::shared_ptr <typename BufferScratch<ValueType>::voxel_type> out;
 
-            Ptr<ProgressBar> progress;
+            std::unique_ptr<ProgressBar> progress;
             if (message.size()) {
               size_t axes_to_smooth = 0;
               for (std::vector<float>::const_iterator i = stdev.begin(); i != stdev.end(); ++i)
                 if (*i)
                   ++axes_to_smooth;
-              progress = new ProgressBar (message, axes_to_smooth + 1);
+              progress.reset (new ProgressBar (message, axes_to_smooth + 1));
             }
 
             for (size_t dim = 0; dim < this->ndim(); dim++) {

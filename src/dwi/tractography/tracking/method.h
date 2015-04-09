@@ -23,7 +23,7 @@
 #ifndef __dwi_tractography_tracking_method_h__
 #define __dwi_tractography_tracking_method_h__
 
-
+#include "memory.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
 
@@ -51,7 +51,7 @@ namespace MR
           values             (shared.source_buffer.dim(3))
         {
           if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
+            act_method_additions.reset (new ACT::ACT_Method_additions (S));
         }
 
         MethodBase (const MethodBase& that) :
@@ -62,7 +62,7 @@ namespace MR
           values              (that.values.size())
         {
           if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
+            act_method_additions.reset (new ACT::ACT_Method_additions (S));
         }
 
 
@@ -120,7 +120,7 @@ namespace MR
 
       private:
         const SharedBase& S;
-        Ptr<ACT::ACT_Method_additions> act_method_additions;
+        copy_ptr<ACT::ACT_Method_additions> act_method_additions;
 
 
       protected:

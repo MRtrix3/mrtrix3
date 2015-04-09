@@ -22,7 +22,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
@@ -398,18 +398,18 @@ void run ()
     }
 
     // Instantiate a kernel depending on the operation requested
-    Ptr<ImageKernelBase> kernel;
+    std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: kernel = new ImageKernel<Mean>    (header, output_path); break;
-      case 1: kernel = new ImageKernel<Sum>     (header, output_path); break;
-      case 2: kernel = new ImageKernel<Product> (header, output_path); break;
-      case 3: kernel = new ImageKernel<RMS>     (header, output_path); break;
-      case 4: kernel = new ImageKernel<Var>     (header, output_path); break;
-      case 5: kernel = new ImageKernel<Std>     (header, output_path); break;
-      case 6: kernel = new ImageKernel<Min>     (header, output_path); break;
-      case 7: kernel = new ImageKernel<Max>     (header, output_path); break;
-      case 8: kernel = new ImageKernel<AbsMax>  (header, output_path); break;
-      case 9: kernel = new ImageKernel<MagMax>  (header, output_path); break;
+      case 0: kernel.reset (new ImageKernel<Mean>    (header, output_path)); break;
+      case 1: kernel.reset (new ImageKernel<Sum>     (header, output_path)); break;
+      case 2: kernel.reset (new ImageKernel<Product> (header, output_path)); break;
+      case 3: kernel.reset (new ImageKernel<RMS>     (header, output_path)); break;
+      case 4: kernel.reset (new ImageKernel<Var>     (header, output_path)); break;
+      case 5: kernel.reset (new ImageKernel<Std>     (header, output_path)); break;
+      case 6: kernel.reset (new ImageKernel<Min>     (header, output_path)); break;
+      case 7: kernel.reset (new ImageKernel<Max>     (header, output_path)); break;
+      case 8: kernel.reset (new ImageKernel<AbsMax>  (header, output_path)); break;
+      case 9: kernel.reset (new ImageKernel<MagMax>  (header, output_path)); break;
       default: assert (0);
     }
 

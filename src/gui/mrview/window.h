@@ -1,7 +1,7 @@
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
@@ -63,7 +63,7 @@ namespace MR
               return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
           }
 
-          Mode::Base* get_current_mode () const { return mode; }
+          Mode::Base* get_current_mode () const { return mode.get(); }
           const Point<>& focus () const { return focal_point; }
           const Point<>& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
@@ -204,7 +204,7 @@ namespace MR
 
           GLArea* glarea;
           QTimer* glrefresh_timer;
-          Ptr<Mode::Base> mode;
+          std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
 

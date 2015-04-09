@@ -228,7 +228,7 @@ namespace MR
     race conditions if these were written to during processing. Most of the
     classes provided in MRtrix do copy-construct appropriately for use in
     multi-threading (for example Image::Voxel, Math::Vector, Math::Matrix,
-    Ptr), while others do not (Image::Buffer for example). That said, if
+    copy_ptr), while others do not (Image::Buffer for example). That said, if
     all class members have appropriate copy constructors, the default copy
     constructor should also be appropriate.
 

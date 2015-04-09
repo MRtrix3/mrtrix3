@@ -67,7 +67,7 @@ namespace MR
         private:
           const track_t size, end;
           track_t start;
-          Ptr<ProgressBar> progress;
+          std::unique_ptr<ProgressBar> progress;
 
       };
 

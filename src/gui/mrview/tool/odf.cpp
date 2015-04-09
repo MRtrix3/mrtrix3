@@ -95,7 +95,7 @@ namespace MR
               VecPtr<MR::Image::Header> hlist;
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
-                  Ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
+                  std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
                   if (header->ndim() < 4) 
                     throw Exception ("image \"" + header->name() + "\" is not 4D");
                   if (header->dim(3) < 6)

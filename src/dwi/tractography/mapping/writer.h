@@ -23,7 +23,7 @@
 #ifndef __dwi_tractography_mapping_writer_h__
 #define __dwi_tractography_mapping_writer_h__
 
-
+#include "memory.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "image/buffer_scratch.h"
@@ -75,15 +75,7 @@ class MapWriterBase
       assert (type != UNDEFINED);
     }
 
-    MapWriterBase (const MapWriterBase& that) :
-        H (that.H),
-        output_image_name (that.output_image_name),
-        direct_dump (that.direct_dump),
-        voxel_statistic (that.voxel_statistic),
-        type (that.type)
-    {
-      throw Exception ("Do not instantiate copy constructor for MapWriterBase");
-    }
+    MapWriterBase (const MapWriterBase&) = delete;
 
     virtual ~MapWriterBase() { }
 
@@ -117,8 +109,8 @@ class MapWriterBase
     // This gets used with mean voxel statistic for some (but not all) writers,
     //   or if the output is a voxel_summed DEC image.
     // It's also hijacked to store per-voxel min/max factors in the case of TOD
-    Ptr<counts_buffer_type> counts;
-    Ptr<counts_voxel_type > v_counts;
+    std::unique_ptr<counts_buffer_type> counts;
+    std::unique_ptr<counts_voxel_type > v_counts;
 
 };
 
@@ -177,9 +169,9 @@ class MapWriter : public MapWriterBase
           H_counts.set_ndim (3);
           H_counts.sanitise();
         }
-        counts = new counts_buffer_type (H_counts, "TWI streamline count buffer");
+        counts.reset (new counts_buffer_type (H_counts, "TWI streamline count buffer"));
         counts->zero();
-        v_counts = new counts_voxel_type (*counts);
+        v_counts.reset (new counts_voxel_type (*counts));
       }
     }
 

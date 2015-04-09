@@ -19,8 +19,10 @@
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
+
 #include "command.h"
 #include "math/SH.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "thread_queue.h"
 #include "image/loop.h"
@@ -118,7 +120,7 @@ class DataLoader
       loop ("estimating peak directions...", 0, 3) {
       if (mask_data) {
         Image::check_dimensions (*mask_data, sh, 0, 3);
-        mask = new Image::Buffer<bool>::voxel_type (*mask_data);
+        mask.reset (new Image::Buffer<bool>::voxel_type (*mask_data));
         loop.start (*mask, sh);
       }
       else
@@ -157,7 +159,7 @@ class DataLoader
 
   private:
     Image::Buffer<value_type>::voxel_type  sh;
-    Ptr<Image::Buffer<bool>::voxel_type> mask;
+    std::unique_ptr<Image::Buffer<bool>::voxel_type> mask;
     Image::Loop loop;
 };
 
@@ -271,7 +273,7 @@ class Processor
     std::vector<Direction> true_peaks;
     value_type threshold;
     std::vector<Direction> peaks_out;
-    Ptr<Image::Buffer<value_type>::voxel_type> ipeaks_vox;
+    copy_ptr<Image::Buffer<value_type>::voxel_type> ipeaks_vox;
 
     bool check_input (const Item& item) {
       if (ipeaks_vox) {
@@ -309,9 +311,9 @@ void run ()
 
   Options opt = get_options ("mask");
 
-  Ptr<Image::Buffer<bool> > mask_data;
+  std::unique_ptr<Image::Buffer<bool> > mask_data;
   if (opt.size())
-    mask_data = new Image::Buffer<bool> (opt[0][0]);
+    mask_data.reset (new Image::Buffer<bool> (opt[0][0]));
 
   opt = get_options ("seeds");
   Math::Matrix<value_type> dirs;
@@ -345,12 +347,12 @@ void run ()
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");
-  Ptr<Image::Buffer<value_type> > ipeaks_data;
+  std::unique_ptr<Image::Buffer<value_type> > ipeaks_data;
   if (opt.size()) {
     if (true_peaks.size())
       throw Exception ("you can't specify both a peaks file and orientations to be estimated at the same time");
     if (opt.size())
-      ipeaks_data = new Image::Buffer<value_type> (opt[0][0]);
+      ipeaks_data.reset (new Image::Buffer<value_type> (opt[0][0]));
 
     Image::check_dimensions (header, *ipeaks_data, 0, 3);
     npeaks = ipeaks_data->dim (3) / 3;
@@ -358,9 +360,9 @@ void run ()
   header.dim(3) = 3 * npeaks;
   Image::Buffer<value_type> peaks_data (argument[1], header);
 
-  DataLoader loader (SH_data, mask_data);
+  DataLoader loader (SH_data, mask_data.get());
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
-      npeaks, true_peaks, threshold, ipeaks_data);
+      npeaks, true_peaks, threshold, ipeaks_data.get());
 
   Thread::run_queue (loader, Item(), Thread::multi (processor));
 }

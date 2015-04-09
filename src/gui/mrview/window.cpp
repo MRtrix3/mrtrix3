@@ -760,7 +760,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
         set_mode_features();
         emit modeChanged();
         updateGL();
@@ -1208,7 +1208,7 @@ namespace MR
         gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
 
-        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
 
         if (batch_commands.size()) 

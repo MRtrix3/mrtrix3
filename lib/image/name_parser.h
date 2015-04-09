@@ -26,7 +26,7 @@
 #include <memory>
 
 #include "mrtrix.h"
-#include "ptr.h"
+#include "memory.h"
 #include "file/path.h"
 
 namespace MR
@@ -132,7 +132,7 @@ namespace MR
         std::vector<Item> array;
         std::vector<size_t> seq_index;
         std::string folder_name, specification, current_name;
-        Ptr<Path::Dir> folder;
+        std::unique_ptr<Path::Dir> folder;
 
         void insert_str (const std::string& str) {
           Item item;

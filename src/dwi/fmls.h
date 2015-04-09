@@ -25,7 +25,9 @@
 #ifndef __dwi_fmls_h__
 #define __dwi_fmls_h__
 
+#include <map> // Used for sorting FOD samples
 
+#include "memory.h"
 #include "math/SH.h"
 #include "math/vector.h"
 #include "point.h"
@@ -37,7 +39,6 @@
 #include "image/loop.h"
 
 
-#include <map> // Used for sorting FOD samples
 
 
 #define FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT 0.0
@@ -216,7 +217,7 @@ class FODQueueWriter
 
     template <class MaskVoxelOrBufferType>
       void set_mask (MaskVoxelOrBufferType& mask_vox) {
-        mask_vox_ptr = new MaskVoxelType (mask_vox);
+        mask_vox_ptr.reset (new MaskVoxelType (mask_vox));
       }
 
 
@@ -243,7 +244,7 @@ class FODQueueWriter
   private:
     FODVoxelType fod_vox;
     Image::Loop loop;
-    Ptr<MaskVoxelType> mask_vox_ptr;
+    std::unique_ptr<MaskVoxelType> mask_vox_ptr;
 
 };
 

@@ -24,6 +24,7 @@
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
+#include "memory.h"
 #include "math/rng.h"
 #include "image/loop.h"
 #include "image/threaded_loop.h"
@@ -170,7 +171,7 @@ class Chunk : public std::vector<complex_type> {
 class ThreadLocalStorageItem {
   public:
     Chunk chunk;
-    Ptr<complex_vox_type> vox;
+    copy_ptr<complex_vox_type> vox;
 };
 
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
@@ -241,8 +242,8 @@ class StackEntry {
         else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
         else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
         else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-        else if (a == "rand")  { value = 0.0; rng = new Math::RNG(); rng_gausssian = false; } 
-        else if (a == "randn") { value = 0.0; rng = new Math::RNG(); rng_gausssian = true; } 
+        else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
+        else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
         else                   { value =  to<complex_type> (arg); }
       }
       arg = nullptr;
@@ -251,7 +252,7 @@ class StackEntry {
     const char* arg;
     std::shared_ptr<Evaluator> evaluator;
     std::shared_ptr<Image::Buffer<complex_type> > buffer;
-    Ptr<Math::RNG> rng;
+    copy_ptr<Math::RNG> rng;
     complex_type value;
     bool rng_gausssian;
 
@@ -615,7 +616,7 @@ class ThreadFunctor {
 
       storage.push_back (ThreadLocalStorageItem());
       if (entry.buffer) {
-        storage.back().vox = new complex_vox_type (*entry.buffer);
+        storage.back().vox.reset (new complex_vox_type (*entry.buffer));
         storage.back().chunk.resize (chunk_size);
         return;
       }
