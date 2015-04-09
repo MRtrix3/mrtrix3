@@ -71,7 +71,7 @@ namespace MR
         grid_layout->addWidget (slider, 3, 1);
 
         slider = new QSlider (Qt::Horizontal);
-        slider->setRange (10,1000);
+        slider->setRange (10,100);
         slider->setSliderPosition (int (info.shine * 10.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (shine_slot (int)));
         grid_layout->addWidget (new QLabel ("Specular exponent"), 4, 0);

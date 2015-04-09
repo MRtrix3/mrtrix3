@@ -157,13 +157,6 @@ namespace MR
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
 
-            QGroupBox* streamtube_group_box = new QGroupBox (tr("streamtube"));
-            streamtube_group_box->setCheckable (true);
-            streamtube_group_box->setChecked (false);
-            default_opt_grid->addWidget (streamtube_group_box, 2, 0, 1, 2);
-
-            connect (streamtube_group_box, SIGNAL (clicked (bool)), this, SLOT (on_streamtube_slot (bool)));
-
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
@@ -297,7 +290,7 @@ namespace MR
         void Tractography::on_use_lighting_slot (bool is_checked)
         {
           use_lighting = is_checked;
-          window.updateGL();
+          on_streamtube_slot(is_checked);
         }
 
 

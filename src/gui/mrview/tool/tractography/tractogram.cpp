@@ -238,16 +238,12 @@ namespace MR
           "  float dir_dot = dot(v_dir[0].xy, v_dir[1].xy);"
           "  bool extra_quad = false;"
           "  vec4 lower_end_point, upper_end_point, connecting_end_point1, connecting_end_point2;"
-          "  if(abs(dir_dot) > 0.8) {\n"
-          "    lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[1]/dir_dot - v_dir[1]);\n"
-          "    upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[1]/dir_dot + v_dir[1]);\n"
-          "  } else {\n"
-          "    lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
-          "    upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n"
-          "    connecting_end_point1 = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
-          "    connecting_end_point2 = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
-          "    extra_quad = true;\n"
-          "  }\n"
+          "  lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
+          "  upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n"
+          "  connecting_end_point1 = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
+          "  connecting_end_point2 = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
+          "  extra_quad = true;\n"
+
 
           "  gl_Position = lower_end_point;\n"
           "  EmitVertex();\n"
@@ -302,28 +298,39 @@ namespace MR
           if (use_lighting)
             source += 
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n";
+              "uniform vec3 light_pos;\n"
+
+              "mat3 rotate_around_axis(vec3 axis, float angle) {\n"
+              "  axis = normalize(axis);\n"
+              "  float s = sin(angle);\n"
+              "  float c = cos(angle);\n"
+              "  float oc = 1.0 - c;\n"
+
+              "  return mat3(oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,\n"
+              "  oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,\n"
+              "  oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c);\n"
+              "}\n";
 
           source +=
               "void main() {\n"
               "  colour = fColour;\n";
 
-          if (use_streamtube)
-            source +=
-             "  colour *= g_height > 0.8 ? g_height + 0.4 : g_height + 0.2;\n";
-
           if (use_lighting)
             source +=
-             "  vec3 t = g_tangent;\n"
-             "  float l_dot_t = dot(light_pos, t);\n"
-             "  vec3 l_perp = light_pos - l_dot_t * t;\n"
-             "  vec3 l_perp_norm = normalize (l_perp);\n"
-             "  float n_dot_t = t.z;\n"
-             "  vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
-             "  vec3 n_perp_norm = normalize (n_perp);\n"
-             "  float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
-             "  colour *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
-             "  colour += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
+             "  float PI = " + str(Math::pi) + ";\n"
+             "  vec3 surface_normal = vec3(-g_tangent.y, g_tangent.x, 0.0f);\n"
+
+             // Rotate around tangent axis to find surface normal
+             // The g_height tells us where we are along the cylinder
+             "  surface_normal = rotate_around_axis(g_tangent, mix(0.0f, PI, g_height)) * surface_normal;"
+
+             "  float light_dot_surfaceN = dot(light_pos, surface_normal);"
+             // Ambient and diffuse component
+             "  colour *= ambient + diffuse * light_dot_surfaceN;\n"
+
+             // Specular component
+             "  vec3 reflect = (2 * light_dot_surfaceN * surface_normal) - light_pos;"
+             "  colour += specular * pow( clamp(-reflect.z, 0, 1), 1/shine);\n";
 
           source += "}\n";
 
