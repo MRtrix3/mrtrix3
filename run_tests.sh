@@ -15,6 +15,7 @@ fi
 for n in testing/*; do
   if [ -d $n ]; then continue; fi
   script=$(basename $n)
+  rm -f testing/data/tmp.*
 
   cat >> testing.log <<EOD
 ###########################################
@@ -24,10 +25,13 @@ EOD
 
   echo -n "running ${script}... "
   ( 
+    set -ex
     export PATH="$(pwd)/bin:$PATH"; 
-    cd testing/data/ && exec ../$script
+    cd testing/data/
+    source ../$script
   ) > .__tmp.log 2>&1
   error=$?
+
 
   cat .__tmp.log >> testing.log
   if [ $error != 0 ]; then 
