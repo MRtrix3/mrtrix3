@@ -38,12 +38,12 @@ namespace MR
       constexpr copy_ptr () noexcept : std::unique_ptr<T,Deleter>() { }
       constexpr copy_ptr (std::nullptr_t) noexcept : std::unique_ptr<T,Deleter>() { }
       explicit copy_ptr (T* p) noexcept : std::unique_ptr<T,Deleter> (p) { }
-      copy_ptr (const copy_ptr& u) : std::unique_ptr<T,Deleter>(new T (*u)) { }
+      copy_ptr (const copy_ptr& u) : std::unique_ptr<T,Deleter>(u ? new T (*u) : nullptr) { }
       copy_ptr (copy_ptr&& u) noexcept : std::unique_ptr<T,Deleter>(std::move(u)) { }
       template< class U, class E >
         copy_ptr (copy_ptr<U, E>&& u) noexcept : std::unique_ptr<T,Deleter>(std::move(u)) { }
 
-      copy_ptr& operator=(const copy_ptr& u) { this->reset (new T (*u)); return *this; }
+      copy_ptr& operator=(const copy_ptr& u) { this->reset (u ? new T (*u) : nullptr); return *this; }
   };
 
 }
