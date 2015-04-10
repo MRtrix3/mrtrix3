@@ -92,7 +92,7 @@ namespace MR
             ProgressBar progress ("compressing image \"" + name + "\"...",
                                   files.size() * bytes_per_segment / BYTES_PER_ZCALL);
             for (size_t n = 0; n < files.size(); n++) {
-              assert (files[n].start == int64_t (lead_in_size));
+              //assert (files[n].start == int64_t (lead_in_size));
               File::GZ zf (files[n].name, "wb");
               if (lead_in)
                 zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
