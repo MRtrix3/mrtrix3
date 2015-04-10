@@ -75,7 +75,6 @@ namespace MR
           line_thickness (0.001f),
           do_crop_to_slab (true),
           use_lighting (false),
-          use_streamtube (false),
           not_3D (true),
           line_opacity (1.0),
           scalar_file_options (NULL),
@@ -290,7 +289,7 @@ namespace MR
         void Tractography::on_use_lighting_slot (bool is_checked)
         {
           use_lighting = is_checked;
-          on_streamtube_slot(is_checked);
+          window.updateGL();
         }
 
 
@@ -308,11 +307,6 @@ namespace MR
           window.updateGL();
         }
 
-        void Tractography::on_streamtube_slot (bool is_checked)
-        {
-          use_streamtube = is_checked;
-          window.updateGL();
-        }
 
         void Tractography::opacity_slot (int opacity)
         {

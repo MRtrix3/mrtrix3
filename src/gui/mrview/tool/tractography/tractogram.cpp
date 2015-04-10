@@ -76,60 +76,36 @@ namespace MR
           "uniform vec3 const_colour;\n"
           "uniform float offset, scale;\n"
 
-          "uniform float lower;\n"
-          "uniform float upper;\n"
-
           "uniform vec3 screen_normal;\n"
           "uniform float crop_var;\n"
           "uniform float slab_width;\n"
 
-          "uniform float aspect_ratio;\n";
+          "uniform float aspect_ratio;\n"
 
-          source +=
           "out vec4 v_dir;\n"
           "out vec4 v_normal;\n"
-          "out vec3 v_colour;\n"
-          "flat out float v_include;\n";
+          "out vec3 v_colour;\n";
 
-          if(use_lighting || use_streamtube)
-            source += "out vec3 v_tangent;\n";
-
-          // Include function
-          source +=
-          "void set_include_flag() {\n"
-          "  bool include_flag = true;\n";
 
           if(do_crop_to_slab)
-            source +=
-            "  float include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n"
-            "  include_flag = include_flag && (include > 0 && include < 1);";
+            source += "flat out float v_include;\n";
 
-          // Only include vertices that are within screen coordinate bounds
-          // This is only useful because geom. shader can choose to emit no primitives
-          source +=
-            " include_flag = include_flag && (gl_Position.x > -1 && gl_Position.x < 1)\n"
-            "   && (gl_Position.y > -1 && gl_Position.y < 1)\n"
-            "   && (gl_Position.z > -1 && gl_Position.z < 1);\n";
+          if(color_type == ScalarFile)
+            source += "flat out float v_amp;\n";
 
-          if(color_type == ScalarFile) {
-            if(tractogram.use_discard_lower())
-              source += "  include_flag = include_flag && (amp < lower);\n";
-            if(tractogram.use_discard_upper())
-              source += "  include_flag = include_flag && (amp > upper);\n";
-          }
-          source +="  v_include = include_flag ? 1.0 : 0.0;\n"
-                   "}\n\n";
+          if(use_lighting)
+            source += "out vec3 v_tangent;\n";
 
           // Colour and lighting function
           source +=
           "void set_colour_and_lighting() {\n";
 
-          if(use_lighting || use_streamtube || colour_by_direction)
+          if(use_lighting || colour_by_direction)
             source +=
             "  vec3 dir = next_vertex - this_vertex;\n";
           if(colour_by_direction)
             source += "  v_colour = normalize (abs(dir));\n";
-          if(use_lighting || use_streamtube)
+          if(use_lighting)
             source += "  v_tangent = normalize (mat3(MV) * dir);\n";
 
           switch (color_type) {
@@ -164,10 +140,15 @@ namespace MR
 
           "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
           "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
-          "  gl_Position = p1;\n"
+          "  gl_Position = p1;\n";
 
-          "  set_include_flag();\n"
+          if(do_crop_to_slab)
+            source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
 
+          if(color_type == ScalarFile)
+            source += "  v_amp = amp";
+
+          source +=
           "  v_dir = normalize(p2-p1);\n"
           "  v_normal = vec4(-v_dir.y, v_dir.x, 0, 0);\n"
 
@@ -189,38 +170,47 @@ namespace MR
 
           "in vec4 v_dir[];\n"
           "in vec4 v_normal[];\n"
-          "in vec3 v_colour[];\n"
-          "flat in float v_include[];\n";
+          "in vec3 v_colour[];\n";
 
-          if(use_lighting || use_streamtube)
-           source += "in vec3 v_tangent[];\n";
+          if(do_crop_to_slab)
+            source +=
+             "flat in float v_include[];\n"
+             "out float g_include;\n";
 
-          if(use_streamtube)
-              source += "out float g_height;\n";
+          if(color_type == ScalarFile)
+           source +=
+            "flat in float v_amp[];\n"
+            "out float g_amp;\n";
+
+          if(use_lighting)
+           source +=
+            "in vec3 v_tangent[];\n"
+            "out float g_height;\n";
 
           source +=
           "out vec3 fColour;\n"
           "out vec3 g_tangent;\n"
 
           "void main() {\n"
-          // Don't create complex primitives if not visible
-          // No longer need to rely on frag shader to discard
-          "  if (v_include[0] + v_include[1] < 0.5) return;\n"
-
           "  fColour = v_colour[0];\n";
 
-          if(use_lighting || use_streamtube)
-            source += "  g_tangent = v_tangent[0];\n";
+          if(use_lighting)
+            source +=
+             "  g_tangent = v_tangent[0];\n"
+             "  g_height = 0.2;\n";
 
-          if(use_streamtube)
-            source += "  g_height = 0.2;\n";
+          if(do_crop_to_slab)
+            source += "  g_include = v_include[0];\n";
+
+          if(color_type == ScalarFile)
+            source += "  g_amp = v_amp[0];\n";
 
           source +=
           "  gl_Position = gl_in[0].gl_Position - line_thickness * (v_normal[0] - v_dir[0]);\n"
           "  EmitVertex();\n"
           "  gl_Position = gl_in[0].gl_Position + line_thickness * (v_normal[0] + v_dir[0]);\n;\n";
 
-          if(use_streamtube)
+          if(use_lighting)
             source += "  g_height = 1.0;\n";
 
           source +=
@@ -228,11 +218,16 @@ namespace MR
 
           "  fColour = v_colour[1];\n";
 
-          if(use_lighting || use_streamtube)
-            source += "  g_tangent = mix(v_tangent[0], v_tangent[1], 0.5);\n";
+          if(use_lighting)
+            source +=
+              "  g_tangent = mix(v_tangent[0], v_tangent[1], 0.5);\n"
+              "  g_height = 0.2;\n";
 
-          if(use_streamtube)
-            source += "  g_height = 0.2;\n";
+          if(do_crop_to_slab)
+            source += "  g_include = v_include[1];\n";
+
+          if(color_type == ScalarFile)
+            source += "  g_amp = v_amp[1];\n";
 
           source +=
           "  float dir_dot = dot(v_dir[0].xy, v_dir[1].xy);"
@@ -244,12 +239,11 @@ namespace MR
           "  connecting_end_point2 = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
           "  extra_quad = true;\n"
 
-
           "  gl_Position = lower_end_point;\n"
           "  EmitVertex();\n"
           "  gl_Position = upper_end_point;\n";
 
-          if(use_streamtube)
+          if(use_lighting)
             source += "  g_height = 1.0;\n";
 
           source +=
@@ -257,17 +251,16 @@ namespace MR
 
           "  if(!extra_quad) { EndPrimitive(); return; }\n";
 
-          if(use_lighting || use_streamtube)
-            source += "  g_tangent = v_tangent[1];\n";
-
-          if(use_streamtube)
-            source += "  g_height = 0.2;\n";
+          if(use_lighting)
+            source +=
+             "  g_tangent = v_tangent[1];\n"
+             "  g_height = 0.2;\n";
 
           source +=
           "  gl_Position = connecting_end_point1;\n"
           "  EmitVertex();\n";
 
-          if(use_streamtube)
+          if(use_lighting)
             source += "  g_height = 1.0;\n";
 
 
@@ -283,17 +276,26 @@ namespace MR
         }
 
 
-        std::string Tractogram::Shader::fragment_shader_source (const Displayable&)
+        std::string Tractogram::Shader::fragment_shader_source (const Displayable& displayable)
         {
+          const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
+
           std::string source =
+            "uniform float lower;\n"
+            "uniform float upper;\n"
             "in vec3 fColour;\n"
             "out vec3 colour;\n";
 
-          if (use_lighting || use_streamtube)
-            source += "in vec3 g_tangent;\n";
+          if (use_lighting)
+            source +=
+              "in vec3 g_tangent;\n"
+              "in float g_height;\n";
 
-          if (use_streamtube)
-            source += "in float g_height;\n";
+          if (do_crop_to_slab)
+            source += "in float g_include;\n";
+
+          if (color_type == ScalarFile)
+            source += "in float g_amp;\n";
 
           if (use_lighting)
             source += 
@@ -315,6 +317,17 @@ namespace MR
               "void main() {\n"
               "  colour = fColour;\n";
 
+          if (do_crop_to_slab)
+            source +=
+             "  if(g_include < 0.0 || g_include > 1.0) discard;\n";
+
+          if (color_type == ScalarFile) {
+            if (tractogram.use_discard_lower())
+              source += "  if (g_amp < lower) discard;\n";
+            if (tractogram.use_discard_upper())
+              source += "  if (g_amp > upper) discard;\n";
+          }
+
           if (use_lighting)
             source +=
              "  float PI = " + str(Math::pi) + ";\n"
@@ -326,11 +339,11 @@ namespace MR
 
              "  float light_dot_surfaceN = dot(light_pos, surface_normal);"
              // Ambient and diffuse component
-             "  colour *= ambient + diffuse * light_dot_surfaceN;\n"
+             "  colour *= ambient + diffuse * clamp(-light_dot_surfaceN, 0, 1);\n"
 
              // Specular component
              "  vec3 reflect = (2 * light_dot_surfaceN * surface_normal) - light_pos;"
-             "  colour += specular * pow( clamp(-reflect.z, 0, 1), 1/shine);\n";
+             "  colour += specular * pow(clamp(reflect.z, 0, 1), shine);\n";
 
           source += "}\n";
 
@@ -349,8 +362,6 @@ namespace MR
               return true;
           if (use_lighting != tractogram.tractography_tool.use_lighting)
             return true;
-          if (use_streamtube != tractogram.tractography_tool.use_streamtube)
-            return true;
 
           return Displayable::Shader::need_update (object);
         }
@@ -364,7 +375,6 @@ namespace MR
           do_crop_to_slab = tractogram.tractography_tool.crop_to_slab();
           scalarfile_by_direction = tractogram.scalarfile_by_direction;
           use_lighting = tractogram.tractography_tool.use_lighting;
-          use_streamtube = tractogram.tractography_tool.use_streamtube;
           color_type = tractogram.color_type;
           Displayable::Shader::update (object);
         }
