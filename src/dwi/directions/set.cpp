@@ -314,13 +314,13 @@ namespace MR {
 
       void FastLookupSet::test_lookup() const
       {
-
         Math::RNG rng;
+        std::normal_distribution<float> normal (0.0, 1.0);
 
         size_t error_count = 0;
         const size_t checks = 1000000;
         for (size_t i = 0; i != checks; ++i) {
-          Point<float> p (rng.normal(), rng.normal(), rng.normal());
+          Point<float> p (normal(rng), normal(rng), normal(rng));
           p.normalise();
           if (select_direction (p) != select_direction_slow (p))
             ++error_count;

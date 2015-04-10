@@ -195,12 +195,12 @@ void ColourMapButton::select_random_colour_slot()
 {
     size_t colour[3];
     Math::RNG rng;
-    size_t max = std::numeric_limits<unsigned char>::max();
-    size_t max_half = max/2;
+    std::uniform_int_distribution<unsigned char> uniform_int;
+    constexpr size_t max_half = std::numeric_limits<unsigned char>::max()/2;
     do {
-      colour[0] = rng.uniform_int(max);
-      colour[1] = rng.uniform_int(max);
-      colour[2] = rng.uniform_int(max);
+      colour[0] = uniform_int(rng);
+      colour[1] = uniform_int(rng);
+      colour[2] = uniform_int(rng);
     } while (colour[0] < max_half && colour[1] < max_half && colour[2] < max_half);
 
     custom_colour_action->setChecked(true);

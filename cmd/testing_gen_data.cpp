@@ -66,7 +66,8 @@ void run ()
 
   struct fill {
     Math::RNG rng;
-    void operator() (decltype(vox)& v) { v.value() = rng.normal(); }
+    std::normal_distribution<float> normal;
+    void operator() (decltype(vox)& v) { v.value() = normal(rng); }
   };
   Image::ThreadedLoop ("generating random data...", vox).run (fill(), vox);
 }

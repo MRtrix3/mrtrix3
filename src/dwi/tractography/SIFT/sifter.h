@@ -28,6 +28,9 @@
 
 #include <vector>
 
+#include "math/rng.h"
+#include "image/buffer.h"
+#include "image/header.h"
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"
@@ -36,9 +39,6 @@
 #include "dwi/tractography/SIFT/output.h"
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
-
-#include "image/buffer.h"
-#include "image/header.h"
 
 
 

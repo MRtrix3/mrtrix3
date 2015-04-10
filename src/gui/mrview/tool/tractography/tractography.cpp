@@ -377,11 +377,11 @@ namespace MR
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             float colour[3];
-            Math::RNG rng;
+            Math::RNG::Uniform<float> rng;
             do {
-              colour[0] = rng.uniform();
-              colour[1] = rng.uniform();
-              colour[2] = rng.uniform();
+              colour[0] = rng();
+              colour[1] = rng();
+              colour[2] = rng();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->erase_nontrack_data();
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->color_type = Manual;

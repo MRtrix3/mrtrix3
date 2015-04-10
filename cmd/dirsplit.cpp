@@ -132,13 +132,14 @@ class EnergyCalculator {
     void next_permutation ()
     {
       size_t i,j;
+      std::uniform_int_distribution<size_t> dist(0, subset.size()-1);
       do {
-        i = rng.uniform_int (subset.size());
-        j = rng.uniform_int (subset.size());
+        i = dist (rng);
+        j = dist (rng);
       } while (i == j);
 
-      size_t n_i = rng.uniform_int (subset[i].size());
-      size_t n_j = rng.uniform_int (subset[j].size());
+      size_t n_i = std::uniform_int_distribution<size_t> (0, subset[i].size()-1) (rng);
+      size_t n_j = std::uniform_int_distribution<size_t> (0, subset[j].size()-1) (rng);
 
       std::swap (subset[i][n_i], subset[j][n_j]);
     }

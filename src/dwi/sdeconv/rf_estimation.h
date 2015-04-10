@@ -276,7 +276,6 @@ class ResponseEstimator
         shared (csd_shared),
         lmax (lmax),
         output (output),
-        rng (),
         mutex (new std::mutex()) { }
 
     ResponseEstimator (const ResponseEstimator& that) :
@@ -297,7 +296,7 @@ class ResponseEstimator
     const size_t lmax;
     Response& output;
 
-    mutable Math::RNG rng;
+    mutable Math::RNG::Uniform<float> rng;
 
     std::shared_ptr<std::mutex> mutex;
 

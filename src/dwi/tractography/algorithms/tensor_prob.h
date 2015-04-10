@@ -65,12 +65,12 @@ namespace MR
           Tensor_Prob (const Shared& shared) :
             Tensor_Det (shared),
             S (shared),
-            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, uniform_rng.rng))) { }
 
           Tensor_Prob (const Tensor_Prob& F) :
             Tensor_Det (F.S),
             S (F.S),
-            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, uniform_rng.rng))) { }
 
 
 
@@ -145,6 +145,7 @@ namespace MR
               WildBootstrap (const Math::Matrix<value_type>& hat_matrix, Math::RNG& random_number_generator) :
                 H (hat_matrix),
                 rng (random_number_generator),
+                uniform_int (0, 1),
                 residuals (H.rows()),
                 log_signal (H.rows()) { }
 
@@ -156,13 +157,14 @@ namespace MR
 
                 for (size_t i = 0; i < residuals.size(); ++i) {
                   residuals[i] = std::exp (-residuals[i]) - data[i];
-                  data[i] += rng.uniform_int (2) ? residuals[i] : -residuals[i];
+                  data[i] += uniform_int (rng) ? residuals[i] : -residuals[i];
                 }
               }
 
             private:
               const Math::Matrix<value_type>& H;
               Math::RNG& rng;
+              std::uniform_int_distribution<> uniform_int;
               Math::Vector<value_type> residuals, log_signal;
           };
 

@@ -23,87 +23,77 @@
 #ifndef __math_simulation_h__
 #define __math_simulation_h__
 
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+#include <random>
+#ifdef MRTRIX_WINDOWS
 #include <sys/time.h>
+#endif
 
-#include "math/vector.h"
+#include "mrtrix.h"
 
 namespace MR
 {
   namespace Math
   {
 
-    class RNG
+    //! random number generator
+    /*! this is a thin wrapper around the standard C++11 std::mt19937 random
+     * number generator. It can be used in combination with the standard C++11
+     * distributions. It differs from the standard in its constructors: the
+     * default constructor will seed using std::random_device, unless a seed
+     * has been expicitly passed using the MRTRIX_RNG_SEED environment
+     * variable. The copy constructor will seed itself using 1 + the last seed
+     * used - this ensures the seeds are unique across instances in
+     * multi-threading. */
+    class RNG : public std::mt19937
     {
       public:
-        RNG () {
-          generator = gsl_rng_alloc (gsl_rng_mt19937);
+        RNG () : std::mt19937 (get_seed()) { }
+        RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
+        RNG (const RNG& rng) : std::mt19937 (get_seed()) { }
+        template <typename ValueType> class Uniform; 
+        template <typename ValueType> class Normal; 
+
+        static std::mt19937::result_type get_seed () {
+          static std::mt19937::result_type current_seed = get_seed_private();
+          return current_seed++;
+        }
+
+      private:
+        static std::mt19937::result_type get_seed_private () {
+          const char* from_env = getenv ("MRTRIX_RNG_SEED");
+          if (from_env) 
+            return to<std::mt19937::result_type> (from_env);
+
+#ifdef MRTRIX_WINDOWS
           struct timeval tv;
-          gettimeofday (&tv, NULL);
-          set (tv.tv_sec ^ tv.tv_usec);
-        }
-        RNG (size_t seed) {
-          generator = gsl_rng_alloc (gsl_rng_mt19937);
-          set (seed);
-        }
-        RNG (const RNG& rng) {
-          generator = gsl_rng_alloc (gsl_rng_mt19937);
-          set (rng.get()+1);
-        }
-        ~RNG ()           {
-          gsl_rng_free (generator);
+          gettimeofday (&tv, nullptr);
+          return tv.tv_sec ^ tv.tv_usec;
+#else 
+          // TODO check whether this does in fact work on Windows...
+          std::random_device rd;
+          return rd();
+#endif
         }
 
 
-
-        void set (size_t seed) {
-          gsl_rng_set (generator, seed);
-        }
-
-        size_t get () const {
-          return gsl_rng_get (generator);
-        }
-
-
-        gsl_rng*  operator() ()                    {
-          return generator;
-        }
-
-        float uniform ()              {
-          return gsl_rng_uniform (generator);
-        }
-        size_t uniform_int (size_t max) {
-          return gsl_rng_uniform_int (generator, max);
-        }
-        float normal (float SD = 1.0) {
-          return gsl_ran_gaussian (generator, SD);
-        }
-        float rician (float amplitude, float SD) {
-          amplitude += gsl_ran_gaussian_ratio_method (generator, SD);
-          float imag = gsl_ran_gaussian_ratio_method (generator, SD);
-          return sqrt (amplitude*amplitude + imag*imag);
-        }
-
-        template <typename T> void shuffle (Vector<T>& V) {
-          gsl_ran_shuffle (generator, V->ptr(), V.size(), sizeof (T));
-        }
-        template <class T> void shuffle (std::vector<T>& V) {
-          gsl_ran_shuffle (generator, &V[0], V.size(), sizeof (T));
-        }
-
-
-      protected:
-        gsl_rng* generator;
     };
 
 
-    inline float cauchy (float x, float s)
-    {
-      x /= s;
-      return (1.0 / (1.0 + x*x));
-    }
+    template <typename ValueType>
+      class RNG::Uniform {
+        public:
+          RNG rng;
+          std::uniform_real_distribution<ValueType> dist;
+          ValueType operator() () { return dist (rng); }
+      };
 
+    template <typename ValueType>
+      class RNG::Normal {
+        public:
+          RNG rng;
+          std::normal_distribution<ValueType> dist;
+          ValueType operator() () { return dist (rng); }
+      };
 
   }
 }

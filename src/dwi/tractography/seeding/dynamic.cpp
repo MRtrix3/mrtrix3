@@ -21,16 +21,11 @@
  */
 
 
-#include "dwi/tractography/seeding/dynamic.h"
-
 #include "app.h"
-
 #include "image/nav.h"
-
 #include "dwi/fmls.h"
-
 #include "math/SH.h"
-
+#include "dwi/tractography/seeding/dynamic.h"
 
 
 namespace MR
@@ -67,8 +62,8 @@ namespace MR
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const Math::RNG& rng, const DWI::Directions::FastLookupSet& dirs) :
-          Base (in, rng, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
+      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const DWI::Directions::FastLookupSet& dirs) :
+          Base (in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           total_samples (0),
           total_seeds   (0),
@@ -135,17 +130,18 @@ namespace MR
       {
 
         uint64_t samples = 0;
+        std::uniform_int_distribution<size_t> uniform_int (0, fixels.size()-2);
 
         while (1) {
 
           ++samples;
-          const size_t fixel_index = 1 + rng.uniform_int (fixels.size() - 1);
+          const size_t fixel_index = 1 + uniform_int (rng.rng);
           const Fixel& fixel = fixels[fixel_index];
 
-          if (fixel.get_seed_prob (mu()) > rng.uniform()) {
+          if (fixel.get_seed_prob (mu()) > rng()) {
 
             const Point<int>& v (fixel.get_voxel());
-            const Point<float> vp (v[0]+rng.uniform()-0.5, v[1]+rng.uniform()-0.5, v[2]+rng.uniform()-0.5);
+            const Point<float> vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
             p = transform.voxel2scanner (vp);
 
             bool good_seed = !act;
