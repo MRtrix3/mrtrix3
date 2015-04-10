@@ -156,6 +156,10 @@ namespace MR
       try {
         INFO ("creating image \"" + image_name + "\"...");
 
+        (*this)["mrtrix_version"] = App::mrtrix_version;
+        if (App::project_version)
+          (*this)["project_version"] = App::project_version;
+
         sanitise();
 
         NameParser parser;
