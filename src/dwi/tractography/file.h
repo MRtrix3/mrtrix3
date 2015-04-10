@@ -212,6 +212,7 @@ namespace MR
           File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
           const_cast<Properties&> (properties).set_timestamp();
+          const_cast<Properties&> (properties).set_version_info();
 
           create (out, properties, "tracks");
           barrier_addr = out.tellp();

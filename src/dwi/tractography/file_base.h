@@ -92,10 +92,6 @@ namespace MR
           void create (File::OFStream& out, const Properties& properties, const std::string& type) {
             out << "mrtrix " + type + "\nEND\n";
 
-            out << "mrtrix_version: " << App::mrtrix_version << "\n";
-            if (App::project_version)
-              out << "project_version: " << App::project_version << "\n";
-
             for (Properties::const_iterator i = properties.begin(); i != properties.end(); ++i) {
               if ((i->first != "count") && (i->first != "total_count"))
                 out << i->first << ": " << i->second << "\n";
