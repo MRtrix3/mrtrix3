@@ -152,7 +152,7 @@ namespace MR
 
 
         Connectome::Node_mesh::Node_mesh (const Mesh::Mesh& in) :
-            count (in.triangles.size()),
+            count (in.num_triangles()),
             vertex_buffer (0),
             vertex_array_object (0),
             index_buffer (0)
@@ -195,7 +195,7 @@ namespace MR
         void Connectome::Node_mesh::render()
         {
           gl::BindVertexArray (vertex_array_object);
-          gl::BindBuffer (index_buffer);
+          gl::BindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer);
           gl::DrawElements (gl::TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
         }
 
