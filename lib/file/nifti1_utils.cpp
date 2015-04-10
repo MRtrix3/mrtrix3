@@ -208,7 +208,7 @@ namespace MR
 
         char descrip[81];
         strncpy (descrip, NH.descrip, 80);
-        if (descrip[0]) {
+        if (descrip[0] && strncmp (descrip, "MRtrix version: ", 16)) {
           descrip[80] = '\0';
           if (strncmp (descrip, "MRtrix version: ", 16) == 0)
             H["mrtrix_version"] = descrip+16;

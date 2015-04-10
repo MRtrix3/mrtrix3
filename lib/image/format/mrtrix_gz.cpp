@@ -52,22 +52,22 @@ namespace MR
         zf.close();
 
         std::string fname;
-        size_t offset;
-        get_mrtrix_file_path (H, "file", fname, offset);
+        size_t in_offset;
+        get_mrtrix_file_path (H, "file", fname, in_offset);
         if (fname != H.name())
           throw Exception ("GZip-compressed MRtrix format images must have image data within the same file as the header");
 
         std::stringstream header;
         header << "mrtrix image\n";
         write_mrtrix_header (H, header);
-        offset = header.str().size() + size_t(24);
-        offset += ((4 - (offset % 4)) % 4);
-        header << "file: . " << offset << "\nEND\n";
+        size_t out_offset = header.str().size() + size_t(24);
+        out_offset += ((4 - (out_offset % 4)) % 4);
+        header << "file: . " << out_offset << "\nEND\n";
 
-        RefPtr<Handler::Base> handler (new Handler::GZ (H, offset));
+        RefPtr<Handler::Base> handler (new Handler::GZ (H, out_offset));
         memcpy (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header(), header.str().c_str(), header.str().size());
-        memset (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header() + header.str().size(), 0, offset - header.str().size());
-        handler->files.push_back (File::Entry (H.name(), offset));
+        memset (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header() + header.str().size(), 0, out_offset - header.str().size());
+        handler->files.push_back (File::Entry (H.name(), in_offset));
 
         return handler;
       }

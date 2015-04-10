@@ -93,6 +93,8 @@ namespace MR
             std::vector<float> V (parse_floats (value));
             dw_scheme.insert (dw_scheme.end(), V.begin(), V.end());
           }
+          else if (key == "mrtrix_version") continue;
+          else if (key == "project_version") continue;
           else if (key.size() && value.size()) {
             if (H[key].size())
               H[key] += '\n';
