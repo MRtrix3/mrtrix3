@@ -131,7 +131,7 @@ namespace MR
         void transform_voxel_to_realspace (const Image::Header&);
         void transform_realspace_to_voxel (const Image::Header&);
 
-        void save (const std::string&) const;
+        void save (const std::string&, const bool binary = true) const;
 
         void output_pve_image (const Image::Header&, const std::string&);
 
@@ -153,12 +153,17 @@ namespace MR
 
       private:
         void load_vtk (const std::string&);
-        void save_vtk (const std::string&) const;
+        void load_stl (const std::string&);
+        void save_vtk (const std::string&, const bool) const;
+        void save_stl (const std::string&, const bool) const;
 
         void verify_data() const;
 
         void load_triangle_vertices (VertexList&, const size_t) const;
         void load_quad_vertices     (VertexList&, const size_t) const;
+
+        Point<float> calc_normal (const Triangle&) const;
+        Point<float> calc_normal (const Quad&) const;
 
     };
 
