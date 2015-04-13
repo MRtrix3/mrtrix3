@@ -188,6 +188,7 @@ namespace MR
           {
             File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
+            const_cast<Properties&> (properties).set_version_info();
             create (out, properties, "track scalars");
             current_offset = out.tellp();
           }
