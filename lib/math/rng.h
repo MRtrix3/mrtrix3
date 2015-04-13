@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __math_simulation_h__
-#define __math_simulation_h__
+#ifndef __math_rng_h__
+#define __math_rng_h__
 
 #include <random>
 #ifdef MRTRIX_WINDOWS
@@ -49,7 +49,7 @@ namespace MR
       public:
         RNG () : std::mt19937 (get_seed()) { }
         RNG (std::mt19937::result_type seed) : std::mt19937 (seed) { }
-        RNG (const RNG& rng) : std::mt19937 (get_seed()) { }
+        RNG (const RNG&) : std::mt19937 (get_seed()) { }
         template <typename ValueType> class Uniform; 
         template <typename ValueType> class Normal; 
 
