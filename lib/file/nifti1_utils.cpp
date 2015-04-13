@@ -210,7 +210,10 @@ namespace MR
         strncpy (descrip, NH.descrip, 80);
         if (descrip[0]) {
           descrip[80] = '\0';
-          H.comments().push_back (descrip);
+          if (strncmp (descrip, "MRtrix version: ", 16) == 0)
+            H["mrtrix_version"] = descrip+16;
+          else
+            H.comments().push_back (descrip);
         }
 
         if (is_nifti) {
