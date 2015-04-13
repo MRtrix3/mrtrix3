@@ -98,8 +98,10 @@ namespace MR
       if (fid < 0) {
         if (App::check_overwrite_files_func && errno == EEXIST) 
           App::check_overwrite_files_func (filename);
-        else 
+        else if (errno == EEXIST)
           throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
+        else
+          throw Exception ("error creating output file \"" + filename + "\": " + std::strerror (errno));
         fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
       }
       if (fid < 0) {
