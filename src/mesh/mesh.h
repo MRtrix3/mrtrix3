@@ -84,6 +84,7 @@ namespace MR
         uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
         uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
 
+        size_t size() const { return vertices; }
 
       private:
         uint32_t indices[vertices];

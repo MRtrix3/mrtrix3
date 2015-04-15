@@ -63,6 +63,7 @@ namespace MR
             void drawOverlays (const Projection& transform) override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
+            size_t num_nodes() const { return nodes.size(); }
 
           private slots:
             void image_open_slot ();
@@ -96,38 +97,39 @@ namespace MR
 
           private:
 
-            // TODO Helper class to manage the storage and display of the mesh for each node
-            class Node_mesh
+            // Stores all fixed information relating to the drawing of nodes
+            class Node
             {
-
               public:
-                // This should transfer all mesh data onto the GPU, and just store the
-                //   necessary references
-                Node_mesh (const Mesh::Mesh&);
-                ~Node_mesh();
+                Node (const Point<float>&, const size_t, MR::Image::BufferScratch<bool>&);
+                Node ();
 
-                // TODO This should also handle the rendering; allows for a fixed colour per node
-                //   without having to create a redundant colour vertex array
-                // Actually, may be able to do this in the calling draw() function by resetting
-                //   the colour using gl::GetUniformLocation()
-                void render();
+                void render_mesh() const { mesh.render(); }
+
+                const Point<float>& get_com() const { return centre_of_mass; }
+                size_t get_volume() const { return volume; }
 
               private:
-                const GLsizei count;
-                GLuint vertex_buffer, vertex_array_object, index_buffer;
+                const Point<float> centre_of_mass;
+                const size_t volume;
+
+                // Helper class to manage the storage and display of the mesh for each node
+                class Mesh {
+                  public:
+                    Mesh (const MR::Mesh::Mesh&);
+                    Mesh ();
+                    ~Mesh();
+                    void render() const;
+                  private:
+                    GLsizei count;
+                    GLuint vertex_buffer, vertex_array_object, index_buffer;
+                } mesh;
+
+                // TODO Helper class to manage the storage and display of the volume for each node
 
             };
+            std::vector<Node> nodes;
 
-
-
-            // Keep the number of nodes here handy & ready to go
-            node_t num_nodes;
-            // TODO Store the centre of mass for each node
-            std::vector< Point<float> > centres_of_mass;
-            // TODO Store a mesh representation of each node
-            // Since this should not need to be manipulated in any way, it should be
-            //   possible to store them in whatever format OpenGL wants them in
-            std::vector<Node_mesh> node_meshes;
 
             // If a connectome config file is provided, this will map from the
             //   value in the image to the appropriate index of the lookup table
@@ -140,11 +142,6 @@ namespace MR
             // TODO Helper functions
             void clear_all();
             void initialise (const std::string&);
-
-
-
-
-
 
         };
 

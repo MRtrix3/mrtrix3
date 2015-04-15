@@ -78,7 +78,7 @@ namespace MR
           if (vox.value()) {
 
             for (size_t adj = 0; adj != 6; ++adj) {
-              Image::Nav::set_pos (neighbour, vox);
+              Image::Nav::set_pos  (neighbour, vox);
               Image::Nav::step_pos (neighbour, steps[adj]);
 
               // May get an overflow here; can't guarantee order of an or operation

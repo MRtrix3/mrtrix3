@@ -25,9 +25,14 @@
 #include "file/path.h"
 #include "gui/dialog/file.h"
 #include "image/buffer.h"
+#include "image/buffer_scratch.h"
 #include "image/header.h"
 #include "image/loop.h"
+#include "image/nav.h"
 #include "image/transform.h"
+
+#include "mesh/mesh.h"
+#include "mesh/vox2mesh.h"
 
 namespace MR
 {
@@ -83,6 +88,8 @@ namespace MR
 
             main_box->addStretch ();
             setMinimumSize (main_box->minimumSize());
+
+            image_open_slot();
         }
 
 
@@ -134,6 +141,8 @@ namespace MR
           // TODO This may be difficult; don't necessarily know the format of the lookup table
           // Ideally also want to make use of the existing functions for importing these
         }
+
+
         void Connectome::config_open_slot()
         {
 
@@ -150,8 +159,29 @@ namespace MR
 
 
 
+        Connectome::Node::Node (const Point<float>& com, const size_t vol, MR::Image::BufferScratch<bool>& img) :
+            centre_of_mass (com),
+            volume (vol)
+        {
+          MR::Mesh::Mesh temp;
+          auto voxel = img.voxel();
+          {
+            MR::LogLevelLatch latch (0);
+            MR::Mesh::vox2mesh (voxel, temp);
+          }
+          mesh = Node::Mesh (temp);
+        }
 
-        Connectome::Node_mesh::Node_mesh (const Mesh::Mesh& in) :
+        Connectome::Node::Node () :
+            centre_of_mass (),
+            volume (0) { }
+
+
+
+
+
+
+        Connectome::Node::Mesh::Mesh (const MR::Mesh::Mesh& in) :
             count (in.num_triangles()),
             vertex_buffer (0),
             vertex_array_object (0),
@@ -174,7 +204,7 @@ namespace MR
 
           std::vector<unsigned int> indices;
           indices.reserve (3 * in.num_triangles());
-          for (size_t i = 0; i != in.num_vertices(); ++i) {
+          for (size_t i = 0; i != in.num_triangles(); ++i) {
             for (size_t v = 0; v != 3; ++v)
               indices.push_back (in.tri(i)[v]);
           }
@@ -183,17 +213,24 @@ namespace MR
           gl::BufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], GL_STATIC_DRAW);
         }
 
+        Connectome::Node::Mesh::Mesh () :
+            count (0),
+            vertex_buffer (0),
+            vertex_array_object (0),
+            index_buffer (0) { }
 
-        Connectome::Node_mesh::~Node_mesh ()
+        Connectome::Node::Mesh::~Mesh ()
         {
-          gl::DeleteBuffers (1, &vertex_buffer);
-          gl::DeleteVertexArrays (1, &vertex_array_object);
-          gl::DeleteBuffers (1, &index_buffer);
+          if (count) {
+            gl::DeleteBuffers (1, &vertex_buffer);
+            gl::DeleteVertexArrays (1, &vertex_array_object);
+            gl::DeleteBuffers (1, &index_buffer);
+          }
         }
 
-
-        void Connectome::Node_mesh::render()
+        void Connectome::Node::Mesh::render() const
         {
+          assert (count);
           gl::BindVertexArray (vertex_array_object);
           gl::BindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer);
           gl::DrawElements (gl::TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
@@ -210,35 +247,68 @@ namespace MR
           image_button ->setText ("");
           lut_button   ->setText ("");
           config_button->setText ("");
-          num_nodes = 0;
+          nodes.clear();
           lookup.clear();
           node_map.clear();
         }
 
         void Connectome::initialise (const std::string& path)
         {
+
+          // TODO This could be made faster by constructing the meshes on-the-fly
+
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype");
           MR::Image::Buffer<node_t> buffer (path);
           auto voxel = buffer.voxel();
           MR::Image::Transform transform (H);
+          std::vector< Point<float> > node_coms;
           std::vector<size_t> node_volumes;
-          MR::Image::LoopInOrder loop (voxel, "Importing parcellation image... ");
-          for (loop.start (voxel); loop.ok(); loop.next (voxel)) {
-            const node_t node = voxel.value();
-            if (node) {
-              if (node >= num_nodes) {
-                num_nodes = node;
-                centres_of_mass.resize (num_nodes+1, Point<float> (0.0f, 0.0f, 0.0f));
-                node_volumes.resize (num_nodes+1, 0);
+          VecPtr< MR::Image::BufferScratch<bool> > node_masks (1);
+          VecPtr< MR::Image::BufferScratch<bool>::voxel_type > node_mask_voxels (1);
+          size_t node_count = 0;
+
+          {
+            MR::Image::LoopInOrder loop (voxel, "Importing parcellation image... ");
+            for (loop.start (voxel); loop.ok(); loop.next (voxel)) {
+              const node_t node_index = voxel.value();
+              if (node_index) {
+
+                if (node_index >= node_count) {
+
+                  node_coms       .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
+                  node_volumes    .resize (node_index+1, 0);
+                  node_masks      .resize (node_index+1);
+                  node_mask_voxels.resize (node_index+1);
+                  for (size_t i = node_count+1; i <= node_index; ++i) {
+                    node_masks[i] = new MR::Image::BufferScratch<bool> (H, "Bitwise mask for node " + str(i));
+                    node_mask_voxels[i] = new MR::Image::BufferScratch<bool>::voxel_type (*node_masks[i]);
+                  }
+                  node_count = node_index;
+                }
+
+                MR::Image::Nav::set_pos (*node_mask_voxels[node_index], voxel);
+                node_mask_voxels[node_index]->value() = true;
+
+                node_coms   [node_index] += transform.voxel2scanner (voxel);
+                node_volumes[node_index]++;
               }
-              centres_of_mass[node] += transform.voxel2scanner (voxel);
-              node_volumes[node]++;
             }
           }
-          for (node_t n = 1; n != num_nodes; ++n)
-            centres_of_mass[n] *= (1.0f / float(node_volumes[n]));
+          for (node_t n = 1; n != node_count; ++n)
+            node_coms[n] *= (1.0f / float(node_volumes[n]));
+
+          // TODO In its current state, this could be multi-threaded
+          {
+            MR::ProgressBar progress ("Triangulating nodes...", node_count);
+            nodes.push_back (Node());
+            for (size_t i = 1; i != node_count; ++i) {
+              nodes.push_back (Node (node_coms[i], node_volumes[i], *node_masks[i]));
+              ++progress;
+            }
+          }
+
         }
 
 
