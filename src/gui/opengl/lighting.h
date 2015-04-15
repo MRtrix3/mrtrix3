@@ -39,10 +39,10 @@ namespace MR
         public:
           Lighting (QObject* parent) : 
             QObject (parent), 
-            ambient (0.4), 
+            ambient (0.5),
             diffuse (0.7), 
-            specular (0.3), 
-            shine (2.0),
+            specular (0.7),
+            shine (5.0),
             set_background (false) {
             load_defaults();
           }

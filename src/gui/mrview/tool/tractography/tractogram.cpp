@@ -342,7 +342,8 @@ namespace MR
              "  colour *= ambient + diffuse * clamp(-light_dot_surfaceN, 0, 1);\n"
 
              // Specular component
-             "  vec3 reflect = (2 * light_dot_surfaceN * surface_normal) - light_pos;"
+             "  vec3 reflect = -(2 * light_dot_surfaceN * surface_normal) + light_pos;"
+
              "  colour += specular * pow(clamp(reflect.z, 0, 1), shine);\n";
 
           source += "}\n";
