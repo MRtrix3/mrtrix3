@@ -52,57 +52,43 @@ namespace MR
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
 
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
-            void onFocusChanged ();
             void image_open_slot ();
             void image_close_slot ();
-            // void toggle_shown_slot (const QModelIndex& index);
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void update_slot (int unused);
-            void lock_orientation_to_image_slot (int unused);
             void colour_by_direction_slot (int unused);
             void hide_negative_lobes_slot (int unused);
-            void use_lighting_slot (int unused);
-            void interpolation_slot (int unused);
-            void show_axes_slot (int unused);
             void lmax_slot (int value);
-            void level_of_detail_slot (int value);
             void lighting_settings_slot (bool unused);
 
-            void overlay_toggled_slot ();
-            void overlay_scale_slot ();
-            void overlay_update_slot ();
-            void overlay_update_slot (int value);
-
-            // void values_changed ();
-            // void colourmap_changed (int index);
+            void updateGL ();
+            void adjust_scale_slot ();
 
           protected:
              class Model;
              class Image;
-             class RenderFrame;
+
+             DWI::Renderer *renderer;
 
              Model* image_list_model;
-             RenderFrame *render_frame;
              QListView* image_list_view;
-             QCheckBox *lock_orientation_to_image_box, *use_lighting_box, *hide_negative_lobes_box;
-             QCheckBox *colour_by_direction_box, *interpolation_box, *show_axes_box;
+             QPushButton* hide_all_button;
+             QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box;
+             QCheckBox *colour_by_direction_box, *interpolation_box;
              QSpinBox *lmax_selector, *level_of_detail_selector;
 
-             DWI::Renderer *overlay_renderer;
-             QGroupBox *overlay_frame;
-             AdjustButton *overlay_scale;
-             QSpinBox *overlay_level_of_detail_selector;
-             QComboBox *overlay_grid_selector;
-             QCheckBox *overlay_lock_to_grid_box;
+             AdjustButton *scale;
+             QComboBox *grid_selector;
 
              Dialog::Lighting *lighting_dialog;
+             GL::Lighting* lighting;
 
-             int overlay_lmax, overlay_level_of_detail;
+             int lmax, level_of_detail;
              
-             virtual void showEvent (QShowEvent* event);
-             virtual void closeEvent (QCloseEvent* event);
+             void add_images (std::vector<std::string>& list);
 
              Image* get_image ();
              void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos);
