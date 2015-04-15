@@ -172,6 +172,37 @@ namespace MR
       };
 
 
+      class IndexBuffer {
+        public:
+          IndexBuffer () : id (0) { }
+          ~IndexBuffer () { clear(); }
+          IndexBuffer (const IndexBuffer&) : id (0) { }
+          IndexBuffer (IndexBuffer&& t) : id (t.id) { t.id = 0; }
+          IndexBuffer& operator= (IndexBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          operator GLuint () const { return id; }
+          void gen () {
+            if (!id) {
+              gl::GenBuffers (1, &id);
+              GL_DEBUG ("created OpenGL index buffer ID " + str(id));
+            }
+          }
+          void clear () {
+            if (id) {
+              GL_DEBUG ("deleting OpenGL index buffer ID " + str(id));
+              gl::DeleteBuffers (1, &id);
+              id = 0;
+            }
+          }
+          void bind () const {
+            assert (id);
+            GL_DEBUG ("binding OpenGL index buffer ID " + str(id));
+            gl::BindBuffer (gl::ELEMENT_ARRAY_BUFFER, id);
+          }
+        protected:
+          GLuint id;
+      };
+
+
 
       class FrameBuffer {
         public:

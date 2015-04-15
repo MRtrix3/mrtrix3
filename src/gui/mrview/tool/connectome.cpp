@@ -236,8 +236,7 @@ namespace MR
 
 
         Connectome::Node::Mesh::Mesh (const MR::Mesh::Mesh& in) :
-            count (in.num_triangles()),
-            index_buffer (0)
+            count (in.num_triangles())
         {
           std::vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
@@ -260,37 +259,29 @@ namespace MR
             for (size_t v = 0; v != 3; ++v)
               indices.push_back (in.tri(i)[v]);
           }
-          gl::GenBuffers (1, &index_buffer);
-          gl::BindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-          gl::BufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], GL_STATIC_DRAW);
+          index_buffer.gen();
+          index_buffer.bind();
+          gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
         }
 
         Connectome::Node::Mesh::Mesh (Mesh&& that) :
             count (that.count),
             vertex_buffer (std::move (that.vertex_buffer)),
             vertex_array_object (std::move (that.vertex_array_object)),
-            index_buffer (that.index_buffer)
+            index_buffer (std::move (that.index_buffer))
         {
-          that.count = that.index_buffer = 0;
+          that.count = 0;
         }
 
         Connectome::Node::Mesh::Mesh () :
-            count (0),
-            index_buffer (0) { }
-
-        Connectome::Node::Mesh::~Mesh ()
-        {
-          if (count) {
-            gl::DeleteBuffers (1, &index_buffer);
-          }
-        }
+            count (0) { }
 
         Connectome::Node::Mesh& Connectome::Node::Mesh::operator= (Connectome::Node::Mesh&& that)
         {
           count = that.count; that.count = 0;
           vertex_buffer = std::move (that.vertex_buffer);
           vertex_array_object = std::move (that.vertex_array_object);
-          index_buffer = that.index_buffer; that.index_buffer = 0;
+          index_buffer = std::move (that.index_buffer);
           return *this;
         }
 
@@ -298,7 +289,7 @@ namespace MR
         {
           assert (count);
           vertex_array_object.bind();
-          gl::BindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer);
+          index_buffer.bind();
           gl::DrawArrays (gl::TRIANGLES, 0, count);
         }
 

@@ -151,14 +151,14 @@ namespace MR
                     Mesh (const Mesh&) = delete;
                     Mesh (Mesh&&);
                     Mesh ();
-                    ~Mesh();
+                    ~Mesh() { }
                     Mesh& operator= (Mesh&&);
                     void render() const;
                   private:
                     GLsizei count;
                     GL::VertexBuffer vertex_buffer;
                     GL::VertexArrayObject vertex_array_object;
-                    GLuint index_buffer;
+                    GL::IndexBuffer index_buffer;
                 } mesh;
 
                 // TODO Helper class to manage the storage and display of the volume for each node
