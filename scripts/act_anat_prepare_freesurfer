@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
 # Script that receives as argument a segmented T1 image from FreeSurfer, and outputs
 #   a five-tissue-type (5TT) segmented image in a format appropriate for ACT

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python2
 
 # Script for performing EPI distortion correction using FSL 5.0 tools eddy / topup / applytopup
 
