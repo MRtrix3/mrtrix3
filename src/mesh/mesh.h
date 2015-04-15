@@ -34,6 +34,7 @@
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/header.h"
+#include "image/info.h"
 #include "image/loop.h"
 #include "image/nav.h"
 #include "image/transform.h"
@@ -128,9 +129,9 @@ namespace MR
         }
 
 
-        void transform_first_to_realspace (const Image::Header&);
-        void transform_voxel_to_realspace (const Image::Header&);
-        void transform_realspace_to_voxel (const Image::Header&);
+        void transform_first_to_realspace (const Image::Info&);
+        void transform_voxel_to_realspace (const Image::Info&);
+        void transform_realspace_to_voxel (const Image::Info&);
 
         void save (const std::string&, const bool binary = true) const;
 

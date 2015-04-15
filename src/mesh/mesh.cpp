@@ -46,25 +46,25 @@ namespace MR
 
 
 
-    void Mesh::transform_first_to_realspace (const Image::Header& H)
+    void Mesh::transform_first_to_realspace (const Image::Info& info)
     {
-      Image::Transform transform (H);
+      Image::Transform transform (info);
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
-        (*v)[0] = ((H.dim(0)-1) * H.vox(0)) - (*v)[0];
+        (*v)[0] = ((info.dim(0)-1) * info.vox(0)) - (*v)[0];
         *v = transform.image2scanner (*v);
       }
     }
 
-    void Mesh::transform_voxel_to_realspace (const Image::Header& H)
+    void Mesh::transform_voxel_to_realspace (const Image::Info& info)
     {
-      Image::Transform transform (H);
+      Image::Transform transform (info);
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
         *v = transform.voxel2scanner (*v);
     }
 
-    void Mesh::transform_realspace_to_voxel (const Image::Header& H)
+    void Mesh::transform_realspace_to_voxel (const Image::Info& info)
     {
-      Image::Transform transform (H);
+      Image::Transform transform (info);
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
         *v = transform.scanner2voxel (*v);
     }

@@ -45,6 +45,48 @@ namespace MR
 
 
 
+        bool Connectome::Shader::need_update (const Connectome&) const { return true; }
+
+        // For now, assume that all nodes are being drawn based on the mesh;
+        //   branches can be added later
+        void Connectome::Shader::update (const Connectome& /*parent*/)
+        {
+          vertex_shader_source =
+              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+              "uniform mat4 MVP;\n";
+
+          vertex_shader_source +=
+              "void main() {\n"
+              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+
+          vertex_shader_source += "}\n";
+
+          fragment_shader_source =
+              "out vec3 color;\n"
+              "in vec3 fragmentColor;\n";
+
+          fragment_shader_source +=
+              "void main(){\n";
+
+          fragment_shader_source +=
+              //"  color = fragmentColor;\n";
+              "  color = vec3(1,0,0);\n";
+
+          fragment_shader_source += "}\n";
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
         Connectome::Connectome (Window& main_window, Dock* parent) :
           Base (main_window, parent) {
@@ -96,10 +138,22 @@ namespace MR
         Connectome::~Connectome () {}
 
 
-        //void Connectome::draw (const Projection& transform, bool is_3D, int axis, int slice)
-        void Connectome::draw (const Projection&, bool, int, int)
+        void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
+          if (hide_all_button->isChecked()) return;
 
+          node_shader.start (*this);
+          projection.set (node_shader);
+
+          gl::Disable (gl::BLEND);
+          gl::Enable (gl::DEPTH_TEST);
+          gl::DepthMask (gl::TRUE_);
+
+          //for (size_t i = 1; i != num_nodes(); ++i)
+          //  nodes[i].render_mesh();
+          nodes[2].render_mesh();
+
+          node_shader.stop();
         }
 
 
@@ -125,11 +179,10 @@ namespace MR
           if (path.empty())
             return;
 
-          // TODO If a new parcellation image is opened, all other data should be invalidated
+          // If a new parcellation image is opened, all other data should be invalidated
           clear_all();
 
-          // TODO Read in the image file, do the necessary conversions e.g. to mesh,
-          //   store the number of nodes,
+          // Read in the image file, do the necessary conversions e.g. to mesh, store the number of nodes, ...
           initialise (path);
 
           image_button->setText (QString::fromStdString (Path::basename (path)));
@@ -168,6 +221,7 @@ namespace MR
           {
             MR::LogLevelLatch latch (0);
             MR::Mesh::vox2mesh (voxel, temp);
+            temp.transform_voxel_to_realspace (img);
           }
           mesh = Node::Mesh (temp);
         }
@@ -183,8 +237,6 @@ namespace MR
 
         Connectome::Node::Mesh::Mesh (const MR::Mesh::Mesh& in) :
             count (in.num_triangles()),
-            vertex_buffer (0),
-            vertex_array_object (0),
             index_buffer (0)
         {
           std::vector<float> vertices;
@@ -193,12 +245,12 @@ namespace MR
             for (size_t axis = 0; axis != 3; ++axis)
               vertices.push_back (in.vert(v)[axis]);
           }
-          gl::GenBuffers (1, &vertex_buffer);
-          gl::BindBuffer (GL_ARRAY_BUFFER, vertex_buffer);
-          gl::BufferData (GL_ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], GL_STATIC_DRAW);
+          vertex_buffer.gen();
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], gl::STATIC_DRAW);
 
-          gl::GenVertexArrays (1, &vertex_array_object);
-          gl::BindVertexArray (vertex_array_object);
+          vertex_array_object.gen();
+          vertex_array_object.bind();
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
@@ -213,27 +265,41 @@ namespace MR
           gl::BufferData (GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], GL_STATIC_DRAW);
         }
 
+        Connectome::Node::Mesh::Mesh (Mesh&& that) :
+            count (that.count),
+            vertex_buffer (std::move (that.vertex_buffer)),
+            vertex_array_object (std::move (that.vertex_array_object)),
+            index_buffer (that.index_buffer)
+        {
+          that.count = that.index_buffer = 0;
+        }
+
         Connectome::Node::Mesh::Mesh () :
             count (0),
-            vertex_buffer (0),
-            vertex_array_object (0),
             index_buffer (0) { }
 
         Connectome::Node::Mesh::~Mesh ()
         {
           if (count) {
-            gl::DeleteBuffers (1, &vertex_buffer);
-            gl::DeleteVertexArrays (1, &vertex_array_object);
             gl::DeleteBuffers (1, &index_buffer);
           }
+        }
+
+        Connectome::Node::Mesh& Connectome::Node::Mesh::operator= (Connectome::Node::Mesh&& that)
+        {
+          count = that.count; that.count = 0;
+          vertex_buffer = std::move (that.vertex_buffer);
+          vertex_array_object = std::move (that.vertex_array_object);
+          index_buffer = that.index_buffer; that.index_buffer = 0;
+          return *this;
         }
 
         void Connectome::Node::Mesh::render() const
         {
           assert (count);
-          gl::BindVertexArray (vertex_array_object);
+          vertex_array_object.bind();
           gl::BindBuffer (GL_ELEMENT_ARRAY_BUFFER, index_buffer);
-          gl::DrawElements (gl::TRIANGLES, count, GL_UNSIGNED_INT, (void*)0);
+          gl::DrawArrays (gl::TRIANGLES, 0, count);
         }
 
 
@@ -276,7 +342,6 @@ namespace MR
               if (node_index) {
 
                 if (node_index >= node_count) {
-
                   node_coms       .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
                   node_volumes    .resize (node_index+1, 0);
                   node_masks      .resize (node_index+1);

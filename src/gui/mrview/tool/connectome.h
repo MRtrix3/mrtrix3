@@ -28,6 +28,7 @@
 
 #include "point.h"
 
+#include "gui/opengl/shader.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/projection.h"
 
@@ -52,8 +53,38 @@ namespace MR
             typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
             typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
+          private:
+
+            class Shader : public GL::Shader::Program {
+              public:
+                Shader() : GL::Shader::Program () { }
+                ~Shader() { }
+
+                bool need_update (const Connectome&) const;
+                void update (const Connectome&);
+
+                void start (const Connectome& parent) {
+                  if (*this == 0 || need_update (parent))
+                    recompile (parent);
+                  GL::Shader::Program::start();
+                }
+
+              protected:
+                std::string vertex_shader_source, fragment_shader_source;
+                void recompile (const Connectome& parent) {
+                  if (*this != 0)
+                    clear();
+                  update (parent);
+                  GL::Shader::Vertex vertex_shader (vertex_shader_source);
+                  GL::Shader::Fragment fragment_shader (fragment_shader_source);
+                  attach (vertex_shader);
+                  attach (fragment_shader);
+                  link();
+                }
+            } node_shader, edge_shader;
+
+
           public:
-            class Model;
 
             Connectome (Window& main_window, Dock* parent);
 
@@ -117,12 +148,17 @@ namespace MR
                 class Mesh {
                   public:
                     Mesh (const MR::Mesh::Mesh&);
+                    Mesh (const Mesh&) = delete;
+                    Mesh (Mesh&&);
                     Mesh ();
                     ~Mesh();
+                    Mesh& operator= (Mesh&&);
                     void render() const;
                   private:
                     GLsizei count;
-                    GLuint vertex_buffer, vertex_array_object, index_buffer;
+                    GL::VertexBuffer vertex_buffer;
+                    GL::VertexArrayObject vertex_array_object;
+                    GLuint index_buffer;
                 } mesh;
 
                 // TODO Helper class to manage the storage and display of the volume for each node
