@@ -89,7 +89,7 @@ void run ()
 
   // Load the lookup table - need this info to match config file structure names to indices in the input image
   Node_map in_nodes;
-  load_lookup_table (in_nodes);
+  load_lut_from_cmdline (in_nodes);
   if (in_nodes.empty())
     throw Exception ("Must provide the lookup table corresponding to the input image parcellation");
 
@@ -115,7 +115,7 @@ void run ()
 
   // Create a new header for the output file
   Image::Header H (in_data);
-  H.comments().push_back ("Created by mrprep4connectome");
+  H.comments().push_back ("Created by labelconfig");
   H.comments().push_back ("Basis image: " + Path::basename (argument[0]));
   H.comments().push_back ("Configuration file: " + Path::basename (argument[1]));
 

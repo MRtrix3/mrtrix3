@@ -43,12 +43,14 @@ namespace Connectomics {
 
 
 
-class Node_info;
-typedef std::map<node_t, Node_info> Node_map;
+
+
+enum lut_format { LUT_NONE, LUT_BASIC, LUT_FREESURFER, LUT_AAL, LUT_ITKSNAP };
+extern const char* lut_format_strings[];
+
 extern const App::OptionGroup LookupTableOption;
-void load_lookup_table (Node_map&);
-
-
+class Node_map;
+void load_lut_from_cmdline (Node_map&);
 
 
 
@@ -92,6 +94,19 @@ class Node_info
 };
 
 
+
+
+class Node_map : public std::map<node_t, Node_info>
+{
+  public:
+    void load (const std::string&, const lut_format);
+  private:
+    void parse_line_basic      (const std::string&);
+    void parse_line_freesurfer (const std::string&);
+    void parse_line_aal        (const std::string&);
+    void parse_line_itksnap    (const std::string&);
+
+};
 
 
 

@@ -77,7 +77,7 @@ void run ()
   auto nodes = nodes_data.voxel();
 
   Node_map node_map;
-  load_lookup_table (node_map);
+  load_lut_from_cmdline (node_map);
 
   Options opt = get_options ("config");
   if (opt.size()) {
