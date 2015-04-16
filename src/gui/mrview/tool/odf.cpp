@@ -169,7 +169,7 @@ namespace MR
             hide_all_button->setToolTip (tr ("Hide All"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
-            connect (hide_all_button, SIGNAL (clicked()), this, SLOT (updateGL ()));
+            connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
             layout->addWidget (hide_all_button, 1);
 
             main_box->addLayout (layout, 0);
@@ -449,6 +449,12 @@ namespace MR
           if (indexes.size())
             image_list_model->remove_item (indexes.first());
           updateGL();
+        }
+
+
+        void ODF::hide_all_slot ()
+        {
+          window.updateGL();
         }
 
 
