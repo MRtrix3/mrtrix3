@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Script that receives as argument a T1-weighted image, and outputs a five-tissue-type (5TT) segmented image
 # in a format appropriate for ACT

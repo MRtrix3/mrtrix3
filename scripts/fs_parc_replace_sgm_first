@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 
 # Script for 'repairing' a FreeSurfer parcellation image
 # FreeSurfer's sub-cortical structure segmentation has been observed to be highly variable

@@ -1,6 +1,6 @@
 def getFSLSuffix():
   import os, sys
-  from warnMessage import warnMessage
+  from lib.warnMessage import warnMessage
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if not fsl_output_type:
 	  return ''

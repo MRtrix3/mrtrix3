@@ -12,8 +12,8 @@ workingDir = ''
 
 def initialise(n):
   import os, random, string, sys
-  from printMessage          import printMessage
-  from readMRtrixConfSetting import readMRtrixConfSetting
+  from lib.printMessage          import printMessage
+  from lib.readMRtrixConfSetting import readMRtrixConfSetting
   global cleanup, mrtrixQuiet, numArgs, tempDir, verbosity, workingDir
   #if not numArgs:
   #  sys.stderr.write('Must set numArgs value before calling initialise()\n')
@@ -53,7 +53,7 @@ def initialise(n):
 
 def gotoTempDir():
   import os
-  from printMessage import printMessage
+  from lib.printMessage import printMessage
   if verbosity:
     printMessage('Changing to temporary directory (' + tempDir + ')')
   os.chdir(tempDir)
@@ -62,7 +62,7 @@ def gotoTempDir():
 
 def moveFileToDest(local_path, destination):
   import os, shutil
-  from printMessage import printMessage
+  from lib.printMessage import printMessage
   if destination[0] != '/':
     destination = os.path.abspath(os.path.join(workingDir, destination))
   printMessage('Moving output file from temporary directory to user specified location')
@@ -72,7 +72,7 @@ def moveFileToDest(local_path, destination):
 
 def terminate():
   import os, shutil
-  from printMessage import printMessage
+  from lib.printMessage import printMessage
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
   if cleanup:
