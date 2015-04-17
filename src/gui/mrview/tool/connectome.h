@@ -115,7 +115,7 @@ namespace MR
             void drawOverlays (const Projection& transform) override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
-            size_t num_nodes() const { return nodes.size(); }
+            size_t num_nodes() const { return nodes.size() - 1; }
 
           private slots:
             void image_open_slot ();
@@ -168,7 +168,7 @@ namespace MR
             //   updated whenever a relevant setting (e.g. node visibility, colours) changes
 
             // TODO Change layout here: Should probably be a grid covering all lines
-            // Also: Colour settings may need more space...
+            // Also: Colour settings may need more space; preferably its own row directly below
 
             QPushButton *image_button, *hide_all_button;
             QComboBox *lut_combobox;
@@ -185,7 +185,7 @@ namespace MR
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
 
-            QColorButton *node_colour_button;
+            QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
 
             AdjustButton *node_size_button;
@@ -282,10 +282,10 @@ namespace MR
             Point<float> node_fixed_colour;
             float node_fixed_alpha;
             float node_size_scale_factor;
-            std::vector<float> node_values_from_file_colour;
-            std::vector<float> node_values_from_file_size;
-            std::vector<float> node_values_from_file_visibility;
-            std::vector<float> node_values_from_file_alpha;
+            Math::Vector<float> node_values_from_file_colour;
+            Math::Vector<float> node_values_from_file_size;
+            Math::Vector<float> node_values_from_file_visibility;
+            Math::Vector<float> node_values_from_file_alpha;
 
 
 
@@ -293,6 +293,9 @@ namespace MR
             // TODO Helper functions
             void clear_all();
             void initialise (const std::string&);
+
+            void import_file_for_node_property (Math::Vector<float>&, const std::string&);
+
             void load_node_properties();
             void calculate_node_colours();
             void calculate_node_sizes();

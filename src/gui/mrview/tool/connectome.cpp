@@ -216,9 +216,9 @@ namespace MR
           node_colour_combobox->addItem ("From vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
           hlayout->addWidget (node_colour_combobox, 1);
-          node_colour_button = new QColorButton;
-          connect (node_colour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
-          hlayout->addWidget (node_colour_button, 1);
+          node_colour_fixedcolour_button = new QColorButton;
+          connect (node_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
+          hlayout->addWidget (node_colour_fixedcolour_button, 1);
           node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           node_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (node_colour_colourmap_button, 1);
@@ -454,10 +454,18 @@ namespace MR
               break;
             case 3:
               //if (node_colour == NODE_COLOUR_FILE) return; // Keep this; may want to select a new file
-              node_colour = NODE_COLOUR_FILE;
-              // TODO Prompt the user to import a file
-              // TODO Make the relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
-              node_colour_colourmap_button->setVisible (true);
+              try {
+                import_file_for_node_property (node_values_from_file_colour, "colours");
+              } catch (...) { }
+              if (node_values_from_file_colour.size()) {
+                node_colour = NODE_COLOUR_FILE;
+                // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
+                node_colour_colourmap_button->setVisible (true);
+              } else {
+                node_colour_combobox->setCurrentIndex (0);
+                node_colour = NODE_COLOUR_FIXED;
+                node_colour_colourmap_button->setVisible (false);
+              }
               break;
           }
           calculate_node_colours();
@@ -475,7 +483,15 @@ namespace MR
               node_size = NODE_SIZE_VOLUME;
               break;
             case 2:
-              node_size = NODE_SIZE_FILE;
+              try {
+                import_file_for_node_property (node_values_from_file_size, "size");
+              } catch (...) { }
+              if (node_values_from_file_size.size()) {
+                node_size = NODE_SIZE_FILE;
+              } else {
+                node_size_combobox->setCurrentIndex (0);
+                node_size = NODE_SIZE_FIXED;
+              }
               break;
           }
           calculate_node_sizes();
@@ -488,7 +504,15 @@ namespace MR
               node_visibility = NODE_VIS_ALL;
               break;
             case 1:
-              node_visibility = NODE_VIS_FILE;
+              try {
+                import_file_for_node_property (node_values_from_file_visibility, "visibility");
+              } catch (...) { }
+              if (node_values_from_file_visibility.size()) {
+                node_visibility = NODE_VIS_FILE;
+              } else {
+                node_visibility_combobox->setCurrentIndex (0);
+                node_visibility = NODE_VIS_ALL;
+              }
               break;
             case 2:
               node_visibility = NODE_VIS_DEGREE;
@@ -514,8 +538,17 @@ namespace MR
               node_alpha_slider->setVisible (false);
               break;
             case 2:
-              node_alpha = NODE_ALPHA_FILE;
-              node_alpha_slider->setVisible (false);
+              try {
+                import_file_for_node_property (node_values_from_file_alpha, "transparency");
+              } catch (...) { }
+              if (node_values_from_file_alpha.size()) {
+                node_alpha = NODE_ALPHA_FILE;
+                node_alpha_slider->setVisible (false);
+              } else {
+                node_alpha_combobox->setCurrentIndex (0);
+                node_alpha = NODE_ALPHA_FIXED;
+                node_alpha_slider->setVisible (true);
+              }
               break;
           }
           calculate_node_alphas();
@@ -533,7 +566,7 @@ namespace MR
 
         void Connectome::node_colour_change_slot()
         {
-          QColor c = node_colour_button->color();
+          QColor c = node_colour_fixedcolour_button->color();
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           calculate_node_colours();
         }
@@ -717,6 +750,24 @@ namespace MR
           }
 
         }
+
+
+
+
+        void Connectome::import_file_for_node_property (Math::Vector<float>& data, const std::string& attribute)
+        {
+          data.clear();
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine node " + attribute);
+          if (path.empty())
+            return;
+          data.load (path);
+          const size_t numel = data.size();
+          if (data.size() != num_nodes()) {
+            data.clear();
+            throw Exception ("File " + Path::basename (path) + " contains " + str (numel) + " elements, but connectome has " + str(num_nodes()) + " nodes");
+          }
+        }
+
 
 
 
