@@ -31,6 +31,8 @@
 #include "image/nav.h"
 #include "image/transform.h"
 
+#include "math/rng.h"
+
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
 
@@ -106,65 +108,142 @@ namespace MR
 
 
         Connectome::Connectome (Window& main_window, Dock* parent) :
-          Base (main_window, parent) {
+            Base (main_window, parent),
+            node_geometry (NODE_GEOM_SPHERE),
+            node_colour (NODE_COLOUR_FIXED),
+            node_size (NODE_SIZE_FIXED),
+            node_visibility (NODE_VIS_ALL),
+            node_fixed_colour (0.5f, 0.5f, 0.5f),
+            node_size_scale_factor (0.0f)
+        {
 
-            VBoxLayout* main_box = new VBoxLayout (this);
+          VBoxLayout* main_box = new VBoxLayout (this);
 
-            HBoxLayout* layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+          HBoxLayout* hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
 
-            image_button = new QPushButton (this);
-            image_button->setToolTip (tr ("Open parcellation image"));
-            // TODO New icons
-            // TODO Have the icons always there, but add the opened file name as text
-            //image_button->setIcon (QIcon (":/open.svg"));
-            connect (image_button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
-            layout->addWidget (image_button, 1);
+          QGroupBox* group_box = new QGroupBox ("Basic setup");
+          main_box->addWidget (group_box);
+          VBoxLayout* vlayout = new VBoxLayout;
+          group_box->setLayout (vlayout);
 
-            hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide all connectome visualisation"));
-            hide_all_button->setIcon (QIcon (":/hide.svg"));
-            hide_all_button->setCheckable (true);
-            connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
-            layout->addWidget (hide_all_button, 1);
+          image_button = new QPushButton (this);
+          image_button->setToolTip (tr ("Open parcellation image"));
+          // TODO New icons
+          // TODO Have the icons always there, but add the opened file name as text
+          //image_button->setIcon (QIcon (":/open.svg"));
+          connect (image_button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
+          hlayout->addWidget (image_button, 1);
 
-            main_box->addLayout (layout, 0);
+          hide_all_button = new QPushButton (this);
+          hide_all_button->setToolTip (tr ("Hide all connectome visualisation"));
+          hide_all_button->setIcon (QIcon (":/hide.svg"));
+          hide_all_button->setCheckable (true);
+          connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
+          hlayout->addWidget (hide_all_button, 1);
 
-            layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+          vlayout->addLayout (hlayout);
 
-            layout->addWidget (new QLabel ("LUT: "));
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
 
-            lut_combobox = new QComboBox (this);
-            lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)"));
-            for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
-              lut_combobox->insertItem (index, MR::DWI::Tractography::Connectomics::lut_format_strings[index]);
-            connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
-            layout->addWidget (lut_combobox, 1);
+          hlayout->addWidget (new QLabel ("LUT: "));
 
-            //lut_namebox = new QLabel ("(none)");
-            //layout->addWidget (lut_namebox);
+          lut_combobox = new QComboBox (this);
+          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)"));
+          for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
+            lut_combobox->insertItem (index, MR::DWI::Tractography::Connectomics::lut_format_strings[index]);
+          connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
+          hlayout->addWidget (lut_combobox, 1);
+          vlayout->addLayout (hlayout);
 
-            main_box->addLayout (layout, 0);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
 
-            layout = new HBoxLayout;
-            layout->setContentsMargins (0, 0, 0, 0);
-            layout->setSpacing (0);
+          hlayout->addWidget (new QLabel ("Config: "));
 
-            config_button = new QPushButton (this);
-            config_button->setToolTip (tr ("Open connectome config file"));
-            //config_button->setIcon (QIcon (":/close.svg"));
-            connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
-            layout->addWidget (config_button, 1);
+          config_button = new QPushButton (this);
+          config_button->setToolTip (tr ("Open connectome config file"));
+          //config_button->setIcon (QIcon (":/close.svg"));
+          config_button->setText (tr ("(none)"));
+          connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
+          hlayout->addWidget (config_button, 1);
+          vlayout->addLayout (hlayout);
 
-            main_box->addLayout (layout, 0);
+          group_box = new QGroupBox ("Node visualisation");
+          main_box->addWidget (group_box);
+          vlayout = new VBoxLayout;
+          group_box->setLayout (vlayout);
 
-            main_box->addStretch ();
-            setMinimumSize (main_box->minimumSize());
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
 
-            image_open_slot();
+          QLabel* label = new QLabel ("Geometry: ");
+          hlayout->addWidget (label);
+          node_geometry_combobox = new QComboBox (this);
+          node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
+          node_geometry_combobox->addItem ("Sphere");
+          node_geometry_combobox->addItem ("Overlay");
+          node_geometry_combobox->addItem ("Mesh");
+          connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_slot (int)));
+          hlayout->addWidget (node_geometry_combobox, 1);
+          vlayout->addLayout(hlayout);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+
+          label = new QLabel ("Colour: ");
+          hlayout->addWidget (label);
+          node_colour_combobox = new QComboBox (this);
+          node_colour_combobox->setToolTip (tr ("Set the colour of each node"));
+          node_colour_combobox->addItem ("Fixed");
+          node_colour_combobox->addItem ("Random");
+          node_colour_combobox->addItem ("Lookup table");
+          node_colour_combobox->addItem ("From scalar file");
+          connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_slot (int)));
+          hlayout->addWidget (node_colour_combobox, 1);
+          vlayout->addLayout (hlayout);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+
+          label = new QLabel ("Size scaling: ");
+          hlayout->addWidget (label);
+          node_size_combobox = new QComboBox (this);
+          node_size_combobox->setToolTip (tr ("Scale the size of each node"));
+          node_size_combobox->addItem ("Fixed");
+          node_size_combobox->addItem ("Volume");
+          node_size_combobox->addItem ("From scalar file");
+          connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_slot (int)));
+          hlayout->addWidget (node_size_combobox, 1);
+          vlayout->addLayout (hlayout);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+
+          label = new QLabel ("Visibility: ");
+          hlayout->addWidget (label);
+          node_visibility_combobox = new QComboBox (this);
+          node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
+          node_visibility_combobox->addItem ("All");
+          node_visibility_combobox->addItem ("From scalar file");
+          node_visibility_combobox->addItem ("Degree >= 1");
+          node_visibility_combobox->addItem ("Manual");
+          connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_slot (int)));
+          hlayout->addWidget (node_visibility_combobox, 1);
+          vlayout->addLayout (hlayout);
+
+          main_box->addStretch ();
+          setMinimumSize (main_box->minimumSize());
+
+          image_open_slot();
         }
 
 
@@ -184,7 +263,7 @@ namespace MR
 
           //for (size_t i = 1; i != num_nodes(); ++i)
           //  nodes[i].render_mesh();
-          nodes[2].render_mesh();
+          nodes[44].render_mesh();
 
           node_shader.stop();
         }
@@ -224,8 +303,10 @@ namespace MR
         {
           if (!index) {
             lut.clear();
+            lut_lookup.clear();
             //lut_namebox->setText (QString::fromStdString ("(none)"));
             lut_combobox->removeItem (5);
+            load_node_properties();
             return;
           }
           if (index == 5)
@@ -236,6 +317,7 @@ namespace MR
             return;
 
           lut.clear();
+          lut_lookup.clear();
           lut_combobox->removeItem (5);
 
           try {
@@ -251,18 +333,18 @@ namespace MR
           lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
           lut_combobox->setCurrentIndex (5);
 
-          // TODO Now want to call a function that will load the relevant properties into the nodes[] member
           load_node_properties();
         }
 
 
         void Connectome::config_open_slot()
         {
-          config_button->setText ("");
           const std::string path = Dialog::File::get_file (this, "Select connectome configuration file");
           if (path.empty())
             return;
           config.clear();
+          lut_lookup.clear();
+          config_button->setText ("");
           MR::DWI::Tractography::Connectomics::load_config (path, config);
           config_button->setText (QString::fromStdString (Path::basename (path)));
           load_node_properties();
@@ -279,11 +361,120 @@ namespace MR
 
 
 
+        void Connectome::node_geometry_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              if (node_geometry == NODE_GEOM_SPHERE) return;
+              node_geometry = NODE_GEOM_SPHERE;
+              node_size_combobox->setEnabled (true);
+              break;
+            case 1:
+              if (node_geometry == NODE_GEOM_OVERLAY) return;
+              node_geometry = NODE_GEOM_OVERLAY;
+              node_size_combobox->setCurrentIndex (0);
+              node_size_combobox->setEnabled (false);
+              break;
+            case 2:
+              if (node_geometry == NODE_GEOM_MESH) return;
+              node_geometry = NODE_GEOM_MESH;
+              node_size_combobox->setCurrentIndex (0);
+              node_size_combobox->setEnabled (false);
+              break;
+          }
+        }
+
+        void Connectome::node_colour_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              // if (node_colour == NODE_COLOUR_FIXED) return; // TODO Should this prompt a new colour selection? Means no need for a button...
+              node_colour = NODE_COLOUR_FIXED;
+              break;
+            case 1:
+              //if (node_colour == NODE_COLOUR_RANDOM) return; // Keep this; regenerate random colours on repeat selection
+              node_colour = NODE_COLOUR_RANDOM;
+              break;
+            case 2:
+              if (node_colour == NODE_COLOUR_LUT) return;
+              // TODO Pointless selection if no LUT is loaded...
+              node_colour = NODE_COLOUR_LUT;
+              break;
+            case 3:
+              //if (node_colour == NODE_COLOUR_FILE) return; // Keep this; may want to select a new file
+              node_colour = NODE_COLOUR_FILE;
+              // TODO Prompt the user to import a file
+              // TODO Make the relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
+              break;
+          }
+          calculate_node_colours();
+          // Probably need to updateGL() as well...
+        }
+
+        void Connectome::node_size_slot (int index)
+        {
+          assert (node_geometry == NODE_GEOM_SPHERE);
+          switch (index) {
+            case 0:
+              node_size = NODE_SIZE_FIXED;
+              break;
+            case 1:
+              node_size = NODE_SIZE_VOLUME;
+              break;
+            case 2:
+              node_size = NODE_SIZE_FILE;
+              break;
+          }
+          calculate_node_sizes();
+        }
+
+        void Connectome::node_visibility_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              node_visibility = NODE_VIS_ALL;
+              break;
+            case 1:
+              node_visibility = NODE_VIS_FILE;
+              break;
+            case 2:
+              node_visibility = NODE_VIS_DEGREE;
+              break;
+            case 3:
+              node_visibility = NODE_VIS_MANUAL;
+              // TODO Here is where the corresponding list view should be made visible
+              break;
+          }
+          calculate_node_visibility();
+        }
+
+        void Connectome::node_alpha_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              node_alpha = NODE_ALPHA_FIXED;
+              break;
+            case 1:
+              node_alpha = NODE_ALPHA_LUT;
+              break;
+            case 2:
+              node_alpha = NODE_ALPHA_FILE;
+              break;
+          }
+          calculate_node_alphas();
+        }
+
+
+
+
+
+
         Connectome::Node::Node (const Point<float>& com, const size_t vol, MR::Image::BufferScratch<bool>& img) :
             centre_of_mass (com),
             volume (vol),
             size (1.0f),
             colour (0.5f, 0.5f, 0.5f),
+            alpha (1.0f),
             visible (true)
         {
           MR::Mesh::Mesh temp;
@@ -302,6 +493,7 @@ namespace MR
             volume (0),
             size (0.0f),
             colour (0.0f, 0.0f, 0.0f),
+            alpha (0.0f),
             visible (false) { }
 
 
@@ -446,9 +638,175 @@ namespace MR
 
         void Connectome::load_node_properties()
         {
+          lut_lookup.clear();
+          if (lut.size()) {
+
+            lut_lookup.push_back (lut.end());
+            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+
+              if (config.size()) {
+                const std::string name = config[node_index];
+                nodes[node_index].set_name (name);
+                Node_map::const_iterator it;
+                for (it = lut.begin(); it != lut.end(); ++it) {
+                  if (it->second.get_name() == name) {
+                    lut_lookup.push_back (it);
+                    continue;
+                  }
+                }
+                if (it == lut.end())
+                  lut_lookup.push_back (it);
+
+              } else { // LUT, but no config file
+
+                const auto it = lut.find (node_index);
+                if (it == lut.end())
+                  nodes[node_index].set_name ("Node " + str(node_index));
+                else
+                  nodes[node_index].set_name (it->second.get_name());
+                lut_lookup.push_back (it);
+
+              }
+
+            } // End looping over all nodes when LUT is present
+
+          } else { // No LUT; just name nodes according to their indices
+
+            lut_lookup.assign (num_nodes()+1, lut.end());
+            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index)
+              nodes[node_index].set_name ("Node " + str(node_index));
+
+          }
+
+          calculate_node_colours();
+          calculate_node_sizes();
+          calculate_node_visibility();
+          calculate_node_alphas();
+
+        }
 
 
 
+        void Connectome::calculate_node_colours()
+        {
+          if (node_colour == NODE_COLOUR_FIXED) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_colour (node_fixed_colour);
+
+          } else if (node_colour == NODE_COLOUR_RANDOM) {
+
+            Point<float> rgb;
+            Math::RNG rng;
+            for (auto i = nodes.begin(); i != nodes.end(); ++i) {
+              do {
+                rgb.set (rng.uniform(), rng.uniform(), rng.uniform());
+              } while (rgb[0] < 0.5 && rgb[1] < 0.5 && rgb[2] < 0.5);
+              i->set_colour (rgb);
+            }
+
+          } else if (node_colour == NODE_COLOUR_LUT) {
+
+            assert (lut.size());
+            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+              if (lut_lookup[node_index] == lut.end())
+                nodes[node_index].set_colour (node_fixed_colour);
+              else
+                nodes[node_index].set_colour (Point<float> (lut_lookup[node_index]->second.get_colour()) / 255.0f);
+            }
+
+          } else if (node_colour == NODE_COLOUR_FILE) {
+
+            // TODO Probably actually nothing to do here;
+            //   shader will branch in order to feed the raw value from the imported file into a colour
+            //   (will need to send the shader a scalar rather than a vec3)
+            // This will then enable use of all possible colour maps
+
+          }
+        }
+
+
+
+        void Connectome::calculate_node_sizes()
+        {
+          if (node_size == NODE_SIZE_FIXED) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_size (1.0f);
+
+          } else if (node_size == NODE_SIZE_VOLUME) {
+
+            // TODO Improve this heuristic
+            // For example: Could take into consideration the voxel size of the image, then
+            //   scale so that the sphere takes up approximately the same volume as the node itself
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_size (i->get_volume());
+
+          } else if (node_size == NODE_SIZE_FILE) {
+
+            assert (node_values_from_file_size.size());
+            for (size_t i = 1; i != num_nodes()+1; ++i)
+              nodes[i].set_size (node_values_from_file_size[i-1]);
+
+          }
+        }
+
+
+
+        void Connectome::calculate_node_visibility()
+        {
+
+          if (node_visibility == NODE_VIS_ALL) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (true);
+
+          } else if (node_visibility == NODE_VIS_FILE) {
+
+            assert (node_values_from_file_visibility.size());
+            for (size_t i = 1; i != num_nodes()+1; ++i)
+              nodes[i].set_visible (node_values_from_file_visibility[i-1]);
+
+          } else if (node_visibility == NODE_VIS_DEGREE) {
+
+            // TODO Need full connectome matrix, as well as current edge visualisation
+            //   thresholds, in order to calculate this
+
+          } else if (node_visibility == NODE_VIS_MANUAL) {
+
+            // TODO This needs to read from the corresponding list view (which doesn't exist yet),
+            //   and set the visibilities accordingly
+
+          }
+        }
+
+
+
+        void Connectome::calculate_node_alphas()
+        {
+
+          if (node_alpha == NODE_ALPHA_FIXED) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_alpha (1.0f);
+
+          } else if (node_alpha == NODE_ALPHA_LUT) {
+
+            assert (lut.size());
+            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+              if (lut_lookup[node_index] == lut.end())
+                nodes[node_index].set_alpha (node_fixed_alpha);
+              else
+                nodes[node_index].set_alpha (lut_lookup[node_index]->second.get_alpha() / 255.0f);
+            }
+
+          } else if (node_alpha == NODE_ALPHA_FILE) {
+
+            assert (node_values_from_file_alpha.size());
+            for (size_t i = 1; i != num_nodes()+1; ++i)
+              nodes[i].set_visible (node_values_from_file_alpha[i-1]);
+
+          }
         }
 
 

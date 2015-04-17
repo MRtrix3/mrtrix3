@@ -54,6 +54,12 @@ namespace MR
             typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
             typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
+            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH };
+            enum node_colour_t     { NODE_COLOUR_FIXED, NODE_COLOUR_RANDOM, NODE_COLOUR_LUT, NODE_COLOUR_FILE };
+            enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
+            enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_FILE, NODE_VIS_DEGREE, NODE_VIS_MANUAL };
+            enum node_alpha_t      { NODE_ALPHA_FIXED, NODE_ALPHA_LUT, NODE_ALPHA_FILE };
+
           private:
 
             class Shader : public GL::Shader::Program {
@@ -72,6 +78,8 @@ namespace MR
 
               protected:
                 std::string vertex_shader_source, fragment_shader_source;
+                // TODO edge shader using lines will make a lot more sense with a geometry shader:
+                //   set up the relevant parameters, then emit two vertices at two locations
 
               private:
                 void recompile (const Connectome& parent);
@@ -112,6 +120,12 @@ namespace MR
             void config_open_slot ();
             void hide_all_slot ();
 
+            void node_geometry_slot (int);
+            void node_colour_slot (int);
+            void node_size_slot (int);
+            void node_visibility_slot (int);
+            void node_alpha_slot (int);
+
           protected:
 
             // TODO Toolbar format for connectome:
@@ -125,23 +139,43 @@ namespace MR
             // Node display options:
             // * Geometry: Mesh, overlay, sphere, ...
             // * Colour by: LUT (if available), file w. colour map, fixed colour, random, ...
-            // * Size by: file
-            // * Visibility: file, degree!=0
+            // * Size by: fixed, volume, file
+            // * Visibility: all, file, degree!=0, manual (list view appears to toggle nodes)
+            // * Transparency: fixed, by file
             //
             // Edge display options:
             // * Geometry: Line, cylinder, ...
-            // * Colour by: file w. colour map, fixed colour, ...
-            // * Size by: file
-            // * Visibility: file
+            // * Colour by: file w. colour map, fixed colour, ... direction?
+            // * Size by: fixed, file
+            // * Visibility: all, file
+            // * Transparency: fixed, weights, file
 
             //
             // Questions:
             // * Should connectomes and parcellation images be paired? Not convinced that this makes sense,
             //     as ideally the underlying image would need to change between subjects also.
 
+            // TODO When node geometry is an overlay image, suspect it will be faster to store a coloured
+            //   texture buffer, which can be used to overlay in either 2D or 3D, but will need to be
+            //   updated whenever a relevant setting (e.g. node visibility, colours) changes
+
             QPushButton *image_button, *hide_all_button;;
             QComboBox *lut_combobox;
             QPushButton *config_button;
+
+            QComboBox *node_geometry_combobox, *node_colour_combobox, *node_size_combobox, *node_visibility_combobox, *node_alpha_combobox;
+            // TODO Elements that need to appear / change based on these selections:
+            // - Size combobox should only be available if node size is set to sphere
+            // - If geometry is set to sphere, a LOD selector shoudl appear
+            // - If node colour is fixed, a button should appear allowing the user to select a colour from a pallette dialog
+            // - If node geometry is set to anything other than sphere, node size should change its value to fixed
+            // - If node size is set to fixed, and geometry is spheres, need a slider bar to control size
+            // - If node size is based on a file, should automatically give a dialog to select the file;
+            //     then also need to print the base name of the file next to the combo box, and will need
+            //     additional scaling controls, e.g. upper and lower thesholds
+            //     (existing slider can be used to control a global scaling factor, but need a way to map the
+            //     range of values within the file to additional scaling factors)
+
 
 
 
@@ -160,13 +194,16 @@ namespace MR
                 const Point<float>& get_com() const { return centre_of_mass; }
                 size_t get_volume() const { return volume; }
 
-                // TODO Might as well store display options in here
+                // TODO Might as well store display options in here, rather than individual vectors;
+                //   these will be set by the main thread before data is applied to the shaders anyways
                 void set_name (const std::string& i) { name = i; }
                 const std::string& get_name() const { return name; }
                 void set_size (const float i) { size = i; }
                 float get_size() const { return size; }
                 void set_colour (const Point<float>& i) { colour = i; }
                 const Point<float>& get_colour() const { return colour; }
+                void set_alpha (const float i) { alpha = i; }
+                float get_alpha() const { return alpha; }
                 void set_visible (const bool i) { visible = i; }
                 bool is_visible() const { return visible; }
 
@@ -178,6 +215,7 @@ namespace MR
                 std::string name;
                 float size;
                 Point<float> colour;
+                float alpha;
                 bool visible;
 
                 // Helper class to manage the storage and display of the mesh for each node
@@ -210,7 +248,30 @@ namespace MR
             // If a connectome configuration file is provided, this will map
             //   each structure name to an index in the parcellation image;
             //   this can then be used to produce the lookup table
-            MR::DWI::Tractography::Connectomics::ConfigInvLookup config;
+            std::vector<std::string> config;
+
+            // TODO If both a LUT and a config file have been provided, it would be
+            //   nice to have a direct vector mapping from image node index to
+            //   a position in the lookup table, pre-generated
+            std::vector<Node_map::const_iterator> lut_lookup;
+
+
+            // Current node visualisation settings
+            node_geometry_t node_geometry;
+            node_colour_t node_colour;
+            node_size_t node_size;
+            node_visibility_t node_visibility;
+            node_alpha_t node_alpha;
+
+            // Other values that need to be stored w.r.t. node visualisation
+            Point<float> node_fixed_colour;
+            float node_fixed_alpha;
+            float node_size_scale_factor;
+            std::vector<float> node_values_from_file_colour;
+            std::vector<float> node_values_from_file_size;
+            std::vector<float> node_values_from_file_visibility;
+            std::vector<float> node_values_from_file_alpha;
+
 
 
 
@@ -218,6 +279,10 @@ namespace MR
             void clear_all();
             void initialise (const std::string&);
             void load_node_properties();
+            void calculate_node_colours();
+            void calculate_node_sizes();
+            void calculate_node_visibility();
+            void calculate_node_alphas();
 
         };
 
