@@ -34,6 +34,7 @@
 
 #include "mesh/mesh.h"
 
+#include "dwi/tractography/connectomics/config.h"
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
@@ -58,10 +59,10 @@ namespace MR
             class Shader : public GL::Shader::Program {
               public:
                 Shader() : GL::Shader::Program () { }
-                ~Shader() { }
+                virtual ~Shader() { }
 
                 bool need_update (const Connectome&) const;
-                void update (const Connectome&);
+                virtual void update (const Connectome&) = 0;
 
                 void start (const Connectome& parent) {
                   if (*this == 0 || need_update (parent))
@@ -71,17 +72,26 @@ namespace MR
 
               protected:
                 std::string vertex_shader_source, fragment_shader_source;
-                void recompile (const Connectome& parent) {
-                  if (*this != 0)
-                    clear();
-                  update (parent);
-                  GL::Shader::Vertex vertex_shader (vertex_shader_source);
-                  GL::Shader::Fragment fragment_shader (fragment_shader_source);
-                  attach (vertex_shader);
-                  attach (fragment_shader);
-                  link();
-                }
-            } node_shader, edge_shader;
+
+              private:
+                void recompile (const Connectome& parent);
+            };
+
+            class NodeShader : public Shader
+            {
+              public:
+                NodeShader() : Shader () { }
+                ~NodeShader() { }
+                void update (const Connectome&) override;
+            } node_shader;
+
+            class EdgeShader : public Shader
+            {
+              public:
+                EdgeShader() : Shader () { }
+                ~EdgeShader() { }
+                void update (const Connectome&) override;
+            } edge_shader;
 
 
           public:
@@ -98,7 +108,7 @@ namespace MR
 
           private slots:
             void image_open_slot ();
-            void lut_open_slot ();
+            void lut_open_slot (int);
             void config_open_slot ();
             void hide_all_slot ();
 
@@ -110,11 +120,13 @@ namespace MR
             // * Button to import colour lookup table
             // * Button to import connectome config file
             //
+            // * Connectome files (list)
+            //
             // Node display options:
             // * Geometry: Mesh, overlay, sphere, ...
-            // * Colour by: LUT (if available), file w. colour map, fixed colour, ...
+            // * Colour by: LUT (if available), file w. colour map, fixed colour, random, ...
             // * Size by: file
-            // * Visibility: file
+            // * Visibility: file, degree!=0
             //
             // Edge display options:
             // * Geometry: Line, cylinder, ...
@@ -122,13 +134,21 @@ namespace MR
             // * Size by: file
             // * Visibility: file
 
-            QGroupBox* basic_option_group;
-            QPushButton *image_button, *lut_button, *config_button, *hide_all_button;
+            //
+            // Questions:
+            // * Should connectomes and parcellation images be paired? Not convinced that this makes sense,
+            //     as ideally the underlying image would need to change between subjects also.
+
+            QPushButton *image_button, *hide_all_button;;
+            QComboBox *lut_combobox;
+            QPushButton *config_button;
+
+
 
 
           private:
 
-            // Stores all fixed information relating to the drawing of nodes
+            // Stores all information relating to the drawing of individual nodes, both fixed and variable
             class Node
             {
               public:
@@ -140,9 +160,25 @@ namespace MR
                 const Point<float>& get_com() const { return centre_of_mass; }
                 size_t get_volume() const { return volume; }
 
+                // TODO Might as well store display options in here
+                void set_name (const std::string& i) { name = i; }
+                const std::string& get_name() const { return name; }
+                void set_size (const float i) { size = i; }
+                float get_size() const { return size; }
+                void set_colour (const Point<float>& i) { colour = i; }
+                const Point<float>& get_colour() const { return colour; }
+                void set_visible (const bool i) { visible = i; }
+                bool is_visible() const { return visible; }
+
+
               private:
                 const Point<float> centre_of_mass;
                 const size_t volume;
+
+                std::string name;
+                float size;
+                Point<float> colour;
+                bool visible;
 
                 // Helper class to manage the storage and display of the mesh for each node
                 class Mesh {
@@ -161,23 +197,27 @@ namespace MR
                     GL::IndexBuffer index_buffer;
                 } mesh;
 
-                // TODO Helper class to manage the storage and display of the volume for each node
+                // TODO Helper class to manage the storage and display of the mask volume for each node
 
             };
             std::vector<Node> nodes;
 
 
-            // If a connectome config file is provided, this will map from the
-            //   value in the image to the appropriate index of the lookup table
-            std::map<node_t, node_t> lookup;
             // If a lookup table is provided, this container will store the
-            //   properties of each node (e.g. name & colour)
-            Node_map node_map;
+            //   properties of each node as provided in that file (e.g. name & colour)
+            Node_map lut;
+
+            // If a connectome configuration file is provided, this will map
+            //   each structure name to an index in the parcellation image;
+            //   this can then be used to produce the lookup table
+            MR::DWI::Tractography::Connectomics::ConfigInvLookup config;
+
 
 
             // TODO Helper functions
             void clear_all();
             void initialise (const std::string&);
+            void load_node_properties();
 
         };
 

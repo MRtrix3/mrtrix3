@@ -45,11 +45,27 @@ namespace MR
 
 
 
+
+
+
+
         bool Connectome::Shader::need_update (const Connectome&) const { return true; }
 
-        // For now, assume that all nodes are being drawn based on the mesh;
-        //   branches can be added later
-        void Connectome::Shader::update (const Connectome& /*parent*/)
+        void Connectome::Shader::recompile (const Connectome& parent)
+        {
+          if (*this != 0)
+            clear();
+          update (parent);
+          GL::Shader::Vertex vertex_shader (vertex_shader_source);
+          GL::Shader::Fragment fragment_shader (fragment_shader_source);
+          attach (vertex_shader);
+          attach (fragment_shader);
+          link();
+        }
+
+      // For now, assume that all nodes are being drawn based on the mesh;
+      //   branches can be added later
+        void Connectome::NodeShader::update (const Connectome& /*parent*/)
         {
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
@@ -75,6 +91,7 @@ namespace MR
           fragment_shader_source += "}\n";
         }
 
+        void Connectome::EdgeShader::update (const Connectome& /*parent*/) { }
 
 
 
@@ -105,26 +122,42 @@ namespace MR
             connect (image_button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (image_button, 1);
 
-            lut_button = new QPushButton (this);
-            lut_button->setToolTip (tr ("Open lookup table file"));
-            //button->setIcon (QIcon (":/close.svg"));
-            lut_button->setEnabled (false);
-            connect (lut_button, SIGNAL (clicked()), this, SLOT (lut_open_slot ()));
-            layout->addWidget (lut_button, 1);
-
-            config_button = new QPushButton (this);
-            config_button->setToolTip (tr ("Open connectome config file"));
-            //config_button->setIcon (QIcon (":/close.svg"));
-            config_button->setEnabled (false);
-            connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
-            layout->addWidget (config_button, 1);
-
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide all connectome visualisation"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
             layout->addWidget (hide_all_button, 1);
+
+            main_box->addLayout (layout, 0);
+
+            layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
+
+            layout->addWidget (new QLabel ("LUT: "));
+
+            lut_combobox = new QComboBox (this);
+            lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)"));
+            for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
+              lut_combobox->insertItem (index, MR::DWI::Tractography::Connectomics::lut_format_strings[index]);
+            connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
+            layout->addWidget (lut_combobox, 1);
+
+            //lut_namebox = new QLabel ("(none)");
+            //layout->addWidget (lut_namebox);
+
+            main_box->addLayout (layout, 0);
+
+            layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
+
+            config_button = new QPushButton (this);
+            config_button->setToolTip (tr ("Open connectome config file"));
+            //config_button->setIcon (QIcon (":/close.svg"));
+            connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
+            layout->addWidget (config_button, 1);
 
             main_box->addLayout (layout, 0);
 
@@ -161,7 +194,6 @@ namespace MR
         void Connectome::drawOverlays (const Projection&)
         {
           if (hide_all_button->isChecked()) return;
-
         }
 
 
@@ -175,7 +207,6 @@ namespace MR
         void Connectome::image_open_slot()
         {
           const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
-
           if (path.empty())
             return;
 
@@ -189,16 +220,52 @@ namespace MR
         }
 
 
-        void Connectome::lut_open_slot()
+        void Connectome::lut_open_slot (int index)
         {
-          // TODO This may be difficult; don't necessarily know the format of the lookup table
-          // Ideally also want to make use of the existing functions for importing these
+          if (!index) {
+            lut.clear();
+            //lut_namebox->setText (QString::fromStdString ("(none)"));
+            lut_combobox->removeItem (5);
+            return;
+          }
+          if (index == 5)
+            return; // Selected currently-open LUT; nothing to do
+
+          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::DWI::Tractography::Connectomics::lut_format_strings[index] + " format)");
+          if (path.empty())
+            return;
+
+          lut.clear();
+          lut_combobox->removeItem (5);
+
+          try {
+            switch (index) {
+              case 1: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_BASIC);      break;
+              case 2: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_FREESURFER); break;
+              case 3: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_AAL);        break;
+              case 4: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_ITKSNAP);    break;
+              default: assert (0);
+            }
+          } catch (...) { return; }
+
+          lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
+          lut_combobox->setCurrentIndex (5);
+
+          // TODO Now want to call a function that will load the relevant properties into the nodes[] member
+          load_node_properties();
         }
 
 
         void Connectome::config_open_slot()
         {
-
+          config_button->setText ("");
+          const std::string path = Dialog::File::get_file (this, "Select connectome configuration file");
+          if (path.empty())
+            return;
+          config.clear();
+          MR::DWI::Tractography::Connectomics::load_config (path, config);
+          config_button->setText (QString::fromStdString (Path::basename (path)));
+          load_node_properties();
         }
 
 
@@ -214,7 +281,10 @@ namespace MR
 
         Connectome::Node::Node (const Point<float>& com, const size_t vol, MR::Image::BufferScratch<bool>& img) :
             centre_of_mass (com),
-            volume (vol)
+            volume (vol),
+            size (1.0f),
+            colour (0.5f, 0.5f, 0.5f),
+            visible (true)
         {
           MR::Mesh::Mesh temp;
           auto voxel = img.voxel();
@@ -224,11 +294,15 @@ namespace MR
             temp.transform_voxel_to_realspace (img);
           }
           mesh = Node::Mesh (temp);
+          name = img.name();
         }
 
         Connectome::Node::Node () :
             centre_of_mass (),
-            volume (0) { }
+            volume (0),
+            size (0.0f),
+            colour (0.0f, 0.0f, 0.0f),
+            visible (false) { }
 
 
 
@@ -302,11 +376,10 @@ namespace MR
         void Connectome::clear_all()
         {
           image_button ->setText ("");
-          lut_button   ->setText ("");
+          emit lut_open_slot (0);
           config_button->setText ("");
           nodes.clear();
-          lookup.clear();
-          node_map.clear();
+          lut.clear();
         }
 
         void Connectome::initialise (const std::string& path)
@@ -338,7 +411,7 @@ namespace MR
                   node_masks      .resize (node_index+1);
                   node_mask_voxels.resize (node_index+1);
                   for (size_t i = node_count+1; i <= node_index; ++i) {
-                    node_masks[i] = new MR::Image::BufferScratch<bool> (H, "Bitwise mask for node " + str(i));
+                    node_masks[i] = new MR::Image::BufferScratch<bool> (H, "Node " + str(i));
                     node_mask_voxels[i] = new MR::Image::BufferScratch<bool>::voxel_type (*node_masks[i]);
                   }
                   node_count = node_index;
@@ -366,6 +439,18 @@ namespace MR
           }
 
         }
+
+
+
+
+
+        void Connectome::load_node_properties()
+        {
+
+
+
+        }
+
 
 
 
