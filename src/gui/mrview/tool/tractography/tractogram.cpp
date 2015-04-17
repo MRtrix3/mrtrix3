@@ -185,6 +185,7 @@ namespace MR
           if(use_lighting)
            source +=
             "in vec3 v_tangent[];\n"
+            "const float PI = " + str(Math::pi) + ";\n"
             "out float g_height;\n";
 
           source +=
@@ -197,7 +198,7 @@ namespace MR
           if(use_lighting)
             source +=
              "  g_tangent = v_tangent[0];\n"
-             "  g_height = 0.2;\n";
+             "  g_height = 0.0;\n";
 
           if(do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
@@ -211,7 +212,7 @@ namespace MR
           "  gl_Position = gl_in[0].gl_Position + line_thickness * (v_normal[0] + v_dir[0]);\n;\n";
 
           if(use_lighting)
-            source += "  g_height = 1.0;\n";
+            source += "  g_height = PI;\n";
 
           source +=
           "  EmitVertex();\n"
@@ -221,7 +222,7 @@ namespace MR
           if(use_lighting)
             source +=
               "  g_tangent = mix(v_tangent[0], v_tangent[1], 0.5);\n"
-              "  g_height = 0.2;\n";
+              "  g_height = 0.0;\n";
 
           if(do_crop_to_slab)
             source += "  g_include = v_include[1];\n";
@@ -244,7 +245,7 @@ namespace MR
           "  gl_Position = upper_end_point;\n";
 
           if(use_lighting)
-            source += "  g_height = 1.0;\n";
+            source += "  g_height = PI;\n";
 
           source +=
           "  EmitVertex();\n"
@@ -254,14 +255,14 @@ namespace MR
           if(use_lighting)
             source +=
              "  g_tangent = v_tangent[1];\n"
-             "  g_height = 0.2;\n";
+             "  g_height = 0.0;\n";
 
           source +=
           "  gl_Position = connecting_end_point1;\n"
           "  EmitVertex();\n";
 
           if(use_lighting)
-            source += "  g_height = 1.0;\n";
+            source += "  g_height = PI;\n";
 
 
           source +=
@@ -300,18 +301,7 @@ namespace MR
           if (use_lighting)
             source += 
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
-
-              "mat3 rotate_around_axis(vec3 axis, float angle) {\n"
-              "  axis = normalize(axis);\n"
-              "  float s = sin(angle);\n"
-              "  float c = cos(angle);\n"
-              "  float oc = 1.0 - c;\n"
-
-              "  return mat3(oc * axis.x * axis.x + c, oc * axis.x * axis.y - axis.z * s, oc * axis.z * axis.x + axis.y * s,\n"
-              "  oc * axis.x * axis.y + axis.z * s, oc * axis.y * axis.y + c, oc * axis.y * axis.z - axis.x * s,\n"
-              "  oc * axis.z * axis.x - axis.y * s, oc * axis.y * axis.z + axis.x * s, oc * axis.z * axis.z + c);\n"
-              "}\n";
+              "uniform vec3 light_pos;\n";
 
           source +=
               "void main() {\n"
@@ -329,22 +319,26 @@ namespace MR
           }
 
           if (use_lighting)
+             // g_height tells us where we are across the cylinder (0 - PI)
             source +=
-             "  float PI = " + str(Math::pi) + ";\n"
-             "  vec3 surface_normal = vec3(-g_tangent.y, g_tangent.x, 0.0f);\n"
+              // compute surface normal:
+              "  float s = sin (g_height);\n"
+              "  float c = cos (g_height);\n"
+              "  vec3 tangent = normalize (g_tangent);\n"
+              "  vec3 in_plane_x = normalize (vec3(-tangent.y, tangent.x, 0.0f));\n"
+              "  vec3 in_plane_y = normalize (vec3(-tangent.x, -tangent.y, 0.0f));\n"
+              "  vec3 surface_normal = c*in_plane_x +  s*abs(tangent.z)*in_plane_y;\n"
+              "  surface_normal.z -= s * sqrt(tangent.x*tangent.x + tangent.y*tangent.y);\n"
 
-             // Rotate around tangent axis to find surface normal
-             // The g_height tells us where we are along the cylinder
-             "  surface_normal = rotate_around_axis(g_tangent, mix(0.0f, PI, g_height)) * surface_normal;"
-
-             "  float light_dot_surfaceN = dot(light_pos, surface_normal);"
+             "  float light_dot_surfaceN = -dot(light_pos, surface_normal);"
              // Ambient and diffuse component
-             "  colour *= ambient + diffuse * clamp(-light_dot_surfaceN, 0, 1);\n"
+             "  colour *= ambient + diffuse * clamp(light_dot_surfaceN, 0, 1);\n"
 
              // Specular component
-             "  vec3 reflect = -(2 * light_dot_surfaceN * surface_normal) + light_pos;"
-
-             "  colour += specular * pow(clamp(reflect.z, 0, 1), shine);\n";
+             "  if (light_dot_surfaceN > 0.0) {\n"
+             "    vec3 reflection = light_pos + 2 * light_dot_surfaceN * surface_normal;\n"
+             "    colour += specular * pow(clamp(-reflection.z, 0, 1), shine);\n"
+             "  }\n";
 
           source += "}\n";
 
