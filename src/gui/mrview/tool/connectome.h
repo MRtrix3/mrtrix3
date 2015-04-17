@@ -29,7 +29,10 @@
 #include "point.h"
 
 #include "gui/opengl/shader.h"
+#include "gui/mrview/adjust_button.h"
+#include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/color_button.h"
 #include "gui/projection.h"
 
 #include "mesh/mesh.h"
@@ -46,7 +49,7 @@ namespace MR
     {
       namespace Tool
       {
-        class Connectome : public Base
+        class Connectome : public Base, public ColourMapButtonObserver
         {
             Q_OBJECT
 
@@ -120,11 +123,16 @@ namespace MR
             void config_open_slot ();
             void hide_all_slot ();
 
-            void node_geometry_slot (int);
-            void node_colour_slot (int);
-            void node_size_slot (int);
-            void node_visibility_slot (int);
-            void node_alpha_slot (int);
+            void node_geometry_selection_slot (int);
+            void node_colour_selection_slot (int);
+            void node_size_selection_slot (int);
+            void node_visibility_selection_slot (int);
+            void node_alpha_selection_slot (int);
+
+            void sphere_lod_slot (int);
+            void node_colour_change_slot();
+            void node_size_value_slot();
+            void node_alpha_value_slot (int);
 
           protected:
 
@@ -159,23 +167,30 @@ namespace MR
             //   texture buffer, which can be used to overlay in either 2D or 3D, but will need to be
             //   updated whenever a relevant setting (e.g. node visibility, colours) changes
 
-            QPushButton *image_button, *hide_all_button;;
+            // TODO Change layout here: Should probably be a grid covering all lines
+            // Also: Colour settings may need more space...
+
+            QPushButton *image_button, *hide_all_button;
             QComboBox *lut_combobox;
             QPushButton *config_button;
 
             QComboBox *node_geometry_combobox, *node_colour_combobox, *node_size_combobox, *node_visibility_combobox, *node_alpha_combobox;
+
             // TODO Elements that need to appear / change based on these selections:
-            // - Size combobox should only be available if node size is set to sphere
-            // - If geometry is set to sphere, a LOD selector shoudl appear
-            // - If node colour is fixed, a button should appear allowing the user to select a colour from a pallette dialog
-            // - If node geometry is set to anything other than sphere, node size should change its value to fixed
-            // - If node size is set to fixed, and geometry is spheres, need a slider bar to control size
             // - If node size is based on a file, should automatically give a dialog to select the file;
             //     then also need to print the base name of the file next to the combo box, and will need
             //     additional scaling controls, e.g. upper and lower thesholds
             //     (existing slider can be used to control a global scaling factor, but need a way to map the
             //     range of values within the file to additional scaling factors)
+            QLabel *node_geometry_sphere_lod_label;
+            QSpinBox *node_geometry_sphere_lod_spinbox;
 
+            QColorButton *node_colour_button;
+            ColourMapButton *node_colour_colourmap_button;
+
+            AdjustButton *node_size_button;
+
+            QSlider *node_alpha_slider;
 
 
 
@@ -253,7 +268,7 @@ namespace MR
             // TODO If both a LUT and a config file have been provided, it would be
             //   nice to have a direct vector mapping from image node index to
             //   a position in the lookup table, pre-generated
-            std::vector<Node_map::const_iterator> lut_lookup;
+            std::vector<Node_map::const_iterator> lut_mapping;
 
 
             // Current node visualisation settings

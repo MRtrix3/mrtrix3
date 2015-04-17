@@ -114,7 +114,7 @@ namespace MR
             node_size (NODE_SIZE_FIXED),
             node_visibility (NODE_VIS_ALL),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
-            node_size_scale_factor (0.0f)
+            node_size_scale_factor (1.0f)
         {
 
           VBoxLayout* main_box = new VBoxLayout (this);
@@ -129,7 +129,7 @@ namespace MR
           group_box->setLayout (vlayout);
 
           image_button = new QPushButton (this);
-          image_button->setToolTip (tr ("Open parcellation image"));
+          image_button->setToolTip (tr ("Change primary parcellation image"));
           // TODO New icons
           // TODO Have the icons always there, but add the opened file name as text
           //image_button->setIcon (QIcon (":/open.svg"));
@@ -189,8 +189,17 @@ namespace MR
           node_geometry_combobox->addItem ("Sphere");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
-          connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_slot (int)));
+          connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
           hlayout->addWidget (node_geometry_combobox, 1);
+          node_geometry_sphere_lod_label = new QLabel ("LOD: ");
+          hlayout->addWidget (node_geometry_sphere_lod_label, 1);
+          node_geometry_sphere_lod_spinbox = new QSpinBox (this);
+          node_geometry_sphere_lod_spinbox->setMinimum (1);
+          node_geometry_sphere_lod_spinbox->setMaximum (7);
+          node_geometry_sphere_lod_spinbox->setSingleStep (1);
+          node_geometry_sphere_lod_spinbox->setValue (4);
+          connect (node_geometry_sphere_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(sphere_lod_slot(int)));
+          hlayout->addWidget (node_geometry_sphere_lod_spinbox, 1);
           vlayout->addLayout(hlayout);
 
           hlayout = new HBoxLayout;
@@ -200,13 +209,19 @@ namespace MR
           label = new QLabel ("Colour: ");
           hlayout->addWidget (label);
           node_colour_combobox = new QComboBox (this);
-          node_colour_combobox->setToolTip (tr ("Set the colour of each node"));
+          node_colour_combobox->setToolTip (tr ("Set how the colour of each node is determined"));
           node_colour_combobox->addItem ("Fixed");
           node_colour_combobox->addItem ("Random");
           node_colour_combobox->addItem ("Lookup table");
-          node_colour_combobox->addItem ("From scalar file");
-          connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_slot (int)));
+          node_colour_combobox->addItem ("From vector file");
+          connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
           hlayout->addWidget (node_colour_combobox, 1);
+          node_colour_button = new QColorButton;
+          connect (node_colour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
+          hlayout->addWidget (node_colour_button, 1);
+          node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
+          node_colour_colourmap_button->setVisible (false);
+          hlayout->addWidget (node_colour_colourmap_button, 1);
           vlayout->addLayout (hlayout);
 
           hlayout = new HBoxLayout;
@@ -218,10 +233,15 @@ namespace MR
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
-          node_size_combobox->addItem ("Volume");
-          node_size_combobox->addItem ("From scalar file");
-          connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_slot (int)));
+          node_size_combobox->addItem ("Node volume");
+          node_size_combobox->addItem ("From vector file");
+          connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
           hlayout->addWidget (node_size_combobox, 1);
+          node_size_button = new AdjustButton (this);
+          node_size_button->setValue (node_size_scale_factor);
+          node_size_button->setMin (0.0f);
+          connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
+          hlayout->addWidget (node_size_button, 1);
           vlayout->addLayout (hlayout);
 
           hlayout = new HBoxLayout;
@@ -233,11 +253,31 @@ namespace MR
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
-          node_visibility_combobox->addItem ("From scalar file");
-          node_visibility_combobox->addItem ("Degree >= 1");
+          node_visibility_combobox->addItem ("From vector file");
+          node_visibility_combobox->addItem ("Node degree >= 1");
           node_visibility_combobox->addItem ("Manual");
-          connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_slot (int)));
+          connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
           hlayout->addWidget (node_visibility_combobox, 1);
+          vlayout->addLayout (hlayout);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+
+          label = new QLabel ("Transparency: ");
+          hlayout->addWidget (label);
+          node_alpha_combobox = new QComboBox (this);
+          node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
+          node_alpha_combobox->addItem ("Fixed");
+          node_alpha_combobox->addItem ("Lookup table");
+          node_alpha_combobox->addItem ("From vector file");
+          connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
+          hlayout->addWidget (node_alpha_combobox, 1);
+          node_alpha_slider = new QSlider (Qt::Horizontal);
+          node_alpha_slider->setRange (0,1000);
+          node_alpha_slider->setSliderPosition (1000);
+          connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
+          hlayout->addWidget (node_alpha_slider, 1);
           vlayout->addLayout (hlayout);
 
           main_box->addStretch ();
@@ -303,7 +343,7 @@ namespace MR
         {
           if (!index) {
             lut.clear();
-            lut_lookup.clear();
+            lut_mapping.clear();
             //lut_namebox->setText (QString::fromStdString ("(none)"));
             lut_combobox->removeItem (5);
             load_node_properties();
@@ -317,7 +357,7 @@ namespace MR
             return;
 
           lut.clear();
-          lut_lookup.clear();
+          lut_mapping.clear();
           lut_combobox->removeItem (5);
 
           try {
@@ -343,7 +383,7 @@ namespace MR
           if (path.empty())
             return;
           config.clear();
-          lut_lookup.clear();
+          lut_mapping.clear();
           config_button->setText ("");
           MR::DWI::Tractography::Connectomics::load_config (path, config);
           config_button->setText (QString::fromStdString (Path::basename (path)));
@@ -361,57 +401,70 @@ namespace MR
 
 
 
-        void Connectome::node_geometry_slot (int index)
+        void Connectome::node_geometry_selection_slot (int index)
         {
           switch (index) {
             case 0:
               if (node_geometry == NODE_GEOM_SPHERE) return;
               node_geometry = NODE_GEOM_SPHERE;
               node_size_combobox->setEnabled (true);
+              node_size_button->setVisible (true);
+              node_geometry_sphere_lod_label->setVisible (true);
+              node_geometry_sphere_lod_spinbox->setVisible (true);
               break;
             case 1:
               if (node_geometry == NODE_GEOM_OVERLAY) return;
               node_geometry = NODE_GEOM_OVERLAY;
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
+              node_size_button->setVisible (false);
+              node_geometry_sphere_lod_label->setVisible (false);
+              node_geometry_sphere_lod_spinbox->setVisible (false);
               break;
             case 2:
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
+              node_size_button->setVisible (false);
+              node_geometry_sphere_lod_label->setVisible (false);
+              node_geometry_sphere_lod_spinbox->setVisible (false);
               break;
           }
         }
 
-        void Connectome::node_colour_slot (int index)
+        void Connectome::node_colour_selection_slot (int index)
         {
           switch (index) {
             case 0:
               // if (node_colour == NODE_COLOUR_FIXED) return; // TODO Should this prompt a new colour selection? Means no need for a button...
               node_colour = NODE_COLOUR_FIXED;
+              node_colour_colourmap_button->setVisible (false);
               break;
             case 1:
               //if (node_colour == NODE_COLOUR_RANDOM) return; // Keep this; regenerate random colours on repeat selection
               node_colour = NODE_COLOUR_RANDOM;
+              node_colour_colourmap_button->setVisible (false);
               break;
             case 2:
               if (node_colour == NODE_COLOUR_LUT) return;
-              // TODO Pointless selection if no LUT is loaded...
+              // TODO Pointless selection if no LUT is loaded... need to detect or disable
               node_colour = NODE_COLOUR_LUT;
+              node_colour_colourmap_button->setVisible (false);
               break;
             case 3:
               //if (node_colour == NODE_COLOUR_FILE) return; // Keep this; may want to select a new file
               node_colour = NODE_COLOUR_FILE;
               // TODO Prompt the user to import a file
               // TODO Make the relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
+              node_colour_colourmap_button->setVisible (true);
               break;
           }
           calculate_node_colours();
           // Probably need to updateGL() as well...
         }
 
-        void Connectome::node_size_slot (int index)
+        void Connectome::node_size_selection_slot (int index)
         {
           assert (node_geometry == NODE_GEOM_SPHERE);
           switch (index) {
@@ -428,7 +481,7 @@ namespace MR
           calculate_node_sizes();
         }
 
-        void Connectome::node_visibility_slot (int index)
+        void Connectome::node_visibility_selection_slot (int index)
         {
           switch (index) {
             case 0:
@@ -443,26 +496,59 @@ namespace MR
             case 3:
               node_visibility = NODE_VIS_MANUAL;
               // TODO Here is where the corresponding list view should be made visible
+              // Ideally the current node colours would also be presented within this list...
               break;
           }
           calculate_node_visibility();
         }
 
-        void Connectome::node_alpha_slot (int index)
+        void Connectome::node_alpha_selection_slot (int index)
         {
           switch (index) {
             case 0:
               node_alpha = NODE_ALPHA_FIXED;
+              node_alpha_slider->setVisible (true);
               break;
             case 1:
               node_alpha = NODE_ALPHA_LUT;
+              node_alpha_slider->setVisible (false);
               break;
             case 2:
               node_alpha = NODE_ALPHA_FILE;
+              node_alpha_slider->setVisible (false);
               break;
           }
           calculate_node_alphas();
         }
+
+
+
+
+
+        void Connectome::sphere_lod_slot (int /*value*/)
+        {
+          // TODO
+          // Get the tessellation code from the ODF overlay tool
+        }
+
+        void Connectome::node_colour_change_slot()
+        {
+          QColor c = node_colour_button->color();
+          node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          calculate_node_colours();
+        }
+
+        void Connectome::node_size_value_slot()
+        {
+          node_size_scale_factor = node_size_button->value();
+        }
+
+        void Connectome::node_alpha_value_slot (int position)
+        {
+          node_fixed_alpha = position / 1000.0f;
+        }
+
+
 
 
 
@@ -638,10 +724,10 @@ namespace MR
 
         void Connectome::load_node_properties()
         {
-          lut_lookup.clear();
+          lut_mapping.clear();
           if (lut.size()) {
 
-            lut_lookup.push_back (lut.end());
+            lut_mapping.push_back (lut.end());
             for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
 
               if (config.size()) {
@@ -650,12 +736,12 @@ namespace MR
                 Node_map::const_iterator it;
                 for (it = lut.begin(); it != lut.end(); ++it) {
                   if (it->second.get_name() == name) {
-                    lut_lookup.push_back (it);
+                    lut_mapping.push_back (it);
                     continue;
                   }
                 }
                 if (it == lut.end())
-                  lut_lookup.push_back (it);
+                  lut_mapping.push_back (it);
 
               } else { // LUT, but no config file
 
@@ -664,7 +750,7 @@ namespace MR
                   nodes[node_index].set_name ("Node " + str(node_index));
                 else
                   nodes[node_index].set_name (it->second.get_name());
-                lut_lookup.push_back (it);
+                lut_mapping.push_back (it);
 
               }
 
@@ -672,7 +758,7 @@ namespace MR
 
           } else { // No LUT; just name nodes according to their indices
 
-            lut_lookup.assign (num_nodes()+1, lut.end());
+            lut_mapping.assign (num_nodes()+1, lut.end());
             for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index)
               nodes[node_index].set_name ("Node " + str(node_index));
 
@@ -709,10 +795,10 @@ namespace MR
 
             assert (lut.size());
             for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
-              if (lut_lookup[node_index] == lut.end())
+              if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_colour (node_fixed_colour);
               else
-                nodes[node_index].set_colour (Point<float> (lut_lookup[node_index]->second.get_colour()) / 255.0f);
+                nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
             }
 
           } else if (node_colour == NODE_COLOUR_FILE) {
@@ -794,10 +880,10 @@ namespace MR
 
             assert (lut.size());
             for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
-              if (lut_lookup[node_index] == lut.end())
+              if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_alpha (node_fixed_alpha);
               else
-                nodes[node_index].set_alpha (lut_lookup[node_index]->second.get_alpha() / 255.0f);
+                nodes[node_index].set_alpha (lut_mapping[node_index]->second.get_alpha() / 255.0f);
             }
 
           } else if (node_alpha == NODE_ALPHA_FILE) {
