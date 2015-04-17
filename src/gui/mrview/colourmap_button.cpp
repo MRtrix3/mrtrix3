@@ -123,7 +123,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
     }
 }
 
-void ColourMapButton::init_customise_sate_menu_items()
+void ColourMapButton::init_customise_state_menu_items()
 {
     auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
     show_colour_bar->setCheckable(true);
@@ -154,7 +154,7 @@ void ColourMapButton::init_menu(bool create_shortcuts, bool use_special, bool cu
     }
 
     if(customise_state)
-        init_customise_sate_menu_items();
+        init_customise_state_menu_items();
 
     setMenu(colourmap_menu);
 }
