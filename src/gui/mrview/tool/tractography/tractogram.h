@@ -123,6 +123,8 @@ namespace MR
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
 
+            void render_streamlines ();
+
         };
       }
     }

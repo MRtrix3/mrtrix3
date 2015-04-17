@@ -42,7 +42,7 @@ namespace MR
         ambient = File::Config::get_float ("AmbientIntensity", 0.6);
         diffuse = File::Config::get_float ("DiffuseIntensity", 0.6);
         specular = File::Config::get_float ("SpecularIntensity", 0.8);
-        shine = File::Config::get_float ("SpecularExponent", 2.0);
+        shine = File::Config::get_float ("SpecularExponent", 0.5);
       }
 
 

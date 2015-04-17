@@ -461,20 +461,23 @@ namespace MR
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
-            gl::Disable (gl::DEPTH_TEST);
-            gl::DepthMask (gl::FALSE_);
             gl::BlendEquation (gl::FUNC_ADD);
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
-            gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity);
+            gl::Disable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+            gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
+            render_streamlines();
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+            gl::Enable (gl::DEPTH_TEST);
+            gl::DepthMask (gl::TRUE_);
+            gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
+            render_streamlines();
+
           } else {
             gl::Disable (gl::BLEND);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-          }
-
-          for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
-            gl::BindVertexArray (vertex_array_objects[buf]);
-            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
+            render_streamlines();
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -486,6 +489,15 @@ namespace MR
           stop (track_shader);
         }
 
+
+
+
+        inline void Tractogram::render_streamlines () {
+          for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
+            gl::BindVertexArray (vertex_array_objects[buf]);
+            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
+          }
+        }
 
 
 

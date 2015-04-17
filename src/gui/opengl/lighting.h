@@ -42,7 +42,7 @@ namespace MR
             ambient (0.5),
             diffuse (0.7), 
             specular (0.7),
-            shine (5.0),
+            shine (0.5),
             set_background (false) {
             load_defaults();
           }
