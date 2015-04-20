@@ -1,7 +1,7 @@
 /*
    Copyright 2014 Brain Research Institute, Melbourne, Australia
 
-   Written by David Raffelt 2014.
+   Written by Robert E. Smith, 2015.
 
    This file is part of MRtrix.
 
