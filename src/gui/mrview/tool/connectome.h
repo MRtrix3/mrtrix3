@@ -41,6 +41,75 @@
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
+
+
+
+
+// TODO Elements that still need to be added to the Connectome tool:
+//
+// * Drawing edges
+//   - This will make a lot more sense with a geometry shader:
+//     set up the relevant parameters, then emit two vertices at two locations
+//     (whether plotting as lines or cylinders)
+//   - Display options:
+//     * Geometry: Line, cylinder, ...
+//     * Colour by: file w. colour map, fixed colour, ... direction?
+//     * Size by: fixed, file
+//     * Visibility: all, file
+//     * Transparency: fixed, weights, file
+//
+// * Drawing nodes
+//   - Implement for GL what's missing currently from the plotting capabilities,
+//     e.g. node colouring/ transparency / visibility
+//   - When in 2D mode, mesh mode should detect triangles intersecting with the
+//     focus plane, and draw the projections on that plane as lines
+//     (preferably with adjustable thickness)
+//   - For drawing as overlay, think it will be best to maintain a single RGB volume
+//     with the appropriate node colours / visibilities / transparencies;
+//     any changes made to these settings need to be propagated to this master image
+//     so that it is valid, and only a single overlay image is required;
+//     Should also be possible to overlay in both 2D and 3D.
+//     If updates are slow, maybe only update dynamically if overlay is the current setting;
+//     then regenerate image from scratch when the node display mode is set to overlay
+//     Alternatively, if each node's mask were to be reduced in FOV to only encompass the
+//     node, and have its transform updated appropriately...?
+//     In 2D mode could also do a quick check to see if the node's FOV actually crosses the
+//     focus plane, and skip drawing as many of them as possible
+//   - Drawing as spheres
+//     Borrow as much code as possible from the ODF overlay tool for generating the
+//     direction sets & changing the LOD
+//   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
+//
+// * Nodes GUI section
+//   - For colour by file: Need additional elements to appear: Colour map picker w. option
+//     to invert colourmap, and upper / lower threshold adjustbars
+//   - For size by file, need upper / lower threshold adjustbars in addition to the
+//     size slider
+//   - Prevent other non-sensible behaviour, e.g.:
+//     * Trying to colour by LUT when no LUT is provided
+//   - Implement list view with list of nodes, enable manual manupulation of nodes
+//
+// * Toolbar load
+//   - Speed up the node tessellation; either doing it all in a single pass, or multi-threading
+//
+// * Toolbar
+//   - Use grid layout for node / edge options: try to keep it neat as GUI elements
+//     appear and disappear
+//
+// * Additional functionalities:
+//   - Print node name in the GL window
+//     How to get access to shorter node names? Rely on user making a new LUT?
+//   - External window with capability of showing bar plots for different node parameters,
+//     clicking on a node in the main GL window highlights that node in those external plots
+//
+// * Icons
+//   - Main parcellation image
+
+
+
+
+
+
 namespace MR
 {
   namespace GUI
@@ -81,8 +150,6 @@ namespace MR
 
               protected:
                 std::string vertex_shader_source, fragment_shader_source;
-                // TODO edge shader using lines will make a lot more sense with a geometry shader:
-                //   set up the relevant parameters, then emit two vertices at two locations
 
               private:
                 void recompile (const Connectome& parent);
@@ -136,52 +203,12 @@ namespace MR
 
           protected:
 
-            // TODO Toolbar format for connectome:
-            // Basic configuration options:
-            // * Button to select template parcellation image
-            // * Button to import colour lookup table
-            // * Button to import connectome config file
-            //
-            // * Connectome files (list)
-            //
-            // Node display options:
-            // * Geometry: Mesh, overlay, sphere, ...
-            // * Colour by: LUT (if available), file w. colour map, fixed colour, random, ...
-            // * Size by: fixed, volume, file
-            // * Visibility: all, file, degree!=0, manual (list view appears to toggle nodes)
-            // * Transparency: fixed, by file
-            //
-            // Edge display options:
-            // * Geometry: Line, cylinder, ...
-            // * Colour by: file w. colour map, fixed colour, ... direction?
-            // * Size by: fixed, file
-            // * Visibility: all, file
-            // * Transparency: fixed, weights, file
-
-            //
-            // Questions:
-            // * Should connectomes and parcellation images be paired? Not convinced that this makes sense,
-            //     as ideally the underlying image would need to change between subjects also.
-
-            // TODO When node geometry is an overlay image, suspect it will be faster to store a coloured
-            //   texture buffer, which can be used to overlay in either 2D or 3D, but will need to be
-            //   updated whenever a relevant setting (e.g. node visibility, colours) changes
-
-            // TODO Change layout here: Should probably be a grid covering all lines
-            // Also: Colour settings may need more space; preferably its own row directly below
-
             QPushButton *image_button, *hide_all_button;
             QComboBox *lut_combobox;
             QPushButton *config_button;
 
             QComboBox *node_geometry_combobox, *node_colour_combobox, *node_size_combobox, *node_visibility_combobox, *node_alpha_combobox;
 
-            // TODO Elements that need to appear / change based on these selections:
-            // - If node size is based on a file, should automatically give a dialog to select the file;
-            //     then also need to print the base name of the file next to the combo box, and will need
-            //     additional scaling controls, e.g. upper and lower thesholds
-            //     (existing slider can be used to control a global scaling factor, but need a way to map the
-            //     range of values within the file to additional scaling factors)
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
 
@@ -209,8 +236,6 @@ namespace MR
                 const Point<float>& get_com() const { return centre_of_mass; }
                 size_t get_volume() const { return volume; }
 
-                // TODO Might as well store display options in here, rather than individual vectors;
-                //   these will be set by the main thread before data is applied to the shaders anyways
                 void set_name (const std::string& i) { name = i; }
                 const std::string& get_name() const { return name; }
                 void set_size (const float i) { size = i; }
@@ -251,6 +276,8 @@ namespace MR
                 } mesh;
 
                 // TODO Helper class to manage the storage and display of the mask volume for each node
+                // These may not be plotted individually, but will be used whenever the primary
+                //   volume needs to be updated
 
             };
             std::vector<Node> nodes;
@@ -265,9 +292,9 @@ namespace MR
             //   this can then be used to produce the lookup table
             std::vector<std::string> config;
 
-            // TODO If both a LUT and a config file have been provided, it would be
-            //   nice to have a direct vector mapping from image node index to
-            //   a position in the lookup table, pre-generated
+            // If both a LUT and a config file have been provided, this provides
+            //   a direct vector mapping from image node index to a position in
+            //   the lookup table, pre-generated
             std::vector<Node_map::const_iterator> lut_mapping;
 
 
@@ -290,7 +317,7 @@ namespace MR
 
 
 
-            // TODO Helper functions
+            // Helper functions
             void clear_all();
             void initialise (const std::string&);
 
