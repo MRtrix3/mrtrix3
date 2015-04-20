@@ -65,9 +65,9 @@ namespace MR
           link();
         }
 
-      // For now, assume that all nodes are being drawn based on the mesh;
-      //   branches can be added later
-        void Connectome::NodeShader::update (const Connectome& /*parent*/)
+        // For now, assume that all nodes are being drawn based on the mesh;
+        //   branches can be added later
+        void Connectome::NodeShader::update (const Connectome& parent)
         {
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
@@ -79,16 +79,29 @@ namespace MR
 
           vertex_shader_source += "}\n";
 
+          // =========================
+
+          const bool per_node_alpha = (parent.node_alpha != NODE_ALPHA_FIXED);
+
           fragment_shader_source =
-              "out vec3 color;\n"
-              "in vec3 fragmentColor;\n";
+              "uniform vec3 node_colour;\n";
+
+          if (per_node_alpha) {
+            fragment_shader_source += "uniform float node_alpha;\n";
+            fragment_shader_source += "out vec4 color;\n";
+          } else {
+            fragment_shader_source += "out vec3 color;\n";
+          }
 
           fragment_shader_source +=
-              "void main(){\n";
+              "void main() {\n";
 
-          fragment_shader_source +=
-              //"  color = fragmentColor;\n";
-              "  color = vec3(1,0,0);\n";
+          if (per_node_alpha) {
+            fragment_shader_source += "  color.xyz = node_colour;\n";
+            fragment_shader_source += "  color.a = node_alpha;\n";
+          } else {
+            fragment_shader_source += "  color = node_colour;\n";
+          }
 
           fragment_shader_source += "}\n";
         }
@@ -113,10 +126,12 @@ namespace MR
             node_colour (NODE_COLOUR_FIXED),
             node_size (NODE_SIZE_FIXED),
             node_visibility (NODE_VIS_ALL),
+            node_alpha (NODE_ALPHA_FIXED),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
-            node_size_scale_factor (1.0f)
+            node_fixed_alpha (1.0f),
+            node_size_scale_factor (1.0f),
+            voxel_volume (0.0f)
         {
-
           VBoxLayout* main_box = new VBoxLayout (this);
 
           HBoxLayout* hlayout = new HBoxLayout;
@@ -189,15 +204,18 @@ namespace MR
           node_geometry_combobox->addItem ("Sphere");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
+          node_geometry_combobox->setCurrentIndex (2);
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
           hlayout->addWidget (node_geometry_combobox, 1);
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
+          node_geometry_sphere_lod_label->setVisible (false);
           hlayout->addWidget (node_geometry_sphere_lod_label, 1);
           node_geometry_sphere_lod_spinbox = new QSpinBox (this);
           node_geometry_sphere_lod_spinbox->setMinimum (1);
           node_geometry_sphere_lod_spinbox->setMaximum (7);
           node_geometry_sphere_lod_spinbox->setSingleStep (1);
           node_geometry_sphere_lod_spinbox->setValue (4);
+          node_geometry_sphere_lod_spinbox->setVisible (false);
           connect (node_geometry_sphere_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(sphere_lod_slot(int)));
           hlayout->addWidget (node_geometry_sphere_lod_spinbox, 1);
           vlayout->addLayout(hlayout);
@@ -297,13 +315,38 @@ namespace MR
           node_shader.start (*this);
           projection.set (node_shader);
 
-          gl::Disable (gl::BLEND);
-          gl::Enable (gl::DEPTH_TEST);
-          gl::DepthMask (gl::TRUE_);
+          const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
 
-          //for (size_t i = 1; i != num_nodes(); ++i)
-          //  nodes[i].render_mesh();
-          nodes[44].render_mesh();
+          gl::Enable (gl::DEPTH_TEST);
+          if (use_alpha) {
+            gl::Enable (gl::BLEND);
+            gl::DepthMask (gl::FALSE_);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
+            gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+            //gl::Disable (gl::CULL_FACE);
+          } else {
+            gl::Disable (gl::BLEND);
+            gl::DepthMask (gl::TRUE_);
+            //gl::Enable (gl::CULL_FACE);
+          }
+
+          for (size_t i = 1; i <= num_nodes(); ++i) {
+            if (nodes[i].is_visible()) {
+              gl::Uniform3fv (gl::GetUniformLocation (node_shader, "node_colour"), 1, nodes[i].get_colour());
+              if (node_alpha != NODE_ALPHA_FIXED) {
+                //gl::BlendColor (1.0, 1.0, 1.0, nodes[i].get_alpha());
+                gl::Uniform1f (gl::GetUniformLocation (node_shader, "node_alpha"), nodes[i].get_alpha());
+              }
+              nodes[i].render_mesh();
+            }
+          }
+
+          // Reset to defaults if we've been doing transparency
+          if (use_alpha) {
+            gl::Disable (gl::BLEND);
+            gl::DepthMask (gl::TRUE_);
+          }
 
           node_shader.stop();
         }
@@ -316,9 +359,17 @@ namespace MR
         }
 
 
-        //bool Connectome::process_batch_command (const std::string& cmd, const std::string& args)
-        bool Connectome::process_batch_command (const std::string&, const std::string&)
+        bool Connectome::process_batch_command (const std::string& cmd, const std::string& args)
         {
+          // BATCH_COMMAND connectome.load path # Load the connectome tool based on a parcellation image
+          if (cmd == "connectome.load") {
+            try {
+              initialise (args);
+              window.updateGL();
+            }
+            catch (Exception& E) { clear_all(); E.display(); }
+            return true;
+          }
           return false;
         }
 
@@ -336,6 +387,7 @@ namespace MR
           initialise (path);
 
           image_button->setText (QString::fromStdString (Path::basename (path)));
+          window.updateGL();
         }
 
 
@@ -374,6 +426,7 @@ namespace MR
           lut_combobox->setCurrentIndex (5);
 
           load_node_properties();
+          window.updateGL();
         }
 
 
@@ -388,6 +441,7 @@ namespace MR
           MR::DWI::Tractography::Connectomics::load_config (path, config);
           config_button->setText (QString::fromStdString (Path::basename (path)));
           load_node_properties();
+          window.updateGL();
         }
 
 
@@ -431,6 +485,7 @@ namespace MR
               node_geometry_sphere_lod_spinbox->setVisible (false);
               break;
           }
+          window.updateGL();
         }
 
         void Connectome::node_colour_selection_slot (int index)
@@ -440,17 +495,27 @@ namespace MR
               // if (node_colour == NODE_COLOUR_FIXED) return; // TODO Should this prompt a new colour selection? Means no need for a button...
               node_colour = NODE_COLOUR_FIXED;
               node_colour_colourmap_button->setVisible (false);
+              node_colour_fixedcolour_button->setVisible (true);
               break;
             case 1:
               //if (node_colour == NODE_COLOUR_RANDOM) return; // Keep this; regenerate random colours on repeat selection
               node_colour = NODE_COLOUR_RANDOM;
               node_colour_colourmap_button->setVisible (false);
+              node_colour_fixedcolour_button->setVisible (false);
               break;
             case 2:
               if (node_colour == NODE_COLOUR_LUT) return;
-              // TODO Pointless selection if no LUT is loaded... need to detect or disable
-              node_colour = NODE_COLOUR_LUT;
-              node_colour_colourmap_button->setVisible (false);
+              // TODO Pointless selection if no LUT is loaded... need to detect; or better, disable
+              if (lut.size()) {
+                node_colour = NODE_COLOUR_LUT;
+                node_colour_colourmap_button->setVisible (false);
+                node_colour_fixedcolour_button->setVisible (false);
+              } else {
+                node_colour_combobox->setCurrentIndex (0);
+                node_colour = NODE_COLOUR_FIXED;
+                node_colour_colourmap_button->setVisible (false);
+                node_colour_fixedcolour_button->setVisible (true);
+              }
               break;
             case 3:
               //if (node_colour == NODE_COLOUR_FILE) return; // Keep this; may want to select a new file
@@ -461,15 +526,17 @@ namespace MR
                 node_colour = NODE_COLOUR_FILE;
                 // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
                 node_colour_colourmap_button->setVisible (true);
+                node_colour_fixedcolour_button->setVisible (false);
               } else {
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
                 node_colour_colourmap_button->setVisible (false);
+                node_colour_fixedcolour_button->setVisible (true);
               }
               break;
           }
           calculate_node_colours();
-          // Probably need to updateGL() as well...
+          window.updateGL();
         }
 
         void Connectome::node_size_selection_slot (int index)
@@ -495,6 +562,7 @@ namespace MR
               break;
           }
           calculate_node_sizes();
+          window.updateGL();
         }
 
         void Connectome::node_visibility_selection_slot (int index)
@@ -524,6 +592,7 @@ namespace MR
               break;
           }
           calculate_node_visibility();
+          window.updateGL();
         }
 
         void Connectome::node_alpha_selection_slot (int index)
@@ -552,6 +621,7 @@ namespace MR
               break;
           }
           calculate_node_alphas();
+          window.updateGL();
         }
 
 
@@ -569,16 +639,20 @@ namespace MR
           QColor c = node_colour_fixedcolour_button->color();
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           calculate_node_colours();
+          window.updateGL();
         }
 
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
+          window.updateGL();
         }
 
         void Connectome::node_alpha_value_slot (int position)
         {
           node_fixed_alpha = position / 1000.0f;
+          calculate_node_alphas();
+          window.updateGL();
         }
 
 
@@ -621,7 +695,7 @@ namespace MR
 
 
         Connectome::Node::Mesh::Mesh (const MR::Mesh::Mesh& in) :
-            count (in.num_triangles())
+            count (3 * in.num_triangles())
         {
           std::vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
@@ -701,6 +775,7 @@ namespace MR
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype");
+          voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
           MR::Image::Buffer<node_t> buffer (path);
           auto voxel = buffer.voxel();
           MR::Image::Transform transform (H);
@@ -708,7 +783,7 @@ namespace MR
           std::vector<size_t> node_volumes;
           VecPtr< MR::Image::BufferScratch<bool> > node_masks (1);
           VecPtr< MR::Image::BufferScratch<bool>::voxel_type > node_mask_voxels (1);
-          size_t node_count = 0;
+          size_t max_index = 0;
 
           {
             MR::Image::LoopInOrder loop (voxel, "Importing parcellation image... ");
@@ -716,16 +791,16 @@ namespace MR
               const node_t node_index = voxel.value();
               if (node_index) {
 
-                if (node_index >= node_count) {
+                if (node_index >= max_index) {
                   node_coms       .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
                   node_volumes    .resize (node_index+1, 0);
                   node_masks      .resize (node_index+1);
                   node_mask_voxels.resize (node_index+1);
-                  for (size_t i = node_count+1; i <= node_index; ++i) {
+                  for (size_t i = max_index+1; i <= node_index; ++i) {
                     node_masks[i] = new MR::Image::BufferScratch<bool> (H, "Node " + str(i));
                     node_mask_voxels[i] = new MR::Image::BufferScratch<bool>::voxel_type (*node_masks[i]);
                   }
-                  node_count = node_index;
+                  max_index = node_index;
                 }
 
                 MR::Image::Nav::set_pos (*node_mask_voxels[node_index], voxel);
@@ -736,14 +811,14 @@ namespace MR
               }
             }
           }
-          for (node_t n = 1; n != node_count; ++n)
+          for (node_t n = 1; n <= max_index; ++n)
             node_coms[n] *= (1.0f / float(node_volumes[n]));
 
           // TODO In its current state, this could be multi-threaded
           {
-            MR::ProgressBar progress ("Triangulating nodes...", node_count);
+            MR::ProgressBar progress ("Triangulating nodes...", max_index);
             nodes.push_back (Node());
-            for (size_t i = 1; i != node_count; ++i) {
+            for (size_t i = 1; i <= max_index; ++i) {
               nodes.push_back (Node (node_coms[i], node_volumes[i], *node_masks[i]));
               ++progress;
             }
@@ -779,20 +854,14 @@ namespace MR
           if (lut.size()) {
 
             lut_mapping.push_back (lut.end());
-            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
 
               if (config.size()) {
                 const std::string name = config[node_index];
                 nodes[node_index].set_name (name);
                 Node_map::const_iterator it;
-                for (it = lut.begin(); it != lut.end(); ++it) {
-                  if (it->second.get_name() == name) {
-                    lut_mapping.push_back (it);
-                    continue;
-                  }
-                }
-                if (it == lut.end())
-                  lut_mapping.push_back (it);
+                for (it = lut.begin(); it != lut.end() && it->second.get_name() != name; ++it);
+                lut_mapping.push_back (it);
 
               } else { // LUT, but no config file
 
@@ -810,7 +879,7 @@ namespace MR
           } else { // No LUT; just name nodes according to their indices
 
             lut_mapping.assign (num_nodes()+1, lut.end());
-            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index)
+            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index)
               nodes[node_index].set_name ("Node " + str(node_index));
 
           }

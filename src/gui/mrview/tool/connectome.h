@@ -79,6 +79,13 @@
 //     Borrow as much code as possible from the ODF overlay tool for generating the
 //     direction sets & changing the LOD
 //   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
+//   - Meshes: Get right hand rule working, use face culling
+//
+// * OpenGL drawing general:
+//   - Order elements from front to back
+//     Even though we should eventually be using the depth buffer, it will result in
+//     less fragment shader calls if the ordering is done explicitly first
+//     Unfortunately can't mix and match the node v.s. edge shaders...
 //
 // * Nodes GUI section
 //   - For colour by file: Need additional elements to appear: Colour map picker w. option
@@ -95,6 +102,8 @@
 // * Toolbar
 //   - Use grid layout for node / edge options: try to keep it neat as GUI elements
 //     appear and disappear
+//   - Only start drawing toolbar after parcellation image has been imported
+//   - Figure out why the toolbar is initially being drawn twice
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
@@ -182,7 +191,7 @@ namespace MR
             void drawOverlays (const Projection& transform) override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
-            size_t num_nodes() const { return nodes.size() - 1; }
+            size_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
 
           private slots:
             void image_open_slot ();
@@ -278,6 +287,8 @@ namespace MR
                 // TODO Helper class to manage the storage and display of the mask volume for each node
                 // These may not be plotted individually, but will be used whenever the primary
                 //   volume needs to be updated
+                // Also: Once the raw data has been loaded, this should have a reduced FOV to only
+                //   encompass the node and no more
 
             };
             std::vector<Node> nodes;
@@ -309,6 +320,7 @@ namespace MR
             Point<float> node_fixed_colour;
             float node_fixed_alpha;
             float node_size_scale_factor;
+            float voxel_volume;
             Math::Vector<float> node_values_from_file_colour;
             Math::Vector<float> node_values_from_file_size;
             Math::Vector<float> node_values_from_file_visibility;
