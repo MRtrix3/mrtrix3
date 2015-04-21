@@ -79,6 +79,11 @@ namespace MR
               "uniform int reverse;\n";
           }
 
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            vertex_shader_source +=
+              "out vec3 normal;\n";
+          }
+
           vertex_shader_source +=
               "void main() {\n";
 
@@ -86,8 +91,11 @@ namespace MR
             case NODE_GEOM_SPHERE:
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace * node_size;\n"
-              "  if (reverse != 0)\n"
+              "  normal = vertexPosition_modelspace;\n"
+              "  if (reverse != 0) {\n"
               "    pos = -pos;\n"
+              "    normal = -normal;\n"
+              "  }\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
               break;
             case NODE_GEOM_OVERLAY:
@@ -108,20 +116,37 @@ namespace MR
               "uniform vec3 node_colour;\n";
 
           if (per_node_alpha) {
-            fragment_shader_source += "uniform float node_alpha;\n";
-            fragment_shader_source += "out vec4 color;\n";
+            fragment_shader_source +=
+              "uniform float node_alpha;\n"
+              "out vec4 color;\n";
           } else {
-            fragment_shader_source += "out vec3 color;\n";
+            fragment_shader_source +=
+              "out vec3 color;\n";
+          }
+
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            fragment_shader_source +=
+              "uniform float ambient, diffuse, specular, shine;\n"
+              "uniform vec3 light_pos;\n"
+              "in vec3 normal;\n";
           }
 
           fragment_shader_source +=
               "void main() {\n";
 
           if (per_node_alpha) {
-            fragment_shader_source += "  color.xyz = node_colour;\n";
-            fragment_shader_source += "  color.a = node_alpha;\n";
+            fragment_shader_source +=
+              "  color.xyz = node_colour;\n"
+              "  color.a = node_alpha;\n";
           } else {
-            fragment_shader_source += "  color = node_colour;\n";
+            fragment_shader_source +=
+              "  color = node_colour;\n";
+          }
+
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            fragment_shader_source +=
+              "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
+              "  color += specular * pow (clamp (dot (reflect (-light_pos, normal), normal), 0, 1), shine);\n";
           }
 
           fragment_shader_source += "}\n";
@@ -143,6 +168,7 @@ namespace MR
 
         Connectome::Connectome (Window& main_window, Dock* parent) :
             Base (main_window, parent),
+            lighting (window.lighting()),
             node_geometry (NODE_GEOM_SPHERE),
             node_colour (NODE_COLOUR_FIXED),
             node_size (NODE_SIZE_FIXED),
@@ -211,41 +237,34 @@ namespace MR
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
-          vlayout = new VBoxLayout;
-          group_box->setLayout (vlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
+          GridLayout* gridlayout = new GridLayout();
+          group_box->setLayout (gridlayout);
 
           QLabel* label = new QLabel ("Geometry: ");
-          hlayout->addWidget (label);
+          gridlayout->addWidget (label, 0, 0);
           node_geometry_combobox = new QComboBox (this);
           node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
           node_geometry_combobox->addItem ("Sphere");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
-          hlayout->addWidget (node_geometry_combobox, 1);
+          gridlayout->addWidget (node_geometry_combobox, 0, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
-          node_geometry_sphere_lod_label->setVisible (false);
           hlayout->addWidget (node_geometry_sphere_lod_label, 1);
           node_geometry_sphere_lod_spinbox = new QSpinBox (this);
           node_geometry_sphere_lod_spinbox->setMinimum (1);
           node_geometry_sphere_lod_spinbox->setMaximum (7);
           node_geometry_sphere_lod_spinbox->setSingleStep (1);
           node_geometry_sphere_lod_spinbox->setValue (4);
-          node_geometry_sphere_lod_spinbox->setVisible (false);
           connect (node_geometry_sphere_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(sphere_lod_slot(int)));
           hlayout->addWidget (node_geometry_sphere_lod_spinbox, 1);
-          vlayout->addLayout(hlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
+          gridlayout->addLayout (hlayout, 0, 2, 1, 2);
 
           label = new QLabel ("Colour: ");
-          hlayout->addWidget (label);
+          gridlayout->addWidget (label, 1, 0);
           node_colour_combobox = new QComboBox (this);
           node_colour_combobox->setToolTip (tr ("Set how the colour of each node is determined"));
           node_colour_combobox->addItem ("Fixed");
@@ -253,70 +272,54 @@ namespace MR
           node_colour_combobox->addItem ("Lookup table");
           node_colour_combobox->addItem ("From vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
-          hlayout->addWidget (node_colour_combobox, 1);
+          gridlayout->addWidget (node_colour_combobox, 1, 1);
           node_colour_fixedcolour_button = new QColorButton;
           connect (node_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
-          hlayout->addWidget (node_colour_fixedcolour_button, 1);
+          gridlayout->addWidget (node_colour_fixedcolour_button, 1, 2);
           node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           node_colour_colourmap_button->setVisible (false);
-          hlayout->addWidget (node_colour_colourmap_button, 1);
-          vlayout->addLayout (hlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
+          gridlayout->addWidget (node_colour_colourmap_button, 1, 3, 1, 1);
 
           label = new QLabel ("Size scaling: ");
-          hlayout->addWidget (label);
+          gridlayout->addWidget (label, 2, 0);
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
           node_size_combobox->addItem ("From vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
-          hlayout->addWidget (node_size_combobox, 1);
-          node_size_button = new AdjustButton (this, 0.1);
+          gridlayout->addWidget (node_size_combobox, 2, 1);
+          node_size_button = new AdjustButton (this, 0.01);
           node_size_button->setValue (node_size_scale_factor);
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
-          hlayout->addWidget (node_size_button, 1);
-          vlayout->addLayout (hlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
+          gridlayout->addWidget (node_size_button, 2, 2, 1, 1);
 
           label = new QLabel ("Visibility: ");
-          hlayout->addWidget (label);
+          gridlayout->addWidget (label, 3, 0);
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
           node_visibility_combobox->addItem ("From vector file");
-          node_visibility_combobox->addItem ("Node degree >= 1");
+          node_visibility_combobox->addItem ("Degree >= 1");
           node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
-          hlayout->addWidget (node_visibility_combobox, 1);
-          vlayout->addLayout (hlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
+          gridlayout->addWidget (node_visibility_combobox, 3, 1);
 
           label = new QLabel ("Transparency: ");
-          hlayout->addWidget (label);
+          gridlayout->addWidget (label, 4, 0);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Lookup table");
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          hlayout->addWidget (node_alpha_combobox, 1);
+          gridlayout->addWidget (node_alpha_combobox, 4, 1);
           node_alpha_slider = new QSlider (Qt::Horizontal);
           node_alpha_slider->setRange (0,1000);
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
-          hlayout->addWidget (node_alpha_slider, 1);
-          vlayout->addLayout (hlayout);
+          gridlayout->addWidget (node_alpha_slider, 4, 2, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -373,6 +376,14 @@ namespace MR
             node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
             node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
             reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+          }
+
+          if (node_geometry != NODE_GEOM_OVERLAY) {
+            gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
+            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
+            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
+            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
+            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
           }
 
           std::map<float, size_t> node_ordering;

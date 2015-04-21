@@ -28,6 +28,7 @@
 
 #include "point.h"
 
+#include "gui/opengl/lighting.h"
 #include "gui/opengl/shader.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
@@ -81,20 +82,23 @@
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
 //       plane and draw as lines
 //   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
-//   - Meshes: Get right hand rule working, use face culling
-//   - Meshes: Look into an alternative mesh conversion that isn't axis-constrained, i.e.
-//     introduce some smoothness into the mesh with 45-degree angles
+//   - Meshes
+//     * Get right hand rule working, use face culling
+//     * Look into an alternative mesh conversion that isn't axis-constrained, i.e.
+//       introduce some smoothness into the mesh with 45-degree angles
+//     * Pre-calculate vertex normals based on connected polygons & use for lighting
 //
 // * OpenGL drawing general:
 //   - Add lighting capability, using similar code to ODF renderer
 //     * May want to have a single GL::Lighting class for which the settings apply
-//       to all geometries
+//       to all geometries -> Actually there already is one, Window::lighting()
 //
 // * Nodes GUI section
 //   - For colour by file: Need additional elements to appear: Colour map picker w. option
 //     to invert colourmap, and upper / lower threshold adjustbars
 //   - For size by file, need upper / lower threshold adjustbars in addition to the
 //     size slider
+//   - Will also want lower & upper thresholds for the visibility option
 //   - Prevent other non-sensible behaviour, e.g.:
 //     * Trying to colour by LUT when no LUT is provided
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
@@ -315,6 +319,10 @@ namespace MR
             // Used when the geometry of node visualisation is a sphere
             GUI::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
+
+
+            // Fixed lighting settings from the main window
+            const GL::Lighting& lighting;
 
 
             // Current node visualisation settings
