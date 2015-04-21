@@ -246,7 +246,7 @@ namespace MR
 
   std::ostream& operator<< (std::ostream& stream, const Header& H) 
   {
-    stream << "\"" << H.name() << "\", size [ ";
+    stream << "\"" << H.name() << "\", " << H.datatype().specifier() << ", size [ ";
     for (size_t n = 0; n < H.ndim(); ++n) stream << H.size(n) << " ";
     stream << "], voxel size [ ";
     for (size_t n = 0; n < H.ndim(); ++n) stream << H.voxsize(n) << " "; 

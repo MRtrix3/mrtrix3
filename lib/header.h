@@ -107,9 +107,9 @@ namespace MR
       ssize_t& stride (size_t axis);
 
       //! get the datatype of the data as stored on file
-      const DataType datatype () const { return datatype_; }
+      DataType datatype () const { return datatype_; }
       //! get/set the datatype of the data as stored on file
-      DataType datatype () { return datatype_; }
+      DataType& datatype () { return datatype_; }
 
       //! get the offset applied to raw intensities
       float intensity_offset () const { return offset_; }
