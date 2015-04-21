@@ -52,7 +52,8 @@ namespace MR
         class Vertex;
         std::vector<Vertex> vertices;
         size_t num_indices;
-        GL::VertexBuffer vertex_buffer, index_buffer;
+        GL::VertexBuffer vertex_buffer;
+        GL::IndexBuffer index_buffer;
 
 
         class Vertex {

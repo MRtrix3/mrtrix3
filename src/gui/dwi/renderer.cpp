@@ -130,7 +130,7 @@ namespace MR
         gl::EnableVertexAttribArray (1);
         gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
 
-        sphere.index_buffer.bind (gl::ELEMENT_ARRAY_BUFFER);
+        sphere.index_buffer.bind();
       }
 
 

@@ -31,6 +31,7 @@
 #include "image/nav.h"
 #include "image/transform.h"
 
+#include "math/math.h"
 #include "math/rng.h"
 
 #include "mesh/mesh.h"
@@ -73,13 +74,35 @@ namespace MR
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "uniform mat4 MVP;\n";
 
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            vertex_shader_source +=
+              "uniform vec3 node_centre;\n"
+              "uniform float node_size;\n"
+              "uniform int reverse;\n";
+          }
+
           vertex_shader_source +=
-              "void main() {\n"
+              "void main() {\n";
+
+          switch (parent.node_geometry) {
+            case NODE_GEOM_SPHERE:
+              vertex_shader_source +=
+              "  vec3 pos = vertexPosition_modelspace * node_size;\n"
+              "  if (reverse != 0)\n"
+              "    pos = -pos;\n"
+              "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
+              break;
+            case NODE_GEOM_OVERLAY:
+              break;
+            case NODE_GEOM_MESH:
+              vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+              break;
+          }
 
           vertex_shader_source += "}\n";
 
-          // =========================
+          // =================================================================
 
           const bool per_node_alpha = (parent.node_alpha != NODE_ALPHA_FIXED);
 
@@ -204,7 +227,6 @@ namespace MR
           node_geometry_combobox->addItem ("Sphere");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
-          node_geometry_combobox->setCurrentIndex (2);
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
           hlayout->addWidget (node_geometry_combobox, 1);
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
@@ -255,7 +277,7 @@ namespace MR
           node_size_combobox->addItem ("From vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
           hlayout->addWidget (node_size_combobox, 1);
-          node_size_button = new AdjustButton (this);
+          node_size_button = new AdjustButton (this, 0.1);
           node_size_button->setValue (node_size_scale_factor);
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
@@ -301,7 +323,16 @@ namespace MR
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
 
+          sphere.LOD (4);
+          sphere_VAO.gen();
+          sphere_VAO.bind();
+          sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+
           image_open_slot();
+
+          window.updateGL();
         }
 
 
@@ -322,7 +353,7 @@ namespace MR
             gl::Enable (gl::BLEND);
             gl::DepthMask (gl::FALSE_);
             gl::BlendEquation (gl::FUNC_ADD);
-            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE);
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
             //gl::Disable (gl::CULL_FACE);
           } else {
@@ -331,14 +362,41 @@ namespace MR
             //gl::Enable (gl::CULL_FACE);
           }
 
+          const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
+          GLuint node_alpha_ID = 0;
+          if (node_alpha != NODE_ALPHA_FIXED)
+            node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
+          GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
+
+          if (node_geometry == NODE_GEOM_SPHERE) {
+            sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+            sphere_VAO.bind();
+            sphere.index_buffer.bind();
+            node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+            node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
+            reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+          }
+
           for (size_t i = 1; i <= num_nodes(); ++i) {
             if (nodes[i].is_visible()) {
-              gl::Uniform3fv (gl::GetUniformLocation (node_shader, "node_colour"), 1, nodes[i].get_colour());
-              if (node_alpha != NODE_ALPHA_FIXED) {
-                //gl::BlendColor (1.0, 1.0, 1.0, nodes[i].get_alpha());
-                gl::Uniform1f (gl::GetUniformLocation (node_shader, "node_alpha"), nodes[i].get_alpha());
+              gl::Uniform3fv (node_colour_ID, 1, nodes[i].get_colour());
+              if (node_alpha != NODE_ALPHA_FIXED)
+                gl::Uniform1f (node_alpha_ID, nodes[i].get_alpha());
+              switch (node_geometry) {
+                case NODE_GEOM_SPHERE:
+                  gl::Uniform3fv (node_centre_ID, 1, &nodes[i].get_com()[0]);
+                  gl::Uniform1f (node_size_ID, nodes[i].get_size() * node_size_scale_factor);
+                  gl::Uniform1i (reverse_ID, 0);
+                  gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                  gl::Uniform1i (reverse_ID, 1);
+                  gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                  break;
+                case NODE_GEOM_OVERLAY:
+                  break;
+                case NODE_GEOM_MESH:
+                  nodes[i].render_mesh();
+                  break;
               }
-              nodes[i].render_mesh();
             }
           }
 
@@ -628,10 +686,10 @@ namespace MR
 
 
 
-        void Connectome::sphere_lod_slot (int /*value*/)
+        void Connectome::sphere_lod_slot (int value)
         {
-          // TODO
-          // Get the tessellation code from the ODF overlay tool
+          sphere.LOD (value);
+          window.updateGL();
         }
 
         void Connectome::node_colour_change_slot()
@@ -747,9 +805,10 @@ namespace MR
         void Connectome::Node::Mesh::render() const
         {
           assert (count);
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
-          gl::DrawArrays (gl::TRIANGLES, 0, count);
+          gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
         }
 
 
@@ -927,6 +986,8 @@ namespace MR
             //   shader will branch in order to feed the raw value from the imported file into a colour
             //   (will need to send the shader a scalar rather than a vec3)
             // This will then enable use of all possible colour maps
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
 
           }
         }
@@ -942,17 +1003,14 @@ namespace MR
 
           } else if (node_size == NODE_SIZE_VOLUME) {
 
-            // TODO Improve this heuristic
-            // For example: Could take into consideration the voxel size of the image, then
-            //   scale so that the sphere takes up approximately the same volume as the node itself
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
-              i->set_size (i->get_volume());
+              i->set_size (voxel_volume * std::cbrt (i->get_volume() / (4.0 * Math::pi)));
 
           } else if (node_size == NODE_SIZE_FILE) {
 
             assert (node_values_from_file_size.size());
             for (size_t i = 1; i != num_nodes()+1; ++i)
-              nodes[i].set_size (node_values_from_file_size[i-1]);
+              nodes[i].set_size (std::cbrt (node_values_from_file_size[i-1] / (4.0 * Math::pi)));
 
           }
         }

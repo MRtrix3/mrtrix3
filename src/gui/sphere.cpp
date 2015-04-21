@@ -174,7 +174,7 @@ namespace MR
 
       num_indices = 3*indices.size();
       index_buffer.gen();
-      index_buffer.bind (gl::ELEMENT_ARRAY_BUFFER);
+      index_buffer.bind();
       gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(Triangle), &indices[0], gl::STATIC_DRAW);
 
     }

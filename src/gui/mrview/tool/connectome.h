@@ -34,6 +34,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
+#include "gui/sphere.h"
 
 #include "mesh/mesh.h"
 
@@ -60,7 +61,7 @@
 //
 // * Drawing nodes
 //   - Implement for GL what's missing currently from the plotting capabilities,
-//     e.g. node colouring/ transparency / visibility
+//     e.g. node colouring / transparency / visibility
 //   - When in 2D mode, mesh mode should detect triangles intersecting with the
 //     focus plane, and draw the projections on that plane as lines
 //     (preferably with adjustable thickness)
@@ -76,10 +77,13 @@
 //     In 2D mode could also do a quick check to see if the node's FOV actually crosses the
 //     focus plane, and skip drawing as many of them as possible
 //   - Drawing as spheres
-//     Borrow as much code as possible from the ODF overlay tool for generating the
-//     direction sets & changing the LOD
+//     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
+//     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
+//       plane and draw as lines
 //   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
 //   - Meshes: Get right hand rule working, use face culling
+//   - Meshes: Look into an alternative mesh conversion that isn't axis-constrained, i.e.
+//     introduce some smoothness into the mesh with 45-degree angles
 //
 // * OpenGL drawing general:
 //   - Order elements from front to back
@@ -307,6 +311,11 @@ namespace MR
             //   a direct vector mapping from image node index to a position in
             //   the lookup table, pre-generated
             std::vector<Node_map::const_iterator> lut_mapping;
+
+
+            // Used when the geometry of node visualisation is a sphere
+            GUI::Sphere sphere;
+            GL::VertexArrayObject sphere_VAO;
 
 
             // Current node visualisation settings
