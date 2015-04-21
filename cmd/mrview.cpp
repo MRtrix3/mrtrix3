@@ -10,14 +10,14 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (d.raffelt@brain.org.au) and Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "the MRtrix image viewer."
 
   + "Basic scripting can be performed at startup, using the -run or -batch options. "
-  "Each command consists of a single line of text, with the first word interpreted "
-  "as the command. Valid commands are:"
+    "Each command consists of a single line of text, with the first word interpreted "
+    "as the command. Valid commands are:"
 
 
   // use this command to re-generate the command documentation:
@@ -41,15 +41,18 @@ void usage ()
   + "window.position x,y\n  Set the position of the main window, in pixel units."
   + "window.fullscreen\n  Show fullscreen or windowed (0: windowed, 1: fullscreen)."
   + "exit\n  quit MRView."
+  + "roi.load path\n  Loads the specified image on the roi tool."
+  + "roi.opacity value\n  Sets the roi opacity to floating value [0-1]."
   + "overlay.load path\n  Loads the specified image on the overlay tool."
   + "overlay.opacity value\n  Sets the overlay opacity to floating value [0-1]."
   + "overlay.colourmap index\n  Sets the colourmap of the overlay as indexed in the colourmap dropdown menu."
   + "tractography.load path\n  Load the specified tracks file into the tractography tool"
+  + "connectome.load path\n  Load the connectome tool based on a parcellation image"
   + "capture.folder path\n  Set the output folder for the screen capture tool"
   + "capture.prefix path\n  Set the output file prefix for the screen capture tool"
   + "capture.grab\n  Start the screen capture process"
-  + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool"
-  ;
+  + "fixel.load path\n  Load the specified MRtrix sparse image file (.msf) into the fixel tool";
+
 
   REFERENCES 
     + "Tournier, J.-D.; Calamante, F. & Connelly, A. "
