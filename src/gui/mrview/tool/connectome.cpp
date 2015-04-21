@@ -66,8 +66,6 @@ namespace MR
           link();
         }
 
-        // For now, assume that all nodes are being drawn based on the mesh;
-        //   branches can be added later
         void Connectome::NodeShader::update (const Connectome& parent)
         {
           vertex_shader_source =
@@ -377,15 +375,20 @@ namespace MR
             reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
           }
 
-          for (size_t i = 1; i <= num_nodes(); ++i) {
-            if (nodes[i].is_visible()) {
-              gl::Uniform3fv (node_colour_ID, 1, nodes[i].get_colour());
+          std::map<float, size_t> node_ordering;
+          for (size_t i = 1; i <= num_nodes(); ++i)
+            node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+
+          for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
+            const size_t index = it->second;
+            if (nodes[index].is_visible()) {
+              gl::Uniform3fv (node_colour_ID, 1, nodes[index].get_colour());
               if (node_alpha != NODE_ALPHA_FIXED)
-                gl::Uniform1f (node_alpha_ID, nodes[i].get_alpha());
+                gl::Uniform1f (node_alpha_ID, nodes[index].get_alpha());
               switch (node_geometry) {
                 case NODE_GEOM_SPHERE:
-                  gl::Uniform3fv (node_centre_ID, 1, &nodes[i].get_com()[0]);
-                  gl::Uniform1f (node_size_ID, nodes[i].get_size() * node_size_scale_factor);
+                  gl::Uniform3fv (node_centre_ID, 1, &nodes[index].get_com()[0]);
+                  gl::Uniform1f (node_size_ID, nodes[index].get_size() * node_size_scale_factor);
                   gl::Uniform1i (reverse_ID, 0);
                   gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                   gl::Uniform1i (reverse_ID, 1);
@@ -394,7 +397,7 @@ namespace MR
                 case NODE_GEOM_OVERLAY:
                   break;
                 case NODE_GEOM_MESH:
-                  nodes[i].render_mesh();
+                  nodes[index].render_mesh();
                   break;
               }
             }

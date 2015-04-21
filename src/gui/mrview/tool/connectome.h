@@ -86,10 +86,9 @@
 //     introduce some smoothness into the mesh with 45-degree angles
 //
 // * OpenGL drawing general:
-//   - Order elements from front to back
-//     Even though we should eventually be using the depth buffer, it will result in
-//     less fragment shader calls if the ordering is done explicitly first
-//     Unfortunately can't mix and match the node v.s. edge shaders...
+//   - Add lighting capability, using similar code to ODF renderer
+//     * May want to have a single GL::Lighting class for which the settings apply
+//       to all geometries
 //
 // * Nodes GUI section
 //   - For colour by file: Need additional elements to appear: Colour map picker w. option
