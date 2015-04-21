@@ -104,10 +104,10 @@ namespace MR
    *
    * // the outer loop is processed sequentially in a thread-safe manner,
    * // so that each thread receives the next position in the loop:
-   * for (auto i = outer_loop (vox); i; ++i) {
+   * for (auto i = outer_loop.run (vox); i; ++i) {
    *   // the inner loop is processed within each thread, with multiple threads 
    *   // running concurrently, each processing a different row of voxels:
-   *   for (auto j = inner_loop (vox); j; ++j)
+   *   for (auto j = inner_loop.run (vox); j; ++j)
    *     my_func (vox);
    * }
    * \endcode
@@ -365,7 +365,7 @@ namespace MR
           void run_outer (Functor&& functor)
           {
             if (Thread::number_of_threads() == 0) {
-              for (auto i = loop (dummy); i; ++i)
+              for (auto i = loop.run (dummy); i; ++i)
                 functor (dummy);
               return;
             }

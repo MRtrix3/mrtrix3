@@ -89,7 +89,7 @@ namespace MR
    * \code
    * float sum = 0.0;
    * Image::Loop loop;
-   * for (auto i = loop (vox); i; ++i)
+   * for (auto i = loop.run (vox); i; ++i)
    *   sum += vox.value();
    * \endcode
    * is equivalent to:
@@ -110,11 +110,11 @@ namespace MR
    *
    * It is often required to loop over more than one ImageType of the same
    * dimensions. This is done trivially by passing any additional ImageType
-   * objects to be looped over to the operator() member functions. For example,
+   * objects to be looped over to the run() member function. For example,
    * this code snippet will copy the contents of the ImageType \a src into a
    * ImageType \a dest, assumed to have the same dimensions as \a src:
    * \code
-   * for (auto i = Image::Loop()(dest, src); i; ++i)
+   * for (auto i = Image::Loop().run(dest, src); i; ++i)
    *   dest.value() = vox.value();
    * \endcode
    *
@@ -124,10 +124,10 @@ namespace MR
    * volume in the ImageType in turn:
    * \code
    * Image::Loop outer (3); // outer loop iterates over axes 3 and above
-   * for (auto i = outer (vox)); i; ++i {
+   * for (auto i = outer.run (vox)); i; ++i {
    *   float sum = 0.0;
    *   Image::Loop inner (0, 3); // inner loop iterates over axes 0 to 2
-   *   for (auto j = inner (vox); j; ++j)
+   *   for (auto j = inner.run (vox); j; ++j)
    *     sum += vox.value();
    *   print ("total = " + str (sum) + "\n");
    * }
@@ -142,7 +142,7 @@ namespace MR
    * float sum = 0.0;
    *
    * Loop loop ("averaging...");
-   * for (auto i = loop(vox); i; ++i) 
+   * for (auto i = loop.run (vox); i; ++i) 
    *   sum += vox.value();
    *
    * float average = sum / float (Image::voxel_count (vox));
@@ -194,6 +194,11 @@ namespace MR
          * for (auto i = loop (vox_in, vox_out); i; ++i)
          *   vox_out.value() = vox_in.value();
          * \endcode */
+        template <typename... ImageType> 
+          LoopIter<Loop,ImageType&...> run (ImageType&... vox) {
+            return { *this, vox... };
+          }
+        //! equivalent to run()
         template <typename... ImageType> 
           LoopIter<Loop,ImageType&...> operator() (ImageType&... vox) {
             return { *this, vox... };
@@ -314,7 +319,7 @@ namespace MR
    * \a vox is a 3D ImageType (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
    * \code
    * float sum = 0.0;
-   * for (auto i = Image::LoopInOrder() (vox); i ++i)
+   * for (auto i = Image::LoopInOrder().run (vox); i ++i)
    *   sum += vox.value();
    * \endcode
    * This is equivalent to:
@@ -337,9 +342,9 @@ namespace MR
    * LoopInOrder inner (vox, 0, 3);
    *
    * // outer loop iterates over axes 3 and above:
-   * for (auto i = Loop(3) (vox); i; ++i) {
+   * for (auto i = Loop(3).run (vox); i; ++i) {
    *   float sum = 0.0;
-   *   for (auto j = inner (vox); j; ++j) {
+   *   for (auto j = inner.run (vox); j; ++j) {
    *     sum += vox.value();
    *   print ("total = " + str (sum) + "\n");
    * }
@@ -353,7 +358,7 @@ namespace MR
    * std::vector<size_t> order = { 1, 0, 2 };
    *
    * LoopInOrder loop (vox, order);
-   * for (auto i = loop (vox); i; ++i) 
+   * for (auto i = loop.run (vox); i; ++i) 
    *   value += std::exp (-vox.value());
    * \endcode
    * This will iterate over the axes in the same order as the first example
@@ -363,15 +368,15 @@ namespace MR
    *
    * As with the Loop class, it is possible to loop over more than one
    * ImageType of the same dimensions, by passing any additional ImageType
-  * objects to be looped over to the operator() member function. For example,
-    * this code snippet will copy the contents of the ImageType \a src into a
-      * ImageType \a dest (assumed to have the same dimensions as \a src),
-    * with the looping order optimised for the \a src ImageType:
-      * \code
-      * LoopInOrder loop (src);
-  * for (auto i = loop (src, dest); i; ++i) 
+   * objects to be looped over to the run() member function. For example,
+   * this code snippet will copy the contents of the ImageType \a src into a
+   * ImageType \a dest (assumed to have the same dimensions as \a src),
+   * with the looping order optimised for the \a src ImageType:
+   * \code
+   * LoopInOrder loop (src);
+   * for (auto i = loop.run(src, dest); i; ++i) 
     *   dest.value() = src.value();
-  * \endcode
+    * \endcode
     *
     * \section progressloopinroder Displaying progress status
     * As in the Loop class, the LoopInOrder object can also display its
@@ -382,7 +387,7 @@ namespace MR
     * float sum = 0.0;
   *
     * LoopInOrder loop (vox, "averaging...");
-  * for (auto i = loop (vox); i; ++i)
+  * for (auto i = loop.run (vox); i; ++i)
     *   sum += vox.value();
   *
     * float average = sum / float (Image::voxel_count (vox));
@@ -447,6 +452,12 @@ namespace MR
          * for (auto i = loop (vox_in, vox_out); i; ++i)
          *   vox_out.value() = vox_in.value();
          * \endcode */
+        template <typename... ImageType> 
+          LoopIter<LoopInOrder,ImageType&...> run (ImageType&... vox) {
+            return { *this, vox... };
+          }
+
+        //! equivalent to run()
         template <typename... ImageType> 
           LoopIter<LoopInOrder,ImageType&...> operator() (ImageType&... vox) {
             return { *this, vox... };

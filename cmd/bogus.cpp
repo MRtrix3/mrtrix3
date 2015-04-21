@@ -40,7 +40,7 @@ void run ()
   auto out = Header::create (argument[1], header).get_image<value_type>(); 
 
   Timer timer;
-  for (auto l = LoopInOrder (in) (in, out); l; ++l)
+  for (auto l = LoopInOrder (in).run (in, out); l; ++l)
     out.value() = std::pow (in.value(), power);
   CONSOLE ("single-threaded loop: " + str(timer.elapsed(), 6) + "s");
 
