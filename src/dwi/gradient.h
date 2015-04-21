@@ -27,9 +27,7 @@
 #include "point.h"
 #include "file/path.h"
 #include "file/config.h"
-#include "image/header.h"
-#include "image/stride.h"
-#include "image/transform.h"
+#include "header.h"
 #include "math/LU.h"
 #include "math/SH.h"
 #include "math/matrix.h"
@@ -108,7 +106,7 @@ namespace MR
      * re-ordering and/or inverting of the vector elements to match the
      * re-ordering performed by MRtrix for non-axial scans. */
     template <typename ValueType> 
-      void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
+      void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
       {
         Math::Matrix<ValueType> bvals, bvecs;
         bvals.load (bvals_path);
@@ -117,13 +115,13 @@ namespace MR
         if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
         if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
 
-        if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t(header.dim (3)))
+        if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t (header.size (3)))
           throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
 
         // account for the fact that bvecs are specified wrt original image axes,
         // which may have been re-ordered and/or inverted by MRtrix to match the
         // expected anatomical frame of reference:
-        std::vector<size_t> order = Image::Stride::order (header, 0, 3);
+        std::vector<size_t> order = Stride::order (header, 0, 3);
         Math::Matrix<ValueType> G (bvecs.columns(), 3);
         for (size_t n = 0; n < G.rows(); ++n) {
           G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
@@ -149,7 +147,7 @@ namespace MR
      * image space, and then to compensate for the fact that FSL defines its vectors
      * with regards to the data strides in the image file.
      */
-    void save_bvecs_bvals (const Image::Header&, const std::string&, const std::string&);
+    void save_bvecs_bvals (const Header&, const std::string&, const std::string&);
 
 
 
@@ -166,7 +164,6 @@ namespace MR
         }
       }
 
-
     //! get the DW gradient encoding matrix
     /*! attempts to find the DW gradient encoding matrix, using the following
      * procedure: 
@@ -178,7 +175,7 @@ namespace MR
      * - if no source of gradient encoding is found, return an empty matrix.
      */
     template <typename ValueType> 
-      Math::Matrix<ValueType> get_DW_scheme (const Image::Header& header)
+      Math::Matrix<ValueType> get_DW_scheme (const Header& header)
       {
         DEBUG ("searching for suitable gradient encoding...");
         using namespace App;
@@ -194,8 +191,8 @@ namespace MR
               throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
             load_bvecs_bvals (grad, header, opt_fsl[0][0], opt_fsl[0][1]);
           }
-          if (!opt_mrtrix.size() && !opt_fsl.size() && header.DW_scheme().is_set())
-            grad = header.DW_scheme();
+          if (!opt_mrtrix.size() && !opt_fsl.size())
+            grad = header.parse_DW_scheme<ValueType>();
         }
         catch (Exception& E) {
           E.display (3);
@@ -216,7 +213,7 @@ namespace MR
 
     //! check that the DW scheme matches the DWI data in \a header
     template <typename ValueType> 
-      inline void check_DW_scheme (const Image::Header& header, const Math::Matrix<ValueType>& grad)
+      inline void check_DW_scheme (const Header& header, const Math::Matrix<ValueType>& grad)
       {
         if (!grad.rows())
           throw Exception ("no valid diffusion encoding scheme found");
@@ -224,7 +221,7 @@ namespace MR
         if (header.ndim() != 4)
           throw Exception ("dwi image should contain 4 dimensions");
 
-        if (header.dim (3) != (int) grad.rows())
+        if (header.size (3) != (int) grad.rows())
           throw Exception ("number of studies in base image does not match that in encoding file");
       }
 
@@ -232,7 +229,7 @@ namespace MR
     //! process GradExportOptions command-line options
     /*! this checks for the \c -export_grad_mrtrix & \c -export_grad_fsl
      * options, and exports the DW schemes if and as requested. */
-    void export_grad_commandline (const Image::Header& header);
+    void export_grad_commandline (const Header& header);
 
 
     //CONF option: BValueScaling
@@ -247,7 +244,7 @@ namespace MR
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
     template <typename ValueType> 
-      inline Math::Matrix<ValueType> get_valid_DW_scheme (const Image::Header& header)
+      inline Math::Matrix<ValueType> get_valid_DW_scheme (const Header& header)
       {
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
         check_DW_scheme (header, grad);

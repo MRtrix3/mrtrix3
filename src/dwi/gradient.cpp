@@ -56,22 +56,22 @@ namespace MR
 
 
 
-    void save_bvecs_bvals (const Image::Header& header, const std::string& bvecs_path, const std::string& bvals_path)
+    void save_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
 
-      const Math::Matrix<float>& grad (header.DW_scheme());
-      Math::Matrix<float> G (grad.rows(), 3);
+      const auto grad = header.parse_DW_scheme<>();
+      Math::Matrix<default_type> G (grad.rows(), 3);
 
       // rotate vectors from scanner space to image space
-      Math::Matrix<float> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::Matrix<float> rotation = header.transform().sub (0,3,0,3);
+      Math::Matrix<default_type> grad_G = grad.sub (0, grad.rows(), 0, 3);
+      Math::Matrix<default_type> rotation = header.transform().sub (0,3,0,3);
       Math::mult (G, 0.0f, 1.0f, CblasNoTrans, grad_G, CblasNoTrans, rotation);
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      std::vector<size_t> order = Image::Stride::order (header, 0, 3);
-      Math::Matrix<float> bvecs (3, grad.rows());
-      Math::Matrix<float> bvals (1, grad.rows());
+      std::vector<size_t> order = Stride::order (header, 0, 3);
+      Math::Matrix<default_type> bvecs (3, grad.rows());
+      Math::Matrix<default_type> bvals (1, grad.rows());
       for (size_t n = 0; n < G.rows(); ++n) {
         bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
         bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
@@ -87,19 +87,19 @@ namespace MR
 
 
 
-    void export_grad_commandline (const Image::Header& header) 
+    void export_grad_commandline (const Header& header) 
     {
-      auto check = [](const Image::Header& h) -> const Image::Header& {
-        if (!h.DW_scheme().is_set())
+      auto check = [](const Header& h) -> const Header& {
+        if (h.keyval().find("dw_scheme") == h.keyval().end())
           throw Exception ("no gradient information found within image \"" + h.name() + "\"");
-        if (h.DW_scheme().rows() == 0 || h.DW_scheme().columns() < 4)
-          throw Exception ("DW scheme in header \"" + h.name() + "\" has unexpected dimensions");
         return h;
       };
 
       App::Options opt = get_options ("export_grad_mrtrix");
-      if (opt.size()) 
-        check (header).DW_scheme().save (opt[0][0]);
+      if (opt.size()) {
+        File::OFStream out (opt[0][0]);
+        out << check(header).keyval().find ("dw_scheme")->second << "\n";;
+      }
 
       opt = get_options ("export_grad_fsl");
       if (opt.size()) 

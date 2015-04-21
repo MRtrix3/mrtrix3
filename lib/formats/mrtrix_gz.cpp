@@ -23,24 +23,21 @@
 #include "file/utils.h"
 #include "file/path.h"
 #include "file/gz.h"
-#include "image/utils.h"
-#include "image/header.h"
-#include "image/handler/gz.h"
-#include "image/format/list.h"
-#include "image/format/mrtrix_utils.h"
+#include "header.h"
+#include "image_io/gz.h"
+#include "formats/list.h"
+#include "formats/mrtrix_utils.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    namespace Format
+    namespace Formats
     {
 
 
-      std::shared_ptr<Handler::Base> MRtrix_GZ::read (Header& H) const
+      std::unique_ptr<ImageIO::Base> MRtrix_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mif.gz"))
-          return std::shared_ptr<Handler::Base>();
+          return std::unique_ptr<ImageIO::Base>();
 
         File::GZ zf (H.name(), "r");
         std::string first_line = zf.getline();
@@ -63,13 +60,13 @@ namespace MR
         offset = header.str().size() + size_t(24);
         offset += ((4 - (offset % 4)) % 4);
         header << "file: . " << offset << "\nEND\n";
+        
+        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, offset));
+        memcpy (io_handler.get()->header(), header.str().c_str(), header.str().size());
+        memset (io_handler.get()->header() + header.str().size(), 0, offset - header.str().size());
+        io_handler->files.push_back (File::Entry (H.name(), offset));
 
-        std::shared_ptr<Handler::Base> handler (new Handler::GZ (H, offset));
-        memcpy (reinterpret_cast<Handler::GZ*>(handler.get())->header(), header.str().c_str(), header.str().size());
-        memset (reinterpret_cast<Handler::GZ*>(handler.get())->header() + header.str().size(), 0, offset - header.str().size());
-        handler->files.push_back (File::Entry (H.name(), offset));
-
-        return handler;
+        return std::move (io_handler);
       }
 
 
@@ -83,8 +80,8 @@ namespace MR
 
         H.set_ndim (num_axes);
         for (size_t i = 0; i < H.ndim(); i++)
-          if (H.dim (i) < 1)
-            H.dim(i) = 1;
+          if (H.size (i) < 1)
+            H.size(i) = 1;
 
         return true;
       }
@@ -93,7 +90,7 @@ namespace MR
 
 
 
-      std::shared_ptr<Image::Handler::Base> MRtrix_GZ::create (Header& H) const
+      std::unique_ptr<ImageIO::Base> MRtrix_GZ::create (Header& H) const
       {
         std::stringstream header;
         header << "mrtrix image\n";
@@ -105,16 +102,15 @@ namespace MR
         while (header.tellp() < offset)
           header << '\0';
 
-        std::shared_ptr<Handler::GZ> handler (new Handler::GZ (H, offset));
-        memcpy (handler->header(), header.str().c_str(), offset);
+        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, offset));
+        memcpy (io_handler->header(), header.str().c_str(), offset);
 
         File::create (H.name());
-        handler->files.push_back (File::Entry (H.name(), offset));
+        io_handler->files.push_back (File::Entry (H.name(), offset));
 
-        return handler;
+        return std::move (io_handler);
       }
 
     }
-  }
 }
 

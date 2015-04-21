@@ -262,7 +262,7 @@ namespace MR
         return "invalid data type";
     }
 
-    return NULL;
+    return nullptr;
   }
 
 

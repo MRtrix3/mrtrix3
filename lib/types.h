@@ -114,6 +114,8 @@ namespace MR
         T (x.begin(), x.end()) { }
     };
 
+  //! the default type used throughout MRtrix
+  typedef float default_type;
 
 }
 

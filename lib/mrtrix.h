@@ -95,18 +95,6 @@ namespace std
 namespace MR
 {
 
-  namespace Image
-  {
-    typedef enum {
-      Default,
-      Magnitude,
-      Real,
-      Imaginary,
-      Phase,
-      RealImag
-    } OutputType;
-  }
-
 
 
   //! read a line from the stream
@@ -126,12 +114,16 @@ namespace MR
   template <class T> inline std::string str (const T& value, int precision = 0)
   {
     std::ostringstream stream;
-    if (precision > 0)
-      stream.precision (precision);
+    stream.precision (precision ? precision : std::numeric_limits<T>::max_digits10);
     stream << value;
     if (stream.fail())
       throw Exception ("error converting value to string");
     return stream.str();
+  }
+
+  inline std::string& add_line (std::string& original, const std::string& new_line)
+  {
+    return original.size() ? (original += "\n" + new_line) : ( original = new_line );
   }
 
 
@@ -231,6 +223,14 @@ namespace MR
     const char* delimiters = " \t\n",
     bool ignore_empty_fields = false,
     size_t num = std::numeric_limits<size_t>::max());
+
+  inline std::vector<std::string> split_lines (
+      const std::string& string,
+      const char* delimiters = " \t\n",
+      bool ignore_empty_fields = true,
+      size_t num = std::numeric_limits<size_t>::max()) {
+    return split (string, "\n", ignore_empty_fields, num);
+  }
 
   inline std::string join (const std::vector<std::string>& V, const std::string& delimiter)
   {

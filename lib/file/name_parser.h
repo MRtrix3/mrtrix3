@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_name_parser_h__
-#define __image_name_parser_h__
+#ifndef __file_name_parser_h__
+#define __file_name_parser_h__
 
 #include <memory>
 
@@ -31,7 +31,7 @@
 
 namespace MR
 {
-  namespace Image
+  namespace File
   {
 
     //! a class to interpret numbered filenames

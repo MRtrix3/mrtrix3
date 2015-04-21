@@ -18,86 +18,76 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
-#ifndef __image_adapter_permute_axes_h__
-#define __image_adapter_permute_axes_h__
+#ifndef __adapter_permute_axes_h__
+#define __adapter_permute_axes_h__
 
-#include "image/adapter/voxel.h"
-#include "image/position.h"
+#include "adapter/base.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Adapter
   {
-    namespace Adapter
+
+    template <class ImageType> 
+      class PermuteAxes : public Base<ImageType>
     {
+      public:
+        using Base<ImageType>::size;
+        using Base<ImageType>::parent_vox;
+        typedef typename ImageType::value_type value_type;
 
-      template <class VoxelType> 
-        class PermuteAxes : public Voxel<VoxelType>
-      {
-        public:
-          using Voxel<VoxelType>::dim;
-          using Voxel<VoxelType>::parent_vox;
-          typedef typename VoxelType::value_type value_type;
-
-          PermuteAxes (const VoxelType& original, const std::vector<int>& axes) :
-            Voxel<VoxelType> (original), 
-            axes_ (axes) {
-              for (int i = 0; i < static_cast<int> (parent_vox.ndim()); ++i) {
-                for (size_t a = 0; a < axes_.size(); ++a)
-                  if (axes_[a] == i)
-                    goto next_axis;
-                if (parent_vox.dim (i) != 1)
-                  throw Exception ("ommitted axis \"" + str (i) + "\" has dimension greater than 1");
+        PermuteAxes (const ImageType& original, const std::vector<int>& axes) :
+          Base<ImageType> (original), 
+          axes_ (axes) {
+            for (int i = 0; i < static_cast<int> (parent_vox.ndim()); ++i) {
+              for (size_t a = 0; a < axes_.size(); ++a)
+                if (axes_[a] == i)
+                  goto next_axis;
+              if (parent_vox.size (i) != 1)
+                throw Exception ("ommitted axis \"" + str (i) + "\" has dimension greater than 1");
 next_axis:
-                continue;
-              }
+              continue;
             }
-
-          Image::Info info () const { 
-            return Image::Info (*this);
-          };
-
-          size_t ndim () const {
-            return axes_.size();
-          }
-          int dim (size_t axis) const {
-            return axes_[axis] < 0 ? 1 : parent_vox.dim (axes_[axis]);
-          }
-          float vox (size_t axis) const {
-            return axes_[axis] < 0 ? NAN : parent_vox.vox (axes_[axis]);
-          }
-          ssize_t stride (size_t axis) const {
-            return axes_[axis] < 0 ? 0 : parent_vox.stride (axes_[axis]);
           }
 
-          void reset () {
-            parent_vox.reset();
-          }
+        size_t ndim () const {
+          return axes_.size();
+        }
+        ssize_t size (size_t axis) const {
+          return axes_[axis] < 0 ? 1 : parent_vox.size (axes_[axis]);
+        }
+        default_type voxsize (size_t axis) const {
+          return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent_vox.voxsize (axes_[axis]);
+        }
+        ssize_t stride (size_t axis) const {
+          return axes_[axis] < 0 ? 0 : parent_vox.stride (axes_[axis]);
+        }
 
-          Position<PermuteAxes<VoxelType> > operator[] (size_t axis) {
-            return Position<PermuteAxes<VoxelType> > (*this, axis);
-          }
+        void reset () { parent_vox.reset(); }
 
-        private:
-          const std::vector<int> axes_;
+        Helper::VoxelIndex<PermuteAxes<ImageType> > index (size_t axis) {
+          return Helper::VoxelIndex<PermuteAxes<ImageType> > (*this, axis);
+        }
 
-          ssize_t get_pos (size_t axis) {
-            return axes_[axis] < 0 ? 0 : parent_vox[axes_[axis]];
-          }
-          void set_pos (size_t axis, ssize_t position) {
-            parent_vox[axes_[axis]] = position;
-          }
-          void move_pos (size_t axis, ssize_t increment) {
-            parent_vox[axes_[axis]] += increment;
-          }
+      private:
+        const std::vector<int> axes_;
 
-          friend class Position<PermuteAxes<VoxelType> >;
-          friend class Value<PermuteAxes<VoxelType> >;
-      };
+        ssize_t get_voxel_position (size_t axis) {
+          return axes_[axis] < 0 ? 0 : parent_vox.index (axes_[axis]);
+        }
+        void set_voxel_position (size_t axis, ssize_t position) {
+          parent_vox.index (axes_[axis]) = position;
+        }
+        void move_voxel_position (size_t axis, ssize_t increment) {
+          parent_vox.index (axes_[axis]) += increment;
+        }
 
-    }
+        friend class Helper::VoxelIndex<PermuteAxes<ImageType>>;
+        friend class Helper::VoxelValue<PermuteAxes<ImageType>>;
+    };
+
   }
 }
 

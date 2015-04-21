@@ -23,29 +23,25 @@
 #ifndef __image_handler_ram_h__
 #define __image_handler_ram_h__
 
-#include "image/header.h"
-#include "image/handler/base.h"
+#include "image_io/base.h"
 
 namespace MR
 {
-  namespace Image
+  namespace ImageIO
   {
 
-    namespace Handler
+
+    class RAM : public Base
     {
+      public:
+        RAM (Header& header) : Base (header) { }
+        virtual ~RAM () { close(); }
 
-      class RAM : public Base
-      {
-        public:
-          RAM (Header& header) : Base (header) { }
-          virtual ~RAM () { close(); }
+      protected:
+        virtual void load ();
+        virtual void unload ();
+    };
 
-        protected:
-          virtual void load ();
-          virtual void unload ();
-      };
-
-    }
   }
 }
 

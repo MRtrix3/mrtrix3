@@ -20,15 +20,15 @@
 
 */
 
-#ifndef __image_position_h__
-#define __image_position_h__
+#ifndef __image_helpers_h__
+#define __image_helpers_h__
 
 namespace MR
 {
-  namespace Image
+  namespace Helper
   {
 
-    /*! \brief a class to simplify the implementation of DataSet classes with
+    /*! \brief a class to simplify the implementation of ImageType classes with
      * non-trivial access to their position.
      *
      * This class provides a means of returning a modifiable voxel position
@@ -36,26 +36,26 @@ namespace MR
      * by simply returning a non-const reference. This is best illustrated with
      * an example.
      *
-     * Consider a DataSet class that keeps track of the offset to the voxel of
+     * Consider a ImageType class that keeps track of the offset to the voxel of
      * interest, by updating the offset every time the position along any axis
-     * is modified (this is actually how most built-in DataSet instances
+     * is modified (this is actually how most built-in ImageType instances
      * operate). This would require an additional operation to be performed
      * on top of the assignment itself. In other words,
      * \code
-     * vox[1] = 12;
+     * vox.index(1) = 12;
      * \endcode
      * cannot be done simply by returning a reference to the corresponding
      * position along axis 1, since the offset would be left unmodified, and
      * would therefore no longer point to the correct voxel. This can be solved
-     * by returning a DataSet::Position instead, as illustated below.
+     * by returning a Helper::VoxelIndex instead, as illustated below.
      *
      * The following class implements the desired interface, but the offset
      * is not updated when required:
      * \code
-     * class MyDataSet
+     * class MyImage
      * {
      *   public:
-     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim) :
+     *     MyImage (ssize_t xdim, ssize_t ydim, ssize_t zdim) :
      *       offset (0)
      *     {
      *       // dataset dimensions:
@@ -67,15 +67,15 @@ namespace MR
      *       // allocate data:
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
-     *     ~MyDataSet () { delete [] data; }
+     *     ~MyImage () { delete [] data; }
      *
      *     typedef float value_type;
      *
      *     size_t     ndim () const            { return 3; }
      *     ssize_t    dim (size_t axis) const  { return N[axis]; }
      *
-     *     // PROBLEM: can't modify the offset when the position is modified!
-     *     ssize_t&   operator[] (size_t axis) { return X[axis]; }
+     *     // PROBLEM: won't modify the offset when the position is modified!
+     *     ssize_t&   index (size_t axis) { return X[axis]; }
      *
      *     float&  value () { return (data[offset]); }
      *
@@ -84,16 +84,17 @@ namespace MR
      *     ssize_t N[3], X[3], S[3], offset;
      * };
      * \endcode
-     * The DataSet::Position class provides a solution to this problem. To use
-     * it, the DataSet class must implement the get_pos(), set_pos(), and
-     * move_pos() methods. While these can be declared public, it is probably
+     * The Helper::VoxelIndex class provides a solution to this problem. To use
+     * it, the ImageType class must implement the get_voxel_position(),
+     * set_voxel_position(), and
+     * move_voxel_position() methods. While these can be declared public, it is probably
      * cleaner to make them private or protected, and to declare the
-     * DataSet::Position class as a friend.
+     * Helper::VoxelIndex class as a friend.
      * \code
-     * class MyDataSet
+     * class MyImage
      * {
      *   public:
-     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim) :
+     *     MyImage (ssize_t xdim, ssize_t ydim, ssize_t zdim) :
      *       offset (0)
      *     {
      *       // dataset dimensions:
@@ -105,16 +106,16 @@ namespace MR
      *       // allocate data:
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
-     *     ~MyDataSet () { delete [] data; }
+     *     ~MyImage () { delete [] data; }
      *
      *     typedef float value_type;
      *
      *     size_t     ndim () const            { return 3; }
      *     ssize_t    dim (size_t axis) const  { return N[axis]; }
      *
-     *     // FIX: return a DataSet::Position<MyDataSet> class:
-     *     DataSet::Position<MyDataSet> operator[] (size_t axis) {
-     *       return DataSet::Position<MyDataSet> (*this, axis);
+     *     // FIX: return a Helper::VoxelIndex<MyImage> class:
+     *     Helper::VoxelIndex<MyImage> index (size_t axis) {
+     *       return Helper::VoxelIndex<MyImage> (*this, axis);
      *     }
      *
      *     float&  value () { return data[offset]; }
@@ -125,155 +126,129 @@ namespace MR
      *
      *     // this function returns the voxel position along the specified axis,
      *     // in a non-modifiable way:
-     *     ssize_t get_pos (size_t axis) const { return X[axis]; }
+     *     ssize_t get_voxel_position (size_t axis) const { return X[axis]; }
      *
      *     // this function sets the voxel position along the specified axis:
-     *     void set_pos (size_t axis, ssize_t pos) const {
-     *       offset += S[axis] * (pos - X[axis]);
-     *       X[axis] = pos;
+     *     void set_voxel_position (size_t axis, ssize_t index) const {
+     *       offset += S[axis] * (index - X[axis]);
+     *       X[axis] = index;
      *     }
      *
      *     // this function moves the voxel position by the specified increment
      *     // along the speficied axis:
-     *     void move_pos (size_t axis, ssize_t increment) {
+     *     void move_voxel_position (size_t axis, ssize_t increment) {
      *       offset += S[axis] * increment;
      *       X[axis] += increment;
      *     }
      *
-     *     friend class DataSet::Position<MyDataSet>;
+     *     friend class Helper::VoxelIndex<MyImage>;
      * };
      * \endcode
-     * In the example above, a DataSet::Position instance is returned by the
-     * operator[]() function, and can be manipulated using standard operators. For
+     * In the example above, a Helper::VoxelIndex instance is returned by the
+     * index() function, and can be manipulated using standard operators. For
      * instance, the following code fragment is allowed, and will update the
      * offset each time as expected:
      * \code
-     * // create an instance of MyDataSet:
-     * MyDataSet data (100, 100, 100);
+     * // create an instance of MyImage:
+     * MyImage data (100, 100, 100);
      *
      * // setting the position of the voxel will cause
-     * // the set_pos() function to be invoked each time:
+     * // the set_voxel_position() function to be invoked each time:
      * // ensuring the offset is up to date:
-     * data[0] = 10;
+     * data.index(0) = 10;
      *
-     * // setting the position also causes the get_pos() function to
+     * // setting the position also causes the get_voxel_position() function to
      * // be invoked, so that the new position can be returned.
      * // This allows chaining of the assignments, e.g.:
-     * data[1] = data[2] = 20;
+     * data.index(1) = data.index(2) = 20;
      *
-     * // incrementing the position will cause the move_pos()
-     * // function to be invoked (and also the get_pos() function
+     * // incrementing the position will cause the move_voxel_position()
+     * // function to be invoked (and also the get_voxel_position() function
      * // so that the new position can be returned):
-     * data[0] += 10;
+     * data.index(0) += 10;
      *
-     * // reading the position will cause the get_pos()
+     * // reading the position will cause the get_voxel_position()
      * // function to be invoked:
-     * ssize_t xpos = data[0];
+     * ssize_t xpos = data.index(0);
      *
      * // this implies that the voxel position can be used
      * // in simple looping constructs:
      * float sum = 0.0
-     * for (data[1] = 0; data[1] < data.dim(1); ++data[1])
+     * for (data.index(1) = 0; data.index(1) < data.dim(1); ++data.index(1))
      *   sum += data.value();
      * \endcode
      *
      * \section performance Performance
-     * The use of this class or of the related DataSet::Value class does not
+     * The use of this class or of the related Helper::VoxelValue class does not
      * impose any measurable performance penalty if the code is
      * compiled for release (i.e. with optimisations turned on and debugging
      * symbols turned off). This is the default setting for the configure
      * script, unless the -debug option is supplied.
      */
-    template <class Set> class Position
+    template <class ImageType> class VoxelIndex
     {
       public:
-        Position (Set& parent, size_t corresponding_axis) : S (parent), axis (corresponding_axis) {
+        VoxelIndex (ImageType& parent, size_t corresponding_axis) : S (parent), axis (corresponding_axis) {
           assert (axis < S.ndim());
         }
-        operator ssize_t () const          {
-          return S.get_pos (axis);
+        operator ssize_t () const {
+          return S.get_voxel_position (axis);
         }
-        ssize_t operator++ ()              {
-          S.move_pos (axis,1);
-          return S.get_pos (axis);
+        ssize_t operator++ () {
+          S.move_voxel_position (axis,1);
+          return S.get_voxel_position (axis);
         }
-        ssize_t operator-- ()              {
-          S.move_pos (axis,-1);
-          return S.get_pos (axis);
+        ssize_t operator-- () {
+          S.move_voxel_position (axis,-1);
+          return S.get_voxel_position (axis);
         }
-        ssize_t operator++ (int)   {
-          const ssize_t p = S.get_pos (axis);
-          S.move_pos (axis,1);
+        ssize_t operator++ (int) {
+          const ssize_t p = S.get_voxel_position (axis);
+          S.move_voxel_position (axis,1);
           return p;
         }
-        ssize_t operator-- (int)   {
-          const ssize_t p = S.get_pos (axis);
-          S.move_pos (axis,-1);
+        ssize_t operator-- (int) {
+          const ssize_t p = S.get_voxel_position (axis);
+          S.move_voxel_position (axis,-1);
           return p;
         }
         ssize_t operator+= (ssize_t increment) {
-          S.move_pos (axis, increment);
-          return S.get_pos (axis);
+          S.move_voxel_position (axis, increment);
+          return S.get_voxel_position (axis);
         }
         ssize_t operator-= (ssize_t increment) {
-          S.move_pos (axis, -increment);
-          return S.get_pos (axis);
+          S.move_voxel_position (axis, -increment);
+          return S.get_voxel_position (axis);
         }
-        ssize_t operator= (ssize_t position)   {
-          S.set_pos (axis, position);
+        ssize_t operator= (ssize_t position) {
+          S.set_voxel_position (axis, position);
           return position;
         }
-        ssize_t operator= (const Position& position) {
-          S.set_pos (axis, ssize_t (position));
+        ssize_t operator= (const VoxelIndex& position) {
+          S.set_voxel_position (axis, ssize_t (position));
           return ssize_t (position);
         }
-        friend std::ostream& operator<< (std::ostream& stream, const Position& p) {
+        friend std::ostream& operator<< (std::ostream& stream, const VoxelIndex& p) {
           stream << ssize_t (p);
           return stream;
         }
       protected:
-        Set& S;
-        size_t axis;
+        ImageType& S;
+        const size_t axis;
     };
 
-  }
-}
 
-#endif
 
-/*
-    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 07/01/10.
 
-    This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
-*/
 
-#ifndef __image_value_h__
-#define __image_value_h__
 
-#include <iostream>
 
-namespace MR
-{
-  namespace Image
-  {
-
-    /*! \brief a class to simplify the implementation of DataSet classes with
+    /*! \brief a class to simplify the implementation of ImageType classes with
      * non-trivial access to their data.
      *
      * This class provides a means of returning a modifiable voxel value from a
@@ -281,21 +256,21 @@ namespace MR
      * returning a non-const reference. This is best illustrated with an
      * example.
      *
-     * Consider a DataSet class that perform a validity check on each voxel
+     * Consider a ImageType class that perform a validity check on each voxel
      * value as it is stored. For example, it might enforce a policy that
      * values should be clamped to a particular range. Such a class might look
      * like the following:
      * \code
-     * class MyDataSet
+     * class MyImage
      * {
      *   public:
-     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim)
+     *     MyImage (ssize_t xdim, ssize_t ydim, ssize_t zdim)
      *     {
      *       N[0] = xdim; N[1] = ydim; N[2] = zdim;
      *       X[0] = X[1] = X[2] = 0;
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
-     *     ~MyDataSet () { delete [] data; }
+     *     ~MyImage () { delete [] data; }
      *
      *     typedef float value_type;
      *
@@ -314,24 +289,24 @@ namespace MR
      * \endcode
      * While it is possible in the above example to modify the voxel values,
      * since they are returned by reference, it is also impossible to implement
-     * clamping of the voxel values as they are modified. The DataSet::Value
+     * clamping of the voxel values as they are modified. The Helper::VoxelValue
      * class provides a solution to this problem.
      *
-     * To use the DataSet::Value interface, the DataSet class must implement a
-     * get_value() and a set_value() method. While these can be declared
+     * To use the Helper::VoxelValue interface, the ImageType class must implement a
+     * get_voxel_value() and a set_voxel_value() method. While these can be declared
      * public, it is probably cleaner to make them private or protected, and to
-     * declare the DataSet::Value class as a friend.
+     * declare the Helper::VoxelValue class as a friend.
      * \code
-     * class MyDataSet
+     * class MyImage
      * {
      *   public:
-     *     MyDataSet (ssize_t xdim, ssize_t ydim, ssize_t zdim)
+     *     MyImage (ssize_t xdim, ssize_t ydim, ssize_t zdim)
      *     {
      *       N[0] = xdim; N[1] = ydim; N[2] = zdim;
      *       X[0] = X[1] = X[2] = 0;
      *       data = new float [N[0]*N[1]*N[2]);
      *     }
-     *     ~MyDataSet () { delete [] data; }
+     *     ~MyImage () { delete [] data; }
      *
      *     typedef float value_type;
      *
@@ -339,8 +314,8 @@ namespace MR
      *     ssize_t    dim (size_t axis) const    { return (N[axis]); }
      *     ssize_t&   operator[] (size_t axis)   { return (X[axis]); }
      *
-     *     // FIX: return a DataSet::Value<MyDataSet> class:
-     *     DataSet::Value<MyDataSet>  value () { return (DataSet::Value<MyDataSet> (*this); }
+     *     // FIX: return a Helper::VoxelValue<MyImage> class:
+     *     Helper::VoxelValue<MyImage>  value () { return (Helper::VoxelValue<MyImage> (*this); }
      *
      *   private:
      *     float*   data
@@ -348,32 +323,32 @@ namespace MR
      *     ssize_t  X[3];
      *
      *     // this function returns the voxel value, in a non-modifiable way:
-     *     value_type get_value () const { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
+     *     value_type get_voxel_value () const { return (data[X[0]+N[0]*(X[1]+N[1]*X[2])]); }
      *
      *     // this function ensures that the value supplied is clamped
      *     // between 0 and 1 before updating the voxel value:
-     *     void set_value (value_type val) {
+     *     void set_voxel_value (value_type val) {
      *       if (val < 0.0) val = 0.0;
      *       if (val > 1.0) val = 1.0;
      *       data[X[0]+N[0]*(X[1]+N[1]*X[2])] = val;
      *     }
      *
-     *     friend class DataSet::Value<MyDataSet>;
+     *     friend class Helper::VoxelValue<MyImage>;
      * };
      * \endcode
-     * In the example above, a DataSet::Value instance is returned by the
+     * In the example above, a Helper::VoxelValue instance is returned by the
      * value() function, and can be manipulated using standard operators. For
      * instance, the following code fragment is allowed, and will function as
      * expected with clamping of the voxel values when any voxel value is
      * modified:
      * \code
-     * // create an instance of MyDataSet:
-     * MyDataSet data (100, 100, 100);
+     * // create an instance of MyImage:
+     * MyImage data (100, 100, 100);
      *
      * // set the position of the voxel:
-     * data[0] = X;
-     * data[1] = Y;
-     * data[2] = Z;
+     * data.index(0) = X;
+     * data.index(1) = Y;
+     * data.index(2) = Z;
      *
      * // set the voxel value, clamped to the range [0.0 1.0]:
      * data.value() = 2.3;
@@ -384,42 +359,42 @@ namespace MR
      * \endcode
      *
      * \section performance Performance
-     * The use of this class or of the related DataSet::Position class does not
+     * The use of this class or of the related Helper::VoxelIndex class does not
      * impose any measurable performance penalty if the code is
      * compiled for release (i.e. with optimisations turned on and debugging
      * symbols turned off). This is the default setting for the configure
      * script, unless the -debug option is supplied.
      */
-    template <class Set> class Value
+    template <class ImageType> class VoxelValue
     {
       public:
-        typedef typename Set::value_type value_type;
+        typedef typename ImageType::value_type value_type;
 
-        Value (Set& parent) : S (parent) { }
+        VoxelValue (ImageType& parent) : S (parent) { }
         operator value_type () const {
-          return get_value();
+          return get_voxel_value();
         }
         value_type operator= (value_type value) {
           return set_value (value);
         }
-        value_type operator= (const Value& V) {
-          value_type value = V.get_value();
+        value_type operator= (const VoxelValue& V) {
+          value_type value = V.get_voxel_value();
           return set_value (value);
         }
         value_type operator+= (value_type value) {
-          value += get_value();
+          value += get_voxel_value();
           return set_value (value);
         }
         value_type operator-= (value_type value) {
-          value = get_value() - value;
+          value = get_voxel_value() - value;
           return set_value (value);
         }
         value_type operator*= (value_type value) {
-          value *= get_value();
+          value *= get_voxel_value();
           return set_value (value);
         }
         value_type operator/= (value_type value) {
-          value = get_value() / value;
+          value = get_voxel_value() / value;
           return set_value (value);
         }
 
@@ -430,18 +405,18 @@ namespace MR
           return S.address();
         }
 
-        friend std::ostream& operator<< (std::ostream& stream, const Value& V) {
-          stream << V.get_value();
+        friend std::ostream& operator<< (std::ostream& stream, const VoxelValue& V) {
+          stream << V.get_voxel_value();
           return stream;
         }
       private:
-        Set& S;
+        ImageType& S;
 
-        value_type get_value () const { 
-          return S.get_value();
+        value_type get_voxel_value () const { 
+          return S.get_voxel_value();
         }
         value_type set_value (value_type value) {
-          S.set_value (value);
+          S.set_voxel_value (value);
           return value;
         }
     };
@@ -450,4 +425,8 @@ namespace MR
 }
 
 #endif
+
+
+
+
 

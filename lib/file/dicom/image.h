@@ -108,7 +108,7 @@ namespace MR {
 
           static std::vector<size_t> count (const std::vector<Frame*>& frames);
           static float get_slice_separation (const std::vector<Frame*>& frames, size_t nslices);
-          static Math::Matrix<float> get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform);
+          static std::string get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform);
 
           friend std::ostream& operator<< (std::ostream& stream, const Frame& item);
       };

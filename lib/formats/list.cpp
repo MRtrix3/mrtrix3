@@ -18,77 +18,74 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
 #include <cstdlib>
 
-#include "image/format/list.h"
+#include "formats/list.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Formats
   {
-    namespace Format
-    {
 #ifdef MRTRIX_AS_R_LIBRARY
-      Format::RAM        RAM_handler;
+    RAM        RAM_handler;
 #endif
 
-      Format::Pipe          pipe_handler;
-      Format::MRtrix        mrtrix_handler;
-      Format::MRtrix_GZ     mrtrix_gz_handler;
-      Format::MRI           mri_handler;
-      Format::NIfTI         nifti_handler;
-      Format::NIfTI_GZ      nifti_gz_handler;
-      Format::Analyse       analyse_handler;
-      Format::XDS           xds_handler;
-      Format::DICOM         dicom_handler;
-      Format::MGH           mgh_handler;
-      Format::MGZ           mgz_handler;
-      Format::MRtrix_sparse mrtrix_sparse_handler;
+    Pipe          pipe_handler;
+    MRtrix        mrtrix_handler;
+    MRtrix_GZ     mrtrix_gz_handler;
+    MRI           mri_handler;
+    NIfTI         nifti_handler;
+    NIfTI_GZ      nifti_gz_handler;
+    Analyse       analyse_handler;
+    XDS           xds_handler;
+    DICOM         dicom_handler;
+    MGH           mgh_handler;
+    MGZ           mgz_handler;
+    MRtrix_sparse mrtrix_sparse_handler;
 
 
-      const Base* handlers[] = {
+    const Base* handlers[] = {
 #ifdef MRTRIX_AS_R_LIBRARY
-        &RAM_handler,
+      &RAM_handler,
 #endif
-        &pipe_handler,
-        &dicom_handler,
-        &mrtrix_handler,
-        &mrtrix_gz_handler,
-        &nifti_handler,
-        &nifti_gz_handler,
-        &analyse_handler,
-        &mri_handler,
-        &xds_handler,
-        &mgh_handler,
-        &mgz_handler,
-        &mrtrix_sparse_handler,
-        NULL
-      };
+      &pipe_handler,
+      &dicom_handler,
+      &mrtrix_handler,
+      &mrtrix_gz_handler,
+      &nifti_handler,
+      &nifti_gz_handler,
+      &analyse_handler,
+      &mri_handler,
+      &xds_handler,
+      &mgh_handler,
+      &mgz_handler,
+      &mrtrix_sparse_handler,
+      NULL
+    };
 
 
 
-      const char* known_extensions[] = {
-        ".mih",
-        ".mif",
-        ".mif.gz",
-        ".img",
-        ".nii",
-        ".nii.gz",
-        ".bfloat",
-        ".bshort",
-        ".mri",
-        ".mgh",
-        ".mgz",
-        ".mgh.gz",
-        ".msf",
-        ".msh",
-        ".dcm",
-        NULL
-      };
+    const char* known_extensions[] = {
+      ".mih",
+      ".mif",
+      ".mif.gz",
+      ".img",
+      ".nii",
+      ".nii.gz",
+      ".bfloat",
+      ".bshort",
+      ".mri",
+      ".mgh",
+      ".mgz",
+      ".mgh.gz",
+      ".msf",
+      ".msh",
+      ".dcm",
+      NULL
+    };
 
-    }
   }
 }
 

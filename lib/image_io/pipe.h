@@ -18,37 +18,34 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
-#ifndef __image_handler_pipe_h__
-#define __image_handler_pipe_h__
+#ifndef __image_io_pipe_h__
+#define __image_io_pipe_h__
 
 #include "memory.h"
-#include "image/handler/base.h"
+#include "image_io/base.h"
 #include "file/mmap.h"
 
 namespace MR
 {
-  namespace Image
+  namespace ImageIO
   {
 
-    namespace Handler
+    class Pipe : public Base
     {
+      public:
+        Pipe (Base&& io_handler) : Base (std::move (io_handler)) { }
 
-      class Pipe : public Base
-      {
-        public:
-          Pipe (Base& handler) : Base (handler) { }
-          ~Pipe ();
+        ~Pipe ();
 
-        protected:
-          std::unique_ptr<File::MMap> mmap;
+      protected:
+        std::unique_ptr<File::MMap> mmap;
 
-          virtual void load ();
-          virtual void unload ();
-      };
+        virtual void load ();
+        virtual void unload ();
+    };
 
-    }
   }
 }
 

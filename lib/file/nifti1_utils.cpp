@@ -20,14 +20,13 @@
 
 */
 
-#include "image/stride.h"
+#include "header.h"
 #include "get_set.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
 #include "math/LU.h"
 #include "math/permutation.h"
 #include "math/versor.h"
-#include "image/header.h"
 
 namespace MR
 {
@@ -45,27 +44,27 @@ namespace MR
 
 
 
-      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& axes)
+      Math::Matrix<default_type> adjust_transform (const Header& H, std::vector<size_t>& axes)
       {
-        Image::Stride::List strides = Image::Stride::get (H);
+        Stride::List strides = Stride::get (H);
         strides.resize (3);
-        axes = Image::Stride::order (strides);
+        axes = Stride::order (strides);
         bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
 
         if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
             !flip[0] && !flip[1] && !flip[2])
           return H.transform();
 
-        Math::Matrix<float> M (H.transform());
+        Math::Matrix<default_type> M (H.transform());
 
         for (size_t i = 0; i < 3; i++)
           M.column (i) = H.transform().column (axes[i]);
 
-        Math::Vector<float> translation = M.column (3).sub (0,3);
+        Math::Vector<default_type> translation = M.column (3).sub (0,3);
         for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
-            float length = float (H.dim (axes[i])-1) * H.vox (axes[i]);
-            Math::Vector<float> axis = M.column (i).sub (0,3);
+            default_type length = default_type (H.size (axes[i])-1) * H.voxsize (axes[i]);
+            Math::Vector<default_type> axis = M.column (i).sub (0,3);
             for (size_t n = 0; n < 3; n++) {
               axis[n] = -axis[n];
               translation[n] -= length*axis[n];
@@ -82,7 +81,7 @@ namespace MR
 
 
 
-      size_t read (Image::Header& H, const nifti_1_header& NH)
+      size_t read (Header& H, const nifti_1_header& NH)
       {
         bool is_BE = false;
         if (get<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
@@ -101,7 +100,7 @@ namespace MR
         strncpy (db_name, NH.db_name, 18);
         if (db_name[0]) {
           db_name[18] = '\0';
-          H.comments().push_back (db_name);
+          add_line (H.keyval()["comments"], db_name);
         }
 
         // data set dimensions:
@@ -114,13 +113,13 @@ namespace MR
 
 
         for (int i = 0; i < ndim; i++) {
-          H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
-          if (H.dim (i) < 0) {
+          H.size(i) = get<int16_t> (&NH.dim[i+1], is_BE);
+          if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.dim(i) = std::abs (H.dim (i));
+            H.size(i) = std::abs (H.size (i));
           }
-          if (!H.dim (i))
-            H.dim(i) = 1;
+          if (!H.size (i))
+            H.size(i) = 1;
           H.stride(i) = i+1;
         }
 
@@ -184,10 +183,10 @@ namespace MR
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
-          if (H.vox (i) < 0.0) {
+          H.voxsize(i) = get<float32> (&NH.pixdim[i+1], is_BE);
+          if (H.voxsize (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.vox(i) = std::abs (H.vox (i));
+            H.voxsize(i) = std::abs (H.voxsize (i));
           }
         }
 
@@ -199,10 +198,8 @@ namespace MR
           if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
-        else {
-          H.intensity_offset() = 0.0;
-          H.intensity_scale() = 1.0;
-        }
+        else 
+          H.reset_intensity_scaling();
 
         size_t data_offset = (size_t) get<float32> (&NH.vox_offset, is_BE);
 
@@ -211,14 +208,14 @@ namespace MR
         if (descrip[0]) {
           descrip[80] = '\0';
           if (strncmp (descrip, "MRtrix version: ", 16) == 0)
-            H["mrtrix_version"] = descrip+16;
+            H.keyval()["mrtrix_version"] = descrip+16;
           else
-            H.comments().push_back (descrip);
+            add_line (H.keyval()["comments"], descrip);
         }
 
         if (is_nifti) {
           if (get<int16_t> (&NH.sform_code, is_BE)) {
-            Math::Matrix<float>& M (H.transform());
+            Math::Matrix<default_type>& M (H.transform());
             M.allocate (4,4);
 
             M (0,0) = get<float32> (&NH.srow_x[0], is_BE);
@@ -240,22 +237,22 @@ namespace MR
             M (3,3) = 1.0;
 
             // get voxel sizes:
-            H.vox(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.vox(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.vox(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.voxsize(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.voxsize(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.voxsize(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
-            M (0,0) /= H.vox (0);
-            M (1,0) /= H.vox (0);
-            M (2,0) /= H.vox (0);
+            M (0,0) /= H.voxsize (0);
+            M (1,0) /= H.voxsize (0);
+            M (2,0) /= H.voxsize (0);
 
-            M (0,1) /= H.vox (1);
-            M (1,1) /= H.vox (1);
-            M (2,1) /= H.vox (1);
+            M (0,1) /= H.voxsize (1);
+            M (1,1) /= H.voxsize (1);
+            M (2,1) /= H.voxsize (1);
 
-            M (0,2) /= H.vox (2);
-            M (1,2) /= H.vox (2);
-            M (2,2) /= H.vox (2);
+            M (0,2) /= H.voxsize (2);
+            M (1,2) /= H.voxsize (2);
+            M (2,2) /= H.voxsize (2);
           }
           else if (get<int16_t> (&NH.qform_code, is_BE)) {
             H.transform().allocate(4,4);
@@ -307,11 +304,11 @@ namespace MR
 
 
 
-      void check (Image::Header& H, bool has_nii_suffix)
+      void check (Header& H, bool has_nii_suffix)
       {
         for (size_t i = 0; i < H.ndim(); ++i)
-          if (H.dim (i) < 1)
-            H.dim(i) = 1;
+          if (H.size (i) < 1)
+            H.size(i) = 1;
 
         // ensure first 3 axes correspond to spatial dimensions
         // while preserving original strides as much as possible
@@ -321,7 +318,7 @@ namespace MR
             max_spatial_stride = std::abs(H.stride(n));
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
-        Image::Stride::symbolise (H);
+        Stride::symbolise (H);
 
         // if .img, reset all strides to defaults, since it can't be assumed
         // that downstream software will be able to parse the NIfTI transform 
@@ -362,7 +359,7 @@ namespace MR
 
 
 
-      void write (nifti_1_header& NH, const Image::Header& H, bool has_nii_suffix)
+      void write (nifti_1_header& NH, const Header& H, bool has_nii_suffix)
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -370,7 +367,7 @@ namespace MR
         bool is_BE = H.datatype().is_big_endian();
 
         std::vector<size_t> axes;
-        Math::Matrix<float> M = adjust_transform (H, axes);
+        Math::Matrix<default_type> M = adjust_transform (H, axes);
 
 
         memset (&NH, 0, sizeof (NH));
@@ -378,7 +375,9 @@ namespace MR
         // magic number:
         put<int32_t> (348, &NH.sizeof_hdr, is_BE);
 
-        strncpy ( (char*) &NH.db_name, H.comments().size() ? H.comments() [0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+        const auto hit = H.keyval().find("comments");
+        auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
+        strncpy ( (char*) &NH.db_name, comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
         put<int32_t> (16384, &NH.extents, is_BE);
         NH.regular = 'r';
         NH.dim_info = 0;
@@ -386,13 +385,13 @@ namespace MR
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
         for (size_t i = 0; i < 3; i++)
-          put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.size (axes[i]), &NH.dim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); i++)
-          put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+          put<int16_t> (H.size (i), &NH.dim[i+1], is_BE);
 
         // data type:
         int16_t dt = 0;
-        switch (H.datatype() ()) {
+        switch (H.datatype()()) {
           case DataType::Bit:
             dt = DT_BINARY;
             break;
@@ -452,9 +451,9 @@ namespace MR
 
         // voxel sizes:
         for (size_t i = 0; i < 3; ++i)
-          put<float32> (H.vox (axes[i]), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.voxsize (axes[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); ++i)
-          put<float32> (H.vox (i), &NH.pixdim[i+1], is_BE);
+          put<float32> (H.voxsize (i), &NH.pixdim[i+1], is_BE);
 
         put<float32> (352.0, &NH.vox_offset, is_BE);
 
@@ -492,26 +491,27 @@ namespace MR
         put<float32> (M(1,3), &NH.qoffset_y, is_BE);
         put<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
+        put<float32> (H.voxsize (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
+        put<float32> (H.voxsize (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
+        put<float32> (H.voxsize (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
         put<float32> (M (0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
+        put<float32> (H.voxsize (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
+        put<float32> (H.voxsize (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
+        put<float32> (H.voxsize (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
         put<float32> (M (1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
+        put<float32> (H.voxsize (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
+        put<float32> (H.voxsize (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
+        put<float32> (H.voxsize (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
         put<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);
       }
 
+
+
     }
   }
 }
-
 

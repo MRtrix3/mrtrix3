@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __image_iterator_h__
-#define __image_iterator_h__
+#ifndef __algo_iterator_h__
+#define __algo_iterator_h__
 
 #include <vector>
 
@@ -29,47 +29,44 @@
 
 namespace MR
 {
-  namespace Image
+
+  /** \defgroup loop Looping functions
+    @{ */
+
+  //! a dummy image to iterate over, useful for multi-threaded looping.
+  class Iterator
   {
+    public:
+      template <class InfoType>
+        Iterator (const InfoType& S) :
+          d (S.ndim()),
+          p (S.ndim(), 0) {
+            for (size_t i = 0; i < S.ndim(); ++i)
+              d[i] = S.size(i);
+          }
 
-    /** \defgroup loop Looping functions
-      @{ */
+      size_t ndim () const { return d.size(); }
+      ssize_t size (size_t axis) const { return d[axis]; }
 
-    //! a dummy image to iterate over, useful for multi-threaded looping.
-    class Iterator
-    {
-      public:
-        template <class InfoType>
-          Iterator (const InfoType& S) :
-            d (S.ndim()),
-            p (S.ndim(), 0) {
-              for (size_t i = 0; i < S.ndim(); ++i)
-                d[i] = S.dim(i);
-            }
+      const ssize_t& index (size_t axis) const { return p[axis]; }
+      ssize_t& index (size_t axis) { return p[axis]; }
 
-        size_t ndim () const { return d.size(); }
-        ssize_t dim (size_t axis) const { return d[axis]; }
+      friend std::ostream& operator<< (std::ostream& stream, const Iterator& V) {
+        stream << "iterator, position [ ";
+        for (size_t n = 0; n < V.ndim(); ++n)
+          stream << V.index(n) << " ";
+        stream << "]";
+        return stream;
+      }
 
-        const ssize_t& operator[] (size_t axis) const { return p[axis]; }
-        ssize_t& operator[] (size_t axis) { return p[axis]; }
+    private:
+      std::vector<ssize_t> d, p;
 
-        friend std::ostream& operator<< (std::ostream& stream, const Iterator& V) {
-          stream << "iterator, position [ ";
-          for (size_t n = 0; n < V.ndim(); ++n)
-            stream << V[n] << " ";
-          stream << "]";
-          return stream;
-        }
+      Iterator() { assert (0); }
+      void value () const { assert (0); }
+  };
 
-      private:
-        std::vector<ssize_t> d, p;
-
-        Iterator() { assert (0); }
-        void value () const { assert (0); }
-    };
-
-    //! @}
-  }
+  //! @}
 }
 
 #endif

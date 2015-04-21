@@ -26,33 +26,30 @@
 #include <unistd.h>
 
 #include "app.h"
-#include "image/handler/ram.h"
+#include "image_io/ram.h"
 
 namespace MR
 {
-  namespace Image
+  namespace ImageIO
   {
-    namespace Handler
+
+
+    void RAM::load ()
     {
-
-
-      void RAM::load ()
-      {
-        DEBUG ("allocating RAM buffer for image \"" + name + "\"...");
-        int64_t bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
-        addresses.push_back (new uint8_t [bytes_per_segment]);
-      }
-
-
-      void RAM::unload()
-      {
-        if (addresses.size()) {
-          DEBUG ("deleting RAM buffer for image \"" + name + "\"...");
-          delete [] addresses[0];
-        }
-      }
-
+      DEBUG ("allocating RAM buffer for image \"" + name + "\"...");
+      int64_t bytes_per_segment = (datatype.bits() * segsize + 7) / 8;
+      addresses.push_back (new uint8_t [bytes_per_segment]);
     }
+
+
+    void RAM::unload()
+    {
+      if (addresses.size()) {
+        DEBUG ("deleting RAM buffer for image \"" + name + "\"...");
+        delete [] addresses[0];
+      }
+    }
+
   }
 }
 

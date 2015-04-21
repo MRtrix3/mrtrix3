@@ -18,51 +18,49 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
-#include "image/handler/base.h"
-#include "image/header.h"
+#include "image_io/base.h"
 
 namespace MR
 {
-  namespace Image
+  namespace ImageIO
   {
-    namespace Handler
+
+
+    Base::Base (const Header& header) : 
+      format (nullptr),
+      header (header),
+      segsize (voxel_count (header)),
+      is_new (false),
+      writable (false) { }
+
+
+    Base::~Base () { }
+
+
+    void Base::open ()
     {
-      Base::Base (const Image::Header& header) : 
-        name (header.name()), 
-        datatype (header.datatype()),
-        segsize (Image::voxel_count (header)),
-        is_new (false),
-        writable (false) { }
+      if (addresses.size())
+        return;
 
-
-      Base::~Base () { }
-
-
-      void Base::open ()
-      {
-        if (addresses.size())
-          return;
-
-        load();
-        DEBUG ("image \"" + name + "\" loaded");
-      }
-
-
-
-      void Base::close ()
-      {
-        if (addresses.empty())
-          return;
-
-        unload();
-        DEBUG ("image \"" + name + "\" unloaded");
-        addresses.clear();
-      }
-
-
+      load();
+      DEBUG ("image \"" + name() + "\" loaded");
     }
+
+
+
+    void Base::close ()
+    {
+      if (addresses.empty())
+        return;
+
+      unload();
+      DEBUG ("image \"" + name() + "\" unloaded");
+      addresses.clear();
+    }
+
+
   }
 }
 

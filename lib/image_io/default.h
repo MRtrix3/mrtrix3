@@ -18,45 +18,41 @@
    You should have received a copy of the GNU General Public License
    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
- */
+*/
 
 #ifndef __image_handler_default_h__
 #define __image_handler_default_h__
 
 #include "types.h"
-#include "image/handler/base.h"
+#include "image_io/base.h"
 #include "file/mmap.h"
 
 namespace MR
 {
-  namespace Image
+  namespace ImageIO
   {
 
-    namespace Handler
+    class Default : public Base
     {
+      public:
+        Default (const Header& header) : 
+          Base (header),
+          bytes_per_segment (0) { }
+        ~Default () { close(); }
 
-      class Default : public Base
-      {
-        public:
-          Default (const Image::Header& header) : 
-            Base (header),
-            bytes_per_segment (0) { }
-          ~Default () { close(); }
+      protected:
+        std::vector<std::shared_ptr<File::MMap> > mmaps;
+        int64_t bytes_per_segment;
 
-        protected:
-          std::vector<std::shared_ptr<File::MMap> > mmaps;
-          int64_t bytes_per_segment;
+        virtual void load ();
+        virtual void unload ();
 
-          virtual void load ();
-          virtual void unload ();
+        void map_files ();
+        void copy_to_mem ();
+        void copy_to_files ();
 
-          void map_files ();
-          void copy_to_mem ();
-          void copy_to_files ();
+    };
 
-      };
-
-    }
   }
 }
 

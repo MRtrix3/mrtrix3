@@ -22,66 +22,63 @@
 
 #include "file/utils.h"
 #include "file/path.h"
-#include "image/header.h"
-#include "image/handler/pipe.h"
-#include "image/format/list.h"
+#include "header.h"
+#include "image_io/pipe.h"
+#include "formats/list.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Formats
   {
-    namespace Format
+
+    std::unique_ptr<ImageIO::Base> Pipe::read (Header& H) const
     {
-
-      std::shared_ptr<Handler::Base> Pipe::read (Header& H) const
-      {
-        if (H.name() == "-") {
-          std::string name;
-          getline (std::cin, name);
-          H.name() = name;
-        }
-        else {
-          if (!File::is_tempfile (H.name())) 
-            return std::shared_ptr<Handler::Base>();
-        }
-
-        if (H.name().empty())
-          throw Exception ("no filename supplied to standard input (broken pipe?)");
-
-        if (!Path::has_suffix (H.name(), ".mif"))
-          throw Exception ("MRtrix only supports the .mif format for command-line piping");
-
-        std::shared_ptr<Handler::Base> original_handler (mrtrix_handler.read (H));
-        std::shared_ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
-        return handler;
+      if (H.name() == "-") {
+        std::string name;
+        getline (std::cin, name);
+        H.name() = name;
+      }
+      else {
+        if (!File::is_tempfile (H.name())) 
+          return std::unique_ptr<ImageIO::Base>();
       }
 
+      if (H.name().empty())
+        throw Exception ("no filename supplied to standard input (broken pipe?)");
 
+      if (!Path::has_suffix (H.name(), ".mif"))
+        throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
-
-
-      bool Pipe::check (Header& H, size_t num_axes) const
-      {
-        if (H.name() != "-")
-          return false;
-
-        H.name() = File::create_tempfile (0, "mif");
-
-        return mrtrix_handler.check (H, num_axes);
-      }
-
-
-
-
-      std::shared_ptr<Handler::Base> Pipe::create (Header& H) const
-      {
-        std::shared_ptr<Handler::Base> original_handler (mrtrix_handler.create (H));
-        std::shared_ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
-        return handler;
-      }
-
-
+      std::unique_ptr<ImageIO::Base> original_handler (mrtrix_handler.read (H));
+      std::unique_ptr<ImageIO::Pipe> io_handler (new ImageIO::Pipe (std::move (*original_handler)));
+      return std::move (io_handler);
     }
+
+
+
+
+
+    bool Pipe::check (Header& H, size_t num_axes) const
+    {
+      if (H.name() != "-")
+        return false;
+
+      H.name() = File::create_tempfile (0, "mif");
+
+      return mrtrix_handler.check (H, num_axes);
+    }
+
+
+
+
+    std::unique_ptr<ImageIO::Base> Pipe::create (Header& H) const
+    {
+      std::unique_ptr<ImageIO::Base> original_handler (mrtrix_handler.create (H));
+      std::unique_ptr<ImageIO::Pipe> io_handler (new ImageIO::Pipe (std::move (*original_handler)));
+      return std::move (io_handler);
+    }
+
+
   }
 }
 

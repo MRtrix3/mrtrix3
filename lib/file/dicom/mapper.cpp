@@ -20,10 +20,9 @@
 
 */
 
-#include "image/header.h"
-#include "image/handler/base.h"
-#include "image/handler/default.h"
-#include "image/handler/mosaic.h"
+#include "header.h"
+#include "image_io/default.h"
+#include "image_io/mosaic.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/image.h"
 #include "file/dicom/series.h"
@@ -36,10 +35,10 @@ namespace MR {
     namespace Dicom {
 
 
-      std::shared_ptr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector<std::shared_ptr<Series>>& series)
+      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, std::vector<std::shared_ptr<Series>>& series)
       {
         assert (series.size() > 0);
-        std::shared_ptr<MR::Image::Handler::Base> handler;
+        std::unique_ptr<MR::ImageIO::Base> io_handler;
 
         Patient* patient (series[0]->study->patient);
         std::string sbuf = ( patient->name.size() ? patient->name : "unnamed" );
@@ -48,39 +47,36 @@ namespace MR {
           += std::string (" [") + series[0]->modality + "]";
         if (series[0]->name.size()) 
           sbuf += std::string (" ") + series[0]->name;
-        H.comments().push_back (sbuf);
+        add_line (H.keyval()["comments"], sbuf);
         H.name() = sbuf;
 
         // build up sorted list of frames:
         std::vector<Frame*> frames;
 
         // loop over series list:
-        for (std::vector< std::shared_ptr<Series> >::const_iterator series_it = series.begin(); series_it != series.end(); ++series_it) {
-          Series& series (**series_it);
-
+        for (const auto series_it : series) {
           try {
-            series.read();
+            series_it->read();
           }
           catch (Exception& E) { 
             E.display();
-            throw Exception ("error reading series " + str (series.number) + " of DICOM image \"" + H.name() + "\""); 
+            throw Exception ("error reading series " + str (series_it->number) + " of DICOM image \"" + H.name() + "\""); 
           }
 
-          std::sort (series.begin(), series.end(), [](decltype(*series.begin())& a, decltype(*series.begin())& b) { return *a < *b; });
+          std::sort (series_it->begin(), series_it->end(),
+              [](decltype(*series_it->begin())& a, decltype(*series_it->begin())& b) { return *a < *b; });
 
           // loop over images in each series:
-          for (auto image_it = series.begin(); image_it != series.end(); ++image_it) {
-            Image& image (**image_it);
-
+          for (auto image_it : *series_it) {
             // if multi-frame, loop over frames in image:
-            if (image.frames.size()) {
-              std::sort (image.frames.begin(), image.frames.end(), [](decltype(*image.frames.begin())& a, decltype(*image.frames.begin())& b) { return *a < *b; });
-              for (auto frame_it = image.frames.begin(); frame_it != image.frames.end(); ++frame_it)
-                frames.push_back (frame_it->get());
+            if (image_it->frames.size()) {
+              std::sort (image_it->frames.begin(), image_it->frames.end(), [](decltype(*image_it->frames.begin())& a, decltype(*image_it->frames.begin())& b) { return *a < *b; });
+              for (auto frame_it : image_it->frames) 
+                frames.push_back (frame_it.get());
             }
             // otherwise add image frame:
             else 
-              frames.push_back (&image);
+              frames.push_back (image_it.get());
           }
         }
 
@@ -101,21 +97,17 @@ namespace MR {
         float slice_separation = Frame::get_slice_separation (frames, dim[1]);
 
 
-        if (series[0]->study->name.size()) {
-          sbuf = "study: " + series[0]->study->name;
-          H.comments().push_back (sbuf);
-        }
+        if (series[0]->study->name.size()) 
+          add_line (H.keyval()["comments"], std::string ("study: " + series[0]->study->name));
 
-        if (patient->DOB.size()) {
-          sbuf = "DOB: " + format_date (patient->DOB);
-          H.comments().push_back (sbuf);
-        }
+        if (patient->DOB.size()) 
+          add_line (H.keyval()["comments"], std::string ("DOB: " + format_date (patient->DOB)));
 
         if (series[0]->date.size()) {
           sbuf = "DOS: " + format_date (series[0]->date);
           if (series[0]->time.size()) 
             sbuf += " " + format_time (series[0]->time);
-          H.comments().push_back (sbuf);
+          add_line (H.keyval()["comments"], sbuf);
         }
 
 
@@ -134,25 +126,25 @@ namespace MR {
 
         if (nchannels > 1) {
           H.stride(3) = 1;
-          H.dim(3) = nchannels;
+          H.size(3) = nchannels;
           ++current_axis;
         }
 
         H.stride(0) = ++current_axis;
-        H.dim(0) = image.dim[0];
-        H.vox(0) = image.pixel_size[0];
+        H.size(0) = image.dim[0];
+        H.voxsize(0) = image.pixel_size[0];
 
         H.stride(1) = ++current_axis;
-        H.dim(1) = image.dim[1];
-        H.vox(1) = image.pixel_size[1];
+        H.size(1) = image.dim[1];
+        H.voxsize(1) = image.pixel_size[1];
 
         H.stride(2) = ++current_axis;
-        H.dim(2) = dim[1];
-        H.vox(2) = slice_separation;
+        H.size(2) = dim[1];
+        H.voxsize(2) = slice_separation;
 
         if (dim[0]*dim[2] > 1) {
           H.stride(current_axis) = current_axis+1;
-          H.dim(current_axis) = dim[0]*dim[2];
+          H.size(current_axis) = dim[0]*dim[2];
           ++current_axis;
         }
 
@@ -169,8 +161,7 @@ namespace MR {
         else throw Exception ("unexpected number of allocated bits per pixel (" + str (image.bits_alloc) 
             + ") in file \"" + H.name() + "\"");
 
-        H.intensity_offset() = image.scale_intercept;
-        H.intensity_scale() = image.scale_slope;
+        H.set_intensity_scaling (image.scale_slope, image.scale_intercept);
 
 
         // If multi-frame, take the transform information from the sorted frames; the first entry in the
@@ -200,7 +191,9 @@ namespace MR {
           M(3,3) = 1.0;
 
           H.transform() = M;
-          H.DW_scheme() = Frame::get_DW_scheme (frames, dim[1], M);
+          std::string dw_scheme = Frame::get_DW_scheme (frames, dim[1], M);
+          if (dw_scheme.size())
+            H.keyval()["dw_scheme"] = dw_scheme;
         }
 
 
@@ -214,35 +207,35 @@ namespace MR {
 
         if (image.images_in_mosaic) {
           INFO ("DICOM image \"" + H.name() + "\" is in mosaic format");
-          if (H.dim (2) != 1)
+          if (H.size (2) != 1)
             throw Exception ("DICOM mosaic contains multiple slices in image \"" + H.name() + "\"");
 
-          H.dim(0) = image.acq_dim[0];
-          H.dim(1) = image.acq_dim[1];
-          H.dim(2) = image.images_in_mosaic;
+          H.size(0) = image.acq_dim[0];
+          H.size(1) = image.acq_dim[1];
+          H.size(2) = image.images_in_mosaic;
 
           if (image.dim[0] % image.acq_dim[0] || image.dim[1] % image.acq_dim[1]) {
             WARN ("acquisition matrix [ " + str (image.acq_dim[0]) + " " + str (image.acq_dim[1]) 
                 + " ] does not fit into DICOM mosaic [ " + str (image.dim[0]) + " " + str (image.dim[1]) 
                 + " ] -  adjusting matrix size to suit");
-            H.dim(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
-            H.dim(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
+            H.size(0) = image.dim[0] / size_t (float(image.dim[0]) / float(image.acq_dim[0]));
+            H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
           }
 
-          float xinc = H.vox(0) * (image.dim[0] - H.dim(0)) / 2.0;
-          float yinc = H.vox(1) * (image.dim[1] - H.dim(1)) / 2.0;
+          float xinc = H.voxsize(0) * (image.dim[0] - H.size(0)) / 2.0;
+          float yinc = H.voxsize(1) * (image.dim[1] - H.size(1)) / 2.0;
           for (size_t i = 0; i < 3; i++) 
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 
-          handler.reset (new MR::Image::Handler::Mosaic (H, image.dim[0], image.dim[1], H.dim (0), H.dim (1), H.dim (2)));
+          io_handler.reset (new MR::ImageIO::Mosaic (H, image.dim[0], image.dim[1], H.size (0), H.size (1), H.size (2)));
         }
         else 
-          handler.reset (new MR::Image::Handler::Default (H));
+          io_handler.reset (new MR::ImageIO::Default (H));
 
         for (size_t n = 0; n < frames.size(); ++n) 
-          handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));
+          io_handler->files.push_back (File::Entry (frames[n]->filename, frames[n]->data));
 
-        return handler;
+        return io_handler;
       }
 
 

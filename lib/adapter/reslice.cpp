@@ -20,17 +20,14 @@
 
 */
 
-#include "image/adapter/reslice.h"
+#include "adapter/reslice.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Adapter
   {
-    namespace Adapter
-    {
-      const Math::Matrix<float> NoTransform;
-      const std::vector<int> AutoOverSample;
-    }
+    const Math::Matrix<default_type> NoTransform;
+    const std::vector<int> AutoOverSample;
   }
 }
 

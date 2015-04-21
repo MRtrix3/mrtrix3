@@ -24,24 +24,21 @@
 #include "file/utils.h"
 #include "file/path.h"
 #include "file/entry.h"
-#include "image/utils.h"
-#include "image/header.h"
-#include "image/format/list.h"
-#include "image/handler/default.h"
+#include "header.h"
+#include "formats/list.h"
+#include "image_io/default.h"
 #include "get_set.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    namespace Format
+    namespace Formats
     {
 
-      std::shared_ptr<Handler::Base> XDS::read (Header& H) const
+      std::unique_ptr<ImageIO::Base> XDS::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".bfloat") &&
             !Path::has_suffix (H.name(), ".bshort"))
-          return std::shared_ptr<Handler::Base>();
+          return std::unique_ptr<ImageIO::Base>();
 
         H.set_ndim (4);
         int BE;
@@ -54,9 +51,9 @@ namespace MR
           throw Exception ("error reading header file \"" + name + "\": " + strerror (errno));
         int dim[3];
         in >> dim[0] >> dim[1] >> dim[2] >> BE;
-        H.dim(0) = dim[1];
-        H.dim(1) = dim[0];
-        H.dim(2) = dim[2];
+        H.size(0) = dim[1];
+        H.size(1) = dim[0];
+        H.size(2) = dim[2];
         in.close();
 
         H.datatype() = (Path::has_suffix (H.name(), ".bfloat") ? DataType::Float32 : DataType::UInt16);
@@ -65,22 +62,22 @@ namespace MR
         else 
           H.datatype().set_flag (DataType::BigEndian);
 
-        H.dim(2) = 1;
+        H.size(2) = 1;
 
-        H.vox(0) = 3.0;
-        H.vox(1) = 3.0;
-        H.vox(2) = 10.0;
-        H.vox(3) = 1.0;
+        H.voxsize(0) = 3.0;
+        H.voxsize(1) = 3.0;
+        H.voxsize(2) = 10.0;
+        H.voxsize(3) = 1.0;
 
         H.stride(0) = -1;
         H.stride(1) = -2;
         H.stride(2) = 0;
         H.stride(3) = 3;
 
-        std::shared_ptr<Handler::Default> handler (new Handler::Default (H));
-        handler->files.push_back (File::Entry (H.name()));
+        std::unique_ptr<ImageIO::Default> io_handler (new ImageIO::Default (H));
+        io_handler->files.push_back (File::Entry (H.name()));
 
-        return handler;
+        return std::move (io_handler);
       }
 
 
@@ -98,7 +95,7 @@ namespace MR
         if (num_axes > 4)
           throw Exception ("cannot create XDS image with more than 4 dimensions");
 
-        if (num_axes == 4 && H.dim (2) > 1)
+        if (num_axes == 4 && H.size (2) > 1)
           throw Exception ("cannot create multi-slice XDS image with a single file");
 
         if (num_axes < 2)
@@ -106,16 +103,16 @@ namespace MR
 
         H.set_ndim (4);
 
-        H.dim(2) = 1;
+        H.size(2) = 1;
         for (size_t n = 0; n < 4; ++n)
-          if (H.dim (n) < 1)
-            H.dim(n) = 1;
+          if (H.size (n) < 1)
+            H.size(n) = 1;
 
 
-        H.vox(0) = 3.0;
-        H.vox(1) = 3.0;
-        H.vox(2) = 10.0;
-        H.vox(3) = 1.0;
+        H.voxsize(0) = 3.0;
+        H.voxsize(1) = 3.0;
+        H.voxsize(2) = 10.0;
+        H.voxsize(3) = 1.0;
 
         H.stride(0) = -1;
         H.stride(1) = -2;
@@ -133,24 +130,23 @@ namespace MR
 
 
 
-      std::shared_ptr<Handler::Base> XDS::create (Header& H) const
+      std::unique_ptr<ImageIO::Base> XDS::create (Header& H) const
       {
         std::string header_name (H.name());
         header_name.replace (header_name.size()-6, 6, "hdr");
 
         File::OFStream out (header_name);
-        out << H.dim (1) << " " << H.dim (0) << " " << H.dim (3)
+        out << H.size (1) << " " << H.size (0) << " " << H.size (3)
             << " " << (H.datatype().is_little_endian() ? 1 : 0) << "\n";
         out.close();
 
-        std::shared_ptr<Handler::Default> handler (new Handler::Default (H));
-        File::create (H.name(), Image::footprint (H, "11 1"));
-        handler->files.push_back (File::Entry (H.name()));
+        std::unique_ptr<ImageIO::Default> io_handler (new ImageIO::Default (H));
+        File::create (H.name(), footprint (H, "11 1"));
+        io_handler->files.push_back (File::Entry (H.name()));
 
-        return handler;
+        return std::move (io_handler);
       }
 
     }
-  }
 }
 

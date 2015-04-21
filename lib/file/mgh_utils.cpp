@@ -20,14 +20,12 @@
 
 */
 
-#include "file/ofstream.h"
-#include "image/stride.h"
-#include "datatype.h"
+#include "header.h"
 #include "get_set.h"
+#include "math/vector.h"
+#include "file/ofstream.h"
 #include "file/mgh_utils.h"
 #include "file/nifti1_utils.h"
-#include "image/header.h"
-#include "math/vector.h"
 
 namespace MR
 {
@@ -37,8 +35,9 @@ namespace MR
     {
 
 
-      bool read_header (Image::Header& H, const mgh_header& MGHH)
+      bool read_header (Header& H, const mgh_header& MGHH)
       {
+        assert (H.more);
 
         bool is_BE = false;
         if (get<int32_t> (&MGHH.version, is_BE) != 1) {
@@ -49,15 +48,15 @@ namespace MR
 
         const size_t ndim = (get<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
         H.set_ndim (ndim);
-        H.dim (0) = get<int32_t> (&MGHH.width, is_BE);
-        H.dim (1) = get<int32_t> (&MGHH.height, is_BE);
-        H.dim (2) = get<int32_t> (&MGHH.depth, is_BE);
+        H.size (0) = get<int32_t> (&MGHH.width, is_BE);
+        H.size (1) = get<int32_t> (&MGHH.height, is_BE);
+        H.size (2) = get<int32_t> (&MGHH.depth, is_BE);
         if (ndim == 4)
-          H.dim (3) = get<int32_t> (&MGHH.nframes, is_BE);
+          H.size (3) = get<int32_t> (&MGHH.nframes, is_BE);
 
-        H.vox (0) = get<float> (&MGHH.spacing_x, is_BE);
-        H.vox (1) = get<float> (&MGHH.spacing_y, is_BE);
-        H.vox (2) = get<float> (&MGHH.spacing_z, is_BE);
+        H.voxsize (0) = get<float> (&MGHH.spacing_x, is_BE);
+        H.voxsize (1) = get<float> (&MGHH.spacing_y, is_BE);
+        H.voxsize (2) = get<float> (&MGHH.spacing_z, is_BE);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
@@ -78,11 +77,9 @@ namespace MR
             dtype.set_flag (DataType::LittleEndian);
         }
         H.datatype() = dtype;
+        H.reset_intensity_scaling();
 
-        H.intensity_offset() = 0.0;
-        H.intensity_scale() = 1.0;
-
-        Math::Matrix<float>& M (H.transform());
+        Math::Matrix<default_type>& M (H.transform());
         M.allocate (4,4);
 
         const int16_t RAS = get<int16_t> (&MGHH.goodRASFlag, is_BE);
@@ -97,7 +94,7 @@ namespace MR
           M (2,3) = get <float> (&MGHH.c_s, is_BE);
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
-              M (i,3) -= 0.5 * H.dim(j) * H.vox(j) * M(i,j);
+              M (i,3) -= 0.5 * H.size(j) * H.voxsize(j) * M(i,j);
           }
 
           M (3,0) = M (3,1) = M (3,2) = 0.0;
@@ -119,21 +116,21 @@ namespace MR
 
 
 
-      void read_other (Image::Header& H, const mgh_other& MGHO, const bool is_BE) {
+      void read_other (Header& H, const mgh_other& MGHO, const bool is_BE) {
 
         if (get<float> (&MGHO.tr, is_BE) != 0.0f)
-          H.comments().push_back ("TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
+          add_line (H.keyval()["comments"], "TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
         if (get<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          H.comments().push_back ("Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
+          add_line (H.keyval()["comments"], "Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
         if (get<float> (&MGHO.te, is_BE) != 0.0f)
-          H.comments().push_back ("TE: "   + str (get<float> (&MGHO.te, is_BE)) + "ms");
+          add_line (H.keyval()["comments"], "TE: "   + str (get<float> (&MGHO.te, is_BE)) + "ms");
         if (get<float> (&MGHO.ti, is_BE) != 0.0f)
-          H.comments().push_back ("TI: "   + str (get<float> (&MGHO.ti, is_BE)) + "ms");
+          add_line (H.keyval()["comments"], "TI: "   + str (get<float> (&MGHO.ti, is_BE)) + "ms");
 
         // Ignore FoV field
 
-        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
-          H.comments().push_back (*i);
+        for (const auto i : MGHO.tags) 
+          add_line (H.keyval()["comments"], i);
 
       }
 
@@ -141,8 +138,9 @@ namespace MR
 
 
 
-      void write_header (mgh_header& MGHH, const Image::Header& H)
+      void write_header (mgh_header& MGHH, const Header& H)
       {
+        assert (H.more);
 
         bool is_BE = H.datatype().is_big_endian();
 
@@ -151,13 +149,13 @@ namespace MR
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
         std::vector<size_t> axes;
-        Math::Matrix<float> M = File::NIfTI::adjust_transform (H, axes);
+        Math::Matrix<default_type> M = File::NIfTI::adjust_transform (H, axes);
 
         put<int32_t> (1, &MGHH.version, is_BE);
-        put<int32_t> (H.dim (axes[0]), &MGHH.width, is_BE);
-        put<int32_t> ((ndim > 1) ? H.dim (axes[1]) : 1, &MGHH.height, is_BE);
-        put<int32_t> ((ndim > 2) ? H.dim (axes[2]) : 1, &MGHH.depth, is_BE);
-        put<int32_t> ((ndim > 3) ? H.dim (3) : 1, &MGHH.nframes, is_BE);
+        put<int32_t> (H.size (axes[0]), &MGHH.width, is_BE);
+        put<int32_t> ((ndim > 1) ? H.size (axes[1]) : 1, &MGHH.height, is_BE);
+        put<int32_t> ((ndim > 2) ? H.size (axes[2]) : 1, &MGHH.depth, is_BE);
+        put<int32_t> ((ndim > 3) ? H.size (3) : 1, &MGHH.nframes, is_BE);
 
         const DataType& dt = H.datatype();
         if (dt.is_complex())
@@ -186,9 +184,9 @@ namespace MR
 
         put<int32_t> (0, &MGHH.dof, is_BE);
         put<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        put<float> (H.vox (axes[0]), &MGHH.spacing_x, is_BE);
-        put<float> (H.vox (axes[1]), &MGHH.spacing_y, is_BE);
-        put<float> (H.vox (axes[2]), &MGHH.spacing_z, is_BE);
+        put<float> (H.voxsize (axes[0]), &MGHH.spacing_x, is_BE);
+        put<float> (H.voxsize (axes[1]), &MGHH.spacing_y, is_BE);
+        put<float> (H.voxsize (axes[2]), &MGHH.spacing_z, is_BE);
 
         //const Math::Matrix<float>& M (H.transform());
         put<float> (M (0,0), &MGHH.x_r, is_BE); put<float> (M (0,1), &MGHH.y_r, is_BE); put<float> (M (0,2), &MGHH.z_r, is_BE);
@@ -196,9 +194,9 @@ namespace MR
         put<float> (M (2,0), &MGHH.x_s, is_BE); put<float> (M (2,1), &MGHH.y_s, is_BE); put<float> (M (2,2), &MGHH.z_s, is_BE);
 
         for (size_t i = 0; i != 3; ++i) {
-          float offset = M (i, 3);
+          default_type offset = M (i, 3);
           for (size_t j = 0; j != 3; ++j)
-            offset += 0.5 * H.dim(axes[j]) * H.vox(axes[j]) * M (i,j);
+            offset += 0.5 * H.size(axes[j]) * H.voxsize(axes[j]) * M (i,j);
           switch (i) {
             case 0: put<float> (offset, &MGHH.c_r, is_BE); break;
             case 1: put<float> (offset, &MGHH.c_a, is_BE); break;
@@ -211,23 +209,26 @@ namespace MR
 
 
 
-      void write_other (mgh_other& MGHO, const Image::Header& H)
+      void write_other (mgh_other& MGHO, const Header& H)
       {
 
         bool is_BE = H.datatype().is_big_endian();
 
-        for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); ++i) {
-          const std::string key = i->substr (0, i->find_first_of (':'));
-          if (key == "TR")
-            put<float> (to<float> (i->substr (3)), &MGHO.tr, is_BE);
-          else if (key == "Flip")
-            put<float> (to<float> (i->substr (5)), &MGHO.flip_angle, is_BE);
-          else if (key == "TE")
-            put<float> (to<float> (i->substr (3)), &MGHO.te, is_BE);
-          else if (key == "TI")
-            put<float> (to<float> (i->substr (3)), &MGHO.ti, is_BE);
-          else
-            MGHO.tags.push_back (*i);
+        const auto comments = H.keyval().find("comments");
+        if (comments != H.keyval().end()) {
+          for (const auto i : split_lines (comments->second)) {
+            const std::string key = i.substr (0, i.find_first_of (':'));
+            if (key == "TR")
+              put<float> (to<float> (i.substr (3)), &MGHO.tr, is_BE);
+            else if (key == "Flip")
+              put<float> (to<float> (i.substr (5)), &MGHO.flip_angle, is_BE);
+            else if (key == "TE")
+              put<float> (to<float> (i.substr (3)), &MGHO.te, is_BE);
+            else if (key == "TI")
+              put<float> (to<float> (i.substr (3)), &MGHO.ti, is_BE);
+            else
+              MGHO.tags.push_back (i);
+          }
         }
         put<float> (0.0, &MGHO.fov, is_BE);
 

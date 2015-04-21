@@ -20,25 +20,22 @@
 
 */
 
-#ifndef __image_sparse_keys_h__
-#define __image_sparse_keys_h__
+#ifndef __sparse_keys_h__
+#define __sparse_keys_h__
 
 #include <string>
 
 namespace MR
 {
-  namespace Image
+  namespace Sparse
   {
-    namespace Sparse
-    {
 
 
-      // These are the keys that must be present in an image header to successfully read or write sparse image data
-      const std::string name_key ("sparse_data_name");
-      const std::string size_key ("sparse_data_size");
+    // These are the keys that must be present in an image header to successfully read or write sparse image data
+    const std::string name_key ("sparse_data_name");
+    const std::string size_key ("sparse_data_size");
 
 
-    }
   }
 }
 

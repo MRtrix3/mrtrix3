@@ -22,11 +22,11 @@
 
 #include <algorithm>
 
-#include "image/name_parser.h"
+#include "file/name_parser.h"
 
 namespace MR
 {
-  namespace Image
+  namespace File
   {
 
     namespace
@@ -120,7 +120,7 @@ namespace MR
 
     std::ostream& operator<< (std::ostream& stream, const NameParser& parser)
     {
-      stream << "Image::NameParser: " << parser.specification << "\n";
+      stream << "File::NameParser: " << parser.specification << "\n";
       for (size_t i = 0; i < parser.array.size(); i++)
         stream << "  " << i << ": " << parser.array[i] << "\n";
       return stream;
