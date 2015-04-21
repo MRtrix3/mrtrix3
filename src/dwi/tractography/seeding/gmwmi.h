@@ -65,7 +65,7 @@ namespace MR
           public:
             using ACT::GMWMI_finder::Interp;
 
-            GMWMI (const std::string&, const Math::RNG&, const std::string&);
+            GMWMI (const std::string&, const std::string&);
 
             bool get_seed (Point<float>&);
 

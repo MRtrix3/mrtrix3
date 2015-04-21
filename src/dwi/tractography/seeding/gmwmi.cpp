@@ -37,11 +37,11 @@ namespace MR
 
 
 
-      GMWMI::GMWMI (const std::string& in, const Math::RNG& rng, const std::string& anat_path) :
-        Base (in, rng, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
+      GMWMI::GMWMI (const std::string& in, const std::string& anat_path) :
+        Base (in, "GM-WM interface", MAX_TRACKING_SEED_ATTEMPTS_GMWMI),
         GMWMI_5TT_Wrapper (anat_path),
         ACT::GMWMI_finder (anat_data),
-        init_seeder (in, rng),
+        init_seeder (in),
         perturb_max_step (4.0f * std::pow (anat_data.vox(0) * anat_data.vox(1) * anat_data.vox(2), (1.0f/3.0f)))
       {
         volume = init_seeder.vol();
@@ -74,7 +74,7 @@ namespace MR
         if (!plane_one.valid())
           plane_one = (normal.cross (Point<float> (0.0f,1.0f,0.0f))).normalise();
         const Point<float> plane_two ((normal.cross (plane_one)).normalise());
-        p += ((rng.uniform()-0.5f) * perturb_max_step * plane_one) + ((rng.uniform()-0.5f) * perturb_max_step * plane_two);
+        p += ((rng()-0.5f) * perturb_max_step * plane_one) + ((rng()-0.5f) * perturb_max_step * plane_two);
         return find_interface (p, interp);
       }
 

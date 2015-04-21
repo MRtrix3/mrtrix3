@@ -317,8 +317,16 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
   if (evaluator) return evaluator->evaluate (storage);
   if (rng) {
     Chunk& chunk = storage.next();
-    for (size_t n = 0; n < chunk.size(); ++n)
-      chunk[n] = rng_gausssian ? rng->normal() : rng->uniform(); 
+    if (rng_gausssian) {
+      std::normal_distribution<real_type> dis (0.0, 1.0);
+      for (size_t n = 0; n < chunk.size(); ++n)
+        chunk[n] = dis (*rng);
+    }
+    else {
+      std::uniform_real_distribution<real_type> dis (0.0, 1.0);
+      for (size_t n = 0; n < chunk.size(); ++n)
+        chunk[n] = dis (*rng);
+    }
     return chunk;
   }
   return storage.next();
