@@ -197,7 +197,7 @@ namespace MR
         }
 
       static const Header open (const std::string& image_name);
-      static const Header create (const std::string& image_name);
+      static const Header create (const std::string& image_name, const Header& template_header);
       static const Header allocate (const Header& template_header);
       static Header empty ();
 
@@ -208,13 +208,7 @@ namespace MR
       //! return a string with the full description of the header
       std::string description() const;
       //! print out debugging information 
-      friend std::ostream& operator<< (std::ostream& stream, const Header& H)
-      {
-        stream << H.description();
-        return stream;
-      }
-
-
+      friend std::ostream& operator<< (std::ostream& stream, const Header& H);
 
       //! the offset to the voxel at the origin (used internally)
       // TODO remove?      size_t __data_start;

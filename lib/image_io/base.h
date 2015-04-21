@@ -72,8 +72,8 @@ namespace MR
         void set_image_is_new (bool image_is_new) {
           is_new = image_is_new;
         }
-        void set_readwrite_if_new (bool readwrite) {
-          if (is_new) 
+        void set_readwrite_if_existing (bool readwrite) {
+          if (!is_new) 
             writable = readwrite;
         }
 

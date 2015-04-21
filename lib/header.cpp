@@ -141,12 +141,12 @@ namespace MR
 
 
 
-  const Header Header::create (const std::string& image_name)
+  const Header Header::create (const std::string& image_name, const Header& template_header)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");
 
-    Header H;
+    Header H (template_header);
 
     try {
       INFO ("creating image \"" + image_name + "\"...");
@@ -175,8 +175,6 @@ namespace MR
       if (!*format_handler)
         throw Exception ("unknown format for image \"" + image_name + "\"");
 
-      H.io->format = (*format_handler)->description;
-
       H.datatype().set_byte_order_native();
       int a = 0;
       for (size_t n = 0; n < Pdim.size(); ++n) {
@@ -193,8 +191,8 @@ namespace MR
         H.name() = parser.name (num);
 
       H.io = (*format_handler)->create (H);
-
       assert (H.io);
+      H.io->format = (*format_handler)->description;
 
       while (get_next (num, Pdim)) {
         header.name() = parser.name (num);
@@ -246,6 +244,17 @@ namespace MR
   }
 
 
+  std::ostream& operator<< (std::ostream& stream, const Header& H) 
+  {
+    stream << "\"" << H.name() << "\", size [ ";
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.size(n) << " ";
+    stream << "], voxel size [ ";
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.voxsize(n) << " "; 
+    stream << "], strides [ ";
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.stride(n) << " "; 
+    stream << "]";
+    return stream;
+  }
 
 
 

@@ -37,8 +37,6 @@ namespace MR
 
       bool read_header (Header& H, const mgh_header& MGHH)
       {
-        assert (H.more);
-
         bool is_BE = false;
         if (get<int32_t> (&MGHH.version, is_BE) != 1) {
           is_BE = true;
@@ -140,8 +138,6 @@ namespace MR
 
       void write_header (mgh_header& MGHH, const Header& H)
       {
-        assert (H.more);
-
         bool is_BE = H.datatype().is_big_endian();
 
         const size_t ndim = H.ndim();

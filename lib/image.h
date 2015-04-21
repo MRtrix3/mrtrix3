@@ -66,7 +66,7 @@ namespace MR
         size_t offset () const { return data_offset; }
 
         //! get position of current voxel location along \a axis
-        ssize_t index (size_t axis) const { return get_voxel_position(); }
+        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
         //! get/set position of current voxel location along \a axis
         Helper::VoxelIndex<Image> index (size_t axis) { return Helper::VoxelIndex<Image> (*this, axis); }
 
@@ -77,10 +77,11 @@ namespace MR
 
         //! use for debugging
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
-          stream << "image \"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", position [ ";
-          for (size_t n = 0; n < V.ndim(); ++n)
-            stream << V[n] << " ";
+          stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
+          for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
           stream << "], current offset = " << V.offset() << ", value = " << V.value();
+          if (!V.data_pointer) stream << " (using indirect IO)";
+          else stream << " (using direct IO, data at " << (void*) V.data_pointer << ")";
           return stream;
         }
 
@@ -120,17 +121,20 @@ namespace MR
       protected:
         //! shared reference to header/buffer
         const std::shared_ptr<const Buffer> buffer;
-        const std::shared_ptr<ValueType> data_pointer;
+        //! pointer to data address whether in RAM or MMap
+        ValueType * const data_pointer;
+        //! voxel indices
         std::vector<ssize_t> x;
+        //! offset to currently pointed-to voxel
         size_t data_offset;
 
         ValueType get_voxel_value () const {
-          if (data_pointer) return data_pointer.get()[data_offset];
+          if (data_pointer) return data_pointer[data_offset];
           return buffer->get_value (data_offset);
         }
 
         void set_voxel_value (ValueType val) {
-          if (data_pointer) data_pointer.get()[data_offset] = val;
+          if (data_pointer) data_pointer[data_offset] = val;
           else buffer->set_value (data_offset, val);
         }
 
@@ -149,6 +153,49 @@ namespace MR
         friend class Helper::VoxelIndex<Image>;
         friend class Helper::VoxelValue<Image>;
     };
+
+
+
+
+
+
+
+
+    template <typename ValueType> 
+      class Image<ValueType>::Buffer : public Header
+    {
+      public:
+        //! construct a Buffer object to access the data in the image specified
+        Buffer (const Header& H, bool read_write_if_existing = false, bool preload = false, Stride::List strides = Stride::List());
+        Buffer (Buffer&&) = default;
+        Buffer (const Buffer&) = delete;
+        Buffer& operator= (const Buffer&) = delete;
+
+        ValueType get_value (size_t offset) const {
+          ssize_t nseg = offset / io->segment_size();
+          return get_func (io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
+        }
+
+        void set_value (size_t offset, ValueType val) const {
+          ssize_t nseg = offset / io->segment_size();
+          put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
+        }
+
+        std::unique_ptr<ValueType[]> data_buffer;
+        ValueType* get_data_pointer () const;
+
+      protected:
+        std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
+        std::function<void(ValueType,void*,size_t,default_type,default_type)> put_func;
+
+        void set_get_put_functions (DataType datatype);
+    };
+
+
+
+
+
+
 
 
 
@@ -374,40 +421,7 @@ namespace MR
 
 
     template <typename ValueType> 
-      class Image<ValueType>::Buffer : public Header
-    {
-      public:
-        //! construct a Buffer object to access the data in the image specified
-        Buffer (const Header& H, bool read_write_if_new = false, bool preload = false, Stride::List strides = Stride::List()) :
-          Header (H) {
-            if (H.is_file_backed()) { // file-backed image
-              acquire_io (H);
-              io->set_readwrite_if_new (read_write_if_new);
-              io->open();
-              set_get_put_functions (datatype());
-            }
-          }
-
-        Buffer (Buffer&&) = default;
-        Buffer (const Buffer&) = delete;
-        Buffer& operator= (const Buffer&) = delete;
-
-
-        ValueType get_value (size_t offset) const {
-          ssize_t nseg = offset / io->segment_size();
-          return get_func (io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
-        }
-
-        void set_value (size_t offset, ValueType val) const {
-          ssize_t nseg = offset / io->segment_size();
-          put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
-        }
-
-      protected:
-        std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
-        std::function<void(ValueType,void*,size_t,default_type,default_type)> put_func;
-
-        void set_get_put_functions (DataType datatype) {
+     void Image<ValueType>::Buffer::set_get_put_functions (DataType datatype) {
 
           switch (datatype()) {
             case DataType::Bit:
@@ -507,7 +521,33 @@ namespace MR
           }
         }
 
-    };
+    template <typename ValueType>
+      Image<ValueType>::Buffer::Buffer (const Header& H, bool read_write_if_existing, bool preload, Stride::List strides) :
+        Header (H) {
+          if (H.is_file_backed()) { // file-backed image
+            acquire_io (H);
+            io->set_readwrite_if_existing (read_write_if_existing);
+            io->open();
+            set_get_put_functions (datatype());
+          }
+        }
+
+
+
+    template <typename ValueType> 
+      ValueType* Image<ValueType>::Buffer::get_data_pointer () const 
+      {
+        if (data_buffer)
+          return data_buffer.get();
+
+        assert (io);
+        if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
+          return reinterpret_cast<ValueType*> (io->segment(0));
+        else 
+          return nullptr;
+      }
+
+
 
     template <typename ValueType>
       inline Image<ValueType> Header::get_image () const 
@@ -515,12 +555,17 @@ namespace MR
         return Image<ValueType> (new typename Image<ValueType>::Buffer (*this)); 
       }
 
+
+
+
+
+
     template <typename ValueType>
       inline Image<ValueType>::Image (Image<ValueType>::Buffer* buffer_p) :
         buffer (buffer_p),
-        data_pointer (buffer->get_data_pointer(), std::default_delete<ValueType[]>()),
+        data_pointer (buffer->get_data_pointer()),
         x (ndim(), 0),
-        data_offset (Stride::offset (buffer))
+        data_offset (Stride::offset (*buffer))
       {
 
       }
