@@ -35,14 +35,14 @@ namespace MR
       {
         File::Config::get_RGB ("BackgroundColor", background_color, 1.0, 1.0, 1.0);
         File::Config::get_RGB ("ObjectColor", object_color, 1.0, 1.0, 0.0);
-        File::Config::get_RGB ("LightPosition", lightpos, 4.0, 0.0, 1.0);
+        File::Config::get_RGB ("LightPosition", lightpos, 0.2, 0.0, 0.7);
 
         Math::normalise (lightpos, 3);
 
         ambient = File::Config::get_float ("AmbientIntensity", 0.6);
-        diffuse = File::Config::get_float ("DiffuseIntensity", 0.6);
-        specular = File::Config::get_float ("SpecularIntensity", 0.8);
-        shine = File::Config::get_float ("SpecularExponent", 0.5);
+        diffuse = File::Config::get_float ("DiffuseIntensity", 0.3);
+        specular = File::Config::get_float ("SpecularIntensity", 0.4);
+        shine = File::Config::get_float ("SpecularExponent", 1.0);
       }
 
 
