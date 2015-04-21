@@ -1412,6 +1412,8 @@ namespace MR
           } \
           ++tool_id;
             
+        updateGL();
+        qApp->processEvents();
 
         try {
           for (size_t copt = 0; copt < MR::App::option.size(); ++copt) {
