@@ -27,6 +27,7 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
+#include "gui/sphere.h"
 #include "gui/opengl/shader.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -49,11 +50,11 @@ namespace MR
       class Renderer
       {
         public:
-          Renderer () : num_indices (0) { }
+          Renderer () : reverse_ID (0), origin_ID (0) { }
 
           bool ready () const { return shader_program; }
           void initGL ();
-          void update_mesh (int LOD, int lmax);
+          void update_mesh (const size_t LOD, const int lmax);
 
           void compute_r_del_daz (Math::Matrix<float>& r_del_daz, const Math::Matrix<float>& SH) const {
             if (!SH.rows() || !SH.columns()) return;
@@ -81,9 +82,9 @@ namespace MR
             (void) buffer_ID; // to silence unused-parameter warnings
             gl::Uniform3fv (origin_ID, 1, origin);
             gl::Uniform1i (reverse_ID, 0);
-            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+            gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
             gl::Uniform1i (reverse_ID, 1);
-            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
+            gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
           }
           void stop () const {
             shader_program.stop();
@@ -91,31 +92,13 @@ namespace MR
 
         protected:
 
-          class Vertex {
-            public:
-              Vertex () { }
-              Vertex (const float x[3]) { p[0] = x[0]; p[1] = x[1]; p[2] = x[2]; }
-              Vertex (const std::vector<Vertex>& vertices, size_t i1, size_t i2) {
-                p[0] = vertices[i1][0] + vertices[i2][0];
-                p[1] = vertices[i1][1] + vertices[i2][1];
-                p[2] = vertices[i1][2] + vertices[i2][2];
-                Math::normalise (p); 
-              }
-
-              float& operator[] (int n) { return p[n]; }
-              float operator[] (int n) const { return p[n]; }
-
-            private:
-              float p[3];
-          };
-
-          void update_transform (const std::vector<Vertex>& vertices, int lmax);
+          void update_transform (const std::vector<GUI::Sphere::Vertex>& vertices, int lmax);
 
           Math::Matrix<float> transform;
 
-          size_t num_indices;
           GL::Shader::Program shader_program;
-          GL::VertexBuffer vertex_buffer, surface_buffer, index_buffer;
+          GUI::Sphere sphere;
+          GL::VertexBuffer surface_buffer;
           GL::VertexArrayObject vertex_array_object;
           mutable GLuint reverse_ID, origin_ID;
       };
