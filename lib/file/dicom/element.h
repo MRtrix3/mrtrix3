@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include "ptr.h"
+#include "memory.h"
 #include "hash_map.h"
 #include "get_set.h"
 #include "file/mmap.h"
@@ -115,7 +115,7 @@ namespace MR {
 
         protected:
 
-          Ptr<File::MMap> fmap;
+          std::unique_ptr<File::MMap> fmap;
           void set_explicit_encoding();
           bool read_GR_EL();
 

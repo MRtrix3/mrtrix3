@@ -26,7 +26,7 @@
 #define __dwi_tractography_sift_proc_mask_h__
 
 #include "app.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -68,7 +68,7 @@ namespace MR
 
 
       template <class Set>
-      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, Ptr< Image::BufferScratch<float> >& act_5tt)
+      void initialise_processing_mask (Set& in_dwi, Image::BufferScratch<float>::voxel_type& proc_mask, std::unique_ptr< Image::BufferScratch<float> >& act_5tt)
       {
 
         auto mask = proc_mask;
@@ -94,7 +94,7 @@ namespace MR
             Image::Info info_5tt (in_dwi);
             info_5tt.set_ndim (4);
             info_5tt.dim(3) = 5;
-            act_5tt = new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch");
+            act_5tt.reset (new Image::BufferScratch<float> (info_5tt, "5TT BufferScratch"));
             auto v_5tt = act_5tt->voxel();
 
             // Test to see if the image has already been re-gridded to match the fixel image
@@ -154,7 +154,7 @@ namespace MR
 
         private:
           typename Set::voxel_type v_dwi;
-          RefPtr<Image::Transform> transform_dwi;
+          std::shared_ptr<Image::Transform> transform_dwi;
           Image::Buffer<float>::voxel_type v_anat;
           Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_anat;
           Image::BufferScratch<float>::voxel_type v_out;

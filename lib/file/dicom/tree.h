@@ -23,7 +23,7 @@
 #ifndef __file_dicom_tree_h__
 #define __file_dicom_tree_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "file/dicom/patient.h"
 
 namespace MR {
@@ -33,18 +33,19 @@ namespace MR {
       class Series; 
       class Patient;
 
-      class Tree : public std::vector< RefPtr<Patient> > { 
+      class Tree : public std::vector<std::shared_ptr<Patient>> { 
         public:
           std::string description;
           void read (const std::string& filename);
-          RefPtr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "", 
+          std::shared_ptr<Patient> find (const std::string& patient_name, const std::string& patient_ID = "", 
               const std::string& patient_DOB = "");
 
           void sort() {
             for (size_t npatient = 0; npatient < size(); ++npatient) {
               Patient& patient (*((*this)[npatient]));
               for (size_t nstudy = 0; nstudy < patient.size(); ++nstudy) 
-                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(), PtrComp());
+                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(), 
+                    [](decltype(*patient[nstudy]->begin())& a, decltype(*patient[nstudy]->begin())& b) { return *a < *b; });
             }
           }
 
@@ -55,7 +56,7 @@ namespace MR {
 
       std::ostream& operator<< (std::ostream& stream, const Tree& item);
 
-      extern std::vector< RefPtr<Series> > (*select_func) (const Tree& tree);
+      extern std::vector<std::shared_ptr<Series>> (*select_func) (const Tree& tree);
 
     }
   }

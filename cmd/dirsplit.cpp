@@ -80,7 +80,7 @@ class Shared {
     bool update (value_type energy, const std::vector<std::vector<size_t>>& set) 
     {
       std::lock_guard<std::mutex> lock (mutex);
-      if (!progress) progress = new ProgressBar ("distributing directions...", target_num_permutations);;
+      if (!progress) progress.reset (new ProgressBar ("distributing directions...", target_num_permutations));
       if (energy < best_energy) {
         best_energy = energy;
         best_subset = set;
@@ -111,7 +111,7 @@ class Shared {
     value_type best_energy;
     const size_t target_num_permutations;
     size_t num_permutations;
-    Ptr<ProgressBar> progress;
+    std::unique_ptr<ProgressBar> progress;
 };
 
 

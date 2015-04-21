@@ -1,5 +1,6 @@
 #include "gui/gui.h"
 #include "progressbar.h"
+#include "memory.h"
 #include "gui/mrview/icons.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/list.h"
@@ -49,11 +50,11 @@ void run ()
   window.show();
 
   if (argument.size()) {
-    VecPtr<MR::Image::Header> list;
+    std::vector<std::unique_ptr<MR::Image::Header>> list;
 
     for (size_t n = 0; n < argument.size(); ++n) {
       try {
-        list.push_back (new Image::Header (argument[n]));
+        list.push_back (std::unique_ptr<MR::Image::Header> (new Image::Header (argument[n])));
       }
       catch (Exception& e) {
         e.display();

@@ -79,7 +79,7 @@ namespace MR
       {
         App::Options opt = App::get_options ("act");
         if (opt.size())
-          act = new Dynamic_ACT_additions (opt[0][0]);
+          act.reset (new Dynamic_ACT_additions (opt[0][0]));
 
         perform_FOD_segmentation (fod_data);
 

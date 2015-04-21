@@ -55,7 +55,7 @@ namespace MR
                 try {
                   tractogram->load_tracks();
                   beginInsertRows (QModelIndex(), items.size(), items.size() + 1);
-                  items.push_back (tractogram);
+                  items.push_back (std::unique_ptr<Displayable> (tractogram));
                   endInsertRows();
                 } catch (Exception& e) {
                   delete tractogram;
@@ -65,7 +65,7 @@ namespace MR
             }
 
             Tractogram* get_tractogram (QModelIndex& index) {
-              return dynamic_cast<Tractogram*>(items[index.row()]);
+              return dynamic_cast<Tractogram*>(items[index.row()].get());
             }
         };
 
@@ -218,7 +218,7 @@ namespace MR
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->render (transform);
           }
         }
 
@@ -227,7 +227,7 @@ namespace MR
         {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->renderColourBar (transform);
           }
         }
 
@@ -383,9 +383,9 @@ namespace MR
               colour[1] = rng.uniform();
               colour[2] = rng.uniform();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->erase_nontrack_data();
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Manual;
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->erase_nontrack_data();
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->color_type = Manual;
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->set_colour (colour);
           }
           window.updateGL();
         }
@@ -403,12 +403,12 @@ namespace MR
               scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
+            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {
               if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
             } else {
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->erase_nontrack_data();
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->erase_nontrack_data();
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->color_type = ScalarFile;
             }
             scalar_file_options->show();
             window.updateGL();

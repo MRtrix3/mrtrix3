@@ -288,9 +288,9 @@ namespace MR
           std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (new MR::Image::Header (names[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (names[n])));
 
           load (list);
         }
@@ -344,7 +344,7 @@ namespace MR
 
 
 
-        void ROI::load (VecPtr<MR::Image::Header>& list) 
+        void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           list_model->load (list);
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
@@ -468,7 +468,7 @@ namespace MR
 
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i]);
+              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
               //if (is_3D) 
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
@@ -734,8 +734,8 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
-            VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (opt[0])); }
+            std::vector<std::unique_ptr<MR::Image::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;

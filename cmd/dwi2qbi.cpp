@@ -21,7 +21,6 @@
 */
 
 #include "command.h"
-#include "ptr.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
 #include "image/voxel.h"

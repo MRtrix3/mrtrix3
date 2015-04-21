@@ -23,6 +23,7 @@
 #ifndef __image_filter_connected_h__
 #define __image_filter_connected_h__
 
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/info.h"
 #include "image/loop.h"
@@ -314,9 +315,9 @@ namespace MR
 
           connector.precompute_adjacency (in);
 
-          Ptr<ProgressBar> progress;
+          std::unique_ptr<ProgressBar> progress;
           if (message.size()) {
-            progress = new ProgressBar (message);
+            progress.reset (new ProgressBar (message));
             ++(*progress);
           }
 

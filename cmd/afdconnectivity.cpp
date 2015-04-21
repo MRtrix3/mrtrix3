@@ -21,7 +21,7 @@
 */
 
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 #include "dwi/fmls.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -130,7 +130,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
         perform_FOD_segmentation (fod_buffer);
         map_streamlines (wbft_path);
       } else {
-        fmls = new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.dim(3)));
+        fmls.reset (new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.dim(3))));
       }
       mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1));
       mapper.set_use_precise_mapping (true);
@@ -149,7 +149,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
     bool all_fixels;
     DWI::Tractography::Mapping::TrackMapperBase mapper;
     Image::Buffer<value_type>::voxel_type v_fod;
-    Ptr<DWI::FMLS::Segmenter> fmls;
+    copy_ptr<DWI::FMLS::Segmenter> fmls;
 
     using Fixel_map<Fixel>::accessor;
 

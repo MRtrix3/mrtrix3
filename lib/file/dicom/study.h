@@ -23,7 +23,7 @@
 #ifndef __file_dicom_study_h__
 #define __file_dicom_study_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "file/dicom/series.h"
 
 namespace MR {
@@ -33,7 +33,7 @@ namespace MR {
       class Patient;
       class Series;
 
-      class Study : public std::vector< RefPtr<Series> > {
+      class Study : public std::vector<std::shared_ptr<Series>> {
         public:
           Study (Patient* parent, const std::string& study_name, const std::string& study_ID = "", 
               const std::string& study_date = "", const std::string& study_time = "") :
@@ -43,7 +43,7 @@ namespace MR {
           Patient* patient;
           std::string name, ID, date, time;
 
-          RefPtr<Series> find (const std::string& series_name, size_t series_number,
+          std::shared_ptr<Series> find (const std::string& series_name, size_t series_number,
               const std::string& series_modality = "", const std::string& series_date = "", const std::string& series_time = "");
       };
 

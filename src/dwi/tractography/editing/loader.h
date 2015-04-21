@@ -27,8 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "ptr.h"
-
+#include "memory.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
@@ -58,7 +57,7 @@ namespace MR {
           private:
             const std::vector<std::string>& file_list;
             Tractography::Properties dummy_properties;
-            Ptr< Tractography::Reader<> > reader;
+            std::unique_ptr<Tractography::Reader<>> reader;
             size_t file_index;
 
         };
@@ -75,7 +74,7 @@ namespace MR {
 
           while (++file_index != file_list.size()) {
             dummy_properties.clear();
-            reader = new Tractography::Reader<> (file_list[file_index], dummy_properties);
+            reader.reset (new Tractography::Reader<> (file_list[file_index], dummy_properties));
             if ((*reader) (out))
               return true;
           }

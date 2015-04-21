@@ -28,11 +28,8 @@
 
 #include <vector>
 
-
 #include "dwi/fixel_map.h"
-
 #include "dwi/directions/set.h"
-
 #include "dwi/tractography/SIFT/fixel.h"
 #include "dwi/tractography/SIFT/gradient_sort.h"
 #include "dwi/tractography/SIFT/model.h"
@@ -72,6 +69,8 @@ namespace MR
             term_ratio (0.0),
             term_mu (0.0),
             enforce_quantisation (true) { }
+
+        SIFTer (const SIFTer& that) = delete;
 
         ~SIFTer() { }
 
@@ -134,16 +133,6 @@ namespace MR
             std::vector<Cost_fn_gradient_sort>& gradient_vector;
             const double current_mu, current_roc_cost;
         };
-
-
-
-        SIFTer (const SIFTer& that) :
-            MapType (that),
-            output_debug (false),
-            term_number (0),
-            term_ratio (0.0),
-            term_mu (0.0),
-            enforce_quantisation (true) { assert (0); }
 
 
       };

@@ -51,15 +51,15 @@ namespace MR
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (VecPtr<MR::Image::Header>& list);
+            void add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
-              return dynamic_cast<Item*>(items[index.row()]);
+              return dynamic_cast<Item*>(items[index.row()].get());
             }
         };
 
 
-        void Overlay::Model::add_items (VecPtr<MR::Image::Header>& list)
+        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
@@ -69,7 +69,7 @@ namespace MR
               overlay->colourmap = 1;
             overlay->alpha = 1.0f;
             overlay->set_use_transparency (true);
-            items.push_back (overlay);
+            items.push_back (std::unique_ptr<Displayable> (overlay));
           }
           endInsertRows();
         }
@@ -184,9 +184,9 @@ namespace MR
           std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
           if (overlay_names.empty())
             return;
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (new MR::Image::Header (overlay_names[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (overlay_names[n])));
 
           add_images (list);
         }
@@ -195,7 +195,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (VecPtr<MR::Image::Header>& list) 
+        void Overlay::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -240,7 +240,7 @@ namespace MR
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
-              Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i]);
+              Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i].get());
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
@@ -284,7 +284,7 @@ namespace MR
 
           for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
 
-            Image* image = dynamic_cast<Image*>(image_list_model->items[i]);
+            Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
               cfloat value = image->interpolate() ?
@@ -591,8 +591,8 @@ namespace MR
         bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("overlay.load")) {
-            VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (opt[0])); }
+            std::vector<std::unique_ptr<MR::Image::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;

@@ -49,10 +49,10 @@ namespace MR
       // mih: MRtrix Image Header
       // mif: MRtrix Image File
 
-      RefPtr<Handler::Base> MRtrix::read (Header& H) const
+      std::shared_ptr<Handler::Base> MRtrix::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mih") && !Path::has_suffix (H.name(), ".mif"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         File::KeyValue kv (H.name(), "mrtrix image");
 
@@ -65,7 +65,7 @@ namespace MR
         ParsedName::List list;
         std::vector<int> num = list.parse_scan_check (fname);
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         for (size_t n = 0; n < list.size(); ++n)
           handler->files.push_back (File::Entry (list[n].name(), offset));
 
@@ -93,7 +93,7 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> MRtrix::create (Header& H) const
+      std::shared_ptr<Handler::Base> MRtrix::create (Header& H) const
       {
         File::OFStream out (H.name(), std::ios::out | std::ios::binary);
 
@@ -114,7 +114,7 @@ namespace MR
 
         out.close();
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         if (single_file) {
           File::resize (H.name(), offset + Image::footprint(H));
           handler->files.push_back (File::Entry (H.name(), offset));

@@ -25,10 +25,10 @@
 
 #include <vector>
 
-#include "image/nav.h"
 
 #include "point.h"
-
+#include "memory.h"
+#include "image/nav.h"
 #include "image/header.h"
 #include "image/transform.h"
 #include "dwi/tractography/properties.h"
@@ -123,7 +123,7 @@ namespace MR
                 }
 
                 if (properties.find ("act") != properties.end()) {
-                  act_shared_additions = new ACT::ACT_Shared_additions (properties["act"], property_set);
+                  act_shared_additions.reset (new ACT::ACT_Shared_additions (properties["act"], property_set));
                   if (act().backtrack() && stop_on_all_include)
                     throw Exception ("Cannot use -stop option if ACT backtracking is enabled");
                 }
@@ -231,7 +231,7 @@ namespace MR
             Downsampler downsampler;
 
             // Additional members for ACT
-            bool is_act() const { return act_shared_additions; }
+            bool is_act() const { return bool (act_shared_additions); }
             const ACT::ACT_Shared_additions& act() const { return *act_shared_additions; }
 
 
@@ -301,7 +301,7 @@ namespace MR
             mutable size_t terminations[TERMINATION_REASON_COUNT];
             mutable size_t rejections  [REJECTION_REASON_COUNT];
 
-            Ptr<ACT::ACT_Shared_additions> act_shared_additions;
+            std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
             Image::Header debug_header;

@@ -23,6 +23,7 @@
 #include <map>
 
 #include "command.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "image/buffer.h"
 #include "image/voxel.h"
@@ -246,14 +247,14 @@ void run ()
       threshold_value = hist.first_min();
     }
     else if (std::isnan (threshold_value)) {
-      Ptr<Image::Buffer<bool> > mask_data;
-      Ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
+      std::unique_ptr<Image::Buffer<bool> > mask_data;
+      std::unique_ptr<Image::Buffer<bool>::voxel_type > mask_voxel;
       opt = get_options ("mask");
       if (opt.size()) {
-        mask_data = new Image::Buffer<bool> (opt[0][0]);
-        mask_voxel = new Image::Buffer<bool>::voxel_type (*mask_data);
+        mask_data.reset (new Image::Buffer<bool> (opt[0][0]));
+        mask_voxel.reset (new Image::Buffer<bool>::voxel_type (*mask_data));
       }
-      threshold_value = Image::Filter::estimate_optimal_threshold (in, (Image::Buffer<bool>::voxel_type*) mask_voxel);
+      threshold_value = Image::Filter::estimate_optimal_threshold (in, mask_voxel.get());
     }
 
     Image::Loop loop ("thresholding \"" + shorten (in.name()) + "\" at intensity " + str (threshold_value) + "...");

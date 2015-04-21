@@ -22,7 +22,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
@@ -370,10 +370,10 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    VecPtr<Image::Header> headers_in;
+    std::vector<std::unique_ptr<Image::Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (new Image::Header (argument[0]));
+    headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
     Image::Header header (*headers_in[0]);
 
     // Wipe any excess unary-dimensional axes
@@ -383,7 +383,7 @@ void run ()
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (new Image::Header (path));
+      headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (path)));
       const Image::Header& temp (*headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
@@ -398,18 +398,18 @@ void run ()
     }
 
     // Instantiate a kernel depending on the operation requested
-    Ptr<ImageKernelBase> kernel;
+    std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: kernel = new ImageKernel<Mean>    (header, output_path); break;
-      case 1: kernel = new ImageKernel<Sum>     (header, output_path); break;
-      case 2: kernel = new ImageKernel<Product> (header, output_path); break;
-      case 3: kernel = new ImageKernel<RMS>     (header, output_path); break;
-      case 4: kernel = new ImageKernel<Var>     (header, output_path); break;
-      case 5: kernel = new ImageKernel<Std>     (header, output_path); break;
-      case 6: kernel = new ImageKernel<Min>     (header, output_path); break;
-      case 7: kernel = new ImageKernel<Max>     (header, output_path); break;
-      case 8: kernel = new ImageKernel<AbsMax>  (header, output_path); break;
-      case 9: kernel = new ImageKernel<MagMax>  (header, output_path); break;
+      case 0: kernel.reset (new ImageKernel<Mean>    (header, output_path)); break;
+      case 1: kernel.reset (new ImageKernel<Sum>     (header, output_path)); break;
+      case 2: kernel.reset (new ImageKernel<Product> (header, output_path)); break;
+      case 3: kernel.reset (new ImageKernel<RMS>     (header, output_path)); break;
+      case 4: kernel.reset (new ImageKernel<Var>     (header, output_path)); break;
+      case 5: kernel.reset (new ImageKernel<Std>     (header, output_path)); break;
+      case 6: kernel.reset (new ImageKernel<Min>     (header, output_path)); break;
+      case 7: kernel.reset (new ImageKernel<Max>     (header, output_path)); break;
+      case 8: kernel.reset (new ImageKernel<AbsMax>  (header, output_path)); break;
+      case 9: kernel.reset (new ImageKernel<MagMax>  (header, output_path)); break;
       default: assert (0);
     }
 

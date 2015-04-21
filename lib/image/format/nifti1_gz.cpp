@@ -37,10 +37,10 @@ namespace MR
     {
 
 
-      RefPtr<Handler::Base> NIfTI_GZ::read (Header& H) const
+      std::shared_ptr<Handler::Base> NIfTI_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".nii.gz")) 
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         nifti_1_header NH;
 
@@ -50,9 +50,9 @@ namespace MR
 
         size_t data_offset = File::NIfTI::read (H, NH);
 
-        RefPtr<Handler::Base> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
-        memcpy (dynamic_cast<Handler::GZ*>((Handler::Base*)handler)->header(), &NH, sizeof(nifti_1_header));
-        memset (dynamic_cast<Handler::GZ*>((Handler::Base*)handler)->header() + sizeof(nifti_1_header), 0, sizeof(nifti1_extender));
+        std::shared_ptr<Handler::Base> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
+        memcpy (dynamic_cast<Handler::GZ*>(handler.get())->header(), &NH, sizeof(nifti_1_header));
+        memset (dynamic_cast<Handler::GZ*>(handler.get())->header() + sizeof(nifti_1_header), 0, sizeof(nifti1_extender));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
         return handler;
@@ -83,12 +83,12 @@ namespace MR
 
 
 
-      RefPtr<Image::Handler::Base> NIfTI_GZ::create (Header& H) const
+      std::shared_ptr<Image::Handler::Base> NIfTI_GZ::create (Header& H) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
 
-        RefPtr<Handler::GZ> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
+        std::shared_ptr<Handler::GZ> handler (new Handler::GZ (H, sizeof(nifti_1_header)+sizeof(nifti1_extender)));
 
         File::NIfTI::write (*reinterpret_cast<nifti_1_header*> (handler->header()), H, true);
         memset (handler->header()+sizeof(nifti_1_header), 0, sizeof(nifti1_extender));

@@ -26,7 +26,7 @@
 #include "command.h"
 #include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -117,7 +117,7 @@ void run ()
 
   const std::string prefix (argument[2]);
 
-  Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
+  std::unique_ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
 
   node_t max_node_index = 0;
   Image::LoopInOrder loop (nodes);

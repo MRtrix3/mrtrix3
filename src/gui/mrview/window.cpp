@@ -120,11 +120,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
+              list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -647,10 +647,10 @@ namespace MR
         if (image_list.empty())
           return;
 
-        VecPtr<MR::Image::Header> list;
+        std::vector<std::unique_ptr<MR::Image::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (new MR::Image::Header (image_list[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -669,8 +669,8 @@ namespace MR
 
 
         try {
-          VecPtr<MR::Image::Header> list;
-          list.push_back (new MR::Image::Header (folder));
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -681,7 +681,7 @@ namespace MR
 
 
 
-      void Window::add_images (VecPtr<MR::Image::Header>& list)
+      void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*this, *list[i]);
@@ -744,7 +744,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
         set_mode_features();
         emit modeChanged();
         updateGL();
@@ -1192,7 +1192,7 @@ namespace MR
         gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
 
-        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
 
         if (MR::App::option.size()) 
@@ -1507,8 +1507,8 @@ namespace MR
             }
 
             if (opt.opt->is ("load")) { 
-              VecPtr<MR::Image::Header> list; 
-              try { list.push_back (new MR::Image::Header (opt[0])); }
+              std::vector<std::unique_ptr<MR::Image::Header>> list; 
+              try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
               catch (Exception& e) { e.display(); }
               add_images (list);
               continue;

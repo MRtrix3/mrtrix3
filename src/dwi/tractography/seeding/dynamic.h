@@ -184,7 +184,7 @@ namespace MR
 
         Image::Transform transform;
 
-        Ptr<Dynamic_ACT_additions> act;
+        std::unique_ptr<Dynamic_ACT_additions> act;
 
       };
 

@@ -24,8 +24,8 @@
 #define __dwi_tractography_mapping_loader_h__
 
 
+#include "memory.h"
 #include "progressbar.h"
-#include "ptr.h"
 #include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/streamline.h"
@@ -52,12 +52,12 @@ class TrackLoader
     virtual bool operator() (Streamline<float>& out)
     {
       if (!reader (out)) {
-        progress = NULL;
+        progress.reset();
         return false;
       }
       if (tracks_to_load && out.index >= tracks_to_load) {
         out.clear();
-        progress = NULL;
+        progress.reset();
         return false;
       }
       if (progress)
@@ -68,7 +68,7 @@ class TrackLoader
   protected:
     Tractography::Reader<float>& reader;
     const size_t tracks_to_load;
-    Ptr<ProgressBar> progress;
+    std::unique_ptr<ProgressBar> progress;
 
 };
 

@@ -216,7 +216,7 @@ namespace MR
 
           Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
 
-          image = new FloatImage (sub, new_info, in);
+          image.reset (new FloatImage (sub, new_info, in));
 
           volume *= image->dim(0) * image->dim(1) * image->dim(2);
 
