@@ -567,63 +567,61 @@ namespace MR
           node_shader.stop();
 
           // =================================================================
+          if (edge_visibility != EDGE_VIS_NONE) {
 
-          edge_shader.start (*this);
-          projection.set (edge_shader);
+            edge_shader.start (*this);
+            projection.set (edge_shader);
 
-          use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
+            use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
 
-          gl::Enable (gl::DEPTH_TEST);
-          if (use_alpha) {
-            gl::Enable (gl::BLEND);
-            gl::DepthMask (gl::FALSE_);
-            gl::BlendEquation (gl::FUNC_ADD);
-            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
-            gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
-          } else {
-            gl::Disable (gl::BLEND);
-            gl::DepthMask (gl::TRUE_);
-          }
+            gl::Enable (gl::DEPTH_TEST);
+            if (use_alpha) {
+              gl::Enable (gl::BLEND);
+              gl::DepthMask (gl::FALSE_);
+              gl::BlendEquation (gl::FUNC_ADD);
+              gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+              gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+            } else {
+              gl::Disable (gl::BLEND);
+              gl::DepthMask (gl::TRUE_);
+            }
 
-          const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
+            const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
 
-          GLuint edge_alpha_ID = 0;
-          if (edge_alpha != EDGE_ALPHA_FIXED)
-            edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
+            GLuint edge_alpha_ID = 0;
+            if (edge_alpha != EDGE_ALPHA_FIXED)
+              edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
-          std::map<float, size_t> edge_ordering;
-          for (size_t i = 0; i <= num_edges(); ++i)
-            edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
+            std::map<float, size_t> edge_ordering;
+            for (size_t i = 0; i <= num_edges(); ++i)
+              edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
 
-          //VAR (edge_ordering.size());
-
-          for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
-          //for (size_t i = 0; i != num_edges(); ++i) {
-            const Edge& edge (edges[it->second]);
-            //const Edge& edge (edges[i]);
-            if (edge.is_visible()) {
-              gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
-              if (edge_alpha != EDGE_ALPHA_FIXED)
-                gl::Uniform1f (edge_alpha_ID, edge.get_alpha());
-              switch (edge_geometry) {
-                case EDGE_GEOM_LINE:
-                  glLineWidth (edge.get_size() * edge_size_scale_factor);
-                  edge.render_line();
-                  break;
-                case EDGE_GEOM_CYLINDER:
-                  // TODO
-                  break;
+            for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
+              const Edge& edge (edges[it->second]);
+              if (edge.is_visible()) {
+                gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
+                if (edge_alpha != EDGE_ALPHA_FIXED)
+                  gl::Uniform1f (edge_alpha_ID, edge.get_alpha());
+                switch (edge_geometry) {
+                  case EDGE_GEOM_LINE:
+                    glLineWidth (edge.get_size() * edge_size_scale_factor);
+                    edge.render_line();
+                    break;
+                  case EDGE_GEOM_CYLINDER:
+                    // TODO
+                    break;
+                }
               }
             }
-          }
 
-          // Reset to defaults if we've been doing transparency
-          if (use_alpha) {
-            gl::Disable (gl::BLEND);
-            gl::DepthMask (gl::TRUE_);
-          }
+            // Reset to defaults if we've been doing transparency
+            if (use_alpha) {
+              gl::Disable (gl::BLEND);
+              gl::DepthMask (gl::TRUE_);
+            }
 
-          edge_shader.stop();
+            edge_shader.stop();
+          }
         }
 
 
@@ -1473,6 +1471,14 @@ namespace MR
 
             // TODO Need full connectome matrix, as well as current edge visualisation
             //   thresholds, in order to calculate this
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (false);
+            for (auto i = edges.begin(); i != edges.end(); ++i) {
+              if (i->is_visible()) {
+                nodes[i->get_node_index(0)].set_visible (true);
+                nodes[i->get_node_index(1)].set_visible (true);
+              }
+            }
 
           } else if (node_visibility == NODE_VIS_MANUAL) {
 
@@ -1582,6 +1588,8 @@ namespace MR
               edges[i].set_visible (edge_values_from_file_visibility[i] && !edges[i].is_diagonal());
 
           }
+          if (node_visibility == NODE_VIS_DEGREE)
+            calculate_node_visibility();
         }
 
 
