@@ -43,9 +43,8 @@ namespace MR {
           void sort() {
             for (size_t npatient = 0; npatient < size(); ++npatient) {
               Patient& patient (*((*this)[npatient]));
-              for (size_t nstudy = 0; nstudy < patient.size(); ++nstudy) 
-                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(), 
-                    [](decltype(*patient[nstudy]->begin())& a, decltype(*patient[nstudy]->begin())& b) { return *a < *b; });
+              for (size_t nstudy = 0; nstudy < patient.size(); ++nstudy)
+                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(), compare_ptr_contents());
             }
           }
 

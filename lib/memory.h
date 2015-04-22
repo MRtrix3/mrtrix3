@@ -46,6 +46,11 @@ namespace MR
       copy_ptr& operator=(const copy_ptr& u) { this->reset (u ? new T (*u) : nullptr); return *this; }
   };
 
+  struct compare_ptr_contents {
+    template <class X>
+      bool operator() (const X& a, const X& b) const { return *a < *b; }
+  };
+
 }
 
 #endif
