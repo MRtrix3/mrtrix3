@@ -279,7 +279,8 @@ namespace MR
       parser.parse (specifier);
 
       scan (parser);
-      std::sort (list.begin(), list.end(), [](decltype(*list.begin())& a, decltype(*list.begin())& b) { return *a < *b; });
+      std::sort (list.begin(), list.end(),
+        [](const std::shared_ptr<Image::ParsedName> &a, const std::shared_ptr<Image::ParsedName> &b) { return *a < *b; });
       std::vector<int> dim = count();
 
       for (size_t n = 0; n < dim.size(); n++)
