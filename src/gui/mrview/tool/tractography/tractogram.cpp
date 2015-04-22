@@ -231,26 +231,15 @@ namespace MR
             source += "  g_amp = v_amp[1];\n";
 
           source +=
-          "  float dir_dot = dot(v_dir[0].xy, v_dir[1].xy);"
-          "  bool extra_quad = false;"
-          "  vec4 lower_end_point, upper_end_point, connecting_end_point1, connecting_end_point2;"
-          "  lower_end_point = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
-          "  upper_end_point = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n"
-          "  connecting_end_point1 = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
-          "  connecting_end_point2 = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
-          "  extra_quad = true;\n"
-
-          "  gl_Position = lower_end_point;\n"
+          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
           "  EmitVertex();\n"
-          "  gl_Position = upper_end_point;\n";
+          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n";
 
           if(use_lighting)
             source += "  g_height = PI;\n";
 
           source +=
-          "  EmitVertex();\n"
-
-          "  if(!extra_quad) { EndPrimitive(); return; }\n";
+          "  EmitVertex();\n";
 
           if(use_lighting)
             source +=
@@ -258,7 +247,7 @@ namespace MR
              "  g_height = 0.0;\n";
 
           source +=
-          "  gl_Position = connecting_end_point1;\n"
+          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
           "  EmitVertex();\n";
 
           if(use_lighting)
@@ -266,7 +255,7 @@ namespace MR
 
 
           source +=
-          "  gl_Position = connecting_end_point2;\n"
+          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
           "  EmitVertex();\n";
 
           source +=
