@@ -224,17 +224,8 @@ void run ()
   switch (header_out.datatype()() & DataType::Type) {
     case DataType::Undefined: throw Exception ("Undefined output image data type"); break;
     case DataType::Bit:
-      copy_permute<bool> (header_in, header_out, pos, argument[1]);
-      break;
     case DataType::UInt8:
-      copy_permute<uint8_t> (header_in, header_out, pos, argument[1]);
-      break;
     case DataType::UInt16:
-      if (header_out.datatype().is_signed())
-        copy_permute<int16_t> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<uint16_t> (header_in, header_out, pos, argument[1]);
-      break;
     case DataType::UInt32:
       if (header_out.datatype().is_signed())
         copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
@@ -248,11 +239,6 @@ void run ()
         copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
       break;
     case DataType::Float32:
-      if (header_out.datatype().is_complex())
-        copy_permute<cfloat> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<float> (header_in, header_out, pos, argument[1]);
-      break;
     case DataType::Float64:
       if (header_out.datatype().is_complex())
         copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
