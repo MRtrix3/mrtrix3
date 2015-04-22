@@ -39,6 +39,8 @@
 
 #include "mesh/mesh.h"
 
+#include "connectome/mat2vec.h"
+
 #include "dwi/tractography/connectomics/config.h"
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
@@ -55,7 +57,8 @@
 //     (whether plotting as lines or cylinders)
 //   - Display options:
 //     * Geometry: Line, cylinder, ...
-//     * Colour by: file w. colour map, fixed colour, ... direction?
+//     * Colour by: file w. colour map, fixed colour, direction, ...
+//       - Colours of corresponding nodes? Would require some plotting cleverness
 //     * Size by: fixed, file
 //     * Visibility: all, file
 //     * Transparency: fixed, weights, file
@@ -111,6 +114,7 @@
 //     appear and disappear
 //   - Only start drawing toolbar after parcellation image has been imported
 //   - Figure out why the toolbar is initially being drawn twice
+//   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
@@ -147,6 +151,12 @@ namespace MR
             enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
             enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_FILE, NODE_VIS_DEGREE, NODE_VIS_MANUAL };
             enum node_alpha_t      { NODE_ALPHA_FIXED, NODE_ALPHA_LUT, NODE_ALPHA_FILE };
+
+            enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER };
+            enum edge_colour_t     { EDGE_COLOUR_FIXED, EDGE_COLOUR_DIR, EDGE_COLOUR_FILE };
+            enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
+            enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_FILE };
+            enum edge_alpha_t      { EDGE_ALPHA_FIXED, EDGE_ALPHA_FILE };
 
           private:
 
@@ -217,6 +227,17 @@ namespace MR
             void node_size_value_slot();
             void node_alpha_value_slot (int);
 
+            void edge_geometry_selection_slot (int);
+            void edge_colour_selection_slot (int);
+            void edge_size_selection_slot (int);
+            void edge_visibility_selection_slot (int);
+            void edge_alpha_selection_slot (int);
+
+            void cylinder_lod_slot (int);
+            void edge_colour_change_slot();
+            void edge_size_value_slot();
+            void edge_alpha_value_slot (int);
+
           protected:
 
             QPushButton *image_button, *hide_all_button;
@@ -235,7 +256,17 @@ namespace MR
 
             QSlider *node_alpha_slider;
 
+            QComboBox *edge_geometry_combobox, *edge_colour_combobox, *edge_size_combobox, *edge_visibility_combobox, *edge_alpha_combobox;
 
+            QLabel *edge_geometry_cylinder_lod_label;
+            QSpinBox *edge_geometry_cylinder_lod_spinbox;
+
+            QColorButton *edge_colour_fixedcolour_button;
+            ColourMapButton *edge_colour_colourmap_button;
+
+            AdjustButton *edge_size_button;
+
+            QSlider *edge_alpha_slider;
 
 
           private:
@@ -298,7 +329,48 @@ namespace MR
                 //   encompass the node and no more
 
             };
+
+            // Stores all information relating to the drawing of individual edges, both fixed and variable
+            // Try to store more than would otherwise be optimal in here, in order to simplify the drawing process
+            class Edge
+            {
+              public:
+                Edge (const Connectome&, const node_t, const node_t);
+                Edge ();
+
+                const Point<float>& get_dir() const { return dir; }
+                void set_size (const float i) { size = i; }
+                float get_size() const { return size; }
+                void set_colour (const Point<float>& i) { colour = i; }
+                const Point<float>& get_colour() const { return colour; }
+                void set_alpha (const float i) { alpha = i; }
+                float get_alpha() const { return alpha; }
+                void set_visible (const bool i) { visible = i; }
+                bool is_visible() const { return visible; }
+                bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
+
+              private:
+                const node_t node_indices[2];
+                const Point<float> node_centres[2];
+                const Point<float> dir;
+
+                float size;
+                Point<float> colour;
+                float alpha;
+                bool visible;
+            };
+
+
+
+
+
+
             std::vector<Node> nodes;
+            std::vector<Edge> edges;
+
+
+            // For converting connectome matrices to vectors
+            MR::Connectome::Mat2Vec mat2vec;
 
 
             // If a lookup table is provided, this container will store the
@@ -319,6 +391,9 @@ namespace MR
             // Used when the geometry of node visualisation is a sphere
             GUI::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
+
+
+            // TODO Class to handle cylinder geometry
 
 
             // Fixed lighting settings from the main window
@@ -343,6 +418,21 @@ namespace MR
             Math::Vector<float> node_values_from_file_alpha;
 
 
+            // Current edge visualisation settings
+            edge_geometry_t edge_geometry;
+            edge_colour_t edge_colour;
+            edge_size_t edge_size;
+            edge_visibility_t edge_visibility;
+            edge_alpha_t edge_alpha;
+
+            // Other values that need to be stored w.r.t. node visualisation
+            Point<float> edge_fixed_colour;
+            float edge_fixed_alpha;
+            float edge_size_scale_factor;
+            Math::Vector<float> edge_values_from_file_colour;
+            Math::Vector<float> edge_values_from_file_size;
+            Math::Vector<float> edge_values_from_file_visibility;
+            Math::Vector<float> edge_values_from_file_alpha;
 
 
             // Helper functions
@@ -350,12 +440,18 @@ namespace MR
             void initialise (const std::string&);
 
             void import_file_for_node_property (Math::Vector<float>&, const std::string&);
+            void import_file_for_edge_property (Math::Vector<float>&, const std::string&);
 
             void load_node_properties();
             void calculate_node_colours();
             void calculate_node_sizes();
             void calculate_node_visibility();
             void calculate_node_alphas();
+
+            void calculate_edge_colours();
+            void calculate_edge_sizes();
+            void calculate_edge_visibility();
+            void calculate_edge_alphas();
 
         };
 

@@ -168,6 +168,7 @@ namespace MR
 
         Connectome::Connectome (Window& main_window, Dock* parent) :
             Base (main_window, parent),
+            mat2vec (0),
             lighting (window.lighting()),
             node_geometry (NODE_GEOM_SPHERE),
             node_colour (NODE_COLOUR_FIXED),
@@ -177,7 +178,15 @@ namespace MR
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_fixed_alpha (1.0f),
             node_size_scale_factor (1.0f),
-            voxel_volume (0.0f)
+            voxel_volume (0.0f),
+            edge_geometry (EDGE_GEOM_LINE),
+            edge_colour (EDGE_COLOUR_FIXED),
+            edge_size (EDGE_SIZE_FIXED),
+            edge_visibility (EDGE_VIS_ALL),
+            edge_alpha (EDGE_ALPHA_FIXED),
+            edge_fixed_colour (0.5f, 0.5f, 0.5f),
+            edge_fixed_alpha (1.0f),
+            edge_size_scale_factor (1.0f)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
@@ -321,6 +330,86 @@ namespace MR
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           gridlayout->addWidget (node_alpha_slider, 4, 2, 1, 2);
 
+          group_box = new QGroupBox ("Edge visualisation");
+          main_box->addWidget (group_box);
+          gridlayout = new GridLayout();
+          group_box->setLayout (gridlayout);
+
+          label = new QLabel ("Geometry: ");
+          gridlayout->addWidget (label, 0, 0);
+          edge_geometry_combobox = new QComboBox (this);
+          edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
+          edge_geometry_combobox->addItem ("Line");
+          edge_geometry_combobox->addItem ("Cylinder");
+          connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
+          gridlayout->addWidget (edge_geometry_combobox, 0, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_geometry_cylinder_lod_label = new QLabel ("LOD: ");
+          hlayout->addWidget (edge_geometry_cylinder_lod_label, 1);
+          edge_geometry_cylinder_lod_spinbox = new QSpinBox (this);
+          edge_geometry_cylinder_lod_spinbox->setMinimum (1);
+          edge_geometry_cylinder_lod_spinbox->setMaximum (7);
+          edge_geometry_cylinder_lod_spinbox->setSingleStep (1);
+          edge_geometry_cylinder_lod_spinbox->setValue (4);
+          connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
+          hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
+          gridlayout->addLayout (hlayout, 0, 2, 1, 2);
+
+          label = new QLabel ("Colour: ");
+          gridlayout->addWidget (label, 1, 0);
+          edge_colour_combobox = new QComboBox (this);
+          edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
+          edge_colour_combobox->addItem ("Fixed");
+          edge_colour_combobox->addItem ("By direction");
+          edge_colour_combobox->addItem ("From matrix file");
+          connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
+          gridlayout->addWidget (edge_colour_combobox, 1, 1);
+          edge_colour_fixedcolour_button = new QColorButton;
+          connect (edge_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (edge_colour_change_slot()));
+          gridlayout->addWidget (edge_colour_fixedcolour_button, 1, 2);
+          edge_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
+          edge_colour_colourmap_button->setVisible (false);
+          gridlayout->addWidget (edge_colour_colourmap_button, 1, 3, 1, 1);
+
+          label = new QLabel ("Size scaling: ");
+          gridlayout->addWidget (label, 2, 0);
+          edge_size_combobox = new QComboBox (this);
+          edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
+          edge_size_combobox->addItem ("Fixed");
+          edge_size_combobox->addItem ("From matrix file");
+          connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
+          gridlayout->addWidget (edge_size_combobox, 2, 1);
+          edge_size_button = new AdjustButton (this, 0.01);
+          edge_size_button->setValue (edge_size_scale_factor);
+          edge_size_button->setMin (0.0f);
+          connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
+          gridlayout->addWidget (edge_size_button, 2, 2, 1, 1);
+
+          label = new QLabel ("Visibility: ");
+          gridlayout->addWidget (label, 3, 0);
+          edge_visibility_combobox = new QComboBox (this);
+          edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
+          edge_visibility_combobox->addItem ("All");
+          edge_visibility_combobox->addItem ("From matrix file");
+          connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
+          gridlayout->addWidget (edge_visibility_combobox, 3, 1);
+
+          label = new QLabel ("Transparency: ");
+          gridlayout->addWidget (label, 4, 0);
+          edge_alpha_combobox = new QComboBox (this);
+          edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
+          edge_alpha_combobox->addItem ("Fixed");
+          edge_alpha_combobox->addItem ("From matrix file");
+          connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
+          gridlayout->addWidget (edge_alpha_combobox, 4, 1);
+          edge_alpha_slider = new QSlider (Qt::Horizontal);
+          edge_alpha_slider->setRange (0,1000);
+          edge_alpha_slider->setSliderPosition (1000);
+          connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
+          gridlayout->addWidget (edge_alpha_slider, 4, 2, 1, 2);
+
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
 
@@ -459,6 +548,7 @@ namespace MR
           initialise (path);
 
           image_button->setText (QString::fromStdString (Path::basename (path)));
+          load_node_properties();
           window.updateGL();
         }
 
@@ -564,7 +654,7 @@ namespace MR
         {
           switch (index) {
             case 0:
-              // if (node_colour == NODE_COLOUR_FIXED) return; // TODO Should this prompt a new colour selection? Means no need for a button...
+              if (node_colour == NODE_COLOUR_FIXED) return;
               node_colour = NODE_COLOUR_FIXED;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
@@ -733,6 +823,162 @@ namespace MR
 
 
 
+        void Connectome::edge_geometry_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              if (edge_geometry == EDGE_GEOM_LINE) return;
+              edge_geometry = EDGE_GEOM_LINE;
+              edge_geometry_cylinder_lod_label->setVisible (false);
+              edge_geometry_cylinder_lod_spinbox->setVisible (false);
+              break;
+            case 1:
+              if (edge_geometry == EDGE_GEOM_CYLINDER) return;
+              edge_geometry = EDGE_GEOM_CYLINDER;
+              edge_size_combobox->setCurrentIndex (0);
+              edge_size_combobox->setEnabled (false);
+              edge_size_button->setVisible (false);
+              edge_geometry_cylinder_lod_label->setVisible (true);
+              edge_geometry_cylinder_lod_spinbox->setVisible (true);
+              break;
+          }
+          window.updateGL();
+        }
+
+        void Connectome::edge_colour_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              if (edge_colour == EDGE_COLOUR_FIXED) return;
+              edge_colour = EDGE_COLOUR_FIXED;
+              edge_colour_colourmap_button->setVisible (false);
+              edge_colour_fixedcolour_button->setVisible (true);
+              break;
+            case 1:
+              if (edge_colour == EDGE_COLOUR_DIR) return;
+              edge_colour = EDGE_COLOUR_DIR;
+              edge_colour_colourmap_button->setVisible (false);
+              edge_colour_fixedcolour_button->setVisible (true);
+            case 2:
+              try {
+                import_file_for_edge_property (edge_values_from_file_colour, "colours");
+              } catch (...) { }
+              if (edge_values_from_file_colour.size()) {
+                edge_colour = EDGE_COLOUR_FILE;
+                // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
+                edge_colour_colourmap_button->setVisible (true);
+                edge_colour_fixedcolour_button->setVisible (false);
+              } else {
+                edge_colour_combobox->setCurrentIndex (0);
+                edge_colour = EDGE_COLOUR_FIXED;
+                edge_colour_colourmap_button->setVisible (false);
+                edge_colour_fixedcolour_button->setVisible (true);
+              }
+              break;
+          }
+          calculate_edge_colours();
+          window.updateGL();
+        }
+
+        void Connectome::edge_size_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              edge_size = EDGE_SIZE_FIXED;
+              break;
+            case 1:
+              try {
+                import_file_for_edge_property (edge_values_from_file_size, "size");
+              } catch (...) { }
+              if (edge_values_from_file_size.size()) {
+                edge_size = EDGE_SIZE_FILE;
+              } else {
+                edge_size_combobox->setCurrentIndex (0);
+                edge_size = EDGE_SIZE_FIXED;
+              }
+              break;
+          }
+          calculate_edge_sizes();
+          window.updateGL();
+        }
+
+        void Connectome::edge_visibility_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              edge_visibility = EDGE_VIS_ALL;
+              break;
+            case 1:
+              try {
+                import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
+              } catch (...) { }
+              if (edge_values_from_file_visibility.size()) {
+                edge_visibility = EDGE_VIS_FILE;
+              } else {
+                edge_visibility_combobox->setCurrentIndex (0);
+                edge_visibility = EDGE_VIS_ALL;
+              }
+              break;
+          }
+          calculate_edge_visibility();
+          window.updateGL();
+        }
+
+        void Connectome::edge_alpha_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              edge_alpha = EDGE_ALPHA_FIXED;
+              edge_alpha_slider->setVisible (true);
+              break;
+            case 1:
+              try {
+                import_file_for_edge_property (edge_values_from_file_alpha, "transparency");
+              } catch (...) { }
+              if (edge_values_from_file_alpha.size()) {
+                edge_alpha = EDGE_ALPHA_FILE;
+                edge_alpha_slider->setVisible (false);
+              } else {
+                edge_alpha_combobox->setCurrentIndex (0);
+                edge_alpha = EDGE_ALPHA_FIXED;
+                edge_alpha_slider->setVisible (true);
+              }
+              break;
+          }
+          calculate_edge_alphas();
+          window.updateGL();
+        }
+
+        void Connectome::cylinder_lod_slot (int /*index*/)
+        {
+          window.updateGL();
+        }
+        void Connectome::edge_colour_change_slot()
+        {
+          QColor c = edge_colour_fixedcolour_button->color();
+          edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          calculate_edge_colours();
+          window.updateGL();
+        }
+        void Connectome::edge_size_value_slot()
+        {
+          edge_size_scale_factor = edge_size_button->value();
+          window.updateGL();
+        }
+
+        void Connectome::edge_alpha_value_slot (int position)
+        {
+          edge_fixed_alpha = position / 1000.0f;
+          calculate_edge_alphas();
+          window.updateGL();
+        }
+
+
+
+
+
+
+
 
         Connectome::Node::Node (const Point<float>& com, const size_t vol, MR::Image::BufferScratch<bool>& img) :
             centre_of_mass (com),
@@ -831,6 +1077,32 @@ namespace MR
 
 
 
+        Connectome::Edge::Edge (const Connectome& parent, const node_t one, const node_t two) :
+            node_indices { one, two },
+            node_centres { parent.nodes[one].get_com(), parent.nodes[two].get_com() },
+            dir ((node_centres[1] - node_centres[0]).normalise()),
+            size (1.0f),
+            colour (0.5f, 0.5f, 0.5f),
+            alpha (1.0f),
+            visible (one != two) { }
+
+        Connectome::Edge::Edge () :
+            node_indices { 0, 0 },
+            node_centres { Point<float>(), Point<float>() },
+            dir (Point<float>()),
+            size (0.0f),
+            colour (0.0f, 0.0f, 0.0f),
+            alpha (0.0f),
+            visible (false) { }
+
+
+
+
+
+
+
+
+
         void Connectome::clear_all()
         {
           image_button ->setText ("");
@@ -844,6 +1116,7 @@ namespace MR
         {
 
           // TODO This could be made faster by constructing the meshes on-the-fly
+          // This would also allow calculation of vertex normals
 
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
@@ -887,6 +1160,8 @@ namespace MR
           for (node_t n = 1; n <= max_index; ++n)
             node_coms[n] *= (1.0f / float(node_volumes[n]));
 
+          nodes.clear();
+
           // TODO In its current state, this could be multi-threaded
           {
             MR::ProgressBar progress ("Triangulating nodes...", max_index);
@@ -896,6 +1171,13 @@ namespace MR
               ++progress;
             }
           }
+
+          mat2vec = MR::Connectome::Mat2Vec (num_nodes());
+
+          edges.clear();
+          edges.reserve (mat2vec.vec_size());
+          for (size_t edge_index = 0; edge_index != mat2vec.vec_size(); ++edge_index)
+            edges.push_back (Edge (*this, mat2vec(edge_index).first, mat2vec(edge_index).second));
 
         }
 
@@ -914,6 +1196,18 @@ namespace MR
             data.clear();
             throw Exception ("File " + Path::basename (path) + " contains " + str (numel) + " elements, but connectome has " + str(num_nodes()) + " nodes");
           }
+        }
+
+
+        void Connectome::import_file_for_edge_property (Math::Vector<float>& data, const std::string& attribute)
+        {
+          data.clear();
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine edge " + attribute);
+          if (path.empty())
+            return;
+          Math::Matrix<float> temp (path);
+          MR::Connectome::verify_matrix (temp, num_nodes());
+          mat2vec (temp, data);
         }
 
 
@@ -987,7 +1281,7 @@ namespace MR
           } else if (node_colour == NODE_COLOUR_LUT) {
 
             assert (lut.size());
-            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
               if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_colour (node_fixed_colour);
               else
@@ -1023,7 +1317,7 @@ namespace MR
           } else if (node_size == NODE_SIZE_FILE) {
 
             assert (node_values_from_file_size.size());
-            for (size_t i = 1; i != num_nodes()+1; ++i)
+            for (size_t i = 1; i <= num_nodes(); ++i)
               nodes[i].set_size (std::cbrt (node_values_from_file_size[i-1] / (4.0 * Math::pi)));
 
           }
@@ -1033,7 +1327,6 @@ namespace MR
 
         void Connectome::calculate_node_visibility()
         {
-
           if (node_visibility == NODE_VIS_ALL) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
@@ -1042,7 +1335,7 @@ namespace MR
           } else if (node_visibility == NODE_VIS_FILE) {
 
             assert (node_values_from_file_visibility.size());
-            for (size_t i = 1; i != num_nodes()+1; ++i)
+            for (size_t i = 1; i <= num_nodes(); ++i)
               nodes[i].set_visible (node_values_from_file_visibility[i-1]);
 
           } else if (node_visibility == NODE_VIS_DEGREE) {
@@ -1062,7 +1355,6 @@ namespace MR
 
         void Connectome::calculate_node_alphas()
         {
-
           if (node_alpha == NODE_ALPHA_FIXED) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
@@ -1071,7 +1363,7 @@ namespace MR
           } else if (node_alpha == NODE_ALPHA_LUT) {
 
             assert (lut.size());
-            for (size_t node_index = 1; node_index != num_nodes()+1; ++node_index) {
+            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
               if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_alpha (node_fixed_alpha);
               else
@@ -1081,8 +1373,95 @@ namespace MR
           } else if (node_alpha == NODE_ALPHA_FILE) {
 
             assert (node_values_from_file_alpha.size());
-            for (size_t i = 1; i != num_nodes()+1; ++i)
-              nodes[i].set_visible (node_values_from_file_alpha[i-1]);
+            for (size_t i = 1; i <= num_nodes(); ++i)
+              nodes[i].set_alpha (node_values_from_file_alpha[i-1]);
+
+          }
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        void Connectome::calculate_edge_colours()
+        {
+          if (edge_colour == EDGE_COLOUR_FIXED) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_colour (edge_fixed_colour);
+
+          } else if (edge_colour == EDGE_COLOUR_DIR) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
+
+          } else if (node_colour == NODE_COLOUR_FILE) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
+
+          }
+        }
+
+
+
+        void Connectome::calculate_edge_sizes()
+        {
+          if (edge_size == EDGE_SIZE_FIXED) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_size (1.0f);
+
+          } else if (edge_size == EDGE_SIZE_FILE) {
+
+            assert (edge_values_from_file_size.size());
+            for (size_t i = 0; i != edges.size(); ++i)
+              edges[i].set_size (std::sqrt (edge_values_from_file_size[i] / Math::pi));
+
+          }
+        }
+
+
+
+        void Connectome::calculate_edge_visibility()
+        {
+          if (edge_visibility == EDGE_VIS_ALL) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_visible (~i->is_diagonal());
+
+          } else if (edge_visibility == EDGE_VIS_FILE) {
+
+            assert (edge_values_from_file_visibility.size());
+            for (size_t i = 0; i != edges.size(); ++i)
+              edges[i].set_visible (node_values_from_file_visibility[i] && !edges[i].is_diagonal());
+
+          }
+        }
+
+
+
+        void Connectome::calculate_edge_alphas()
+        {
+          if (edge_alpha == EDGE_ALPHA_FIXED) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_alpha (1.0f);
+
+          } else if (edge_alpha == EDGE_ALPHA_FILE) {
+
+            assert (edge_values_from_file_alpha.size());
+            for (size_t i = 0; i != edges.size(); ++i)
+              edges[i].set_alpha (edge_values_from_file_alpha[i]);
 
           }
         }
