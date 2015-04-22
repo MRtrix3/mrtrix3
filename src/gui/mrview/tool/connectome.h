@@ -84,6 +84,7 @@
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
 //       plane and draw as lines
+//   - Draw as points
 //   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
 //   - Meshes
 //     * Get right hand rule working, use face culling
@@ -155,7 +156,7 @@ namespace MR
             enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER };
             enum edge_colour_t     { EDGE_COLOUR_FIXED, EDGE_COLOUR_DIR, EDGE_COLOUR_FILE };
             enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
-            enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_FILE };
+            enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_FILE };
             enum edge_alpha_t      { EDGE_ALPHA_FIXED, EDGE_ALPHA_FILE };
 
           private:
@@ -209,6 +210,7 @@ namespace MR
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
             size_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
+            size_t num_edges() const { return edges.size(); }
 
           private slots:
             void image_open_slot ();
@@ -338,6 +340,12 @@ namespace MR
                 Edge (const Connectome&, const node_t, const node_t);
                 Edge ();
 
+                void render_line() const;
+
+                node_t get_node_index (const size_t i) const { assert (i==0 || i==1); return node_indices[i]; }
+                const Point<float> get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
+                Point<float> get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+
                 const Point<float>& get_dir() const { return dir; }
                 void set_size (const float i) { size = i; }
                 float get_size() const { return size; }
@@ -358,6 +366,7 @@ namespace MR
                 Point<float> colour;
                 float alpha;
                 bool visible;
+
             };
 
 
@@ -442,7 +451,8 @@ namespace MR
             void import_file_for_node_property (Math::Vector<float>&, const std::string&);
             void import_file_for_edge_property (Math::Vector<float>&, const std::string&);
 
-            void load_node_properties();
+            void load_properties();
+
             void calculate_node_colours();
             void calculate_node_sizes();
             void calculate_node_visibility();

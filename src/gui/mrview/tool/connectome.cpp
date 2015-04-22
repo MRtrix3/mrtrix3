@@ -152,7 +152,59 @@ namespace MR
           fragment_shader_source += "}\n";
         }
 
-        void Connectome::EdgeShader::update (const Connectome& /*parent*/) { }
+
+
+
+
+
+
+
+        void Connectome::EdgeShader::update (const Connectome& parent)
+        {
+          vertex_shader_source =
+              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+              "uniform mat4 MVP;\n";
+
+          vertex_shader_source +=
+              "void main() {\n";
+
+          vertex_shader_source +=
+              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+
+          vertex_shader_source +=
+              "}\n";
+
+          // =================================================================
+
+          const bool per_edge_alpha = (parent.edge_alpha != EDGE_ALPHA_FIXED);
+
+          fragment_shader_source =
+              "uniform vec3 edge_colour;\n";
+
+          if (per_edge_alpha) {
+            fragment_shader_source +=
+              "uniform float edge_alpha;\n"
+              "out vec4 color;\n";
+          } else {
+            fragment_shader_source +=
+              "out vec3 color;\n";
+          }
+
+          fragment_shader_source +=
+              "void main() {\n";
+
+          if (per_edge_alpha) {
+            fragment_shader_source +=
+              "  color.xyz = edge_colour;\n"
+              "  color.a = edge_alpha;\n";
+          } else {
+            fragment_shader_source +=
+              "  color = edge_colour;\n";
+          }
+
+          fragment_shader_source += "}\n";
+
+        }
 
 
 
@@ -182,7 +234,7 @@ namespace MR
             edge_geometry (EDGE_GEOM_LINE),
             edge_colour (EDGE_COLOUR_FIXED),
             edge_size (EDGE_SIZE_FIXED),
-            edge_visibility (EDGE_VIS_ALL),
+            edge_visibility (EDGE_VIS_NONE),
             edge_alpha (EDGE_ALPHA_FIXED),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
             edge_fixed_alpha (1.0f),
@@ -347,12 +399,14 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           edge_geometry_cylinder_lod_label = new QLabel ("LOD: ");
+          edge_geometry_cylinder_lod_label->setVisible (false);
           hlayout->addWidget (edge_geometry_cylinder_lod_label, 1);
           edge_geometry_cylinder_lod_spinbox = new QSpinBox (this);
           edge_geometry_cylinder_lod_spinbox->setMinimum (1);
           edge_geometry_cylinder_lod_spinbox->setMaximum (7);
           edge_geometry_cylinder_lod_spinbox->setSingleStep (1);
           edge_geometry_cylinder_lod_spinbox->setValue (4);
+          edge_geometry_cylinder_lod_spinbox->setVisible (false);
           connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
           hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
           gridlayout->addLayout (hlayout, 0, 2, 1, 2);
@@ -392,7 +446,9 @@ namespace MR
           edge_visibility_combobox = new QComboBox (this);
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
+          edge_visibility_combobox->addItem ("None");
           edge_visibility_combobox->addItem ("From matrix file");
+          edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 3, 1);
 
@@ -421,8 +477,6 @@ namespace MR
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
           image_open_slot();
-
-          window.updateGL();
         }
 
 
@@ -436,7 +490,7 @@ namespace MR
           node_shader.start (*this);
           projection.set (node_shader);
 
-          const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
+          bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
 
           gl::Enable (gl::DEPTH_TEST);
           if (use_alpha) {
@@ -453,11 +507,12 @@ namespace MR
           }
 
           const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
+
           GLuint node_alpha_ID = 0;
           if (node_alpha != NODE_ALPHA_FIXED)
             node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
-          GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
 
+          GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
           if (node_geometry == NODE_GEOM_SPHERE) {
             sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
             sphere_VAO.bind();
@@ -480,15 +535,15 @@ namespace MR
             node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
 
           for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
-            const size_t index = it->second;
-            if (nodes[index].is_visible()) {
-              gl::Uniform3fv (node_colour_ID, 1, nodes[index].get_colour());
+            const Node& node (nodes[it->second]);
+            if (node.is_visible()) {
+              gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
               if (node_alpha != NODE_ALPHA_FIXED)
-                gl::Uniform1f (node_alpha_ID, nodes[index].get_alpha());
+                gl::Uniform1f (node_alpha_ID, node.get_alpha());
               switch (node_geometry) {
                 case NODE_GEOM_SPHERE:
-                  gl::Uniform3fv (node_centre_ID, 1, &nodes[index].get_com()[0]);
-                  gl::Uniform1f (node_size_ID, nodes[index].get_size() * node_size_scale_factor);
+                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                  gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   gl::Uniform1i (reverse_ID, 0);
                   gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                   gl::Uniform1i (reverse_ID, 1);
@@ -497,7 +552,7 @@ namespace MR
                 case NODE_GEOM_OVERLAY:
                   break;
                 case NODE_GEOM_MESH:
-                  nodes[index].render_mesh();
+                  node.render_mesh();
                   break;
               }
             }
@@ -510,6 +565,65 @@ namespace MR
           }
 
           node_shader.stop();
+
+          // =================================================================
+
+          edge_shader.start (*this);
+          projection.set (edge_shader);
+
+          use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
+
+          gl::Enable (gl::DEPTH_TEST);
+          if (use_alpha) {
+            gl::Enable (gl::BLEND);
+            gl::DepthMask (gl::FALSE_);
+            gl::BlendEquation (gl::FUNC_ADD);
+            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+            gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+          } else {
+            gl::Disable (gl::BLEND);
+            gl::DepthMask (gl::TRUE_);
+          }
+
+          const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
+
+          GLuint edge_alpha_ID = 0;
+          if (edge_alpha != EDGE_ALPHA_FIXED)
+            edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
+
+          std::map<float, size_t> edge_ordering;
+          for (size_t i = 0; i <= num_edges(); ++i)
+            edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
+
+          //VAR (edge_ordering.size());
+
+          for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
+          //for (size_t i = 0; i != num_edges(); ++i) {
+            const Edge& edge (edges[it->second]);
+            //const Edge& edge (edges[i]);
+            if (edge.is_visible()) {
+              gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
+              if (edge_alpha != EDGE_ALPHA_FIXED)
+                gl::Uniform1f (edge_alpha_ID, edge.get_alpha());
+              switch (edge_geometry) {
+                case EDGE_GEOM_LINE:
+                  glLineWidth (edge.get_size() * edge_size_scale_factor);
+                  edge.render_line();
+                  break;
+                case EDGE_GEOM_CYLINDER:
+                  // TODO
+                  break;
+              }
+            }
+          }
+
+          // Reset to defaults if we've been doing transparency
+          if (use_alpha) {
+            gl::Disable (gl::BLEND);
+            gl::DepthMask (gl::TRUE_);
+          }
+
+          edge_shader.stop();
         }
 
 
@@ -548,7 +662,7 @@ namespace MR
           initialise (path);
 
           image_button->setText (QString::fromStdString (Path::basename (path)));
-          load_node_properties();
+          load_properties();
           window.updateGL();
         }
 
@@ -560,7 +674,7 @@ namespace MR
             lut_mapping.clear();
             //lut_namebox->setText (QString::fromStdString ("(none)"));
             lut_combobox->removeItem (5);
-            load_node_properties();
+            load_properties();
             return;
           }
           if (index == 5)
@@ -587,7 +701,7 @@ namespace MR
           lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
           lut_combobox->setCurrentIndex (5);
 
-          load_node_properties();
+          load_properties();
           window.updateGL();
         }
 
@@ -602,7 +716,7 @@ namespace MR
           config_button->setText ("");
           MR::DWI::Tractography::Connectomics::load_config (path, config);
           config_button->setText (QString::fromStdString (Path::basename (path)));
-          load_node_properties();
+          load_properties();
           window.updateGL();
         }
 
@@ -835,9 +949,6 @@ namespace MR
             case 1:
               if (edge_geometry == EDGE_GEOM_CYLINDER) return;
               edge_geometry = EDGE_GEOM_CYLINDER;
-              edge_size_combobox->setCurrentIndex (0);
-              edge_size_combobox->setEnabled (false);
-              edge_size_button->setVisible (false);
               edge_geometry_cylinder_lod_label->setVisible (true);
               edge_geometry_cylinder_lod_spinbox->setVisible (true);
               break;
@@ -858,7 +969,8 @@ namespace MR
               if (edge_colour == EDGE_COLOUR_DIR) return;
               edge_colour = EDGE_COLOUR_DIR;
               edge_colour_colourmap_button->setVisible (false);
-              edge_colour_fixedcolour_button->setVisible (true);
+              edge_colour_fixedcolour_button->setVisible (false);
+              break;
             case 2:
               try {
                 import_file_for_edge_property (edge_values_from_file_colour, "colours");
@@ -909,6 +1021,9 @@ namespace MR
               edge_visibility = EDGE_VIS_ALL;
               break;
             case 1:
+              edge_visibility = EDGE_VIS_NONE;
+              break;
+            case 2:
               try {
                 import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
               } catch (...) { }
@@ -1095,6 +1210,16 @@ namespace MR
             alpha (0.0f),
             visible (false) { }
 
+        void Connectome::Edge::render_line() const
+        {
+          glColor3f (colour[0], colour[1], colour[2]);
+          glBegin (GL_LINES);
+          glVertex3f (node_centres[0][0], node_centres[0][1], node_centres[0][2]);
+          glVertex3f (node_centres[1][0], node_centres[1][1], node_centres[1][2]);
+          glEnd();
+        }
+
+
 
 
 
@@ -1109,6 +1234,7 @@ namespace MR
           emit lut_open_slot (0);
           config_button->setText ("");
           nodes.clear();
+          edges.clear();
           lut.clear();
         }
 
@@ -1177,7 +1303,7 @@ namespace MR
           edges.clear();
           edges.reserve (mat2vec.vec_size());
           for (size_t edge_index = 0; edge_index != mat2vec.vec_size(); ++edge_index)
-            edges.push_back (Edge (*this, mat2vec(edge_index).first, mat2vec(edge_index).second));
+            edges.push_back (Edge (*this, mat2vec(edge_index).first + 1, mat2vec(edge_index).second + 1));
 
         }
 
@@ -1215,7 +1341,7 @@ namespace MR
 
 
 
-        void Connectome::load_node_properties()
+        void Connectome::load_properties()
         {
           lut_mapping.clear();
           if (lut.size()) {
@@ -1255,6 +1381,11 @@ namespace MR
           calculate_node_sizes();
           calculate_node_visibility();
           calculate_node_alphas();
+
+          calculate_edge_colours();
+          calculate_edge_sizes();
+          calculate_edge_visibility();
+          calculate_edge_alphas();
 
         }
 
@@ -1404,7 +1535,7 @@ namespace MR
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
 
-          } else if (node_colour == NODE_COLOUR_FILE) {
+          } else if (edge_colour == EDGE_COLOUR_FILE) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
@@ -1437,13 +1568,18 @@ namespace MR
           if (edge_visibility == EDGE_VIS_ALL) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_visible (~i->is_diagonal());
+              i->set_visible (!i->is_diagonal());
+
+          } else if (edge_visibility == EDGE_VIS_NONE) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_visible (false);
 
           } else if (edge_visibility == EDGE_VIS_FILE) {
 
             assert (edge_values_from_file_visibility.size());
             for (size_t i = 0; i != edges.size(); ++i)
-              edges[i].set_visible (node_values_from_file_visibility[i] && !edges[i].is_diagonal());
+              edges[i].set_visible (edge_values_from_file_visibility[i] && !edges[i].is_diagonal());
 
           }
         }
