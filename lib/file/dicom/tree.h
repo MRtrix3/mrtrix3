@@ -44,8 +44,7 @@ namespace MR {
             for (size_t npatient = 0; npatient < size(); ++npatient) {
               Patient& patient (*((*this)[npatient]));
               for (size_t nstudy = 0; nstudy < patient.size(); ++nstudy)
-                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(),
-                    [](const std::shared_ptr<File::Dicom::Series> &a, const std::shared_ptr<File::Dicom::Series> &b) { return *a < *b; });
+                std::sort (patient[nstudy]->begin(), patient[nstudy]->end(), compare_ptr_contents());
             }
           }
 

@@ -66,8 +66,7 @@ namespace MR {
             throw Exception ("error reading series " + str (series.number) + " of DICOM image \"" + H.name() + "\""); 
           }
 
-          std::sort (series.begin(), series.end(),
-            [](const std::shared_ptr<File::Dicom::Image> &a, const std::shared_ptr<File::Dicom::Image> &b) { return *a < *b; });
+          std::sort (series.begin(), series.end(), compare_ptr_contents());
 
           // loop over images in each series:
           for (auto image_it = series.begin(); image_it != series.end(); ++image_it) {
@@ -75,8 +74,7 @@ namespace MR {
 
             // if multi-frame, loop over frames in image:
             if (image.frames.size()) {
-              std::sort (image.frames.begin(), image.frames.end(),
-                [](const std::shared_ptr<Dicom::Frame> &a, const std::shared_ptr<Dicom::Frame> &b) { return *a < *b; });
+              std::sort (image.frames.begin(), image.frames.end(), compare_ptr_contents());
               for (auto frame_it = image.frames.begin(); frame_it != image.frames.end(); ++frame_it)
                 frames.push_back (frame_it->get());
             }
