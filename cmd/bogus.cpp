@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "image.h"
 #include "timer.h"
+#include "math/rng.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 
@@ -21,34 +22,49 @@ void usage ()
   + Argument ("out", "the output image.").type_image_out ();
 
   OPTIONS
-  + Option ("power", "the power by which to raise each value (default: 2)")
+  + Option ("power", "the power by which to raise each value (default: 1)")
+  +   Argument ("value").type_float()
+
+  + Option ("noise", "the std. dev. of the noise to add to each value (default: 1)")
   +   Argument ("value").type_float();
 }
 
 typedef float value_type;
 
+
 void run ()
 {
-  value_type power = 2.0;
+  value_type power = 1.0;
   auto opt = get_options ("power");
   if (opt.size())
     power = opt[0][0];
 
+  value_type noise = 1.0;
+  opt = get_options ("noise");
+  if (opt.size())
+    noise = opt[0][0];
+
   auto in = Header::open (argument[0]).get_image<value_type>().with_direct_io ();
   auto header = in.header();
-  header.datatype() = DataType::UInt16;
+
+  auto scratch = Header::allocate (header).get_image<value_type>();
+  struct noisify {
+    const value_type noise;
+    Math::RNG::Normal<value_type> rng;
+    void operator() (decltype(in)& in, decltype(scratch)& out) { out.value() = in.value() + noise*rng(); }
+  };
+  Timer timer;
+  ThreadedLoop ("adding noise...", in).run (noisify({noise}), in, scratch);
+  CONSOLE ("time taken: " + str(timer.elapsed(), 6) + "s");
+
+
+  header.datatype() = DataType::Float32;
   auto out = Header::create (argument[1], header).get_image<value_type>().with_direct_io(); 
 
-  Timer timer;
-
-  for (auto l = LoopInOrder (in).run (in, out); l; ++l)
-    out.value() = std::pow (in.value(), power);
-  CONSOLE ("single-threaded loop: " + str(timer.elapsed(), 6) + "s");
-
   timer.start();
-  ThreadedLoop (in).run ([&](decltype(in)& vin, decltype(out)& vout) {
-      vout.value() = std::pow (vin.value(), power);
-      }, in, out);
-  CONSOLE ("multi-threaded loop: " + str(timer.elapsed(), 6) + "s");
+  ThreadedLoop ("raising to power " + str(power) + "...", scratch).run ([&](decltype(in)& in, decltype(out)& out) {
+      out.value() = std::pow (in.value(), power);
+      }, scratch, out);
+  CONSOLE ("time taken: " + str(timer.elapsed(), 6) + "s");
 }
 

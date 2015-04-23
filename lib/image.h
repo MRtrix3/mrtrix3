@@ -492,14 +492,21 @@ namespace MR
     template <typename ValueType> 
       ValueType* Image<ValueType>::Buffer::get_data_pointer () const 
       {
-        if (data_buffer)
+        if (data_buffer) // already allocated via with_direct_io()
           return data_buffer.get();
 
-        assert (io);
+        if (!io) { // scractch buffer: allocate and return
+          data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
+          return data_buffer.get();
+        }
+
+        // file-backed: check wether we can still do direct IO
+        // if so, return address where mapped
         if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
           return reinterpret_cast<ValueType*> (io->segment(0));
-        else 
-          return nullptr;
+        
+        // can't do direct IO
+        return nullptr;
       }
 
 
@@ -524,6 +531,7 @@ namespace MR
         strides (strides.size() ? strides : Stride::get (*buffer)),
         data_offset (Stride::offset (*this))
         { 
+          assert (data_pointer || buffer->get_io());
         }
 
 
