@@ -371,6 +371,7 @@ namespace MR
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
+          node_visibility_combobox->addItem ("None");
           node_visibility_combobox->addItem ("From vector file");
           node_visibility_combobox->addItem ("Degree >= 1");
           node_visibility_combobox->addItem ("Manual");
@@ -457,6 +458,7 @@ namespace MR
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
           edge_visibility_combobox->addItem ("None");
+          edge_visibility_combobox->addItem ("By nodes");
           edge_visibility_combobox->addItem ("From matrix file");
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
@@ -497,100 +499,105 @@ namespace MR
         {
           if (hide_all_button->isChecked()) return;
 
-          node_shader.start (*this);
-          projection.set (node_shader);
+          if (node_visibility != NODE_VIS_NONE) {
 
-          bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
+            node_shader.start (*this);
+            projection.set (node_shader);
 
-          gl::Enable (gl::DEPTH_TEST);
-          if (use_alpha) {
-            gl::Enable (gl::BLEND);
-            gl::DepthMask (gl::FALSE_);
-            gl::BlendEquation (gl::FUNC_ADD);
-            gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
-            gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
-            //gl::Disable (gl::CULL_FACE);
-          } else {
-            gl::Disable (gl::BLEND);
-            gl::DepthMask (gl::TRUE_);
-            //gl::Enable (gl::CULL_FACE);
-          }
+            const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
 
-          const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
+            gl::Enable (gl::DEPTH_TEST);
+            if (use_alpha) {
+              gl::Enable (gl::BLEND);
+              gl::DepthMask (gl::FALSE_);
+              gl::BlendEquation (gl::FUNC_ADD);
+              gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+              gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+              //gl::Disable (gl::CULL_FACE);
+            } else {
+              gl::Disable (gl::BLEND);
+              gl::DepthMask (gl::TRUE_);
+              //gl::Enable (gl::CULL_FACE);
+            }
 
-          GLuint node_alpha_ID = 0;
-          if (node_alpha != NODE_ALPHA_FIXED)
-            node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
+            const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
 
-          GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-          if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
-            node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
-            node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
-          }
+            GLuint node_alpha_ID = 0;
+            if (node_alpha != NODE_ALPHA_FIXED)
+              node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
-          if (node_geometry == NODE_GEOM_SPHERE) {
-            sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
-            sphere_VAO.bind();
-            sphere.index_buffer.bind();
-            reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
-          }
+            GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
+            if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
+              node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+              node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
+            }
 
-          if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
-            gl::Uniform1f  (node_size_ID, node_size_scale_factor);
-          }
+            if (node_geometry == NODE_GEOM_SPHERE) {
+              sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+              sphere_VAO.bind();
+              sphere.index_buffer.bind();
+              reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+            }
 
-          if (node_geometry != NODE_GEOM_OVERLAY) {
-            gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
-            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
-            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
-            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
-            gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
-          }
+            if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
+              gl::Uniform1f  (node_size_ID, node_size_scale_factor);
+            }
 
-          std::map<float, size_t> node_ordering;
-          for (size_t i = 1; i <= num_nodes(); ++i)
-            node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+            if (node_geometry != NODE_GEOM_OVERLAY) {
+              gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
+              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
+              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
+              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
+              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
+            }
 
-          for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
-            const Node& node (nodes[it->second]);
-            if (node.is_visible()) {
-              gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
-              if (node_alpha != NODE_ALPHA_FIXED)
-                gl::Uniform1f (node_alpha_ID, node.get_alpha());
-              if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
-                gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-              switch (node_geometry) {
-                case NODE_GEOM_SPHERE:
-                  gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
-                  gl::Uniform1i (reverse_ID, 0);
-                  gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                  gl::Uniform1i (reverse_ID, 1);
-                  gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                  break;
-                case NODE_GEOM_OVERLAY:
-                  break;
-                case NODE_GEOM_MESH:
-                  node.render_mesh();
-                  break;
+            std::map<float, size_t> node_ordering;
+            for (size_t i = 1; i <= num_nodes(); ++i)
+              node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+
+            for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
+              const Node& node (nodes[it->second]);
+              if (node.is_visible()) {
+                gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
+                if (node_alpha != NODE_ALPHA_FIXED)
+                  gl::Uniform1f (node_alpha_ID, node.get_alpha());
+                if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
+                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                switch (node_geometry) {
+                  case NODE_GEOM_SPHERE:
+                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                    gl::Uniform1i (reverse_ID, 0);
+                    gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                    gl::Uniform1i (reverse_ID, 1);
+                    gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                    break;
+                  case NODE_GEOM_OVERLAY:
+                    break;
+                  case NODE_GEOM_MESH:
+                    node.render_mesh();
+                    break;
+                }
               }
             }
-          }
 
-          // Reset to defaults if we've been doing transparency
-          if (use_alpha) {
-            gl::Disable (gl::BLEND);
-            gl::DepthMask (gl::TRUE_);
-          }
+            // Reset to defaults if we've been doing transparency
+            if (use_alpha) {
+              gl::Disable (gl::BLEND);
+              gl::DepthMask (gl::TRUE_);
+            }
 
-          node_shader.stop();
+            node_shader.stop();
+
+          }
 
           // =================================================================
+
           if (edge_visibility != EDGE_VIS_NONE) {
 
             edge_shader.start (*this);
             projection.set (edge_shader);
 
-            use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
+            const bool use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
 
             gl::Enable (gl::DEPTH_TEST);
             if (use_alpha) {
@@ -871,6 +878,9 @@ namespace MR
               node_visibility = NODE_VIS_ALL;
               break;
             case 1:
+              node_visibility = NODE_VIS_NONE;
+              break;
+            case 2:
               try {
                 import_file_for_node_property (node_values_from_file_visibility, "visibility");
               } catch (...) { }
@@ -881,10 +891,20 @@ namespace MR
                 node_visibility = NODE_VIS_ALL;
               }
               break;
-            case 2:
-              node_visibility = NODE_VIS_DEGREE;
-              break;
             case 3:
+              if (edge_visibility == EDGE_VIS_NODES) {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot have node visibility based on edges; edge visibility is based on nodes!"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                node_visibility_combobox->setCurrentIndex (0);
+                node_visibility = NODE_VIS_ALL;
+              } else {
+                node_visibility = NODE_VIS_DEGREE;
+              }
+              break;
+            case 4:
               node_visibility = NODE_VIS_MANUAL;
               // TODO Here is where the corresponding list view should be made visible
               // Ideally the current node colours would also be presented within this list...
@@ -1047,14 +1067,27 @@ namespace MR
               edge_visibility = EDGE_VIS_NONE;
               break;
             case 2:
+              if (node_visibility == NODE_VIS_DEGREE) {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot have edge visibility based on nodes; node visibility is based on edges!"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                edge_visibility_combobox->setCurrentIndex (1);
+                edge_visibility = EDGE_VIS_NONE;
+              } else {
+                edge_visibility = EDGE_VIS_NODES;
+              }
+              break;
+            case 3:
               try {
                 import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
               } catch (...) { }
               if (edge_values_from_file_visibility.size()) {
                 edge_visibility = EDGE_VIS_FILE;
               } else {
-                edge_visibility_combobox->setCurrentIndex (0);
-                edge_visibility = EDGE_VIS_ALL;
+                edge_visibility_combobox->setCurrentIndex (1);
+                edge_visibility = EDGE_VIS_NONE;
               }
               break;
           }
@@ -1486,6 +1519,11 @@ namespace MR
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (true);
 
+          } else if (node_visibility == NODE_VIS_NONE) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (false);
+
           } else if (node_visibility == NODE_VIS_FILE) {
 
             assert (node_values_from_file_visibility.size());
@@ -1494,8 +1532,6 @@ namespace MR
 
           } else if (node_visibility == NODE_VIS_DEGREE) {
 
-            // TODO Need full connectome matrix, as well as current edge visualisation
-            //   thresholds, in order to calculate this
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (false);
             for (auto i = edges.begin(); i != edges.end(); ++i) {
@@ -1511,6 +1547,8 @@ namespace MR
             //   and set the visibilities accordingly
 
           }
+          if (edge_visibility == EDGE_VIS_NODES)
+            calculate_edge_visibility();
         }
 
 
@@ -1605,6 +1643,11 @@ namespace MR
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_visible (false);
+
+          } else if (edge_visibility == EDGE_VIS_NODES) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_visible (nodes[i->get_node_index(0)].is_visible() && nodes[i->get_node_index(1)].is_visible());
 
           } else if (edge_visibility == EDGE_VIS_FILE) {
 
