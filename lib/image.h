@@ -278,6 +278,8 @@ namespace MR
           return round_func<TypeOUT> (in.real());
         }
 
+
+
       // apply scaling from storage:
       template <typename DiskType>
         inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type 
@@ -291,6 +293,19 @@ namespace MR
           return typename DiskType::value_type (offset) + typename DiskType::value_type (scale) * val;
         }
 
+      // apply scaling to storage:
+      template <typename DiskType>
+        inline typename std::enable_if<std::is_arithmetic<DiskType>::value, default_type>::type 
+        scale_to_storage (DiskType val, default_type offset, default_type scale) {
+          return (val - offset) / scale;
+        }
+
+      template <typename DiskType>
+        inline typename std::enable_if<std::is_same<std::complex<typename DiskType::value_type>, DiskType>::value, DiskType>::type 
+        scale_to_storage (DiskType val, default_type offset, default_type scale) {
+          return (val - typename DiskType::value_type (offset)) / typename DiskType::value_type (scale);
+        }
+
 
 
       // for single-byte types:
@@ -302,7 +317,7 @@ namespace MR
 
       template <typename RAMType, typename DiskType> 
         void __put (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-          return MR::put<DiskType> (round_func<DiskType> ((val - offset) / scale), data, i); 
+          return MR::put<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
         }
 
       // for little-endian multi-byte types:
@@ -314,7 +329,7 @@ namespace MR
 
       template <typename RAMType, typename DiskType> 
         void __putLE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-          return MR::putLE<DiskType> (round_func<DiskType> ((val - offset) / scale), data, i); 
+          return MR::putLE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
         }
 
 
@@ -327,7 +342,7 @@ namespace MR
 
       template <typename RAMType, typename DiskType> 
         void __putBE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-          return MR::putBE<DiskType> (round_func<DiskType> ((val - offset) / scale), data, i); 
+          return MR::putBE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
         }
 
 

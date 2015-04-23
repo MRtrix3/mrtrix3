@@ -170,7 +170,7 @@ namespace MR
             const auto lines = split_lines (it->second);
             for (size_t row = 0; row < lines.size(); ++row) {
               const auto values = parse_floats (lines[row]);
-              if (G.columns() == 0)
+              if (!G.is_set())
                 G.allocate (lines.size(), values.size());
               else if (G.columns() != values.size())
                 throw Exception ("malformed DW scheme in image \"" + name() + "\" - uneven number of entries per row");
