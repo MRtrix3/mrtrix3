@@ -116,12 +116,10 @@ class Median {
         ++count;
       }
     }
-    value_type result () const { 
-      if (!count){
+    value_type result () { 
+      if (!count)
         return NAN;
-      }
-      std::vector<value_type> v(values); // Why do I need this copy?
-      return Math::median(v);
+      return Math::median(values);
     }
     size_t count;
     std::vector<value_type> values; 
