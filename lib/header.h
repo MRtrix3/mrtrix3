@@ -50,6 +50,7 @@ namespace MR
     public:
       class Axis;
 
+      Header () = default; 
       Header (Header&&) = default;
 
       //! copy constructor
@@ -199,7 +200,6 @@ namespace MR
       static const Header open (const std::string& image_name);
       static const Header create (const std::string& image_name, const Header& template_header);
       static const Header allocate (const Header& template_header);
-      static Header empty ();
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -226,8 +226,6 @@ namespace MR
       //! the values by which to scale the intensities
       default_type offset_, scale_;
 
-
-      Header () = default; // static methods should be used to create Header
 
       void acquire_io (const Header& H) { io = std::move (H.io); }
       void merge (const Header& H);
@@ -279,7 +277,12 @@ namespace MR
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
 
 
-
+  inline const Header Header::allocate (const Header& template_header) 
+  {
+    Header H (template_header);
+    H.sanitise();
+    return H;
+  }
 
 
 

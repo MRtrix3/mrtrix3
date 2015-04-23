@@ -236,13 +236,6 @@ namespace MR
 
 
 
-  const Header Header::allocate (const Header& template_header) 
-  {
-    Header H (template_header);
-    H.sanitise();
-    return H;
-  }
-
 
   std::ostream& operator<< (std::ostream& stream, const Header& H) 
   {

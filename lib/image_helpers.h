@@ -69,13 +69,13 @@ namespace MR
       {
         template <class... DestImageType>
           void to (DestImageType&... dest) const {
-            apply (__max_axis<DestImageType...> (to_axis), std::tie (dest...));
-            for (size_t n = from_axis; n < to_axis; ++n)
+            size_t last_axis = to_axis;
+            apply (__max_axis<DestImageType...> (last_axis), std::tie (dest...));
+            for (size_t n = from_axis; n < last_axis; ++n)
               apply (__assign<DestImageType...> (n, ref.index(n)), std::tie (dest...));
           }
         const ImageType& ref;
-        const size_t from_axis;
-        size_t to_axis;
+        const size_t from_axis, to_axis;
       };
 
 
