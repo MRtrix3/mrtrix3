@@ -109,19 +109,14 @@ class Mean {
 
 class Median {
   public:
-    Median () : count (0) { }
+    Median () { }
     void operator() (value_type val) { 
-      if (std::isfinite (val)) {
+      if (std::isfinite (val))
         values.push_back(val);
-        ++count;
-      }
     }
     value_type result () { 
-      if (!count)
-        return NAN;
       return Math::median(values);
     }
-    size_t count;
     std::vector<value_type> values; 
 };
 
