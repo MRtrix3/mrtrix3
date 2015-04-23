@@ -31,8 +31,8 @@
 #include "get_set.h"
 #include "header.h"
 #include "image_helpers.h"
-//#include "copy.h"
-//#include "threaded_copy.h"
+#include "algo/copy.h"
+#include "algo/threaded_copy.h"
 
 namespace MR
 {
@@ -49,7 +49,7 @@ namespace MR
         Image& operator= (const Image&) = default;
 
         //! used internally to instantiate Image objects
-        Image (Buffer*);
+        Image (std::unique_ptr<Buffer>&, const Stride::List& = Stride::List());
 
         const Header& header () const { return *buffer; }
 
@@ -59,7 +59,7 @@ namespace MR
         size_t  ndim () const { return buffer->ndim(); }
         ssize_t size (size_t axis) const { return buffer->size (axis); }
         default_type voxsize (size_t axis) const { return buffer->voxsize (axis); }
-        ssize_t stride (size_t axis) const { return buffer->stride (axis); }
+        ssize_t stride (size_t axis) const { return strides[axis]; }
         DataType datatype () const { return buffer->datatype(); }
 
         //! offset to current voxel from start of data
@@ -68,7 +68,7 @@ namespace MR
         //! get position of current voxel location along \a axis
         ssize_t index (size_t axis) const { return get_voxel_position (axis); }
         //! get/set position of current voxel location along \a axis
-        Helper::VoxelIndex<Image> index (size_t axis) { return Helper::VoxelIndex<Image> (*this, axis); }
+        Helper::VoxelIndex<Image> index (size_t axis) { return { *this, axis }; }
 
         //! get voxel value at current location
         ValueType value () const { return get_voxel_value (); }
@@ -103,6 +103,20 @@ namespace MR
           return std::string();
         }
 
+        //! return a new Image using direct IO
+        /*! this will preload the data into RAM if the datatype on file doesn't
+         * match that on file (or if any scaling is applied to the data). The
+         * optional \a with_strides argument is used to additionally enforce
+         * preloading if the strides aren't compatible with those specified. 
+         *
+         * Example:
+         * \code
+         * auto image = Header::open (argument[0]).get_image().with_direct_io();
+         * \endcode 
+         * \note this invalidate the invoking Image - do not use the original
+         * image in subsequent code.*/
+         const Image with_direct_io (Stride::List with_strides = Stride::List()) const;
+
 
         //! display the contents of the image in MRView
         void display () const {
@@ -125,6 +139,8 @@ namespace MR
         ValueType * const data_pointer;
         //! voxel indices
         std::vector<ssize_t> x;
+        //! voxel indices
+        const Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
 
@@ -150,6 +166,8 @@ namespace MR
           x[axis] += increment;
         }
 
+        const Image with_direct_io (Stride::List with_strides = Stride::List()); // do not use this function with a non-const Image
+
         friend class Helper::VoxelIndex<Image>;
         friend class Helper::VoxelValue<Image>;
     };
@@ -166,10 +184,12 @@ namespace MR
     {
       public:
         //! construct a Buffer object to access the data in the image specified
-        Buffer (const Header& H, bool read_write_if_existing = false, bool preload = false, Stride::List strides = Stride::List());
+        Buffer (const Header& H, bool read_write_if_existing = false, bool direct_io = false, Stride::List strides = Stride::List());
         Buffer (Buffer&&) = default;
-        Buffer (const Buffer&) = delete;
         Buffer& operator= (const Buffer&) = delete;
+        Buffer (const Buffer& b) : 
+          Header (b), get_func (b.get_func), put_func (b.put_func) { }
+
 
         ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
@@ -183,6 +203,8 @@ namespace MR
 
         std::unique_ptr<ValueType[]> data_buffer;
         ValueType* get_data_pointer () const;
+
+        ImageIO::Base* get_io () const { return io.get(); }
 
       protected:
         std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
@@ -201,118 +223,12 @@ namespace MR
 
 
 
+
+
     //! \cond skip
-    namespace {
-
-      template <class... DestImageType>
-        struct __assign {
-          __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
-          const size_t axis;
-          const ssize_t index;
-          template <class ImageType> 
-            void operator() (ImageType& x) { x.index (axis) = index; }
-        };
-
-      template <class... DestImageType>
-        struct __assign<std::tuple<DestImageType...>> {
-          __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
-          const size_t axis;
-          const ssize_t index;
-          template <class ImageType> 
-            void operator() (ImageType& x) { std::get<0>(x).index (axis) = index; }
-        };
-
-      template <class... DestImageType>
-        struct __max_axis {
-          __max_axis (size_t& axis) : axis (axis) { }
-          size_t& axis;
-          template <class ImageType> 
-            void operator() (ImageType& x) { if (axis > x.ndim()) axis = x.ndim(); }
-        };
-
-      template <class... DestImageType>
-        struct __max_axis<std::tuple<DestImageType...>> {
-          __max_axis (size_t& axis) : axis (axis) { }
-          size_t& axis;
-          template <class ImageType> 
-            void operator() (ImageType& x) { if (axis > std::get<0>(x).ndim()) axis = std::get<0>(x).ndim(); }
-        };
-
-      template <class ImageType>
-        struct __assign_pos_axis_range
-        {
-          template <class... DestImageType>
-            void to (DestImageType&... dest) const {
-              apply (__max_axis<DestImageType...> (to_axis), std::tie (dest...));
-              for (size_t n = from_axis; n < to_axis; ++n)
-                apply (__assign<DestImageType...> (n, ref.index(n)), std::tie (dest...));
-            }
-          const ImageType& ref;
-          const size_t from_axis;
-          size_t to_axis;
-        };
 
 
-      template <class ImageType, typename IntType>
-        struct __assign_pos_axes
-        {
-          template <class... DestImageType>
-            void to (DestImageType&... dest) const {
-              for (auto a : axes) 
-                apply (__assign<DestImageType...> (a, ref.index(a)), std::tie (dest...));
-            }
-          const ImageType& ref;
-          const std::vector<IntType> axes;
-        };
-    }
-
-    //! \endcond
-
-
-    //! returns a functor to set the position in ref to other voxels
-    /*! this can be used as follows:
-     * \code
-     * assign_pos_of (src_image, 0, 3).to (dest_image1, dest_image2);
-     * \endcode */
-    template <class ImageType>
-      inline __assign_pos_axis_range<ImageType> 
-      assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
-      {
-        return { reference, from_axis, to_axis };
-      }
-
-    //! returns a functor to set the position in ref to other voxels
-    /*! this can be used as follows:
-     * \code
-     * std::vector<int> axes = { 0, 3, 4 };
-     * assign_pos (src_image, axes) (dest_image1, dest_image2);
-     * \endcode */
-    template <class ImageType, typename IntType>
-      inline __assign_pos_axes<ImageType, IntType> 
-      assign_pos_of (const ImageType& reference, const std::vector<IntType>& axes) 
-      {
-        return { reference, axes };
-      }
-
-    //! \copydoc __assign_pos_axes
-    template <class ImageType, typename IntType>
-      inline __assign_pos_axes<ImageType, IntType> 
-      assign_pos_of (const ImageType& reference, const std::vector<IntType>&& axes) 
-      {
-        return assign_pos_of (reference, axes);
-      }
-
-
-
-
-
-
-
-
-  //! \cond skip
-
-
-  // functions needed for conversion to/from storage:
+    // functions needed for conversion to/from storage:
     namespace
     {
 
@@ -521,8 +437,12 @@ namespace MR
           }
         }
 
+
+
+
+
     template <typename ValueType>
-      Image<ValueType>::Buffer::Buffer (const Header& H, bool read_write_if_existing, bool preload, Stride::List strides) :
+      Image<ValueType>::Buffer::Buffer (const Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
         Header (H) {
           if (H.is_file_backed()) { // file-backed image
             acquire_io (H);
@@ -531,6 +451,10 @@ namespace MR
             set_get_put_functions (datatype());
           }
         }
+
+
+
+
 
 
 
@@ -550,9 +474,10 @@ namespace MR
 
 
     template <typename ValueType>
-      inline Image<ValueType> Header::get_image () const 
+      inline const Image<ValueType> Header::get_image () const 
       {
-        return Image<ValueType> (new typename Image<ValueType>::Buffer (*this)); 
+        std::unique_ptr<typename Image<ValueType>::Buffer> buffer (new typename Image<ValueType>::Buffer (*this));
+        return Image<ValueType> (buffer);
       }
 
 
@@ -561,15 +486,71 @@ namespace MR
 
 
     template <typename ValueType>
-      inline Image<ValueType>::Image (Image<ValueType>::Buffer* buffer_p) :
-        buffer (buffer_p),
+      inline Image<ValueType>::Image (std::unique_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
+        buffer (std::move (buffer_p)),
         data_pointer (buffer->get_data_pointer()),
         x (ndim(), 0),
-        data_offset (Stride::offset (*buffer))
-      {
-
+        strides (strides.size() ? strides : Stride::get (*buffer)),
+        data_offset (Stride::offset (*this))
+      { 
       }
 
+
+
+    template <typename ValueType>
+      const Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides) const
+      {
+        if (!buffer->get_io())
+          throw Exception ("FIXME: don't use 'with_direct_io()' on scratch images!");
+
+        bool preload = ( datatype() != DataType::from<ValueType>() );
+        if (with_strides.size()) {
+          auto new_strides = Stride::get_actual (Stride::get_nearest_match (*this, with_strides), *this);
+          preload |= ( new_strides != Stride::get (*this) );
+          with_strides = new_strides;
+        }
+        else 
+          with_strides = Stride::get (*this); 
+
+        if (!preload) 
+          return std::move (*this);
+
+        // do the preload:
+
+        // lightweight struct to copy data into:
+        struct TmpImage {
+          typedef ValueType value_type;
+
+          const Buffer& b;
+          value_type* const data;
+          std::vector<ssize_t> x;
+          const Stride::List& strides;
+          size_t offset;
+
+          const std::string name () const { return "preloader buffer"; }
+          size_t ndim () const { return b.ndim(); }
+          ssize_t size (size_t axis) const { return b.size(axis); }
+          ssize_t stride (size_t axis) const { return strides[axis]; }
+          ssize_t index (size_t axis) const { return x[axis]; }
+          Helper::VoxelIndex<TmpImage> index (size_t axis) { return { *this, axis }; }
+          Helper::VoxelValue<TmpImage> value () { return { *this }; }
+
+          void set_voxel_value (ValueType val) { data[offset] = val; }
+          ssize_t get_voxel_position (size_t axis) const { return x[axis]; }
+          void set_voxel_position (size_t axis, ssize_t position) { offset += stride (axis) * (position - x[axis]); x[axis] = position; }
+          void move_voxel_position (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+        };
+
+        // the buffer into which to copy the data:
+        auto new_buffer = std::unique_ptr<Buffer> (new Buffer (*buffer));
+        new_buffer->data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
+        TmpImage dest = { *buffer, new_buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+
+        auto src (*this);
+        threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
+
+        return Image (new_buffer, with_strides);
+      }
     
     //! \endcond
 

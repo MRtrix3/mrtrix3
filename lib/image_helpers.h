@@ -25,6 +25,112 @@
 
 namespace MR
 {
+
+
+  //! \cond skip
+  namespace {
+
+    template <class... DestImageType>
+      struct __assign {
+        __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
+        const size_t axis;
+        const ssize_t index;
+        template <class ImageType> 
+          void operator() (ImageType& x) { x.index (axis) = index; }
+      };
+
+    template <class... DestImageType>
+      struct __assign<std::tuple<DestImageType...>> {
+        __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
+        const size_t axis;
+        const ssize_t index;
+        template <class ImageType> 
+          void operator() (ImageType& x) { apply (__assign<DestImageType...> (axis, index), x); }
+      };
+
+    template <class... DestImageType>
+      struct __max_axis {
+        __max_axis (size_t& axis) : axis (axis) { }
+        size_t& axis;
+        template <class ImageType> 
+          void operator() (ImageType& x) { if (axis > x.ndim()) axis = x.ndim(); }
+      };
+
+    template <class... DestImageType>
+      struct __max_axis<std::tuple<DestImageType...>> {
+        __max_axis (size_t& axis) : axis (axis) { }
+        size_t& axis;
+        template <class ImageType> 
+          void operator() (ImageType& x) { apply (__max_axis<DestImageType...> (axis), x); }
+      };
+
+    template <class ImageType>
+      struct __assign_pos_axis_range
+      {
+        template <class... DestImageType>
+          void to (DestImageType&... dest) const {
+            apply (__max_axis<DestImageType...> (to_axis), std::tie (dest...));
+            for (size_t n = from_axis; n < to_axis; ++n)
+              apply (__assign<DestImageType...> (n, ref.index(n)), std::tie (dest...));
+          }
+        const ImageType& ref;
+        const size_t from_axis;
+        size_t to_axis;
+      };
+
+
+    template <class ImageType, typename IntType>
+      struct __assign_pos_axes
+      {
+        template <class... DestImageType>
+          void to (DestImageType&... dest) const {
+            for (auto a : axes) 
+              apply (__assign<DestImageType...> (a, ref.index(a)), std::tie (dest...));
+          }
+        const ImageType& ref;
+        const std::vector<IntType> axes;
+      };
+  }
+
+  //! \endcond
+
+
+
+  //! returns a functor to set the position in ref to other voxels
+  /*! this can be used as follows:
+   * \code
+   * assign_pos_of (src_image, 0, 3).to (dest_image1, dest_image2);
+   * \endcode */
+  template <class ImageType>
+    inline __assign_pos_axis_range<ImageType> 
+    assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
+    {
+      return { reference, from_axis, to_axis };
+    }
+
+  //! returns a functor to set the position in ref to other voxels
+  /*! this can be used as follows:
+   * \code
+   * std::vector<int> axes = { 0, 3, 4 };
+   * assign_pos (src_image, axes) (dest_image1, dest_image2);
+   * \endcode */
+  template <class ImageType, typename IntType>
+    inline __assign_pos_axes<ImageType, IntType> 
+    assign_pos_of (const ImageType& reference, const std::vector<IntType>& axes) 
+    {
+      return { reference, axes };
+    }
+
+  //! \copydoc __assign_pos_axes
+  template <class ImageType, typename IntType>
+    inline __assign_pos_axes<ImageType, IntType> 
+    assign_pos_of (const ImageType& reference, const std::vector<IntType>&& axes) 
+    {
+      return assign_pos_of (reference, axes);
+    }
+
+
+
   namespace Helper
   {
 
@@ -84,12 +190,13 @@ namespace MR
      *     ssize_t N[3], X[3], S[3], offset;
      * };
      * \endcode
-     * The Helper::VoxelIndex class provides a solution to this problem. To use
+     */
+    /* The Helper::VoxelIndex class provides a solution to this problem. To use
      * it, the ImageType class must implement the get_voxel_position(),
-     * set_voxel_position(), and
-     * move_voxel_position() methods. While these can be declared public, it is probably
-     * cleaner to make them private or protected, and to declare the
-     * Helper::VoxelIndex class as a friend.
+     * set_voxel_position(), and move_voxel_position() methods. While these can
+     * be declared public, it is probably cleaner to make them private or
+     * protected, and to declare the Helper::VoxelIndex class as a friend.
+     * 
      * \code
      * class MyImage
      * {
@@ -143,11 +250,12 @@ namespace MR
      *
      *     friend class Helper::VoxelIndex<MyImage>;
      * };
-     * \endcode
-     * In the example above, a Helper::VoxelIndex instance is returned by the
+     * \endcode */
+    /* In the example above, a Helper::VoxelIndex instance is returned by the
      * index() function, and can be manipulated using standard operators. For
      * instance, the following code fragment is allowed, and will update the
      * offset each time as expected:
+     *
      * \code
      * // create an instance of MyImage:
      * MyImage data (100, 100, 100);
@@ -287,7 +395,8 @@ namespace MR
      *     ssize_t  X[3];
      * };
      * \endcode
-     * While it is possible in the above example to modify the voxel values,
+     */
+    /* While it is possible in the above example to modify the voxel values,
      * since they are returned by reference, it is also impossible to implement
      * clamping of the voxel values as they are modified. The Helper::VoxelValue
      * class provides a solution to this problem.
@@ -336,7 +445,8 @@ namespace MR
      *     friend class Helper::VoxelValue<MyImage>;
      * };
      * \endcode
-     * In the example above, a Helper::VoxelValue instance is returned by the
+     */
+    /* In the example above, a Helper::VoxelValue instance is returned by the
      * value() function, and can be manipulated using standard operators. For
      * instance, the following code fragment is allowed, and will function as
      * expected with clamping of the voxel values when any voxel value is

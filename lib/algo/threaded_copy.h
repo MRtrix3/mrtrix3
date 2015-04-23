@@ -34,7 +34,7 @@ namespace MR
     struct __copy_func {
       template <class InputVoxelType, class OutputVoxelType>
         inline void operator() (InputVoxelType& in, OutputVoxelType& out) const {
-          auto tmp = in.value();
+          const typename InputVoxelType::value_type tmp = in.value();
           out.value() = tmp;
         }
     };

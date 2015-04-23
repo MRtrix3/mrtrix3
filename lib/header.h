@@ -154,7 +154,7 @@ namespace MR
        * compile-time error - this it to ensure that the Header has not been
        * modified since being created. */
       template <typename ValueType>
-        Image<ValueType> get_image () const;
+        const Image<ValueType> get_image () const;
 
       //! get generic key/value text attributes
       const std::map<std::string, std::string>& keyval () const { return keyval_; }
@@ -243,7 +243,7 @@ namespace MR
       }
 
       template <typename ValueType>
-        Image<ValueType> get_image (); // do not use this function with a non-const Header
+        const Image<ValueType> get_image (); // do not use this function with a non-const Header
   };
 
 
