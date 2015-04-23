@@ -344,12 +344,16 @@ namespace MR
           node_colour_combobox->addItem ("From vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
           gridlayout->addWidget (node_colour_combobox, 1, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           node_colour_fixedcolour_button = new QColorButton;
           connect (node_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
-          gridlayout->addWidget (node_colour_fixedcolour_button, 1, 2);
+          hlayout->addWidget (node_colour_fixedcolour_button, 1);
           node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           node_colour_colourmap_button->setVisible (false);
-          gridlayout->addWidget (node_colour_colourmap_button, 1, 3, 1, 1);
+          hlayout->addWidget (node_colour_colourmap_button, 1);
+          gridlayout->addLayout (hlayout, 1, 2, 1, 2);
 
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 2, 0);
@@ -360,11 +364,15 @@ namespace MR
           node_size_combobox->addItem ("From vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
           gridlayout->addWidget (node_size_combobox, 2, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           node_size_button = new AdjustButton (this, 0.01);
           node_size_button->setValue (node_size_scale_factor);
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
-          gridlayout->addWidget (node_size_button, 2, 2, 1, 1);
+          hlayout->addWidget (node_size_button, 1);
+          gridlayout->addLayout (hlayout, 2, 2, 1, 2);
 
           label = new QLabel ("Visibility: ");
           gridlayout->addWidget (label, 3, 0);
@@ -387,11 +395,15 @@ namespace MR
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
           gridlayout->addWidget (node_alpha_combobox, 4, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           node_alpha_slider = new QSlider (Qt::Horizontal);
           node_alpha_slider->setRange (0,1000);
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
-          gridlayout->addWidget (node_alpha_slider, 4, 2, 1, 2);
+          hlayout->addWidget (node_alpha_slider, 1);
+          gridlayout->addLayout (hlayout, 4, 2, 1, 2);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -431,12 +443,16 @@ namespace MR
           edge_colour_combobox->addItem ("From matrix file");
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
           gridlayout->addWidget (edge_colour_combobox, 1, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           edge_colour_fixedcolour_button = new QColorButton;
           connect (edge_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (edge_colour_change_slot()));
-          gridlayout->addWidget (edge_colour_fixedcolour_button, 1, 2);
+          hlayout->addWidget (edge_colour_fixedcolour_button, 1);
           edge_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           edge_colour_colourmap_button->setVisible (false);
-          gridlayout->addWidget (edge_colour_colourmap_button, 1, 3, 1, 1);
+          hlayout->addWidget (edge_colour_colourmap_button, 1);
+          gridlayout->addLayout (hlayout, 1, 2, 1, 2);
 
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 2, 0);
@@ -446,11 +462,15 @@ namespace MR
           edge_size_combobox->addItem ("From matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
           gridlayout->addWidget (edge_size_combobox, 2, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           edge_size_button = new AdjustButton (this, 0.01);
           edge_size_button->setValue (edge_size_scale_factor);
           edge_size_button->setMin (0.0f);
           connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
-          gridlayout->addWidget (edge_size_button, 2, 2, 1, 1);
+          hlayout->addWidget (edge_size_button, 1);
+          gridlayout->addLayout (hlayout, 2, 2, 1, 2);
 
           label = new QLabel ("Visibility: ");
           gridlayout->addWidget (label, 3, 0);
@@ -472,11 +492,15 @@ namespace MR
           edge_alpha_combobox->addItem ("From matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
           gridlayout->addWidget (edge_alpha_combobox, 4, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
           edge_alpha_slider = new QSlider (Qt::Horizontal);
           edge_alpha_slider->setRange (0,1000);
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
-          gridlayout->addWidget (edge_alpha_slider, 4, 2, 1, 2);
+          hlayout->addWidget (edge_alpha_slider, 1);
+          gridlayout->addLayout (hlayout, 4, 2, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -802,29 +826,30 @@ namespace MR
               node_colour = NODE_COLOUR_FIXED;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
+              node_colour_combobox->removeItem (4);
               break;
             case 1:
               //if (node_colour == NODE_COLOUR_RANDOM) return; // Keep this; regenerate random colours on repeat selection
               node_colour = NODE_COLOUR_RANDOM;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
+              node_colour_combobox->removeItem (4);
               break;
             case 2:
               if (node_colour == NODE_COLOUR_LUT) return;
               // TODO Pointless selection if no LUT is loaded... need to detect; or better, disable
               if (lut.size()) {
                 node_colour = NODE_COLOUR_LUT;
-                node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (false);
               } else {
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
-                node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
               }
+              node_colour_colourmap_button->setVisible (false);
+              node_colour_combobox->removeItem (4);
               break;
             case 3:
-              //if (node_colour == NODE_COLOUR_FILE) return; // Keep this; may want to select a new file
               try {
                 import_file_for_node_property (node_values_from_file_colour, "colours");
               } catch (...) { }
@@ -833,13 +858,21 @@ namespace MR
                 // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
                 node_colour_colourmap_button->setVisible (true);
                 node_colour_fixedcolour_button->setVisible (false);
+                if (node_colour_combobox->count() == 4)
+                  node_colour_combobox->addItem (node_values_from_file_colour.get_name());
+                else
+                  node_colour_combobox->setItemText (4, node_values_from_file_colour.get_name());
+                node_colour_combobox->setCurrentIndex (4);
               } else {
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
+                node_colour_combobox->removeItem (4);
               }
               break;
+            case 4:
+              return;
           }
           calculate_node_colours();
           window.updateGL();
@@ -851,21 +884,32 @@ namespace MR
           switch (index) {
             case 0:
               node_size = NODE_SIZE_FIXED;
+              node_size_combobox->removeItem (3);
               break;
             case 1:
               node_size = NODE_SIZE_VOLUME;
+              node_size_combobox->removeItem (3);
               break;
             case 2:
+
               try {
                 import_file_for_node_property (node_values_from_file_size, "size");
               } catch (...) { }
               if (node_values_from_file_size.size()) {
                 node_size = NODE_SIZE_FILE;
+                if (node_size_combobox->count() == 3)
+                  node_size_combobox->addItem (node_values_from_file_size.get_name());
+                else
+                  node_size_combobox->setItemText (3, node_values_from_file_size.get_name());
+                node_size_combobox->setCurrentIndex (3);
               } else {
                 node_size_combobox->setCurrentIndex (0);
                 node_size = NODE_SIZE_FIXED;
+                node_size_combobox->removeItem (3);
               }
               break;
+            case 3:
+              return;
           }
           calculate_node_sizes();
           window.updateGL();
@@ -876,9 +920,11 @@ namespace MR
           switch (index) {
             case 0:
               node_visibility = NODE_VIS_ALL;
+              node_visibility_combobox->removeItem (5);
               break;
             case 1:
               node_visibility = NODE_VIS_NONE;
+              node_visibility_combobox->removeItem (5);
               break;
             case 2:
               try {
@@ -886,9 +932,15 @@ namespace MR
               } catch (...) { }
               if (node_values_from_file_visibility.size()) {
                 node_visibility = NODE_VIS_FILE;
+                if (node_visibility_combobox->count() == 5)
+                  node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
+                else
+                  node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
+                node_visibility_combobox->setCurrentIndex (5);
               } else {
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = NODE_VIS_ALL;
+                node_visibility_combobox->removeItem (5);
               }
               break;
             case 3:
@@ -903,12 +955,16 @@ namespace MR
               } else {
                 node_visibility = NODE_VIS_DEGREE;
               }
+              node_visibility_combobox->removeItem (5);
               break;
             case 4:
               node_visibility = NODE_VIS_MANUAL;
+              node_visibility_combobox->removeItem (5);
               // TODO Here is where the corresponding list view should be made visible
               // Ideally the current node colours would also be presented within this list...
               break;
+            case 5:
+              return;
           }
           calculate_node_visibility();
           window.updateGL();
@@ -920,10 +976,12 @@ namespace MR
             case 0:
               node_alpha = NODE_ALPHA_FIXED;
               node_alpha_slider->setVisible (true);
+              node_alpha_combobox->removeItem (3);
               break;
             case 1:
               node_alpha = NODE_ALPHA_LUT;
               node_alpha_slider->setVisible (false);
+              node_alpha_combobox->removeItem (3);
               break;
             case 2:
               try {
@@ -932,12 +990,20 @@ namespace MR
               if (node_values_from_file_alpha.size()) {
                 node_alpha = NODE_ALPHA_FILE;
                 node_alpha_slider->setVisible (false);
+                if (node_alpha_combobox->count() == 3)
+                  node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
+                else
+                  node_alpha_combobox->setItemText (3, node_values_from_file_alpha.get_name());
+                node_alpha_combobox->setCurrentIndex (3);
               } else {
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = NODE_ALPHA_FIXED;
                 node_alpha_slider->setVisible (true);
+                node_alpha_combobox->removeItem (3);
               }
               break;
+            case 3:
+              return;
           }
           calculate_node_alphas();
           window.updateGL();
@@ -1007,12 +1073,14 @@ namespace MR
               edge_colour = EDGE_COLOUR_FIXED;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (true);
+              edge_colour_combobox->removeItem (3);
               break;
             case 1:
               if (edge_colour == EDGE_COLOUR_DIR) return;
               edge_colour = EDGE_COLOUR_DIR;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (false);
+              edge_colour_combobox->removeItem (3);
               break;
             case 2:
               try {
@@ -1023,13 +1091,21 @@ namespace MR
                 // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
                 edge_colour_colourmap_button->setVisible (true);
                 edge_colour_fixedcolour_button->setVisible (false);
+                if (edge_colour_combobox->count() == 3)
+                  edge_colour_combobox->addItem (edge_values_from_file_colour.get_name());
+                else
+                  edge_colour_combobox->setItemText (3, edge_values_from_file_colour.get_name());
+                edge_colour_combobox->setCurrentIndex (3);
               } else {
                 edge_colour_combobox->setCurrentIndex (0);
                 edge_colour = EDGE_COLOUR_FIXED;
                 edge_colour_colourmap_button->setVisible (false);
                 edge_colour_fixedcolour_button->setVisible (true);
+                edge_colour_combobox->removeItem (3);
               }
               break;
+            case 3:
+              return;
           }
           calculate_edge_colours();
           window.updateGL();
@@ -1040,6 +1116,7 @@ namespace MR
           switch (index) {
             case 0:
               edge_size = EDGE_SIZE_FIXED;
+              edge_size_combobox->removeItem (2);
               break;
             case 1:
               try {
@@ -1047,11 +1124,19 @@ namespace MR
               } catch (...) { }
               if (edge_values_from_file_size.size()) {
                 edge_size = EDGE_SIZE_FILE;
+                if (edge_size_combobox->count() == 2)
+                  edge_size_combobox->addItem (edge_values_from_file_size.get_name());
+                else
+                  edge_size_combobox->setItemText (2, edge_values_from_file_size.get_name());
+                edge_size_combobox->setCurrentIndex (2);
               } else {
                 edge_size_combobox->setCurrentIndex (0);
                 edge_size = EDGE_SIZE_FIXED;
+                edge_size_combobox->removeItem (2);
               }
               break;
+            case 2:
+              return;
           }
           calculate_edge_sizes();
           window.updateGL();
@@ -1062,9 +1147,11 @@ namespace MR
           switch (index) {
             case 0:
               edge_visibility = EDGE_VIS_ALL;
+              edge_visibility_combobox->removeItem (4);
               break;
             case 1:
               edge_visibility = EDGE_VIS_NONE;
+              edge_visibility_combobox->removeItem (4);
               break;
             case 2:
               if (node_visibility == NODE_VIS_DEGREE) {
@@ -1078,6 +1165,7 @@ namespace MR
               } else {
                 edge_visibility = EDGE_VIS_NODES;
               }
+              edge_visibility_combobox->removeItem (4);
               break;
             case 3:
               try {
@@ -1085,11 +1173,19 @@ namespace MR
               } catch (...) { }
               if (edge_values_from_file_visibility.size()) {
                 edge_visibility = EDGE_VIS_FILE;
+                if (edge_visibility_combobox->count() == 4)
+                  edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
+                else
+                  edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
+                edge_visibility_combobox->setCurrentIndex (4);
               } else {
                 edge_visibility_combobox->setCurrentIndex (1);
                 edge_visibility = EDGE_VIS_NONE;
+                edge_visibility_combobox->removeItem (4);
               }
               break;
+            case 4:
+              return;
           }
           calculate_edge_visibility();
           window.updateGL();
@@ -1101,6 +1197,7 @@ namespace MR
             case 0:
               edge_alpha = EDGE_ALPHA_FIXED;
               edge_alpha_slider->setVisible (true);
+              edge_alpha_combobox->removeItem (2);
               break;
             case 1:
               try {
@@ -1109,12 +1206,20 @@ namespace MR
               if (edge_values_from_file_alpha.size()) {
                 edge_alpha = EDGE_ALPHA_FILE;
                 edge_alpha_slider->setVisible (false);
+                if (edge_alpha_combobox->count() == 2)
+                  edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
+                else
+                  edge_alpha_combobox->setItemText (2, edge_values_from_file_alpha.get_name());
+                edge_alpha_combobox->setCurrentIndex (2);
               } else {
                 edge_alpha_combobox->setCurrentIndex (0);
                 edge_alpha = EDGE_ALPHA_FIXED;
                 edge_alpha_slider->setVisible (true);
+                edge_alpha_combobox->removeItem (2);
               }
               break;
+            case 2:
+              return;
           }
           calculate_edge_alphas();
           window.updateGL();
@@ -1366,7 +1471,7 @@ namespace MR
 
 
 
-        void Connectome::import_file_for_node_property (Math::Vector<float>& data, const std::string& attribute)
+        void Connectome::import_file_for_node_property (FileDataVector& data, const std::string& attribute)
         {
           data.clear();
           const std::string path = Dialog::File::get_file (this, "Select vector file to determine node " + attribute);
@@ -1378,10 +1483,11 @@ namespace MR
             data.clear();
             throw Exception ("File " + Path::basename (path) + " contains " + str (numel) + " elements, but connectome has " + str(num_nodes()) + " nodes");
           }
+          data.set_name (Path::basename (path));
         }
 
 
-        void Connectome::import_file_for_edge_property (Math::Vector<float>& data, const std::string& attribute)
+        void Connectome::import_file_for_edge_property (FileDataVector& data, const std::string& attribute)
         {
           data.clear();
           const std::string path = Dialog::File::get_file (this, "Select matrix file to determine edge " + attribute);
@@ -1390,6 +1496,7 @@ namespace MR
           Math::Matrix<float> temp (path);
           MR::Connectome::verify_matrix (temp, num_nodes());
           mat2vec (temp, data);
+          data.set_name (Path::basename (path));
         }
 
 

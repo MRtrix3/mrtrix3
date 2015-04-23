@@ -52,23 +52,20 @@
 // TODO Elements that still need to be added to the Connectome tool:
 //
 // * Drawing edges
-//   - This will make a lot more sense with a geometry shader:
-//     set up the relevant parameters, then emit two vertices at two locations
-//     (whether plotting as lines or cylinders)
 //   - Display options:
-//     * Geometry: Line, cylinder, ...
-//     * Colour by: file w. colour map, fixed colour, direction, ...
-//       - Colours of corresponding nodes? Would require some plotting cleverness
-//     * Size by: fixed, file
-//     * Visibility: all, none, file
-//     * Transparency: fixed, file
+//     * Geometry: Cylinder
+//     * Colour by: Corresponding nodes? Would require some plotting cleverness
 //
 // * Drawing nodes
 //   - Implement for GL what's missing currently from the plotting capabilities,
-//     e.g. node colouring / transparency / visibility
+//     e.g. mesh lighting, overlay
 //   - When in 2D mode, mesh mode should detect triangles intersecting with the
 //     focus plane, and draw the projections on that plane as lines
 //     (preferably with adjustable thickness)
+//     This may be best handled within a geometry shader: Detect that polygon
+//     intersects viewing plane, emit two vertices, draw with GL_LINES
+//     (shader will need access to the following two vertices, and run on only
+//     every third vertex)
 //   - For drawing as overlay, think it will be best to maintain a single RGB volume
 //     with the appropriate node colours / visibilities / transparencies;
 //     any changes made to these settings need to be propagated to this master image
@@ -369,6 +366,31 @@ namespace MR
 
             };
 
+            // Vector that stores the name of the file imported, so it can be displayed in the GUI
+            class FileDataVector : public Math::Vector<float>
+            {
+              public:
+                FileDataVector () : Math::Vector<float>() { }
+                FileDataVector (const FileDataVector& V) : Math::Vector<float> (V) { name = V.name; }
+                FileDataVector (size_t nelements) : Math::Vector<float> (nelements) { }
+                FileDataVector (const std::string& file) : Math::Vector<float> (file), name (Path::basename (file).c_str()) { }
+
+                FileDataVector& load (const std::string& filename) {
+                  Math::Vector<float>::load (filename);
+                  name = Path::basename (filename).c_str();
+                  return *this;
+                }
+
+                FileDataVector& clear () { Math::Vector<float>::clear(); name.clear(); return *this; }
+
+                const QString& get_name() const { return name; }
+                void set_name (const std::string& s) { name = s.c_str(); }
+
+              private:
+                QString name;
+
+            };
+
 
 
 
@@ -421,10 +443,10 @@ namespace MR
             float node_fixed_alpha;
             float node_size_scale_factor;
             float voxel_volume;
-            Math::Vector<float> node_values_from_file_colour;
-            Math::Vector<float> node_values_from_file_size;
-            Math::Vector<float> node_values_from_file_visibility;
-            Math::Vector<float> node_values_from_file_alpha;
+            FileDataVector node_values_from_file_colour;
+            FileDataVector node_values_from_file_size;
+            FileDataVector node_values_from_file_visibility;
+            FileDataVector node_values_from_file_alpha;
 
 
             // Current edge visualisation settings
@@ -438,18 +460,18 @@ namespace MR
             Point<float> edge_fixed_colour;
             float edge_fixed_alpha;
             float edge_size_scale_factor;
-            Math::Vector<float> edge_values_from_file_colour;
-            Math::Vector<float> edge_values_from_file_size;
-            Math::Vector<float> edge_values_from_file_visibility;
-            Math::Vector<float> edge_values_from_file_alpha;
+            FileDataVector edge_values_from_file_colour;
+            FileDataVector edge_values_from_file_size;
+            FileDataVector edge_values_from_file_visibility;
+            FileDataVector edge_values_from_file_alpha;
 
 
             // Helper functions
             void clear_all();
             void initialise (const std::string&);
 
-            void import_file_for_node_property (Math::Vector<float>&, const std::string&);
-            void import_file_for_edge_property (Math::Vector<float>&, const std::string&);
+            void import_file_for_node_property (FileDataVector&, const std::string&);
+            void import_file_for_edge_property (FileDataVector&, const std::string&);
 
             void load_properties();
 
