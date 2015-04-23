@@ -60,8 +60,8 @@
 //     * Colour by: file w. colour map, fixed colour, direction, ...
 //       - Colours of corresponding nodes? Would require some plotting cleverness
 //     * Size by: fixed, file
-//     * Visibility: all, file
-//     * Transparency: fixed, weights, file
+//     * Visibility: all, none, file
+//     * Transparency: fixed, file
 //
 // * Drawing nodes
 //   - Implement for GL what's missing currently from the plotting capabilities,
@@ -85,7 +85,6 @@
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
 //       plane and draw as lines
 //   - Draw as points
-//   - Once matrix is imported, implement option to hide all nodes with no supra-threshold edges
 //   - Meshes
 //     * Get right hand rule working, use face culling
 //     * Look into an alternative mesh conversion that isn't axis-constrained, i.e.

@@ -72,10 +72,14 @@ namespace MR
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "uniform mat4 MVP;\n";
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || (parent.node_geometry == NODE_GEOM_MESH && parent.node_size_scale_factor != 1.0f)) {
             vertex_shader_source +=
               "uniform vec3 node_centre;\n"
-              "uniform float node_size;\n"
+              "uniform float node_size;\n";
+          }
+
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            vertex_shader_source +=
               "uniform int reverse;\n";
           }
 
@@ -101,8 +105,14 @@ namespace MR
             case NODE_GEOM_OVERLAY:
               break;
             case NODE_GEOM_MESH:
-              vertex_shader_source +=
-              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+              if (parent.node_size_scale_factor != 1.0f) {
+                vertex_shader_source +=
+                    "  gl_Position = MVP * vec4 (node_centre + (node_size * (vertexPosition_modelspace - node_centre)), 1);\n";
+              } else {
+                vertex_shader_source +=
+                    "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+              }
+
               break;
           }
 
@@ -513,13 +523,20 @@ namespace MR
             node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
           GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
+          if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
+            node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+            node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
+          }
+
           if (node_geometry == NODE_GEOM_SPHERE) {
             sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
             sphere_VAO.bind();
             sphere.index_buffer.bind();
-            node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
-            node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
             reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+          }
+
+          if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
+            gl::Uniform1f  (node_size_ID, node_size_scale_factor);
           }
 
           if (node_geometry != NODE_GEOM_OVERLAY) {
@@ -540,9 +557,10 @@ namespace MR
               gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
               if (node_alpha != NODE_ALPHA_FIXED)
                 gl::Uniform1f (node_alpha_ID, node.get_alpha());
+              if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
+                gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
               switch (node_geometry) {
                 case NODE_GEOM_SPHERE:
-                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
                   gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   gl::Uniform1i (reverse_ID, 0);
                   gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
@@ -737,6 +755,7 @@ namespace MR
               node_geometry = NODE_GEOM_SPHERE;
               node_size_combobox->setEnabled (true);
               node_size_button->setVisible (true);
+              node_size_button->setMax (std::numeric_limits<float>::max());
               node_geometry_sphere_lod_label->setVisible (true);
               node_geometry_sphere_lod_spinbox->setVisible (true);
               break;
@@ -754,7 +773,13 @@ namespace MR
               node_geometry = NODE_GEOM_MESH;
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
-              node_size_button->setVisible (false);
+              //node_size_button->setVisible (false);
+              node_size_button->setVisible (true);
+              if (node_size_scale_factor > 1.0f) {
+                node_size_scale_factor = 1.0f;
+                node_size_button->setValue (node_size_scale_factor);
+              }
+              node_size_button->setMax (1.0f);
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               break;
