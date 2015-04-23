@@ -842,6 +842,13 @@ namespace MR
                 node_colour = NODE_COLOUR_LUT;
                 node_colour_fixedcolour_button->setVisible (false);
               } else {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot colour nodes based on a lookup table; \n"
+                                          "none has been provided (use the 'LUT' combo box at the "
+                                          "top of the toolbar)"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
                 node_colour_fixedcolour_button->setVisible (true);
@@ -1378,6 +1385,38 @@ namespace MR
           glVertex3f (node_centres[0][0], node_centres[0][1], node_centres[0][2]);
           glVertex3f (node_centres[1][0], node_centres[1][1], node_centres[1][2]);
           glEnd();
+        }
+
+
+
+
+
+
+
+
+        Connectome::FileDataVector& Connectome::FileDataVector::load (const std::string& filename) {
+          Math::Vector<float>::load (filename);
+          name = Path::basename (filename).c_str();
+          calc_minmax();
+          return *this;
+        }
+
+        Connectome::FileDataVector& Connectome::FileDataVector::clear ()
+        {
+          Math::Vector<float>::clear();
+          name.clear();
+          min = max = NAN;
+          return *this;
+        }
+
+        void Connectome::FileDataVector::calc_minmax()
+        {
+          min = std::numeric_limits<float>::max();
+          max = -std::numeric_limits<float>::max();
+          for (size_t i = 0; i != size(); ++i) {
+            min = std::min (min, operator[] (i));
+            max = std::max (max, operator[] (i));
+          }
         }
 
 

@@ -326,6 +326,10 @@ namespace MR
                 //   volume needs to be updated
                 // Also: Once the raw data has been loaded, this should have a reduced FOV to only
                 //   encompass the node and no more
+                // This will enable:
+                //   * Faster update of primary node overlay image (smaller loop)
+                //   * In 2D mode, detect whether or not this bounding box crosses the focus
+                //     plane; if not, no need to send any data to the shader
 
             };
 
@@ -370,24 +374,22 @@ namespace MR
             class FileDataVector : public Math::Vector<float>
             {
               public:
-                FileDataVector () : Math::Vector<float>() { }
-                FileDataVector (const FileDataVector& V) : Math::Vector<float> (V) { name = V.name; }
-                FileDataVector (size_t nelements) : Math::Vector<float> (nelements) { }
-                FileDataVector (const std::string& file) : Math::Vector<float> (file), name (Path::basename (file).c_str()) { }
+                FileDataVector () : Math::Vector<float>(), min (NAN), max (NAN) { }
+                FileDataVector (const FileDataVector& V) : Math::Vector<float> (V), name (V.name), min (V.min), max (V.max) { }
+                FileDataVector (size_t nelements) : Math::Vector<float> (nelements), min (NAN), max (NAN) { }
+                FileDataVector (const std::string& file) : Math::Vector<float> (file), name (Path::basename (file).c_str()), min (NAN), max (NAN) { calc_minmax(); }
 
-                FileDataVector& load (const std::string& filename) {
-                  Math::Vector<float>::load (filename);
-                  name = Path::basename (filename).c_str();
-                  return *this;
-                }
-
-                FileDataVector& clear () { Math::Vector<float>::clear(); name.clear(); return *this; }
+                FileDataVector& load (const std::string&);
+                FileDataVector& clear();
 
                 const QString& get_name() const { return name; }
                 void set_name (const std::string& s) { name = s.c_str(); }
 
               private:
                 QString name;
+                float min, max;
+
+                void calc_minmax();
 
             };
 
