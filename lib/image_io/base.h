@@ -66,6 +66,9 @@ namespace MR
         void open ();
         void close ();
 
+        bool is_image_new () const { return is_new; }
+        bool is_image_readwrite () const { return writable; }
+
         void set_readwrite (bool readwrite) {
           writable = readwrite;
         }

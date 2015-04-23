@@ -36,8 +36,8 @@ void run ()
 
   auto in = Header::open (argument[0]).get_image<value_type>().with_direct_io ();
   auto header = in.header();
-  header.datatype() = DataType::Float32;
-  auto out = Header::create (argument[1], header).get_image<value_type>(); 
+  header.datatype() = DataType::UInt16;
+  auto out = Header::create (argument[1], header).get_image<value_type>().with_direct_io(); 
 
   Timer timer;
 

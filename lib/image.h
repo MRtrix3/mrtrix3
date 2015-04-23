@@ -47,9 +47,10 @@ namespace MR
         Image (const Image&) = default;
         Image (Image&&) = default;
         Image& operator= (const Image&) = default;
+        ~Image();
 
         //! used internally to instantiate Image objects
-        Image (std::unique_ptr<Buffer>&, const Stride::List& = Stride::List());
+        Image (const std::shared_ptr<const Buffer>&, const Stride::List& = Stride::List());
 
         const Header& header () const { return *buffer; }
 
@@ -201,10 +202,11 @@ namespace MR
           put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
-        std::unique_ptr<ValueType[]> data_buffer;
+        mutable std::unique_ptr<ValueType[]> data_buffer;
         ValueType* get_data_pointer () const;
 
         ImageIO::Base* get_io () const { return io.get(); }
+        void grab_io (const Buffer& b) const { io = std::move (b.io); }
 
       protected:
         std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
@@ -329,6 +331,36 @@ namespace MR
         }
 
 
+
+
+
+      // lightweight struct to copy data into:
+      template <typename ValueType>
+      struct TmpImage {
+        typedef ValueType value_type;
+
+        const typename Image<ValueType>::Buffer& b;
+        value_type* const data;
+        std::vector<ssize_t> x;
+        const Stride::List& strides;
+        size_t offset;
+
+        const std::string name () const { return "direct IO buffer"; }
+        size_t ndim () const { return b.ndim(); }
+        ssize_t size (size_t axis) const { return b.size(axis); }
+        ssize_t stride (size_t axis) const { return strides[axis]; }
+        ssize_t index (size_t axis) const { return x[axis]; }
+        Helper::VoxelIndex<TmpImage> index (size_t axis) { return { *this, axis }; }
+        value_type value () const { return data[offset]; }
+        Helper::VoxelValue<TmpImage> value () { return { *this }; }
+
+        void set_voxel_value (ValueType val) { data[offset] = val; }
+        value_type get_voxel_value () const { return data[offset]; }
+        ssize_t get_voxel_position (size_t axis) const { return x[axis]; }
+        void set_voxel_position (size_t axis, ssize_t position) { offset += stride (axis) * (position - x[axis]); x[axis] = position; }
+        void move_voxel_position (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+      };
+
     }
 
 
@@ -337,105 +369,105 @@ namespace MR
 
 
     template <typename ValueType> 
-     void Image<ValueType>::Buffer::set_get_put_functions (DataType datatype) {
+      void Image<ValueType>::Buffer::set_get_put_functions (DataType datatype) {
 
-          switch (datatype()) {
-            case DataType::Bit:
-              get_func = __get<ValueType,bool>;
-              put_func = __put<ValueType,bool>;
-              return;
-            case DataType::Int8:
-              get_func = __get<ValueType,int8_t>;
-              put_func = __put<ValueType,int8_t>;
-              return;
-            case DataType::UInt8:
-              get_func = __get<ValueType,uint8_t>;
-              put_func = __put<ValueType,uint8_t>;
-              return;
-            case DataType::Int16LE:
-              get_func = __getLE<ValueType,int16_t>;
-              put_func = __putLE<ValueType,int16_t>;
-              return;
-            case DataType::UInt16LE:
-              get_func = __getLE<ValueType,uint16_t>;
-              put_func = __putLE<ValueType,uint16_t>;
-              return;
-            case DataType::Int16BE:
-              get_func = __getBE<ValueType,int16_t>;
-              put_func = __putBE<ValueType,int16_t>;
-              return;
-            case DataType::UInt16BE:
-              get_func = __getBE<ValueType,uint16_t>;
-              put_func = __putBE<ValueType,uint16_t>;
-              return;
-            case DataType::Int32LE:
-              get_func = __getLE<ValueType,int32_t>;
-              put_func = __putLE<ValueType,int32_t>;
-              return;
-            case DataType::UInt32LE:
-              get_func = __getLE<ValueType,uint32_t>;
-              put_func = __putLE<ValueType,uint32_t>;
-              return;
-            case DataType::Int32BE:
-              get_func = __getBE<ValueType,int32_t>;
-              put_func = __putBE<ValueType,int32_t>;
-              return;
-            case DataType::UInt32BE:
-              get_func = __getBE<ValueType,uint32_t>;
-              put_func = __putBE<ValueType,uint32_t>;
-              return;
-            case DataType::Int64LE:
-              get_func = __getLE<ValueType,int64_t>;
-              put_func = __putLE<ValueType,int64_t>;
-              return;
-            case DataType::UInt64LE:
-              get_func = __getLE<ValueType,uint64_t>;
-              put_func = __putLE<ValueType,uint64_t>;
-              return;
-            case DataType::Int64BE:
-              get_func = __getBE<ValueType,int64_t>;
-              put_func = __putBE<ValueType,int64_t>;
-              return;
-            case DataType::UInt64BE:
-              get_func = __getBE<ValueType,uint64_t>;
-              put_func = __putBE<ValueType,uint64_t>;
-              return;
-            case DataType::Float32LE:
-              get_func = __getLE<ValueType,float>;
-              put_func = __putLE<ValueType,float>;
-              return;
-            case DataType::Float32BE:
-              get_func = __getBE<ValueType,float>;
-              put_func = __putBE<ValueType,float>;
-              return;
-            case DataType::Float64LE:
-              get_func = __getLE<ValueType,double>;
-              put_func = __putLE<ValueType,double>;
-              return;
-            case DataType::Float64BE:
-              get_func = __getBE<ValueType,double>;
-              put_func = __putBE<ValueType,double>;
-              return;
-            case DataType::CFloat32LE:
-              get_func = __getLE<ValueType,cfloat>;
-              put_func = __putLE<ValueType,cfloat>;
-              return;
-            case DataType::CFloat32BE:
-              get_func = __getBE<ValueType,cfloat>;
-              put_func = __putBE<ValueType,cfloat>;
-              return;
-            case DataType::CFloat64LE:
-              get_func = __getLE<ValueType,cdouble>;
-              put_func = __putLE<ValueType,cdouble>;
-              return;
-            case DataType::CFloat64BE:
-              get_func = __getBE<ValueType,cdouble>;
-              put_func = __putBE<ValueType,cdouble>;
-              return;
-            default:
-              throw Exception ("invalid data type in image header");
-          }
+        switch (datatype()) {
+          case DataType::Bit:
+            get_func = __get<ValueType,bool>;
+            put_func = __put<ValueType,bool>;
+            return;
+          case DataType::Int8:
+            get_func = __get<ValueType,int8_t>;
+            put_func = __put<ValueType,int8_t>;
+            return;
+          case DataType::UInt8:
+            get_func = __get<ValueType,uint8_t>;
+            put_func = __put<ValueType,uint8_t>;
+            return;
+          case DataType::Int16LE:
+            get_func = __getLE<ValueType,int16_t>;
+            put_func = __putLE<ValueType,int16_t>;
+            return;
+          case DataType::UInt16LE:
+            get_func = __getLE<ValueType,uint16_t>;
+            put_func = __putLE<ValueType,uint16_t>;
+            return;
+          case DataType::Int16BE:
+            get_func = __getBE<ValueType,int16_t>;
+            put_func = __putBE<ValueType,int16_t>;
+            return;
+          case DataType::UInt16BE:
+            get_func = __getBE<ValueType,uint16_t>;
+            put_func = __putBE<ValueType,uint16_t>;
+            return;
+          case DataType::Int32LE:
+            get_func = __getLE<ValueType,int32_t>;
+            put_func = __putLE<ValueType,int32_t>;
+            return;
+          case DataType::UInt32LE:
+            get_func = __getLE<ValueType,uint32_t>;
+            put_func = __putLE<ValueType,uint32_t>;
+            return;
+          case DataType::Int32BE:
+            get_func = __getBE<ValueType,int32_t>;
+            put_func = __putBE<ValueType,int32_t>;
+            return;
+          case DataType::UInt32BE:
+            get_func = __getBE<ValueType,uint32_t>;
+            put_func = __putBE<ValueType,uint32_t>;
+            return;
+          case DataType::Int64LE:
+            get_func = __getLE<ValueType,int64_t>;
+            put_func = __putLE<ValueType,int64_t>;
+            return;
+          case DataType::UInt64LE:
+            get_func = __getLE<ValueType,uint64_t>;
+            put_func = __putLE<ValueType,uint64_t>;
+            return;
+          case DataType::Int64BE:
+            get_func = __getBE<ValueType,int64_t>;
+            put_func = __putBE<ValueType,int64_t>;
+            return;
+          case DataType::UInt64BE:
+            get_func = __getBE<ValueType,uint64_t>;
+            put_func = __putBE<ValueType,uint64_t>;
+            return;
+          case DataType::Float32LE:
+            get_func = __getLE<ValueType,float>;
+            put_func = __putLE<ValueType,float>;
+            return;
+          case DataType::Float32BE:
+            get_func = __getBE<ValueType,float>;
+            put_func = __putBE<ValueType,float>;
+            return;
+          case DataType::Float64LE:
+            get_func = __getLE<ValueType,double>;
+            put_func = __putLE<ValueType,double>;
+            return;
+          case DataType::Float64BE:
+            get_func = __getBE<ValueType,double>;
+            put_func = __putBE<ValueType,double>;
+            return;
+          case DataType::CFloat32LE:
+            get_func = __getLE<ValueType,cfloat>;
+            put_func = __putLE<ValueType,cfloat>;
+            return;
+          case DataType::CFloat32BE:
+            get_func = __getBE<ValueType,cfloat>;
+            put_func = __putBE<ValueType,cfloat>;
+            return;
+          case DataType::CFloat64LE:
+            get_func = __getLE<ValueType,cdouble>;
+            put_func = __putLE<ValueType,cdouble>;
+            return;
+          case DataType::CFloat64BE:
+            get_func = __getBE<ValueType,cdouble>;
+            put_func = __putBE<ValueType,cdouble>;
+            return;
+          default:
+            throw Exception ("invalid data type in image header");
         }
+      }
 
 
 
@@ -451,7 +483,6 @@ namespace MR
             set_get_put_functions (datatype());
           }
         }
-
 
 
 
@@ -476,8 +507,8 @@ namespace MR
     template <typename ValueType>
       inline const Image<ValueType> Header::get_image () const 
       {
-        std::unique_ptr<typename Image<ValueType>::Buffer> buffer (new typename Image<ValueType>::Buffer (*this));
-        return Image<ValueType> (buffer);
+        auto buffer = std::make_shared<const typename Image<ValueType>::Buffer> (*this);
+        return { buffer };
       }
 
 
@@ -486,13 +517,33 @@ namespace MR
 
 
     template <typename ValueType>
-      inline Image<ValueType>::Image (std::unique_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
-        buffer (std::move (buffer_p)),
+      inline Image<ValueType>::Image (const std::shared_ptr<const Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
+        buffer (buffer_p),
         data_pointer (buffer->get_data_pointer()),
         x (ndim(), 0),
         strides (strides.size() ? strides : Stride::get (*buffer)),
         data_offset (Stride::offset (*this))
-      { 
+        { 
+        }
+
+
+
+
+
+    template <typename ValueType>
+      inline Image<ValueType>::~Image () 
+      {
+        if (buffer.unique()) {
+          // was image preloaded and read/write? If so,need to write back:
+          if (buffer->get_io()) {
+            if (buffer->get_io()->is_image_readwrite() && buffer->data_buffer) {
+              auto data_buffer = std::move (buffer->data_buffer);
+              TmpImage<ValueType> src = { *buffer, data_buffer.get(), std::vector<ssize_t> (ndim(), 0), strides, Stride::offset (*this) };
+              Image<ValueType> dest (buffer);
+              threaded_copy_with_progress_message ("writing back direct IO buffer for \"" + name() + "\"", src, dest); 
+            }
+          }
+        }
       }
 
 
@@ -517,41 +568,25 @@ namespace MR
 
         // do the preload:
 
-        // lightweight struct to copy data into:
-        struct TmpImage {
-          typedef ValueType value_type;
-
-          const Buffer& b;
-          value_type* const data;
-          std::vector<ssize_t> x;
-          const Stride::List& strides;
-          size_t offset;
-
-          const std::string name () const { return "preloader buffer"; }
-          size_t ndim () const { return b.ndim(); }
-          ssize_t size (size_t axis) const { return b.size(axis); }
-          ssize_t stride (size_t axis) const { return strides[axis]; }
-          ssize_t index (size_t axis) const { return x[axis]; }
-          Helper::VoxelIndex<TmpImage> index (size_t axis) { return { *this, axis }; }
-          Helper::VoxelValue<TmpImage> value () { return { *this }; }
-
-          void set_voxel_value (ValueType val) { data[offset] = val; }
-          ssize_t get_voxel_position (size_t axis) const { return x[axis]; }
-          void set_voxel_position (size_t axis, ssize_t position) { offset += stride (axis) * (position - x[axis]); x[axis] = position; }
-          void move_voxel_position (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
-        };
-
         // the buffer into which to copy the data:
-        auto new_buffer = std::unique_ptr<Buffer> (new Buffer (*buffer));
-        new_buffer->data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
-        TmpImage dest = { *buffer, new_buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+        buffer->data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
 
-        auto src (*this);
-        threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
+        if (buffer->get_io()->is_image_new()) {
+          // no need to preload if data is zero anyway:
+          memset (buffer->data_buffer.get(), 0, voxel_count (*this));
+        }
+        else {
+          auto src (*this);
+          TmpImage<ValueType> dest = { *buffer, buffer->data_buffer.get(), std::vector<ssize_t> (ndim(), 0), with_strides, Stride::offset (with_strides, *this) };
+          threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
+        }
 
-        return Image (new_buffer, with_strides);
+        return Image (buffer, with_strides);
       }
-    
+
+
+
+
     //! \endcond
 
 }
