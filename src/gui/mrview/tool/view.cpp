@@ -186,20 +186,44 @@ namespace MR
 
           group_box = new QGroupBox ("Focus");
           main_box->addWidget (group_box);
-          hlayout = new HBoxLayout;
-          group_box->setLayout (hlayout);
+          GridLayout* layout = new GridLayout;
+          group_box->setLayout (layout);
+
+          const int focus_button_width = 80;
+
+          layout->addWidget (new QLabel (tr("Voxel: ")), 0, 0);
+
+          voxel_x = new AdjustButton (this);
+          voxel_x->setMinimumWidth(focus_button_width);
+          connect (voxel_x, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_x, 0, 1);
+
+          voxel_y = new AdjustButton (this);
+          voxel_y->setMinimumWidth(focus_button_width);
+          connect (voxel_y, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_y, 0, 2);
+
+          voxel_z = new AdjustButton (this);
+          voxel_z->setMinimumWidth(focus_button_width);
+          connect (voxel_z, SIGNAL (valueChanged()), this, SLOT (onSetVoxel()));
+          layout->addWidget (voxel_z, 0, 3);
+
+          layout->addWidget (new QLabel (tr("Position: ")), 1, 0);
 
           focus_x = new AdjustButton (this);
+          focus_x->setMinimumWidth(focus_button_width);
           connect (focus_x, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_x);
+          layout->addWidget (focus_x, 1, 1);
 
           focus_y = new AdjustButton (this);
+          focus_y->setMinimumWidth(focus_button_width);
           connect (focus_y, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_y);
+          layout->addWidget (focus_y, 1, 2);
 
           focus_z = new AdjustButton (this);
+          focus_z->setMinimumWidth(focus_button_width);
           connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
-          hlayout->addWidget (focus_z);
+          layout->addWidget (focus_z, 1, 3);
 
           group_box = new QGroupBox ("Intensity scaling");
           main_box->addWidget (group_box);
@@ -215,7 +239,7 @@ namespace MR
           hlayout->addWidget (max_entry);
 
 
-          GridLayout* layout;
+
           layout = new GridLayout;
           main_box->addLayout (layout);
 
@@ -447,9 +471,15 @@ namespace MR
 
         void View::onFocusChanged () 
         {
-          focus_x->setValue (window.focus()[0]);
-          focus_y->setValue (window.focus()[1]);
-          focus_z->setValue (window.focus()[2]);
+          auto focus(window.focus());
+          focus_x->setValue (focus[0]);
+          focus_y->setValue (focus[1]);
+          focus_z->setValue (focus[2]);
+
+          window.image()->interp.scanner2voxel(focus, focus);
+          voxel_x->setValue (focus[0]);
+          voxel_y->setValue (focus[1]);
+          voxel_z->setValue (focus[2]);
         }
 
 
@@ -475,6 +505,17 @@ namespace MR
 
 
 
+
+        void View::onSetVoxel ()
+        {
+          try {
+            Point<> focus(voxel_x->value(), voxel_y->value(), voxel_z->value());
+            window.image()->interp.voxel2scanner(focus,focus);
+            window.set_focus (focus);
+            window.updateGL();
+          }
+          catch (Exception) { }
+        }
 
 
         void View::onModeChanged () 

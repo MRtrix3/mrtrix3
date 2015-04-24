@@ -69,6 +69,7 @@ namespace MR
             void onFocusChanged ();
             void onFOVChanged ();
             void onSetFocus ();
+            void onSetVoxel ();
             void onPlaneChanged ();
             void onSetPlane (int index);
             void onSetScaling ();
@@ -97,6 +98,7 @@ namespace MR
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z;
+            AdjustButton *voxel_x, *voxel_y, *voxel_z;
             QSpinBox **voxel_pos;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
