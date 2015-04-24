@@ -111,7 +111,7 @@ class Median {
   public:
     Median () { }
     void operator() (value_type val) { 
-      if (std::isfinite (val))
+      if (!std::isnan (val))
         values.push_back(val);
     }
     value_type result () { 
