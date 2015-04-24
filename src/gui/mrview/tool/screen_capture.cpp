@@ -79,21 +79,27 @@ namespace MR
           main_box->addWidget (translate_group_box);
           translate_group_box->setLayout (translate_layout);
 
-          translate_layout->addWidget (new QLabel ("Axis X"), 0, 0);
+          QCheckBox* scanner_coord_check = new QCheckBox ("Use scanner coordinates");
+          scanner_coord_check->setCheckable (true);
+          connect (scanner_coord_check, SIGNAL (toggled(bool)), this,
+                   SLOT (on_trans_scanner_coords_slot(bool)));
+          translate_layout->addWidget(scanner_coord_check, 0, 0, 1, 2);
+
+          translate_layout->addWidget (new QLabel ("Axis X"), 1, 0);
           translate_x = new AdjustButton (this);
-          translate_layout->addWidget (translate_x, 0, 1);
+          translate_layout->addWidget (translate_x, 1, 1);
           translate_x->setValue (0.0);
           translate_x->setRate (0.1);
 
-          translate_layout->addWidget (new QLabel ("Axis Y"), 1, 0);
+          translate_layout->addWidget (new QLabel ("Axis Y"), 2, 0);
           translate_y = new AdjustButton (this);
-          translate_layout->addWidget (translate_y, 1, 1);
+          translate_layout->addWidget (translate_y, 2, 1);
           translate_y->setValue (0.0);
           translate_y->setRate (0.1);
 
-          translate_layout->addWidget (new QLabel ("Axis Z"), 2, 0);
+          translate_layout->addWidget (new QLabel ("Axis Z"), 3, 0);
           translate_z = new AdjustButton (this);
-          translate_layout->addWidget (translate_z, 2, 1);
+          translate_layout->addWidget (translate_z, 3, 1);
           translate_z->setValue (0.0);
           translate_z->setRate (0.1);
 
@@ -248,15 +254,16 @@ namespace MR
             this->window.set_orientation (orientation);
 
             // Translation
+            Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
+            trans_vec /= frames->value();
+            if(!translate_in_scanner_coord)
+              trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
+
             Point<float> focus (this->window.focus());
-            focus[0] += translate_x->value() / frames->value();
-            focus[1] += translate_y->value() / frames->value();
-            focus[2] += translate_z->value() / frames->value();
+            focus += trans_vec;
             window.set_focus (focus);
             Point<float> target (this->window.target());
-            target[0] += translate_x->value() / frames->value();
-            target[1] += translate_y->value() / frames->value();
-            target[2] += translate_z->value() / frames->value();
+            target += trans_vec;
             window.set_target (target);
 
             // Volume
@@ -296,6 +303,15 @@ namespace MR
         void Capture::on_output_update () {
           start_index->setValue (0);
         }
+
+
+
+
+
+        void Capture::on_trans_scanner_coords_slot (bool flag) {
+          translate_in_scanner_coord = flag;
+        }
+
 
 
 

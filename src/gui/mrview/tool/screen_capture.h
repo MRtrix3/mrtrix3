@@ -54,6 +54,7 @@ namespace MR
             void on_screen_preview ();
             void select_output_folder_slot();
             void on_output_update ();
+            void on_trans_scanner_coords_slot (bool);
 
           private:
 
@@ -73,6 +74,7 @@ namespace MR
             QPushButton *folder_button;
             int axis;
             QDir* directory;
+            bool translate_in_scanner_coord;
 
             void run (bool with_capture);
 
