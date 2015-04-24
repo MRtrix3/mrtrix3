@@ -474,12 +474,12 @@ namespace MR
           if(!window.image())
             return;
 
-          auto focus(window.focus());
+          auto focus (window.focus());
           focus_x->setValue (focus[0]);
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          window.image()->interp.scanner2voxel(focus, focus);
+          focus = window.image()->interp.scanner2voxel (focus);
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -512,8 +512,8 @@ namespace MR
         void View::onSetVoxel ()
         {
           try {
-            Point<> focus(voxel_x->value(), voxel_y->value(), voxel_z->value());
-            window.image()->interp.voxel2scanner(focus,focus);
+            Point<> focus (voxel_x->value(), voxel_y->value(), voxel_z->value());
+            focus = window.image()->interp.voxel2scanner (focus);
             window.set_focus (focus);
             window.updateGL();
           }
