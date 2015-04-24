@@ -471,6 +471,9 @@ namespace MR
 
         void View::onFocusChanged () 
         {
+          if(!window.image())
+            return;
+
           auto focus(window.focus());
           focus_x->setValue (focus[0]);
           focus_y->setValue (focus[1]);
