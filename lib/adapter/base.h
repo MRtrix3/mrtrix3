@@ -46,7 +46,7 @@ namespace MR
             }
 
           typedef typename ImageType::value_type value_type;
-          typedef Base voxel_type;
+          typedef Base voxel_type; // TODO why is this needed...?
 
           template <class U> 
             const Base& operator= (const U& V) {
@@ -58,7 +58,6 @@ namespace MR
           }
 
           const std::string& name () const { return parent_vox.name(); }
-          DataType datatype () const { return parent_vox.datatype(); }
           size_t ndim () const { return parent_vox.ndim(); }
           ssize_t size (size_t axis) const { return parent_vox.size (axis); }
           default_type voxsize (size_t axis) const { return parent_vox.voxsize (axis); }
@@ -74,7 +73,7 @@ namespace MR
           void reset () { parent_vox.reset(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Base& V) {
-            stream << "image adapter \"" << V.name() << "\", datatype " << V.datatype().specifier() << ", position [ ";
+            stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier() << ", position [ ";
             for (size_t n = 0; n < V.ndim(); ++n) 
               stream << V[n] << " ";
             stream << "], value = " << V.value();

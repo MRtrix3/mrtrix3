@@ -294,7 +294,7 @@ class Evaluator
 
 
 inline bool StackEntry::is_complex () const {
-  if (image) return image->datatype().is_complex();
+  if (image) return image->header().datatype().is_complex();
   if (evaluator) return evaluator->is_complex();
   return value.imag() != 0.0;
 }

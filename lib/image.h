@@ -61,7 +61,6 @@ namespace MR
         ssize_t size (size_t axis) const { return buffer->size (axis); }
         default_type voxsize (size_t axis) const { return buffer->voxsize (axis); }
         ssize_t stride (size_t axis) const { return strides[axis]; }
-        DataType datatype () const { return buffer->datatype(); }
 
         //! offset to current voxel from start of data
         size_t offset () const { return data_offset; }
@@ -575,9 +574,11 @@ namespace MR
       const Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides) const
       {
         if (!buffer->get_io())
-          throw Exception ("FIXME: don't use 'with_direct_io()' on scratch images!");
+          throw Exception ("FIXME: don't invoke 'with_direct_io()' on scratch images!");
+        if (!buffer.unique())
+          throw Exception ("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
-        bool preload = ( datatype() != DataType::from<ValueType>() );
+        bool preload = ( buffer->datatype() != DataType::from<ValueType>() );
         if (with_strides.size()) {
           auto new_strides = Stride::get_actual (Stride::get_nearest_match (*this, with_strides), *this);
           preload |= ( new_strides != Stride::get (*this) );

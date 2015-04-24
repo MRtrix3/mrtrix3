@@ -80,8 +80,8 @@ void usage ()
 
 
 
-template <class HeaderType>
-inline std::vector<int> set_header (Header& header, const HeaderType& input)
+template <class ImageType>
+inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
   header.set_ndim (input.ndim());
   for (size_t n = 0; n < header.ndim(); ++n) {
@@ -90,7 +90,7 @@ inline std::vector<int> set_header (Header& header, const HeaderType& input)
     header.stride(n) = input.stride(n);
   }
   header.transform() = input.transform();
-  header.datatype() = input.datatype();
+  header.datatype() = input.header().datatype();
   header.reset_intensity_scaling();
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
