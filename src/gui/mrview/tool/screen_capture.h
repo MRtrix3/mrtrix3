@@ -54,7 +54,6 @@ namespace MR
             void on_screen_preview ();
             void select_output_folder_slot();
             void on_output_update ();
-            void on_trans_scanner_coords_slot (bool);
 
           private:
 
@@ -62,6 +61,7 @@ namespace MR
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
+            QCheckBox* scanner_coord_check;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
@@ -74,7 +74,6 @@ namespace MR
             QPushButton *folder_button;
             int axis;
             QDir* directory;
-            bool translate_in_scanner_coord;
 
             void run (bool with_capture);
 

@@ -79,10 +79,8 @@ namespace MR
           main_box->addWidget (translate_group_box);
           translate_group_box->setLayout (translate_layout);
 
-          QCheckBox* scanner_coord_check = new QCheckBox ("Use scanner coordinates");
+          scanner_coord_check = new QCheckBox ("Use scanner coordinates");
           scanner_coord_check->setCheckable (true);
-          connect (scanner_coord_check, SIGNAL (toggled(bool)), this,
-                   SLOT (on_trans_scanner_coords_slot(bool)));
           translate_layout->addWidget(scanner_coord_check, 0, 0, 1, 2);
 
           translate_layout->addWidget (new QLabel ("Axis X"), 1, 0);
@@ -256,7 +254,7 @@ namespace MR
             // Translation
             Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
             trans_vec /= frames->value();
-            if(!translate_in_scanner_coord)
+            if(!scanner_coord_check->isChecked())
               trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
 
             Point<float> focus (this->window.focus());
@@ -307,10 +305,6 @@ namespace MR
 
 
 
-
-        void Capture::on_trans_scanner_coords_slot (bool flag) {
-          translate_in_scanner_coord = flag;
-        }
 
 
 
