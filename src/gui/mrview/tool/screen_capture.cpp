@@ -248,7 +248,7 @@ namespace MR
             axis[1] = rotation_axis_y->value();
             axis[2] = rotation_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
-            orientation *= rotation;
+            orientation = rotation * orientation;
             this->window.set_orientation (orientation);
 
             // Translation
