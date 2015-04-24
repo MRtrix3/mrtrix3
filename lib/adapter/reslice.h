@@ -47,16 +47,16 @@ namespace MR
      *
      * For example:
      * \code
-     * Image::Buffer<float> buffer_reference (argument[0]);    // reference header
-     * Image::ConstHeader header_reference (buffer_reference); // to be used for reslicing
-     * Image::Buffer<float> buffer_data (argument[1]);         // input data to be resliced
-     * auto data = buffer_data.voxel();                        // to access the corresponding data
-
-     * Image::Adapter::Reslice<
-     *     Image::Interp::Cubic,
-     *     decltype(data)>   regridder (data, header_reference);
-     * Image::Buffer<float> buffer_out (argument[2]);          // copy data from regridder to output
-     * Image::copy (regridder, buffer_out.voxel());
+     * // reference header:
+     * auto reference = Header::open (argument[0]);
+     * // input data to be resliced:
+     * auto data = Header::open (argument[1]).get_image<float>(); 
+     *
+     * auto regridder = Adapter::make_reslice<Interp::Cubic> (data, reference);
+     * auto out = Header::create (argument[2], regridder).get_image<float>();
+     *
+     * // copy data from regridder to output
+     * copy (regridder, out);
      * \endcode
      *
      * It is also possible to supply an additional transform to be applied to
@@ -87,31 +87,14 @@ namespace MR
               const HeaderType& reference,
               const Math::Matrix<default_type>& transform = NoTransform,
               const std::vector<int>& oversample = AutoOverSample,
-              const value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
+              const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
-            transform_ (reference.transform()) {
+            x ({ 0, 0, 0 }),
+            dim ({ reference.size(0), reference.size(1), reference.size(2) }),
+            vox ({ reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) }),
+            transform_ (reference.transform()),
+            direct_transform (get_direct_transform (Transform(reference), Transform(original), transform)) {
               assert (ndim() >= 3);
-              x[0] = x[1] = x[2] = 0;
-              dim[0] = reference.size[0];
-              dim[1] = reference.size[1];
-              dim[2] = reference.size[2];
-              vox[0] = reference.voxsize[0];
-              vox[1] = reference.voxsize[1];
-              vox[2] = reference.voxsize[2];
-
-              Transform transform_reference (reference);
-              Transform transform_original (original);
-              Math::Matrix<default_type> Mr, Mo;
-              transform_reference.voxel2scanner_matrix (Mr);
-              transform_original.scanner2voxel_matrix (Mo);
-
-              if (transform.is_set()) {
-                Math::Matrix<default_type> Mt;
-                Math::mult (Mt, Mo, transform);
-                Mo.swap (Mt);
-              }
-
-              Math::mult (direct_transform, Mo, Mr);
 
               if (oversample.size()) {
                 assert (oversample.size() == 3);
@@ -122,8 +105,8 @@ namespace MR
                 OS[2] = oversample[2];
               }
               else {
-                Point<value_type> y, x0, x1 (0.0,0.0,0.0);
-                Transform::transform_position (x0, direct_transform, x1);
+                Point<default_type> x1 (0.0,0.0,0.0), y, x0;
+                Transform::transform_position (y, direct_transform, x1);
                 x1[0] = 1.0;
                 Transform::transform_position (x0, direct_transform, x1);
                 OS[0] = std::ceil (0.999 * (y-x0).norm());
@@ -152,29 +135,22 @@ namespace MR
             }
 
 
-        size_t ndim () const {
-          return interp.ndim();
-        }
-        int size (size_t axis) const {
-          return axis < 3 ? dim[axis]: interp.size (axis);
-        }
-        default_type voxsize (size_t axis) const {
-          return axis < 3 ? vox[axis] : interp.voxsize (axis);
-        }
+        size_t ndim () const { return interp.ndim(); }
+        int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
+        default_type voxsize (size_t axis) const { return axis < 3 ? vox[axis] : interp.voxsize (axis); }
         const Math::Matrix<default_type>& transform () const { return transform_; }
-        DataType datatype () const { return interp.datatype(); }
         const std::string& name () const { return interp.name(); }
 
         void reset () {
           x[0] = x[1] = x[2] = 0;
           for (size_t n = 3; n < interp.ndim(); ++n)
-            interp[n] = 0;
+            interp.index(n) = 0;
         }
 
         value_type& value () {
           if (oversampling) {
             Point<default_type> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
-            result = 0.0;
+            value_type result = 0.0;
             Point<default_type> s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
@@ -191,41 +167,54 @@ namespace MR
               }
             }
             result *= norm;
+            return result;
           }
-          else {
-            Point<default_type> pos;
-            Transform::transform_position (pos, direct_transform, x);
-            interp.voxel (pos);
-            result = interp.value();
-          }
-          return result;
+
+          Point<default_type> pos;
+          Transform::transform_position (pos, direct_transform, x);
+          interp.voxel (pos);
+          return interp.value();
         }
 
-        Helper::VoxelIndex<Reslice<Interpolator,ImageType> > operator[] (size_t axis) {
-          return Helper::VoxelIndex<Reslice<Interpolator,ImageType> > (*this, axis);
-        }
+        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
 
       private:
         Interpolator<ImageType> interp;
-        ssize_t x[3], dim[3];
-        default_type vox[3];
+        ssize_t x[3];
+        const ssize_t dim[3];
+        const default_type vox[3];
         bool oversampling;
         int OS[3];
         default_type from[3], inc[3];
         default_type norm;
-        Math::Matrix<default_type> transform_, direct_transform;
-        value_type result;
+        const Math::Matrix<default_type> transform_, direct_transform;
 
         ssize_t get_voxel_position (size_t axis) const {
-          return axis < 3 ? x[axis] : interp[axis];
+          return axis < 3 ? x[axis] : interp.index(axis);
         }
         void set_voxel_position (size_t axis, ssize_t position) {
           if (axis < 3) x[axis] = position;
-          else interp[axis] = position;
+          else interp.index(axis) = position;
         }
         void move_voxel_position (size_t axis, ssize_t increment) {
           if (axis < 3) x[axis] += increment;
-          else interp[axis] += increment;
+          else interp.index(axis) += increment;
+        }
+
+        static inline Math::Matrix<default_type> get_direct_transform (const Transform& reference, 
+            const Transform& original, const Math::Matrix<default_type>& transform) {
+          Math::Matrix<default_type> Mr, Mo, direct_transform;
+          reference.voxel2scanner_matrix (Mr);
+          original.scanner2voxel_matrix (Mo);
+
+          if (transform.is_set()) {
+            Math::Matrix<default_type> Mt;
+            Math::mult (Mt, Mo, transform);
+            Mo.swap (Mt);
+          }
+
+          Math::mult (direct_transform, Mo, Mr);
+          return direct_transform;
         }
 
         friend class Helper::VoxelIndex<Reslice<Interpolator,ImageType> >;

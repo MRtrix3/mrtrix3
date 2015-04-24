@@ -185,31 +185,11 @@ namespace MR
         return stream;
       }
 
-      template <typename ValueType> static inline ValueType default_out_of_bounds_value () {
-        return ValueType(0);
-      }
-
     protected:
       uint8_t dt;
 
   };
 
-  template <> inline float DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline double DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-  template <> inline cfloat DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline cdouble DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<cdouble>::quiet_NaN();
-  }
 
 
   template <> inline DataType DataType::from<bool> ()

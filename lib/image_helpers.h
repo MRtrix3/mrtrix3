@@ -531,6 +531,19 @@ namespace MR
         }
     };
 
+
+    //! convenience function returning fully-formed VoxelIndex 
+    template <class ImageType>
+      VoxelIndex<ImageType> voxel_index (ImageType& image, size_t axis) {
+        return { image, axis };
+      }
+
+    //! convenience function returning fully-formed VoxelValue
+    template <class ImageType>
+      VoxelValue<ImageType> voxel_value (ImageType& image) {
+        return { image };
+      }
+
   }
 }
 

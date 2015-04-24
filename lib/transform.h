@@ -159,32 +159,32 @@ namespace MR
         return transform_vector (I2S, r);
       }
 
-      const default_type* scanner2voxel_matrix () {
+      const default_type* const scanner2voxel_matrix () const {
         return *S2V;
       }
 
-      const default_type* voxel2scanner_matrix () {
+      const default_type* const voxel2scanner_matrix () const {
         return *V2S;
       }
 
-      const default_type* image2scanner_matrix () {
+      const default_type* const image2scanner_matrix () const {
         return *I2S;
       }
 
-      const default_type* scanner2image_matrix () {
+      const default_type* const scanner2image_matrix () const {
         return *S2I;
       }
 
 
-      void scanner2voxel_matrix (Math::Matrix<default_type>& M) {
+      void scanner2voxel_matrix (Math::Matrix<default_type>& M) const {
         get_matrix (M, S2V);
       }
 
-      void voxel2scanner_matrix (Math::Matrix<default_type>& M) {
+      void voxel2scanner_matrix (Math::Matrix<default_type>& M) const {
         get_matrix (M, V2S);
       }
 
-      void voxel2image_matrix (Math::Matrix<default_type>& M) {
+      void voxel2image_matrix (Math::Matrix<default_type>& M) const {
         M.allocate (4,4);
         M.identity();
         M(0,0) = voxelsize[0];
@@ -192,7 +192,7 @@ namespace MR
         M(2,2) = voxelsize[2];
       }
 
-      void image2voxel_matrix (Math::Matrix<default_type>& M) {
+      void image2voxel_matrix (Math::Matrix<default_type>& M) const {
         M.allocate (4,4);
         M.identity();
         M(0,0) = 1 / voxelsize[0];
@@ -200,11 +200,11 @@ namespace MR
         M(2,2) = 1 / voxelsize[2];
       }
 
-      void image2scanner_matrix (Math::Matrix<default_type>& M) {
+      void image2scanner_matrix (Math::Matrix<default_type>& M) const {
         get_matrix (M, I2S);
       }
 
-      void scanner2image_matrix (Math::Matrix<default_type>& M) {
+      void scanner2image_matrix (Math::Matrix<default_type>& M) const {
         get_matrix (M, S2I);
       }
 
@@ -243,6 +243,11 @@ namespace MR
         return false;
       }
 
+      template <typename ValueType> 
+        static inline ValueType default_out_of_bounds_value () {
+        return ValueType(0);
+      }
+
     protected:
       default_type  S2V[3][4], V2S[3][4], I2S[3][4], S2I[3][4], voxelsize[3];
       default_type  bounds[3];
@@ -254,19 +259,19 @@ namespace MR
         return out_of_bounds;
       }
 
-      void set_matrix (default_type M[3][4], const Math::Matrix<default_type>& MV) {
+      void set_matrix (default_type M[3][4], const Math::Matrix<default_type>& MV) const {
         for (size_t i = 0; i < 3; i++)
           for (size_t j = 0; j < 4; j++)
             M[i][j] = MV(i, j);
       }
 
-      void set_matrix (Math::Matrix<default_type>& MV, default_type M[3][4]) {
+      void set_matrix (Math::Matrix<default_type>& MV, const default_type M[3][4]) const {
         for (size_t i = 0; i < 3; i++)
           for (size_t j = 0; j < 4; j++)
             MV(i, j) = M[i][j];
       }
 
-      void get_matrix (Math::Matrix<default_type> & MV, default_type M[3][4]) {
+      void get_matrix (Math::Matrix<default_type> & MV, const default_type M[3][4]) const {
         MV.allocate (4,4);
         MV.identity();
         set_matrix (MV, M);
@@ -311,6 +316,24 @@ namespace MR
         }
 
   };
+
+  template <> inline float Transform::default_out_of_bounds_value ()
+  {
+    return std::numeric_limits<float>::quiet_NaN();
+  }
+  template <> inline double Transform::default_out_of_bounds_value ()
+  {
+    return std::numeric_limits<double>::quiet_NaN();
+  }
+  template <> inline cfloat Transform::default_out_of_bounds_value ()
+  {
+    return std::numeric_limits<float>::quiet_NaN();
+  }
+  template <> inline cdouble Transform::default_out_of_bounds_value ()
+  {
+    return std::numeric_limits<cdouble>::quiet_NaN();
+  }
+
 
 }
 

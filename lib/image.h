@@ -65,6 +65,12 @@ namespace MR
         //! offset to current voxel from start of data
         size_t offset () const { return data_offset; }
 
+        //! reset index to zero (origin)
+        void reset () {
+          for (size_t n = 0; n < ndim(); ++n)
+            index(n) = 0;
+        }
+
         //! get position of current voxel location along \a axis
         ssize_t index (size_t axis) const { return get_voxel_position (axis); }
         //! get/set position of current voxel location along \a axis
