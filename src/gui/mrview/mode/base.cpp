@@ -136,7 +136,11 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          const auto &header = image()->header();
+          float increment = snap_to_image() ?
+            x * header.vox(plane()) :
+            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+          move_in_out (increment, *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
         }

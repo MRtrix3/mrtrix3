@@ -61,6 +61,7 @@ namespace MR
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
+            QCheckBox* scanner_coord_check;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;

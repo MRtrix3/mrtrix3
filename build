@@ -8,6 +8,10 @@ config_file = 'config.default'
 
 bcolors = {
     "candidate" : '\033[94m',
+    "no known conversion" : '\033[94m',
+    "expected" : '\033[93m',
+    "^" : '\033[91m',
+    "static assertion" : '\033[91m',
     "Linking" : '\033[01;32m',
     "In function" : '\033[01;32m',
     "WARNING" : '\033[95m',

@@ -134,7 +134,7 @@ void LightBox::paint(Projection&)
 
     GLint x = projection.x_position(), y = projection.y_position();
     GLint w = projection.width(), h = projection.height();
-    GLint dw = w / n_cols, dh = h / n_rows;
+    GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
 
     const Point<> orig_focus = window.focus();
 
