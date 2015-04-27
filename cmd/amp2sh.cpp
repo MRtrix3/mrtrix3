@@ -22,14 +22,12 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
+#include "image.h"
 #include "math/matrix.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"
-#include "image/threaded_loop.h"
+#include "algo/threaded_loop.h"
 
 
 using namespace MR;
@@ -86,7 +84,7 @@ void usage ()
 
   + DWI::GradImportOptions()
   + DWI::ShellOption
-  + Image::Stride::StrideOption;
+  + Stride::Options;
 }
 
 
@@ -125,8 +123,8 @@ class Amp2SH {
       a (common.amp2sh.columns()),
       c (common.amp2sh.rows()) { }
 
-    template <class SHVoxelType, class AmpVoxelType>
-      void operator() (SHVoxelType& SH, AmpVoxelType& amp) 
+    template <class SHImageType, class AmpImageType>
+      void operator() (SHImageType& SH, AmpImageType& amp) 
       {
         get_amps (amp);
         mult (c, C.amp2sh, a);
@@ -136,8 +134,8 @@ class Amp2SH {
 
 
     // Rician-corrected version:
-    template <class SHVoxelType, class AmpVoxelType, class NoiseVoxelType>
-      void operator() (SHVoxelType& SH, AmpVoxelType& amp, const NoiseVoxelType& noise) 
+    template <class SHImageType, class AmpImageType, class NoiseImageType>
+      void operator() (SHImageType& SH, AmpImageType& amp, const NoiseImageType& noise) 
       {
         w.allocate (C.sh2amp.rows());
         w = value_type(1.0);
@@ -166,27 +164,27 @@ class Amp2SH {
     Math::Vector<value_type> a, c, w, ap;
     Math::Matrix<value_type> Q, sh2amp;
 
-    template <class AmpVoxelType>
-      void get_amps (AmpVoxelType& amp) {
+    template <class AmpImageType>
+      void get_amps (AmpImageType& amp) {
         double norm = 1.0;
         if (C.normalise) {
           for (size_t n = 0; n < C.bzeros.size(); n++) {
-            amp[3] = C.bzeros[n];
+            amp.index(3) = C.bzeros[n];
             norm += amp.value ();
           }
           norm = C.bzeros.size() / norm;
         }
 
         for (size_t n = 0; n < a.size(); n++) {
-          amp[3] = C.dwis.size() ? C.dwis[n] : n;
+          amp.index(3) = C.dwis.size() ? C.dwis[n] : n;
           a[n] = amp.value() * norm;
         }
       }
 
-    template <class SHVoxelType>
-      void write_SH (SHVoxelType& SH) {
-        for (SH[3] = 0; SH[3] < SH.dim (3); ++SH[3])
-          SH.value() = c[SH[3]];
+    template <class SHImageType>
+      void write_SH (SHImageType& SH) {
+        for (auto l = Loop(3) (SH); l; ++l)
+          SH.value() = c[SH.index(3)];
       }
 
     bool get_rician_bias (const Math::Matrix<value_type>& sh2amp, value_type noise) {
@@ -212,8 +210,8 @@ class Amp2SH {
 
 void run ()
 {
-  Image::BufferPreload<value_type> amp_data (argument[0], Image::Stride::contiguous_along_axis (3));
-  Image::Header header (amp_data);
+  auto amp = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis (3));
+  auto header = amp.header();
 
   std::vector<size_t> bzeros, dwis;
   Math::Matrix<value_type> dirs;
@@ -222,11 +220,11 @@ void run ()
     dirs.load(opt[0][0]);
   } 
   else {
-    if (header["directions"].size()) {
+    auto hit = header.keyval().find ("directions");
+    if (hit != header.keyval().end()) {
       std::vector<value_type> dir_vector;
-      std::vector<std::string > lines = split (header["directions"], "\n", true);
-      for (size_t l = 0; l < lines.size(); l++) {
-        std::vector<value_type> v (parse_floats (lines[l]));
+      for (auto line : split_lines (hit->second)) {
+        auto v = parse_floats (line);
         dir_vector.insert (dir_vector.end(), v.begin(), v.end());
       }
       dirs.resize(dir_vector.size() / 2, 2);
@@ -236,7 +234,7 @@ void run ()
       }
     } 
     else {
-      Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (amp_data);
+      auto grad = DWI::get_valid_DW_scheme<value_type> (amp.header());
       DWI::Shells shells (grad);
       shells.select_shells (true, true);
       if (shells.smallest().is_bzero())
@@ -246,7 +244,7 @@ void run ()
     }
   }
 
-  Math::Matrix<value_type> sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
+  auto sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
 
 
   bool normalise = get_options ("normalise").size();
@@ -254,25 +252,21 @@ void run ()
     throw Exception ("the normalise option is only available if the input data contains b=0 images.");
 
 
-  header.dim (3) = sh2amp.columns();
+  header.size (3) = sh2amp.columns();
   header.datatype() = DataType::Float32;
-  Image::Stride::set_from_command_line (header);
-  Image::Buffer<value_type> SH_data (argument[1], header);
-
-  auto amp_vox = amp_data.voxel();
-  auto SH_vox = SH_data.voxel();
+  Stride::set_from_command_line (header);
+  auto SH = Header::create (argument[1], header).get_image<value_type>();
 
   Amp2SHCommon common (sh2amp, bzeros, dwis, normalise);
 
   opt = get_options ("rician");
   if (opt.size()) {
-    Image::BufferPreload<value_type> noise_data (opt[0][0]);
-    Image::BufferPreload<value_type>::voxel_type noise_vox (noise_data);
-    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 0, 3)
-      .run (Amp2SH (common), SH_vox, amp_vox, noise_vox);
+    auto noise = Header::open (opt[0][0]).get_image<value_type>().with_direct_io();
+    ThreadedLoop ("mapping amplitudes to SH coefficients...", amp, 0, 3)
+      .run (Amp2SH (common), SH, amp, noise);
   }
   else {
-    Image::ThreadedLoop ("mapping amplitudes to SH coefficients...", amp_vox, 0, 3)
-      .run (Amp2SH (common), SH_vox, amp_vox);
+    ThreadedLoop ("mapping amplitudes to SH coefficients...", amp, 0, 3)
+      .run (Amp2SH (common), SH, amp);
   }
 }

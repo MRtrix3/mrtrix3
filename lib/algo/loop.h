@@ -233,7 +233,6 @@ namespace MR
          * to be processed, and update the progress status if appropriate. */
         template <typename... ImageType>
           void next (ImageType&... vox) {
-            auto tvox = std::tie (vox...);
             ++progress_;
             next_axis (from_, std::tie (vox...));
           }
@@ -266,7 +265,7 @@ namespace MR
         ProgressBar progress_;
 
         template <typename... ImageType>
-          void next_axis (size_t axis, std::tuple<ImageType&...>& vox) {
+          void next_axis (size_t axis, const std::tuple<ImageType&...>& vox) {
             if (axis < max_axis_) {
               if (std::get<0>(vox).index(axis) + 1 < std::get<0>(vox).size (axis)) 
                 apply (inc_pos (axis), vox);
