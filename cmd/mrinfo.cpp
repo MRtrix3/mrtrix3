@@ -38,7 +38,7 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
 
     + Option ("format", "image file format")
     + Option ("ndim", "number of image dimensions")
-    + Option ("dimensions", "image dimensions along each axis")
+    + Option ("size", "image size along each axis")
     + Option ("vox", "voxel size along each image dimension")
     + Option ("datatype_long", "data type used for image data storage (long description)")
     + Option ("datatype_short", "data type used for image data storage (short specifier)")
@@ -172,7 +172,7 @@ void run ()
 
   const bool format      = get_options("format")        .size();
   const bool ndim        = get_options("ndim")          .size();
-  const bool dimensions  = get_options("dimensions")    .size();
+  const bool size        = get_options("size")          .size();
   const bool vox         = get_options("vox")           .size();
   const bool dt_long     = get_options("datatype_long") .size();
   const bool dt_short    = get_options("datatype_short").size();
@@ -187,7 +187,7 @@ void run ()
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool validate    = get_options("validate")      .size();
 
-  const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride || 
+  const bool print_full_header = !(format || ndim || size || vox || dt_long || dt_short || stride || 
       offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
 
 
@@ -202,7 +202,7 @@ void run ()
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
-    if (dimensions) print_dimensions (header);
+    if (size)       print_dimensions (header);
     if (vox)        print_vox (header);
     if (dt_long)    std::cout << (header.datatype().description() ? header.datatype().description() : "invalid") << "\n";
     if (dt_short)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
