@@ -122,6 +122,12 @@ namespace MR
     };
 
   }
+
+
+
+  inline const char* Header::format () const { return io ? io->format : nullptr; }
+
+
 }
 
 #endif

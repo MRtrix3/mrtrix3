@@ -305,12 +305,16 @@ namespace MR
 
     for (const auto& p : keyval()) {
       std::string key = "  " + p.first + ": ";
-      if (key.size() < 20) 
-        key.resize (20, ' ');
-      desc += key;
-      for (const auto value : split (p.second)) {
-        desc += key + value + "\n";
-        desc = "                     ";
+      if (key.size() < 21) 
+        key.resize (21, ' ');
+      const auto entries = split_lines (p.second);
+      if (entries.size() > 5) 
+        desc += key + "[ " + str (entries.size()) + " entries ]\n";
+      else {
+        for (const auto value : entries) {
+          desc += key + value + "\n";
+          key = "                     ";
+        }
       }
     }
 

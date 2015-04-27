@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "command.h"
-#include "image/header.h"
+#include "header.h"
 #include "dwi/gradient.h"
 
 
@@ -107,31 +107,31 @@ void usage ()
 
 
 
-void print_dimensions (const Image::Header& header)
+void print_dimensions (const Header& header)
 {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
-    buffer += str (header.dim (i));
+    buffer += str (header.size (i));
   }
   std::cout << buffer << "\n";
 }
 
-void print_vox (const Image::Header& header)
+void print_vox (const Header& header)
 {
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
-    buffer += str (header.vox (i));
+    buffer += str (header.voxsize (i));
   }
   std::cout << buffer << "\n";
 }
 
-void print_strides (const Image::Header& header)
+void print_strides (const Header& header)
 {
   std::string buffer;
-  std::vector<ssize_t> strides (Image::Stride::get (header));
-  Image::Stride::symbolise (strides);
+  std::vector<ssize_t> strides (Stride::get (header));
+  Stride::symbolise (strides);
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
     buffer += header.stride (i) ? str (strides[i]) : "?";
@@ -139,20 +139,17 @@ void print_strides (const Image::Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_comments (const Image::Header& header)
+void print_comments (const Header& header)
 {
-  std::string buffer;
-  for (std::vector<std::string>::const_iterator i = header.comments().begin(); i != header.comments().end(); ++i)
-    buffer += *i + "\n";
-  std::cout << buffer;
+  const auto hit = header.keyval().find ("comments");
+  if (hit != header.keyval().end())
+      std::cout << hit->second << "\n";
 }
 
-void print_properties (const Image::Header& header)
+void print_properties (const Header& header)
 {
-  std::string buffer;
-  for (std::map<std::string, std::string>::const_iterator i = header.begin(); i != header.end(); ++i)
-    buffer += i->first + ": " + i->second + "\n";
-  std::cout << buffer;
+  for (const auto& i : header.keyval())
+    std::cout << i.first << ": " << i.second << "\n";
 }
 
 
@@ -171,7 +168,7 @@ void run ()
     throw Exception ("can only export DW gradient table to file if a single input image is provided");
 
   if (get_options ("norealign").size())
-    Image::Header::do_not_realign_transform = true;
+    Header::do_not_realign_transform = true;
 
   const bool format      = get_options("format")        .size();
   const bool ndim        = get_options("ndim")          .size();
@@ -195,12 +192,12 @@ void run ()
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
-    Image::Header header (argument[i]);
+    auto header = Header::open (argument[i]);
     if (import_grad) {
       if (validate) 
-        header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header);
+        header.set_DW_scheme (DWI::get_valid_DW_scheme<default_type> (header));
       else 
-        header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+        header.set_DW_scheme (DWI::get_DW_scheme<default_type> (header));
     }
 
     if (format)     std::cout << header.format() << "\n";
@@ -215,9 +212,9 @@ void run ()
     if (comments)   print_comments (header);
     if (properties) print_properties (header);
     if (transform)  std::cout << header.transform();
-    if (dwgrad)     std::cout << header.DW_scheme();
+    if (dwgrad)     std::cout << header.parse_DW_scheme();
     if (shells || shellcounts)     { 
-      DWI::Shells dwshells (header.DW_scheme()); 
+      DWI::Shells dwshells (header.parse_DW_scheme()); 
       if (shells) {
         for (size_t i = 0; i < dwshells.count(); i++) 
           std::cout << dwshells[i].get_mean() << " ";

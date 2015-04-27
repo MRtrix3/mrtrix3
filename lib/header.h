@@ -50,7 +50,9 @@ namespace MR
     public:
       class Axis;
 
-      Header () = default; 
+      Header () :
+        offset_ (0.0),
+        scale_ (1.0) { }
       Header (Header&&) = default;
 
       //! copy constructor
@@ -81,6 +83,9 @@ namespace MR
       const std::string& name () const { return name_; }
       //! get/set the name of the image
       std::string& name () { return name_; }
+
+      //! return the format of the image, or null if not file-backed
+      const char* format () const;
 
       //! get the 4x4 affine transformation matrix mapping image to world coordinates
       const Math::Matrix<default_type>& transform () const { return transform_; }
