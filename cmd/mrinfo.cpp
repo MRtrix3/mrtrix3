@@ -34,31 +34,8 @@ using namespace App;
 
 
 
-const OptionGroup ExtractOption = OptionGroup ("Options to print only specific information from the image header")
-
-    + Option ("format", "image file format")
-    + Option ("ndim", "number of image dimensions")
-    + Option ("size", "image size along each axis")
-    + Option ("vox", "voxel size along each image dimension")
-    + Option ("datatype_long", "data type used for image data storage (long description)")
-    + Option ("datatype_short", "data type used for image data storage (short specifier)")
-    + Option ("stride", "data strides i.e. order and direction of axes data layout")
-    + Option ("offset", "image intensity offset")
-    + Option ("multiplier", "image intensity multiplier")
-    + Option ("comments", "any comments embedded in the image header")
-    + Option ("properties", "any text properties embedded in the image header")
-    + Option ("transform", "the image transform")
-    + Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
-    + Option ("shells", "list the average b-value of each shell")
-    + Option ("shellcounts", "list the number of volumes in each shell");
-
 const OptionGroup GradImportOptions = DWI::GradImportOptions();
 const OptionGroup GradExportOptions = DWI::GradExportOptions();
-
-
-
-
 
 
 void usage ()
@@ -86,18 +63,35 @@ void usage ()
     + Argument ("image", "the input image(s).").allow_multiple().type_image_in();
 
   OPTIONS
-    + Option ("norealign", 
-        "do not realign transform to near-default RAS coordinate system (the "
-        "default behaviour on image load). This is useful to inspect the transform "
-        "and strides as they are actually stored in the header, rather than as "
-        "MRtrix interprets them.") 
-    + ExtractOption
+    +   Option ("format", "image file format")
+    +   Option ("ndim", "number of image dimensions")
+    +   Option ("size", "image size along each axis")
+    +   Option ("vox", "voxel size along each image dimension")
+    +   Option ("datatype_long", "data type used for image data storage (long description)")
+    +   Option ("datatype_short", "data type used for image data storage (short specifier)")
+    +   Option ("stride", "data strides i.e. order and direction of axes data layout")
+    +   Option ("offset", "image intensity offset")
+    +   Option ("multiplier", "image intensity multiplier")
+    +   Option ("properties", "any text properties embedded in the image header")
+    +   Option ("transform", "the image transform")
+    +   Option ("norealign", 
+          "do not realign transform to near-default RAS coordinate system (the "
+          "default behaviour on image load). This is useful to inspect the transform "
+          "and strides as they are actually stored in the header, rather than as "
+          "MRtrix interprets them.") 
+
+
     + GradImportOptions
-    + Option ("validate", 
-        "verify that DW scheme matches the image, and sanitise the information as would "
-        "normally be done within an MRtrix application (i.e. scaling of b-value by gradient "
-        "norm, normalisation of gradient vectors)")
-    + GradExportOptions;
+    +   Option ("validate", 
+          "verify that DW scheme matches the image, and sanitise the information as would "
+          "normally be done within an MRtrix application (i.e. scaling of b-value by gradient "
+          "norm, normalisation of gradient vectors)")
+
+    + GradExportOptions
+    +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
+          "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    +   Option ("shells", "list the average b-value of each shell")
+    +   Option ("shellcounts", "list the number of volumes in each shell");
 
 }
 
@@ -139,13 +133,6 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_comments (const Header& header)
-{
-  const auto hit = header.keyval().find ("comments");
-  if (hit != header.keyval().end())
-      std::cout << hit->second << "\n";
-}
-
 void print_properties (const Header& header)
 {
   for (const auto& i : header.keyval())
@@ -179,7 +166,6 @@ void run ()
   const bool stride      = get_options("stride")        .size();
   const bool offset      = get_options("offset")        .size();
   const bool multiplier  = get_options("multiplier")    .size();
-  const bool comments    = get_options("comments")      .size();
   const bool properties  = get_options("properties")    .size();
   const bool transform   = get_options("transform")     .size();
   const bool dwgrad      = get_options("dwgrad")        .size();
@@ -188,7 +174,7 @@ void run ()
   const bool validate    = get_options("validate")      .size();
 
   const bool print_full_header = !(format || ndim || size || vox || dt_long || dt_short || stride || 
-      offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
+      offset || multiplier || properties || transform || dwgrad || export_grad || shells || shellcounts);
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -209,7 +195,6 @@ void run ()
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (comments)   print_comments (header);
     if (properties) print_properties (header);
     if (transform)  std::cout << header.transform();
     if (dwgrad)     std::cout << header.parse_DW_scheme();
