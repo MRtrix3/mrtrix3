@@ -67,8 +67,7 @@ void usage ()
     +   Option ("ndim", "number of image dimensions")
     +   Option ("size", "image size along each axis")
     +   Option ("vox", "voxel size along each image dimension")
-    +   Option ("datatype_long", "data type used for image data storage (long description)")
-    +   Option ("datatype_short", "data type used for image data storage (short specifier)")
+    +   Option ("datatype", "data type used for image data storage")
     +   Option ("stride", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
@@ -161,8 +160,7 @@ void run ()
   const bool ndim        = get_options("ndim")          .size();
   const bool size        = get_options("size")          .size();
   const bool vox         = get_options("vox")           .size();
-  const bool dt_long     = get_options("datatype_long") .size();
-  const bool dt_short    = get_options("datatype_short").size();
+  const bool datatype    = get_options("datatype")      .size();
   const bool stride      = get_options("stride")        .size();
   const bool offset      = get_options("offset")        .size();
   const bool multiplier  = get_options("multiplier")    .size();
@@ -173,7 +171,7 @@ void run ()
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool validate    = get_options("validate")      .size();
 
-  const bool print_full_header = !(format || ndim || size || vox || dt_long || dt_short || stride || 
+  const bool print_full_header = !(format || ndim || size || vox || datatype || stride || 
       offset || multiplier || properties || transform || dwgrad || export_grad || shells || shellcounts);
 
 
@@ -190,8 +188,7 @@ void run ()
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
     if (vox)        print_vox (header);
-    if (dt_long)    std::cout << (header.datatype().description() ? header.datatype().description() : "invalid") << "\n";
-    if (dt_short)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
+    if (datatype)   std::cout << (header.datatype().specifier() ? header.datatype().specifier() : "invalid") << "\n";
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
