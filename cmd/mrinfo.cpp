@@ -71,7 +71,6 @@ void usage ()
     +   Option ("stride", "data strides i.e. order and direction of axes data layout")
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
-    +   Option ("properties", "any text properties embedded in the image header")
     +   Option ("transform", "the image transform")
     +   Option ("norealign", 
           "do not realign transform to near-default RAS coordinate system (the "
@@ -79,6 +78,9 @@ void usage ()
           "and strides as they are actually stored in the header, rather than as "
           "MRtrix interprets them.") 
 
+    + Option ("property", "any text properties embedded in the image header under the "
+        "specified key (use 'all' to list all keys found)").allow_multiple()
+    +   Argument ("key").type_text()
 
     + GradImportOptions
     +   Option ("validate", 
@@ -132,10 +134,21 @@ void print_strides (const Header& header)
   std::cout << buffer << "\n";
 }
 
-void print_properties (const Header& header)
+void print_properties (const Header& header, const std::string& key)
 {
-  for (const auto& i : header.keyval())
-    std::cout << i.first << ": " << i.second << "\n";
+  if (lowercase (key) == "all") {
+    for (const auto& it : header.keyval()) {
+      std::cout << it.first << ": ";
+      print_properties (header, it.first);
+    }
+  }
+  else {
+    const auto values = header.keyval().find (key);
+    if (values != header.keyval().end())
+      std::cout << values->second << "\n";
+    else 
+      WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
+  }
 }
 
 
@@ -164,7 +177,7 @@ void run ()
   const bool stride      = get_options("stride")        .size();
   const bool offset      = get_options("offset")        .size();
   const bool multiplier  = get_options("multiplier")    .size();
-  const bool properties  = get_options("properties")    .size();
+  const auto properties  = get_options("property");
   const bool transform   = get_options("transform")     .size();
   const bool dwgrad      = get_options("dwgrad")        .size();
   const bool shells      = get_options("shells")        .size();
@@ -172,7 +185,7 @@ void run ()
   const bool validate    = get_options("validate")      .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride || 
-      offset || multiplier || properties || transform || dwgrad || export_grad || shells || shellcounts);
+      offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts);
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -192,7 +205,6 @@ void run ()
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (properties) print_properties (header);
     if (transform)  std::cout << header.transform();
     if (dwgrad)     std::cout << header.parse_DW_scheme();
     if (shells || shellcounts)     { 
@@ -208,6 +220,8 @@ void run ()
         std::cout << "\n";
       }
     }
+    for (size_t n = 0; n < properties.size(); ++n) 
+      print_properties (header, properties[n][0]);
 
     DWI::export_grad_commandline (header);
 
