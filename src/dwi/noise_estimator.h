@@ -23,9 +23,7 @@
 #ifndef __dwi_noise_estimator_h__
 #define __dwi_noise_estimator_h__
 
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/threaded_loop.h"
+#include "image.h"
 #include "dwi/gradient.h"
 #include "math/matrix.h"
 #include "math/least_squares.h"
@@ -36,74 +34,64 @@
 namespace MR {
   namespace DWI {
 
-    template <class InputVoxelType, class OutputVoxelType, class ValueType>
-      class NoiseEstimatorFunctor {
-      public:
+    namespace {
 
-        typedef ValueType value_type;
+      template <class InputImageType, class OutputImageType, typename ValueType>
+        class NoiseEstimatorFunctor {
+          public:
 
-        NoiseEstimatorFunctor (InputVoxelType& dwi, OutputVoxelType& noise, const Math::Matrix<value_type>& SH2amp_mapping, int axis) :
-          dwi (dwi),
-          noise (noise),
-          axis (axis) {
+            NoiseEstimatorFunctor (const Math::Matrix<ValueType>& SH2amp_mapping, int axis, InputImageType& dwi, OutputImageType& noise) :
+              dwi (dwi),
+              noise (noise),
+              axis (axis) {
 
-            Math::Matrix<value_type> iSH = Math::pinv (SH2amp_mapping);
-            Math::mult (H, SH2amp_mapping, iSH);
+                Math::Matrix<ValueType> iSH = Math::pinv (SH2amp_mapping);
+                Math::mult (H, SH2amp_mapping, iSH);
 
-            S.allocate (H.columns(), dwi.dim(axis));
-            R.allocate (S);
+                S.allocate (H.columns(), dwi.size (axis));
+                R.allocate (S);
 
-            leverage.allocate (H.rows());
-            for (size_t n = 0; n < leverage.size(); ++n) 
-              leverage[n] = H(n,n) < 1.0 ? 1.0 / std::sqrt (1.0 - H(n,n)) : 1.0;
+                leverage.allocate (H.rows());
+                for (size_t n = 0; n < leverage.size(); ++n) 
+                  leverage[n] = H(n,n) < 1.0 ? 1.0 / std::sqrt (1.0 - H(n,n)) : 1.0;
 
-          }
+              }
 
-        void operator () (const Image::Iterator& pos) {
-          Image::voxel_assign (dwi, pos);
-          for (dwi[axis] = 0; dwi[axis] < dwi.dim(axis); ++dwi[axis]) 
-            for (dwi[3] = 0; dwi[3] < dwi.dim(3); ++dwi[3]) 
-              S(dwi[3],dwi[axis]) = dwi.value();
+            void operator () (const Iterator& pos) {
+              assign_pos_of (pos).to (dwi, noise);
+              for (auto l = Loop (axis, axis+1) (dwi); l; ++l)  
+                for (auto l2 = Loop (3) (dwi); l2; ++l2) 
+                  S(dwi.index(3), dwi.index(axis)) = dwi.value();
 
-          Math::mult (R, CblasLeft, value_type(0.0), value_type(1.0), CblasUpper, H, S);
-          R -= S;
+              Math::mult (R, CblasLeft, ValueType(0.0), ValueType(1.0), CblasUpper, H, S);
+              R -= S;
 
-          Image::voxel_assign (noise, pos);
-          for (noise[axis] = 0; noise[axis] < noise.dim(axis); ++noise[axis]) {
-            R.column(noise[axis]) *= leverage;
-            noise.value() = scale_estimator (R.column (noise[axis]));
-          }
-        }
+              for (auto l = Loop (axis, axis+1) (noise); l; ++l) {
+                R.column (noise.index (axis)) *= leverage;
+                noise.value() = scale_estimator (R.column (noise.index (axis)));
+              }
+            }
 
-      protected:
-        InputVoxelType dwi;
-        OutputVoxelType noise;
-        Math::Matrix<value_type> H, S, R;
-        Math::Vector<value_type> leverage;
-        Sn_scale_estimator<value_type> scale_estimator;
-        int axis;
-    };
-
-
+          protected:
+            InputImageType dwi;
+            OutputImageType noise;
+            Math::Matrix<ValueType> H, S, R;
+            Math::Vector<ValueType> leverage;
+            Sn_scale_estimator<ValueType> scale_estimator;
+            int axis;
+        };
+    }
 
 
-    class NoiseEstimator : public Image::ConstInfo 
-    {
-      public:
-        template <class InfoType>
-        NoiseEstimator (const InfoType& dwi_info) :
-          Image::ConstInfo (dwi_info) { 
-            Image::Info::set_ndim (3);
-          }
 
-        template <class InputVoxelType, class OutputVoxelType, class ValueType> 
-          inline void operator() (InputVoxelType& dwi, OutputVoxelType& noise, const Math::Matrix<ValueType>& SH2amp_mapping) {
-            Image::ThreadedLoop loop ("estimating noise level...", dwi, 0, 3);
-            NoiseEstimatorFunctor<InputVoxelType,OutputVoxelType,ValueType> functor (dwi, noise, SH2amp_mapping, loop.inner_axes()[0]);
-            loop.run_outer (functor);
-          } 
 
-    };
+    template <class InputImageType, class OutputImageType, class ValueType> 
+      inline void estimate_noise (InputImageType& dwi, OutputImageType& noise, const Math::Matrix<ValueType>& SH2amp_mapping) {
+        ThreadedLoop loop ("estimating noise level...", dwi, 0, 3);
+        NoiseEstimatorFunctor<InputImageType,OutputImageType,ValueType> functor (SH2amp_mapping, loop.inner_axes()[0], dwi, noise);
+        loop.run_outer (functor);
+      } 
+
 
   }
 }

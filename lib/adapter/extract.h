@@ -57,7 +57,7 @@ namespace MR
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n) 
-            parent.index(n) = ( n == extract_axis ? indices[0] : 0 );
+            parent().index(n) = ( n == extract_axis ? indices[0] : 0 );
           current_pos = 0;
         }
 
@@ -68,7 +68,7 @@ namespace MR
         const Math::Matrix<default_type>& transform () const { return trans; } 
 
         auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; } 
-        ssize_t index (size_t axis) const { return get_pos (axis); }
+        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
 
         friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
           stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
@@ -79,35 +79,35 @@ namespace MR
         }
 
       private:
-        size_t extract_axis;
+        const size_t extract_axis;
         const std::vector<int> indices;
         Math::Matrix<default_type> trans;
         ssize_t current_pos;
 
-        ssize_t get_pos (size_t axis) {
-          return ( axis == extract_axis ? current_pos : parent.index(axis) );
+        ssize_t get_voxel_position (size_t axis) const {
+          return ( axis == extract_axis ? current_pos : parent().index(axis) );
         }
 
-        void set_pos (size_t axis, ssize_t position) {
+        void set_voxel_position (size_t axis, ssize_t position) {
           if (axis == extract_axis) {
-            parent.index(axis) = indices[position];
+            parent().index(axis) = indices[position];
             current_pos = position;
           }
           else 
-            parent.index(axis) = position;
+            parent().index(axis) = position;
         }
 
-        void move_pos (size_t axis, ssize_t increment) {
+        void move_voxel_position (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
             ssize_t prev_pos = indices[current_pos];
             current_pos += increment;
-            parent.index(axis) += current_pos < ssize_t(indices.size()) ? indices[current_pos] - prev_pos : 0;
+            parent().index(axis) += current_pos < ssize_t(indices.size()) ? indices[current_pos] - prev_pos : 0;
           }
           else 
-            parent.index(axis) += increment;
+            parent().index(axis) += increment;
         }
 
-        friend class Helper::VoxelIndex<Extract1D<ImageType> >;
+        friend class Helper::VoxelIndex<Extract1D<ImageType>>;
     };
 
 
@@ -150,7 +150,7 @@ namespace MR
         void reset () {
           for (size_t n = 0; n < ndim(); ++n) {
             current_pos[n] = 0;
-            parent.index(n) = indices[n][0];
+            parent().index(n) = indices[n][0];
           }
         }
 
@@ -167,13 +167,13 @@ namespace MR
         }
         void set_voxel_position (size_t axis, ssize_t position) {
           current_pos[axis] = position;
-          parent.index(axis) = indices[axis][position];
+          parent().index(axis) = indices[axis][position];
         }
 
         void move_voxel_position (size_t axis, ssize_t increment) {
           ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;
-          parent.index (axis) += indices[axis][current_pos[axis]] - indices[axis][prev];
+          parent().index (axis) += indices[axis][current_pos[axis]] - indices[axis][prev];
         }
 
         friend class Helper::VoxelIndex<Extract<ImageType> >;

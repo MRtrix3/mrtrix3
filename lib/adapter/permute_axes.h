@@ -41,11 +41,11 @@ namespace MR
         PermuteAxes (const ImageType& original, const std::vector<int>& axes) :
           Base<ImageType> (original), 
           axes_ (axes) {
-            for (int i = 0; i < static_cast<int> (parent.ndim()); ++i) {
+            for (int i = 0; i < static_cast<int> (parent().ndim()); ++i) {
               for (size_t a = 0; a < axes_.size(); ++a)
                 if (axes_[a] == i)
                   goto next_axis;
-              if (parent.size (i) != 1)
+              if (parent().size (i) != 1)
                 throw Exception ("omitted axis \"" + str (i) + "\" has dimension greater than 1");
 next_axis:
               continue;
@@ -56,16 +56,16 @@ next_axis:
           return axes_.size();
         }
         ssize_t size (size_t axis) const {
-          return axes_[axis] < 0 ? 1 : parent.size (axes_[axis]);
+          return axes_[axis] < 0 ? 1 : parent().size (axes_[axis]);
         }
         default_type voxsize (size_t axis) const {
-          return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent.voxsize (axes_[axis]);
+          return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().voxsize (axes_[axis]);
         }
         ssize_t stride (size_t axis) const {
-          return axes_[axis] < 0 ? 0 : parent.stride (axes_[axis]);
+          return axes_[axis] < 0 ? 0 : parent().stride (axes_[axis]);
         }
 
-        void reset () { parent.reset(); }
+        void reset () { parent().reset(); }
 
         auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
 
@@ -73,13 +73,13 @@ next_axis:
         const std::vector<int> axes_;
 
         ssize_t get_voxel_position (size_t axis) {
-          return axes_[axis] < 0 ? 0 : parent.index (axes_[axis]);
+          return axes_[axis] < 0 ? 0 : parent().index (axes_[axis]);
         }
         void set_voxel_position (size_t axis, ssize_t position) {
-          parent.index (axes_[axis]) = position;
+          parent().index (axes_[axis]) = position;
         }
         void move_voxel_position (size_t axis, ssize_t increment) {
-          parent.index (axes_[axis]) += increment;
+          parent().index (axes_[axis]) += increment;
         }
 
         friend class Helper::VoxelIndex<PermuteAxes<ImageType>>;

@@ -56,9 +56,6 @@ void usage ()
 
 typedef float value_type;
 typedef double cost_value_type;
-//typedef Image::BufferPreload<value_type> InputBufferType;
-//typedef Image::Buffer<value_type> OutputBufferType;
-//typedef Image::Buffer<bool> MaskBufferType;
 
 
 
@@ -101,9 +98,11 @@ class Processor
 
     template <class DWIType>
       bool load_data (DWIType& dwi) {
-        if (mask.valid()) 
+        if (mask.valid()) {
+          assign_pos_of (dwi, 0, 3).to (mask);
           if (!mask.value())
             return false;
+        }
 
         for (size_t n = 0; n < sdeconv.shared.dwis.size(); n++) {
           dwi.index(3) = sdeconv.shared.dwis[n];
@@ -144,6 +143,7 @@ void run ()
     mask = Header::open (opt[0][0]).get_image<bool>();
     check_dimensions (dwi, mask);
   }
+
 
   DWI::CSDeconv<value_type>::Shared shared (dwi.header());
   shared.parse_cmdline_options();
