@@ -86,7 +86,10 @@ void usage ()
 template <class InfoType>
 inline std::vector<int> set_header (Image::Header& header, const InfoType& input)
 {
+  // need to preserve dataype, already parsed from command-line:
+  auto datatype = header.datatype();
   header.info() = input.info();
+  header.datatype() = datatype;
 
   header.intensity_offset() = 0.0;
   header.intensity_scale() = 1.0;
@@ -141,6 +144,7 @@ inline void copy_permute (Image::Header& header_in, Image::Header& header_out, c
 
   buffer_type buffer_in (header_in);
   voxel_type in = buffer_in.voxel();
+
 
   if (pos.empty()) {
 
