@@ -32,9 +32,9 @@ namespace MR
   namespace {
 
     struct __copy_func {
-      template <class InputVoxelType, class OutputVoxelType>
-        inline void operator() (InputVoxelType& in, OutputVoxelType& out) const {
-          const typename InputVoxelType::value_type tmp = in.value();
+      template <class InputImageType, class OutputImageType>
+        inline void operator() (InputImageType& in, OutputImageType& out) const {
+          const typename InputImageType::value_type tmp = in.value();
           out.value() = tmp;
         }
     };
@@ -46,10 +46,10 @@ namespace MR
 
 
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy (
-        InputVoxelType& source, 
-        OutputVoxelType& destination, 
+        InputImageType& source, 
+        OutputImageType& destination, 
         const std::vector<size_t>& axes,
         size_t num_axes_in_thread = 1) 
     {
@@ -57,10 +57,10 @@ namespace MR
         .run (__copy_func(), source, destination);
     }
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy (
-        InputVoxelType& source, 
-        OutputVoxelType& destination, 
+        InputImageType& source, 
+        OutputImageType& destination, 
         size_t num_axes_in_thread = 1, 
         size_t from_axis = 0, 
         size_t to_axis = std::numeric_limits<size_t>::max())
@@ -72,11 +72,11 @@ namespace MR
 
 
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy_with_progress_message (
         const std::string& message, 
-        InputVoxelType& source, 
-        OutputVoxelType& destination, 
+        InputImageType& source, 
+        OutputImageType& destination, 
         const std::vector<size_t>& axes,
         size_t num_axes_in_thread = 1)
     {
@@ -84,24 +84,24 @@ namespace MR
         .run (__copy_func(), source, destination);
     }
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy_with_progress_message (
         const std::string& message, 
-        InputVoxelType& source, 
-        OutputVoxelType& destination, 
+        InputImageType& source, 
+        OutputImageType& destination, 
         size_t num_axes_in_thread = 1, 
         size_t from_axis = 0, 
         size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      ThreadedLoop (message, source, from_axis, to_axis, num_axes_in_thread)
-        .run (__copy_func(), source, destination);
+      ThreadedLoop loop (message, source, from_axis, to_axis, num_axes_in_thread);
+      loop.run (__copy_func(), source, destination);
     }
 
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy_with_progress (
-        InputVoxelType& source,
-        OutputVoxelType& destination, 
+        InputImageType& source,
+        OutputImageType& destination, 
         const std::vector<size_t>& axes, 
         size_t num_axes_in_thread = 1)
     {
@@ -109,10 +109,10 @@ namespace MR
           source, destination, axes, num_axes_in_thread);
     }
 
-  template <class InputVoxelType, class OutputVoxelType>
+  template <class InputImageType, class OutputImageType>
     inline void threaded_copy_with_progress (
-        InputVoxelType& source, 
-        OutputVoxelType& destination, 
+        InputImageType& source, 
+        OutputImageType& destination, 
         size_t num_axes_in_thread = 1,
         size_t from_axis = 0,
         size_t to_axis = std::numeric_limits<size_t>::max())

@@ -46,11 +46,19 @@ namespace MR
         Image () = delete;
         Image (const Image&) = default;
         Image (Image&&) = default;
-        Image& operator= (const Image&) = default;
+        Image& operator= (const Image& image) {
+          // use placement-new here to allow use of a const shared_ptr to hold
+          // the buffer/header:
+          new (this) Image (image);
+          return *this;
+        }
         ~Image();
 
         //! used internally to instantiate Image objects
         Image (const std::shared_ptr<const Buffer>&, const Stride::List& = Stride::List());
+
+        bool valid () const { return bool(buffer); }
+        bool operator! () const { return !valid(); }
 
         const Header& header () const { return *buffer; }
 
@@ -534,6 +542,8 @@ namespace MR
     template <typename ValueType>
       inline const Image<ValueType> Header::get_image () const 
       {
+        if (!valid())
+          return { nullptr };
         auto buffer = std::make_shared<const typename Image<ValueType>::Buffer> (*this);
         return { buffer };
       }

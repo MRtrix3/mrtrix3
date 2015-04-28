@@ -25,7 +25,8 @@
 
 #include "apply.h"
 #include "progressbar.h"
-#include "image.h"
+#include "stride.h"
+#include "image_helpers.h"
 
 namespace MR
 {

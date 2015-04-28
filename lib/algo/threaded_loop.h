@@ -24,7 +24,6 @@
 #define __algo_threaded_loop_h__
 
 #include "debug.h"
-#include "image.h"
 #include "algo/loop.h"
 #include "algo/iterator.h"
 #include "thread.h"
@@ -508,19 +507,7 @@ namespace MR
 
   }
 
-
-
   /*! \} */
-
-
-
-
-
-
-
-
-
-
 
 }
 
