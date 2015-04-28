@@ -295,8 +295,8 @@ class ImageKernel : public ImageKernelBase {
   public:
     ImageKernel (const Header& header, const std::string& path) :
       ImageKernelBase (path),
-      header (header),
-      image (header) {
+      header (header){
+        image = header.get_image<float>();
         ThreadedLoop (image).run (InitFunctor(), image);
       }
 
@@ -314,8 +314,8 @@ class ImageKernel : public ImageKernelBase {
 
   protected:
     const Header& header;
-    Image<Operation> image;
-
+    Image<float> image;
+    // Image<Operation> image;
 };
 
 
@@ -374,30 +374,33 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<std::unique_ptr<Header>> headers_in;
+    std::vector<Header> headers_in;
+    // std::vector<std::unique_ptr<Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
     // auto header = Header::open (argument[0]);
-    headers_in.push_back (std::unique_ptr<Header> (new Header::open (argument[0])));
-    Header header (*headers_in[0]);
+    // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (argument[0]))));
+    headers_in.push_back (Header::open (argument[0]));
+    Header header (headers_in[0]);
 
     // Wipe any excess unary-dimensional axes
-    while (header.dim (header.ndim() - 1) == 1)
+    while (header.size (header.ndim() - 1) == 1)
       header.set_ndim (header.ndim() - 1);
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (std::unique_ptr<Header> (new Header::open (path)));
-      const Header& temp (*headers_in[i]);
+      // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
+      headers_in.push_back (Header::open (path));
+      const Header temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
-        if (temp.dim(axis) != header.dim(axis))
+        if (temp.size(axis) != header.size(axis))
           throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
-        if (temp.dim(axis) != 1)
+        if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
     }
@@ -424,7 +427,7 @@ void run ()
       ProgressBar progress (std::string("computing ") + operations[op] + " across " 
           + str(headers_in.size()) + " images...", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
-        kernel->process (*headers_in[i]);
+        kernel->process (headers_in[i]);
         ++progress;
       }
     }
