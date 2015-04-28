@@ -24,7 +24,7 @@
 #define __dwi_sdeconv_constrained_h__
 
 #include "app.h"
-#include "image/header.h"
+#include "header.h"
 #include "dwi/gradient.h"
 #include "math/SH.h"
 #include "dwi/directions/predefined.h"
@@ -48,7 +48,7 @@ namespace MR
         {
           public:
 
-            Shared (const Image::Header& dwi_header) :
+            Shared (const Header& dwi_header) :
                 neg_lambda (1.0),
                 norm_lambda (1.0),
                 threshold (0.0),
