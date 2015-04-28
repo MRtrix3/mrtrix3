@@ -55,31 +55,28 @@ typedef float value_type;
 
 class DWI2ADC {
   public:
-    DWI2ADC (Image<value_type>& dwi_image, Image<value_type>& adc_image, const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
-      dwi_image (dwi_image), 
-      adc_image (adc_image), 
-      dwi (dwi_image.size (dwi_axis)), 
+    DWI2ADC (const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
+      dwi (binv.columns()),
       adc (2), 
       binv (binv), 
       dwi_axis (dwi_axis) { }
 
-    void operator() (const Iterator& pos) {
-      assign_pos_of (pos).to (dwi_image, adc_image);
-      for (auto l = Loop (dwi_axis, dwi_axis+1) (dwi_image); l; ++l) {
-        value_type val = dwi_image.value();
-        dwi[dwi_image.index(dwi_axis)] = val ? std::log (val) : 1.0e-12;
+    template <class DWIType, class ADCType>
+      void operator() (DWIType& dwi_image, ADCType& adc_image) {
+        for (auto l = Loop (dwi_axis, dwi_axis+1) (dwi_image); l; ++l) {
+          value_type val = dwi_image.value();
+          dwi[dwi_image.index(dwi_axis)] = val ? std::log (val) : 1.0e-12;
+        }
+
+        Math::mult (adc, binv, dwi);
+
+        adc_image.index(3) = 0;
+        adc_image.value() = std::exp (adc[0]);
+        adc_image.index(3) = 1;
+        adc_image.value() = adc[1];
       }
 
-      Math::mult (adc, binv, dwi);
-
-      adc_image.index (3) = 0;
-      adc_image.value() = std::exp (adc[0]);
-      adc_image.index(3) = 1;
-      adc_image.value() = adc[1];
-    }
-
   protected:
-    Image<value_type> dwi_image, adc_image;
     Math::Vector<value_type> dwi, adc;
     const Math::Matrix<value_type>& binv;
     const size_t dwi_axis;
@@ -113,7 +110,7 @@ void run () {
   auto adc = Header::create (argument[1], header).get_image<value_type>();
 
   ThreadedLoop ("computing ADC values...", dwi, 0, 3)
-    .run (DWI2ADC (dwi, adc, binv, dwi_axis));
+    .run (DWI2ADC (binv, dwi_axis), dwi, adc);
 }
 
 
