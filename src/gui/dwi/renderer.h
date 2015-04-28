@@ -27,7 +27,7 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
-#include "gui/sphere.h"
+#include "gui/shapes/sphere.h"
 #include "gui/opengl/shader.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -92,12 +92,12 @@ namespace MR
 
         protected:
 
-          void update_transform (const std::vector<GUI::Sphere::Vertex>& vertices, int lmax);
+          void update_transform (const std::vector<Shapes::Sphere::Vertex>& vertices, int lmax);
 
           Math::Matrix<float> transform;
 
           GL::Shader::Program shader_program;
-          GUI::Sphere sphere;
+          Shapes::Sphere sphere;
           GL::VertexBuffer surface_buffer;
           GL::VertexArrayObject vertex_array_object;
           mutable GLuint reverse_ID, origin_ID;

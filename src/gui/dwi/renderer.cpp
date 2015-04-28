@@ -124,7 +124,7 @@ namespace MR
 
         sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (0);
-        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(GUI::Sphere::Vertex), (void*)0);
+        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::Sphere::Vertex), (void*)0);
 
         surface_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (1);
@@ -181,7 +181,7 @@ namespace MR
 
 
 
-      void Renderer::update_transform (const std::vector<GUI::Sphere::Vertex>& vertices, int lmax)
+      void Renderer::update_transform (const std::vector<Shapes::Sphere::Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 

@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/sphere.h"
+#include "gui/shapes/sphere.h"
 
 #include <map>
 
@@ -53,6 +53,8 @@ namespace MR
 {
   namespace GUI
   {
+    namespace Shapes
+    {
 
     namespace {
 
@@ -181,6 +183,7 @@ namespace MR
 
 
 
+    }
   }
 }
 

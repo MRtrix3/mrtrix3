@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/cube.h"
+#include "gui/shapes/cube.h"
 
 #define NUM_VERTICES 8
 #define NUM_POLYGONS 12
@@ -57,6 +57,8 @@ namespace MR
 {
   namespace GUI
   {
+    namespace Shapes
+    {
 
 
     void Cube::generate()
@@ -77,6 +79,7 @@ namespace MR
 
 
 
+    }
   }
 }
 

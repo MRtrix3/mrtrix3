@@ -33,10 +33,11 @@
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/tool/base.h"
+#include "gui/shapes/cube.h"
+#include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
-#include "gui/cube.h"
 #include "gui/projection.h"
-#include "gui/sphere.h"
+
 
 #include "mesh/mesh.h"
 
@@ -423,11 +424,11 @@ namespace MR
 
 
             // Used when the geometry of node visualisation is a sphere
-            GUI::Sphere sphere;
+            Shapes::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
 
             // Used when the geometry of node visualisation is a cube
-            GUI::Cube cube;
+            Shapes::Cube cube;
             GL::VertexArrayObject cube_VAO;
 
 
