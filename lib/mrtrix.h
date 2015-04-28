@@ -226,7 +226,6 @@ namespace MR
 
   inline std::vector<std::string> split_lines (
       const std::string& string,
-      const char* delimiters = " \t\n",
       bool ignore_empty_fields = true,
       size_t num = std::numeric_limits<size_t>::max()) {
     return split (string, "\n", ignore_empty_fields, num);
