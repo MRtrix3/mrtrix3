@@ -23,13 +23,9 @@
 #include "command.h"
 #include "progressbar.h"
 #include "memory.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/iterator.h"
-#include "image/threaded_loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
+#include "image.h"
+// #include "header.h"
+#include "algo/threaded_loop.h"
 #include "math/math.h"
 #include "math/median.h"
 
@@ -80,13 +76,6 @@ void usage ()
 
 
 typedef float value_type;
-
-typedef Image::BufferPreload<value_type> PreloadBufferType;
-typedef PreloadBufferType::voxel_type PreloadVoxelType;
-
-typedef Image::Buffer<value_type> BufferType;
-typedef BufferType::voxel_type VoxelType;
-
 
 
 class Mean {
@@ -250,10 +239,10 @@ class AxisKernel {
   public:
     AxisKernel (size_t axis) : axis (axis) { }
 
-    template <class InputVoxelType, class OutputVoxelType>
-      void operator() (InputVoxelType& in, OutputVoxelType& out) {
+    template <class InputImageType, class OutputImageType>
+      void operator() (InputImageType& in, OutputImageType& out) {
         Operation op;
-        for (in[axis] = 0; in[axis] < in.dim(axis); ++in[axis])
+        for (in[axis] = 0; in[axis] < in.size(axis); ++in[axis])
           op (in.value());
         out.value() = op.result();
       }
@@ -270,7 +259,7 @@ class ImageKernelBase {
     ImageKernelBase (const std::string& path) :
       output_path (path) { }
     virtual ~ImageKernelBase() { }
-    virtual void process (const Image::Header& image_in) = 0;
+    virtual void process (const Header& image_in) = 0;
   protected:
     const std::string output_path;
 };
@@ -282,13 +271,13 @@ class ImageKernel : public ImageKernelBase {
   protected:
     class InitFunctor { 
       public: 
-        template <class VoxelType> 
-          void operator() (VoxelType& out) const { out.value() = Operation(); } 
+        template <class ImageType> 
+          void operator() (ImageType& out) const { out.value() = Operation(); } 
     };
     class ProcessFunctor { 
       public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const { 
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const { 
             Operation op = out.value(); 
             op (in.value()); 
             out.value() = op;
@@ -296,36 +285,36 @@ class ImageKernel : public ImageKernelBase {
     };
     class ResultFunctor {
       public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const {
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const {
             Operation op = in.value(); 
             out.value() = op.result(); 
           } 
     };
 
   public:
-    ImageKernel (const Image::Header& header, const std::string& path) :
+    ImageKernel (const Header& header, const std::string& path) :
       ImageKernelBase (path),
       header (header),
-      buffer (header) {
-        Image::ThreadedLoop (buffer).run (InitFunctor(), buffer.voxel());
+      image (header) {
+        ThreadedLoop (image).run (InitFunctor(), image);
       }
 
     ~ImageKernel()
     {
-      Image::Buffer<value_type> out (output_path, header);
-      Image::ThreadedLoop (buffer).run (ResultFunctor(), out.voxel(), buffer.voxel());
+      Image<value_type> out (output_path, header);
+      ThreadedLoop (image).run (ResultFunctor(), out, image);
     }
 
-    void process (const Image::Header& image_in)
+    void process (const Header& image_in)
     {
-      Image::Buffer<value_type> in (image_in);
-      Image::ThreadedLoop (buffer).run (ProcessFunctor(), buffer.voxel(), in.voxel());
+      Image<value_type> in (image_in);
+      ThreadedLoop (image).run (ProcessFunctor(), image, in);
     }
 
   protected:
-    const Image::Header& header;
-    Image::BufferScratch<Operation> buffer;
+    const Header& header;
+    Image<Operation> image;
 
 };
 
@@ -346,36 +335,36 @@ void run ()
 
     const size_t axis = opt[0][0];
 
-    PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
+    auto image_in = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis (axis));
 
-    if (axis >= buffer_in.ndim())
-      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
+    if (axis >= image_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
-    Image::Header header_out (buffer_in);
+
+    Header header_out (image_in.header());
+
     header_out.datatype() = DataType::Float32;
-    header_out.dim(axis) = 1;
-    Image::squeeze_dim (header_out);
+    header_out.size(axis) = 1;
+    squeeze_dim (header_out);
 
-    BufferType buffer_out (output_path, header_out);
+    auto image_out = Header::create (output_path, header_out).get_image<float>();
+    // auto image_out = Header::allocate (header_out).get_image<float>();
+    // Image image_out (output_path, header_out);
 
-    auto vox_in = buffer_in.voxel();
-    auto vox_out = buffer_out.voxel();
-
-
-    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);
+    ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
 
     switch (op) {
-      case 0: loop.run  (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
-      case 1: loop.run  (AxisKernel<Median> (axis), vox_in, vox_out); return;
-      case 2: loop.run  (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
-      case 3: loop.run  (AxisKernel<Product>(axis), vox_in, vox_out); return;
-      case 4: loop.run  (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
-      case 5: loop.run  (AxisKernel<Var>    (axis), vox_in, vox_out); return;
-      case 6: loop.run  (AxisKernel<Std>    (axis), vox_in, vox_out); return;
-      case 7: loop.run  (AxisKernel<Min>    (axis), vox_in, vox_out); return;
-      case 8: loop.run  (AxisKernel<Max>    (axis), vox_in, vox_out); return;
-      case 9: loop.run  (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
-      case 10: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
+      case 0: loop.run  (AxisKernel<Mean>   (axis), image_in, image_out); return;
+      case 1: loop.run  (AxisKernel<Median> (axis), image_in, image_out); return;
+      case 2: loop.run  (AxisKernel<Sum>    (axis), image_in, image_out); return;
+      case 3: loop.run  (AxisKernel<Product>(axis), image_in, image_out); return;
+      case 4: loop.run  (AxisKernel<RMS>    (axis), image_in, image_out); return;
+      case 5: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
+      case 6: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
+      case 7: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
+      case 8: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
+      case 9: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
+      case 10: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
       default: assert (0);
     }
 
@@ -385,11 +374,12 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<std::unique_ptr<Image::Header>> headers_in;
+    std::vector<std::unique_ptr<Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
-    Image::Header header (*headers_in[0]);
+    // auto header = Header::open (argument[0]);
+    headers_in.push_back (std::unique_ptr<Header> (new Header::open (argument[0])));
+    Header header (*headers_in[0]);
 
     // Wipe any excess unary-dimensional axes
     while (header.dim (header.ndim() - 1) == 1)
@@ -398,8 +388,8 @@ void run ()
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (path)));
-      const Image::Header& temp (*headers_in[i]);
+      headers_in.push_back (std::unique_ptr<Header> (new Header::open (path)));
+      const Header& temp (*headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
