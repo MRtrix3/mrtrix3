@@ -68,6 +68,11 @@ namespace MR
         offset_ (0.0),
         scale_ (1.0) { }
 
+      Header& operator= (Header&& H) = default;
+
+      //! assignment operator
+      /*! This copies everything over apart from the IO handler and the
+       * intensity scaling. */
       Header& operator= (const Header& H) {
         axes_ = H.axes_;
         transform_ = H.transform_;
@@ -159,12 +164,14 @@ namespace MR
       /*! when this method is invoked, the image data will actually be made
        * available (i.e. it will be mapped, loaded or allocated into memory).
        *
-       * \note this function should only be invoked on const objects - you should
-       * not try to use it on a non-const Header object, it will result in a
-       * compile-time error - this it to ensure that the Header has not been
-       * modified since being created. */
+       * \warning do not modify the Header between its instantiation with the
+       * open(), create() or allocate() calls, and obtaining an image via the
+       * get_image() method. The latter will use the information in the Header
+       * to access the data, and any mismatch in the information may cause
+       * problems.
+       */
       template <typename ValueType>
-        const Image<ValueType> get_image () const;
+        Image<ValueType> get_image ();
 
       //! get generic key/value text attributes
       const std::map<std::string, std::string>& keyval () const { return keyval_; }
@@ -206,10 +213,10 @@ namespace MR
           keyval()["dw_scheme"] = dw_scheme;
         }
 
-      static const Header open (const std::string& image_name);
-      static const Header create (const std::string& image_name, const Header& template_header);
-      static const Header allocate (const Header& template_header);
-      static const Header empty ();
+      static Header open (const std::string& image_name);
+      static Header create (const std::string& image_name, const Header& template_header);
+      static Header allocate (const Header& template_header);
+      static Header empty ();
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -230,14 +237,14 @@ namespace MR
       std::map<std::string, std::string> keyval_;
 
       //! additional information relevant for images stored on file
-      mutable std::unique_ptr<ImageIO::Base> io; 
+      std::unique_ptr<ImageIO::Base> io; 
       //! the type of the data as stored on file
       DataType datatype_; 
       //! the values by which to scale the intensities
       default_type offset_, scale_;
 
 
-      void acquire_io (const Header& H) { io = std::move (H.io); }
+      void acquire_io (Header& H) { io = std::move (H.io); }
       void merge (const Header& H);
 
       //! realign transform to match RAS coordinate system as closely as possible
@@ -249,9 +256,6 @@ namespace MR
         Stride::sanitise (*this);
         Stride::actualise (*this);
       }
-
-      template <typename ValueType>
-        const Image<ValueType> get_image (); // do not use this function with a non-const Header
   };
 
 
@@ -287,14 +291,14 @@ namespace MR
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
 
 
-  inline const Header Header::allocate (const Header& template_header) 
+  inline Header Header::allocate (const Header& template_header) 
   {
     Header H (template_header);
     H.sanitise();
     return H;
   }
 
-  inline const Header Header::empty ()
+  inline Header Header::empty ()
   {
     return { };
   }

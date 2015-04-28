@@ -72,7 +72,7 @@ namespace MR
 
 
 
-  const Header Header::open (const std::string& image_name)
+  Header Header::open (const std::string& image_name)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");
@@ -141,7 +141,7 @@ namespace MR
 
 
 
-  const Header Header::create (const std::string& image_name, const Header& template_header)
+  Header Header::create (const std::string& image_name, const Header& template_header)
   {
     if (image_name.empty())
       throw Exception ("no name supplied to open image!");

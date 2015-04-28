@@ -135,7 +135,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
 
 
 template <typename T>
-inline void copy_permute (const Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
+inline void copy_permute (Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
 {
   //typedef Image::Buffer<T> buffer_type;
   //typedef typename buffer_type::voxel_type voxel_type;
@@ -183,7 +183,7 @@ inline void copy_permute (const Header& header_in, Header& header_out, const std
 
 void run ()
 {
-  const Header header_in = Header::open (argument[0]);
+  Header header_in = Header::open (argument[0]);
 
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());

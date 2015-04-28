@@ -46,16 +46,12 @@ namespace MR
         Image ();
         Image (const Image&) = default;
         Image (Image&&) = default;
-        Image& operator= (const Image& image) {
-          // use placement-new here to allow use of a const shared_ptr to hold
-          // the buffer/header:
-          new (this) Image (image);
-          return *this;
-        }
+        Image& operator= (const Image& image) = default;
+        Image& operator= (Image&&) = default;
         ~Image();
 
         //! used internally to instantiate Image objects
-        Image (const std::shared_ptr<const Buffer>&, const Stride::List& = Stride::List());
+        Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
 
         bool valid () const { return bool(buffer); }
         bool operator! () const { return !valid(); }
@@ -129,7 +125,7 @@ namespace MR
          * \endcode 
          * \note this invalidate the invoking Image - do not use the original
          * image in subsequent code.*/
-         const Image with_direct_io (Stride::List with_strides = Stride::List()) const;
+         Image with_direct_io (Stride::List with_strides = Stride::List());
 
 
         //! display the contents of the image in MRView
@@ -148,13 +144,13 @@ namespace MR
 
       protected:
         //! shared reference to header/buffer
-        const std::shared_ptr<const Buffer> buffer;
+        std::shared_ptr<Buffer> buffer;
         //! pointer to data address whether in RAM or MMap
-        ValueType * const data_pointer;
+        ValueType* data_pointer;
         //! voxel indices
         std::vector<ssize_t> x;
         //! voxel indices
-        const Stride::List strides;
+        Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
 
@@ -180,8 +176,6 @@ namespace MR
           x[axis] += increment;
         }
 
-        const Image with_direct_io (Stride::List with_strides = Stride::List()); // do not use this function with a non-const Image
-
         friend class Helper::VoxelIndex<Image>;
         friend class Helper::VoxelValue<Image>;
     };
@@ -198,9 +192,10 @@ namespace MR
     {
       public:
         //! construct a Buffer object to access the data in the image specified
-        Buffer (const Header& H, bool read_write_if_existing = false, bool direct_io = false, Stride::List strides = Stride::List());
+        Buffer (Header& H, bool read_write_if_existing = false, bool direct_io = false, Stride::List strides = Stride::List());
         Buffer (Buffer&&) = default;
         Buffer& operator= (const Buffer&) = delete;
+        Buffer& operator= (Buffer&&) = default;
         Buffer (const Buffer& b) : 
           Header (b), get_func (b.get_func), put_func (b.put_func) { }
 
@@ -215,11 +210,10 @@ namespace MR
           put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
-        mutable std::unique_ptr<ValueType[]> data_buffer;
-        ValueType* get_data_pointer () const;
+        std::unique_ptr<ValueType[]> data_buffer;
+        ValueType* get_data_pointer ();
 
         ImageIO::Base* get_io () const { return io.get(); }
-        void grab_io (const Buffer& b) const { io = std::move (b.io); }
 
       protected:
         std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
@@ -502,7 +496,7 @@ namespace MR
 
 
     template <typename ValueType>
-      Image<ValueType>::Buffer::Buffer (const Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
+      Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
         Header (H) {
           if (H.is_file_backed()) { // file-backed image
             acquire_io (H);
@@ -518,12 +512,12 @@ namespace MR
 
 
     template <typename ValueType> 
-      ValueType* Image<ValueType>::Buffer::get_data_pointer () const 
+      ValueType* Image<ValueType>::Buffer::get_data_pointer () 
       {
         if (data_buffer) // already allocated via with_direct_io()
           return data_buffer.get();
 
-        if (!io) { // scractch buffer: allocate and return
+        if (!io) { // scratch buffer: allocate and return
           data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
           return data_buffer.get();
         }
@@ -540,11 +534,11 @@ namespace MR
 
 
     template <typename ValueType>
-      inline const Image<ValueType> Header::get_image () const 
+      inline Image<ValueType> Header::get_image () 
       {
         if (!valid())
           return { };
-        auto buffer = std::make_shared<const typename Image<ValueType>::Buffer> (*this);
+        auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this);
         return { buffer };
       }
 
@@ -560,7 +554,7 @@ namespace MR
         { }
 
     template <typename ValueType>
-      inline Image<ValueType>::Image (const std::shared_ptr<const Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
+      inline Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
         buffer (buffer_p),
         data_pointer (buffer->get_data_pointer()),
         x (ndim(), 0),
@@ -594,7 +588,7 @@ namespace MR
 
 
     template <typename ValueType>
-      const Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides) const
+      Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides)
       {
         if (!buffer->get_io())
           throw Exception ("FIXME: don't invoke 'with_direct_io()' on scratch images!");
