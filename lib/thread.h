@@ -64,9 +64,13 @@ namespace MR
           ++backend->refcount; 
         }
         static void unregister_thread () {
-          std::lock_guard<std::mutex> lock (get_lock());
-          --backend->refcount;
-          if (!backend->refcount) {
+          bool delete_backend;
+          {
+            std::lock_guard<std::mutex> lock (get_lock());
+            --backend->refcount;
+            delete_backend = ( backend->refcount == 0 );
+          }
+          if (delete_backend) {
             delete backend;
             backend = nullptr;
           }

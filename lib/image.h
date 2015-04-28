@@ -43,7 +43,7 @@ namespace MR
         typedef ValueType value_type;
         class Buffer;
 
-        Image () = delete;
+        Image ();
         Image (const Image&) = default;
         Image (Image&&) = default;
         Image& operator= (const Image& image) {
@@ -543,7 +543,7 @@ namespace MR
       inline const Image<ValueType> Header::get_image () const 
       {
         if (!valid())
-          return { nullptr };
+          return { };
         auto buffer = std::make_shared<const typename Image<ValueType>::Buffer> (*this);
         return { buffer };
       }
@@ -554,6 +554,12 @@ namespace MR
 
 
     template <typename ValueType>
+      inline Image<ValueType>::Image () :
+        data_pointer (nullptr), 
+        data_offset (0)
+        { }
+
+    template <typename ValueType>
       inline Image<ValueType>::Image (const std::shared_ptr<const Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
         buffer (buffer_p),
         data_pointer (buffer->get_data_pointer()),
@@ -561,6 +567,7 @@ namespace MR
         strides (strides.size() ? strides : Stride::get (*buffer)),
         data_offset (Stride::offset (*this))
         { 
+          assert (buffer);
           assert (data_pointer || buffer->get_io());
         }
 

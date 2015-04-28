@@ -137,7 +137,7 @@ void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis(3));
 
-  auto mask = Header::empty().get_image<bool>();
+  auto mask = Image<bool>();
 
   Options opt = get_options ("mask");
   if (opt.size()) {
