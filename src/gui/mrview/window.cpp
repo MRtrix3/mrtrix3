@@ -907,8 +907,15 @@ namespace MR
 
       void Window::reset_view_slot ()
       {
-        if (image())
+        if (image()) {
           mode->reset_event();
+          QList<QAction*> tools = tool_group->actions();
+          for (QAction* action : tools) {
+            Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(action)->dock;
+            if (dock)
+              dock->tool->reset_event();
+          }
+        }
       }
 
 
