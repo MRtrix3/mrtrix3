@@ -69,10 +69,17 @@ namespace MR
         void Connectome::NodeShader::update (const Connectome& parent)
         {
           vertex_shader_source =
-              "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
+              "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
+
+          if (parent.node_geometry == NODE_GEOM_CUBE) {
+            vertex_shader_source +=
+              "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
+          }
+
+          vertex_shader_source +=
               "uniform mat4 MVP;\n";
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE || (parent.node_geometry == NODE_GEOM_MESH && parent.node_size_scale_factor != 1.0f)) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE || (parent.node_geometry == NODE_GEOM_MESH && parent.node_size_scale_factor != 1.0f)) {
             vertex_shader_source +=
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
@@ -83,9 +90,13 @@ namespace MR
               "uniform int reverse;\n";
           }
 
+          //if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
           if (parent.node_geometry == NODE_GEOM_SPHERE) {
             vertex_shader_source +=
               "out vec3 normal;\n";
+          } else if (parent.node_geometry == NODE_GEOM_CUBE) {
+            vertex_shader_source +=
+              "flat out vec3 normal;\n";
           }
 
           vertex_shader_source +=
@@ -101,6 +112,11 @@ namespace MR
               "    normal = -normal;\n"
               "  }\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
+              break;
+            case NODE_GEOM_CUBE:
+              vertex_shader_source +=
+              "  gl_Position = (MVP * vec4 (node_centre + (vertexPosition_modelspace * node_size), 1));\n"
+              "  normal = vertexNormal_modelspace;\n";
               break;
             case NODE_GEOM_OVERLAY:
               break;
@@ -134,11 +150,17 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
+              "uniform vec3 light_pos;\n";
+          }
+          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+            fragment_shader_source +=
               "in vec3 normal;\n";
+          } else if (parent.node_geometry == NODE_GEOM_CUBE) {
+            fragment_shader_source +=
+              "flat in vec3 normal;\n";
           }
 
           fragment_shader_source +=
@@ -153,7 +175,7 @@ namespace MR
               "  color = node_colour;\n";
           }
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (-light_pos, normal), normal), 0, 1), shine);\n";
@@ -316,6 +338,7 @@ namespace MR
           node_geometry_combobox = new QComboBox (this);
           node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
           node_geometry_combobox->addItem ("Sphere");
+          node_geometry_combobox->addItem ("Cube");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
@@ -505,14 +528,22 @@ namespace MR
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
 
+          cube.generate();
+          cube_VAO.gen();
+          cube_VAO.bind();
+          cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          cube.normals_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+
           sphere.LOD (4);
           sphere_VAO.gen();
           sphere_VAO.bind();
           sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
-
-          image_open_slot();
         }
 
 
@@ -551,7 +582,7 @@ namespace MR
               node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
             GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-            if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
+            if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
               node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
               node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
             }
@@ -561,6 +592,13 @@ namespace MR
               sphere_VAO.bind();
               sphere.index_buffer.bind();
               reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+            } else if (node_geometry == NODE_GEOM_CUBE) {
+              cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
+              cube.normals_buffer.bind (gl::ARRAY_BUFFER);
+              cube_VAO.bind();
+              cube.index_buffer.bind();
+              glShadeModel (GL_FLAT);
+              gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
             }
 
             if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
@@ -585,7 +623,7 @@ namespace MR
                 gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                 if (node_alpha != NODE_ALPHA_FIXED)
                   gl::Uniform1f (node_alpha_ID, node.get_alpha());
-                if (node_geometry == NODE_GEOM_SPHERE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
+                if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
                   gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
                 switch (node_geometry) {
                   case NODE_GEOM_SPHERE:
@@ -594,6 +632,10 @@ namespace MR
                     gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                     gl::Uniform1i (reverse_ID, 1);
                     gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                    break;
+                  case NODE_GEOM_CUBE:
+                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                    gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                   case NODE_GEOM_OVERLAY:
                     break;
@@ -609,6 +651,9 @@ namespace MR
               gl::Disable (gl::BLEND);
               gl::DepthMask (gl::TRUE_);
             }
+
+            if (node_geometry == NODE_GEOM_CUBE)
+              glShadeModel (GL_SMOOTH);
 
             node_shader.stop();
 
@@ -791,6 +836,15 @@ namespace MR
               node_geometry_sphere_lod_spinbox->setVisible (true);
               break;
             case 1:
+              if (node_geometry == NODE_GEOM_CUBE) return;
+              node_geometry = NODE_GEOM_CUBE;
+              node_size_combobox->setEnabled (true);
+              node_size_button->setVisible (true);
+              node_size_button->setMax (std::numeric_limits<float>::max());
+              node_geometry_sphere_lod_label->setVisible (false);
+              node_geometry_sphere_lod_spinbox->setVisible (false);
+              break;
+            case 2:
               if (node_geometry == NODE_GEOM_OVERLAY) return;
               node_geometry = NODE_GEOM_OVERLAY;
               node_size_combobox->setCurrentIndex (0);
@@ -799,7 +853,7 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               break;
-            case 2:
+            case 3:
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
               node_size_combobox->setCurrentIndex (0);
@@ -887,7 +941,7 @@ namespace MR
 
         void Connectome::node_size_selection_slot (int index)
         {
-          assert (node_geometry == NODE_GEOM_SPHERE);
+          assert (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE);
           switch (index) {
             case 0:
               node_size = NODE_SIZE_FIXED;
@@ -1306,7 +1360,8 @@ namespace MR
           }
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], gl::STATIC_DRAW);
+          if (vertices.size())
+            gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], gl::STATIC_DRAW);
 
           vertex_array_object.gen();
           vertex_array_object.bind();
@@ -1321,7 +1376,8 @@ namespace MR
           }
           index_buffer.gen();
           index_buffer.bind();
-          gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
+          if (indices.size())
+            gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
         }
 
         Connectome::Node::Mesh::Mesh (Mesh&& that) :

@@ -34,6 +34,7 @@
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/color_button.h"
+#include "gui/cube.h"
 #include "gui/projection.h"
 #include "gui/sphere.h"
 
@@ -144,7 +145,7 @@ namespace MR
             typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
             typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
-            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH };
+            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_CUBE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH };
             enum node_colour_t     { NODE_COLOUR_FIXED, NODE_COLOUR_RANDOM, NODE_COLOUR_LUT, NODE_COLOUR_FILE };
             enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
             enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE, NODE_VIS_MANUAL };
@@ -424,6 +425,10 @@ namespace MR
             // Used when the geometry of node visualisation is a sphere
             GUI::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
+
+            // Used when the geometry of node visualisation is a cube
+            GUI::Cube cube;
+            GL::VertexArrayObject cube_VAO;
 
 
             // TODO Class to handle cylinder geometry
