@@ -186,7 +186,6 @@ namespace MR
 
 
 
-
     template <typename ValueType> 
       class Image<ValueType>::Buffer : public Header
     {
@@ -219,7 +218,7 @@ namespace MR
         std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
         std::function<void(ValueType,void*,size_t,default_type,default_type)> put_func;
 
-        void set_get_put_functions (DataType datatype);
+        void set_get_put_functions ();
     };
 
 
@@ -387,11 +386,19 @@ namespace MR
 
 
 
+    template <typename ValueType>
+        typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_get_put_functions (
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, 
+        DataType datatype) { }
 
 
 
-    template <typename ValueType> 
-      void Image<ValueType>::Buffer::set_get_put_functions (DataType datatype) {
+    template <typename ValueType>
+        typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_get_put_functions (
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, 
+        DataType datatype) {
 
         switch (datatype()) {
           case DataType::Bit:
@@ -493,16 +500,25 @@ namespace MR
 
 
 
+    template <typename ValueType> 
+      inline void Image<ValueType>::Buffer::set_get_put_functions () {
+        __set_get_put_functions (get_func, put_func, datatype());
+      }
+
+
+
+
 
 
     template <typename ValueType>
       Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
         Header (H) {
           if (H.is_file_backed()) { // file-backed image
+            assert (is_data_type<ValueType>::value);
             acquire_io (H);
             io->set_readwrite_if_existing (read_write_if_existing);
             io->open();
-            set_get_put_functions (datatype());
+            set_get_put_functions ();
           }
         }
 
