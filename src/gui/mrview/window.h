@@ -122,6 +122,8 @@ namespace MR
           void modeChanged ();
           void imageChanged ();
           void scalingChanged ();
+          void volumeChanged (size_t);
+          void volumeGroupChanged (size_t);
 
         public slots:
           void on_scaling_changed ();
