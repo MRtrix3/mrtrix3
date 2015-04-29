@@ -36,9 +36,13 @@ namespace MR
   class DataType
   {
     public:
-      DataType () : dt (DataType::Native) { }
-      DataType (uint8_t type) : dt (type) { }
-      DataType (const DataType& DT) : dt (DT.dt) { }
+      DataType () noexcept : dt (DataType::Native) { }
+      DataType (uint8_t type) noexcept : dt (type) { }
+      DataType (const DataType&) noexcept = default;
+      DataType (DataType&&) noexcept = default;
+      DataType& operator= (const DataType&) noexcept = default;
+      DataType& operator= (DataType&&) noexcept = default;
+
       bool undefined () const {
         return dt == Undefined;
       }
@@ -59,10 +63,6 @@ namespace MR
       }
       bool operator!= (const DataType DT) const {
         return dt != DT.dt;
-      }
-      const DataType& operator= (const DataType DT) {
-        dt = DT.dt;
-        return *this;
       }
 
       bool is (uint8_t type) const {

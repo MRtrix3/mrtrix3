@@ -54,7 +54,28 @@ namespace MR
       Header () :
         offset_ (0.0),
         scale_ (1.0) { }
-      Header (Header&&) = default;
+
+      Header (Header&& H) noexcept :
+        axes_ (std::move (H.axes_)),
+        transform_ (std::move (H.transform_)),
+        name_ (std::move (H.name_)),
+        keyval_ (std::move (H.keyval_)),
+        io (std::move (H.io)),
+        datatype_ (std::move (H.datatype_)),
+        offset_ (H.offset_),
+        scale_ (H.scale_) { }
+
+      Header& operator= (Header&& H) noexcept {
+        axes_ = std::move (H.axes_);
+        transform_ = std::move (H.transform_);
+        name_ = std::move (H.name_);
+        keyval_ = std::move (H.keyval_);
+        io = std::move (H.io);
+        datatype_ = std::move (H.datatype_);
+        offset_ = H.offset_;
+        scale_ = H.scale_;
+        return *this;
+      }
 
       //! copy constructor
       /*! This copies everything over apart from the IO handler and the
@@ -68,7 +89,6 @@ namespace MR
         offset_ (0.0),
         scale_ (1.0) { }
 
-      Header& operator= (Header&& H) = default;
 
       //! assignment operator
       /*! This copies everything over apart from the IO handler and the
@@ -266,7 +286,7 @@ namespace MR
   //! a class to hold attributes about each axis
   class Header::Axis {
     public:
-      Axis () : size (1), voxsize (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
+      Axis () noexcept : size (1), voxsize (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
       ssize_t size;
       default_type voxsize;
       ssize_t stride;

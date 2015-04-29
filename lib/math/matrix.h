@@ -58,6 +58,11 @@ namespace MR
     template <> class GSLMatrix <float> : public gsl_matrix_float
     {
       public:
+        GSLMatrix () { }
+        GSLMatrix (const GSLMatrix&) noexcept = delete;
+        GSLMatrix (GSLMatrix&&) noexcept = default;
+        GSLMatrix& operator= (const GSLMatrix&) noexcept = delete;
+        GSLMatrix& operator= (GSLMatrix&&) noexcept = default;
         void set (float* p) {
           data = p;
         }
@@ -65,6 +70,11 @@ namespace MR
     template <> class GSLMatrix <double> : public gsl_matrix
     {
       public:
+        GSLMatrix () { }
+        GSLMatrix (const GSLMatrix&) noexcept = delete;
+        GSLMatrix (GSLMatrix&&) noexcept = default;
+        GSLMatrix& operator= (const GSLMatrix&) noexcept = delete;
+        GSLMatrix& operator= (GSLMatrix&&) noexcept = default;
         void set (double* p) {
           data = p;
         }
@@ -75,6 +85,11 @@ namespace MR
     template <> class GSLMatrix <cfloat> : public gsl_matrix_complex_float
     {
       public:
+        GSLMatrix () { }
+        GSLMatrix (const GSLMatrix&) noexcept = delete;
+        GSLMatrix (GSLMatrix&&) noexcept = default;
+        GSLMatrix& operator= (const GSLMatrix&) noexcept = delete;
+        GSLMatrix& operator= (GSLMatrix&&) noexcept = default;
         void set (cfloat* p) {
           data = (float*) p;
         }
@@ -82,6 +97,11 @@ namespace MR
     template <> class GSLMatrix <cdouble> : public gsl_matrix_complex
     {
       public:
+        GSLMatrix () { }
+        GSLMatrix (const GSLMatrix&) noexcept = delete;
+        GSLMatrix (GSLMatrix&&) noexcept = default;
+        GSLMatrix& operator= (const GSLMatrix&) noexcept = delete;
+        GSLMatrix& operator= (GSLMatrix&&) noexcept = default;
         void set (cdouble* p) {
           data = (double*) p;
         }
@@ -136,20 +156,20 @@ namespace MR
         class View;
 
         //! construct empty matrix
-        Matrix () throw () {
+        Matrix () noexcept {
           size1 = size2 = tda = 0;
-          data = NULL;
-          block = NULL;
+          data = nullptr;
+          block = nullptr;
           owner = 1;
         }
 
         //! construct from View
-        Matrix (const View& V) {
+        Matrix (const View& V) noexcept {
           Matrix<ValueType>::size1 = V.size1;
           Matrix<ValueType>::size2 = V.size2;
           Matrix<ValueType>::tda = V.tda;
           Matrix<ValueType>::set (V.data);
-          Matrix<ValueType>::block = NULL;
+          Matrix<ValueType>::block = nullptr;
           Matrix<ValueType>::owner = 0;
         }
 
@@ -157,6 +177,13 @@ namespace MR
         Matrix (const Matrix& M) {
           initialize (M.rows(), M.columns());
           LOOP (operator() (i,j) = M (i,j));
+        }
+        //! move constructor
+        Matrix (Matrix&& M) noexcept :
+          GSLMatrix<value_type> (std::move (M)) {
+          M.data = nullptr;
+          M.block = nullptr;
+          M.owner = 0;
         }
 
         //! copy constructor
@@ -177,11 +204,11 @@ namespace MR
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (ValueType* data, size_t nrows, size_t ncolumns) throw () {
+        Matrix (ValueType* data, size_t nrows, size_t ncolumns) noexcept {
           size1 = nrows;
           size2 = tda = ncolumns;
           set (data);
-          block = NULL;
+          block = nullptr;
           owner = 0;
         }
         //! construct from existing data array with non-standard row stride
@@ -190,20 +217,20 @@ namespace MR
          * allow access to the data provided using the Matrix interface. The
          * underlying data array must remain accessible during the lifetime of
          * the Matrix class. */
-        Matrix (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
+        Matrix (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) noexcept {
           size1 = nrows;
           size2 = ncolumns;
           tda = row_skip;
           set (data);
-          block = NULL;
+          block = nullptr;
           owner = 0;
         }
 
         //! construct a matrix by reading from the text file \a filename
         Matrix (const std::string& filename) {
           size1 = size2 = tda = 0;
-          data = NULL;
-          block = NULL;
+          data = nullptr;
+          block = nullptr;
           owner = 1;
           load (filename);
         }
@@ -217,14 +244,14 @@ namespace MR
         }
 
         //! deallocate the matrix data
-        Matrix& clear () {
+        Matrix& clear () noexcept {
           if (block) {
             assert (owner);
             GSLBlock<ValueType>::free (block);
           }
           size1 = size2 = tda = 0;
-          data = NULL;
-          block = NULL;
+          data = nullptr;
+          block = nullptr;
           owner = 1;
           return *this;
         }
@@ -250,7 +277,7 @@ namespace MR
           if (block) {
             if (block->size < nrows * ncolumns) {
               GSLBlock<ValueType>::free (block);
-              block = NULL;
+              block = nullptr;
             }
           }
 
@@ -262,7 +289,7 @@ namespace MR
           size1 = nrows;
           size2 = tda = ncolumns;
           owner = 1;
-          data = block ? block->data : NULL;
+          data = block ? block->data : nullptr;
           return *this;
         }
 
@@ -331,7 +358,7 @@ namespace MR
         }
 
         //! assign the specified \a value to all elements of the matrix
-        Matrix&  operator= (ValueType value) throw () {
+        Matrix&  operator= (ValueType value) noexcept {
           LOOP (operator() (i,j) = value);
           return *this;
         }
@@ -343,6 +370,15 @@ namespace MR
           return *this;
         }
 
+        //! move assignment
+        Matrix&  operator= (Matrix&& M) noexcept {
+          this->GSLMatrix<value_type>::operator= (std::move (M));
+          M.data = nullptr;
+          M.block = nullptr;
+          M.owner = 0;
+          return *this;
+        }
+
         //! assign the values in \a M to the corresponding elements of the matrix
         template <typename U> Matrix& operator= (const Matrix<U>& M) {
           allocate (M);
@@ -351,66 +387,65 @@ namespace MR
         }
 
         //! comparison operator
-        bool operator== (const Matrix& M) throw () {
+        bool operator== (const Matrix& M) noexcept {
           return ! (*this != M);
         }
 
         //! comparison operator
-        bool operator!= (const Matrix& M) throw () {
+        bool operator!= (const Matrix& M) noexcept {
           if (rows() != M.rows() || columns() != M.columns()) return true;
           LOOP (if (operator() (i,j) != M (i,j)) return true);
           return false;
         }
 
         //! swap contents with \a M without copying
-        void swap (Matrix& M) throw () {
-          char c [sizeof (Matrix)];
-          memcpy (&c, this, sizeof (Matrix));
-          memcpy (this, &M, sizeof (Matrix));
-          memcpy (&M, &c, sizeof (Matrix));
+        void swap (Matrix& M) noexcept {
+          auto t = std::move (*this);
+          *this = std::move (M);
+          M = std::move (t);
         }
 
         //! return reference to element at \a i, \a j
-        ValueType& operator() (size_t i, size_t j) throw () {
+        ValueType& operator() (size_t i, size_t j) noexcept {
           assert (i < rows());
           assert (j < columns());
           return ptr() [i * tda + j];
         }
 
         //! return const reference to element at \a i, \a j
-        const ValueType& operator() (size_t i, size_t j) const throw () {
+        const ValueType& operator() (size_t i, size_t j) const noexcept {
           assert (i < rows());
           assert (j < columns());
           return ptr() [i * tda + j];
         }
 
         //! return number of rows of matrix
-        size_t rows () const throw () {
+        size_t rows () const noexcept {
           return size1;
         }
 
         //! return number of columns of matrix
-        size_t columns () const throw () {
+        size_t columns () const noexcept {
           return size2;
         }
 
         //! true if matrix points to existing data
-        bool is_set () const throw () {
+        bool is_set () const noexcept {
           return ptr();
         }
 
         //! return a pointer to the underlying data
-        ValueType* ptr () throw () {
+        ValueType* ptr () noexcept {
           return (ValueType*) (data);
         }
 
         //! return a pointer to the underlying data
-        const ValueType* ptr () const throw () {
+        const ValueType* ptr () const noexcept {
           return (const ValueType*) (data);
         }
 
         //! return the row stride
-        size_t row_stride () const throw () {
+        size_t row_stride () const noexcept {
           return tda;
         }
 
@@ -421,68 +456,68 @@ namespace MR
         }
 
         //! set all diagonal elements of matrix to one, and all others to zero
-        Matrix& identity () throw () {
+        Matrix& identity () noexcept {
           LOOP (operator() (i,j) = (i==j?1.0:0.0));
           return *this;
         }
 
         //! add \a value to all elements of the matrix
-        Matrix& operator+= (ValueType value) throw () {
+        Matrix& operator+= (ValueType value) noexcept {
           LOOP (operator() (i,j) += value);
           return *this;
         }
         //! subtract \a value from all elements of the matrix
-        Matrix& operator-= (ValueType value) throw () {
+        Matrix& operator-= (ValueType value) noexcept {
           LOOP (operator() (i,j) -= value);
           return *this;
         }
         //! multiply all elements of the matrix by \a value
-        Matrix& operator*= (ValueType value) throw () {
+        Matrix& operator*= (ValueType value) noexcept {
           LOOP (operator() (i,j) *= value);
           return *this;
         }
         //! divide all elements of the matrix by \a value
-        Matrix& operator/= (ValueType value) throw () {
+        Matrix& operator/= (ValueType value) noexcept {
           LOOP (operator() (i,j) /= value);
           return *this;
         }
 
         //! add each element of \a M to the corresponding element of the matrix
-        Matrix& operator+= (const Matrix& M) throw () {
+        Matrix& operator+= (const Matrix& M) noexcept {
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator() (i,j) += M (i,j));
           return *this;
         }
 
         //! subtract each element of \a M from the corresponding element of the matrix
-        Matrix& operator-= (const Matrix& M) throw () {
+        Matrix& operator-= (const Matrix& M) noexcept {
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator() (i,j) -= M (i,j));
           return *this;
         }
 
         //! multiply each element of the matrix by the corresponding element of \a M
-        Matrix& operator*= (const Matrix& M) throw () {
+        Matrix& operator*= (const Matrix& M) noexcept {
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator() (i,j) *= M (i,j));
           return *this;
         }
 
         //! divide each element of the matrix by the corresponding element of \a M
-        Matrix& operator/= (const Matrix& M) throw () {
+        Matrix& operator/= (const Matrix& M) noexcept {
           assert (rows() == M.rows() && columns() == M.columns());
           LOOP (operator() (i,j) /= M (i,j));
           return *this;
         }
 
         //! exponentiate each element of the matrix by \a power
-        Matrix& pow (ValueType power) throw () {
+        Matrix& pow (ValueType power) noexcept {
           LOOP (operator() (i,j) = std::pow (operator() (i,j), power));
           return *this;
         }
 
         //! square each element of the matrix
-        Matrix& sqrt () throw () {
+        Matrix& sqrt () noexcept {
           LOOP (operator() (i,j) = std::sqrt (operator() (i,j)));
           return *this;
         }
@@ -495,12 +530,12 @@ namespace MR
         }
 
         //! return a view of the matrix
-        View view () throw () {
+        View view () noexcept {
           return View (ptr(), rows(), columns(), row_stride());
         }
 
         //! set current Matrix to be a view of another
-        Matrix& view (const Matrix& V) throw () {
+        Matrix& view (const Matrix& V) noexcept {
           if (block) {
             assert (owner);
             GSLBlock<ValueType>::free (block);
@@ -509,14 +544,14 @@ namespace MR
           Matrix<ValueType>::size2 = V.size2;
           Matrix<ValueType>::tda = V.tda;
           Matrix<ValueType>::set (V.data);
-          block = NULL;
+          block = nullptr;
           owner = 0;
           return *this;
         }
 
 
         //! return a Matrix::View corresponding to a submatrix of the matrix
-        View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) throw () {
+        View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) noexcept {
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
           return View (ptr() + from_row*tda + from_column,
@@ -524,7 +559,7 @@ namespace MR
         }
 
         //! return a Matrix::View corresponding to a submatrix of the matrix
-        const View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) const throw () {
+        const View sub (size_t from_row, size_t to_row, size_t from_column, size_t to_column) const noexcept {
           assert (from_row <= to_row && to_row <= rows());
           assert (from_column <= to_column && to_column <= columns());
           return View (const_cast<ValueType*> (ptr() + from_row*tda + from_column),
@@ -532,36 +567,36 @@ namespace MR
         }
 
         //! return a Vector::View corresponding to a row of the matrix
-        VectorView row (size_t index = 0) throw () {
+        VectorView row (size_t index = 0) noexcept {
           assert (index < rows());
           return VectorView (ptr() +index*tda, size2, 1);
         }
         //! return a Vector::View corresponding to a row of the matrix
-        const VectorView row (size_t index = 0) const throw () {
+        const VectorView row (size_t index = 0) const noexcept {
           assert (index < rows());
           return VectorView (const_cast<ValueType*> (ptr()) +index*tda, size2, 1);
         }
 
         //! return a Vector::View corresponding to a column of the matrix
-        VectorView column (size_t index = 0) throw () {
+        VectorView column (size_t index = 0) noexcept {
           assert (index < columns());
           return VectorView (ptr() +index, size1, tda);
         }
 
         //! return a Vector::View corresponding to a column of the matrix
-        const VectorView column (size_t index = 0) const throw () {
+        const VectorView column (size_t index = 0) const noexcept {
           assert (index < columns());
           return VectorView (const_cast<ValueType*> (ptr()) +index, size1, tda);
         }
 
         //! return a Vector::View corresponding to the diagonal of the matrix
-        VectorView diagonal () throw () {
+        VectorView diagonal () noexcept {
           assert (rows() > 0 && columns() > 0);
           return VectorView (ptr(), MIN (size1,size2), tda+1);
         }
 
         //! return a Vector::View corresponding to the diagonal of the matrix
-        const VectorView diagonal () const throw () {
+        const VectorView diagonal () const noexcept {
           assert (rows() > 0 && columns() > 0);
           return VectorView (const_cast<ValueType*> (ptr()), MIN (size1,size2), tda+1);
         }
@@ -569,7 +604,7 @@ namespace MR
         //! return a Vector::View corresponding to a diagonal of the matrix
         /** \param offset the diagonal to obtain. If \a offset > 0, return the corresponding upper diagonal.
           If \a offset < 0, return the corresponding lower diagonal. */
-        VectorView diagonal (int offset) throw () {
+        VectorView diagonal (int offset) noexcept {
           assert (rows() > 0 && columns() > 0);
           if (offset == 0) return diagonal();
           if (offset < 0)
@@ -582,7 +617,7 @@ namespace MR
         //! return a Vector::View corresponding to a diagonal of the matrix
         /** \param offset the diagonal to obtain. If \a offset > 0, return the corresponding upper diagonal.
           If \a offset < 0, return the corresponding lower diagonal. */
-        const VectorView diagonal (int offset) const throw () {
+        const VectorView diagonal (int offset) const noexcept {
           assert (rows() > 0 && columns() > 0);
           if (offset == 0) return (diagonal());
           if (offset < 0)
@@ -669,11 +704,11 @@ namespace MR
             if (!block)
               throw Exception ("Failed to allocate memory for Matrix data");
           }
-          else block = NULL;
+          else block = nullptr;
           size1 = nrows;
           size2 = tda = ncolumns;
           owner = 1;
-          data = block ? block->data : NULL;
+          data = block ? block->data : nullptr;
         }
     };
 
@@ -694,13 +729,13 @@ namespace MR
         public:
           View (const View& M) : Matrix<ValueType> (M) { }
 
-          Matrix<ValueType>& operator= (ValueType value) throw () {
+          Matrix<ValueType>& operator= (ValueType value) noexcept {
             return Matrix<ValueType>::operator= (value);
           }
-          Matrix<ValueType>& operator= (const Matrix<ValueType>& M) throw () {
+          Matrix<ValueType>& operator= (const Matrix<ValueType>& M) noexcept {
             return Matrix<ValueType>::operator= (M);
           }
-          template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) throw () {
+          template <typename U> Matrix<ValueType>& operator= (const Matrix<U>& M) noexcept {
             return Matrix<ValueType>::operator= (M);
           }
 
@@ -711,12 +746,12 @@ namespace MR
           View (const Matrix<ValueType>&) { assert (0); }
           template <typename U> View (const Matrix<U>&) { assert (0); }
 
-          View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) throw () {
+          View (ValueType* data, size_t nrows, size_t ncolumns, size_t row_skip) noexcept {
             Matrix<ValueType>::size1 = nrows;
             Matrix<ValueType>::size2 = ncolumns;
             Matrix<ValueType>::tda = row_skip;
             Matrix<ValueType>::set (data);
-            Matrix<ValueType>::block = NULL;
+            Matrix<ValueType>::block = nullptr;
             Matrix<ValueType>::owner = 0;
           }
 
