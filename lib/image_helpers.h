@@ -184,34 +184,7 @@ namespace MR
     }
 
 
-  //! \cond skip
-  namespace
-  {
-    template <typename T> inline bool is_complex__ ()
-    {
-      return false;
-    }
-    template <> inline bool is_complex__<cfloat> ()
-    {
-      return true;
-    }
-    template <> inline bool is_complex__<cdouble> ()
-    {
-      return true;
-    }
-  }
-  //! \endcond
 
-
-
-
-  //! return whether the HeaderType contains complex data
-  template <class HeaderType> 
-    inline bool is_complex (const HeaderType&)
-    {
-      typedef typename HeaderType::default_type T;
-      return is_complex__<T> ();
-    }
 
   template <class InfoType1, class InfoType2> 
     inline bool dimensions_match (const InfoType1& in1, const InfoType2& in2)

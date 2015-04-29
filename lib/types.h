@@ -117,6 +117,15 @@ namespace MR
   //! the default type used throughout MRtrix
   typedef float default_type;
 
+  //! check whether type is complex:
+  template <class ValueType> struct is_complex : std::false_type { };
+  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { };
+
+
+  //! check whether type is compatible with MRtrix3's file IO backend:
+  template <class ValueType> struct is_data_type : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
+
+
 }
 
 namespace std 
