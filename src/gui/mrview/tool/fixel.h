@@ -50,8 +50,9 @@ namespace MR
               class Shader : public Displayable::Shader {
                 public:
                   Shader () : do_crop_to_slice (false), color_type (Direction), length_type (Amplitude) { }
-                  virtual std::string vertex_shader_source (const Displayable& fixel_image);
-                  virtual std::string fragment_shader_source (const Displayable& fixel_image);
+                  std::string vertex_shader_source (const Displayable&) override;
+                  std::string geometry_shader_source (const Displayable& fixel_image) override;
+                  std::string fragment_shader_source (const Displayable& fixel_image) override;
                   virtual bool need_update (const Displayable& object) const;
                   virtual void update (const Displayable& object);
                 protected:
@@ -81,6 +82,14 @@ namespace MR
                 return user_line_length_multiplier;
               }
 
+              void set_line_thickness (float value) {
+                line_thickness = value;
+              }
+
+              float get_line_thickenss () const {
+                return line_thickness;
+              }
+
               void set_length_type (FixelLengthType value) {
                 length_type = value;
               }
@@ -101,7 +110,8 @@ namespace MR
               virtual void load_image_buffer() = 0;
               std::string filename;
               MR::Image::Header header;
-              std::vector<Point<float> > buffer_dir;
+              std::vector<Point<float>> buffer_pos;
+              std::vector<Point<float>> buffer_dir;
               std::vector<float> buffer_val;
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
@@ -112,10 +122,12 @@ namespace MR
               ColourMap::Renderer colourbar_renderer;
               int colourbar_position_index;
               GL::VertexBuffer vertex_buffer;
+              GL::VertexBuffer direction_buffer;
               GL::VertexArrayObject vertex_array_object;
               GL::VertexBuffer value_buffer;
               float voxel_size_length_multipler;
               float user_line_length_multiplier;
+              float line_thickness;
               FixelLengthType length_type;
               FixelColourType colour_type;
         };

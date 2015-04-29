@@ -72,7 +72,7 @@ namespace MR
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (1.0),
+          line_thickness (0.001f),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -159,7 +159,7 @@ namespace MR
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+            default_opt_grid->addWidget (slab_group_box, 3, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -175,7 +175,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 3, 0, 1, 2);
+            default_opt_grid->addWidget (lighting_group_box, 4, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -317,7 +317,7 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          line_thickness = static_cast<float>(thickness) / 100000.0f;
           window.updateGL();
         }
 

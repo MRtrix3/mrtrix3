@@ -195,6 +195,7 @@ namespace MR
           class Shader : public GL::Shader::Program {
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
+              virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }
               virtual std::string vertex_shader_source (const Displayable& object) = 0;
 
               virtual bool need_update (const Displayable& object) const;
@@ -216,9 +217,12 @@ namespace MR
                 update (object);
 
                 GL::Shader::Vertex vertex_shader (vertex_shader_source (object));
+                GL::Shader::Geometry geometry_shader (geometry_shader_source (object));
                 GL::Shader::Fragment fragment_shader (fragment_shader_source (object));
 
                 attach (vertex_shader);
+                if((GLuint)geometry_shader)
+                    attach (geometry_shader);
                 attach (fragment_shader);
                 link();
               }

@@ -80,7 +80,6 @@ namespace MR
 
         Vector::Vector (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (2.0),
           do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
@@ -201,8 +200,8 @@ namespace MR
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
-            line_thickness_slider->setRange (100,1500);
-            line_thickness_slider->setSliderPosition (float (200.0));
+            line_thickness_slider->setRange (1,25);
+            line_thickness_slider->setSliderPosition (10);
             connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 0, 0);
             default_opt_grid->addWidget (line_thickness_slider, 0, 1);
@@ -336,6 +335,7 @@ namespace MR
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
           float line_length_multiplier = 0.0f;
+          float line_thickness(0.f);
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
@@ -358,6 +358,7 @@ namespace MR
             lower_threshold_val += fixel->lessthan;
             upper_threshold_val += fixel->greaterthan;
             line_length_multiplier += fixel->get_line_length_multiplier();
+            line_thickness = fixel->get_line_thickenss();
           }
 
           rate /= indices.size();
@@ -457,6 +458,8 @@ namespace MR
             threshold_upper->setEnabled (false);
           }
           threshold_upper->setRate (rate);
+
+          line_thickness_slider->setValue(static_cast<int>(line_thickness * 1000));
         }
 
 
@@ -469,7 +472,9 @@ namespace MR
 
         void Vector::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1000.f);
           window.updateGL();
         }
 
