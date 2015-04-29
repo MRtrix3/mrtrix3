@@ -27,6 +27,8 @@
 #include "project_version.h"
 #include "app.h"
 
+#define MRTRIX_UPDATED_API
+
 #ifdef MRTRIX_AS_R_LIBRARY
 
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) 
