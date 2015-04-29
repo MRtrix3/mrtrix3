@@ -32,8 +32,7 @@ namespace MR
   template <class InputImageType, class OutputImageType>
     void copy (InputImageType&& source, OutputImageType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      LoopInOrder loop (source, from_axis, to_axis);
-      for (auto i = loop (source, destination); i; ++i)
+      for (auto i = LoopInOrder (source, from_axis, to_axis).run (source, destination); i; ++i)
         destination.value() = source.value();
     }
 
@@ -50,8 +49,7 @@ namespace MR
   template <class InputImageType, class OutputImageType>
     void copy_with_progress_message (const std::string& message, InputImageType&& source, OutputImageType&& destination, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      LoopInOrder loop (source, message, from_axis, to_axis);
-      for (auto i = loop (source, destination); i; ++i)
+      for (auto i = LoopInOrder (message, source, from_axis, to_axis).run (source, destination); i; ++i)
         destination.value() = source.value();
     }
 

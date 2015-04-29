@@ -124,7 +124,7 @@ namespace MR
    * over. In the following example, the program will loop over each 3D
    * volume in the ImageType in turn:
    * \code
-   * Image::Loop outer (3); // outer loop iterates over axes 3 and above
+   * Image::Loop outer (3); // outer loop iterates over axis 3
    * for (auto i = outer.run (vox)); i; ++i {
    *   float sum = 0.0;
    *   Image::Loop inner (0, 3); // inner loop iterates over axes 0 to 2
@@ -163,23 +163,35 @@ namespace MR
       public:
 
         //! Constructor
-        /*! Construct a Loop object to iterate over the axes specified. By
-         * default, the Loop will iterate over all axes of the first ImageType
-         * supplied to next(). If \a from_axis and \a to_axis are specified,
+        /*! Construct a Loop object to iterate over the axes specified. With
+         * no arguments, the Loop will iterate over all axes of the first ImageType
+         * supplied to next(). If a single argument is specified, the Loop will
+         * iterate over that axis only. If both \a from_axis and \a to_axis are specified,
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
-        Loop (size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+        explicit Loop (size_t from_axis, size_t to_axis) :
           from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true) { }
+
+        //! \copydoc Loop(size_t,size_t)
+        explicit Loop (size_t axis) : Loop (axis, axis+1) { }
+        //! \copydoc Loop(size_t,size_t)
+        explicit Loop () : Loop (0, std::numeric_limits<size_t>::max()) { }
 
         //! Constructor with progress status
         /*! Construct a Loop object to iterate over the axes specified and
-         * display the progress status with the specified message. By default,
-         * the Loop will iterate over all axes of the first ImageType supplied to
-         * next(). If \a from_axis and \a to_axis are specified, the Loop will
-         * iterate from axis \a from_axis up to but \b not including axis \a
-         * to_axis. */
-        Loop (const std::string& message, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+         * display the progress status with the specified message. With no
+         * arguments, the Loop will iterate over all axes of the first
+         * ImageType supplied to next(). If a single argument is specified, the
+         * Loop will iterate over that axis only. If both \a from_axis and \a
+         * to_axis are specified, the Loop will iterate from axis \a from_axis
+         * up to but \b not including axis \a to_axis. */
+        explicit Loop (const std::string& message, size_t from_axis, size_t to_axis) :
           from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true), progress_ (message, 1) { }
+        
+        //! \copydoc Loop(const std::string&,size_t,size_t)
+        explicit Loop (const std::string& message, size_t axis) : Loop (message, axis, axis+1) { }
+        //! \copydoc Loop(const std::string&,size_t,size_t)
+        explicit Loop (const std::string& message) : Loop (message, 0, std::numeric_limits<size_t>::max()) { }
 
         //! return iteratable object for use in loop
         /*! This start the loop by resetting the appropriate coordinates of
@@ -407,34 +419,44 @@ namespace MR
       public:
         //! Constructor from axes indices
         /*! Construct a LoopInOrder object to iterate over the axes specified. */
-        LoopInOrder (const std::vector<size_t>& axes) :
+        explicit LoopInOrder (const std::vector<size_t>& axes) :
           axes_ (axes), first_axis (axes_[0]), cont_ (true) { }
 
         //! Construct from axes indices with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified and
          * display the progress status with the specified message. */
-        LoopInOrder (const std::vector<size_t>& axes, const std::string& message) :
+        explicit LoopInOrder (const std::string& message, const std::vector<size_t>& axes) :
           axes_ (axes), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
         //! Construct from ImageType strides
-        /*! Construct a LoopInOrder object to iterate over the axes of \a set
-         * in order of smallest stride first. If supplied, the optional
-         * arguments \a from_axis and \a to_axis can be used to restrict those
-         * axes that will be looped over: the Loop will then iterate from axis
-         * \a from_axis up to but \b not including axis \a to_axis. */
+        /*! Construct a LoopInOrder object to iterate over the axes of \a image
+         * in order of smallest stride first. With no arguments, the Loop will
+         * iterate over all axes of \a image. If both \a from_axis and \a
+         * to_axis are specified, the Loop will iterate from \a from_axis up to
+         * but \b not including \a to_axis. 
+         *
+         * \note If only \a from_axis is specified, \a to_axis defaults to all
+         * remaining axes above \a from_axis - looping will \b not be restricted
+         * to \a from_axis alone. Use Loop if you need to loop over a single
+         * axis.*/
         template <class ImageType>
-          LoopInOrder (const ImageType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          explicit LoopInOrder (const ImageType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true) { }
 
         //! Constructor from ImageType strides with progress status
-        /*! Construct a LoopInOrder object to iterate over the axes specified
-         * in order of smallest stride first, and display the progress status
-         * with the specified message. If supplied, the optional arguments \a
-         * from_axis and \a to_axis can be used to restrict those axes that
-         * will be looped over: the Loop will then iterate from axis \a
-         * from_axis up to but \b not including axis \a to_axis. */
+        /*! Construct a LoopInOrder object to iterate over the axes of \a image
+         * in order of smallest stride first, and display the progress status                                                                                                                                  
+         * with the specified message. With no arguments, the Loop will
+         * iterate over all axes of \a image. If both \a from_axis and \a
+         * to_axis are specified, the Loop will iterate from \a from_axis up to
+         * but \b not including \a to_axis. 
+         *
+         * \note If only \a from_axis is specified, \a to_axis defaults to all
+         * remaining axes above \a from_axis - looping will \b not be restricted
+         * to \a from_axis alone. Use Loop if you need to loop over a single
+         * axis.*/
         template <class ImageType>
-          LoopInOrder (const ImageType& vox, const std::string& message, 
+          explicit LoopInOrder (const std::string& message, const ImageType& vox, 
               size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
