@@ -390,6 +390,7 @@ void run ()
     // Header of first input image is the template to which all other input images are compared
     headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
     Image::Header header (*headers_in[0]);
+    header.datatype() = DataType::Float32;
 
     // Wipe any excess unary-dimensional axes
     while (header.dim (header.ndim() - 1) == 1)
