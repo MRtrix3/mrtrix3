@@ -75,11 +75,6 @@ namespace MR
           degrees_button->setValue (0.0);
           degrees_button->setRate (0.1);
 
-          connect (rotation_axis_x, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (rotation_axis_y, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (rotation_axis_z, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (degrees_button, SIGNAL (valueChanged()), this, SLOT (reset()));
-
           QGroupBox* translate_group_box = new QGroupBox (tr("Translate"));
           GridLayout* translate_layout = new GridLayout;
           translate_layout->setContentsMargins (5, 5, 5, 5);
@@ -109,10 +104,6 @@ namespace MR
           translate_z->setValue (0.0);
           translate_z->setRate (0.1);
 
-          connect (translate_x, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (translate_y, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (translate_z, SIGNAL (valueChanged()), this, SLOT (reset()));
-
           QGroupBox* volume_group_box = new QGroupBox (tr("Volume"));
           GridLayout* volume_layout = new GridLayout;
           volume_layout->setContentsMargins (5, 5, 5, 5);
@@ -133,9 +124,6 @@ namespace MR
           target_volume->setMaximum (std::numeric_limits<int>::max());
           target_volume->setValue (0);
 
-          connect (volume_axis, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
-          connect (target_volume, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
-
           QGroupBox* FOV_group_box = new QGroupBox (tr("FOV"));
           GridLayout* FOV_layout = new GridLayout;
           FOV_layout->setContentsMargins (5, 5, 5, 5);
@@ -148,8 +136,6 @@ namespace MR
           FOV_layout->addWidget (FOV_multipler, 0, 1);
           FOV_multipler->setValue (1.0);
           FOV_multipler->setRate (0.01);
-
-          connect (FOV_multipler, SIGNAL (valueChanged()), this, SLOT (reset()));
 
           QGroupBox* output_group_box = new QGroupBox (tr("Output"));
           main_box->addWidget (output_group_box);
