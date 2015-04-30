@@ -36,7 +36,9 @@ namespace MR
       {
 
         Capture::Capture (Window& main_window, Dock* parent) :
-          Base (main_window, parent)
+          Base (main_window, parent),
+          rotation_type(RotationType::World),
+          translation_type(TranslationType::Voxel)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
@@ -198,8 +200,6 @@ namespace MR
           capture->setIcon(QIcon (":/record.svg"));
           connect (capture, SIGNAL (clicked()), this, SLOT (on_screen_capture()));
           capture_grid_layout->addWidget (capture, 2, 3);
-
-
 
           main_box->addStretch ();
 
