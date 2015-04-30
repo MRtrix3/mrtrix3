@@ -24,15 +24,18 @@
 
 #include "file/path.h"
 #include "gui/dialog/file.h"
+#include "image/adapter/extract.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/header.h"
+#include "image/info.h"
 #include "image/loop.h"
 #include "image/nav.h"
 #include "image/transform.h"
 
 #include "math/math.h"
 #include "math/rng.h"
+#include "math/versor.h"
 
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
@@ -90,7 +93,6 @@ namespace MR
               "uniform int reverse;\n";
           }
 
-          //if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
           if (parent.node_geometry == NODE_GEOM_SPHERE) {
             vertex_shader_source +=
               "out vec3 normal;\n";
@@ -132,7 +134,8 @@ namespace MR
               break;
           }
 
-          vertex_shader_source += "}\n";
+          vertex_shader_source +=
+              "}\n";
 
           // =================================================================
 
@@ -181,7 +184,8 @@ namespace MR
               "  color += specular * pow (clamp (dot (reflect (-light_pos, normal), normal), 0, 1), shine);\n";
           }
 
-          fragment_shader_source += "}\n";
+          fragment_shader_source +=
+              "}\n";
         }
 
 
@@ -197,11 +201,33 @@ namespace MR
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "uniform mat4 MVP;\n";
 
+          if (parent.edge_geometry == EDGE_GEOM_CYLINDER) {
+            vertex_shader_source +=
+              "uniform vec3 centre_one, centre_two;\n"
+              "uniform mat3 rot_matrix;\n"
+              "uniform float radius;\n";
+          }
+
           vertex_shader_source +=
               "void main() {\n";
 
-          vertex_shader_source +=
+          switch (parent.edge_geometry) {
+            case EDGE_GEOM_LINE:
+              vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+              break;
+            case EDGE_GEOM_CYLINDER:
+              vertex_shader_source +=
+              "  vec3 centre = centre_one;\n"
+              "  vec3 offset = vertexPosition_modelspace;\n"
+              "  if (offset[2] != 0.0) {\n"
+              "    centre = centre_two;\n"
+              "    offset[2] = 0.0;\n"
+              "  }\n"
+              "  offset = offset * rot_matrix;\n"
+              "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
+              break;
+          }
 
           vertex_shader_source +=
               "}\n";
@@ -234,7 +260,8 @@ namespace MR
               "  color = edge_colour;\n";
           }
 
-          fragment_shader_source += "}\n";
+          fragment_shader_source +=
+              "}\n";
 
         }
 
@@ -538,6 +565,13 @@ namespace MR
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
+          cylinder.LOD (4);
+          cylinder_VAO.gen();
+          cylinder_VAO.bind();
+          cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+
           sphere.LOD (4);
           sphere_VAO.gen();
           sphere_VAO.bind();
@@ -680,6 +714,17 @@ namespace MR
               gl::DepthMask (gl::TRUE_);
             }
 
+            GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0, radius_ID = 0;
+            if (edge_geometry == EDGE_GEOM_CYLINDER) {
+              cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
+              cylinder_VAO.bind();
+              cylinder.index_buffer.bind();
+              node_centre_one_ID = gl::GetUniformLocation (edge_shader, "centre_one");
+              node_centre_two_ID = gl::GetUniformLocation (edge_shader, "centre_two");
+              rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
+              radius_ID          = gl::GetUniformLocation (edge_shader, "radius");
+            }
+
             const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
 
             GLuint edge_alpha_ID = 0;
@@ -687,7 +732,7 @@ namespace MR
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
             std::map<float, size_t> edge_ordering;
-            for (size_t i = 0; i <= num_edges(); ++i)
+            for (size_t i = 0; i != num_edges(); ++i)
               edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
 
             for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
@@ -702,7 +747,11 @@ namespace MR
                     edge.render_line();
                     break;
                   case EDGE_GEOM_CYLINDER:
-                    // TODO
+                    gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
+                    gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
+                    gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
+                    gl::Uniform1f        (radius_ID,                    edge.get_size() * edge_size_scale_factor);
+                    gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                 }
               }
@@ -713,6 +762,9 @@ namespace MR
               gl::Disable (gl::BLEND);
               gl::DepthMask (gl::TRUE_);
             }
+
+            if (edge_geometry == EDGE_GEOM_LINE)
+              glLineWidth (1.0f);
 
             edge_shader.stop();
           }
@@ -858,7 +910,6 @@ namespace MR
               node_geometry = NODE_GEOM_MESH;
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
-              //node_size_button->setVisible (false);
               node_size_button->setVisible (true);
               if (node_size_scale_factor > 1.0f) {
                 node_size_scale_factor = 1.0f;
@@ -883,7 +934,7 @@ namespace MR
               node_colour_combobox->removeItem (4);
               break;
             case 1:
-              //if (node_colour == NODE_COLOUR_RANDOM) return; // Keep this; regenerate random colours on repeat selection
+              // Regenerate random colours on repeat selection
               node_colour = NODE_COLOUR_RANDOM;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
@@ -1286,8 +1337,9 @@ namespace MR
           window.updateGL();
         }
 
-        void Connectome::cylinder_lod_slot (int /*index*/)
+        void Connectome::cylinder_lod_slot (int index)
         {
+          cylinder.LOD (index);
           window.updateGL();
         }
         void Connectome::edge_colour_change_slot()
@@ -1420,19 +1472,68 @@ namespace MR
             node_indices { one, two },
             node_centres { parent.nodes[one].get_com(), parent.nodes[two].get_com() },
             dir ((node_centres[1] - node_centres[0]).normalise()),
+            rot_matrix (new GLfloat[9]),
             size (1.0f),
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
-            visible (one != two) { }
+            visible (one != two)
+        {
+          static const Point<float> z_axis (0.0f, 0.0f, 1.0f);
+          if (is_diagonal()) {
+
+            rot_matrix[0] = 0.0f; rot_matrix[1] = 0.0f; rot_matrix[2] = 0.0f;
+            rot_matrix[3] = 0.0f; rot_matrix[4] = 0.0f; rot_matrix[5] = 0.0f;
+            rot_matrix[6] = 0.0f; rot_matrix[7] = 0.0f; rot_matrix[8] = 0.0f;
+
+          } else {
+
+            // First, let's get an axis of rotation, s.t. the rotation angle is positive
+            const Point<float> rot_axis = (z_axis.cross (dir).normalise());
+            // Now, a rotation angle
+            const float rot_angle = std::acos (z_axis.dot (dir));
+            // Convert to versor representation
+            const Math::Versor<float> versor (rot_angle, rot_axis);
+            // Convert to a matrix
+            Math::Matrix<float> matrix;
+            versor.to_matrix (matrix);
+            // Put into the GLfloat array
+            rot_matrix[0] = matrix(0,0); rot_matrix[1] = matrix(0,1); rot_matrix[2] = matrix(0,2);
+            rot_matrix[3] = matrix(1,0); rot_matrix[4] = matrix(1,1); rot_matrix[5] = matrix(1,2);
+            rot_matrix[6] = matrix(2,0); rot_matrix[7] = matrix(2,1); rot_matrix[8] = matrix(2,2);
+
+          }
+        }
+
+        Connectome::Edge::Edge (Edge&& that) :
+            node_indices { that.node_indices[0], that.node_indices[1] },
+            node_centres { that.node_centres[0], that.node_centres[1] },
+            dir (that.dir),
+            rot_matrix (that.rot_matrix),
+            size (that.size),
+            colour (that.colour),
+            alpha (that.alpha),
+            visible (that.visible)
+        {
+          that.rot_matrix = nullptr;
+        }
 
         Connectome::Edge::Edge () :
             node_indices { 0, 0 },
             node_centres { Point<float>(), Point<float>() },
             dir (Point<float>()),
+            rot_matrix (nullptr),
             size (0.0f),
             colour (0.0f, 0.0f, 0.0f),
             alpha (0.0f),
             visible (false) { }
+
+        Connectome::Edge::~Edge()
+        {
+          if (rot_matrix) {
+            delete[] rot_matrix;
+            rot_matrix = nullptr;
+          }
+        }
 
         void Connectome::Edge::render_line() const
         {
@@ -1489,6 +1590,8 @@ namespace MR
           image_button ->setText ("");
           emit lut_open_slot (0);
           config_button->setText ("");
+          if (buffer)
+            delete buffer.release();
           nodes.clear();
           edges.clear();
           lut.clear();
@@ -1497,20 +1600,18 @@ namespace MR
         void Connectome::initialise (const std::string& path)
         {
 
-          // TODO This could be made faster by constructing the meshes on-the-fly
-          // This would also allow calculation of vertex normals
-
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype");
+          if (!H.ndim() == 3)
+            throw Exception ("Input parcellation image must be a 3D image");
           voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
-          MR::Image::Buffer<node_t> buffer (path);
-          auto voxel = buffer.voxel();
+          buffer = new MR::Image::BufferPreload<node_t> (path);
+          auto voxel = buffer->voxel();
           MR::Image::Transform transform (H);
           std::vector< Point<float> > node_coms;
           std::vector<size_t> node_volumes;
-          VecPtr< MR::Image::BufferScratch<bool> > node_masks (1);
-          VecPtr< MR::Image::BufferScratch<bool>::voxel_type > node_mask_voxels (1);
+          std::vector< Point<int> > node_lower_corners, node_upper_corners;
           size_t max_index = 0;
 
           {
@@ -1520,22 +1621,21 @@ namespace MR
               if (node_index) {
 
                 if (node_index >= max_index) {
-                  node_coms       .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
-                  node_volumes    .resize (node_index+1, 0);
-                  node_masks      .resize (node_index+1);
-                  node_mask_voxels.resize (node_index+1);
-                  for (size_t i = max_index+1; i <= node_index; ++i) {
-                    node_masks[i] = new MR::Image::BufferScratch<bool> (H, "Node " + str(i));
-                    node_mask_voxels[i] = new MR::Image::BufferScratch<bool>::voxel_type (*node_masks[i]);
-                  }
+                  node_coms         .resize (node_index+1, Point<float> (0.0f, 0.0f, 0.0f));
+                  node_volumes      .resize (node_index+1, 0);
+                  node_lower_corners.resize (node_index+1, Point<int> (H.dim(0), H.dim(1), H.dim(2)));
+                  node_upper_corners.resize (node_index+1, Point<int> (-1, -1, -1));
                   max_index = node_index;
                 }
 
-                MR::Image::Nav::set_pos (*node_mask_voxels[node_index], voxel);
-                node_mask_voxels[node_index]->value() = true;
-
                 node_coms   [node_index] += transform.voxel2scanner (voxel);
                 node_volumes[node_index]++;
+
+                for (size_t axis = 0; axis != 3; ++axis) {
+                  node_lower_corners[node_index][axis] = std::min (node_lower_corners[node_index][axis], int(voxel[axis]));
+                  node_upper_corners[node_index][axis] = std::max (node_upper_corners[node_index][axis], int(voxel[axis]));
+                }
+
               }
             }
           }
@@ -1544,12 +1644,48 @@ namespace MR
 
           nodes.clear();
 
-          // TODO In its current state, this could be multi-threaded
+          // TODO Multi-thread this
           {
-            MR::ProgressBar progress ("Triangulating nodes...", max_index);
+            MR::ProgressBar progress ("Constructing nodes...", max_index);
             nodes.push_back (Node());
-            for (size_t i = 1; i <= max_index; ++i) {
-              nodes.push_back (Node (node_coms[i], node_volumes[i], *node_masks[i]));
+            for (size_t node_index = 1; node_index <= max_index; ++node_index) {
+              if (node_volumes[node_index]) {
+
+                // Determine the sub-volume occupied by this node, and update the image transform appropriately
+                MR::Image::Info info (H.info());
+                Math::Vector<float> a (4), b (4);
+                for (size_t axis = 0; axis != 3; ++axis) {
+                  info.dim (axis) = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
+                  a[axis] = node_lower_corners[node_index][axis] * info.vox (axis);
+                }
+                a[3] = 1.0;
+                Math::mult (b, info.transform(), a);
+                info.transform().column (3) = b;
+
+                // Construct a scratch buffer into which the volume for this node will be copied
+                MR::Image::BufferScratch<bool> scratch_data (info);
+                auto scratch = scratch_data.voxel();
+
+                // Use an image adapter to only access the relevant portion of the input image
+                std::vector< std::vector<int> > per_axis_indices;
+                for (size_t axis = 0; axis != 3; ++axis) {
+                  std::vector<int> indices;
+                  for (int i = node_lower_corners[node_index][axis]; i <= node_upper_corners[node_index][axis]; ++i)
+                    indices.push_back (i);
+                  per_axis_indices.push_back (indices);
+                }
+                MR::Image::Adapter::Extract<decltype(voxel)> extract (voxel, per_axis_indices);
+
+                // Generate the boolean scratch buffer
+                MR::Image::Loop loop;
+                for (loop.start (extract, scratch); loop.ok(); loop.next (extract, scratch))
+                  scratch.value() = (extract.value() == node_index);
+
+                nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], scratch_data));
+
+              } else {
+                nodes.push_back (Node());
+              }
               ++progress;
             }
           }

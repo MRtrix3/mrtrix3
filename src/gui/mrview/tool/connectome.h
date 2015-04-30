@@ -34,10 +34,12 @@
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/shapes/cube.h"
+#include "gui/shapes/cylinder.h"
 #include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
 
+#include "image/buffer_preload.h"
 
 #include "mesh/mesh.h"
 
@@ -55,7 +57,6 @@
 //
 // * Drawing edges
 //   - Display options:
-//     * Geometry: Cylinder
 //     * Colour by: Corresponding nodes? Would require some plotting cleverness
 //
 // * Drawing nodes
@@ -79,6 +80,10 @@
 //     node, and have its transform updated appropriately...?
 //     In 2D mode could also do a quick check to see if the node's FOV actually crosses the
 //     focus plane, and skip drawing as many of them as possible
+//     Actually, may not be any need to store an image per node; just have a
+//     buffer accessing the original image, and use the values read from it to
+//     access the relevant node while the RGB volume is updated. Can use an Extract adaptor
+//     to reduce the search space when passing the volumes to the vox2mesh function
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
@@ -88,7 +93,11 @@
 //     * Get right hand rule working, use face culling
 //     * Look into an alternative mesh conversion that isn't axis-constrained, i.e.
 //       introduce some smoothness into the mesh with 45-degree angles
+//       -> e.g. Marching Cubes
+//          http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html
 //     * Pre-calculate vertex normals based on connected polygons & use for lighting
+//     * Some kind of mesh smoothing
+//       -> e.g. Laplacian Smooth
 //
 // * OpenGL drawing general:
 //   - Add lighting capability, using similar code to ODF renderer
@@ -332,6 +341,8 @@ namespace MR
                 //   * Faster update of primary node overlay image (smaller loop)
                 //   * In 2D mode, detect whether or not this bounding box crosses the focus
                 //     plane; if not, no need to send any data to the shader
+                //   * Run the vox2mesh conversion on the reduced volume; this will reduce the
+                //     overhead of looping through mostly-empty images
 
             };
 
@@ -341,13 +352,17 @@ namespace MR
             {
               public:
                 Edge (const Connectome&, const node_t, const node_t);
+                Edge (Edge&&);
                 Edge ();
+                ~Edge();
 
                 void render_line() const;
 
                 node_t get_node_index (const size_t i) const { assert (i==0 || i==1); return node_indices[i]; }
                 const Point<float> get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
                 Point<float> get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+
+                const GLfloat* get_rot_matrix() const { return rot_matrix; }
 
                 const Point<float>& get_dir() const { return dir; }
                 void set_size (const float i) { size = i; }
@@ -364,6 +379,8 @@ namespace MR
                 const node_t node_indices[2];
                 const Point<float> node_centres[2];
                 const Point<float> dir;
+
+                GLfloat* rot_matrix;
 
                 float size;
                 Point<float> colour;
@@ -398,6 +415,9 @@ namespace MR
 
 
 
+            // For the sake of viewing nodes as an overlay, need to ALWAYS
+            // have access to the parcellation image
+            Ptr< MR::Image::BufferPreload<node_t> > buffer;
 
 
             std::vector<Node> nodes;
@@ -431,8 +451,9 @@ namespace MR
             Shapes::Cube cube;
             GL::VertexArrayObject cube_VAO;
 
-
-            // TODO Class to handle cylinder geometry
+            // Used when the geometry of edge visualisation is a cylinder
+            Shapes::Cylinder cylinder;
+            GL::VertexArrayObject cylinder_VAO;
 
 
             // Fixed lighting settings from the main window
