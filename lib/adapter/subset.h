@@ -20,99 +20,73 @@
 
 */
 
-#ifndef __image_adapter_subset_h__
-#define __image_adapter_subset_h__
+#ifndef __adapter_subset_h__
+#define __adapter_subset_h__
 
 #include "math/matrix.h"
-#include "image/info.h"
-#include "image/position.h"
-#include "image/value.h"
-#include "image/voxel.h"
-#include "image/adapter/voxel.h"
+#include "image.h"
+#include "adapter/base.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    namespace Adapter {
+  namespace Adapter {
 
-    template <class VoxelType>
-      class Subset : public Voxel<VoxelType>
+    template <class ImageType>
+      class Subset : public Base<ImageType>
     {
       public:
-        typedef typename VoxelType::value_type value_type;
+        typedef typename ImageType::value_type value_type;
 
-        using Voxel<VoxelType>::name;
-        using Voxel<VoxelType>::ndim;
-        using Voxel<VoxelType>::vox;
+        using Base<ImageType>::name;
+        using Base<ImageType>::voxsize;
 
         template <class VectorType>
-          Subset (const VoxelType& original, const VectorType& from, const VectorType& dimensions) :
-            Voxel<VoxelType> (original),
-            from_ (ndim()),
-            info_ (original)
-          {
-            for (size_t n = 0; n < ndim(); ++n) {
-              assert (ssize_t (from[n] + dimensions[n]) <= original.dim(n));
-              from_[n] = from[n];
-              info_.dim(n) = dimensions[n];
-            }
+          Subset (const ImageType& original, const VectorType& from, const VectorType& dimensions) :
+            Base<ImageType> (original),
+            from_ (container_cast<decltype(from_)>(from)),
+            size_ (container_cast<decltype(size_)>(dimensions)),
+            transform_ (original.transform())
+      {
+        for (size_t n = 0; n < ndim(); ++n) 
+          if (from_[n] + size_[n] > original.size(n))
+            throw Exception ("FIXME: dimensions requested for Subset adapter are out of bounds!");
 
-            for (size_t j = 0; j < 3; ++j)
-              for (size_t i = 0; i < 3; ++i)
-                info_.transform()(i,3) += from[j] * vox(j) * info_.transform()(i,j);
-          }
-
-        const Image::Info& info() const {
-          return info_;
-        }
+        for (size_t j = 0; j < 3; ++j)
+          for (size_t i = 0; i < 3; ++i)
+            transform_(i,3) += from[j] * voxsize(j) * transform_(i,j);
+      }
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n)
             set_pos (n, 0);
         }
 
-        ssize_t dim (size_t axis) const {
-          return info_.dim (axis);
-        }
-        const Math::Matrix<float>& transform() const { 
-          return info_.transform();
-        }
+        size_t ndim () const { return size_.size(); }
+        ssize_t size (size_t axis) const { return size_ [axis]; }
+        const Math::Matrix<float>& transform() const { return transform_; }
 
-        Value<Subset<VoxelType> > value () {
-          return (Value<Subset<VoxelType> > (*this));
-        }
-        Position<Subset<VoxelType> > operator[] (size_t axis) {
-          return (Position<Subset<VoxelType> > (*this, axis));
-        }
+        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; } 
+        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
+
 
       protected:
-        using Voxel<VoxelType>::parent_vox;
-        std::vector<ssize_t> from_;
-        Image::Info info_;
+        using Base<ImageType>::parent;
+        const std::vector<ssize_t> from_, size_;
+        Math::Matrix<default_type> transform_;
 
-        value_type get_value () const {
-          return parent_vox.value();
+        ssize_t get_voxel_position (size_t axis) const {
+          return parent().index(axis)-from_[axis];
         }
-        void set_value (value_type val) {
-          parent_vox.value() = val;
+        void set_voxel_position (size_t axis, ssize_t position) {
+          parent().index(axis) = position + from_[axis];
         }
-
-        ssize_t get_pos (size_t axis) const {
-          return parent_vox[axis]-from_[axis];
-        }
-        void set_pos (size_t axis, ssize_t position) {
-          parent_vox[axis] = position + from_[axis];
-        }
-        void move_pos (size_t axis, ssize_t increment) {
-          parent_vox[axis] += increment;
+        void move_voxel_position (size_t axis, ssize_t increment) {
+          parent().index(axis) += increment;
         }
 
-        friend class Value<Subset<VoxelType> >;
-        friend class Position<Subset<VoxelType> >;
+        friend class Helper::VoxelIndex<Subset<ImageType>>;
     };
 
-    }
   }
 }
 

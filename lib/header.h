@@ -56,7 +56,7 @@ namespace MR
         offset_ (0.0),
         scale_ (1.0) { }
 
-      Header (Header&& H) noexcept :
+      explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
         transform_ (std::move (H.transform_)),
         name_ (std::move (H.name_)),
@@ -246,6 +246,8 @@ namespace MR
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header);
       static Header allocate (const Header& template_header, const std::string& label = "scratch image");
+      template <class HeaderType>
+        static Header copy (const HeaderType& template_header);
       static Header empty ();
 
       /*! use to prevent automatic realignment of transform matrix into
@@ -256,9 +258,6 @@ namespace MR
       std::string description() const;
       //! print out debugging information 
       friend std::ostream& operator<< (std::ostream& stream, const Header& H);
-
-      //! the offset to the voxel at the origin (used internally)
-      // TODO remove?      size_t __data_start;
 
     protected:
       std::vector<Axis> axes_; 
@@ -321,6 +320,22 @@ namespace MR
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
 
+  template <class HeaderType>
+    inline Header Header::copy (const HeaderType& original) {
+      Header H = original.header();
+      H.name() = original.name();
+      H.set_ndim (original.ndim());
+      for (size_t n = 0; n < H.ndim(); ++n) {
+        H.size(n) = original.size(n);
+        H.stride(n) = original.stride(n);
+        H.voxsize(n) = original.voxsize(n);
+      }
+      H.transform() = original.transform();
+
+      return H;
+    }
+
+  template <> inline Header Header::copy<Header> (const Header& original) { return original; }
 
   inline Header Header::empty ()
   {

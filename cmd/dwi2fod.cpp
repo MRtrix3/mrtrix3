@@ -141,7 +141,7 @@ void run ()
   Options opt = get_options ("mask");
   if (opt.size()) {
     mask = Header::open (opt[0][0]).get_image<bool>();
-    check_dimensions (dwi, mask);
+    check_dimensions (dwi, mask, 0, 3);
   }
 
 

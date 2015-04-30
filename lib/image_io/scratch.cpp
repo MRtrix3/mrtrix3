@@ -33,11 +33,11 @@ namespace MR
 
     bool Scratch::is_file_backed () const { return false; }
 
-    void Scratch::load (const Header& header, size_t bytes_per_element)
+    void Scratch::load (const Header& header, size_t bits_per_element)
     {
-      assert (bytes_per_element);
+      assert (bits_per_element);
       DEBUG ("allocating scratch buffer for image \"" + header.name() + "\"...");
-      int64_t bytes_per_segment = bytes_per_element * segsize;
+      int64_t bytes_per_segment = bits_per_element * segsize;
       addresses.push_back (std::unique_ptr<uint8_t[]> (new uint8_t [bytes_per_segment]));
     }
 

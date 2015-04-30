@@ -28,14 +28,38 @@
 #include <tuple>
 
 #include "debug.h"
-#include "get_set.h"
 #include "header.h"
+#include "get_set.h"
 #include "image_helpers.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 
 namespace MR
 {
+  // TODO make sure buffer are allocated to correct size for bool
+  // will probably require using uint8_t as pointer type...
+  namespace {
+
+    template <typename ValueType>
+      inline ValueType __get_value_direct_io (const ValueType* data, size_t offset) {
+        return data[offset];
+      }
+    template <>
+      inline bool __get_value_direct_io (const bool* data, size_t offset) {
+        return get<bool> (data, offset);
+      }
+
+    template <typename ValueType>
+      inline void __set_value_direct_io (ValueType val, ValueType* data, size_t offset) {
+        data[offset] = val;
+      }
+    template <>
+      inline void __set_value_direct_io (bool val, bool* data, size_t offset) {
+        put<bool> (val, reinterpret_cast<void*>(data), offset, true);
+      }
+
+  }
+
 
   template <typename ValueType>
     class Image {
@@ -155,12 +179,12 @@ namespace MR
         size_t data_offset;
 
         ValueType get_voxel_value () const {
-          if (data_pointer) return data_pointer[data_offset];
+          if (data_pointer) return __get_value_direct_io (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
 
         void set_voxel_value (ValueType val) {
-          if (data_pointer) data_pointer[data_offset] = val;
+          if (data_pointer) __set_value_direct_io (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
         }
 
@@ -175,6 +199,8 @@ namespace MR
           data_offset += stride (axis) * increment;
           x[axis] += increment;
         }
+
+
 
         friend class Helper::VoxelIndex<Image>;
         friend class Helper::VoxelValue<Image>;
@@ -253,13 +279,13 @@ namespace MR
         size_t ndim () const { return b.ndim(); }
         ssize_t size (size_t axis) const { return b.size(axis); }
         ssize_t stride (size_t axis) const { return strides[axis]; }
-        ssize_t index (size_t axis) const { return x[axis]; }
+        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
         Helper::VoxelIndex<TmpImage> index (size_t axis) { return { *this, axis }; }
-        value_type value () const { return data[offset]; }
+        value_type value () const { return get_voxel_value(); }
         Helper::VoxelValue<TmpImage> value () { return { *this }; }
 
-        void set_voxel_value (ValueType val) { data[offset] = val; }
-        value_type get_voxel_value () const { return data[offset]; }
+        void set_voxel_value (ValueType val) { __set_value_direct_io (val, data, offset); }
+        value_type get_voxel_value () const { return __get_value_direct_io (data, offset); }
         ssize_t get_voxel_position (size_t axis) const { return x[axis]; }
         void set_voxel_position (size_t axis, ssize_t position) { offset += stride (axis) * (position - x[axis]); x[axis] = position; }
         void move_voxel_position (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
