@@ -33,6 +33,8 @@
 #include "file/mmap.h"
 #include "math/matrix.h"
 #include "image_helpers.h"
+#include "image_io/base.h" 
+
 
 namespace MR
 {
@@ -43,7 +45,6 @@ namespace MR
   //! functions and classes related to image data input/output
 
 
-  namespace ImageIO { class Base; }
   template <typename ValueType> class Image;
 
   class Header 
@@ -105,7 +106,16 @@ namespace MR
         return *this;
       }
 
-      bool valid () const { return axes_.size() >= 3; }
+      ~Header () { 
+        if (io) {
+          try { io->close (*this); }
+          catch (Exception& E) {
+            E.display();
+          }
+        }
+      }
+
+      bool valid () const { return bool (io); }
       bool operator! () const { return !valid(); }
 
       //! get the name of the image
@@ -113,8 +123,8 @@ namespace MR
       //! get/set the name of the image
       std::string& name () { return name_; }
 
-      //! return the format of the image, or null if not file-backed
-      const char* format () const;
+      //! return the format of the image
+      const char* format () const { return format_; }
 
       //! get the 4x4 affine transformation matrix mapping image to world coordinates
       const Math::Matrix<default_type>& transform () const { return transform_; }
@@ -170,7 +180,7 @@ namespace MR
       //! reset intensity offset to zero and scaling to one
       void reset_intensity_scaling () { set_intensity_scaling (); }
 
-      bool is_file_backed () const { return bool (io); }
+      bool is_file_backed () const { return valid() ? io->is_file_backed() : false; }
 
       //! make header self-consistent
       void sanitise () {
@@ -235,7 +245,7 @@ namespace MR
 
       static Header open (const std::string& image_name);
       static Header create (const std::string& image_name, const Header& template_header);
-      static Header allocate (const Header& template_header);
+      static Header allocate (const Header& template_header, const std::string& label = "scratch image");
       static Header empty ();
 
       /*! use to prevent automatic realignment of transform matrix into
@@ -255,6 +265,7 @@ namespace MR
       Math::Matrix<default_type> transform_; 
       std::string name_;
       std::map<std::string, std::string> keyval_;
+      const char* format_;
 
       //! additional information relevant for images stored on file
       std::unique_ptr<ImageIO::Base> io; 
@@ -311,13 +322,6 @@ namespace MR
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
 
 
-  inline Header Header::allocate (const Header& template_header) 
-  {
-    Header H (template_header);
-    H.sanitise();
-    return H;
-  }
-
   inline Header Header::empty ()
   {
     return { };
@@ -329,8 +333,6 @@ namespace MR
 
   //! @}
 }
-
-#include "image_io/base.h" // std::unique_ptr requires knowledge of sizeof (ImageIO::Base) 
 
 #endif
 

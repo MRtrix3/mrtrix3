@@ -25,6 +25,7 @@
 #include "stride.h"
 #include "transform.h"
 #include "image_io/default.h"
+#include "image_io/scratch.h"
 #include "file/name_parser.h"
 #include "formats/list.h"
 #include "math/permutation.h"
@@ -98,7 +99,7 @@ namespace MR
         throw Exception ("unknown format for image \"" + H.name() + "\"");
       assert (H.io);
 
-      H.io->format = (*format_handler)->description;
+      H.format_ = (*format_handler)->description;
 
       while (++item < list.size()) {
         Header header (H);
@@ -129,6 +130,7 @@ namespace MR
       H.sanitise();
       if (!do_not_realign_transform) 
         H.realign_transform();
+
     }
     catch (Exception& E) {
       throw Exception (E, "error opening image \"" + image_name + "\"");
@@ -192,7 +194,7 @@ namespace MR
 
       H.io = (*format_handler)->create (H);
       assert (H.io);
-      H.io->format = (*format_handler)->description;
+      H.format_ = (*format_handler)->description;
 
       while (get_next (num, Pdim)) {
         header.name() = parser.name (num);
@@ -204,9 +206,13 @@ namespace MR
 
       if (Pdim.size()) {
         int a = 0, n = 0;
-        for (size_t i = 0; i < H.ndim(); ++i)
-          if (H.stride(i))
+        ssize_t next_stride = 0;
+        for (size_t i = 0; i < H.ndim(); ++i) {
+          if (H.stride(i)) {
             ++n;
+            next_stride = std::max (next_stride, std::abs (H.stride(i)));
+          }
+        }
 
         H.set_ndim (n + Pdim.size());
 
@@ -214,7 +220,7 @@ namespace MR
           while (H.stride(a)) 
             ++a;
           H.size(a) = Pdim[i];
-          H.stride(a) = ++n;
+          H.stride(a) = ++next_stride;
         }
 
         H.name() = image_name;
@@ -282,7 +288,7 @@ namespace MR
     desc += "]\n";
 
     if (io) {
-      desc += std::string("  Format:            ") + (io->format ? io->format : "undefined") + "\n";
+      desc += std::string("  Format:            ") + (format() ? format() : "undefined") + "\n";
       desc += std::string ("  Data type:         ") + ( datatype().description() ? datatype().description() : "invalid" ) + "\n";
       desc += "  Intensity scaling: offset = " + str (intensity_offset()) + ", multiplier = " + str (intensity_scale()) + "\n";
     }
@@ -476,5 +482,16 @@ namespace MR
   }
 
 
+
+  Header Header::allocate (const Header& template_header, const std::string& label) 
+  {
+    Header H (template_header);
+    H.name() = label;
+    H.reset_intensity_scaling();
+    H.sanitise();
+    H.format_ = "scratch image";
+    H.io = std::move (std::unique_ptr<ImageIO::Scratch> (new ImageIO::Scratch (H))); 
+    return H;
+  }
 
 }

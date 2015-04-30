@@ -20,38 +20,38 @@
 
 */
 
-#ifdef MRTRIX_AS_R_LIBRARY
+#include <memory>
+#include <vector>
 
-#include <limits>
-#include <unistd.h>
-
-#include "app.h"
-#include "image_io/ram.h"
+#include "image_io/scratch.h"
+#include "header.h"
 
 namespace MR
 {
   namespace ImageIO
   {
 
+    bool Scratch::is_file_backed () const { return false; }
 
-    void RAM::load (const Header& header, size_t)
+    void Scratch::load (const Header& header, size_t bytes_per_element)
     {
-      DEBUG ("allocating RAM buffer for image \"" + header.name() + "\"...");
-      int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
-      addresses.push_back (new uint8_t [bytes_per_segment]);
+      assert (bytes_per_element);
+      DEBUG ("allocating scratch buffer for image \"" + header.name() + "\"...");
+      int64_t bytes_per_segment = bytes_per_element * segsize;
+      addresses.push_back (std::unique_ptr<uint8_t[]> (new uint8_t [bytes_per_segment]));
     }
 
 
-    void RAM::unload (const Header& header)
+    void Scratch::unload (const Header& header)
     {
       if (addresses.size()) {
-        DEBUG ("deleting RAM buffer for image \"" + header.name() + "\"...");
-        delete [] addresses[0];
+        DEBUG ("deleting scratch buffer for image \"" + header.name() + "\"...");
+        addresses[0].reset();
       }
     }
 
   }
 }
 
-#endif
+
 

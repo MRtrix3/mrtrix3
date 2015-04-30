@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_base_h__
-#define __image_handler_base_h__
+#ifndef __image_io_base_h__
+#define __image_io_base_h__
 
 #include <vector>
 #include <stdint.h>
@@ -29,7 +29,7 @@
 #include <cassert>
 
 #include "memory.h"
-#include "header.h"
+#include "mrtrix.h"
 #include "file/entry.h"
 
 #define MAX_FILES_PER_IMAGE 256U
@@ -51,20 +51,19 @@ namespace MR
     {
       public:
         Base (const Header& header);
-        Base (Base&&) = default;
+        Base (Base&&) noexcept = default;
         Base (const Base&) = delete;
         Base& operator=(const Base&) = delete;
 
         virtual ~Base ();
 
-        //! the image format
-        const char* format;
+        virtual bool is_file_backed () const;
 
-        const std::string& name () const { return header.name(); }
-        const DataType datatype () const { return header.datatype(); }
-
-        void open ();
-        void close ();
+        // bytes_per_element is only used for scratch data
+        // it is ignored in all other (file-backed) handlers,
+        // where the datatype in the header specifies the bits per element:
+        void open (const Header& header, size_t bytes_per_element = 0);
+        void close (const Header& header);
 
         bool is_image_new () const { return is_new; }
         bool is_image_readwrite () const { return writable; }
@@ -96,20 +95,18 @@ namespace MR
 
         void merge (const Base& B) {
           assert (addresses.empty());
-          assert (datatype() == B.datatype());
           for (size_t n = 0; n < B.files.size(); ++n) 
             files.push_back (B.files[n]);
           segsize += B.segsize;
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const Base& B) {
-          stream << "\"" << B.name() << ", data type " << B.datatype() << ", " << str (B.files.size()) << " files, segsize " << str(B.segsize)
+          stream << str (B.files.size()) << " files, segsize " << str(B.segsize)
             << ", is " << (B.is_new ? "" : "NOT ") << "new, " << (B.writable ? "read/write" : "read-only");
           return stream;
         }
 
       protected:
-        const Header& header;
         size_t segsize;
         std::vector<std::unique_ptr<uint8_t[]>> addresses;
         bool is_new, writable;
@@ -117,16 +114,11 @@ namespace MR
         void check () const {
           assert (addresses.size());
         }
-        virtual void load () = 0;
-        virtual void unload () = 0;
+        virtual void load (const Header& header, size_t bytes_per_element) = 0;
+        virtual void unload (const Header& header) = 0;
     };
 
   }
-
-
-
-  inline const char* Header::format () const { return io ? io->format : nullptr; }
-
 
 }
 

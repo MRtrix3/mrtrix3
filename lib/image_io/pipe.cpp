@@ -24,6 +24,7 @@
 #include <unistd.h>
 
 #include "app.h"
+#include "header.h"
 #include "image_io/pipe.h"
 
 namespace MR
@@ -31,27 +32,17 @@ namespace MR
   namespace ImageIO
   {
 
-    Pipe::~Pipe () 
-    { 
-      close(); 
-      if (!is_new && files.size() == 1) {
-        DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
-        unlink (files[0].name.c_str());
-      }
-    }
 
-
-
-    void Pipe::load ()
+    void Pipe::load (const Header& header, size_t)
     {
       assert (files.size() == 1);
       DEBUG ("mapping piped image \"" + files[0].name + "\"...");
 
       segsize /= files.size();
-      int64_t bytes_per_segment = (datatype().bits() * segsize + 7) / 8;
+      int64_t bytes_per_segment = (header.datatype().bits() * segsize + 7) / 8;
 
       if (double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
-        throw Exception ("image \"" + name() + "\" is larger than maximum accessible memory");
+        throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
       mmap.reset (new File::MMap (files[0], writable, !is_new, bytes_per_segment));
       addresses.resize (1);
@@ -59,13 +50,18 @@ namespace MR
     }
 
 
-    void Pipe::unload()
+    void Pipe::unload (const Header&)
     {
       if (mmap) {
         mmap.reset();
         if (is_new)
           std::cout << files[0].name << "\n";
         addresses[0].release();
+      }
+
+      if (!is_new && files.size() == 1) {
+        DEBUG ("deleting piped image file \"" + files[0].name + "\"...");
+        unlink (files[0].name.c_str());
       }
     }
 

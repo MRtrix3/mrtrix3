@@ -21,6 +21,7 @@
 */
 
 #include "image_io/base.h"
+#include "header.h"
 
 namespace MR
 {
@@ -29,8 +30,6 @@ namespace MR
 
 
     Base::Base (const Header& header) : 
-      format (nullptr),
-      header (header),
       segsize (voxel_count (header)),
       is_new (false),
       writable (false) { }
@@ -39,24 +38,26 @@ namespace MR
     Base::~Base () { }
 
 
-    void Base::open ()
+    bool Base::is_file_backed () const { return true; }
+
+    void Base::open (const Header& header, size_t bytes_per_element)
     {
       if (addresses.size())
         return;
 
-      load();
-      DEBUG ("image \"" + name() + "\" loaded");
+      load (header, bytes_per_element);
+      DEBUG ("image \"" + header.name() + "\" loaded");
     }
 
 
 
-    void Base::close ()
+    void Base::close (const Header& header)
     {
       if (addresses.empty())
         return;
 
-      unload();
-      DEBUG ("image \"" + name() + "\" unloaded");
+      unload (header);
+      DEBUG ("image \"" + header.name() + "\" unloaded");
       addresses.clear();
     }
 

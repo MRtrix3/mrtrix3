@@ -513,13 +513,14 @@ namespace MR
     template <typename ValueType>
       Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
         Header (H) {
-          if (H.is_file_backed()) { // file-backed image
-            assert (is_data_type<ValueType>::value);
-            acquire_io (H);
-            io->set_readwrite_if_existing (read_write_if_existing);
-            io->open();
+          assert (H.valid()); // IO handler set
+          assert (H.is_file_backed() ? is_data_type<ValueType>::value : true);
+
+          acquire_io (H);
+          io->set_readwrite_if_existing (read_write_if_existing);
+          io->open (*this, sizeof(ValueType));
+          if (io->is_file_backed()) 
             set_get_put_functions ();
-          }
         }
 
 
@@ -533,12 +534,11 @@ namespace MR
         if (data_buffer) // already allocated via with_direct_io()
           return data_buffer.get();
 
-        if (!io) { // scratch buffer: allocate and return
-          data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
-          return data_buffer.get();
-        }
+        assert (io);
+        if (!io->is_file_backed()) // this is a scratch image
+          return reinterpret_cast<ValueType*> (io->segment(0));
 
-        // file-backed: check wether we can still do direct IO
+        // check wether we can still do direct IO
         // if so, return address where mapped
         if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
           return reinterpret_cast<ValueType*> (io->segment(0));
@@ -552,8 +552,9 @@ namespace MR
     template <typename ValueType>
       inline Image<ValueType> Header::get_image () 
       {
+        assert (valid());
         if (!valid())
-          return { };
+          throw Exception ("FIXME: don't invoke get_image() with invalid Header!");
         auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this);
         return { buffer };
       }
@@ -570,15 +571,16 @@ namespace MR
         { }
 
     template <typename ValueType>
-      inline Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& strides) :
+      inline Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& desired_strides) :
         buffer (buffer_p),
         data_pointer (buffer->get_data_pointer()),
         x (ndim(), 0),
-        strides (strides.size() ? strides : Stride::get (*buffer)),
+        strides (desired_strides.size() ? desired_strides : Stride::get (*buffer)),
         data_offset (Stride::offset (*this))
         { 
           assert (buffer);
           assert (data_pointer || buffer->get_io());
+          DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset));
         }
 
 
@@ -606,8 +608,10 @@ namespace MR
     template <typename ValueType>
       Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides)
       {
+        if (buffer->data_buffer)
+          throw Exception ("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
         if (!buffer->get_io())
-          throw Exception ("FIXME: don't invoke 'with_direct_io()' on scratch images!");
+          throw Exception ("FIXME: don't invoke 'with_direct_io()' on invalid images!");
         if (!buffer.unique())
           throw Exception ("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 

@@ -21,6 +21,7 @@
 */
 
 
+#include "header.h"
 #include "image_io/sparse.h"
 
 
@@ -39,10 +40,10 @@ namespace MR
       data_end (0) { }
 
 
-    void Sparse::load()
+    void Sparse::load (const Header& header, size_t)
     {
 
-      Default::load();
+      Default::load (header,0);
 
       std::fstream stream (file.name.c_str(), std::ios_base::in | std::ios_base::binary);
       stream.seekg (0, std::ios::end);
@@ -89,10 +90,10 @@ namespace MR
 
 
 
-    void Sparse::unload()
+    void Sparse::unload (const Header& header)
     {
 
-      Default::unload();
+      Default::unload (header);
 
       const uint64_t truncate_file_size = (data_end == size()) ? 0 : file.start + data_end;
       // Null the excess data before closing the memory map to prevent std::ofstream from giving an error

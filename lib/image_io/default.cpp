@@ -23,6 +23,7 @@
 #include <limits>
 
 #include "app.h"
+#include "header.h"
 #include "file/ofstream.h"
 #include "image_io/default.h"
 
@@ -31,33 +32,33 @@ namespace MR
   namespace ImageIO
   {
 
-    void Default::load ()
+    void Default::load (const Header& header, size_t)
     {
       if (files.empty())
-        throw Exception ("no files specified in header for image \"" + name() + "\"");
+        throw Exception ("no files specified in header for image \"" + header.name() + "\"");
 
       segsize /= files.size();
 
-      if (datatype().bits() == 1) {
+      if (header.datatype().bits() == 1) {
         bytes_per_segment = segsize/8;
         if (bytes_per_segment*8 < int64_t (segsize))
           ++bytes_per_segment;
       }
-      else bytes_per_segment = datatype().bytes() * segsize;
+      else bytes_per_segment = header.datatype().bytes() * segsize;
 
       if (files.size() * double (bytes_per_segment) >= double (std::numeric_limits<size_t>::max()))
-        throw Exception ("image \"" + name() + "\" is larger than maximum accessible memory");
+        throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
       if (files.size() > MAX_FILES_PER_IMAGE) 
-        copy_to_mem ();
+        copy_to_mem (header);
       else 
-        map_files ();
+        map_files (header);
     }
 
 
 
 
-    void Default::unload ()
+    void Default::unload (const Header& header)
     {
       if (mmaps.empty() && addresses.size()) {
         assert (addresses[0].get());
@@ -81,9 +82,9 @@ namespace MR
 
 
 
-    void Default::map_files ()
+    void Default::map_files (const Header& header)
     {
-      DEBUG ("mapping image \"" + name() + "\"...");
+      DEBUG ("mapping image \"" + header.name() + "\"...");
       mmaps.resize (files.size());
       addresses.resize (mmaps.size());
       for (size_t n = 0; n < files.size(); n++) {
@@ -96,13 +97,13 @@ namespace MR
 
 
 
-    void Default::copy_to_mem ()
+    void Default::copy_to_mem (const Header& header)
     {
-      DEBUG ("loading image \"" + name() + "\"...");
-      addresses.resize (files.size() > 1 && datatype().bits() *segsize != 8*size_t (bytes_per_segment) ? files.size() : 1);
+      DEBUG ("loading image \"" + header.name() + "\"...");
+      addresses.resize (files.size() > 1 && header.datatype().bits() *segsize != 8*size_t (bytes_per_segment) ? files.size() : 1);
       addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
       if (!addresses[0]) 
-        throw Exception ("failed to allocate memory for image \"" + name() + "\"");
+        throw Exception ("failed to allocate memory for image \"" + header.name() + "\"");
 
       if (is_new) memset (addresses[0].get(), 0, files.size() * bytes_per_segment);
       else {

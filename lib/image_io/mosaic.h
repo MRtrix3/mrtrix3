@@ -34,18 +34,17 @@ namespace MR
     class Mosaic : public Base
     {
       public:
-        Mosaic (Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
+        Mosaic (const Header& header, size_t mosaic_xdim, size_t mosaic_ydim, size_t slice_xdim, size_t slice_ydim, size_t nslices) :
           Base (header), m_xdim (mosaic_xdim), m_ydim (mosaic_ydim),
           xdim (slice_xdim), ydim (slice_ydim), slices (nslices) { 
             segsize = header.size(0) * header.size(1) * header.size(2);
           }
-        ~Mosaic () { close(); }
 
       protected:
         size_t m_xdim, m_ydim, xdim, ydim, slices;
 
-        virtual void load ();
-        virtual void unload ();
+        virtual void load (const Header&, size_t);
+        virtual void unload (const Header&);
     };
 
   }

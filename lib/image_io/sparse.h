@@ -75,8 +75,6 @@ namespace MR
       public:
         Sparse (const Header& header, const std::string&, const size_t, const File::Entry entry);
 
-        ~Sparse () { close(); }
-
 
         // Find the number of elements in a particular voxel based on the file offset
         uint32_t get_numel (const uint64_t) const;
@@ -96,8 +94,8 @@ namespace MR
 
 
       protected:
-        virtual void load ();
-        virtual void unload ();
+        virtual void load (const Header&, size_t);
+        virtual void unload (const Header&);
 
         const std::string class_name;
         const size_t class_size;

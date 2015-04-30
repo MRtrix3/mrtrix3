@@ -24,6 +24,7 @@
 
 #include "app.h"
 #include "progressbar.h"
+#include "header.h"
 #include "image_io/mosaic.h"
 
 namespace MR
@@ -32,34 +33,34 @@ namespace MR
   {
 
 
-    void Mosaic::load ()
+    void Mosaic::load (const Header& header, size_t)
     {
       if (files.empty())
-        throw Exception ("no files specified in header for image \"" + name() + "\"");
+        throw Exception ("no files specified in header for image \"" + header.name() + "\"");
 
-      assert (datatype().bits() > 1);
+      assert (header.datatype().bits() > 1);
 
-      size_t bytes_per_segment = datatype().bytes() * segsize;
+      size_t bytes_per_segment = header.datatype().bytes() * segsize;
       if (files.size() * bytes_per_segment > std::numeric_limits<size_t>::max())
-        throw Exception ("image \"" + name() + "\" is larger than maximum accessible memory");
+        throw Exception ("image \"" + header.name() + "\" is larger than maximum accessible memory");
 
-      DEBUG ("loading mosaic image \"" + name() + "\"...");
+      DEBUG ("loading mosaic image \"" + header.name() + "\"...");
       addresses.resize (1);
       addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
       if (!addresses[0])
-        throw Exception ("failed to allocate memory for image \"" + name() + "\"");
+        throw Exception ("failed to allocate memory for image \"" + header.name() + "\"");
 
       ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
       uint8_t* data = addresses[0].get();
       for (size_t n = 0; n < files.size(); n++) {
-        File::MMap file (files[n], false, false, m_xdim * m_ydim * datatype().bytes());
+        File::MMap file (files[n], false, false, m_xdim * m_ydim * header.datatype().bytes());
         size_t nx = 0, ny = 0;
         for (size_t z = 0; z < slices; z++) {
           size_t ox = nx*xdim;
           size_t oy = ny*ydim;
           for (size_t y = 0; y < ydim; y++) {
-            memcpy (data, file.address() + datatype().bytes() * (ox + m_xdim* (y+oy)), xdim * datatype().bytes());
-            data += xdim * datatype().bytes();
+            memcpy (data, file.address() + header.datatype().bytes() * (ox + m_xdim* (y+oy)), xdim * header.datatype().bytes());
+            data += xdim * header.datatype().bytes();
           }
           nx++;
           if (nx >= m_xdim / xdim) {
@@ -73,7 +74,7 @@ namespace MR
       segsize = std::numeric_limits<size_t>::max();
     }
 
-    void Mosaic::unload () { }
+    void Mosaic::unload (const Header& header) { }
 
   }
 }

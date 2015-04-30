@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_handler_ram_h__
-#define __image_handler_ram_h__
+#ifndef __image_io_ram_h__
+#define __image_io_ram_h__
 
 #include "image_io/base.h"
 
@@ -34,12 +34,11 @@ namespace MR
     class RAM : public Base
     {
       public:
-        RAM (Header& header) : Base (header) { }
-        virtual ~RAM () { close(); }
+        RAM (const Header& header) : Base (header) { }
 
       protected:
-        virtual void load ();
-        virtual void unload ();
+        virtual void load (const Header&, size_t);
+        virtual void unload (const Header&);
     };
 
   }
