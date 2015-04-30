@@ -485,12 +485,12 @@ namespace MR
             volume_box->setVisible(true);
             vol_index->setEnabled(true);
             vol_index->setMaximum(image->interp.dim(3) - 1);
-            vol_index->setValue(0);
+            vol_index->setValue(image->interp[3]);
 
             if(dim > 4) {
               vol_group->setEnabled(true);
               vol_group->setMaximum(image->interp.dim(4) - 1);
-              vol_group->setValue(0);
+              vol_group->setValue(image->interp[4]);
             } else
               vol_group->setEnabled(false);
           } else {
