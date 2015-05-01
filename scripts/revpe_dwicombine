@@ -189,9 +189,9 @@ with open('grad_combined.b', 'w') as outfile:
 
 # Generate an initial distortion-corrected volume
 # TODO The string '[ 0 0 0 1 ]' is being written to stdout somewhere here...
-runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac')
-runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac')
-runCommand('mrcat dwi1_topup.' + fsl_suffix + ' dwi2_topup.' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
+runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup' + fsl_suffix + ' --method=jac')
+runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup' + fsl_suffix + ' --method=jac')
+runCommand('mrcat dwi1_topup' + fsl_suffix + ' dwi2_topup' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
 
 # Produce a brain mask based on this initial correction
 runCommand('dwi2mask topup_combined.mif mask.mif -grad grad_combined.b')
@@ -244,8 +244,8 @@ runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif')
 runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif')
 
 # Manually combine corresponding volumes from EDDY output
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option)
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option)
+runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option)
+runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option)
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - ' + result_path + ' -grad grad1.b' + axis_permute_option + vox_permute_option)
 

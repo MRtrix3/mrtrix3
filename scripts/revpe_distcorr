@@ -136,14 +136,14 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 
 # Apply the warp field to the image series
 # Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
-runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac')
+runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup' + fsl_suffix + ' --method=jac')
 
 # Need to split depending on whether DW information is available
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 if not grad:
 
   printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + result_path + stride_option)
+  runCommand('mrconvert series_topup' + fsl_suffix + ' ' + result_path + stride_option)
   
 else:
 
@@ -153,7 +153,7 @@ else:
   runCommand('mrinfo series.mif -export_grad_fsl bvecs bvals')
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('mrconvert series_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
   
   # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
   # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
@@ -179,7 +179,7 @@ else:
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
   #   text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
+  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
 lib.app.moveFileToDest (result_path, sys.argv[4])
 lib.app.terminate()
