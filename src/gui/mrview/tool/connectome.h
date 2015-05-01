@@ -73,21 +73,9 @@
 //     intersects viewing plane, emit two vertices, draw with GL_LINES
 //     (shader will need access to the following two vertices, and run on only
 //     every third vertex)
-//   - For drawing as overlay, think it will be best to maintain a single RGB volume
-//     with the appropriate node colours / visibilities / transparencies;
-//     any changes made to these settings need to be propagated to this master image
-//     so that it is valid, and only a single overlay image is required;
-//     Should also be possible to overlay in both 2D and 3D.
-//     If updates are slow, maybe only update dynamically if overlay is the current setting;
-//     then regenerate image from scratch when the node display mode is set to overlay
-//     Alternatively, if each node's mask were to be reduced in FOV to only encompass the
-//     node, and have its transform updated appropriately...?
-//     In 2D mode could also do a quick check to see if the node's FOV actually crosses the
-//     focus plane, and skip drawing as many of them as possible
-//     Actually, may not be any need to store an image per node; just have a
-//     buffer accessing the original image, and use the values read from it to
-//     access the relevant node while the RGB volume is updated. Can use an Extract adaptor
-//     to reduce the search space when passing the volumes to the vox2mesh function
+//   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
+//   - In 2D mode, use mask image extent / node location & size to detect when there is no
+//     need to process a particular node (need to save the image extent from construction)
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
@@ -107,6 +95,10 @@
 //   - Add lighting capability, using similar code to ODF renderer
 //     * May want to have a single GL::Lighting class for which the settings apply
 //       to all geometries -> Actually there already is one, Window::lighting()
+//   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
+//     (arose with implementation of the node overlay image)
+//   - Make transparency sliders a little more sensible
+//     (may need linear scale in 2D mode, non-linear in 3D)
 //
 // * Nodes GUI section
 //   - For colour by file: Need additional elements to appear: Colour map picker w. option

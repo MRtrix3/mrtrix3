@@ -199,7 +199,7 @@ namespace MR
             if (image->use_discard_upper())
               source += " && amplitude <= overlay"+str(n)+"_upper";
 
-            source += ") {\n";
+            source += " && amplitude >= overlay"+str(n)+"_alpha_offset) {\n";
 
             if (!ColourMap::maps[image->colourmap].special) {
               source += 

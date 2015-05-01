@@ -1647,12 +1647,13 @@ namespace MR
           set_interpolate (false);
           set_colourmap (5);
           set_min_max (0.0f, 1.0f);
-          set_allowed_features  (false, true, true);
-          set_use_discard_lower (false);
+          set_allowed_features  (true, true, true);
+          set_use_discard_lower (true);
           set_use_discard_upper (false);
           set_use_transparency  (true);
           set_invert_scale      (false);
           set_interpolate       (false);
+          transparent_intensity = opaque_intensity = lessthan = std::numeric_limits<float>::min();
           alpha = 1.0f;
           type = gl::FLOAT;
           format = gl::RGBA;
@@ -1665,6 +1666,9 @@ namespace MR
         void Connectome::NodeOverlay::update_texture2D (const int plane, const int slice)
         {
           // TESTME Suspect this should never be run...
+          // Only time this could conceptually be used is if activation of the connectome tool
+          // 'overhauled' the main image, and the camera & focus plane were set based on the
+          // parcellation image
           assert (0);
           if (!texture2D[plane])
             texture2D[plane].gen (gl::TEXTURE_3D);
