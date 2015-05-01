@@ -65,26 +65,14 @@ namespace MR
         ssize_t size (size_t axis) const { return size_ [axis]; }
         const Math::Matrix<float>& transform() const { return transform_; }
 
-        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; } 
-        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
-
+        ssize_t index (size_t axis) const { return parent().index(axis)-from_[axis]; }
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        void move_index (size_t axis, ssize_t increment) { parent().index(axis) += increment; }
 
       protected:
         using Base<ImageType>::parent;
         const std::vector<ssize_t> from_, size_;
         Math::Matrix<default_type> transform_;
-
-        ssize_t get_voxel_position (size_t axis) const {
-          return parent().index(axis)-from_[axis];
-        }
-        void set_voxel_position (size_t axis, ssize_t position) {
-          parent().index(axis) = position + from_[axis];
-        }
-        void move_voxel_position (size_t axis, ssize_t increment) {
-          parent().index(axis) += increment;
-        }
-
-        friend class Helper::VoxelIndex<Subset<ImageType>>;
     };
 
   }

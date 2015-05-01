@@ -67,8 +67,18 @@ namespace MR
 
         const Math::Matrix<default_type>& transform () const { return trans; } 
 
-        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; } 
-        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
+        ssize_t index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
+        void move_index (size_t axis, ssize_t increment) {
+          if (axis == extract_axis) {
+            ssize_t prev_pos = indices[current_pos];
+            current_pos += increment;
+            parent().index(axis) += current_pos < ssize_t(indices.size()) ? indices[current_pos] - prev_pos : 0;
+          }
+          else 
+            parent().index(axis) += increment;
+        }
+
 
         friend std::ostream& operator<< (std::ostream& stream, const Extract1D& V) {
           stream << "Extract1D adapter for image \"" << V.name() << "\", position [ ";
@@ -84,30 +94,6 @@ namespace MR
         Math::Matrix<default_type> trans;
         ssize_t current_pos;
 
-        ssize_t get_voxel_position (size_t axis) const {
-          return ( axis == extract_axis ? current_pos : parent().index(axis) );
-        }
-
-        void set_voxel_position (size_t axis, ssize_t position) {
-          if (axis == extract_axis) {
-            parent().index(axis) = indices[position];
-            current_pos = position;
-          }
-          else 
-            parent().index(axis) = position;
-        }
-
-        void move_voxel_position (size_t axis, ssize_t increment) {
-          if (axis == extract_axis) {
-            ssize_t prev_pos = indices[current_pos];
-            current_pos += increment;
-            parent().index(axis) += current_pos < ssize_t(indices.size()) ? indices[current_pos] - prev_pos : 0;
-          }
-          else 
-            parent().index(axis) += increment;
-        }
-
-        friend class Helper::VoxelIndex<Extract1D<ImageType>>;
     };
 
 
@@ -154,29 +140,18 @@ namespace MR
           }
         }
 
-        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
-        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
-
-      private:
-        std::vector<size_t> current_pos;
-        const std::vector<std::vector<int> > indices;
-        Math::Matrix<default_type> trans;
-
-        ssize_t get_voxel_position (size_t axis) const {
-          return current_pos[axis];
-        }
-        void set_voxel_position (size_t axis, ssize_t position) {
-          current_pos[axis] = position;
-          parent().index(axis) = indices[axis][position];
-        }
-
-        void move_voxel_position (size_t axis, ssize_t increment) {
+        ssize_t index (size_t axis) const { return current_pos[axis]; }
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        void move_index (size_t axis, ssize_t increment) {
           ssize_t prev = current_pos[axis];
           current_pos[axis] += increment;
           parent().index (axis) += indices[axis][current_pos[axis]] - indices[axis][prev];
         }
 
-        friend class Helper::VoxelIndex<Extract<ImageType> >;
+      private:
+        std::vector<size_t> current_pos;
+        const std::vector<std::vector<int> > indices;
+        Math::Matrix<default_type> trans;
     };
 
   }

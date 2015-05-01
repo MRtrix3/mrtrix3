@@ -100,14 +100,22 @@ namespace MR
         }
 
         //! get position of current voxel location along \a axis
-        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
+        ssize_t index (size_t axis) const { return x[axis]; }
         //! get/set position of current voxel location along \a axis
-        Helper::VoxelIndex<Image> index (size_t axis) { return { *this, axis }; }
+        auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
         //! get voxel value at current location
-        ValueType value () const { return get_voxel_value (); }
+        ValueType value () const {
+          if (data_pointer) return __get_value_direct_io (data_pointer, data_offset);
+          return buffer->get_value (data_offset);
+        }
         //! get/set voxel value at current location
-        Helper::VoxelValue<Image> value () { return { *this }; }
+        auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        void set_value (ValueType val) {
+          if (data_pointer) __set_value_direct_io (val, data_pointer, data_offset);
+          else buffer->set_value (data_offset, val);
+        }
 
         //! use for debugging
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
@@ -177,33 +185,6 @@ namespace MR
         Stride::List strides;
         //! offset to currently pointed-to voxel
         size_t data_offset;
-
-        ValueType get_voxel_value () const {
-          if (data_pointer) return __get_value_direct_io (data_pointer, data_offset);
-          return buffer->get_value (data_offset);
-        }
-
-        void set_voxel_value (ValueType val) {
-          if (data_pointer) __set_value_direct_io (val, data_pointer, data_offset);
-          else buffer->set_value (data_offset, val);
-        }
-
-        ssize_t get_voxel_position (size_t axis) const {
-          return x[axis];
-        }
-        void set_voxel_position (size_t axis, ssize_t position) {
-          data_offset += stride (axis) * (position - x[axis]);
-          x[axis] = position;
-        }
-        void move_voxel_position (size_t axis, ssize_t increment) {
-          data_offset += stride (axis) * increment;
-          x[axis] += increment;
-        }
-
-
-
-        friend class Helper::VoxelIndex<Image>;
-        friend class Helper::VoxelValue<Image>;
     };
 
 
@@ -279,16 +260,14 @@ namespace MR
         size_t ndim () const { return b.ndim(); }
         ssize_t size (size_t axis) const { return b.size(axis); }
         ssize_t stride (size_t axis) const { return strides[axis]; }
-        ssize_t index (size_t axis) const { return get_voxel_position (axis); }
-        Helper::VoxelIndex<TmpImage> index (size_t axis) { return { *this, axis }; }
-        value_type value () const { return get_voxel_value(); }
-        Helper::VoxelValue<TmpImage> value () { return { *this }; }
 
-        void set_voxel_value (ValueType val) { __set_value_direct_io (val, data, offset); }
-        value_type get_voxel_value () const { return __get_value_direct_io (data, offset); }
-        ssize_t get_voxel_position (size_t axis) const { return x[axis]; }
-        void set_voxel_position (size_t axis, ssize_t position) { offset += stride (axis) * (position - x[axis]); x[axis] = position; }
-        void move_voxel_position (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+        ssize_t index (size_t axis) const { return x[axis]; }
+        auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+
+        value_type value () const { return __get_value_direct_io (data, offset); } 
+        auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        void set_value (ValueType val) { __set_value_direct_io (val, data, offset); }
       };
 
   }

@@ -61,11 +61,13 @@ namespace MR
           ssize_t stride (size_t axis) const { return parent_.stride (axis); }
           const Math::Matrix<default_type>& transform () const { return parent_.transform(); }
 
-          ssize_t index (size_t axis) const { return get_voxel_position (axis); }
-          auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
+          ssize_t index (size_t axis) const { return parent_.index (axis); }
+          auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+          void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
 
-          value_type value () const { return get_voxel_value (); }
-          auto value () -> decltype(Helper::voxel_value(*this)) { return { *this }; }
+          value_type value () const { return parent_.value(); } 
+          auto value () -> decltype(Helper::value(*this)) { return { *this }; }
+          void set_value (value_type val) { parent_.value() = val; } 
 
           void reset () { parent_.reset(); }
 
@@ -79,16 +81,6 @@ namespace MR
 
         protected:
           ImageType parent_;
-
-          value_type get_voxel_value () const { return parent_.value(); } 
-          void set_voxel_value (value_type val) { parent_.value() = val; } 
-
-          ssize_t get_voxel_position (size_t axis) const { return parent_.index (axis); }
-          void set_voxel_position (size_t axis, ssize_t position) { TRACE; parent_.index (axis) = position; }
-          void move_voxel_position (size_t axis, ssize_t increment) { TRACE; parent_.index (axis) += increment; }
-
-          friend class Helper::VoxelIndex<Base>;
-          friend class Helper::VoxelValue<Base>;
       };
 
 

@@ -67,23 +67,13 @@ next_axis:
 
         void reset () { parent().reset(); }
 
-        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
+        ssize_t index (size_t axis) const { return axes_[axis] < 0 ? 0 : parent().index (axes_[axis]); }
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        void move_index (size_t axis, ssize_t increment) { parent().index (axes_[axis]) += increment; }
 
       private:
         const std::vector<int> axes_;
 
-        ssize_t get_voxel_position (size_t axis) {
-          return axes_[axis] < 0 ? 0 : parent().index (axes_[axis]);
-        }
-        void set_voxel_position (size_t axis, ssize_t position) {
-          parent().index (axes_[axis]) = position;
-        }
-        void move_voxel_position (size_t axis, ssize_t increment) {
-          parent().index (axes_[axis]) += increment;
-        }
-
-        friend class Helper::VoxelIndex<PermuteAxes<ImageType>>;
-        friend class Helper::VoxelValue<PermuteAxes<ImageType>>;
     };
 
   }

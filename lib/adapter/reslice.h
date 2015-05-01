@@ -147,7 +147,7 @@ namespace MR
             interp.index(n) = 0;
         }
 
-        value_type& value () {
+        value_type value () const {
           if (oversampling) {
             Point<default_type> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             value_type result = 0.0;
@@ -175,8 +175,14 @@ namespace MR
           interp.voxel (pos);
           return interp.value();
         }
+        value_type value () { const auto* _this = this; _this->value(); }
 
-        auto index (size_t axis) -> decltype(Helper::voxel_index(*this, axis)) { return { *this, axis }; }
+        ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+        auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+        void move_index (size_t axis, ssize_t increment) {
+          if (axis < 3) x[axis] += increment;
+          else interp.index(axis) += increment;
+        }
 
       private:
         Interpolator<ImageType> interp;
@@ -188,18 +194,6 @@ namespace MR
         default_type from[3], inc[3];
         default_type norm;
         const Math::Matrix<default_type> transform_, direct_transform;
-
-        ssize_t get_voxel_position (size_t axis) const {
-          return axis < 3 ? x[axis] : interp.index(axis);
-        }
-        void set_voxel_position (size_t axis, ssize_t position) {
-          if (axis < 3) x[axis] = position;
-          else interp.index(axis) = position;
-        }
-        void move_voxel_position (size_t axis, ssize_t increment) {
-          if (axis < 3) x[axis] += increment;
-          else interp.index(axis) += increment;
-        }
 
         static inline Math::Matrix<default_type> get_direct_transform (const Transform& reference, 
             const Transform& original, const Math::Matrix<default_type>& transform) {
@@ -216,8 +210,6 @@ namespace MR
           Math::mult (direct_transform, Mo, Mr);
           return direct_transform;
         }
-
-        friend class Helper::VoxelIndex<Reslice<Interpolator,ImageType> >;
     };
 
     //! @}
