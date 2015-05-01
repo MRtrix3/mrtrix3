@@ -58,305 +58,151 @@ namespace MR
 
   namespace ByteOrder
   {
-    namespace
-    {
-      template <typename ValueType> inline void swap (ValueType& a, ValueType& b) throw ()
-      {
-        ValueType c (a);
-        a = b;
-        b = c;
+
+    template <typename ValueType>
+      inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 1, ValueType>::type swap (ValueType v) {
+        return v; 
       }
+
+    template <typename ValueType>
+      inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 2, ValueType>::type swap (ValueType v) {
+        union {
+          ValueType v;
+          uint8_t i[2];
+        } val = { v };
+        std::swap (val.i[0], val.i[1]);
+        return val.v;
+      }
+
+    template <typename ValueType>
+      inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 4, ValueType>::type swap (ValueType v) {
+        union {
+        ValueType v;
+        uint8_t i[4];
+      } val = { v };
+      std::swap (val.i[0], val.i[3]);
+      std::swap (val.i[1], val.i[2]);
+      return val.v;
     }
 
-    inline int16_t  swap (int16_t v)
-    {
+    template <typename ValueType>
+      inline typename std::enable_if<std::is_fundamental<ValueType>::value && sizeof(ValueType) == 8, ValueType>::type swap (ValueType v) {
       union {
-        int16_t v;
-        uint8_t i[2];
-      } val = { v };
-      swap (val.i[0], val.i[1]);
-      return val.v;
-    }
-    inline uint16_t swap (uint16_t v)
-    {
-      union {
-        uint16_t v;
-        uint8_t i[2];
-      } val = { v };
-      swap (val.i[0], val.i[1]);
-      return val.v;
-    }
-    inline int32_t  swap (int32_t v)
-    {
-      union {
-        int32_t v;
-        uint8_t i[4];
-      } val = { v };
-      swap (val.i[0], val.i[3]);
-      swap (val.i[1], val.i[2]);
-      return val.v;
-    }
-    inline uint32_t swap (uint32_t v)
-    {
-      union {
-        uint32_t v;
-        uint8_t i[4];
-      } val = { v };
-      swap (val.i[0], val.i[3]);
-      swap (val.i[1], val.i[2]);
-      return val.v;
-    }
-    inline int64_t  swap (int64_t v)
-    {
-      union {
-        int64_t v;
+        ValueType v;
         uint8_t i[8];
       } val = { v };
-      swap (val.i[0], val.i[7]);
-      swap (val.i[1], val.i[6]);
-      swap (val.i[2], val.i[5]);
-      swap (val.i[3], val.i[4]);
-      return val.v;
-    }
-    inline uint64_t swap (uint64_t v)
-    {
-      union {
-        uint64_t v;
-        uint8_t i[8];
-      } val = { v };
-      swap (val.i[0], val.i[7]);
-      swap (val.i[1], val.i[6]);
-      swap (val.i[2], val.i[5]);
-      swap (val.i[3], val.i[4]);
-      return val.v;
-    }
-    inline float32  swap (float32 v)
-    {
-      union {
-        float32 v;
-        uint8_t i[4];
-      } val = { v };
-      swap (val.i[0], val.i[3]);
-      swap (val.i[1], val.i[2]);
-      return val.v;
-    }
-    inline float64  swap (float64 v)
-    {
-      union {
-        float64 v;
-        uint32_t i[2];
-      } val = { v };
-      uint32_t t = swap (val.i[0]);
-      val.i[0] = swap (val.i[1]);
-      val.i[1] = t;
+      std::swap (val.i[0], val.i[7]);
+      std::swap (val.i[1], val.i[6]);
+      std::swap (val.i[2], val.i[5]);
+      std::swap (val.i[3], val.i[4]);
       return val.v;
     }
 
-    inline int16_t LE (int16_t v)
-    {
-      return TO_LE (v);
-    }
-    inline int16_t BE (int16_t v)
-    {
-      return TO_BE (v);
-    }
-    inline uint16_t LE (uint16_t v)
-    {
-      return TO_LE (v);
-    }
-    inline uint16_t BE (uint16_t v)
-    {
-      return TO_BE (v);
-    }
-    inline int32_t LE (int32_t v)
-    {
-      return TO_LE (v);
-    }
-    inline int32_t BE (int32_t v)
-    {
-      return TO_BE (v);
-    }
-    inline uint32_t LE (uint32_t v)
-    {
-      return TO_LE (v);
-    }
-    inline uint32_t BE (uint32_t v)
-    {
-      return TO_BE (v);
-    }
-    inline int64_t LE (int64_t v)
-    {
-      return TO_LE (v);
-    }
-    inline int64_t BE (int64_t v)
-    {
-      return TO_BE (v);
-    }
-    inline uint64_t LE (uint64_t v)
-    {
-      return TO_LE (v);
-    }
-    inline uint64_t BE (uint64_t v)
-    {
-      return TO_BE (v);
-    }
+    template <typename ValueType>
+      inline typename std::enable_if<is_complex<ValueType>::value, ValueType>::type swap (ValueType v) { return { swap (v.real()), swap (v.imag()) }; } 
 
-    inline float32 LE (float32 v)
-    {
-      return TO_LE (v);
-    }
-    inline float32 BE (float32 v)
-    {
-      return TO_BE (v);
-    }
-    inline float64 LE (float64 v)
-    {
-      return TO_LE (v);
-    }
-    inline float64 BE (float64 v)
-    {
-      return TO_BE (v);
-    }
+    template <typename ValueType>
+      inline ValueType LE (ValueType v) { return TO_LE (v); }
 
-    inline cfloat LE (cfloat v)
-    {
-      TO_LE (v.real());
-      TO_LE (v.imag());
-      return v;
-    }
-    inline cfloat BE (cfloat v)
-    {
-      TO_BE (v.real());
-      TO_BE (v.imag());
-      return v;
-    }
-    inline cdouble LE (cdouble v)
-    {
-      TO_LE (v.real());
-      TO_LE (v.imag());
-      return v;
-    }
-    inline cdouble BE (cdouble v)
-    {
-      TO_BE (v.real());
-      TO_BE (v.imag());
-      return v;
-    }
+    template <typename ValueType>
+      inline ValueType BE (ValueType v) { return TO_BE (v); }
 
-    template <typename ValueType> inline ValueType swap (const ValueType value, bool is_big_endian)
-    {
-      return is_big_endian ? BE (value) : LE (value);
-    }
+    template <typename ValueType> 
+      inline ValueType swap (const ValueType value, bool is_big_endian) { return is_big_endian ? BE (value) : LE (value); }
+
+  }
+
+  namespace {
+    template <typename ValueType> ValueType* as (void* p) { return reinterpret_cast<ValueType*> (p); }
+    template <typename ValueType> const ValueType* as (const void* p) { return reinterpret_cast<const ValueType*> (p); }
   }
 
 
-  template <typename ValueType> inline ValueType getLE (const void* address)
-  {
-    return ByteOrder::LE (*((ValueType*) address));
-  }
-  template <typename ValueType> inline ValueType getBE (const void* address)
-  {
-    return ByteOrder::BE (*((ValueType*) address));
-  }
-  template <typename ValueType> inline ValueType get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  {
-    return ByteOrder::swap (*((ValueType*) address), is_big_endian);
-  }
+  // GET from pointer:
+  template <typename ValueType> 
+    inline ValueType getLE (const void* address) { return ByteOrder::LE (*as<ValueType> (address)); }
 
-  template <typename ValueType> inline void putLE (const ValueType value, void* address)
-  {
-    *((ValueType*) address) = ByteOrder::LE (value);
-  }
-  template <typename ValueType> inline void putBE (const ValueType value, void* address)
-  {
-    *((ValueType*) address) = ByteOrder::BE (value);
-  }
-  template <typename ValueType> inline void put (const ValueType value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  {
-    *((ValueType*) address) = ByteOrder::swap (value, is_big_endian);
-  }
+  template <typename ValueType> 
+    inline ValueType getBE (const void* address) { return ByteOrder::BE (*as<ValueType> (address)); }
 
-  template <typename ValueType> inline ValueType getLE (const void* data, size_t i)
-  {
-    return ByteOrder::LE (((ValueType*) data)[i]);
-  }
-  template <typename ValueType> inline ValueType getBE (const void* data, size_t i)
-  {
-    return ByteOrder::BE (((ValueType*) data)[i]);
-  }
-  template <typename ValueType> inline ValueType get (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  {
-    return ByteOrder::swap (*((ValueType*) data)[i], is_big_endian);
-  }
+  template <typename ValueType> 
+    inline ValueType get (const void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { return ByteOrder::swap (*as<ValueType>(address), is_big_endian); }
 
-  template <typename ValueType> inline void putLE (const ValueType value, void* data, size_t i)
-  {
-    ((ValueType*) data)[i] = ByteOrder::LE (value);
-  }
-  template <typename ValueType> inline void putBE (const ValueType value, void* data, size_t i)
-  {
-    ((ValueType*) data)[i] = ByteOrder::BE (value);
-  }
-  template <typename ValueType> inline void put (const ValueType value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN)
-  {
-    *((ValueType*) data)[i] = ByteOrder::swap (value, is_big_endian);
-  }
+  template <typename ValueType> 
+    inline ValueType get_native (const void* address) { return *as<ValueType>(address); }
+
+  // PUT at pointer:
+  template <typename ValueType> 
+    inline void putLE (const ValueType value, void* address) { *as<ValueType>(address) = ByteOrder::LE (value); }
+
+  template <typename ValueType> 
+    inline void putBE (const ValueType value, void* address) { *as<ValueType>(address) = ByteOrder::BE (value); }
+
+  template <typename ValueType> 
+    inline void put (const ValueType value, void* address, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { *as<ValueType>(address) = ByteOrder::swap (value, is_big_endian); }
+
+  template <typename ValueType> 
+    inline void put_native (const ValueType value, void* address) { *as<ValueType>(address) = value; }
+
+
+
+  //! fetch \a value in little-endian format from offset \a i from \a data 
+  template <typename ValueType> 
+    inline ValueType getLE (const void* data, size_t i) { return ByteOrder::LE (as<ValueType>(data)[i]); }
+
+  //! fetch \a value in big-endian format from offset \a i from \a data 
+  template <typename ValueType> 
+    inline ValueType getBE (const void* data, size_t i) { return ByteOrder::BE (as<ValueType>(data)[i]); }
+
+  //! fetch \a value in format \a is_big_endian from offset \a i from \a data 
+  template <typename ValueType> 
+    inline ValueType get (const void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { return ByteOrder::swap (as<ValueType>(data)[i], is_big_endian); }
+
+  //! fetch \a value in native format from offset \a i from \a data 
+  template <typename ValueType> 
+    inline ValueType get_native (const void* data, size_t i) { return as<ValueType>(data)[i]; }
+
+
+
+  //! store \a value in little-endian format at offset \a i from \a data 
+  template <typename ValueType> 
+    inline void putLE (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = ByteOrder::LE (value); }
+
+  //! store \a value in big-endian format at offset \a i from \a data 
+  template <typename ValueType> 
+    inline void putBE (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = ByteOrder::BE (value); }
+
+  //! store \a value in format \a is_big_endian at offset \a i from \a data 
+  template <typename ValueType> 
+    inline void put (const ValueType value, void* data, size_t i, bool is_big_endian = MRTRIX_IS_BIG_ENDIAN) { as<ValueType>(data)[i] = ByteOrder::swap (value, is_big_endian); }
+
+  //! store \a value in native format at offset \a i from \a data 
+  template <typename ValueType> 
+    inline void put_native (const ValueType value, void* data, size_t i) { as<ValueType>(data)[i] = value; }
 
 
   //! \cond skip
  
-  template <> inline int8_t get<int8_t> (const void* address, bool)
-  {
-    return *((int8_t*) address);
-  }
-  template <> inline int8_t get<int8_t> (const void* data, size_t i, bool)
-  {
-    return  ((int8_t*) data)[i];
-  }
 
-  template <> inline void put<int8_t> (const int8_t value, void* address, bool)
-  {
-    *((int8_t*) address) = value;
-  }
-  template <> inline void put<int8_t> (const int8_t value, void* data, size_t i, bool)
-  {
-    ((int8_t*) data)[i] = value;
-  }
+  template <> 
+    inline bool get_native<bool> (const void* data, size_t i) { return ( as<uint8_t>(data)[i/8]) & (BITMASK >> i%8 ); }
 
-  template <> inline uint8_t get<uint8_t> (const void* address, bool)
-  {
-    return *((uint8_t*) address);
-  }
-  template <> inline uint8_t get<uint8_t> (const void* data, size_t i, bool)
-  {
-    return  ((uint8_t*) data)[i];
-  }
-
-  template <> inline void put<uint8_t> (const uint8_t value, void* address, bool)
-  {
-    *((uint8_t*) address) = value;
-  }
-  template <> inline void put<uint8_t> (const uint8_t value, void* data, size_t i, bool)
-  {
-    ((uint8_t*) data)[i] = value;
-  }
+  template <> 
+    inline void put_native<bool> (const bool value, void* data, size_t i) {
+      std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (as<uint8_t>(data) + (i/8));
+      uint8_t prev = *at, new_value;
+      do {
+        if (value) new_value = prev | (BITMASK >> i%8);
+        else new_value = prev & ~(BITMASK >> i%8);
+      } while (!at->compare_exchange_weak (prev, new_value));
+    }
 
 
-  template <> inline bool get<bool> (const void* data, size_t i, bool)
-  {
-    return  (((uint8_t*) data)[i/8]) & (BITMASK >> i%8);
-  }
+  template <> 
+    inline bool get<bool> (const void* data, size_t i, bool) { return get_native<bool> (data, i); }
 
-  template <> inline void put<bool> (const bool value, void* data, size_t i, bool)
-  {
-    std::atomic<uint8_t>* at = reinterpret_cast<std::atomic<uint8_t>*> (((uint8_t*) data) + (i/8));
-    uint8_t prev = *at, new_value;
-    do {
-      if (value) new_value = prev | (BITMASK >> i%8);
-      else new_value = prev & ~(BITMASK >> i%8);
-    } while (!at->compare_exchange_weak (prev, new_value));
-
-  }
+  template <> 
+    inline void put<bool> (const bool value, void* data, size_t i, bool) { put_native<bool> (value, data, i); }
 
   //! \endcond
 

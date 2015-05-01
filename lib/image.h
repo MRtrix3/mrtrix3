@@ -36,30 +36,6 @@
 
 namespace MR
 {
-  // TODO make sure buffer are allocated to correct size for bool
-  // will probably require using uint8_t as pointer type...
-  namespace {
-
-    template <typename ValueType>
-      inline ValueType __get_value_direct_io (const ValueType* data, size_t offset) {
-        return data[offset];
-      }
-    template <>
-      inline bool __get_value_direct_io (const bool* data, size_t offset) {
-        return get<bool> (data, offset);
-      }
-
-    template <typename ValueType>
-      inline void __set_value_direct_io (ValueType val, ValueType* data, size_t offset) {
-        data[offset] = val;
-      }
-    template <>
-      inline void __set_value_direct_io (bool val, bool* data, size_t offset) {
-        put<bool> (val, reinterpret_cast<void*>(data), offset, true);
-      }
-
-  }
-
 
   template <typename ValueType>
     class Image {
@@ -107,13 +83,13 @@ namespace MR
 
         //! get voxel value at current location
         ValueType value () const {
-          if (data_pointer) return __get_value_direct_io (data_pointer, data_offset);
+          if (data_pointer) return get_native<ValueType> (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
         //! get/set voxel value at current location
         auto value () -> decltype (Helper::value (*this)) { return { *this }; }
         void set_value (ValueType val) {
-          if (data_pointer) __set_value_direct_io (val, data_pointer, data_offset);
+          if (data_pointer) put_native<ValueType> (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
         }
 
@@ -123,7 +99,7 @@ namespace MR
           for (size_t n = 0; n < V.ndim(); ++n) stream << V.index(n) << " ";
           stream << "], current offset = " << V.offset() << ", value = " << V.value();
           if (!V.data_pointer) stream << " (using indirect IO)";
-          else stream << " (using direct IO, data at " << (void*) V.data_pointer << ")";
+          else stream << " (using direct IO, data at " << V.data_pointer << ")";
           return stream;
         }
 
@@ -172,13 +148,14 @@ namespace MR
         /*! \note this will only work if image access is direct (i.e. for a
          * scratch image, with preloading, or when the data type is native and
          * without scaling. */
-        ValueType* address () const { return data_pointer ? data_pointer + data_offset : nullptr; }
+        // TODO do we need this??
+        //ValueType* address () const { return data_pointer ? data_pointer + data_offset : nullptr; }
 
       protected:
         //! shared reference to header/buffer
         std::shared_ptr<Buffer> buffer;
         //! pointer to data address whether in RAM or MMap
-        ValueType* data_pointer;
+        void* data_pointer;
         //! voxel indices
         std::vector<ssize_t> x;
         //! voxel indices
@@ -216,8 +193,8 @@ namespace MR
           put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
-        std::unique_ptr<ValueType[]> data_buffer;
-        ValueType* get_data_pointer ();
+        std::unique_ptr<uint8_t[]> data_buffer;
+        void* get_data_pointer ();
 
         ImageIO::Base* get_io () const { return io.get(); }
 
@@ -251,7 +228,7 @@ namespace MR
         typedef ValueType value_type;
 
         const typename Image<ValueType>::Buffer& b;
-        value_type* const data;
+        void* const data;
         std::vector<ssize_t> x;
         const Stride::List& strides;
         size_t offset;
@@ -265,9 +242,9 @@ namespace MR
         auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
         void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        value_type value () const { return __get_value_direct_io (data, offset); } 
+        value_type value () const { return get_native<ValueType> (data, offset); } 
         auto value () -> decltype (Helper::value (*this)) { return { *this }; }
-        void set_value (ValueType val) { __set_value_direct_io (val, data, offset); }
+        void set_value (ValueType val) { put_native<ValueType> (val, data, offset); }
       };
 
   }
@@ -317,19 +294,19 @@ namespace MR
 
 
   template <typename ValueType> 
-    ValueType* Image<ValueType>::Buffer::get_data_pointer () 
+    void* Image<ValueType>::Buffer::get_data_pointer () 
     {
       if (data_buffer) // already allocated via with_direct_io()
         return data_buffer.get();
 
       assert (io);
       if (!io->is_file_backed()) // this is a scratch image
-        return reinterpret_cast<ValueType*> (io->segment(0));
+        return io->segment(0);
 
       // check wether we can still do direct IO
       // if so, return address where mapped
       if (io->nsegments() == 1 && datatype() == DataType::from<ValueType>() && intensity_offset() == 0.0 && intensity_scale() == 1.0)
-        return reinterpret_cast<ValueType*> (io->segment(0));
+        return io->segment(0);
 
       // can't do direct IO
       return nullptr;
@@ -418,11 +395,12 @@ namespace MR
       // do the preload:
 
       // the buffer into which to copy the data:
-      buffer->data_buffer = std::unique_ptr<ValueType[]> (new ValueType [voxel_count (*this)]);
+      const auto buffer_size = footprint<ValueType> (voxel_count (*this));
+      buffer->data_buffer = std::unique_ptr<uint8_t[]> (new uint8_t [buffer_size]);
 
       if (buffer->get_io()->is_image_new()) {
         // no need to preload if data is zero anyway:
-        memset (buffer->data_buffer.get(), 0, voxel_count (*this));
+        memset (buffer->data_buffer.get(), 0, buffer_size);
       }
       else {
         auto src (*this);
@@ -443,7 +421,7 @@ namespace MR
         std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, \
         DataType datatype); \
   MRTRIX_EXTERN template Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides); \
-  MRTRIX_EXTERN template ValueType* Image<ValueType>::Buffer::get_data_pointer (); \
+  MRTRIX_EXTERN template void* Image<ValueType>::Buffer::get_data_pointer (); \
   MRTRIX_EXTERN template Image<ValueType> Header::get_image (); \
   MRTRIX_EXTERN template Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& desired_strides); \
   MRTRIX_EXTERN template Image<ValueType>::~Image (); \

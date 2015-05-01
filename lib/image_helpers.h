@@ -183,13 +183,13 @@ namespace MR
 
   //! returns the memory footprint of an Image
   template <class HeaderType> 
-    inline int64_t footprint (const HeaderType& in, size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
+    inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type footprint (const HeaderType& in, size_t from_dim = 0, size_t up_to_dim = std::numeric_limits<size_t>::max()) {
       return footprint (voxel_count (in, from_dim, up_to_dim), in.datatype());
     }
 
   //! returns the memory footprint of an Image
   template <class HeaderType> 
-    inline int64_t footprint (const HeaderType& in, const char* specifier) {
+    inline typename std::enable_if<std::is_class<HeaderType>::value, int64_t>::type footprint (const HeaderType& in, const char* specifier) {
       return footprint (voxel_count (in, specifier), in.datatype());
     }
 
