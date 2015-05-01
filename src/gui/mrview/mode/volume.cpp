@@ -183,7 +183,7 @@ namespace MR
 
           // OVERLAYS:
           for (size_t n = 0, N = mode.overlays_for_3D.size(); n < N; ++n) {
-            const Image* image = mode.overlays_for_3D[n];
+            const ImageBase* image = mode.overlays_for_3D[n];
             source += 
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
               "    if (overlay_coord"+str(n) + ".s >= 0.0 && overlay_coord"+str(n) + ".s <= 1.0 &&\n"
@@ -268,12 +268,12 @@ namespace MR
           }
 
 
-          inline GL::mat4 get_tex_to_scanner_matrix (const Image& image)
+          inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
-            Point<> pos = image.interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
-            Point<> vec_X = image.interp.voxel2scanner_dir (Point<> (image.interp.dim(0), 0.0f, 0.0f));
-            Point<> vec_Y = image.interp.voxel2scanner_dir (Point<> (0.0f, image.interp.dim(1), 0.0f));
-            Point<> vec_Z = image.interp.voxel2scanner_dir (Point<> (0.0f, 0.0f, image.interp.dim(2)));
+            Point<> pos = image.transform().voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
+            Point<> vec_X = image.transform().voxel2scanner_dir (Point<> (image.info().dim(0), 0.0f, 0.0f));
+            Point<> vec_Y = image.transform().voxel2scanner_dir (Point<> (0.0f, image.info().dim(1), 0.0f));
+            Point<> vec_Z = image.transform().voxel2scanner_dir (Point<> (0.0f, 0.0f, image.info().dim(2)));
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];

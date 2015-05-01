@@ -287,7 +287,7 @@ namespace MR
 
           Tool::Base* tool_has_focus;
 
-          friend class Image;
+          friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
           friend class Window::GLArea;
