@@ -173,7 +173,7 @@ else:
     index_file.write(indices);
   
   # Run eddy
-  runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after')
+  runCommand(eddy_cmd + ' --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after')
   
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
