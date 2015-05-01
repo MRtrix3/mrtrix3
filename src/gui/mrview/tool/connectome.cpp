@@ -381,6 +381,11 @@ namespace MR
           node_geometry_sphere_lod_spinbox->setValue (4);
           connect (node_geometry_sphere_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(sphere_lod_slot(int)));
           hlayout->addWidget (node_geometry_sphere_lod_spinbox, 1);
+          node_geometry_overlay_interp_checkbox = new QCheckBox ("Interp");
+          node_geometry_overlay_interp_checkbox->setTristate (false);
+          node_geometry_overlay_interp_checkbox->setVisible (false);
+          connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
+          hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
           gridlayout->addLayout (hlayout, 0, 2, 1, 2);
 
           label = new QLabel ("Colour: ");
@@ -910,6 +915,7 @@ namespace MR
               node_size_button->setMax (std::numeric_limits<float>::max());
               node_geometry_sphere_lod_label->setVisible (true);
               node_geometry_sphere_lod_spinbox->setVisible (true);
+              node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
             case 1:
               if (node_geometry == NODE_GEOM_CUBE) return;
@@ -919,6 +925,7 @@ namespace MR
               node_size_button->setMax (std::numeric_limits<float>::max());
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
+              node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
             case 2:
               if (node_geometry == NODE_GEOM_OVERLAY) return;
@@ -928,6 +935,7 @@ namespace MR
               node_size_button->setVisible (false);
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
+              node_geometry_overlay_interp_checkbox->setVisible (true);
               update_node_overlay();
               break;
             case 3:
@@ -943,6 +951,7 @@ namespace MR
               node_size_button->setMax (1.0f);
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
+              node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
           }
           window.updateGL();
@@ -1159,6 +1168,13 @@ namespace MR
         void Connectome::sphere_lod_slot (int value)
         {
           sphere.LOD (value);
+          window.updateGL();
+        }
+
+        void Connectome::overlay_interp_slot (int)
+        {
+          assert (node_overlay);
+          node_overlay->set_interpolate (node_geometry_overlay_interp_checkbox->isChecked());
           window.updateGL();
         }
 
@@ -1636,6 +1652,7 @@ namespace MR
           set_use_discard_upper (false);
           set_use_transparency  (true);
           set_invert_scale      (false);
+          set_interpolate       (false);
           alpha = 1.0f;
           type = gl::FLOAT;
           format = gl::RGBA;

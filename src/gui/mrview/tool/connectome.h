@@ -240,6 +240,7 @@ namespace MR
             void node_alpha_selection_slot (int);
 
             void sphere_lod_slot (int);
+            void overlay_interp_slot (int);
             void node_colour_change_slot();
             void node_size_value_slot();
             void node_alpha_value_slot (int);
@@ -265,6 +266,7 @@ namespace MR
 
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
+            QCheckBox *node_geometry_overlay_interp_checkbox;
 
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
