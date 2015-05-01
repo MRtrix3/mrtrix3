@@ -107,38 +107,38 @@ namespace MR
     // for single-byte types:
 
     template <typename RAMType, typename DiskType> 
-      RAMType __get (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (MR::get<DiskType> (data, i), offset, scale)); 
+      RAMType __fetch (const void* data, size_t i, default_type offset, default_type scale) {
+        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
       }
 
     template <typename RAMType, typename DiskType> 
-      void __put (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return MR::put<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+      void __store (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
+        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
       }
 
     // for little-endian multi-byte types:
 
     template <typename RAMType, typename DiskType> 
-      RAMType __getLE (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (MR::getLE<DiskType> (data, i), offset, scale)); 
+      RAMType __fetch_LE (const void* data, size_t i, default_type offset, default_type scale) {
+        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
       }
 
     template <typename RAMType, typename DiskType> 
-      void __putLE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return MR::putLE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+      void __store_LE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
+        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
       }
 
 
     // for big-endian multi-byte types:
 
     template <typename RAMType, typename DiskType> 
-      RAMType __getBE (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (MR::getBE<DiskType> (data, i), offset, scale)); 
+      RAMType __fetch_BE (const void* data, size_t i, default_type offset, default_type scale) {
+        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
       }
 
     template <typename RAMType, typename DiskType> 
-      void __putBE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return MR::putBE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+      void __store_BE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
+        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
       }
 
 
@@ -149,103 +149,103 @@ namespace MR
 
 
   template <typename ValueType>
-    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_get_put_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, 
+    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
         DataType datatype) {
 
       switch (datatype()) {
         case DataType::Bit:
-          get_func = __get<ValueType,bool>;
-          put_func = __put<ValueType,bool>;
+          fetch_func = __fetch<ValueType,bool>;
+          store_func = __store<ValueType,bool>;
           return;
         case DataType::Int8:
-          get_func = __get<ValueType,int8_t>;
-          put_func = __put<ValueType,int8_t>;
+          fetch_func = __fetch<ValueType,int8_t>;
+          store_func = __store<ValueType,int8_t>;
           return;
         case DataType::UInt8:
-          get_func = __get<ValueType,uint8_t>;
-          put_func = __put<ValueType,uint8_t>;
+          fetch_func = __fetch<ValueType,uint8_t>;
+          store_func = __store<ValueType,uint8_t>;
           return;
         case DataType::Int16LE:
-          get_func = __getLE<ValueType,int16_t>;
-          put_func = __putLE<ValueType,int16_t>;
+          fetch_func = __fetch_LE<ValueType,int16_t>;
+          store_func = __store_LE<ValueType,int16_t>;
           return;
         case DataType::UInt16LE:
-          get_func = __getLE<ValueType,uint16_t>;
-          put_func = __putLE<ValueType,uint16_t>;
+          fetch_func = __fetch_LE<ValueType,uint16_t>;
+          store_func = __store_LE<ValueType,uint16_t>;
           return;
         case DataType::Int16BE:
-          get_func = __getBE<ValueType,int16_t>;
-          put_func = __putBE<ValueType,int16_t>;
+          fetch_func = __fetch_BE<ValueType,int16_t>;
+          store_func = __store_BE<ValueType,int16_t>;
           return;
         case DataType::UInt16BE:
-          get_func = __getBE<ValueType,uint16_t>;
-          put_func = __putBE<ValueType,uint16_t>;
+          fetch_func = __fetch_BE<ValueType,uint16_t>;
+          store_func = __store_BE<ValueType,uint16_t>;
           return;
         case DataType::Int32LE:
-          get_func = __getLE<ValueType,int32_t>;
-          put_func = __putLE<ValueType,int32_t>;
+          fetch_func = __fetch_LE<ValueType,int32_t>;
+          store_func = __store_LE<ValueType,int32_t>;
           return;
         case DataType::UInt32LE:
-          get_func = __getLE<ValueType,uint32_t>;
-          put_func = __putLE<ValueType,uint32_t>;
+          fetch_func = __fetch_LE<ValueType,uint32_t>;
+          store_func = __store_LE<ValueType,uint32_t>;
           return;
         case DataType::Int32BE:
-          get_func = __getBE<ValueType,int32_t>;
-          put_func = __putBE<ValueType,int32_t>;
+          fetch_func = __fetch_BE<ValueType,int32_t>;
+          store_func = __store_BE<ValueType,int32_t>;
           return;
         case DataType::UInt32BE:
-          get_func = __getBE<ValueType,uint32_t>;
-          put_func = __putBE<ValueType,uint32_t>;
+          fetch_func = __fetch_BE<ValueType,uint32_t>;
+          store_func = __store_BE<ValueType,uint32_t>;
           return;
         case DataType::Int64LE:
-          get_func = __getLE<ValueType,int64_t>;
-          put_func = __putLE<ValueType,int64_t>;
+          fetch_func = __fetch_LE<ValueType,int64_t>;
+          store_func = __store_LE<ValueType,int64_t>;
           return;
         case DataType::UInt64LE:
-          get_func = __getLE<ValueType,uint64_t>;
-          put_func = __putLE<ValueType,uint64_t>;
+          fetch_func = __fetch_LE<ValueType,uint64_t>;
+          store_func = __store_LE<ValueType,uint64_t>;
           return;
         case DataType::Int64BE:
-          get_func = __getBE<ValueType,int64_t>;
-          put_func = __putBE<ValueType,int64_t>;
+          fetch_func = __fetch_BE<ValueType,int64_t>;
+          store_func = __store_BE<ValueType,int64_t>;
           return;
         case DataType::UInt64BE:
-          get_func = __getBE<ValueType,uint64_t>;
-          put_func = __putBE<ValueType,uint64_t>;
+          fetch_func = __fetch_BE<ValueType,uint64_t>;
+          store_func = __store_BE<ValueType,uint64_t>;
           return;
         case DataType::Float32LE:
-          get_func = __getLE<ValueType,float>;
-          put_func = __putLE<ValueType,float>;
+          fetch_func = __fetch_LE<ValueType,float>;
+          store_func = __store_LE<ValueType,float>;
           return;
         case DataType::Float32BE:
-          get_func = __getBE<ValueType,float>;
-          put_func = __putBE<ValueType,float>;
+          fetch_func = __fetch_BE<ValueType,float>;
+          store_func = __store_BE<ValueType,float>;
           return;
         case DataType::Float64LE:
-          get_func = __getLE<ValueType,double>;
-          put_func = __putLE<ValueType,double>;
+          fetch_func = __fetch_LE<ValueType,double>;
+          store_func = __store_LE<ValueType,double>;
           return;
         case DataType::Float64BE:
-          get_func = __getBE<ValueType,double>;
-          put_func = __putBE<ValueType,double>;
+          fetch_func = __fetch_BE<ValueType,double>;
+          store_func = __store_BE<ValueType,double>;
           return;
         case DataType::CFloat32LE:
-          get_func = __getLE<ValueType,cfloat>;
-          put_func = __putLE<ValueType,cfloat>;
+          fetch_func = __fetch_LE<ValueType,cfloat>;
+          store_func = __store_LE<ValueType,cfloat>;
           return;
         case DataType::CFloat32BE:
-          get_func = __getBE<ValueType,cfloat>;
-          put_func = __putBE<ValueType,cfloat>;
+          fetch_func = __fetch_BE<ValueType,cfloat>;
+          store_func = __store_BE<ValueType,cfloat>;
           return;
         case DataType::CFloat64LE:
-          get_func = __getLE<ValueType,cdouble>;
-          put_func = __putLE<ValueType,cdouble>;
+          fetch_func = __fetch_LE<ValueType,cdouble>;
+          store_func = __store_LE<ValueType,cdouble>;
           return;
         case DataType::CFloat64BE:
-          get_func = __getBE<ValueType,cdouble>;
-          put_func = __putBE<ValueType,cdouble>;
+          fetch_func = __fetch_BE<ValueType,cdouble>;
+          store_func = __store_BE<ValueType,cdouble>;
           return;
         default:
           throw Exception ("invalid data type in image header");
@@ -254,7 +254,7 @@ namespace MR
 
 #undef MRTRIX_EXTERN
 #define MRTRIX_EXTERN
-  __DEFINE_SET_GET_PUT_FUNCTIONS;
+  __DEFINE_FETCH_STORE_FUNCTIONS;
 
 
 

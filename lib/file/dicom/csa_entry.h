@@ -31,7 +31,7 @@
 #define __file_dicom_csa_entry_h__
 
 #include "datatype.h"
-#include "get_set.h"
+#include "raw.h"
 #include "file/dicom/element.h"
 
 namespace MR {
@@ -48,7 +48,7 @@ namespace MR {
                   DEBUG ("WARNING: CSA data is not in SV10 format");
 
                 cnum = 0;
-                num = getLE<uint32_t> (start+8);
+                num = Raw::fetch_LE<uint32_t> (start+8);
                 next = start + 16;
               }
 
@@ -60,10 +60,10 @@ namespace MR {
               if (start >= end + 84) 
                 return false;
               strncpy (name, (const char*) start, 64);
-              getLE<uint32_t> (start+64); // vm
+              Raw::fetch_LE<uint32_t> (start+64); // vm
               strncpy (vr, (const char*) start+68, 4);
-              getLE<uint32_t> (start+72); // syngodt
-              nitems = getLE<uint32_t> (start+76);
+              Raw::fetch_LE<uint32_t> (start+72); // syngodt
+              nitems = Raw::fetch_LE<uint32_t> (start+76);
               if (print) 
                 fprintf (stdout, "    [CSA] %s: ", name);
               next = start + 84;
@@ -71,7 +71,7 @@ namespace MR {
                 return false;
 
               for (uint32_t m = 0; m < nitems; m++) {
-                uint32_t length = getLE<uint32_t> (next);
+                uint32_t length = Raw::fetch_LE<uint32_t> (next);
                 size_t size = 16 + 4*((length+3)/4);
                 if (next + size > end) 
                   return false;
@@ -90,7 +90,7 @@ namespace MR {
             int get_int () const { 
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
-                uint32_t length = getLE<uint32_t> (p);
+                uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length) 
                   return to<int> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
@@ -101,7 +101,7 @@ namespace MR {
             float get_float () const { 
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
-                uint32_t length = getLE<uint32_t> (p);
+                uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length) 
                   return to<float> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
@@ -112,7 +112,7 @@ namespace MR {
             void get_float (float* v) const { 
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
-                uint32_t length = getLE<uint32_t> (p);
+                uint32_t length = Raw::fetch_LE<uint32_t> (p);
                 if (length) 
                   v[m] = to<float> (std::string (reinterpret_cast<const char*> (p)+16, 4*((length+3)/4)));
                 p += 16 + 4*((length+3)/4);
@@ -124,7 +124,7 @@ namespace MR {
               const uint8_t* next = item.start + 84;
 
               for (uint32_t m = 0; m < item.nitems; m++) {
-                uint32_t length = getLE<uint32_t> (next);
+                uint32_t length = Raw::fetch_LE<uint32_t> (next);
                 size_t size = 16 + 4*((length+3)/4);
                 while (length > 0 && !next[16+length-1]) 
                   length--;

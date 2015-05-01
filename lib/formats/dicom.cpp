@@ -24,7 +24,6 @@
 
 #include "file/path.h"
 #include "file/config.h"
-#include "get_set.h"
 #include "file/dicom/mapper.h"
 #include "file/dicom/tree.h"
 #include "formats/list.h"

@@ -27,7 +27,6 @@
 #include "header.h"
 #include "formats/list.h"
 #include "image_io/default.h"
-#include "get_set.h"
 
 namespace MR
 {

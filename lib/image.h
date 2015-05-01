@@ -29,7 +29,7 @@
 
 #include "debug.h"
 #include "header.h"
-#include "get_set.h"
+#include "raw.h"
 #include "image_helpers.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
@@ -83,13 +83,13 @@ namespace MR
 
         //! get voxel value at current location
         ValueType value () const {
-          if (data_pointer) return get_native<ValueType> (data_pointer, data_offset);
+          if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
         //! get/set voxel value at current location
         auto value () -> decltype (Helper::value (*this)) { return { *this }; }
         void set_value (ValueType val) {
-          if (data_pointer) put_native<ValueType> (val, data_pointer, data_offset);
+          if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
         }
 
@@ -180,17 +180,17 @@ namespace MR
         Buffer& operator= (const Buffer&) = delete;
         Buffer& operator= (Buffer&&) = default;
         Buffer (const Buffer& b) : 
-          Header (b), get_func (b.get_func), put_func (b.put_func) { }
+          Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
 
         ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
-          return get_func (io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
+          return fetch_func (io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
         void set_value (size_t offset, ValueType val) const {
           ssize_t nseg = offset / io->segment_size();
-          put_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
+          store_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
         std::unique_ptr<uint8_t[]> data_buffer;
@@ -199,10 +199,10 @@ namespace MR
         ImageIO::Base* get_io () const { return io.get(); }
 
       protected:
-        std::function<ValueType(const void*,size_t,default_type,default_type)> get_func;
-        std::function<void(ValueType,void*,size_t,default_type,default_type)> put_func;
+        std::function<ValueType(const void*,size_t,default_type,default_type)> fetch_func;
+        std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
 
-        void set_get_put_functions ();
+        void set_fetch_store_functions ();
     };
 
 
@@ -242,9 +242,9 @@ namespace MR
         auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
         void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        value_type value () const { return get_native<ValueType> (data, offset); } 
+        value_type value () const { return Raw::fetch_native<ValueType> (data, offset); } 
         auto value () -> decltype (Helper::value (*this)) { return { *this }; }
-        void set_value (ValueType val) { put_native<ValueType> (val, data, offset); }
+        void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
 
   }
@@ -252,22 +252,22 @@ namespace MR
 
 
   template <typename ValueType>
-    typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_get_put_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, 
+    typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
         DataType datatype) { }
 
 
 
   template <typename ValueType>
-    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_get_put_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, 
+    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
+        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
         DataType datatype);
 
   template <typename ValueType> 
-    inline void Image<ValueType>::Buffer::set_get_put_functions () {
-      __set_get_put_functions (get_func, put_func, datatype());
+    inline void Image<ValueType>::Buffer::set_fetch_store_functions () {
+      __set_fetch_store_functions (fetch_func, store_func, datatype());
     }
 
 
@@ -285,7 +285,7 @@ namespace MR
         io->set_readwrite_if_existing (read_write_if_existing);
         io->open (*this, sizeof(ValueType));
         if (io->is_file_backed()) 
-          set_get_put_functions ();
+          set_fetch_store_functions ();
       }
 
 
@@ -413,12 +413,12 @@ namespace MR
 
 
 
-  //define get/put methods for all types using C++11 extern templates, 
+  //define fetch/store methods for all types using C++11 extern templates, 
   //to avoid massive compile times...
-#define __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(ValueType) \
-  MRTRIX_EXTERN template void __set_get_put_functions<ValueType> ( \
-      std::function<ValueType(const void*,size_t,default_type,default_type)>& get_func, \
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& put_func, \
+#define __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(ValueType) \
+  MRTRIX_EXTERN template void __set_fetch_store_functions<ValueType> ( \
+      std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func, \
+        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, \
         DataType datatype); \
   MRTRIX_EXTERN template Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides); \
   MRTRIX_EXTERN template void* Image<ValueType>::Buffer::get_data_pointer (); \
@@ -427,23 +427,23 @@ namespace MR
   MRTRIX_EXTERN template Image<ValueType>::~Image (); \
   MRTRIX_EXTERN template Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides)
 
-#define __DEFINE_SET_GET_PUT_FUNCTIONS \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(bool); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(uint8_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(int8_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(uint16_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(int16_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(uint32_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(int32_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(uint64_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(int64_t); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(float); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(double); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(cfloat); \
-  __DEFINE_SET_GET_PUT_FUNCTION_FOR_TYPE(cdouble); \
+#define __DEFINE_FETCH_STORE_FUNCTIONS \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(bool); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint8_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int8_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint16_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int16_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint32_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int32_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint64_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int64_t); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(float); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(double); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cfloat); \
+  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cdouble); \
 
 #define MRTRIX_EXTERN extern
-  __DEFINE_SET_GET_PUT_FUNCTIONS;
+  __DEFINE_FETCH_STORE_FUNCTIONS;
 
 
 
