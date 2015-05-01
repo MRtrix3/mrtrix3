@@ -455,6 +455,9 @@ namespace MR
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
                   }
+#ifndef NDEBUG
+                  if (std::distance (p, data.end()) > 3)
+#endif
                   p += 3;
                 }
               }
