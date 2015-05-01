@@ -1721,8 +1721,6 @@ namespace MR
 
         std::string Connectome::NodeOverlay::Shader::fragment_shader_source (const Displayable& object)
         {
-          // FIXME This is currently trying to draw a global alpha value from the object, but not succeeding
-          // FIXME It should also be getting an alpha from the vertex shader
           assert (object.colourmap == 5);
           std::string source = object.declare_shader_variables () +
             "uniform sampler3D tex;\n"
@@ -1733,12 +1731,7 @@ namespace MR
             "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
             "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
             "  color = texture (tex, texcoord.stp);\n"
-            "  float amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
-            "  if (amplitude != 0) {\n"
-            "    color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n"
-            "  } else {\n"
-            "    color.a = 0.0;\n"
-            "  }\n";
+            "  color.a = color.a * alpha;\n";
           source += "  " + std::string (ColourMap::maps[object.colourmap].mapping);
           source += "}\n";
           return source;
