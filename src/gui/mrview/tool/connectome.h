@@ -28,10 +28,13 @@
 
 #include "point.h"
 
+#include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
 #include "gui/opengl/shader.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
+#include "gui/mrview/image.h"
+#include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/shapes/cube.h"
 #include "gui/shapes/cylinder.h"
@@ -40,6 +43,7 @@
 #include "gui/projection.h"
 
 #include "image/buffer_preload.h"
+#include "image/buffer_scratch.h"
 
 #include "mesh/mesh.h"
 
@@ -122,8 +126,11 @@
 //     appear and disappear
 //   - Only start drawing toolbar after parcellation image has been imported
 //   - Figure out why the toolbar is initially being drawn twice
+//     -> May be something to do with dual screen...
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Implement check for determining when the shader needs to be updated
+//   - Disable LUT and config file options if no image is loaded
+//   - Enable collapsing of node / edge visualisation groups; will make room for future additions
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
@@ -412,6 +419,30 @@ namespace MR
 
             };
 
+            // Class to handle the node image overlay
+            class NodeOverlay : public MR::GUI::MRView::ImageBase
+            {
+              public:
+                NodeOverlay (const MR::Image::Info&);
+
+                void update_texture2D (const int, const int) override;
+                void update_texture3D() override;
+
+                typedef MR::Image::BufferScratch<float>::voxel_type voxel_type;
+                voxel_type voxel() { need_update = true; return voxel_type (data); }
+
+              private:
+                MR::Image::BufferScratch<float> data;
+                bool need_update;
+
+              public:
+                class Shader : public Displayable::Shader {
+                  public:
+                    virtual std::string vertex_shader_source (const Displayable&);
+                    virtual std::string fragment_shader_source (const Displayable&);
+                } slice_shader;
+            };
+
 
 
 
@@ -450,6 +481,9 @@ namespace MR
             // Used when the geometry of node visualisation is a cube
             Shapes::Cube cube;
             GL::VertexArrayObject cube_VAO;
+
+            // Used when the geometry of node visualisation is an image overlay
+            Ptr<NodeOverlay> node_overlay;
 
             // Used when the geometry of edge visualisation is a cylinder
             Shapes::Cylinder cylinder;
@@ -508,6 +542,8 @@ namespace MR
             void calculate_node_sizes();
             void calculate_node_visibility();
             void calculate_node_alphas();
+
+            void update_node_overlay();
 
             void calculate_edge_colours();
             void calculate_edge_sizes();

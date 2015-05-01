@@ -26,7 +26,6 @@
 #include "gui/dialog/file.h"
 #include "image/adapter/extract.h"
 #include "image/buffer.h"
-#include "image/buffer_scratch.h"
 #include "image/header.h"
 #include "image/info.h"
 #include "image/loop.h"
@@ -584,112 +583,137 @@ namespace MR
         Connectome::~Connectome () {}
 
 
-        void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
+        void Connectome::draw (const Projection& projection, bool is_3D, int /*axis*/, int /*slice*/)
         {
           if (hide_all_button->isChecked()) return;
 
           if (node_visibility != NODE_VIS_NONE) {
 
-            node_shader.start (*this);
-            projection.set (node_shader);
+            if (node_geometry == NODE_GEOM_OVERLAY) {
 
-            const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
+              if (is_3D) {
+                window.get_current_mode()->overlays_for_3D.push_back (node_overlay);
+              } else {
+                // set up OpenGL environment:
+                gl::Enable (gl::BLEND);
+                gl::Disable (gl::DEPTH_TEST);
+                gl::DepthMask (gl::FALSE_);
+                gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
+                gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                gl::BlendEquation (gl::FUNC_ADD);
 
-            gl::Enable (gl::DEPTH_TEST);
-            if (use_alpha) {
-              gl::Enable (gl::BLEND);
-              gl::DepthMask (gl::FALSE_);
-              gl::BlendEquation (gl::FUNC_ADD);
-              gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
-              gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
-              //gl::Disable (gl::CULL_FACE);
+                node_overlay->render3D (node_overlay->slice_shader, projection, projection.depth_of (window.focus()));
+
+                // restore OpenGL environment:
+                gl::Disable (gl::BLEND);
+                gl::Enable (gl::DEPTH_TEST);
+                gl::DepthMask (gl::TRUE_);
+              }
+
             } else {
-              gl::Disable (gl::BLEND);
-              gl::DepthMask (gl::TRUE_);
-              //gl::Enable (gl::CULL_FACE);
-            }
 
-            const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
+              node_shader.start (*this);
+              projection.set (node_shader);
 
-            GLuint node_alpha_ID = 0;
-            if (node_alpha != NODE_ALPHA_FIXED)
-              node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
+              const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
 
-            GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-            if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
-              node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
-              node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
-            }
+              gl::Enable (gl::DEPTH_TEST);
+              if (use_alpha) {
+                gl::Enable (gl::BLEND);
+                gl::DepthMask (gl::FALSE_);
+                gl::BlendEquation (gl::FUNC_ADD);
+                gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+                gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+                //gl::Disable (gl::CULL_FACE);
+              } else {
+                gl::Disable (gl::BLEND);
+                gl::DepthMask (gl::TRUE_);
+                //gl::Enable (gl::CULL_FACE);
+              }
 
-            if (node_geometry == NODE_GEOM_SPHERE) {
-              sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
-              sphere_VAO.bind();
-              sphere.index_buffer.bind();
-              reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
-            } else if (node_geometry == NODE_GEOM_CUBE) {
-              cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
-              cube.normals_buffer.bind (gl::ARRAY_BUFFER);
-              cube_VAO.bind();
-              cube.index_buffer.bind();
-              glShadeModel (GL_FLAT);
-              gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
-            }
+              const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
 
-            if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
-              gl::Uniform1f  (node_size_ID, node_size_scale_factor);
-            }
+              GLuint node_alpha_ID = 0;
+              if (node_alpha != NODE_ALPHA_FIXED)
+                node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
-            if (node_geometry != NODE_GEOM_OVERLAY) {
-              gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
-              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
-              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
-              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
-              gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
-            }
+              GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
+              if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
+                node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+                node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
+              }
 
-            std::map<float, size_t> node_ordering;
-            for (size_t i = 1; i <= num_nodes(); ++i)
-              node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+              if (node_geometry == NODE_GEOM_SPHERE) {
+                sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+                sphere_VAO.bind();
+                sphere.index_buffer.bind();
+                reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
+              } else if (node_geometry == NODE_GEOM_CUBE) {
+                cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
+                cube.normals_buffer.bind (gl::ARRAY_BUFFER);
+                cube_VAO.bind();
+                cube.index_buffer.bind();
+                glShadeModel (GL_FLAT);
+                gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
+              }
 
-            for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
-              const Node& node (nodes[it->second]);
-              if (node.is_visible()) {
-                gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
-                if (node_alpha != NODE_ALPHA_FIXED)
-                  gl::Uniform1f (node_alpha_ID, node.get_alpha());
-                if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
-                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-                switch (node_geometry) {
-                  case NODE_GEOM_SPHERE:
-                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
-                    gl::Uniform1i (reverse_ID, 0);
-                    gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                    gl::Uniform1i (reverse_ID, 1);
-                    gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                    break;
-                  case NODE_GEOM_CUBE:
-                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
-                    gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
-                    break;
-                  case NODE_GEOM_OVERLAY:
-                    break;
-                  case NODE_GEOM_MESH:
-                    node.render_mesh();
-                    break;
+              if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
+                gl::Uniform1f  (node_size_ID, node_size_scale_factor);
+              }
+
+              if (node_geometry != NODE_GEOM_OVERLAY) {
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
+              }
+
+              std::map<float, size_t> node_ordering;
+              for (size_t i = 1; i <= num_nodes(); ++i)
+                node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+
+              for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
+                const Node& node (nodes[it->second]);
+                if (node.is_visible()) {
+                  gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
+                  if (node_alpha != NODE_ALPHA_FIXED)
+                    gl::Uniform1f (node_alpha_ID, node.get_alpha());
+                  if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
+                    gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                  switch (node_geometry) {
+                    case NODE_GEOM_SPHERE:
+                      gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                      gl::Uniform1i (reverse_ID, 0);
+                      gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      gl::Uniform1i (reverse_ID, 1);
+                      gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      break;
+                    case NODE_GEOM_CUBE:
+                      gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                      gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      break;
+                    case NODE_GEOM_OVERLAY:
+                      break;
+                    case NODE_GEOM_MESH:
+                      node.render_mesh();
+                      break;
+                  }
                 }
               }
+
+              // Reset to defaults if we've been doing transparency
+              if (use_alpha) {
+                gl::Disable (gl::BLEND);
+                gl::DepthMask (gl::TRUE_);
+              }
+
+              if (node_geometry == NODE_GEOM_CUBE)
+                glShadeModel (GL_SMOOTH);
+
+              node_shader.stop();
+
             }
-
-            // Reset to defaults if we've been doing transparency
-            if (use_alpha) {
-              gl::Disable (gl::BLEND);
-              gl::DepthMask (gl::TRUE_);
-            }
-
-            if (node_geometry == NODE_GEOM_CUBE)
-              glShadeModel (GL_SMOOTH);
-
-            node_shader.stop();
 
           }
 
@@ -904,6 +928,7 @@ namespace MR
               node_size_button->setVisible (false);
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
+              update_node_overlay();
               break;
             case 3:
               if (node_geometry == NODE_GEOM_MESH) return;
@@ -995,15 +1020,16 @@ namespace MR
           assert (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE);
           switch (index) {
             case 0:
+              if (node_size == NODE_SIZE_FIXED) return;
               node_size = NODE_SIZE_FIXED;
               node_size_combobox->removeItem (3);
               break;
             case 1:
+              if (node_size == NODE_SIZE_VOLUME) return;
               node_size = NODE_SIZE_VOLUME;
               node_size_combobox->removeItem (3);
               break;
             case 2:
-
               try {
                 import_file_for_node_property (node_values_from_file_size, "size");
               } catch (...) { }
@@ -1031,10 +1057,12 @@ namespace MR
         {
           switch (index) {
             case 0:
+              if (node_visibility == NODE_VIS_ALL) return;
               node_visibility = NODE_VIS_ALL;
               node_visibility_combobox->removeItem (5);
               break;
             case 1:
+              if (node_visibility == NODE_VIS_NONE) return;
               node_visibility = NODE_VIS_NONE;
               node_visibility_combobox->removeItem (5);
               break;
@@ -1056,6 +1084,7 @@ namespace MR
               }
               break;
             case 3:
+              if (node_visibility == NODE_VIS_DEGREE) return;
               if (edge_visibility == EDGE_VIS_NODES) {
                 QMessageBox::warning (QApplication::activeWindow(),
                                       tr ("Visualisation error"),
@@ -1086,13 +1115,15 @@ namespace MR
         {
           switch (index) {
             case 0:
+              if (node_alpha == NODE_ALPHA_FIXED) return;
               node_alpha = NODE_ALPHA_FIXED;
-              node_alpha_slider->setVisible (true);
+              //node_alpha_slider->setVisible (true);
               node_alpha_combobox->removeItem (3);
               break;
             case 1:
+              if (node_alpha == NODE_ALPHA_LUT) return;
               node_alpha = NODE_ALPHA_LUT;
-              node_alpha_slider->setVisible (false);
+              //node_alpha_slider->setVisible (false);
               node_alpha_combobox->removeItem (3);
               break;
             case 2:
@@ -1101,7 +1132,7 @@ namespace MR
               } catch (...) { }
               if (node_values_from_file_alpha.size()) {
                 node_alpha = NODE_ALPHA_FILE;
-                node_alpha_slider->setVisible (false);
+                //node_alpha_slider->setVisible (false);
                 if (node_alpha_combobox->count() == 3)
                   node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
                 else
@@ -1110,7 +1141,7 @@ namespace MR
               } else {
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = NODE_ALPHA_FIXED;
-                node_alpha_slider->setVisible (true);
+                //node_alpha_slider->setVisible (true);
                 node_alpha_combobox->removeItem (3);
               }
               break;
@@ -1148,7 +1179,8 @@ namespace MR
         void Connectome::node_alpha_value_slot (int position)
         {
           node_fixed_alpha = position / 1000.0f;
-          calculate_node_alphas();
+          if (node_overlay)
+            node_overlay->alpha = node_fixed_alpha;
           window.updateGL();
         }
 
@@ -1227,6 +1259,7 @@ namespace MR
         {
           switch (index) {
             case 0:
+              if (edge_size == EDGE_SIZE_FIXED) return;
               edge_size = EDGE_SIZE_FIXED;
               edge_size_combobox->removeItem (2);
               break;
@@ -1258,14 +1291,17 @@ namespace MR
         {
           switch (index) {
             case 0:
+              if (edge_visibility == EDGE_VIS_ALL) return;
               edge_visibility = EDGE_VIS_ALL;
               edge_visibility_combobox->removeItem (4);
               break;
             case 1:
+              if (edge_visibility == EDGE_VIS_NONE) return;
               edge_visibility = EDGE_VIS_NONE;
               edge_visibility_combobox->removeItem (4);
               break;
             case 2:
+              if (edge_visibility == EDGE_VIS_NODES) return;
               if (node_visibility == NODE_VIS_DEGREE) {
                 QMessageBox::warning (QApplication::activeWindow(),
                                       tr ("Visualisation error"),
@@ -1307,6 +1343,7 @@ namespace MR
         {
           switch (index) {
             case 0:
+              if (edge_alpha == EDGE_ALPHA_FIXED) return;
               edge_alpha = EDGE_ALPHA_FIXED;
               edge_alpha_slider->setVisible (true);
               edge_alpha_combobox->removeItem (2);
@@ -1585,16 +1622,192 @@ namespace MR
 
 
 
+        Connectome::NodeOverlay::NodeOverlay (const MR::Image::Info& info) :
+            MR::GUI::MRView::ImageBase (info),
+            data (info),
+            need_update (true)
+        {
+          position.assign (3, -1);
+          set_interpolate (false);
+          set_colourmap (5);
+          set_min_max (0.0f, 1.0f);
+          set_allowed_features  (false, true, true);
+          set_use_discard_lower (false);
+          set_use_discard_upper (false);
+          set_use_transparency  (true);
+          set_invert_scale      (false);
+          alpha = 1.0f;
+          type = gl::FLOAT;
+          format = gl::RGBA;
+          internal_format = gl::RGBA32F;
+        }
+
+
+
+
+        void Connectome::NodeOverlay::update_texture2D (const int plane, const int slice)
+        {
+          // TESTME Suspect this should never be run...
+          assert (0);
+          if (!texture2D[plane])
+            texture2D[plane].gen (gl::TEXTURE_3D);
+          texture2D[plane].bind();
+          gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
+          texture2D[plane].set_interp (interpolation);
+
+          if (position[plane] == slice && !need_update)
+            return;
+          position[plane] = slice;
+
+          int x, y;
+          get_axes (plane, x, y);
+          const ssize_t xdim = _info.dim (x), ydim = _info.dim (y);
+
+          std::vector<float> texture_data;
+          auto vox = data.voxel();
+          texture_data.resize (4*xdim*ydim, 0.0f);
+          if (position[plane] >= 0 && position[plane] < _info.dim (plane)) {
+            vox[plane] = slice;
+            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
+              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
+                for (vox[3] = 0; vox[3] != 4; ++vox[3]) {
+                  texture_data[4*(vox[x]+vox[y]*xdim) + vox[3]] = vox.value();
+            } } }
+          }
+
+          gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, reinterpret_cast<void*> (&texture_data[0]));
+          need_update = false;
+        }
+
+        void Connectome::NodeOverlay::update_texture3D()
+        {
+          bind();
+          allocate();
+          if (!need_update) return;
+          value_min = 0.0f; value_max = 1.0f;
+          auto V = data.voxel();
+          std::vector<float> texture_data (4 * V.dim(0) * V.dim(1));
+
+          ProgressBar progress ("loading parcellation overlay...", V.dim(2));
+
+          for (V[2] = 0; V[2] != V.dim(2); ++V[2]) {
+            for (V[1] = 0; V[1] != V.dim(1); ++V[1]) {
+              for (V[0] = 0; V[0] != V.dim(0); ++V[0]) {
+                for (V[3] = 0; V[3] != 4;        ++V[3]) {
+                  texture_data[4*(V[0]+V[1]*V.dim(0)) + V[3]] = V.value();
+            } } }
+            upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&texture_data[0]));
+            ++progress;
+          }
+          need_update = false;
+        }
+
+
+
+
+        std::string Connectome::NodeOverlay::Shader::vertex_shader_source (const Displayable&)
+        {
+          return
+            "layout(location = 0) in vec3 vertpos;\n"
+            "layout(location = 1) in vec3 texpos;\n"
+            "uniform mat4 MVP;\n"
+            "out vec3 texcoord;\n"
+            "void main() {\n"
+            "  gl_Position =  MVP * vec4 (vertpos,1);\n"
+            "  texcoord = texpos;\n"
+            "}\n";
+        }
+
+
+        std::string Connectome::NodeOverlay::Shader::fragment_shader_source (const Displayable& object)
+        {
+          // FIXME This is currently trying to draw a global alpha value from the object, but not succeeding
+          // FIXME It should also be getting an alpha from the vertex shader
+          assert (object.colourmap == 5);
+          std::string source = object.declare_shader_variables () +
+            "uniform sampler3D tex;\n"
+            "in vec3 texcoord;\n"
+            "out vec4 color;\n"
+            "void main() {\n"
+            "  if (texcoord.s < 0.0 || texcoord.s > 1.0 ||\n"
+            "      texcoord.t < 0.0 || texcoord.t > 1.0 ||\n"
+            "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
+            "  color = texture (tex, texcoord.stp);\n"
+            "  float amplitude = " + std::string (ColourMap::maps[object.colourmap].amplitude) + ";\n"
+            "  if (amplitude != 0) {\n"
+            "    color.a = clamp ((amplitude - alpha_offset) * alpha_scale, 0, alpha);\n"
+            "  } else {\n"
+            "    color.a = 0.0;\n"
+            "  }\n";
+          source += "  " + std::string (ColourMap::maps[object.colourmap].mapping);
+          source += "}\n";
+          return source;
+        }
+
+
+
+
+
+
+
+
+
+
         void Connectome::clear_all()
         {
           image_button ->setText ("");
-          emit lut_open_slot (0);
+          lut_combobox->removeItem (5);
+          lut_combobox->setCurrentIndex (0);
           config_button->setText ("");
+          if (node_colour == NODE_COLOUR_FILE) {
+            node_colour_combobox->removeItem (4);
+            node_colour_combobox->setCurrentIndex (0);
+            node_colour = NODE_COLOUR_FIXED;
+          }
+          if (node_size == NODE_SIZE_FILE) {
+            node_size_combobox->removeItem (3);
+            node_size_combobox->setCurrentIndex (0);
+            node_size = NODE_SIZE_FIXED;
+          }
+          if (node_visibility == NODE_VIS_FILE) {
+            node_visibility_combobox->removeItem (5);
+            node_visibility_combobox->setCurrentIndex (0);
+            node_visibility = NODE_VIS_ALL;
+          }
+          if (node_alpha == NODE_ALPHA_FILE) {
+            node_alpha_combobox->removeItem (3);
+            node_alpha_combobox->setCurrentIndex (0);
+            node_alpha = NODE_ALPHA_FIXED;
+          }
+          if (edge_colour == EDGE_COLOUR_FILE) {
+            edge_colour_combobox->removeItem (3);
+            edge_colour_combobox->setCurrentIndex (0);
+            edge_colour = EDGE_COLOUR_FIXED;
+          }
+          if (edge_size == EDGE_SIZE_FILE) {
+            edge_size_combobox->removeItem (2);
+            edge_size_combobox->setCurrentIndex (0);
+            edge_size = EDGE_SIZE_FIXED;
+          }
+          if (edge_visibility == EDGE_VIS_FILE) {
+            edge_visibility_combobox->removeItem (4);
+            edge_visibility_combobox->setCurrentIndex (1);
+            edge_visibility = EDGE_VIS_NONE;
+          }
+          if (edge_alpha == EDGE_ALPHA_FILE) {
+            edge_alpha_combobox->removeItem (2);
+            edge_alpha_combobox->setCurrentIndex (0);
+            edge_alpha = EDGE_ALPHA_FIXED;
+          }
           if (buffer)
             delete buffer.release();
           nodes.clear();
           edges.clear();
           lut.clear();
+          config.clear();
+          lut_mapping.clear();
+          if (node_overlay)
+            delete node_overlay.release();
         }
 
         void Connectome::initialise (const std::string& path)
@@ -1603,7 +1816,7 @@ namespace MR
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype");
-          if (!H.ndim() == 3)
+          if (H.ndim() != 3)
             throw Exception ("Input parcellation image must be a 3D image");
           voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
           buffer = new MR::Image::BufferPreload<node_t> (path);
@@ -1696,6 +1909,15 @@ namespace MR
           edges.reserve (mat2vec.vec_size());
           for (size_t edge_index = 0; edge_index != mat2vec.vec_size(); ++edge_index)
             edges.push_back (Edge (*this, mat2vec(edge_index).first + 1, mat2vec(edge_index).second + 1));
+
+          // Construct the node overlay image
+          MR::Image::Info overlay_info (H.info());
+          overlay_info.set_ndim (4);
+          overlay_info.dim (3) = 4; // RGBA
+          overlay_info.stride (3) = 0;
+          overlay_info.sanitise();
+          node_overlay = new NodeOverlay (overlay_info);
+          update_node_overlay();
 
         }
 
@@ -1823,6 +2045,7 @@ namespace MR
               i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
 
           }
+          update_node_overlay();
         }
 
 
@@ -1885,6 +2108,7 @@ namespace MR
             //   and set the visibilities accordingly
 
           }
+          update_node_overlay();
           if (edge_visibility == EDGE_VIS_NODES)
             calculate_edge_visibility();
         }
@@ -1914,6 +2138,45 @@ namespace MR
             for (size_t i = 1; i <= num_nodes(); ++i)
               nodes[i].set_alpha (node_values_from_file_alpha[i-1]);
 
+          }
+          update_node_overlay();
+        }
+
+
+
+
+
+
+
+
+
+
+        void Connectome::update_node_overlay()
+        {
+          assert (buffer);
+          assert (node_overlay);
+          auto in = buffer->voxel();
+          auto out = node_overlay->voxel();
+          if (node_geometry == NODE_GEOM_OVERLAY) {
+            // TODO Multi-thread this
+            // Do NOT put a progress message here; causes an updateGL() call, which
+            //   loads the texture even though the scratch buffer hasn't been filled yet...
+            MR::Image::LoopInOrder loop (in);
+            for (loop.start (in, out); loop.ok(); loop.next (in, out)) {
+              const node_t node_index = in.value();
+              if (node_index) {
+                assert (node_index <= num_nodes());
+                if (nodes[node_index].is_visible()) {
+                  const Point<float>& colour (nodes[node_index].get_colour());
+                  for (out[3] = 0; out[3] != 3; ++out[3])
+                    out.value() = colour[int(out[3])];
+                  out.value() = nodes[node_index].get_alpha();
+                } else {
+                  for (out[3] = 0; out[3] != 4; ++out[3])
+                    out.value() = 0.0f;
+                }
+              }
+            }
           }
         }
 
