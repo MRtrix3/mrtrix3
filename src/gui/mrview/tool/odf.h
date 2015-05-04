@@ -32,6 +32,7 @@ namespace MR
   {
     namespace DWI {
       class Renderer;
+      class RenderFrame;
     }
     namespace Dialog {
       class Lighting;
@@ -42,6 +43,8 @@ namespace MR
       namespace Tool
       {
 
+        class ODF_Preview;
+
         class ODF : public Base
         {
             Q_OBJECT
@@ -49,6 +52,7 @@ namespace MR
           public:
 
             ODF (Window& main_window, Dock* parent);
+            ~ODF();
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
 
@@ -56,8 +60,11 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
+            void onWindowChange ();
+            void onPreviewClosed ();
             void image_open_slot ();
             void image_close_slot ();
+            void show_preview_slot ();
             void hide_all_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void colour_by_direction_slot (int unused);
@@ -66,17 +73,20 @@ namespace MR
             void lighting_settings_slot (bool unused);
 
             void updateGL ();
+            void update_preview();
             void adjust_scale_slot ();
 
           protected:
              class Model;
              class Image;
 
+             ODF_Preview *preview;
+
              DWI::Renderer *renderer;
 
              Model* image_list_model;
              QListView* image_list_view;
-             QPushButton* hide_all_button;
+             QPushButton *show_preview_button, *hide_all_button;
              QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box;
              QCheckBox *colour_by_direction_box, *interpolation_box;
              QSpinBox *lmax_selector, *level_of_detail_selector;
@@ -91,8 +101,14 @@ namespace MR
              
              void add_images (std::vector<std::string>& list);
 
+             virtual void showEvent (QShowEvent* event);
+             virtual void closeEvent (QCloseEvent* event);
+
              Image* get_image ();
-             void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos);
+             void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos, const bool interp);
+
+             friend class ODF_Preview;
+
         };
 
       }

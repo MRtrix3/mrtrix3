@@ -26,6 +26,7 @@
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
+#include "gui/mrview/tool/odf_preview.h"
 #include "gui/mrview/mode/base.h"
 
 namespace MR
@@ -148,6 +149,9 @@ namespace MR
           lighting_dialog (nullptr),
           lmax (0),
           level_of_detail (0) { 
+
+            preview = new ODF_Preview (window, this);
+
             lighting = new GL::Lighting (this);
             VBoxLayout *main_box = new VBoxLayout (this);
 
@@ -164,6 +168,13 @@ namespace MR
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
+
+            show_preview_button = new QPushButton (this);
+            show_preview_button->setToolTip (tr ("Show preview window"));
+            show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
+            show_preview_button->setCheckable (true);
+            connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
+            layout->addWidget (show_preview_button, 1);
 
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide All"));
@@ -284,6 +295,14 @@ namespace MR
             adjust_scale_slot ();
           }
 
+        ODF::~ODF()
+        {
+          if (renderer) {
+            delete renderer;
+            renderer = nullptr;
+          }
+        }
+
 
 
 
@@ -358,7 +377,7 @@ namespace MR
             for (int y = -ny; y <= ny; ++y) {
               for (int x = -nx; x <= nx; ++x) {
                 Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
-                get_values (values, settings->image, p);
+                get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
                 renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (lmax)));
@@ -380,7 +399,7 @@ namespace MR
 
 
 
-        inline ODF::Image* ODF::get_image () 
+        inline ODF::Image* ODF::get_image ()
         {
           QModelIndexList list = image_list_view->selectionModel()->selectedRows();
           if (!list.size())
@@ -393,10 +412,10 @@ namespace MR
 
 
 
-        void ODF::get_values (Math::Vector<float>& values, MRView::Image& image, const Point<>& pos)
+        void ODF::get_values (Math::Vector<float>& values, MRView::Image& image, const Point<>& pos, const bool interp)
         {
           Point<> p = image.interp.scanner2voxel (pos);
-          if (!interpolation_box->isChecked()) {
+          if (!interp) {
             p[0] = std::round (p[0]);
             p[1] = std::round (p[1]);
             p[2] = std::round (p[2]);
@@ -427,6 +446,36 @@ namespace MR
 
 
 
+        void ODF::showEvent (QShowEvent*)
+        {
+          connect (&window, SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
+          connect (&window, SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
+          connect (&window, SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
+          connect (&window, SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
+          onWindowChange();
+        }
+
+        void ODF::closeEvent (QCloseEvent*) {
+          window.disconnect (this);
+        }
+
+
+
+
+        void ODF::onWindowChange ()
+        {
+          update_preview();
+        }
+
+
+
+        void ODF::onPreviewClosed ()
+        {
+          show_preview_button->setChecked (false);
+        }
+
+
+
 
 
         void ODF::image_open_slot ()
@@ -449,6 +498,17 @@ namespace MR
           if (indexes.size())
             image_list_model->remove_item (indexes.first());
           updateGL();
+        }
+
+
+        void ODF::show_preview_slot ()
+        {
+          if (show_preview_button->isChecked()) {
+            preview->show();
+            update_preview();
+          } else {
+            preview->hide();
+          }
         }
 
 
@@ -531,6 +591,20 @@ namespace MR
             window.updateGL();
         }
 
+        void ODF::update_preview()
+        {
+          assert (preview);
+          if (!preview->isVisible())
+            return;
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          MRView::Image& image (settings->image);
+          Math::Vector<float> values (Math::SH::NforL (preview->lmax()));
+          get_values (values, image, window.focus(), preview->interpolate());
+          preview->set (values);
+        }
+
 
 
 
@@ -544,6 +618,7 @@ namespace MR
           colour_by_direction_box->setChecked (settings->color_by_direction);
           scale->setValue (settings->scale);
           updateGL();
+          update_preview();
         }
 
 
