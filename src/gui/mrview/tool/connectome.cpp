@@ -1434,7 +1434,7 @@ namespace MR
           auto voxel = img.voxel();
           {
             MR::LogLevelLatch latch (0);
-            MR::Mesh::vox2mesh (voxel, temp);
+            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
             temp.transform_voxel_to_realspace (img);
           }
           mesh = Node::Mesh (temp);

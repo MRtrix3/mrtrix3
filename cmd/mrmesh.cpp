@@ -23,6 +23,7 @@
 #include "command.h"
 
 #include "image/buffer.h"
+#include "image/filter/optimal_threshold.h"
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
 
@@ -40,23 +41,46 @@ void usage ()
   AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "Generate a mesh file from a mask image.";
+  + "Generate a mesh file from an image.";
 
 
   ARGUMENTS
   + Argument ("input",  "the input image.").type_image_in ()
   + Argument ("output", "the output mesh file.").type_file_out ();
 
+  OPTIONS
+  + Option ("blocky", "generate a \'blocky\' mesh that precisely represents the voxel edges")
+
+  + Option ("threshold", "manually set the intensity threshold at which the mesh will be generated "
+                         "(if omitted, a threshold will be determined automatically)")
+    + Argument ("value").type_float (-std::numeric_limits<float>::max(), 0.0f, std::numeric_limits<float>::max());
 }
 
 
-void run () {
-
-  Image::Buffer<bool> input_data (argument[0]);
-  auto input_voxel = input_data.voxel();
+void run ()
+{
 
   Mesh::Mesh mesh;
-  Mesh::vox2mesh (input_voxel, mesh);
+
+  if (get_options ("blocky").size()) {
+
+    Image::Buffer<bool> input_data (argument[0]);
+    auto input_voxel = input_data.voxel();
+    Mesh::vox2mesh (input_voxel, mesh);
+
+  } else {
+
+    Image::Buffer<float> input_data (argument[0]);
+    auto input_voxel = input_data.voxel();
+    float threshold;
+    Options opt = get_options ("threshold");
+    if (opt.size())
+      threshold = opt[0][0];
+    else
+      threshold = Image::Filter::estimate_optimal_threshold (input_voxel);
+    Mesh::vox2mesh_mc (input_voxel, threshold, mesh);
+
+  }
 
   mesh.save (argument[1]);
 

@@ -207,7 +207,7 @@ namespace MR
       template <class InputVoxelType> 
         inline typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input)
         {
-          return estimate_optimal_threshold (input, nullptr);
+          return estimate_optimal_threshold (input, (Image::BufferScratch<bool>::voxel_type*)nullptr);
         }
 
       /** \addtogroup Filters
