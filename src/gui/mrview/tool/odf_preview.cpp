@@ -80,6 +80,7 @@ namespace MR
           setWindowTitle ("ODF preview pane");
           setModal (false);
           setSizeGripEnabled (true);
+          setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
 
           Tool::Base::VBoxLayout *main_box = new Tool::Base::VBoxLayout (this);
 
