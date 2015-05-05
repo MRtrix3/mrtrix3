@@ -84,12 +84,10 @@ namespace MR
 
           Tool::Base::VBoxLayout *main_box = new Tool::Base::VBoxLayout (this);
 
-          QSplitter* splitter = new QSplitter (Qt::Vertical, parent);
-          main_box->addWidget (splitter);
-          splitter->addWidget (render_frame);
+          main_box->addWidget (render_frame);
 
           QGroupBox* group_box = new QGroupBox (tr("Display settings"));
-          splitter->addWidget (group_box);
+          main_box->addWidget (group_box);
           Tool::Base::GridLayout* box_layout = new Tool::Base::GridLayout;
           group_box->setLayout (box_layout);
 
@@ -150,8 +148,8 @@ namespace MR
           connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
           box_layout->addWidget (lighting_settings_button, 5, 0, 1, 4);
 
-          splitter->setStretchFactor (0, 1);
-          splitter->setStretchFactor (1, 0);
+          main_box->setStretchFactor (render_frame, 1);
+          main_box->setStretchFactor (group_box, 0);
 
           hide_negative_lobes_slot (0);
           show_axes_slot (0);
