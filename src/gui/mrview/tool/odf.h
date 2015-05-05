@@ -43,8 +43,6 @@ namespace MR
       namespace Tool
       {
 
-        class ODF_Preview;
-
         class ODF : public Base
         {
             Q_OBJECT
@@ -76,11 +74,13 @@ namespace MR
             void update_preview();
             void adjust_scale_slot ();
 
+            void hide_event() override;
+
           protected:
              class Model;
              class Image;
 
-             ODF_Preview *preview;
+             Dock *preview;
 
              DWI::Renderer *renderer;
 

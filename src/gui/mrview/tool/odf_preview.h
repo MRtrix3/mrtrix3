@@ -23,6 +23,7 @@
 #ifndef __gui_mrview_tool_odf_preview_h__
 #define __gui_mrview_tool_odf_preview_h__
 
+#include "gui/mrview/tool/base.h"
 #include "gui/mrview/window.h"
 
 namespace MR
@@ -47,15 +48,14 @@ namespace MR
 
         class ODF;
 
-        class ODF_Preview : public QDialog
+        class ODF_Preview : public Base
         {
             Q_OBJECT
           public:
-            ODF_Preview (Window&, ODF*);
+            ODF_Preview (Window&, Dock*, ODF*);
             void set (const Math::Vector<float>&);
             bool interpolate() const { return interpolation_box->isChecked(); }
             size_t lmax() const { return lmax_selector->value(); }
-            void hide();
           private slots:
             void lock_orientation_to_image_slot (int);
             void hide_negative_lobes_slot (int);
@@ -66,9 +66,8 @@ namespace MR
             void level_of_detail_slot (int);
             void use_lighting_slot (int);
             void lighting_settings_slot (bool);
-            void closeEvent (QCloseEvent*);
+            void hide_event ();
           protected:
-            Window& window;
             ODF* parent;
             class RenderFrame;
             RenderFrame* render_frame;

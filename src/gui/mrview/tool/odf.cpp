@@ -150,7 +150,13 @@ namespace MR
           lmax (0),
           level_of_detail (0) { 
 
-            preview = new ODF_Preview (window, this);
+            preview = new Dock (&main_window, "ODF preview pane");
+            main_window.addDockWidget (Qt::RightDockWidgetArea, preview);
+            preview->tool = new ODF_Preview (window, preview, this);
+            preview->tool->adjustSize();
+            preview->setWidget (preview->tool);
+            preview->setFloating (true);
+            preview->hide();
 
             lighting = new GL::Lighting (this);
             VBoxLayout *main_box = new VBoxLayout (this);
@@ -172,7 +178,6 @@ namespace MR
             show_preview_button = new QPushButton (this);
             show_preview_button->setToolTip (tr ("Show preview window"));
             show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
-            show_preview_button->setCheckable (true);
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             layout->addWidget (show_preview_button, 1);
 
@@ -503,12 +508,9 @@ namespace MR
 
         void ODF::show_preview_slot ()
         {
-          if (show_preview_button->isChecked()) {
-            preview->show();
-            update_preview();
-          } else {
-            preview->hide();
-          }
+          preview->show();
+          preview->raise();
+          update_preview();
         }
 
 
@@ -581,7 +583,11 @@ namespace MR
           updateGL();
         }
 
-
+        void ODF::hide_event ()
+        {
+          assert (preview);
+          preview->hide();
+        }
 
 
 
@@ -600,9 +606,10 @@ namespace MR
           if (!settings)
             return;
           MRView::Image& image (settings->image);
-          Math::Vector<float> values (Math::SH::NforL (preview->lmax()));
-          get_values (values, image, window.focus(), preview->interpolate());
-          preview->set (values);
+          ODF_Preview* preview_tool = dynamic_cast<ODF_Preview*>(preview->tool);
+          Math::Vector<float> values (Math::SH::NforL (preview_tool->lmax()));
+          get_values (values, image, window.focus(), preview_tool->interpolate());
+          preview_tool->set (values);
         }
 
 

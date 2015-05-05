@@ -69,19 +69,12 @@ namespace MR
 
 
 
-
-        ODF_Preview::ODF_Preview (Window& main_window, ODF* parent) :
-            QDialog (parent),
-            window (main_window),
+        ODF_Preview::ODF_Preview (Window& main_window, Dock* dock, ODF* parent) :
+            Base (main_window, dock),
             parent (parent),
             render_frame (new RenderFrame (this, main_window)),
             lighting_dialog (nullptr)
         {
-          setWindowTitle ("ODF preview pane");
-          setModal (false);
-          setSizeGripEnabled (true);
-          setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-
           Tool::Base::VBoxLayout *main_box = new Tool::Base::VBoxLayout (this);
 
           main_box->addWidget (render_frame);
@@ -169,14 +162,6 @@ namespace MR
           lock_orientation_to_image_slot (0);
         }
 
-        void ODF_Preview::hide()
-        {
-          parent->show_preview_button->setChecked (false);
-          if (lighting_dialog)
-            lighting_dialog->hide();
-          QDialog::hide();
-        }
-
         void ODF_Preview::lock_orientation_to_image_slot (int)
         {
           if (lock_orientation_to_image_box->isChecked()) {
@@ -229,9 +214,10 @@ namespace MR
           lighting_dialog->show();
         }
 
-        void ODF_Preview::closeEvent (QCloseEvent*)
+        void ODF_Preview::hide_event ()
         {
-          hide();
+          if (lighting_dialog)
+            lighting_dialog->hide();
         }
 
 

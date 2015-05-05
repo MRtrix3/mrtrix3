@@ -53,6 +53,8 @@ namespace MR
             Dock (QWidget* parent, const QString& name) :
               QDockWidget (name, parent), tool (NULL) { }
 
+            void hideEvent (QHideEvent*) override;
+
             Base* tool;
         };
 
@@ -130,6 +132,7 @@ namespace MR
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();
             virtual bool mouse_release_event ();
+            virtual void hide_event() { }
             virtual QCursor* get_cursor ();
             void update_cursor() { window.set_cursor(); }
         };
