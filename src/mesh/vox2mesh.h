@@ -27,6 +27,7 @@
 #include <map>
 
 #include "point.h"
+#include "progressbar.h"
 
 #include "image/nav.h"
 
@@ -441,11 +442,12 @@ namespace MR
 
       VoxelType voxel (input_image);
       float in_vertex_values[8];
-      std::map<std::array<Point<int>, 2>, size_t> input_vertex_pair_to_output_vertex_index_map;
+      std::map< Point<int>, std::map<Point<int>, size_t> > input_vertex_pair_to_output_vertex_index_map;
       Point<int> lower_corner;
-      for (lower_corner[2] = -1; lower_corner[2] <= voxel.dim(2); ++lower_corner[2]) {
-        for (lower_corner[1] = -1; lower_corner[1] <= voxel.dim(1); ++lower_corner[1]) {
-          for (lower_corner[0] = -1; lower_corner[0] <= voxel.dim(0); ++lower_corner[0]) {
+      ProgressBar progress ("Converting image to mesh representation... ", (voxel.dim(0)+1) * (voxel.dim(1)+1) * (voxel.dim(2)+1));
+      for (lower_corner[2] = -1; lower_corner[2] != voxel.dim(2); ++lower_corner[2]) {
+        for (lower_corner[1] = -1; lower_corner[1] != voxel.dim(1); ++lower_corner[1]) {
+          for (lower_corner[0] = -1; lower_corner[0] != voxel.dim(0); ++lower_corner[0]) {
 
             // This is our lower corner for our region of 8 voxels
             uint8_t code = 0x00;
@@ -480,23 +482,26 @@ namespace MR
                   vertex_positions[i] = lower_corner + neighbour_offsets[vertex_index];
                 }
                 // Has a vertex already been generated somewhere along this edge?
-                auto existing = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions);
-                if (existing == input_vertex_pair_to_output_vertex_index_map.end()) {
-                  std::swap (vertex_positions[0], vertex_positions[1]);
-                  existing = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions);
-                  if (existing == input_vertex_pair_to_output_vertex_index_map.end()) {
-                    input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions, vertices.size()));
-                    edge_to_output_vertex[edge_index] = vertices.size();
-                    // Calculate the precise position of this vertex, based on the
-                    //   image intensities in the two relevant voxels
-                    const float alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
-                    const Vertex pos = Point<float>(vertex_positions[0]) + alpha * Point<float>(vertex_positions[1] - vertex_positions[0]);
-                    vertices.push_back (pos);
-                  } else {
-                    edge_to_output_vertex[edge_index] = existing->second;
-                  }
+                auto lookup_zero_it = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions[0]);
+                if (lookup_zero_it == input_vertex_pair_to_output_vertex_index_map.end())
+                  lookup_zero_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[0], std::map<Point<int>, size_t>())).first;
+                auto lookup_one_it = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions[1]);
+                if (lookup_one_it == input_vertex_pair_to_output_vertex_index_map.end())
+                  lookup_one_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[1], std::map<Point<int>, size_t>())).first;
+                auto& lookup_zero = lookup_zero_it->second;
+                auto& lookup_one  = lookup_one_it ->second;
+                auto existing_zero = lookup_zero.find (vertex_positions[1]);
+                if (existing_zero == lookup_zero.end()) {
+                  lookup_zero.insert (std::make_pair (vertex_positions[1], vertices.size()));
+                  lookup_one .insert (std::make_pair (vertex_positions[0], vertices.size()));
+                  edge_to_output_vertex[edge_index] = vertices.size();
+                  // Calculate the precise position of this vertex, based on the
+                  //   image intensities in the two relevant voxels
+                  const float alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
+                  const Vertex pos = Point<float>(vertex_positions[0]) + (1.0f - alpha) * Point<float>(vertex_positions[1] - vertex_positions[0]);
+                  vertices.push_back (pos);
                 } else {
-                  edge_to_output_vertex[edge_index] = existing->second;
+                  edge_to_output_vertex[edge_index] = existing_zero->second;
                 }
 
               }
@@ -509,6 +514,8 @@ namespace MR
               const uint32_t indices[3] { edge_to_output_vertex[*first_edge], edge_to_output_vertex[*(first_edge+1)], edge_to_output_vertex[*(first_edge+2)] };
               polygons.push_back (Triangle (indices));
             }
+
+            ++progress;
 
       } } } // Finished looping over all voxels in the input image
 
