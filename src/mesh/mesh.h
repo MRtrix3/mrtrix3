@@ -61,7 +61,7 @@ namespace MR
 
       public:
 
-        template <class T>
+        template <typename T>
         Polygon (const T* const d)
         {
           for (size_t i = 0; i != vertices; ++i)
@@ -133,7 +133,7 @@ namespace MR
         void transform_voxel_to_realspace (const Image::Info&);
         void transform_realspace_to_voxel (const Image::Info&);
 
-        void save (const std::string&, const bool binary = true) const;
+        void save (const std::string&, const bool binary = false) const;
 
         void output_pve_image (const Image::Header&, const std::string&);
 
@@ -142,13 +142,18 @@ namespace MR
         size_t num_quads() const { return quads.size(); }
         size_t num_polygons() const { return triangles.size() + quads.size(); }
 
-        const Vertex&   vert (const size_t i) const { return vertices[i]; }
-        const Triangle& tri  (const size_t i) const { return triangles[i]; }
-        const Quad&     quad (const size_t i) const { return quads[i]; }
+        bool have_normals() const { return normals.size(); }
+        void calculate_normals();
+
+        const Vertex&   vert (const size_t i) const { assert (i < vertices .size()); return vertices[i]; }
+        const Vertex&   norm (const size_t i) const { assert (i < normals  .size()); return normals[i]; }
+        const Triangle& tri  (const size_t i) const { assert (i < triangles.size()); return triangles[i]; }
+        const Quad&     quad (const size_t i) const { assert (i < quads    .size()); return quads[i]; }
 
 
       protected:
         VertexList vertices;
+        VertexList normals;
         TriangleList triangles;
         QuadList quads;
 

@@ -73,7 +73,7 @@ namespace MR
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
-          if (parent.node_geometry == NODE_GEOM_CUBE) {
+          if (parent.node_geometry == NODE_GEOM_CUBE || parent.node_geometry == NODE_GEOM_MESH) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
           }
@@ -81,7 +81,7 @@ namespace MR
           vertex_shader_source +=
               "uniform mat4 MVP;\n";
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE || (parent.node_geometry == NODE_GEOM_MESH && parent.node_size_scale_factor != 1.0f)) {
+          if (parent.node_geometry != NODE_GEOM_OVERLAY) {
             vertex_shader_source +=
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
@@ -92,7 +92,7 @@ namespace MR
               "uniform int reverse;\n";
           }
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_MESH) {
             vertex_shader_source +=
               "out vec3 normal;\n";
           } else if (parent.node_geometry == NODE_GEOM_CUBE) {
@@ -116,20 +116,17 @@ namespace MR
               break;
             case NODE_GEOM_CUBE:
               vertex_shader_source +=
-              "  gl_Position = (MVP * vec4 (node_centre + (vertexPosition_modelspace * node_size), 1));\n"
+              "  vec3 pos = vertexPosition_modelspace * node_size;\n"
+              "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n"
               "  normal = vertexNormal_modelspace;\n";
               break;
             case NODE_GEOM_OVERLAY:
               break;
             case NODE_GEOM_MESH:
-              if (parent.node_size_scale_factor != 1.0f) {
-                vertex_shader_source +=
-                    "  gl_Position = MVP * vec4 (node_centre + (node_size * (vertexPosition_modelspace - node_centre)), 1);\n";
-              } else {
-                vertex_shader_source +=
-                    "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
-              }
-
+              vertex_shader_source +=
+              "  normal = vertexNormal_modelspace;\n"
+              "  vec3 pos = (node_size * (vertexPosition_modelspace - node_centre));\n"
+              "  gl_Position = MVP * vec4 (node_centre + pos, 1);\n";
               break;
           }
 
@@ -152,17 +149,23 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
+          if (parent.node_geometry != NODE_GEOM_OVERLAY) {
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n";
+              "uniform vec3 light_pos;\n"
+              "uniform vec3 screen_normal;\n";
           }
-          if (parent.node_geometry == NODE_GEOM_SPHERE) {
+          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_MESH) {
             fragment_shader_source +=
               "in vec3 normal;\n";
           } else if (parent.node_geometry == NODE_GEOM_CUBE) {
             fragment_shader_source +=
               "flat in vec3 normal;\n";
+          }
+
+          if (parent.node_geometry != NODE_GEOM_OVERLAY) {
+            fragment_shader_source +=
+              "in vec3 position;\n";
           }
 
           fragment_shader_source +=
@@ -177,10 +180,10 @@ namespace MR
               "  color = node_colour;\n";
           }
 
-          if (parent.node_geometry == NODE_GEOM_SPHERE || parent.node_geometry == NODE_GEOM_CUBE) {
+          if (parent.node_geometry != NODE_GEOM_OVERLAY) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
-              "  color += specular * pow (clamp (dot (reflect (-light_pos, normal), normal), 0, 1), shine);\n";
+              "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
           }
 
           fragment_shader_source +=
@@ -643,7 +646,7 @@ namespace MR
                 node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
               GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-              if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f)) {
+              if (node_geometry != NODE_GEOM_OVERLAY) {
                 node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
                 node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
               }
@@ -662,16 +665,13 @@ namespace MR
                 gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
               }
 
-              if (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f) {
-                gl::Uniform1f  (node_size_ID, node_size_scale_factor);
-              }
-
               if (node_geometry != NODE_GEOM_OVERLAY) {
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
               }
 
               std::map<float, size_t> node_ordering;
@@ -684,18 +684,18 @@ namespace MR
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                   if (node_alpha != NODE_ALPHA_FIXED)
                     gl::Uniform1f (node_alpha_ID, node.get_alpha());
-                  if (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE || (node_geometry == NODE_GEOM_MESH && node_size_scale_factor != 1.0f))
+                  if (node_geometry != NODE_GEOM_OVERLAY) {
                     gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                  }
                   switch (node_geometry) {
                     case NODE_GEOM_SPHERE:
-                      gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                       gl::Uniform1i (reverse_ID, 0);
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       gl::Uniform1i (reverse_ID, 1);
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case NODE_GEOM_CUBE:
-                      gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                       gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case NODE_GEOM_OVERLAY:
@@ -1436,6 +1436,7 @@ namespace MR
             MR::LogLevelLatch latch (0);
             MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
             temp.transform_voxel_to_realspace (img);
+            temp.calculate_normals();
           }
           mesh = Node::Mesh (temp);
           name = img.name();
@@ -1468,10 +1469,26 @@ namespace MR
           if (vertices.size())
             gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], gl::STATIC_DRAW);
 
+          assert (in.have_normals());
+          std::vector<float> normals;
+          normals.reserve (3 * in.num_vertices());
+          for (size_t n = 0; n != in.num_vertices(); ++n) {
+            for (size_t axis = 0; axis != 3; ++axis)
+              normals.push_back (-in.norm(n)[axis]);
+          }
+          normal_buffer.gen();
+          normal_buffer.bind (gl::ARRAY_BUFFER);
+          if (normals.size())
+            gl::BufferData (gl::ARRAY_BUFFER, normals.size() * sizeof (float), &normals[0], gl::STATIC_DRAW);
+
           vertex_array_object.gen();
           vertex_array_object.bind();
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          normal_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
           std::vector<unsigned int> indices;
           indices.reserve (3 * in.num_triangles());
@@ -1488,6 +1505,7 @@ namespace MR
         Connectome::Node::Mesh::Mesh (Mesh&& that) :
             count (that.count),
             vertex_buffer (std::move (that.vertex_buffer)),
+            normal_buffer (std::move (that.normal_buffer)),
             vertex_array_object (std::move (that.vertex_array_object)),
             index_buffer (std::move (that.index_buffer))
         {
@@ -1501,6 +1519,7 @@ namespace MR
         {
           count = that.count; that.count = 0;
           vertex_buffer = std::move (that.vertex_buffer);
+          normal_buffer = std::move (that.normal_buffer);
           vertex_array_object = std::move (that.vertex_array_object);
           index_buffer = std::move (that.index_buffer);
           return *this;
@@ -1510,6 +1529,7 @@ namespace MR
         {
           assert (count);
           vertex_buffer.bind (gl::ARRAY_BUFFER);
+          normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);

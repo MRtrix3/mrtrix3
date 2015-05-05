@@ -328,7 +328,7 @@ namespace MR
                     void render() const;
                   private:
                     GLsizei count;
-                    GL::VertexBuffer vertex_buffer;
+                    GL::VertexBuffer vertex_buffer, normal_buffer;
                     GL::VertexArrayObject vertex_array_object;
                     GL::IndexBuffer index_buffer;
                 } mesh;

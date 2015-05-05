@@ -53,6 +53,12 @@ namespace MR
         (*v)[0] = ((info.dim(0)-1) * info.vox(0)) - (*v)[0];
         *v = transform.image2scanner (*v);
       }
+      if (normals.size()) {
+        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
+          (*n)[0] = -(*n)[0];
+          *n = transform.image2scanner_dir (*n);
+        }
+      }
     }
 
     void Mesh::transform_voxel_to_realspace (const Image::Info& info)
@@ -60,6 +66,10 @@ namespace MR
       Image::Transform transform (info);
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
         *v = transform.voxel2scanner (*v);
+      if (normals.size()) {
+        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
+          *n = transform.voxel2scanner_dir (*n);
+      }
     }
 
     void Mesh::transform_realspace_to_voxel (const Image::Info& info)
@@ -67,6 +77,10 @@ namespace MR
       Image::Transform transform (info);
       for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v)
         *v = transform.scanner2voxel (*v);
+      if (normals.size()) {
+        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
+          *n = transform.scanner2voxel_dir (*n);
+      }
     }
 
 
@@ -106,12 +120,12 @@ namespace MR
                                                 Point<int> ( 0,  0, +1)};
 
       // Compute normals for polygons
-      std::vector< Point<float> > normals;
+      std::vector< Point<float> > polygon_normals;
       normals.reserve (triangles.size() + quads.size());
       for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p)
-        normals.push_back (calc_normal (*p));
+        polygon_normals.push_back (calc_normal (*p));
       for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p)
-        normals.push_back (calc_normal (*p));
+        polygon_normals.push_back (calc_normal (*p));
 
       // Create some memory to work with:
       // Stores a flag for each voxel as encoded in enum vox_mesh_t
@@ -269,7 +283,7 @@ namespace MR
 
           // Only test against those polygons that are near this voxel
           for (std::vector<size_t>::const_iterator polygon_index = i->second.begin(); polygon_index != i->second.end(); ++polygon_index) {
-            const Point<float>& n (normals[*polygon_index]);
+            const Point<float>& n (polygon_normals[*polygon_index]);
 
             const size_t polygon_num_vertices = (*polygon_index < triangles.size()) ? 3 : 4;
             VertexList v;
@@ -356,6 +370,27 @@ namespace MR
       // Restore the vertex data back to realspace
       vertices = vertices_realspace;
 
+    }
+
+
+
+
+    void Mesh::calculate_normals()
+    {
+      normals.clear();
+      normals.assign (vertices.size(), Vertex (0.0f, 0.0f, 0.0f));
+      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
+        const Vertex this_normal = calc_normal (*p);
+        for (size_t index = 0; index != 3; ++index)
+          normals[(*p)[index]] += this_normal;
+      }
+      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
+        const Vertex this_normal = calc_normal (*p);
+        for (size_t index = 0; index != 4; ++index)
+          normals[(*p)[index]] += this_normal;
+      }
+      for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n)
+        n->normalise();
     }
 
 
@@ -607,7 +642,7 @@ namespace MR
 
     void Mesh::save_vtk (const std::string& path, const bool binary) const
     {
-      File::OFStream out (path);
+      File::OFStream out (path, (binary ? std::ios_base::binary | std::ios_base::out : std::ios_base::out));
       out << "# vtk DataFile Version 1.0\n";
       out << "\n";
       if (binary)
@@ -617,6 +652,7 @@ namespace MR
       out << "DATASET POLYDATA\n";
       out << "POINTS " << str(vertices.size()) << " float\n";
       ProgressBar progress ("writing mesh to file... ", vertices.size() + triangles.size() + quads.size());
+      // FIXME Binary output not working (crashes ParaView)
       for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
         if (binary)
           out.write (reinterpret_cast<const char*>(&(*i)), 3 * sizeof(float));
@@ -747,11 +783,11 @@ namespace MR
       return (((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]])).normalise());
     }
 
-    // FIXME Should be averaging normals calculated from the three vertices?
-    //   (i.e. no guarantee that the four points all lie on the same plane)
     Point<float> Mesh::calc_normal (const Quad& in) const
     {
-      return (((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]])).normalise());
+      return ((((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]])).normalise()
+             + ((vertices[in[2]] - vertices[in[0]]).cross (vertices[in[3]] - vertices[in[2]])).normalise())
+             .normalise());
     }
 
 
