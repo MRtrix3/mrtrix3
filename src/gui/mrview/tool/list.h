@@ -20,8 +20,8 @@ TOOL(View, View options, Adjust view settings)
 TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(Tractography, Tractography, Display tracks over the current image)
-TOOL(ODF, ODF Display, Display orientation density functions)
-TOOL(Vector, Vector Plot, Plot vector images)
+TOOL(ODF, ODF display, Display orientation density functions)
+TOOL(Vector, Vector plot, Plot vector images)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
 
 #endif

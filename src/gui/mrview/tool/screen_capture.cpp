@@ -150,7 +150,7 @@ namespace MR
           connect (prefix_textbox, SIGNAL (textChanged(const QString&)), this, SLOT (on_output_update()));
 
           folder_button = new QPushButton (tr("Select output folder"), this);
-          folder_button->setToolTip (tr ("Output Folder"));
+          folder_button->setToolTip (tr ("Output folder"));
           connect (folder_button, SIGNAL (clicked()), this, SLOT (select_output_folder_slot ()));
           output_grid_layout->addWidget (folder_button, 1, 0, 1, 2);
 

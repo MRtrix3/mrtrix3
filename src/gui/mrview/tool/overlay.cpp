@@ -85,19 +85,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open overlay image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close overlay image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide All"));
+            hide_all_button->setToolTip (tr ("Hide all overlays"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));

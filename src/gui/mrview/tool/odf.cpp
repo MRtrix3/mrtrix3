@@ -189,13 +189,13 @@ namespace MR
             HBoxLayout* layout = new HBoxLayout;
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open ODF image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close ODF image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);

@@ -90,19 +90,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Fixel Image"));
+            button->setToolTip (tr ("Open fixel image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Fixel Image"));
+            button->setToolTip (tr ("Close fixel image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Fixel Images"));
+            hide_all_button->setToolTip (tr ("Hide all fixel images"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -659,7 +659,7 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("Vector Plot tool options")
+            + OptionGroup ("Vector plot tool options")
 
             + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
             +   Argument ("image").type_image_in();
