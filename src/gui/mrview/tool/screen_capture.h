@@ -104,7 +104,7 @@ namespace MR
                     volume(volume), volume_axis(volume_axis),
                     frame_index(frame_index), plane(plane) {}
             };
-            constexpr static size_t max_cache_size = 10;
+            constexpr static size_t max_cache_size = 1;
             std::deque<CaptureState> cached_state;
 
             void run (bool with_capture);
