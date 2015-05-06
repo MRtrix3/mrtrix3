@@ -23,15 +23,13 @@
 #ifndef __dwi_gradient_h__
 #define __dwi_gradient_h__
 
+#include <Eigen/SVD>
+
 #include "app.h"
-#include "point.h"
 #include "file/path.h"
 #include "file/config.h"
 #include "header.h"
-#include "math/LU.h"
 #include "math/SH.h"
-#include "math/matrix.h"
-#include "math/permutation.h"
 #include "dwi/shells.h"
 
 
@@ -46,56 +44,57 @@ namespace MR
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
-    template <typename ValueType> 
-      Math::Matrix<ValueType>& normalise_grad (Math::Matrix<ValueType>& grad)
-      {
-        if (grad.columns() < 3)
-          throw Exception ("invalid gradient matrix dimensions");
-        for (size_t i = 0; i < grad.rows(); i++) {
-          ValueType norm = Math::norm (grad.row (i).sub (0,3));
-          if (norm) 
-            grad.row (i).sub (0,3) /= norm;
-        }
-        return grad;
+    Matrix& normalise_grad (Matrix& grad)
+    {
+      if (grad.cols() < 3)
+        throw Exception ("invalid gradient matrix dimensions");
+      for (ssize_t i = 0; i < grad.rows(); i++) {
+        auto norm = grad.row(i).head<3>().norm();
+        if (norm) 
+          grad.row(i).head<3>().array() /= norm;
       }
+      return grad;
+    }
 
 
     /*! \brief convert the DW encoding matrix in \a grad into a
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
-    template <typename ValueType> 
-      inline Math::Matrix<ValueType> gen_direction_matrix (
-          const Math::Matrix<ValueType>& grad, 
-          const std::vector<size_t>& dwi)
-      {
-        Math::Matrix<ValueType> dirs (dwi.size(),2);
-        for (size_t i = 0; i < dwi.size(); i++) {
-          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-          ValueType z = grad (dwi[i],2) / Math::norm (grad.row (dwi[i]).sub (0,3));
-          if (z >= 1.0) 
-            dirs(i,1) = 0.0;
-          else if (z <= -1.0)
-            dirs (i,1) = Math::pi;
-          else 
-            dirs (i,1) = std::acos (z);
-        }
-        return dirs;
+    inline Matrix gen_direction_matrix (
+        const Matrix& grad, 
+        const std::vector<size_t>& dwi)
+    {
+      Matrix dirs (dwi.size(),2);
+      for (size_t i = 0; i < dwi.size(); i++) {
+        dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+        auto z = grad (dwi[i],2) / grad.row (dwi[i]).head<3>().norm();
+        if (z >= 1.0) 
+          dirs(i,1) = 0.0;
+        else if (z <= -1.0)
+          dirs (i,1) = Math::pi;
+        else 
+          dirs (i,1) = std::acos (z);
       }
+      return dirs;
+    }
 
-    template <typename ValueType>
-      ValueType condition_number_for_lmax (const Math::Matrix<ValueType>& dirs, int lmax) 
-      {
-        Math::Matrix<double> g;
-        if (dirs.columns() == 2) // spherical coordinates:
-          g = dirs;
-        else // Cartesian to spherical:
-          g = Math::SH::C2S(dirs).sub(0, dirs.rows(), 0, 2);
 
-        Math::Matrix<double> A;
-        Math::SH::init_transform (A, g, lmax);
 
-        return Math::cond (A);
-      }
+
+
+    default_type condition_number_for_lmax (const Matrix& dirs, int lmax) 
+    {
+      Matrix g;
+      if (dirs.cols() == 2) // spherical coordinates:
+        g = dirs;
+      else // Cartesian to spherical:
+        g = Math::SH::cartesian2spherical (dirs).block<0,0>(dirs.rows(), 2);
+
+      Matrix A = Math::SH::init_transform (g, lmax);
+
+      auto v = Eigen::JacobiSVD<Matrix> (A).singularValues();
+      return v[0] / v[v.size()-1];
+    }
 
 
 

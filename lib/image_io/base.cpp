@@ -40,12 +40,12 @@ namespace MR
 
     bool Base::is_file_backed () const { return true; }
 
-    void Base::open (const Header& header, size_t bits_per_element)
+    void Base::open (const Header& header, size_t buffer_size)
     {
       if (addresses.size())
         return;
 
-      load (header, bits_per_element);
+      load (header, buffer_size);
       DEBUG ("image \"" + header.name() + "\" loaded");
     }
 

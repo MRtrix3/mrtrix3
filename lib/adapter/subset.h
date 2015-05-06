@@ -63,7 +63,7 @@ namespace MR
 
         size_t ndim () const { return size_.size(); }
         ssize_t size (size_t axis) const { return size_ [axis]; }
-        const Math::Matrix<float>& transform() const { return transform_; }
+        const transform_type& transform() const { return transform_; }
 
         ssize_t index (size_t axis) const { return parent().index(axis)-from_[axis]; }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
@@ -72,7 +72,7 @@ namespace MR
       protected:
         using Base<ImageType>::parent;
         const std::vector<ssize_t> from_, size_;
-        Math::Matrix<default_type> transform_;
+        transform_type transform_;
     };
 
   }

@@ -23,14 +23,20 @@
 #ifndef __math_least_squares_h__
 #define __math_least_squares_h__
 
-#include "math/cholesky.h"
-#include "math/LU.h"
+#include "types.h"
 
 namespace MR
 {
   namespace Math
   {
 
+    /** @addtogroup linalg
+      @{ */
+
+    /** @defgroup ls Least-squares & Moore-Penrose pseudo-inverse
+      @{ */
+
+/*
     namespace {
       template <typename ValueType> inline CBLAS_TRANSPOSE __transpose () { return CblasTrans; } 
 #ifdef __math_complex_h__
@@ -38,12 +44,6 @@ namespace MR
       template <> inline CBLAS_TRANSPOSE __transpose<cdouble> () { return CblasConjTrans; }
 #endif
     }
-
-    /** @addtogroup linalg
-      @{ */
-
-    /** @defgroup ls Least-squares & Moore-Penrose pseudo-inverse
-      @{ */
 
 
     //! solve over-determined least-squares problem Mx = b
@@ -95,40 +95,18 @@ namespace MR
 
 
 
-    //! compute Moore-Penrose pseudo-inverse of M given its transpose Mt
-    template <typename ValueType> 
-      inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& Mt, Matrix<ValueType>& work)
-      {
-        CBLAS_TRANSPOSE trans1 = Mt.rows() > Mt.columns() ? __transpose<ValueType>() : CblasNoTrans;
-        CBLAS_TRANSPOSE trans2 = Mt.rows() > Mt.columns() ? CblasNoTrans : __transpose<ValueType>();
-        CBLAS_SIDE side = Mt.rows() > Mt.columns() ? CblasRight : CblasLeft;
-        mult (work, ValueType (0.0), ValueType (1.0), trans1, Mt, trans2, Mt);
-        Cholesky::inv (work);
-        return mult (I, side, ValueType (0.0), ValueType (1.0), CblasUpper, work, Mt);
-      }
+*/
 
-
-
-
-    //! compute Moore-Penrose pseudo-inverse of M
-    template <typename ValueType> 
-      inline Matrix<ValueType>& pinv (Matrix<ValueType>& I, const Matrix<ValueType>& M)
-      {
-      I.allocate (M.columns(), M.rows());
-      size_t n = std::min (M.rows(), M.columns());
-      Matrix<ValueType> work (n,n);
-      Matrix<ValueType> Mt (M.columns(), M.rows());
-      return pinv (I, transpose (Mt, M), work);
-    }
 
 
     //! return Moore-Penrose pseudo-inverse of M
-    template <typename ValueType>
-      Math::Matrix<ValueType> pinv (const Math::Matrix<ValueType>& M)
+    template <class MatrixType>
+      inline Matrix pinv (const MatrixType& M)
       {
-        Matrix<ValueType> I;
-        pinv (I, M);
-        return I;
+        if (M.rows() >= M.cols()) 
+         return (M.transpose()*M).ldlt().solve (M.transpose());                                                                                
+        else 
+          return (M*M.transpose()).ldlt().solve (M).transpose();                                                                               
       }
 
     /** @} */

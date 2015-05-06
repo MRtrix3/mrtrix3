@@ -59,7 +59,7 @@ namespace MR
           ssize_t size (size_t axis) const { return parent_.size (axis); }
           default_type voxsize (size_t axis) const { return parent_.voxsize (axis); }
           ssize_t stride (size_t axis) const { return parent_.stride (axis); }
-          const Math::Matrix<default_type>& transform () const { return parent_.transform(); }
+          const transform_type& transform () const { return parent_.transform(); }
 
           ssize_t index (size_t axis) const { return parent_.index (axis); }
           auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }

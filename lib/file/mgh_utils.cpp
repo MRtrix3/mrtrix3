@@ -22,7 +22,6 @@
 
 #include "header.h"
 #include "raw.h"
-#include "math/vector.h"
 #include "file/ofstream.h"
 #include "file/mgh_utils.h"
 #include "file/nifti1_utils.h"
@@ -77,34 +76,39 @@ namespace MR
         H.datatype() = dtype;
         H.reset_intensity_scaling();
 
-        Math::Matrix<default_type>& M (H.transform());
-        M.allocate (4,4);
+        transform_type& M (H.transform());
 
         const int16_t RAS = Raw::fetch<int16_t> (&MGHH.goodRASFlag, is_BE);
         if (RAS) {
 
-          M (0,0) = Raw::fetch <float> (&MGHH.x_r, is_BE); M (0,1) = Raw::fetch <float> (&MGHH.y_r, is_BE); M (0,2) = Raw::fetch <float> (&MGHH.z_r, is_BE);
-          M (1,0) = Raw::fetch <float> (&MGHH.x_a, is_BE); M (1,1) = Raw::fetch <float> (&MGHH.y_a, is_BE); M (1,2) = Raw::fetch <float> (&MGHH.z_a, is_BE);
-          M (2,0) = Raw::fetch <float> (&MGHH.x_s, is_BE); M (2,1) = Raw::fetch <float> (&MGHH.y_s, is_BE); M (2,2) = Raw::fetch <float> (&MGHH.z_s, is_BE);
+          M(0,0) = Raw::fetch <float> (&MGHH.x_r, is_BE); 
+          M(0,1) = Raw::fetch <float> (&MGHH.y_r, is_BE); 
+          M(0,2) = Raw::fetch <float> (&MGHH.z_r, is_BE);
 
-          M (0,3) = Raw::fetch <float> (&MGHH.c_r, is_BE);
-          M (1,3) = Raw::fetch <float> (&MGHH.c_a, is_BE);
-          M (2,3) = Raw::fetch <float> (&MGHH.c_s, is_BE);
+          M(1,0) = Raw::fetch <float> (&MGHH.x_a, is_BE); 
+          M(1,1) = Raw::fetch <float> (&MGHH.y_a, is_BE); 
+          M(1,2) = Raw::fetch <float> (&MGHH.z_a, is_BE);
+
+          M(2,0) = Raw::fetch <float> (&MGHH.x_s, is_BE); 
+          M(2,1) = Raw::fetch <float> (&MGHH.y_s, is_BE); 
+          M(2,2) = Raw::fetch <float> (&MGHH.z_s, is_BE);
+
+          M(0,3) = Raw::fetch <float> (&MGHH.c_r, is_BE);
+          M(1,3) = Raw::fetch <float> (&MGHH.c_a, is_BE);
+          M(2,3) = Raw::fetch <float> (&MGHH.c_s, is_BE);
+
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
-              M (i,3) -= 0.5 * H.size(j) * H.voxsize(j) * M(i,j);
+              M(i,3) -= 0.5 * H.size(j) * H.voxsize(j) * M(i,j);
           }
 
-          M (3,0) = M (3,1) = M (3,2) = 0.0;
-          M (3,3) = 1.0;
 
         } else {
 
           // Default transformation matrix, assumes coronal orientation
-          M (0,0) = -1.0; M (0,1) =  0.0; M (0,2) =  0.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) =  0.0; M (0,2) = -1.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) = +1.0; M (0,2) =  0.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) =  0.0; M (0,2) =  0.0; M (0,3) = 1.0;
+          M(0,0) = -1.0; M(0,1) =  0.0; M(0,2) =  0.0; M(0,3) = 0.0;
+          M(1,0) =  0.0; M(1,1) =  0.0; M(1,2) = -1.0; M(1,3) = 0.0;
+          M(2,0) =  0.0; M(2,1) = +1.0; M(2,2) =  0.0; M(2,3) = 0.0;
 
         }
 
@@ -145,7 +149,7 @@ namespace MR
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
         std::vector<size_t> axes;
-        Math::Matrix<default_type> M = File::NIfTI::adjust_transform (H, axes);
+        auto M = File::NIfTI::adjust_transform (H, axes);
 
         Raw::store<int32_t> (1, &MGHH.version, is_BE);
         Raw::store<int32_t> (H.size (axes[0]), &MGHH.width, is_BE);
@@ -185,14 +189,22 @@ namespace MR
         Raw::store<float> (H.voxsize (axes[2]), &MGHH.spacing_z, is_BE);
 
         //const Math::Matrix<float>& M (H.transform());
-        Raw::store<float> (M (0,0), &MGHH.x_r, is_BE); Raw::store<float> (M (0,1), &MGHH.y_r, is_BE); Raw::store<float> (M (0,2), &MGHH.z_r, is_BE);
-        Raw::store<float> (M (1,0), &MGHH.x_a, is_BE); Raw::store<float> (M (1,1), &MGHH.y_a, is_BE); Raw::store<float> (M (1,2), &MGHH.z_a, is_BE);
-        Raw::store<float> (M (2,0), &MGHH.x_s, is_BE); Raw::store<float> (M (2,1), &MGHH.y_s, is_BE); Raw::store<float> (M (2,2), &MGHH.z_s, is_BE);
+        Raw::store<float> (M(0,0), &MGHH.x_r, is_BE); 
+        Raw::store<float> (M(0,1), &MGHH.y_r, is_BE); 
+        Raw::store<float> (M(0,2), &MGHH.z_r, is_BE);
+
+        Raw::store<float> (M(1,0), &MGHH.x_a, is_BE); 
+        Raw::store<float> (M(1,1), &MGHH.y_a, is_BE); 
+        Raw::store<float> (M(1,2), &MGHH.z_a, is_BE);
+        
+        Raw::store<float> (M(2,0), &MGHH.x_s, is_BE); 
+        Raw::store<float> (M(2,1), &MGHH.y_s, is_BE); 
+        Raw::store<float> (M(2,2), &MGHH.z_s, is_BE);
 
         for (size_t i = 0; i != 3; ++i) {
-          default_type offset = M (i, 3);
+          default_type offset = M(i, 3);
           for (size_t j = 0; j != 3; ++j)
-            offset += 0.5 * H.size(axes[j]) * H.voxsize(axes[j]) * M (i,j);
+            offset += 0.5 * H.size(axes[j]) * H.voxsize(axes[j]) * M(i,j);
           switch (i) {
             case 0: Raw::store<float> (offset, &MGHH.c_r, is_BE); break;
             case 1: Raw::store<float> (offset, &MGHH.c_a, is_BE); break;

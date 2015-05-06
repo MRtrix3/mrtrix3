@@ -31,7 +31,6 @@
 #include "datatype.h"
 #include "stride.h"
 #include "file/mmap.h"
-#include "math/matrix.h"
 #include "image_helpers.h"
 #include "image_io/base.h" 
 
@@ -54,7 +53,9 @@ namespace MR
 
       Header () :
         offset_ (0.0),
-        scale_ (1.0) { }
+        scale_ (1.0) {
+          transform_.setIdentity();
+        }
 
       explicit Header (Header&& H) noexcept :
         axes_ (std::move (H.axes_)),
@@ -157,9 +158,9 @@ namespace MR
       const char* format () const { return format_; }
 
       //! get the 4x4 affine transformation matrix mapping image to world coordinates
-      const Math::Matrix<default_type>& transform () const { return transform_; }
+      const transform_type& transform () const { return transform_; }
       //! get/set the 4x4 affine transformation matrix mapping image to world coordinates
-      Math::Matrix<default_type>& transform () { return transform_; }
+      transform_type& transform () { return transform_; }
 
       //! return the number of dimensions (axes) of image
       size_t ndim () const;
@@ -290,7 +291,7 @@ namespace MR
 
     protected:
       std::vector<Axis> axes_; 
-      Math::Matrix<default_type> transform_; 
+      transform_type transform_; 
       std::string name_;
       std::map<std::string, std::string> keyval_;
       const char* format_;

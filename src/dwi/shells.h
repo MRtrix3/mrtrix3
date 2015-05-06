@@ -31,9 +31,6 @@
 #include "app.h"
 #include "bitset.h"
 
-#include "math/matrix.h"
-#include "math/vector.h"
-
 #include "file/config.h"
 
 
@@ -68,8 +65,8 @@ namespace MR
 
     extern const App::OptionGroup ShellOption;
 
-    inline float bzero_threshold () {
-      static const float value = File::Config::get_float ("BZeroThreshold", 10.0);
+    inline default_type bzero_threshold () {
+      static const default_type value = File::Config::get_float ("BZeroThreshold", 10.0);
       return value;
     }
 
@@ -82,7 +79,7 @@ namespace MR
 
         Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
 
-        Shell (const Math::Matrix<float>& grad, const std::vector<size_t>& indices);
+        Shell (const Matrix& grad, const std::vector<size_t>& indices);
 
         Shell& operator= (const Shell& rhs)
         {
@@ -98,10 +95,10 @@ namespace MR
         const std::vector<size_t>& get_volumes() const { return volumes; }
         size_t count() const { return volumes.size(); }
 
-        float get_mean()  const { return mean; }
-        float get_stdev() const { return stdev; }
-        float get_min()   const { return min; }
-        float get_max()   const { return max; }
+        default_type get_mean()  const { return mean; }
+        default_type get_stdev() const { return stdev; }
+        default_type get_min()   const { return min; }
+        default_type get_max()   const { return max; }
 
         bool is_bzero()   const { return (mean < bzero_threshold()); }
 
@@ -118,7 +115,7 @@ namespace MR
 
       protected:
         std::vector<size_t> volumes;
-        float mean, stdev, min, max;
+        default_type mean, stdev, min, max;
 
     };
 
@@ -130,9 +127,7 @@ namespace MR
     {
 
       public:
-        Shells (const Math::Matrix<float>& grad) { initialise (grad); }
-        Shells (const Math::Matrix<double>& grad) { Math::Matrix<float> gradF (grad); initialise (gradF); }
-
+        Shells (const Matrix& grad);
 
         const Shell& operator[] (const size_t i) const { return shells[i]; }
         const Shell& smallest() const { return shells.front(); }
@@ -140,8 +135,8 @@ namespace MR
         size_t       count()    const { return shells.size(); }
         size_t       volumecount()    const { 
           size_t count = 0;
-          for (std::vector<Shell>::const_iterator it = shells.begin(); it != shells.end(); ++it)
-            count += it->count();
+          for (const auto& it : shells)
+            count += it.count();
           return count;
         }
 
@@ -171,8 +166,8 @@ namespace MR
         friend std::ostream& operator<< (std::ostream& stream, const Shells& S)
         {
           stream << "Total of " << S.count() << " DWI shells:" << std::endl;
-          for (std::vector<Shell>::const_iterator it = S.shells.begin(); it != S.shells.end(); ++it)
-            stream << *it << std::endl;
+          for (const auto& it : S.shells)
+            stream << it << std::endl;
           return stream;
         }
 
@@ -183,9 +178,7 @@ namespace MR
 
       private:
 
-        typedef Math::Vector<float>::View BValueList;
-
-        void initialise (const Math::Matrix<float>&);
+        typedef decltype(std::declval<Matrix>().row(0)) BValueList;
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;

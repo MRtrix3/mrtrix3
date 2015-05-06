@@ -44,7 +44,7 @@ namespace MR
 
 
 
-      Math::Matrix<default_type> adjust_transform (const Header& H, std::vector<size_t>& axes)
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
       {
         Stride::List strides = Stride::get (H);
         strides.resize (3);
@@ -55,24 +55,24 @@ namespace MR
             !flip[0] && !flip[1] && !flip[2])
           return H.transform();
 
-        Math::Matrix<default_type> M (H.transform());
+        const auto& M_in = H.transform().matrix();
+        transform_type out (H.transform());
+        auto& M_out = out.matrix();
 
         for (size_t i = 0; i < 3; i++)
-          M.column (i) = H.transform().column (axes[i]);
+          M_out.col (i) = M_in.col (axes[i]);
 
-        Math::Vector<default_type> translation = M.column (3).sub (0,3);
+        auto translation = M_out.col(3);
         for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
-            default_type length = default_type (H.size (axes[i])-1) * H.voxsize (axes[i]);
-            Math::Vector<default_type> axis = M.column (i).sub (0,3);
-            for (size_t n = 0; n < 3; n++) {
-              axis[n] = -axis[n];
-              translation[n] -= length*axis[n];
-            }
+            auto length = default_type (H.size (axes[i])-1) * H.voxsize (axes[i]);
+            auto axis = M_out.col(i);
+            axis = -axis;
+            translation -= length * axis;
           }
         }
 
-        return M;
+        return out;
       }
 
 
@@ -215,26 +215,22 @@ namespace MR
 
         if (is_nifti) {
           if (Raw::fetch<int16_t> (&NH.sform_code, is_BE)) {
-            Math::Matrix<default_type>& M (H.transform());
-            M.allocate (4,4);
+            auto& M (H.transform());
 
-            M (0,0) = Raw::fetch<float32> (&NH.srow_x[0], is_BE);
-            M (0,1) = Raw::fetch<float32> (&NH.srow_x[1], is_BE);
-            M (0,2) = Raw::fetch<float32> (&NH.srow_x[2], is_BE);
-            M (0,3) = Raw::fetch<float32> (&NH.srow_x[3], is_BE);
+            M(0,0) = Raw::fetch<float32> (&NH.srow_x[0], is_BE);
+            M(0,1) = Raw::fetch<float32> (&NH.srow_x[1], is_BE);
+            M(0,2) = Raw::fetch<float32> (&NH.srow_x[2], is_BE);
+            M(0,3) = Raw::fetch<float32> (&NH.srow_x[3], is_BE);
 
-            M (1,0) = Raw::fetch<float32> (&NH.srow_y[0], is_BE);
-            M (1,1) = Raw::fetch<float32> (&NH.srow_y[1], is_BE);
-            M (1,2) = Raw::fetch<float32> (&NH.srow_y[2], is_BE);
-            M (1,3) = Raw::fetch<float32> (&NH.srow_y[3], is_BE);
+            M(1,0) = Raw::fetch<float32> (&NH.srow_y[0], is_BE);
+            M(1,1) = Raw::fetch<float32> (&NH.srow_y[1], is_BE);
+            M(1,2) = Raw::fetch<float32> (&NH.srow_y[2], is_BE);
+            M(1,3) = Raw::fetch<float32> (&NH.srow_y[3], is_BE);
 
-            M (2,0) = Raw::fetch<float32> (&NH.srow_z[0], is_BE);
-            M (2,1) = Raw::fetch<float32> (&NH.srow_z[1], is_BE);
-            M (2,2) = Raw::fetch<float32> (&NH.srow_z[2], is_BE);
-            M (2,3) = Raw::fetch<float32> (&NH.srow_z[3], is_BE);
-
-            M (3,0) = M (3,1) = M (3,2) = 0.0;
-            M (3,3) = 1.0;
+            M(2,0) = Raw::fetch<float32> (&NH.srow_z[0], is_BE);
+            M(2,1) = Raw::fetch<float32> (&NH.srow_z[1], is_BE);
+            M(2,2) = Raw::fetch<float32> (&NH.srow_z[2], is_BE);
+            M(2,3) = Raw::fetch<float32> (&NH.srow_z[3], is_BE);
 
             // get voxel sizes:
             H.voxsize(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
@@ -255,21 +251,18 @@ namespace MR
             M (2,2) /= H.voxsize (2);
           }
           else if (Raw::fetch<int16_t> (&NH.qform_code, is_BE)) {
-            H.transform().allocate(4,4);
-
-            {
+            { // TODO update with Eigen3 Quaternions
               Math::Versor<double> Q (Raw::fetch<float32> (&NH.quatern_b, is_BE), Raw::fetch<float32> (&NH.quatern_c, is_BE), Raw::fetch<float32> (&NH.quatern_d, is_BE));
               Math::Matrix<double> R (3,3);
               Q.to_matrix (R);
-              H.transform().sub (0,3,0,3) = R;
+              for (size_t i = 0; i < 3; ++i)
+                for (size_t j = 0; j < 3; ++j)
+                  H.transform()(i,j) = R(i,j);
             }
 
             H.transform()(0,3) = Raw::fetch<float32> (&NH.qoffset_x, is_BE);
             H.transform()(1,3) = Raw::fetch<float32> (&NH.qoffset_y, is_BE);
             H.transform()(2,3) = Raw::fetch<float32> (&NH.qoffset_z, is_BE);
-
-            H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
-            H.transform()(3,3) = 1.0;
 
             // qfac:
             float qfac = Raw::fetch<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
@@ -281,7 +274,7 @@ namespace MR
           }
         }
         else {
-          H.transform().clear();
+          H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
           //CONF option: Analyse.LeftToRight
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether images in Analyse format
@@ -367,7 +360,7 @@ namespace MR
         bool is_BE = H.datatype().is_big_endian();
 
         std::vector<size_t> axes;
-        Math::Matrix<default_type> M = adjust_transform (H, axes);
+        auto M = adjust_transform (H, axes);
 
 
         memset (&NH, 0, sizeof (NH));
@@ -473,12 +466,16 @@ namespace MR
         Raw::store<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        Math::Matrix<double> R = M.sub(0,3,0,3);
-        if (Math::LU::sgndet (R) < 0.0) {
-          R.column (2) *= -1.0;
+        auto R = M.matrix().topLeftCorner<3,3>();
+        if (R.determinant() < 0.0) {
+          R.col(2) *= -1.0;
           NH.pixdim[0] = -1.0;
         }
-        const Math::Versor<double> Q (R);
+        Math::Matrix<double> R2 (3,3);
+        for (size_t i = 0; i < 3; ++i)
+          for (size_t j = 0; j < 3; ++j)
+            R2(i,j) = R(i,j);
+        const Math::Versor<double> Q (R2);
 
         Raw::store<float32> (Q[1], &NH.quatern_b, is_BE);
         Raw::store<float32> (Q[2], &NH.quatern_c, is_BE);

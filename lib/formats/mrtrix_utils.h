@@ -131,12 +131,9 @@ namespace MR
           if (!check_transform())
             throw Exception ("invalid \"transform\" specification for MRtrix image \"" + H.name() + "\"");
 
-          H.transform().allocate (4,4);
           for (int row = 0; row < 3; ++row)
             for (int col = 0; col < 4; ++col)
               H.transform() (row,col) = transform[row][col];
-          H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
-          H.transform()(3,3) = 1.0;
         }
 
 
@@ -174,11 +171,9 @@ namespace MR
 
         out << "\ndatatype: " << H.datatype().specifier();
 
-        if (H.transform().is_set()) {
-          out << "\ntransform: " << H.transform()(0,0) << "," <<  H.transform()(0,1) << "," << H.transform()(0,2) << "," << H.transform()(0,3);
-          out << "\ntransform: " << H.transform()(1,0) << "," <<  H.transform()(1,1) << "," << H.transform()(1,2) << "," << H.transform()(1,3);
-          out << "\ntransform: " << H.transform()(2,0) << "," <<  H.transform()(2,1) << "," << H.transform()(2,2) << "," << H.transform()(2,3);
-        }
+        out << "\ntransform: " << H.transform()(0,0) << "," <<  H.transform()(0,1) << "," << H.transform()(0,2) << "," << H.transform()(0,3);
+        out << "\ntransform: " << H.transform()(1,0) << "," <<  H.transform()(1,1) << "," << H.transform()(1,2) << "," << H.transform()(1,3);
+        out << "\ntransform: " << H.transform()(2,0) << "," <<  H.transform()(2,1) << "," << H.transform()(2,2) << "," << H.transform()(2,3);
 
         if (H.intensity_offset() != 0.0 || H.intensity_scale() != 1.0)
           out << "\nscaling: " << H.intensity_offset() << "," << H.intensity_scale();

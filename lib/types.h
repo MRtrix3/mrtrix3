@@ -23,8 +23,11 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
+#define EIGEN_DONT_PARALLELIZE
+
 #include <stdint.h>
 #include <complex>
+#include <Eigen/Geometry>
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -116,6 +119,24 @@ namespace MR
 
   //! the default type used throughout MRtrix
   typedef float default_type;
+
+  //! the default matrix type used throughout MRtrix
+  typedef Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> Matrix;
+  //! the default vector type used throughout MRtrix
+  typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> Vector;
+  //! the default 3-vector type used throughout MRtrix
+  typedef Eigen::Matrix<default_type, 3, 1> Vector3;
+  //! static 3x3 matrix type
+  typedef Eigen::Matrix<default_type, 3, 3> Matrix33;
+  //! static 4x4 matrix type
+  typedef Eigen::Matrix<default_type, 4, 4> Matrix44;
+
+
+  constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
+  constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
+
+  //! the type for the affine transform of an image:
+  typedef Eigen::Transform<default_type, 3, Eigen::AffineCompact> transform_type;
 
   //! check whether type is complex:
   template <class ValueType> struct is_complex : std::false_type { };

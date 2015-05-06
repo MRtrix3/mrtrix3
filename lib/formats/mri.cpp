@@ -208,8 +208,7 @@ namespace MR
             add_line (H.keyval()["comments"], std::string (reinterpret_cast<const char*> (data (current)), size (current, is_BE)));
             break;
           case MRI_TRANSFORM:
-            H.transform().allocate (4,4);
-            for (size_t i = 0; i < 4; ++i)
+            for (size_t i = 0; i < 3; ++i)
               for (size_t j = 0; j < 4; ++j)
                 H.transform() (i,j) = Raw::fetch<float32> (data (current) + (i*4 + j) *sizeof (float32), is_BE);
             break;
@@ -316,12 +315,14 @@ namespace MR
         }
       }
 
-      if (H.transform().is_set()) {
-        write_tag (out, MRI_TRANSFORM, 16*sizeof (float32), is_BE);
-        for (size_t i = 0; i < 4; ++i)
-          for (size_t j = 0; j < 4; ++j)
-            write<float> (out, H.transform() (i,j), is_BE);
-      }
+      write_tag (out, MRI_TRANSFORM, 16*sizeof (float32), is_BE);
+      for (size_t i = 0; i < 3; ++i)
+        for (size_t j = 0; j < 4; ++j)
+          write<float> (out, H.transform() (i,j), is_BE);
+      write<float> (out, 0.0f, is_BE);
+      write<float> (out, 0.0f, is_BE);
+      write<float> (out, 0.0f, is_BE);
+      write<float> (out, 1.0f, is_BE);
 
       const auto dw_scheme = H.keyval().find ("dw_scheme");
       if (dw_scheme != H.keyval().end()) {

@@ -432,7 +432,7 @@ namespace MR {
 
 
 
-      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform)
+      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform)
       {
         if (!std::isfinite (frames[0]->bvalue)) {
           DEBUG ("no DW encoding information found in DICOM frames");

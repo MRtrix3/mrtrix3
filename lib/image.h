@@ -59,7 +59,7 @@ namespace MR
         const Header& header () const { return *buffer; }
 
         const std::string& name() const { return buffer->name(); }
-        const Math::Matrix<default_type>& transform() const { return buffer->transform(); }
+        const transform_type& transform() const { return buffer->transform(); }
 
         size_t  ndim () const { return buffer->ndim(); }
         ssize_t size (size_t axis) const { return buffer->size (axis); }
@@ -295,7 +295,7 @@ namespace MR
 
         acquire_io (H);
         io->set_readwrite_if_existing (read_write_if_existing);
-        io->open (*this, sizeof(ValueType));
+        io->open (*this, footprint<ValueType> (voxel_count (*this)));
         if (io->is_file_backed()) 
           set_fetch_store_functions ();
       }

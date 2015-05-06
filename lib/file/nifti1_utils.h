@@ -24,7 +24,6 @@
 #define __file_nifti1_utils_h__
 
 #include "file/nifti1.h"
-#include "math/matrix.h"
 
 namespace MR
 {
@@ -35,7 +34,7 @@ namespace MR
     namespace NIfTI
     {
 
-      Math::Matrix<default_type> adjust_transform (const Header& H, std::vector<size_t>& order);
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 
       void check (Header& H, bool single_file);
       //! \todo add straight Analyse support

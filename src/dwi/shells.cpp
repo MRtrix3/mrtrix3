@@ -193,7 +193,7 @@ namespace MR
 
 
 
-    void Shells::initialise (const Math::Matrix<float>& grad)
+    void Shells::Shells (const Math::Matrix<float>& grad)
     {
       BValueList bvals (grad.column (3));
       std::vector<size_t> clusters (bvals.size(), 0);

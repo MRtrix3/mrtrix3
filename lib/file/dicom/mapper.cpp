@@ -166,28 +166,24 @@ namespace MR {
         // If multi-frame, take the transform information from the sorted frames; the first entry in the
         // vector should be the first slice of the first volume
         {
-          Math::Matrix<float> M(4,4);
+          transform_type M;
           const Frame* frame (image.frames.size() ? image.frames[0].get() : &static_cast<const Frame&> (image));
 
           M(0,0) = -frame->orientation_x[0];
           M(1,0) = -frame->orientation_x[1];
           M(2,0) = +frame->orientation_x[2];
-          M(3,0) = 0.0;
 
           M(0,1) = -frame->orientation_y[0];
           M(1,1) = -frame->orientation_y[1];
           M(2,1) = +frame->orientation_y[2];
-          M(3,1) = 0.0;
 
           M(0,2) = -frame->orientation_z[0];
           M(1,2) = -frame->orientation_z[1];
           M(2,2) = +frame->orientation_z[2];
-          M(3,2) = 0.0;
 
           M(0,3) = -frame->position_vector[0];
           M(1,3) = -frame->position_vector[1];
           M(2,3) = +frame->position_vector[2];
-          M(3,3) = 1.0;
 
           H.transform() = M;
           std::string dw_scheme = Frame::get_DW_scheme (frames, dim[1], M);

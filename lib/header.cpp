@@ -53,8 +53,8 @@ namespace MR
         WARN ("voxel dimensions differ between image files for \"" + name() + "\"");
     }
 
-    if (!transform().is_set() && H.transform().is_set())
-      transform() = H.transform();
+    if ((transform().matrix() - H.transform().matrix()).cwiseAbs().maxCoeff() > 1.0e-6)
+      WARN ("transform matrices differ between image files for \"" + name() + "\"");;
 
     if (datatype() != H.datatype())
       throw Exception ("data types differ between image files for \"" + name() + "\"");
@@ -319,19 +319,16 @@ namespace MR
     }
 
 
-    if (transform().is_set()) {
-      desc += "  Transform:         ";
-      for (size_t i = 0; i < transform().rows(); i++) {
-        if (i) desc +=  "                     ";
-        for (size_t j = 0; j < transform().columns(); j++) {
-          char buf[14], buf2[14];
-          snprintf (buf, 14, "%.4g", transform() (i,j));
-          snprintf (buf2, 14, "%12.10s", buf);
-          desc += buf2;
-        }
-        desc += "\n";
-
+    desc += "  Transform:         ";
+    for (size_t i = 0; i < 3; i++) {
+      if (i) desc +=  "                     ";
+      for (size_t j = 0; j < 4; j++) {
+        char buf[14], buf2[14];
+        snprintf (buf, 14, "%.4g", transform() (i,j));
+        snprintf (buf2, 14, "%12.10s", buf);
+        desc += buf2;
       }
+      desc += "\n";
     }
 
     for (const auto& p : keyval()) {
@@ -369,7 +366,7 @@ namespace MR
       return std::numeric_limits<size_t>::max();
     }
 
-    void disambiguate_permutation (Math::Permutation& permutation)
+    void disambiguate_permutation (size_t permutation[3])
     {
       if (permutation[0] == permutation[1])
         permutation[1] = not_any_of (permutation[0], permutation[2]);
@@ -417,30 +414,10 @@ namespace MR
 
   void Header::sanitise_transform ()
   {
-    if (transform().is_set()) {
-      if (transform().rows() != 4 || transform().columns() != 4) {
-        transform().clear();
-        WARN ("transform matrix is not 4x4 - resetting to sane defaults");
-      }
-      else {
-        for (size_t i = 0; i < 3; i++) {
-          for (size_t j = 0; j < 4; j++) {
-            if (!std::isfinite (transform() (i,j))) {
-              transform().clear();
-              WARN ("transform matrix contains invalid entries - resetting to sane defaults");
-              break;
-            }
-          }
-          if (!transform().is_set()) break;
-        }
-      }
+    if (!transform().matrix().allFinite()) {
+      WARN ("transform matrix contains invalid entries - resetting to sane defaults");
+      transform() = Transform::get_default (*this);
     }
-
-    if (!transform().is_set())
-      Transform::set_default (transform(), *this);
-
-    transform() (3,0) = transform() (3,1) = transform() (3,2) = 0.0;
-    transform() (3,3) = 1.0;
   }
 
 
@@ -449,10 +426,11 @@ namespace MR
   void Header::realign_transform ()
   {
     // find which row of the transform is closest to each scanner axis:
-    Math::Permutation perm (3);
-    Math::absmax (transform().row (0).sub (0,3), perm[0]);
-    Math::absmax (transform().row (1).sub (0,3), perm[1]);
-    Math::absmax (transform().row (2).sub (0,3), perm[2]);
+    size_t perm [3];
+    decltype(transform().matrix().topLeftCorner<3,3>())::Index index;
+    transform().matrix().topLeftCorner<3,3>().row(0).cwiseAbs().maxCoeff (&index); perm[0] = index;
+    transform().matrix().topLeftCorner<3,3>().row(1).cwiseAbs().maxCoeff (&index); perm[1] = index;
+    transform().matrix().topLeftCorner<3,3>().row(2).cwiseAbs().maxCoeff (&index); perm[2] = index;
     disambiguate_permutation (perm);
     assert (perm[0] != perm[1] && perm[1] != perm[2] && perm[2] != perm[0]);
 
@@ -468,14 +446,14 @@ namespace MR
         !flip[0] && !flip[1] && !flip[2])
       return;
 
-    Math::Matrix<default_type> M (transform());
-    Math::Vector<default_type> translation = M.column (3).sub (0,3);
+    auto M (transform());
+    auto translation = M.translation();
 
     // modify translation vector:
     for (size_t i = 0; i < 3; ++i) {
       if (flip[i]) {
         const default_type length = (size(i)-1) * voxsize(i);
-        Math::Vector<default_type> axis = M.column (i);
+        auto axis = M.matrix().col (i);
         for (size_t n = 0; n < 3; ++n) {
           axis[n] = -axis[n];
           translation[n] -= length*axis[n];
@@ -485,8 +463,9 @@ namespace MR
 
     // switch and/or invert rows if needed:
     for (size_t i = 0; i < 3; ++i) {
-      Math::Vector<default_type> row = M.row (i).sub (0,3);
-      perm.apply (row);
+      auto row = M.matrix().row(i).head<3>();
+      row = Vector3 (row[perm[0]], row[perm[1]], row[perm[2]]);
+
       if (flip[i])
         stride(i) = -stride(i);
     }

@@ -59,10 +59,10 @@ namespace MR
 
         virtual bool is_file_backed () const;
 
-        // bits_per_element is only used for scratch data
-        // it is ignored in all other (file-backed) handlers,
-        // where the datatype in the header specifies the bits per element:
-        void open (const Header& header, size_t bits_per_element = 0);
+        // buffer_size is only used for scratch data; it is ignored in all
+        // other (file-backed) handlers, where the buffer size is determined
+        // from the information in the header
+        void open (const Header& header, size_t buffer_size = 0);
         void close (const Header& header);
 
         bool is_image_new () const { return is_new; }
@@ -114,7 +114,7 @@ namespace MR
         void check () const {
           assert (addresses.size());
         }
-        virtual void load (const Header& header, size_t bits_per_element) = 0;
+        virtual void load (const Header& header, size_t buffer_size) = 0;
         virtual void unload (const Header& header) = 0;
     };
 

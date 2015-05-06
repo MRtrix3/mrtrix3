@@ -31,7 +31,7 @@ namespace MR
   namespace Adapter
   {
 
-    extern const Math::Matrix<default_type> NoTransform;
+    extern const transform_type NoTransform;
     extern const std::vector<int> AutoOverSample;
 
     //! \addtogroup interp
@@ -85,7 +85,7 @@ namespace MR
         template <class HeaderType>
           Reslice (const ImageType& original,
               const HeaderType& reference,
-              const Math::Matrix<default_type>& transform = NoTransform,
+              const transform_type& transform = NoTransform,
               const std::vector<int>& oversample = AutoOverSample,
               const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
@@ -93,7 +93,7 @@ namespace MR
             dim ({ reference.size(0), reference.size(1), reference.size(2) }),
             vox ({ reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) }),
             transform_ (reference.transform()),
-            direct_transform (get_direct_transform (Transform(reference), Transform(original), transform)) {
+            direct_transform (Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
               assert (ndim() >= 3);
 
               if (oversample.size()) {
@@ -105,18 +105,12 @@ namespace MR
                 OS[2] = oversample[2];
               }
               else {
-                Point<default_type> x1 (0.0,0.0,0.0), y, x0;
-                Transform::transform_position (y, direct_transform, x1);
-                x1[0] = 1.0;
-                Transform::transform_position (x0, direct_transform, x1);
+                Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
+                Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
                 OS[0] = std::ceil (0.999 * (y-x0).norm());
-                x1[0] = 0.0;
-                x1[1] = 1.0;
-                Transform::transform_position (x0, direct_transform, x1);
+                x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
                 OS[1] = std::ceil (0.999 * (y-x0).norm());
-                x1[1] = 0.0;
-                x1[2] = 1.0;
-                Transform::transform_position (x0, direct_transform, x1);
+                x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
                 OS[2] = std::ceil (0.999 * (y-x0).norm());
               }
 
@@ -149,18 +143,16 @@ namespace MR
 
         value_type value () const {
           if (oversampling) {
-            Point<default_type> d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+            Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             value_type result = 0.0;
-            Point<default_type> s;
+            Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
               for (int y = 0; y < OS[1]; ++y) {
                 s[1] = d[1] + y*inc[1];
                 for (int x = 0; x < OS[0]; ++x) {
                   s[0] = d[0] + x*inc[0];
-                  Point<default_type> pos;
-                  Transform::transform_position (pos, direct_transform, s);
-                  interp.voxel (pos);
+                  interp.voxel (direct_transform * s);
                   if (!interp) continue;
                   else result += interp.value();
                 }
@@ -170,9 +162,7 @@ namespace MR
             return result;
           }
 
-          Point<default_type> pos;
-          Transform::transform_position (pos, direct_transform, x);
-          interp.voxel (pos);
+          interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
         }
         value_type value () { const auto* _this = this; _this->value(); }
@@ -193,23 +183,7 @@ namespace MR
         int OS[3];
         default_type from[3], inc[3];
         default_type norm;
-        const Math::Matrix<default_type> transform_, direct_transform;
-
-        static inline Math::Matrix<default_type> get_direct_transform (const Transform& reference, 
-            const Transform& original, const Math::Matrix<default_type>& transform) {
-          Math::Matrix<default_type> Mr, Mo, direct_transform;
-          reference.voxel2scanner_matrix (Mr);
-          original.scanner2voxel_matrix (Mo);
-
-          if (transform.is_set()) {
-            Math::Matrix<default_type> Mt;
-            Math::mult (Mt, Mo, transform);
-            Mo.swap (Mt);
-          }
-
-          Math::mult (direct_transform, Mo, Mr);
-          return direct_transform;
-        }
+        const transform_type transform_, direct_transform;
     };
 
     //! @}

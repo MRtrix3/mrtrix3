@@ -26,7 +26,7 @@ namespace MR
 {
   namespace Adapter
   {
-    const Math::Matrix<default_type> NoTransform;
+    const transform_type NoTransform = transform_type::Identity();
     const std::vector<int> AutoOverSample;
   }
 }
