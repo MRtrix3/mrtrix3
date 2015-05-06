@@ -27,7 +27,6 @@
 #include <mutex>
 
 #include "progressbar.h"
-#include "ptr.h"
 #include "thread.h"
 
 #include "math/vector.h"

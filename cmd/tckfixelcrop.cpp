@@ -94,10 +94,10 @@ void run ()
 
   DWI::Tractography::Writer<float> tck_writer (argument[2], properties);
 
-  Ptr< DWI::Tractography::ScalarWriter<float> > tsf_writer;
+  std::unique_ptr< DWI::Tractography::ScalarWriter<float> > tsf_writer;
   Options opt = get_options ("tsf");
   if (opt.size())
-    tsf_writer = new DWI::Tractography::ScalarWriter<float> (opt[0][0], properties);
+    tsf_writer.reset (new DWI::Tractography::ScalarWriter<float> (opt[0][0], properties));
 
   float angular_threshold = 30.0;
   opt = get_options ("angle");

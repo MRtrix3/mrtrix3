@@ -401,7 +401,7 @@ void run() {
 
   Math::Stats::GLMTTest glm_ttest (data, design, contrast);
   Stats::CFE::Enhancer cfe_integrator (connectivity_matrix, cfe_dh, cfe_e, cfe_h);
-  RefPtr<std::vector<double> > empirical_cfe_statistic;
+  std::shared_ptr<std::vector<double> > empirical_cfe_statistic;
 
   Image::Header output_header (input_header);
   output_header.comments().push_back ("num permutations = " + str(num_perms));
@@ -415,7 +415,7 @@ void run() {
 
   // If performing non-stationarity adjustment we need to pre-compute the empirical CFE statistic
   if (do_nonstationary_adjustment) {
-    empirical_cfe_statistic = new std::vector<double> (num_fixels, 0.0);
+    empirical_cfe_statistic.reset(new std::vector<double> (num_fixels, 0.0));
     Stats::PermTest::precompute_empirical_stat (glm_ttest, cfe_integrator, nperms_nonstationary, *empirical_cfe_statistic);
     output_header.comments().push_back ("nonstationary adjustment = true");
     write_fixel_output (output_prefix + "cfe_empirical.msf", *empirical_cfe_statistic, output_header, mask_vox, indexer_vox);
@@ -425,10 +425,10 @@ void run() {
 
   // Precompute default statistic and CFE statistic
   std::vector<value_type> cfe_output (num_fixels, 0.0);
-  RefPtr<std::vector<value_type> > cfe_output_neg;
+  std::shared_ptr<std::vector<value_type> > cfe_output_neg;
   std::vector<value_type> tvalue_output (num_fixels, 0.0);
   if (compute_negative_contrast)
-    cfe_output_neg = new std::vector<value_type> (num_fixels, 0.0);
+    cfe_output_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
 
   Stats::PermTest::precompute_default_permutation (glm_ttest, cfe_integrator, empirical_cfe_statistic, cfe_output, cfe_output_neg, tvalue_output);
 
@@ -441,13 +441,13 @@ void run() {
   opt = get_options ("notest");
   if (!opt.size()) {
     Math::Vector<value_type> perm_distribution (num_perms);
-    RefPtr<Math::Vector<value_type> > perm_distribution_neg;
+    std::shared_ptr<Math::Vector<value_type> > perm_distribution_neg;
     std::vector<value_type> uncorrected_pvalues (num_fixels, 0.0);
-    RefPtr<std::vector<value_type> > uncorrected_pvalues_neg;
+    std::shared_ptr<std::vector<value_type> > uncorrected_pvalues_neg;
 
     if (compute_negative_contrast) {
-      perm_distribution_neg = new Math::Vector<value_type> (num_perms);
-      uncorrected_pvalues_neg = new std::vector<value_type> (num_fixels, 0.0);
+      perm_distribution_neg.reset (new Math::Vector<value_type> (num_perms));
+      uncorrected_pvalues_neg.reset (new std::vector<value_type> (num_fixels, 0.0));
     }
 
     Stats::PermTest::run_permutations (glm_ttest, cfe_integrator, num_perms, empirical_cfe_statistic,

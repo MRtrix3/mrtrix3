@@ -446,9 +446,9 @@ void run ()
           std::vector<value_type> noise_only (num_fixels, 0.0);
 
           // Add noise
-          Math::RNG rng;
+          Math::RNG::Normal<float> rng;
           for (int32_t f = 0; f < num_fixels; ++f) {
-            value_type the_noise = rng.normal();
+            value_type the_noise = rng();
             noisy_test_statistic[f] = truth_statistic[f] * SNR[snr] + the_noise;
             noise_only[f] = the_noise;
           }
