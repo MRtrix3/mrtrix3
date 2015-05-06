@@ -23,7 +23,7 @@
 #ifndef __dwi_tractography_tracking_method_h__
 #define __dwi_tractography_tracking_method_h__
 
-
+#include "memory.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
 
@@ -51,18 +51,18 @@ namespace MR
           values             (shared.source_buffer.dim(3))
         {
           if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
+            act_method_additions.reset (new ACT::ACT_Method_additions (S));
         }
 
         MethodBase (const MethodBase& that) :
           pos                 (0.0, 0.0, 0.0),
           dir                 (0.0, 0.0, 1.0),
           S                   (that.S),
-          rng                 (that.rng),
+          uniform_rng         (that.uniform_rng),
           values              (that.values.size())
         {
           if (S.is_act())
-            act_method_additions = new ACT::ACT_Method_additions (S);
+            act_method_additions.reset (new ACT::ACT_Method_additions (S));
         }
 
 
@@ -120,13 +120,14 @@ namespace MR
 
       private:
         const SharedBase& S;
-        Ptr<ACT::ACT_Method_additions> act_method_additions;
+        copy_ptr<ACT::ACT_Method_additions> act_method_additions;
 
 
       protected:
-        Math::RNG rng;
+        Math::RNG::Uniform<value_type> uniform_rng;
         std::vector<value_type> values;
 
+        Point<value_type> random_direction ();
         Point<value_type> random_direction (value_type max_angle, value_type sin_max_angle);
         Point<value_type> random_direction (const Point<value_type>& d, value_type max_angle, value_type sin_max_angle);
         Point<value_type> rotate_direction (const Point<value_type>& reference, const Point<value_type>& direction);
@@ -138,13 +139,26 @@ namespace MR
 
 
 
+    Point<value_type> MethodBase::random_direction ()
+    {
+      Point<value_type> d;
+      do {
+        d[0] = 2.0 * uniform_rng() - 1.0;
+        d[1] = 2.0 * uniform_rng() - 1.0;
+        d[2] = 2.0 * uniform_rng() - 1.0;
+      } while (d.norm2() > 1.0);
+      d.normalise();
+      return d;
+    }
+
+
     Point<value_type> MethodBase::random_direction (value_type max_angle, value_type sin_max_angle)
     {
-      value_type phi = 2.0 * Math::pi * rng.uniform();
+      value_type phi = 2.0 * Math::pi * uniform_rng();
       value_type theta;
       do {
-        theta = max_angle * rng.uniform();
-      } while (sin_max_angle * rng.uniform() > sin (theta));
+        theta = max_angle * uniform_rng();
+      } while (sin_max_angle * uniform_rng() > sin (theta));
       return (Point<value_type> (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)));
     }
 

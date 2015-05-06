@@ -153,7 +153,7 @@ namespace MR {
                       item.parents.back().element == 0x9230U) { // multi-frame item
                     if (in_frames) {
                       calc_distance();
-                      frames.push_back (RefPtr<Frame> (new Frame (*this)));
+                      frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
                       frame_offset += dim[0] * dim[1] * (bits_alloc/8);
                     }
                     else 
@@ -261,7 +261,7 @@ namespace MR {
         calc_distance();
 
         if (frame_offset > 0)
-          frames.push_back (RefPtr<Frame> (new Frame (*this)));
+          frames.push_back (std::shared_ptr<Frame> (new Frame (*this)));
 
         for (size_t n = 0; n < frames.size(); ++n) 
           frames[n]->data = data + frames[n]->frame_offset;

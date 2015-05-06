@@ -20,6 +20,8 @@
 
 */
 
+#include <unistd.h>
+
 #include <gsl/gsl_version.h>
 #include <gsl/gsl_errno.h>
 
@@ -28,7 +30,6 @@
 #include "progressbar.h"
 #include "file/path.h"
 #include "file/config.h"
-#include "version.h"
 
 #define MRTRIX_HELP_COMMAND "less"
 
@@ -76,6 +77,8 @@ namespace MR
     std::vector<ParsedOption> option;
     int log_level = 1;
     bool fail_on_warn = false;
+    bool stderr_to_file = false;
+    bool terminal_use_colour = true;
 
     int argc = 0;
     char** argv = NULL;
@@ -118,6 +121,10 @@ namespace MR
       {
         File::Config::init ();
 
+        //CONF option: HelpCommand
+        //CONF default: less
+        //CONF the command to use to display each command's help page (leave
+        //CONF empty to send directly to the terminal).
         const std::string help_display_command = File::Config::get ("HelpCommand", MRTRIX_HELP_COMMAND); 
 
         if (help_display_command.size()) {
@@ -149,14 +156,16 @@ namespace MR
       std::string version_string ()
       {
         std::string version = 
-          "== " + App::NAME + " " + ( project_version ? project_version : MRTRIX_GIT_VERSION ) + " ==\n" +
+          "== " + App::NAME + " " + ( project_version ? project_version : mrtrix_version ) + " ==\n" +
           str(8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
-          " version, built " __DATE__ + ( project_version ? " against MRtrix " MRTRIX_GIT_VERSION : "" ) + ", using GSL " + gsl_version + "\n"
+          " version, built " __DATE__ 
+          + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
+          + ", using GSL " + gsl_version + "\n"
           "Author(s): " + AUTHOR + "\n" +
           COPYRIGHT + "\n";
 
@@ -281,7 +290,7 @@ namespace MR
         for (size_t i = 0; i < REFERENCES.size(); ++i)
           s += indent_newlines (REFERENCES[i]) + "\n\n";
       }
-      s += std::string("---\n\nMRtrix ") + MRTRIX_GIT_VERSION + ", built " + build_date + "\n\n"
+      s += std::string("---\n\nMRtrix ") + mrtrix_version + ", built " + build_date + "\n\n"
         "\n\n**Author:** " + AUTHOR 
         + "\n\n**Copyright:** " + COPYRIGHT + "\n\n";
 
@@ -364,6 +373,10 @@ namespace MR
         WARN ("existing output files will be overwritten");
         overwrite_files = true;
       }
+      //CONF option: FailOnWarn
+      //CONF default: 0 (false)
+      //CONF A boolean value specifying whether MRtrix applications should
+      //CONF abort as soon as any (otherwise non-fatal) warning is issued.
       if (get_options ("failonwarn").size() || File::Config::get_bool ("FailOnWarn", false))
         fail_on_warn = true;
     }
@@ -465,6 +478,17 @@ namespace MR
       }
 
       File::Config::init ();
+      
+      //CONF option: TerminalColor
+      //CONF default: 1 (true)
+      //CONF A boolean value to indicate whether colours should be used in the terminal.
+      terminal_use_colour = stderr_to_file ? false : File::Config::get_bool ("TerminalColor", 
+#ifdef MRTRIX_WINDOWS
+          false
+#else
+          true
+#endif
+          ); 
 
       load_standard_options();
 
@@ -499,6 +523,13 @@ namespace MR
       setvbuf (stderr, NULL, _IONBF, 0);
       setvbuf (stdout, NULL, _IOLBF, 0);
 #endif
+
+      try {
+        stderr_to_file = Path::is_file (STDERR_FILENO);
+      } catch (...) {
+        DEBUG ("Unable to determine nature of stderr; assuming socket");
+        stderr_to_file = false;
+      }
 
       argc = cmdline_argc;
       argv = cmdline_argv;

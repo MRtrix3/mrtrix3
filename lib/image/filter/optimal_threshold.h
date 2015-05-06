@@ -23,7 +23,7 @@
 #ifndef __image_filter_optimal_threshold_h__
 #define __image_filter_optimal_threshold_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/threaded_loop.h"
 #include "image/min_max.h"
@@ -44,47 +44,36 @@ namespace MR
 
           class MeanStdFunctor {
             public:
-              MeanStdFunctor (double& overall_sum, double& overall_sum_sqr) : 
-                overall_sum (overall_sum), overall_sum_sqr (overall_sum_sqr),
-                sum (0.0), sum_sqr (0.0) { }
-
-              ~MeanStdFunctor () {
-                overall_sum += sum;
-                overall_sum_sqr += sum_sqr;
-              }
-
-              template <class VoxelType>
-                void operator() (VoxelType& vox) {
-                  double in = vox.value();
-                  sum += in;
-                  sum_sqr += Math::pow2 (in);
-                }
-
-              double& overall_sum;
-              double& overall_sum_sqr;
-              double sum, sum_sqr;
-          };
-
-          class MeanStdFunctorMask {
-            public:
-              MeanStdFunctorMask (double& overall_sum, double& overall_sum_sqr, size_t& overall_count) : 
+              MeanStdFunctor (double& overall_sum, double& overall_sum_sqr, size_t& overall_count) :
                 overall_sum (overall_sum), overall_sum_sqr (overall_sum_sqr), overall_count (overall_count),
                 sum (0.0), sum_sqr (0.0), count (0) { }
 
-              ~MeanStdFunctorMask () {
+              ~MeanStdFunctor () {
                 overall_sum += sum;
                 overall_sum_sqr += sum_sqr;
                 overall_count += count;
               }
 
-        template <class VoxelType, class MaskVoxelType>
+              template <class VoxelType, class MaskVoxelType>
               void operator() (VoxelType vox, MaskVoxelType mask) {
                 if (mask.value()) {
                   double in = vox.value();
-                  sum += in;
-                  sum_sqr += Math::pow2 (in);
-                  ++count;
+                  if (std::isfinite(in)) {
+                    sum += in;
+                    sum_sqr += Math::pow2 (in);
+                    ++count;
+                  }
                 }
+              }
+
+              template <class VoxelType>
+              void operator() (VoxelType vox) {
+                  double in = vox.value();
+                  if (std::isfinite(in)) {
+                    sum += in;
+                    sum_sqr += Math::pow2 (in);
+                    ++count;
+                  }
               }
 
               double& overall_sum;
@@ -108,41 +97,26 @@ namespace MR
               template <class VoxelType>
               void operator() (VoxelType& vox) {
                 double in = vox.value();
-                if (in > threshold) {
-                  sum += 1;
-                  mean_xy += in;
+                if (std::isfinite(in)) {
+                  if (in > threshold) {
+                    sum += 1;
+                    mean_xy += in;
+                  }
                 }
               }
 
-              const double threshold;
-              double& overall_sum;
-              double& overall_mean_xy;
-              double sum;
-              double mean_xy;
-          };
-
-
-          class CorrelationFunctorMask {
-            public:
-              CorrelationFunctorMask (double threshold, double& overall_sum, double& overall_mean_xy) : 
-                threshold (threshold), overall_sum (overall_sum), overall_mean_xy (overall_mean_xy),
-                sum (0), mean_xy (0.0) { }
-
-              ~CorrelationFunctorMask () {
-                overall_sum += sum;
-                overall_mean_xy += mean_xy;
-              }
-
               template <class VoxelType, class MaskVoxelType>
-                void operator() (VoxelType& vox, MaskVoxelType& mask) {
-                  if (mask.value()) {
-                    double in = vox.value();
+              void operator() (VoxelType& vox, MaskVoxelType& mask) {
+                if (mask.value()) {
+                  double in = vox.value();
+                  if (std::isfinite(in)) {
                     if (in > threshold) {
                       sum += 1;
                       mean_xy += in;
                     }
                   }
                 }
+              }
 
               const double threshold;
               double& overall_sum;
@@ -150,7 +124,6 @@ namespace MR
               double sum;
               double mean_xy;
           };
-
 
       }
       //! \endcond
@@ -172,11 +145,10 @@ namespace MR
                 Image::ThreadedLoop loop (input);
                 if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run (MeanStdFunctorMask (sum, sum_sqr, count), input, replicated_mask);
+                  loop.run (MeanStdFunctor (sum, sum_sqr, count), input, replicated_mask);
                 }
                 else {
-                  loop.run (MeanStdFunctor (sum, sum_sqr), input);
-                  count = Image::voxel_count (input);
+                  loop.run (MeanStdFunctor (sum, sum_sqr, count), input);
                 }
 
                 input_image_mean = sum / count;
@@ -190,7 +162,7 @@ namespace MR
               Image::ThreadedLoop loop (input);
               if (mask) {
                   Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run (CorrelationFunctorMask (threshold, sum, mean_xy), input, replicated_mask);
+                  loop.run (CorrelationFunctor (threshold, sum, mean_xy), input, replicated_mask);
               }
               else
                 loop.run (CorrelationFunctor (threshold, sum, mean_xy), input);
@@ -198,6 +170,7 @@ namespace MR
               mean_xy /= count;
               double covariance = mean_xy - (sum / count) * input_image_mean;
               double mask_stdev = sqrt ((sum - double (sum * sum) / count) / count);
+
               return -covariance / (input_image_stdev * mask_stdev);
             }
 

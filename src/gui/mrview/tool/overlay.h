@@ -26,6 +26,7 @@
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/colourmap_button.h"
 
 namespace MR
 {
@@ -36,7 +37,7 @@ namespace MR
       namespace Tool
       {
 
-        class Overlay : public Base
+        class Overlay : public Base, public ColourMapButtonObserver, public DisplayableVisitor
         {
             Q_OBJECT
 
@@ -45,7 +46,19 @@ namespace MR
             Overlay (Window& main_window, Dock* parent);
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+            void drawOverlays (const Projection& transform) override;
+            int draw_tool_labels (int position, int start_line_num, const Projection&transform) const override;
+
+            void selected_colourmap(size_t index, const ColourMapButton&) override;
+            void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;
+            void toggle_show_colour_bar(bool visible, const ColourMapButton&) override;
+            void toggle_invert_colourmap(bool, const ColourMapButton&) override;
+            void reset_colourmap(const ColourMapButton&) override;
+
+            void render_image_colourbar(const Image& image, const Projection& transform) override;
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
             void image_open_slot ();
@@ -55,7 +68,6 @@ namespace MR
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
             void update_slot (int unused);
             void values_changed ();
-            void colourmap_changed (int index);
             void upper_threshold_changed (int unused);
             void lower_threshold_changed (int unused);
             void upper_threshold_value_changed ();
@@ -82,7 +94,7 @@ namespace MR
              QPushButton* hide_all_button;
              Model* image_list_model;
              QListView* image_list_view;
-             QComboBox* colourmap_combobox;
+             ColourMapButton* colourmap_button;
              AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
              QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
              InterpolateCheckBox* interpolate_check_box;
@@ -94,7 +106,10 @@ namespace MR
                window.updateGL();
              }
              
-             void add_images (VecPtr<MR::Image::Header>& list); 
+             void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
+
+          private:
+             ColourMap::Renderer colourbar_renderer;
         };
 
       }

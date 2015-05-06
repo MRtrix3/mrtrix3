@@ -1,10 +1,11 @@
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
+#include "gui/mrview/colourmap_button.h"
 #include "gui/cursor.h"
 
 namespace MR
@@ -30,7 +31,7 @@ namespace MR
 
 
 
-      class Window : public QMainWindow
+      class Window : public QMainWindow, ColourMapButtonObserver
       {
           Q_OBJECT
 
@@ -38,12 +39,15 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (VecPtr<MR::Image::Header>& list);
+          void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
           Qt::MouseButtons mouse_buttons () const { return buttons_; }
           Qt::KeyboardModifiers modifiers () const { return modifiers_; }
+
+          void selected_colourmap(size_t colourmap, const ColourMapButton&) override;
+          void selected_custom_colour(const QColor&colour, const ColourMapButton&) override;
 
           const Image* image () const {
             return static_cast<const Image*> (image_group->checkedAction());
@@ -59,7 +63,7 @@ namespace MR
               return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
           }
 
-          Mode::Base* get_current_mode () const { return mode; }
+          Mode::Base* get_current_mode () const { return mode.get(); }
           const Point<>& focus () const { return focal_point; }
           const Point<>& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
@@ -106,6 +110,8 @@ namespace MR
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
+          static void add_commandline_options (MR::App::OptionList& options);
+
         signals:
           void focusChanged ();
           void targetChanged ();
@@ -116,6 +122,8 @@ namespace MR
           void modeChanged ();
           void imageChanged ();
           void scalingChanged ();
+          void volumeChanged (size_t);
+          void volumeGroupChanged (size_t);
 
         public slots:
           void on_scaling_changed ();
@@ -132,7 +140,6 @@ namespace MR
           void select_mouse_mode_slot (QAction* action);
           void select_tool_slot (QAction* action);
           void select_plane_slot (QAction* action);
-          void select_colourmap_slot ();
           void invert_scaling_slot ();
           void full_screen_slot ();
           void toggle_annotations_slot ();
@@ -156,7 +163,7 @@ namespace MR
           void about_slot ();
           void aboutQt_slot ();
 
-          void process_batch_command ();
+          void process_commandline_options ();
 
 
 
@@ -165,13 +172,11 @@ namespace MR
           QPoint mouse_position_, mouse_displacement_;
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
-          std::vector<std::string> batch_commands;
 
 
           class GLArea : public QGLWidget {
             public:
               GLArea (Window& parent);
-              QSize minimumSizeHint () const;
               QSize sizeHint () const;
 
             protected:
@@ -202,7 +207,7 @@ namespace MR
 
           GLArea* glarea;
           QTimer* glrefresh_timer;
-          Ptr<Mode::Base> mode;
+          std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
 
@@ -215,13 +220,13 @@ namespace MR
           int anatomical_plane, annotations, colourbar_position_index;
           bool snap_to_image_axes_and_voxel;
 
-          QMenu *image_menu,
-                *colourmap_menu;
+          QMenu *image_menu;
+
+          ColourMapButton *colourmap_button;
 
           QActionGroup *mode_group,
                        *tool_group,
                        *image_group,
-                       *colourmap_group,
                        *mode_action_group,
                        *plane_group;
 
@@ -230,7 +235,6 @@ namespace MR
                   *properties_action,
 
                   **tool_actions,
-                  **colourmap_actions,
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,

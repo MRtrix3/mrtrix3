@@ -24,6 +24,7 @@
 #include "image/voxel.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
+#include "memory.h"
 #include "math/rng.h"
 #include "image/loop.h"
 #include "image/threaded_loop.h"
@@ -53,16 +54,16 @@ DESCRIPTION
   "the stack, and push their output as a new entry on the stack. "
   "For example:"
   
-  + "$ mrcalc a.mif 2 -mult r.mif"
+  + "    $ mrcalc a.mif 2 -mult r.mif"
   
-  + "performs the operation r = a x 2 for every voxel a,r in "
+  + "performs the operation r = 2*a for every voxel a,r in "
   "images a.mif and r.mif respectively. Similarly:"
   
-  + "$ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
+  + "    $ mrcalc a.mif -neg b.mif -div -exp 9.3 -mult r.mif"
   
   + "performs the operation r = 9.3*exp(-a/b), and:"
   
-  + "$ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
+  + "    $ mrcalc a.mif b.mif -add c.mif d.mif -mult 4.2 -add -div r.mif"
   
   + "performs r = (a+b)/(c*d+4.2)."
   
@@ -170,7 +171,7 @@ class Chunk : public std::vector<complex_type> {
 class ThreadLocalStorageItem {
   public:
     Chunk chunk;
-    Ptr<complex_vox_type> vox;
+    copy_ptr<complex_vox_type> vox;
 };
 
 class ThreadLocalStorage : public std::vector<ThreadLocalStorageItem> {
@@ -219,14 +220,21 @@ class StackEntry {
       arg (entry) { }
 
     StackEntry (Evaluator* evaluator_p) : 
-      arg (NULL),
+      arg (nullptr),
       evaluator (evaluator_p) { }
 
     void load () {
       if (!arg) 
         return;
+      auto search = buffer_list.find (arg);
+      if (search != buffer_list.end()) {
+        DEBUG (std::string ("image \"") + arg + "\" already loaded - re-using exising buffer");
+        buffer = search->second;
+        return;
+      }
       try {
-        buffer = new Image::Buffer<complex_type> (arg);
+        buffer.reset (new Image::Buffer<complex_type> (arg));
+        buffer_list.insert (std::make_pair (arg, buffer));
       }
       catch (Exception) {
         std::string a = lowercase (arg);
@@ -234,24 +242,28 @@ class StackEntry {
         else if (a == "-nan")  { value = -std::numeric_limits<real_type>::quiet_NaN(); }
         else if (a ==  "inf")  { value =  std::numeric_limits<real_type>::infinity(); }
         else if (a == "-inf")  { value = -std::numeric_limits<real_type>::infinity(); }
-        else if (a == "rand")  { value = 0.0; rng = new Math::RNG(); rng_gausssian = false; } 
-        else if (a == "randn") { value = 0.0; rng = new Math::RNG(); rng_gausssian = true; } 
+        else if (a == "rand")  { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = false; } 
+        else if (a == "randn") { value = 0.0; rng.reset (new Math::RNG()); rng_gausssian = true; } 
         else                   { value =  to<complex_type> (arg); }
       }
-      arg = NULL;
+      arg = nullptr;
     }
 
     const char* arg;
-    RefPtr<Evaluator> evaluator;
-    RefPtr<Image::Buffer<complex_type> > buffer;
-    Ptr<Math::RNG> rng;
+    std::shared_ptr<Evaluator> evaluator;
+    std::shared_ptr<Image::Buffer<complex_type> > buffer;
+    copy_ptr<Math::RNG> rng;
     complex_type value;
     bool rng_gausssian;
 
     bool is_complex () const;
 
+    static std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> buffer_list;
+
     Chunk& evaluate (ThreadLocalStorage& storage) const;
 };
+
+std::map<std::string, std::shared_ptr<Image::Buffer<complex_type>>> StackEntry::buffer_list;
 
 
 class Evaluator
@@ -305,8 +317,16 @@ inline Chunk& StackEntry::evaluate (ThreadLocalStorage& storage) const
   if (evaluator) return evaluator->evaluate (storage);
   if (rng) {
     Chunk& chunk = storage.next();
-    for (size_t n = 0; n < chunk.size(); ++n)
-      chunk[n] = rng_gausssian ? rng->normal() : rng->uniform(); 
+    if (rng_gausssian) {
+      std::normal_distribution<real_type> dis (0.0, 1.0);
+      for (size_t n = 0; n < chunk.size(); ++n)
+        chunk[n] = dis (*rng);
+    }
+    else {
+      std::uniform_real_distribution<real_type> dis (0.0, 1.0);
+      for (size_t n = 0; n < chunk.size(); ++n)
+        chunk[n] = dis (*rng);
+    }
     return chunk;
   }
   return storage.next();
@@ -604,7 +624,7 @@ class ThreadFunctor {
 
       storage.push_back (ThreadLocalStorageItem());
       if (entry.buffer) {
-        storage.back().vox = new complex_vox_type (*entry.buffer);
+        storage.back().vox.reset (new complex_vox_type (*entry.buffer));
         storage.back().chunk.resize (chunk_size);
         return;
       }

@@ -109,9 +109,9 @@ namespace MR
 
           draw_button = new QToolButton (this);
           draw_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
-          QAction* action = new QAction (QIcon (":/draw.svg"), tr ("Draw / erase"), this);
-          action->setShortcut (tr ("D"));
-          action->setToolTip (tr ("Add/remove voxels to/from ROI"));
+          QAction* action = new QAction (QIcon (":/draw.svg"), tr ("Edit"), this);
+          action->setShortcut (tr ("E"));
+          action->setToolTip (tr ("Add/remove voxels to/from ROI\n\nUse left mouse button to add voxels,\nright mouse button to erase"));
           action->setCheckable (true);
           action->setEnabled (false);
           connect (action, SIGNAL (toggled(bool)), this, SLOT (draw_slot ()));
@@ -161,7 +161,7 @@ namespace MR
           action->setChecked (false);
           edit_mode_group->addAction (action);
           rectangle_button->setDefaultAction (action);
-          grid_layout->addWidget (rectangle_button, 0, 0, 1, 1);
+          grid_layout->addWidget (rectangle_button, 0, 0);
 
           fill_button = new QToolButton (this);
           fill_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -172,11 +172,7 @@ namespace MR
           action->setChecked (false);
           edit_mode_group->addAction (action);
           fill_button->setDefaultAction (action);
-          grid_layout->addWidget (fill_button, 0, 1, 1, 1);
-
-          layout = new HBoxLayout;
-          layout->setContentsMargins (0, 0, 0, 0);
-          layout->setSpacing (0);
+          grid_layout->addWidget (fill_button, 0, 1);
 
           brush_button = new QToolButton (this);
           brush_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -187,14 +183,15 @@ namespace MR
           action->setChecked (true);
           edit_mode_group->addAction (action);
           brush_button->setDefaultAction (action);
-          layout->addWidget (brush_button, 1);
+          grid_layout->addWidget (brush_button, 0, 2);
+          
+          QLabel* label = new QLabel (tr("brush size: "));
+          grid_layout->addWidget (label, 1, 0, 1, 2, Qt::AlignRight);
 
           brush_size_button = new AdjustButton (this);
           brush_size_button->setToolTip (tr ("Brush size (in mm)"));
           brush_size_button->setEnabled (true);
-          layout->addWidget (brush_size_button, 1);
-
-          grid_layout->addLayout (layout, 1, 0, 1, 2);
+          grid_layout->addWidget (brush_size_button, 1, 2);
 
           main_box->addWidget (group_box, 0);
 
@@ -206,7 +203,7 @@ namespace MR
           slice_copy_group->setEnabled (false);
           connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
 
-          layout->addWidget (new QLabel ("Copy from slice: "), 0, 0);
+          layout->addWidget (new QLabel ("Copy slice: "), 0, Qt::AlignRight);
 
           copy_from_above_button = new QToolButton (this);
           copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -291,9 +288,9 @@ namespace MR
           std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (new MR::Image::Header (names[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (names[n])));
 
           load (list);
         }
@@ -311,6 +308,7 @@ namespace MR
           try {
             MR::Image::Header header;
             header.info() = roi->info();
+            header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
             if (name.size()) {
               MR::Image::Buffer<bool> buffer (name, header);
@@ -347,7 +345,7 @@ namespace MR
 
 
 
-        void ROI::load (VecPtr<MR::Image::Header>& list) 
+        void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           list_model->load (list);
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
@@ -471,7 +469,7 @@ namespace MR
 
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i]);
+              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
               //if (is_3D) 
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
@@ -721,36 +719,41 @@ namespace MR
 
 
 
+        void ROI::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("ROI Analysis tool options")
 
+            + Option ("roi.load", "Loads the specified image on the overlay tool.")
+            +   Argument ("image").type_image_in()
 
-        bool ROI::process_batch_command (const std::string& cmd, const std::string& args)
+            + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")
+            +   Argument ("value").type_float (0.0, 1.0, 1.0);
+        }
+
+        bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          (void)cmd;
-          (void)args;
-          /*
-
-          // BATCH_COMMAND roi.load path # Loads the specified image on the roi tool.
-          if (cmd == "roi.load") {
-            VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (args)); }
+          if (opt.opt->is ("roi.load")) {
+            std::vector<std::unique_ptr<MR::Image::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;
           }
 
-          // BATCH_COMMAND roi.opacity value # Sets the roi opacity to floating value [0-1].
-          else if (cmd == "roi.opacity") {
+          if (opt.opt->is ("roi.opacity")) {
             try {
-              float n = to<float> (args);
-              opacity_slider->setSliderPosition(int(1.e3f*n));
+              float value = opt[0];
+              opacity_slider->setSliderPosition(int(1.e3f*value));
             }
             catch (Exception& e) { e.display(); }
             return true;
           }
 
-          */
           return false;
         }
+
 
 
       }

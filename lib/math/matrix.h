@@ -23,13 +23,14 @@
 #ifndef __math_matrix_h__
 #define __math_matrix_h__
 
+#include <memory>
+
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_blas.h>
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 
-#include "ptr.h"
 #include "file/ofstream.h"
 #include "math/math.h"
 #include "math/vector.h"
@@ -616,7 +617,7 @@ namespace MR
 
         //! read the matrix data from \a stream and assign to the matrix \a M
         friend std::istream& operator>> (std::istream& stream, Matrix& M) {
-          std::vector< RefPtr< std::vector<ValueType> > > V;
+          std::vector<std::unique_ptr<std::vector<ValueType>>> V;
           std::string sbuf, entry;
 
           while (getline (stream, sbuf)) {
@@ -624,7 +625,7 @@ namespace MR
             if (sbuf.empty()) 
               continue;
 
-            V.push_back (RefPtr< std::vector<ValueType> > (new std::vector<ValueType>));
+            V.push_back (std::unique_ptr<std::vector<ValueType>> (new std::vector<ValueType>));
 
             std::istringstream line (sbuf);
             while (line >> entry) 
@@ -1174,6 +1175,23 @@ namespace MR
         gsl_permutation_free (p);
         return det;
       }
+
+    //! compute condition number of \a A
+    /** \param A input matrix
+     * \return the condition number
+     */
+    template <typename ValueType>
+      inline double cond (const Matrix<ValueType>& A)
+      {
+        Math::Matrix<double> D = A;
+        Math::Matrix<double> V (A.columns(), A.columns());
+        Math::Vector<double> S (A.columns());
+        Math::Vector<double> work (A.columns());
+
+        gsl_linalg_SV_decomp (D.gsl(), V.gsl(), S.gsl(), work.gsl());
+        return S[0] / S[S.size()-1];
+      }
+
     /** @} */
 
 

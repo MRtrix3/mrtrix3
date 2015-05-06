@@ -38,7 +38,7 @@ namespace MR {
         if (size() == 0) 
           return dim;
 
-        const Image* first[] = { (*this)[0], (*this)[0] };
+        const Image* first[] = { (*this)[0].get(), (*this)[0].get() };
 
 
         for (size_t current_entry = 1; current_entry < size(); current_entry++) {
@@ -50,7 +50,7 @@ namespace MR {
             if (dim[0] && dim[0] != current_dim[0]) 
               throw Exception ("mismatch between number of images along sequence dimension");
 
-            first[0] = first[1] = (*this)[current_entry];
+            first[0] = first[1] = (*this)[current_entry].get();
             dim[0] = current_dim[0];
             dim[1] = current_dim[1];
             current_dim[0] = current_dim[1] = 1;
@@ -60,7 +60,7 @@ namespace MR {
             if (dim[0] && dim[0] != current_dim[0]) 
               throw Exception ("mismatch between number of images along sequence dimension");
 
-            first[0] = (*this)[current_entry];
+            first[0] = (*this)[current_entry].get();
             dim[0] = current_dim[0];
             current_dim[0] = 1;
             current_dim[1]++;

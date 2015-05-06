@@ -44,7 +44,7 @@ namespace MR
           ~Default () { close(); }
 
         protected:
-          std::vector<RefPtr<File::MMap> > mmaps;
+          std::vector<std::shared_ptr<File::MMap> > mmaps;
           int64_t bytes_per_segment;
 
           virtual void load ();

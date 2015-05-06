@@ -29,6 +29,7 @@
 #include "image/voxel.h"
 #include "math/versor.h"
 #include "image/interp/linear.h"
+#include "image/interp/nearest.h"
 
 
 namespace MR
@@ -59,6 +60,9 @@ namespace MR
           void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
 
+          void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
+          { if(show_colour_bar) visitor.render_image_colourbar(*this, projection); }
+
           void get_axes (int plane, int& x, int& y) {
             if (plane) {
               if (plane == 1) {
@@ -82,10 +86,19 @@ namespace MR
 
         private:
           BufferType buffer;
+          MR::Image::Interp::Nearest<VoxelType> nearest_interp;
 
         public:
           InterpVoxelType interp;
           VoxelType& voxel () { return interp; }
+          cfloat trilinear_value(const Point<float> &scanner_point) {
+            if(interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
+            return interp.value();
+          }
+          cfloat nearest_neighbour_value(const Point<float> &scanner_point) {
+            if(nearest_interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
+            return nearest_interp.value();
+          }
 
         private:
           GL::Texture texture2D[3];

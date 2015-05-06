@@ -82,18 +82,18 @@ const OptionGroup TermOption = OptionGroup ("Options for terminating the optimis
 
 const OptionGroup SFOption = OptionGroup ("Thresholds for single-fibre voxel selection")
 
-    + Option ("volume_ratio", "required volume ratio between largest FOD lobe and the sum of all other positive lobes in the voxel")
+    + Option ("volume_ratio", "maximal volume ratio between the sum of all other positive lobes in the voxel, and the largest FOD lobe (default = 0.15)")
       + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_VOLUME_RATIO, 1.0)
 
-    + Option ("dispersion_multiplier", "dispersion of FOD lobe must not exceed some threshold as determined by this factor and FOD dispersion statistics. "
-                                       "The threshold is: (mean + (multiplier * (mean - min))). "
+    + Option ("dispersion_multiplier", "dispersion of FOD lobe must not exceed some threshold as determined by this multiplier and the FOD dispersion in other single-fibre voxels. "
+                                       "The threshold is: (mean + (multiplier * (mean - min))); default = 1.0. "
                                        "Criterion is only applied in second pass of RF estimation.")
       + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER, 100.0)
 
-    + Option ("integral_multiplier", "integral of FOD lobe must not be outside some range as determined by this factor and FOD lobe integral statistics. "
-                                     "The range is: (mean +- (multiplier * stdev)). "
+    + Option ("integral_multiplier", "integral of FOD lobe must not be outside some range as determined by this multiplier and FOD lobe integral in other single-fibre voxels. "
+                                     "The range is: (mean +- (multiplier * stdev)); default = 2.0. "
                                      "Criterion is only applied in second pass of RF estimation.")
-      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1.0);
+      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1e6);
 
 
 
@@ -117,7 +117,7 @@ void usage () {
 
   OPTIONS
 
-    + DWI::GradImportOptions
+    + DWI::GradImportOptions()
     + DWI::ShellOption
 
     + Option ("mask", "provide an initial mask image")

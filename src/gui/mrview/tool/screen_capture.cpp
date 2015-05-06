@@ -35,142 +35,181 @@ namespace MR
       namespace Tool
       {
 
-
-        ScreenCapture::ScreenCapture (Window& main_window, Dock* parent) :
+        Capture::Capture (Window& main_window, Dock* parent) :
           Base (main_window, parent)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
-          QGroupBox* rotate_group_box = new QGroupBox ("Rotate");
+          QGroupBox* rotate_group_box = new QGroupBox (tr("Rotate"));
           GridLayout* rotate_layout = new GridLayout;
           rotate_layout->setContentsMargins (5, 5, 5, 5);
           rotate_layout->setSpacing (5);
           main_box->addWidget (rotate_group_box);
           rotate_group_box->setLayout (rotate_layout);
 
-          rotate_layout->addWidget (new QLabel ("Axis X"), 0, 0);
+          rotation_type_combobox = new QComboBox;
+          rotation_type_combobox->insertItem (0, tr("World"), RotationType::World);
+          rotation_type_combobox->insertItem (1, tr("Camera"), RotationType::Eye);
+          connect (rotation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_rotation_type(int)));
+          rotate_layout->addWidget(rotation_type_combobox, 0, 1, 1, 4);
+
+          rotate_layout->addWidget (new QLabel (tr("Axis: ")), 1, 0);
           rotation_axis_x = new AdjustButton (this);
-          rotate_layout->addWidget (rotation_axis_x, 0, 1);
+          rotate_layout->addWidget (rotation_axis_x, 1, 1);
           rotation_axis_x->setValue (0.0);
           rotation_axis_x->setRate (0.1);
 
-          rotate_layout->addWidget (new QLabel ("Axis Y"), 1, 0);
           rotation_axis_y = new AdjustButton (this);
-          rotate_layout->addWidget (rotation_axis_y, 1, 1);
+          rotate_layout->addWidget (rotation_axis_y, 1, 2);
           rotation_axis_y->setValue (0.0);
           rotation_axis_y->setRate (0.1);
 
-          rotate_layout->addWidget (new QLabel ("Axis Z"), 2, 0);
           rotation_axis_z = new AdjustButton (this);
-          rotate_layout->addWidget (rotation_axis_z, 2, 1);
+          rotate_layout->addWidget (rotation_axis_z, 1, 3);
           rotation_axis_z->setValue (1.0);
           rotation_axis_z->setRate (0.1);
 
-          rotate_layout->addWidget (new QLabel ("Angle"), 3, 0);
+          rotate_layout->addWidget (new QLabel (tr("Angle: ")), 2, 0);
           degrees_button = new AdjustButton (this);
-          rotate_layout->addWidget (degrees_button, 3, 1);
+          rotate_layout->addWidget (degrees_button, 2, 1, 1, 3);
           degrees_button->setValue (0.0);
           degrees_button->setRate (0.1);
 
-          QGroupBox* translate_group_box = new QGroupBox ("Translate");
+          connect (rotation_axis_x, SIGNAL (valueChanged()), this, SLOT (reset()));
+          connect (rotation_axis_y, SIGNAL (valueChanged()), this, SLOT (reset()));
+          connect (rotation_axis_z, SIGNAL (valueChanged()), this, SLOT (reset()));
+          connect (degrees_button, SIGNAL (valueChanged()), this, SLOT (reset()));
+
+          QGroupBox* translate_group_box = new QGroupBox (tr("Translate"));
           GridLayout* translate_layout = new GridLayout;
           translate_layout->setContentsMargins (5, 5, 5, 5);
           translate_layout->setSpacing (5);
           main_box->addWidget (translate_group_box);
           translate_group_box->setLayout (translate_layout);
 
-          translate_layout->addWidget (new QLabel ("Axis X"), 0, 0);
+          translation_type_combobox = new QComboBox;
+          translation_type_combobox->insertItem (0, tr("Voxel"), TranslationType::Voxel);
+          translation_type_combobox->insertItem (1, tr("Scanner"), TranslationType::Scanner);
+          connect (translation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_translation_type(int)));
+          translate_layout->addWidget(translation_type_combobox, 0, 1, 1, 4);
+
+          translate_layout->addWidget (new QLabel (tr("Axis: ")), 1, 0);
           translate_x = new AdjustButton (this);
-          translate_layout->addWidget (translate_x, 0, 1);
+          translate_layout->addWidget (translate_x, 1, 1);
           translate_x->setValue (0.0);
           translate_x->setRate (0.1);
 
-          translate_layout->addWidget (new QLabel ("Axis Y"), 1, 0);
           translate_y = new AdjustButton (this);
-          translate_layout->addWidget (translate_y, 1, 1);
+          translate_layout->addWidget (translate_y, 1, 2);
           translate_y->setValue (0.0);
           translate_y->setRate (0.1);
 
-          translate_layout->addWidget (new QLabel ("Axis Z"), 2, 0);
           translate_z = new AdjustButton (this);
-          translate_layout->addWidget (translate_z, 2, 1);
+          translate_layout->addWidget (translate_z, 1, 3);
           translate_z->setValue (0.0);
           translate_z->setRate (0.1);
 
-          QGroupBox* volume_group_box = new QGroupBox ("Volume");
+          connect (translate_x, SIGNAL (valueChanged()), this, SLOT (reset()));
+          connect (translate_y, SIGNAL (valueChanged()), this, SLOT (reset()));
+          connect (translate_z, SIGNAL (valueChanged()), this, SLOT (reset()));
+
+          QGroupBox* volume_group_box = new QGroupBox (tr("Volume"));
           GridLayout* volume_layout = new GridLayout;
           volume_layout->setContentsMargins (5, 5, 5, 5);
           volume_layout->setSpacing (5);
           main_box->addWidget (volume_group_box);
           volume_group_box->setLayout (volume_layout);
 
-          volume_layout->addWidget (new QLabel ("Axis"), 0, 0);
+          volume_layout->addWidget (new QLabel (tr("Axis: ")), 0, 0);
           volume_axis = new QSpinBox (this);
           volume_axis->setMinimum (3);
           volume_axis->setValue (3);
           volume_layout->addWidget (volume_axis, 0, 1);
 
-          volume_layout->addWidget (new QLabel ("Target"), 1, 0);
-          target_volume = new AdjustButton (this);
-          volume_layout->addWidget (target_volume, 1, 1);
-          target_volume->setValue (0.0);
-          target_volume->setRate (0.1);
+          volume_layout->addWidget (new QLabel (tr("Target: ")), 0, 2);
+          target_volume = new QSpinBox (this);
+          volume_layout->addWidget (target_volume, 0, 3);
+          target_volume->setMinimum (0);
+          target_volume->setValue (0);
 
-          QGroupBox* FOV_group_box = new QGroupBox ("FOV");
+          connect (volume_axis, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
+          connect (target_volume, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
+
+          QGroupBox* FOV_group_box = new QGroupBox (tr("FOV"));
           GridLayout* FOV_layout = new GridLayout;
           FOV_layout->setContentsMargins (5, 5, 5, 5);
           FOV_layout->setSpacing (5);
           main_box->addWidget (FOV_group_box);
           FOV_group_box->setLayout (FOV_layout);
 
-          FOV_layout->addWidget (new QLabel ("Multiplier"), 0, 0);
+          FOV_layout->addWidget (new QLabel (tr("Multiplier: ")), 0, 0);
           FOV_multipler = new AdjustButton (this);
           FOV_layout->addWidget (FOV_multipler, 0, 1);
           FOV_multipler->setValue (1.0);
           FOV_multipler->setRate (0.01);
 
+          connect (FOV_multipler, SIGNAL (valueChanged()), this, SLOT (reset()));
 
-          QGroupBox* output_group_box = new QGroupBox ("Output");
+          QGroupBox* output_group_box = new QGroupBox (tr("Output"));
           main_box->addWidget (output_group_box);
           GridLayout* output_grid_layout = new GridLayout;
           output_group_box->setLayout (output_grid_layout);
 
-          output_grid_layout->addWidget (new QLabel ("Prefix"), 0, 0);
+          output_grid_layout->addWidget (new QLabel (tr("Prefix: ")), 0, 0);
           prefix_textbox = new QLineEdit ("screenshot", this);
           output_grid_layout->addWidget (prefix_textbox, 0, 1);
-          connect (prefix_textbox, SIGNAL (editingFinished()), this, SLOT (on_output_update()));
+          connect (prefix_textbox, SIGNAL (textChanged(const QString&)), this, SLOT (on_output_update()));
 
-          folder_button = new QPushButton ("Select output folder", this);
+          folder_button = new QPushButton (tr("Select output folder"), this);
           folder_button->setToolTip (tr ("Output Folder"));
           connect (folder_button, SIGNAL (clicked()), this, SLOT (select_output_folder_slot ()));
           output_grid_layout->addWidget (folder_button, 1, 0, 1, 2);
 
-          QGroupBox* capture_group_box = new QGroupBox ("Capture");
+          QGroupBox* capture_group_box = new QGroupBox (tr("Capture"));
           main_box->addWidget (capture_group_box);
           GridLayout* capture_grid_layout = new GridLayout;
           capture_group_box->setLayout (capture_grid_layout);
 
-          capture_grid_layout->addWidget (new QLabel ("Start Index"), 0, 0);
+          capture_grid_layout->addWidget (new QLabel (tr("Start Index: ")), 0, 0);
           start_index = new QSpinBox (this);
           start_index->setMinimum (0);
+          start_index->setMinimumWidth(50);
           start_index->setMaximum (std::numeric_limits<int>::max());
           start_index->setValue (0);
           capture_grid_layout->addWidget (start_index, 0, 1);
 
-          capture_grid_layout->addWidget (new QLabel ("Frames"), 1, 0);
+          capture_grid_layout->addWidget (new QLabel (tr("Frames: ")), 0, 2);
           frames = new QSpinBox (this);
+          frames->setMinimumWidth(50);
           frames->setMinimum (0);
           frames->setMaximum (std::numeric_limits<int>::max());
           frames->setValue (1);
-          capture_grid_layout->addWidget (frames, 1, 1);
+          capture_grid_layout->addWidget (frames, 0, 3);
 
-          QPushButton* preview = new QPushButton ("Preview", this);
+          QPushButton* preview = new QPushButton (this);
+          preview->setToolTip(tr("Preview play"));
+          preview->setIcon(QIcon (":/play.svg"));
           connect (preview, SIGNAL (clicked()), this, SLOT (on_screen_preview()));
-          capture_grid_layout->addWidget (preview, 2, 0, 1, 2);
+          capture_grid_layout->addWidget (preview, 2, 0);
 
-          QPushButton* capture = new QPushButton ("Record", this);
+          QPushButton* stop = new QPushButton (this);
+          stop->setToolTip (tr ("Stop"));
+          stop->setIcon(QIcon (":/stop.svg"));
+          connect (stop, SIGNAL (clicked()), this, SLOT (on_screen_stop()));
+          capture_grid_layout->addWidget (stop, 2, 1);
+
+          rewind_button= new QPushButton (this);
+          rewind_button->setToolTip (tr ("Rewind"));
+          rewind_button->setIcon(QIcon (":/rewind.svg"));
+          rewind_button->setAutoRepeat(true);
+          connect (rewind_button, SIGNAL (clicked()), this, SLOT (on_screen_rewind()));
+          capture_grid_layout->addWidget (rewind_button, 2, 2);
+
+          QPushButton* capture = new QPushButton (this);
+          capture->setToolTip (tr ("Record"));
+          capture->setIcon(QIcon (":/record.svg"));
           connect (capture, SIGNAL (clicked()), this, SLOT (on_screen_capture()));
-          capture_grid_layout->addWidget (capture, 3, 0, 1, 2);
+          capture_grid_layout->addWidget (capture, 2, 3);
 
           main_box->addStretch ();
 
@@ -179,17 +218,39 @@ namespace MR
 
 
 
+        void Capture::on_rotation_type(int index) {
+          rotation_type = static_cast<RotationType>(rotation_type_combobox->itemData(index).toInt());
+          reset();
+        }
+
+        void Capture::on_translation_type(int index) {
+          translation_type = static_cast<TranslationType>(translation_type_combobox->itemData(index).toInt());
+          reset();
+        }
 
 
-        void ScreenCapture::on_screen_preview () { run (false); }
 
-        void ScreenCapture::on_screen_capture () { run (true); }
+        void Capture::on_screen_preview () { if(!is_playing) run (false); }
 
+        void Capture::on_screen_capture () { if(!is_playing) run (true); }
 
-        void ScreenCapture::run (bool with_capture) 
+        void Capture::on_screen_stop () { is_playing = false; }
+
+        void Capture::on_screen_rewind ()
+        {
+          if(!is_playing) {
+            rewind_press_counter = rewind_button->isDown() ? rewind_press_counter + 1 : 1;
+            rewind_button->setAutoRepeatInterval(std::max(200 / (int)rewind_press_counter, 25));
+            run (false, true);
+          }
+        }
+
+        void Capture::run (bool with_capture, bool reverse)
         {
           if (!window.image())
             return;
+
+          is_playing = true;
 
           Image::VoxelType& vox (window.image()->interp);
 
@@ -212,28 +273,42 @@ namespace MR
           if (std::isnan (target_volume->value()))
             target_volume->setValue(0.0);
 
-          if (volume_axis->value() >= ssize_t (vox.ndim()))
-            volume_axis->setValue (vox.ndim()-1);
-
-          if (target_volume->value() >= vox.dim(volume_axis->value()))
-            target_volume->setValue (vox.dim(volume_axis->value())-1);
-
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
           if (window.snap_to_image () && degrees_button->value() > 0.0)
             window.set_snap_to_image (false);
-          float radians = degrees_button->value() * (Math::pi / 180.0) / frames->value();
-          float volume = vox[volume_axis->value()];
-          float volume_inc = (target_volume->value() - volume) / frames->value();
+
+
+          float frames_value = reverse ? -frames->value() : frames->value();
+
+          int volume = 0, volume_inc = 0;
+          if (volume_axis->value() < ssize_t (vox.ndim())) {
+            if (target_volume->value() >= vox.dim(volume_axis->value()))
+              target_volume->setValue (vox.dim(volume_axis->value())-1);
+            volume = vox[volume_axis->value()];
+            volume_inc = target_volume->value() / frames_value;
+          }
+
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
-          int first_index = start_index->value();
-          int i = first_index;
+          float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
+          size_t first_index = start_index->value();
+          size_t i, upper_limit;
 
+          if(reverse) {
+            i = 0;
+            upper_limit = std::min(first_index, rewind_press_counter * rewind_press_counter);
+          } else {
+            i = first_index;
+            upper_limit = frames_value;
+          }
 
-          for (; i < first_index + frames->value(); ++i) {
-            if (with_capture) 
+          for (; i < upper_limit; ++i) {
+            if (!is_playing)
+              break;
+
+            if (with_capture)
               this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
 
             // Rotation
@@ -243,32 +318,48 @@ namespace MR
             axis[1] = rotation_axis_y->value();
             axis[2] = rotation_axis_z->value();
             Math::Versor<float> rotation (radians, axis.ptr());
-            orientation *= rotation;
+
+            switch (rotation_type) {
+              case RotationType::World:
+                orientation = rotation*orientation;
+                break;
+              case RotationType::Eye:
+                orientation *= rotation;
+                break;
+              default:
+                break;
+            }
+
             this->window.set_orientation (orientation);
 
             // Translation
+            Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
+            trans_vec /= frames_value;
+            if(translation_type == TranslationType::Voxel)
+              trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
+
             Point<float> focus (this->window.focus());
-            focus[0] += translate_x->value() / frames->value();
-            focus[1] += translate_y->value() / frames->value();
-            focus[2] += translate_z->value() / frames->value();
+            focus += trans_vec;
             window.set_focus (focus);
             Point<float> target (this->window.target());
-            target[0] += translate_x->value() / frames->value();
-            target[1] += translate_y->value() / frames->value();
-            target[2] += translate_z->value() / frames->value();
+            target += trans_vec;
             window.set_target (target);
 
             // Volume
-            volume += volume_inc;
-            window.set_image_volume (volume_axis->value(), std::round (volume));
+            if (volume_axis->value() < ssize_t (vox.ndim())) {
+              volume += volume_inc;
+              window.set_image_volume (volume_axis->value(), volume);
+            }
 
             // FOV
-            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames->value())));
+            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
 
-            start_index->setValue (i + 1);
+            start_index->setValue (reverse ? first_index - i - 1: i + 1);
             this->window.updateGL();
-            qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
+            qApp->processEvents();
           }
+
+          is_playing = false;
         }
 
 
@@ -276,7 +367,7 @@ namespace MR
 
 
 
-        void ScreenCapture::select_output_folder_slot ()
+        void Capture::select_output_folder_slot ()
         {
           directory->setPath(QFileDialog::getExistingDirectory (this, tr("Directory"), directory->path()));
           QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
@@ -290,7 +381,7 @@ namespace MR
 
 
 
-        void ScreenCapture::on_output_update () {
+        void Capture::on_output_update () {
           start_index->setValue (0);
         }
 
@@ -299,26 +390,42 @@ namespace MR
 
 
 
-        bool ScreenCapture::process_batch_command (const std::string& cmd, const std::string& args)
+
+
+        void Capture::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Screen Capture tool options")
+
+            + Option ("capture.folder", "Set the output folder for the screen capture tool.")
+            +   Argument ("path").type_text()
+
+            + Option ("capture.prefix", "Set the output file prefix for the screen capture tool.")
+            +   Argument ("string").type_text()
+
+            + Option ("capture.grab", "Start the screen capture process.");
+        }
+
+        bool Capture::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND capture.folder path # Set the output folder for the screen capture tool
-          if (cmd == "capture.folder") {
-            directory->setPath (args.c_str());
+          if (opt.opt->is ("capture.folder")) {
+            directory->setPath (std::string(opt[0]).c_str());
             QString path (shorten(directory->path().toUtf8().constData(), 20, 0).c_str());
             folder_button->setText(path);
             on_output_update ();
             return true;
           }
 
-          // BATCH_COMMAND capture.prefix path # Set the output file prefix for the screen capture tool
-          if (cmd == "capture.prefix") {
-            prefix_textbox->setText (args.c_str());
+          if (opt.opt->is ("capture.prefix")) {
+            prefix_textbox->setText (std::string(opt[0]).c_str());
             on_output_update ();
             return true;
           }
 
-          // BATCH_COMMAND capture.grab # Start the screen capture process
-          if (cmd == "capture.grab") {
+          if (opt.opt->is ("capture.grab")) {
+            this->window.updateGL();
+            qApp->processEvents();
             on_screen_capture();
             return true;
           }

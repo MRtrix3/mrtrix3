@@ -84,18 +84,22 @@ namespace MR
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
-              std::string value;
-              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
-                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
-                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
-                imvox[0] = vox[0];
-                imvox[1] = vox[1];
-                imvox[2] = vox[2];
-                cfloat val = imvox.value();
-                value = "value: " + str (val);
+              std::string value_str = "value: ";
+              cfloat value = image()->interpolate() ?
+                image()->nearest_neighbour_value(window.focus()) :
+                image()->trilinear_value(window.focus());
+              if(std::isnan(std::abs(value)))
+                value_str += "?";
+              else value_str += str(value);
+              projection.render_text (value_str, LeftEdge | BottomEdge, 2);
+
+              // Draw additional labels from tools
+              QList<QAction*> tools = window.tools()->actions();
+              for (size_t i = 0, line_num = 3, N = tools.size(); i < N; ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  line_num += dock->tool->draw_tool_labels (LeftEdge | BottomEdge, line_num, projection);
               }
-              else value = "value: ?";
-              projection.render_text (value, LeftEdge | BottomEdge, 2);
             }
 
             if (window.show_comments()) {
@@ -105,15 +109,17 @@ namespace MR
 
             projection.done_render_text();
 
-            if (window.show_colourbar())
+            if (window.show_colourbar()) {
               window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index, image()->scale_inverted());
 
-            QList<QAction*> tools = window.tools()->actions();
-            for (int i = 0; i < tools.size(); ++i) {
-              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
-              if (dock)
-                dock->tool->drawOverlays (projection);
+              QList<QAction*> tools = window.tools()->actions();
+              for (int i = 0; i < tools.size(); ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  dock->tool->drawOverlays (projection);
+              }
             }
+
           }
 
 done_painting:
@@ -130,7 +136,11 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          const auto &header = image()->header();
+          float increment = snap_to_image() ?
+            x * header.vox(plane()) :
+            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+          move_in_out (increment, *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
         }

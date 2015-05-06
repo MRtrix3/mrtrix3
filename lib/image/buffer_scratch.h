@@ -41,19 +41,19 @@ namespace MR
     {
       public:
         template <class Template>
-          BufferScratch (const Template& info) :
+          explicit BufferScratch (const Template& info) :
             ConstInfo (info),
-            data_ (new value_type [Image::voxel_count (*this)]) {
-              Info::datatype_ = DataType::from<value_type>();
+            data_ (Image::voxel_count (*this)) {
+              datatype_ = DataType::from<value_type>();
               zero();
             }
 
         template <class Template>
-          BufferScratch (const Template& info, const std::string& label) :
+          explicit BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
-            data_ (new value_type [Image::voxel_count (*this)]) {
-              zero();
+            data_ (Image::voxel_count (*this)) {
               datatype_ = DataType::from<value_type>();
+              zero();
               name_ = label;
             }
 
@@ -63,7 +63,7 @@ namespace MR
         voxel_type voxel() { return voxel_type (*this); }
 
         void zero () {
-          memset (data_, 0, Image::voxel_count (*this) * sizeof(ValueType));
+          memset (address(0), 0, data_.size()*sizeof(value_type));
         }
 
         value_type get_value (size_t index) const {
@@ -74,23 +74,22 @@ namespace MR
           data_[index] = val;
         }
 
-        value_type* address (size_t index) const {
+        const value_type* address (size_t index) const {
+          return &data_[index];
+        }
+
+        value_type* address (size_t index) {
           return &data_[index];
         }
 
         friend std::ostream& operator<< (std::ostream& stream, const BufferScratch& V) {
           stream << "scratch image data \"" << V.name() << "\": " + str (Image::voxel_count (V))
-            + " voxels in " + V.datatype().specifier() + " format, stored at address " + str ((void*) V.data_);
+            + " voxels in " + V.datatype().specifier() + " format, stored at address " + str ((void*) V.address(0));
           return stream;
         }
 
       protected:
-        Ptr<value_type,true> data_;
-
-        template <class InfoType>
-          BufferScratch& operator= (const InfoType&) { assert (0); return *this; }
-
-        BufferScratch (const BufferScratch& that) : ConstInfo (that) { assert (0); }
+        std::vector<value_type> data_;
     };
 
 
@@ -104,21 +103,17 @@ namespace MR
         template <class Template>
         BufferScratch (const Template& info) :
             ConstInfo (info),
-            bytes_ ((Image::voxel_count (*this)+7)/8),
-            data_ (new uint8_t [bytes_])
+            data_ ((Image::voxel_count (*this)+7)/8, 0)
         {
           Info::datatype_ = DataType::Bit;
-          zero();
         }
 
         template <class Template>
         BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
-            bytes_ ((Image::voxel_count (*this)+7)/8),
-            data_ (new uint8_t [bytes_])
+            data_ ((Image::voxel_count (*this)+7)/8, 0)
         {
           Info::datatype_ = DataType::Bit;
-          zero();
           name_ = label;
         }
 
@@ -128,32 +123,28 @@ namespace MR
         voxel_type voxel() { return voxel_type (*this); }
 
         void zero () {
-          memset (data_, 0x00, bytes_);
+          std::fill (data_.begin(), data_.end(), 0);
         }
 
         bool get_value (size_t index) const {
-          return get<bool> (data_, index);
+          return get<bool> (address(), index);
         }
 
         void set_value (size_t index, bool val) {
-          put<bool> (val, data_, index);
+          put<bool> (val, address(), index);
         }
+
+        void* address () { return &data_[0]; }
+        const void* address () const { return &data_[0]; }
 
         friend std::ostream& operator<< (std::ostream& stream, const BufferScratch& V) {
           stream << "scratch image data \"" << V.name() << "\": " + str (Image::voxel_count (V))
-            + " voxels in boolean format (" << V.bytes_ << " bytes), stored at address " + str ((void*) V.data_);
+            + " voxels in boolean format (" << V.data_.size() << " bytes), stored at address " + str ((void*) V.address());
           return stream;
         }
 
       protected:
-        size_t bytes_;
-        Ptr<uint8_t,true> data_;
-
-        template <class InfoType>
-          BufferScratch& operator= (const InfoType&) { assert (0); return *this; }
-
-        BufferScratch (const BufferScratch& that) : ConstInfo (that), bytes_ (that.bytes_) { assert (0); }
-
+        std::vector<uint8_t> data_;
     };
 
 

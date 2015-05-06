@@ -1,6 +1,6 @@
 function write_mrtrix (image, filename)
 
-% function: read_mrtrix (image, filename)
+% function: write_mrtrix (image, filename)
 %
 % write the data contained in the structure 'image' in the MRtrix 
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').

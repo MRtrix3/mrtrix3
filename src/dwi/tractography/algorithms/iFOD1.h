@@ -147,20 +147,15 @@ namespace MR
           const Point<Tracking::value_type> init_dir (dir);
 
           for (size_t n = 0; n < S.max_seed_attempts; n++) {
-            if (init_dir.valid()) {
-              dir = rand_dir (init_dir);
-            } else {
-              dir.set (rng.normal(), rng.normal(), rng.normal());
-              dir.normalise();
-            }
+            dir = init_dir.valid() ? rand_dir (init_dir) : random_direction();
             value_type val = FOD (dir);
             if (std::isfinite (val))
               if (val > S.init_threshold)
                 return true;
           }
 
-        } else {
-
+        } 
+        else {
           dir = S.init_dir;
           value_type val = FOD (dir);
           if (std::isfinite (val))
@@ -212,7 +207,7 @@ namespace MR
                 max_truncation = val/max_val;
             }
 
-            if (rng.uniform() < val/max_val) {
+            if (uniform_rng() < val/max_val) {
               dir = new_dir;
               dir.normalise();
               pos += S.step_size * dir;

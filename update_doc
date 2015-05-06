@@ -4,10 +4,11 @@
 folder=$(mktemp -d)
 ( 
   set -e
+  cp format_config_options $folder
   cd $folder
   echo Using temporary folder $folder
 
-  git clone git@github.com:jdtournier/mrtrix3.git mrtrix3
+  git clone git@github.com:MRtrix3/mrtrix3.git mrtrix3
   
   ( 
     cd mrtrix3
@@ -16,7 +17,7 @@ folder=$(mktemp -d)
     ./build 2>/dev/null
   )
 
-  git clone git@github.com:jdtournier/mrtrix3-dev-doc.git 
+  git clone git@github.com:MRtrix3/mrtrix3-dev-doc.git 
   ( 
     set -e 
     cd mrtrix3-dev-doc 
@@ -29,7 +30,7 @@ folder=$(mktemp -d)
   
   
   
-  git clone git@github.com:jdtournier/mrtrix3.wiki.git
+  git clone git@github.com:MRtrix3/mrtrix3.wiki.git
   
   rm -rf mrtrix3.wiki/commands/list
   mkdir -p mrtrix3.wiki/commands/list
@@ -41,21 +42,17 @@ folder=$(mktemp -d)
 **Commands**<br>
 ' > mrtrix3.wiki/commands/_Sidebar.md
   
-  echo 'This section provides the documentation for every command included in
-  MRtrix3. This is the same information that is displayed by each command when
-  invoked without options, or with the `-help` option.
-  
-  Use the sidebar to access the documentation for a particular command.' >\
-  mrtrix3.wiki/commands/MRtrix3-commands.md
-  
   for n in mrtrix3/bin/*; do
     $n __print_usage_markdown__ > mrtrix3.wiki/commands/list/$(basename $n).md
     echo '[['$(basename $n)']]<br>' >> mrtrix3.wiki/commands/_Sidebar.md
   done
+
+  grep -rn --include=\*.h --include=\*.cpp '^\s*//CONF\b ' mrtrix3 | sed -ne 's/^.*CONF \(.*\)/\1/p' | ./format_config_options > mrtrix3.wiki/DesignPrinciples/List-of-configuration-file-options.md
+
   
   (
     cd mrtrix3.wiki
-    git add commands
+    git add commands DesignPrinciples/List-of-configuration-file-options.md
     git commit -m "automatic update of command documentation"
     git push
   )

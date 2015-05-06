@@ -45,6 +45,9 @@ namespace MR
 
 
 
+        //CONF option: NumberOfUndos
+        //CONF default: 16
+        //CONF The number of undo operations permitted in the MRView ROI analysis tool 
         int ROI_Item::number_of_undos = MR::File::Config::get_int ("NumberOfUndos", 16);
         int ROI_Item::current_preset_colour = 0;
         int ROI_Item::new_roi_counter = 0;

@@ -1,5 +1,6 @@
 def getFSLSuffix():
   import os, sys
+  from lib.warnMessage import warnMessage
   fsl_output_type = os.environ.get('FSLOUTPUTTYPE', '')
   if not fsl_output_type:
 	  return ''
@@ -12,6 +13,6 @@ def getFSLSuffix():
   if fsl_output_type == 'NIFTI_PAIR_GZ':
     sys.stderr.write('MRtrix does not support compressed NIFTI pairs; please set FSLOUTPUTTYPE to something else\n')
     exit(1)
-  sys.stderr.write('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail\n')
+  warnMessage('Environment variable FSLOUTPUTTYPE not set; FSL commands may fail\n')
   return 'nii.gz'
 

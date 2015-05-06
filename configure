@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re
 
@@ -345,6 +345,15 @@ def compile (source, compiler_flags = [], linker_flags = []):
   return ret[1]
 
 
+def compare_version (needed, observed):
+  needed = [ float(n) for n in needed.split()[0].split('.') ]
+  observed = [ float(n) for n in observed.split()[0].split('.') ]
+  for n in zip (needed, observed):
+    if n[0] > n[1]:
+      return False
+  return True
+
+
 
 
 
@@ -585,6 +594,7 @@ if 'GSL_CFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
+    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
     
@@ -593,6 +603,7 @@ if 'GSL_LDFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
+    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
     
@@ -1001,19 +1012,34 @@ int main (int argc, char *argv[]) {
 }
 ''', cpp_flags + qt_cflags, ld_flags + qt_ldflags)
     report (gl_test.strip() + '\n')
-    if 'NOT SUPPORTED' in gl_test:
-      report ('''
-WARNING: not all required OpenGL extensions are supported (see above).
-         Some of the graphical user interface components may not be stable on
-         this system.
-''')
+    if not compare_version ('3.3', gl_test):
+      raise RuntimeError
   except:
-    report ('''not found
+    try:
+      gl_test
+      report ('''
+WARNING: your OpenGL implementation does not support version 3.3.
+''')
+    except:
+      report ('''not found
 
 WARNING: no OpenGL implementation found.
-         Some of the graphical user interface components may not be stable on
-         this system.
 ''')
+
+    report ('''
+         You will still be able to build MRtrix3, but you will NOT be
+         able to run the graphical user interface components in this
+         environment.
+
+         For more information, please refer to:
+         https://github.com/MRtrix3/mrtrix3/wiki/troubleshooting-on-Linux#opengl-version-33-not-supported
+
+         If you are running within a remote X11 forwarding environment, please
+         refer to: https://github.com/MRtrix3/mrtrix3/wiki/Remote-display
+''')
+
+
+
   if system == "darwin":
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')

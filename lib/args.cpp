@@ -23,7 +23,6 @@
 #include "args.h"
 #include "app.h"
 #include "debug.h"
-#include "version.h"
 
 #define HELP_WIDTH  80
 
@@ -152,10 +151,12 @@ namespace MR
       if (!format) 
         return std::string (NAME) + ": " + cmd_version;
 
-      std::string mrtrix_version = "MRtrix " MRTRIX_GIT_VERSION;
+      std::string mrtrix_version_string = std::string("MRtrix ") + mrtrix_version;
       std::string date (build_date);
 
-      std::string topline = mrtrix_version + std::string (std::max (1, 40-size(mrtrix_version)-size(App::NAME)/2), ' ') + bold (App::NAME);
+      std::string topline = mrtrix_version_string + 
+        std::string (std::max (1, 40-size(mrtrix_version_string)-size(App::NAME)/2), ' ') 
+        + bold (App::NAME);
       topline += std::string (80-size(topline)-size(date), ' ') + date;
       
       return topline + "\n\n     " + bold (NAME) + ": " + cmd_version;

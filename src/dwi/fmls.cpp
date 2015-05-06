@@ -138,8 +138,7 @@ Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
     az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
     az_el_pairs (row, 1) = std::acos  (d[2]);
   }
-  transform = new Math::SH::Transform<float> (az_el_pairs, lmax);
-
+  transform.reset (new Math::SH::Transform<float> (az_el_pairs, lmax));
 }
 
 

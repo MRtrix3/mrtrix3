@@ -52,6 +52,15 @@ namespace MR
       const uint32_t TransparencyEnabled = 0x00400000;
       const uint32_t LightingEnabled = 0x00800000;
 
+      class Image;
+      namespace Tool { class AbstractFixel; }
+      class DisplayableVisitor
+      {
+        public:
+          virtual void render_image_colourbar(const Image&, const Projection&) {}
+          virtual void render_fixel_colourbar(const Tool::AbstractFixel&, const Projection&) {}
+      };
+
       class Displayable : public QAction
       {
         Q_OBJECT
@@ -61,6 +70,8 @@ namespace MR
           Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
+
+          virtual void request_render_colourbar(DisplayableVisitor&, const Projection&) {}
 
           const std::string& get_filename () const {
             return filename;
@@ -116,6 +127,9 @@ namespace MR
             flags_ = cmap;
           }
 
+          void set_colour (std::array<GLubyte,3> &c) {
+            colour = c;
+          }
 
           void set_use_discard_lower (bool yesno) {
             if (!discard_lower_enabled()) return;
@@ -181,6 +195,7 @@ namespace MR
           class Shader : public GL::Shader::Program {
             public:
               virtual std::string fragment_shader_source (const Displayable& object) = 0;
+              virtual std::string geometry_shader_source (const Displayable&) { return std::string(); }
               virtual std::string vertex_shader_source (const Displayable& object) = 0;
 
               virtual bool need_update (const Displayable& object) const;
@@ -202,9 +217,12 @@ namespace MR
                 update (object);
 
                 GL::Shader::Vertex vertex_shader (vertex_shader_source (object));
+                GL::Shader::Geometry geometry_shader (geometry_shader_source (object));
                 GL::Shader::Fragment fragment_shader (fragment_shader_source (object));
 
                 attach (vertex_shader);
+                if((GLuint)geometry_shader)
+                    attach (geometry_shader);
                 attach (fragment_shader);
                 link();
               }
@@ -262,6 +280,7 @@ namespace MR
           std::array<GLubyte,3> colour;
           size_t colourmap;
           bool show;
+          bool show_colour_bar;
 
 
         signals:

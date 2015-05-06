@@ -37,10 +37,10 @@ namespace MR
     {
 
 
-      RefPtr<Handler::Base> MRtrix_GZ::read (Header& H) const
+      std::shared_ptr<Handler::Base> MRtrix_GZ::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mif.gz"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         File::GZ zf (H.name(), "r");
         std::string first_line = zf.getline();
@@ -64,9 +64,9 @@ namespace MR
         offset += ((4 - (offset % 4)) % 4);
         header << "file: . " << offset << "\nEND\n";
 
-        RefPtr<Handler::Base> handler (new Handler::GZ (H, offset));
-        memcpy (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header(), header.str().c_str(), header.str().size());
-        memset (reinterpret_cast<Handler::GZ*>((Handler::Base*)handler)->header() + header.str().size(), 0, offset - header.str().size());
+        std::shared_ptr<Handler::Base> handler (new Handler::GZ (H, offset));
+        memcpy (reinterpret_cast<Handler::GZ*>(handler.get())->header(), header.str().c_str(), header.str().size());
+        memset (reinterpret_cast<Handler::GZ*>(handler.get())->header() + header.str().size(), 0, offset - header.str().size());
         handler->files.push_back (File::Entry (H.name(), offset));
 
         return handler;
@@ -93,7 +93,7 @@ namespace MR
 
 
 
-      RefPtr<Image::Handler::Base> MRtrix_GZ::create (Header& H) const
+      std::shared_ptr<Image::Handler::Base> MRtrix_GZ::create (Header& H) const
       {
         std::stringstream header;
         header << "mrtrix image\n";
@@ -105,7 +105,7 @@ namespace MR
         while (header.tellp() < offset)
           header << '\0';
 
-        RefPtr<Handler::GZ> handler (new Handler::GZ (H, offset));
+        std::shared_ptr<Handler::GZ> handler (new Handler::GZ (H, offset));
         memcpy (handler->header(), header.str().c_str(), offset);
 
         File::create (H.name());

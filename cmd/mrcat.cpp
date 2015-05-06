@@ -68,15 +68,15 @@ void run () {
     axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  std::vector<Ptr<Image::Buffer<value_type> > > in (num_images);
-  in[0] = new Image::Buffer<value_type> (argument[0]);
+  std::vector<std::unique_ptr<Image::Buffer<value_type>>> in (num_images);
+  in[0].reset (new Image::Buffer<value_type> (argument[0]));
   Image::ConstHeader& header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i] = new Image::Buffer<value_type> (argument[i]);
+    in[i].reset (new Image::Buffer<value_type> (argument[i]));
     for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;

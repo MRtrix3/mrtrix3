@@ -73,6 +73,10 @@ namespace MR
 
       QGLFormat core_format () {
         QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
+        //CONF option: VSync
+        //CONF default: 0 (false)
+        //CONF Whether the screen update should synchronise with the monitor's
+        //CONF vertical refresh (to avoid tearing artefacts). 
         int swap_interval = MR::File::Config::get_int ("VSync", 0);
         f.setSwapInterval (swap_interval);
         bool need_core_profile = 
@@ -81,10 +85,19 @@ namespace MR
 #else
         false;
 #endif
+        //CONF option: NeedOpenGLCoreProfile
+        //CONF default: 0 (true on MacOSX, false otherwise)
+        //CONF Whether the creation of an OpenGL 3.3 context requires it to be
+        //CONF a core profile (needed on newer versions of the ATI drivers on
+        //CONF Linux, for instance).
         if (File::Config::get_bool ("NeedOpenGLCoreProfile", need_core_profile)) {
           f.setVersion (3,3);
           f.setProfile (QGLFormat::CoreProfile);
         }
+        //CONF option: MSAA
+        //CONF default: 0 (false)
+        //CONF How many samples to use for multi-sample anti-aliasing (to
+        //CONF improve display quality). 
         int nsamples = File::Config::get_int ("MSAA", 0);
         if (nsamples > 1) {
           f.setSampleBuffers (true);

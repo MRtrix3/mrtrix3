@@ -51,6 +51,12 @@ namespace MR
             (*this)["timestamp"] = str (Timer::current_time(), TRACTOGRAPHY_FILE_TIMESTAMP_PRECISION);
           }
 
+          void set_version_info () {
+            (*this)["mrtrix_version"] = App::mrtrix_version;
+            if (App::project_version)
+              (*this)["project_version"] = App::project_version;
+          }
+
           ROISet include, exclude, mask;
           Seeding::List seeds;
           std::vector<std::string> comments;

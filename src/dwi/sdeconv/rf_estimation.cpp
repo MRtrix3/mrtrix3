@@ -214,8 +214,7 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   }
 
   // Convert directions from Euclidean space to azimuth/elevation pairs
-  Math::Matrix<float> dirs;
-  DWI::gen_direction_matrix (dirs, rotated_grad, shared.dwis);
+  Math::Matrix<float> dirs = DWI::gen_direction_matrix (rotated_grad, shared.dwis);
 
   try {
 
@@ -249,7 +248,7 @@ Math::Matrix<float> ResponseEstimator::gen_rotation_matrix (const Point<float>& 
   // Here the other two axes are determined at random (but both are orthogonal to the FOD peak direction)
   Math::Matrix<float> R (3, 3);
   R (2, 0) = dir[0]; R (2, 1) = dir[1]; R (2, 2) = dir[2];
-  Point<float> vec2 (rng.uniform(), rng.uniform(), rng.uniform());
+  Point<float> vec2 (rng(), rng(), rng());
   vec2 = dir.cross (vec2);
   vec2.normalise();
   R (0, 0) = vec2[0]; R (0, 1) = vec2[1]; R (0, 2) = vec2[2];

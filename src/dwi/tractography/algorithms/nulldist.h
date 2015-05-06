@@ -65,12 +65,7 @@ namespace MR
       bool init() {
         if (!get_data (source))
           return false;
-        if (!S.init_dir) {
-          dir.set (rng.normal(), rng.normal(), rng.normal());
-          dir.normalise();
-        } else {
-          dir = S.init_dir;
-        }
+        dir = S.init_dir.valid() ? S.init_dir : random_direction();
         return true;
       }
 
@@ -83,7 +78,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() { return rng.uniform(); }
+      float get_metric() { return uniform_rng(); }
 
 
       protected:

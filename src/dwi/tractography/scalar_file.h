@@ -188,6 +188,7 @@ namespace MR
           {
             File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
             // Do NOT set Properties timestamp here! (Must match corresponding .tck file)
+            const_cast<Properties&> (properties).set_version_info();
             create (out, properties, "track scalars");
             current_offset = out.tellp();
           }
@@ -217,7 +218,7 @@ namespace MR
         protected:
 
           const size_t buffer_capacity;
-          Ptr<value_type, true> buffer;
+          std::unique_ptr<value_type[]> buffer;
           size_t buffer_size;
           int64_t current_offset;
 
@@ -242,7 +243,7 @@ namespace MR
               return;
             File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
             out.seekp (current_offset, out.beg);
-            out.write (reinterpret_cast<char*> (&(buffer[0])), sizeof (value_type)*(buffer_size));
+            out.write (reinterpret_cast<char*> (buffer.get()), sizeof(value_type)*buffer_size);
             current_offset = int64_t (out.tellp());
             verify_stream (out);
             update_counts (out);

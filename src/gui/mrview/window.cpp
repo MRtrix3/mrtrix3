@@ -1,5 +1,4 @@
 #include "app.h"
-#include "version.h"
 #include "timer.h"
 #include "file/config.h"
 #include "image/header.h"
@@ -88,15 +87,17 @@ namespace MR
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
+          setMinimumSize (256, 256);
           setFocusPolicy (Qt::StrongFocus);
           QFont font_ = font();
           font_.setPointSize (MR::File::Config::get_int ("FontSize", 10));
           setFont (font_);
+          QSizePolicy policy (QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
+          policy.setHorizontalStretch (255);
+          policy.setVerticalStretch (255);
+          setSizePolicy (policy);
         }
 
-      QSize Window::GLArea::minimumSizeHint () const {
-        return QSize (256, 256);
-      }
       QSize Window::GLArea::sizeHint () const {
         std::string init_size_string = lowercase (MR::File::Config::get ("MRViewInitWindowSize"));
         std::vector<int> init_window_size;
@@ -119,11 +120,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
+              list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -204,24 +205,12 @@ namespace MR
         tool_has_focus (nullptr)
       {
 
-        setDockOptions (AllowTabbedDocks);
+        setDockOptions (AllowTabbedDocks | VerticalTabs);
         setDocumentMode (true);
 
-        Options opt = get_options ("batch");
-        for (size_t n = 0; n < opt.size(); ++n) {
-          std::ifstream batch_file (opt[n][0].c_str());
-          if (!batch_file) 
-            throw Exception ("error opening batch file \"" + opt[n][0] + "\": " + strerror (errno));
-          std::string command;
-          while (getline (batch_file, command)) 
-            batch_commands.push_back (command);
-        }
-
-        opt = get_options ("run");
-        for (size_t n = 0; n < opt.size(); ++n) 
-          batch_commands.push_back (opt[n][0]);
-
-
+        //CONF option: IconSize
+        //CONF default: 24
+        //CONF The size of the icons in the main MRView toolbar.
         setWindowTitle (tr ("MRView"));
         setWindowIcon (QPixmap (":/mrtrix.png"));
         { 
@@ -234,10 +223,14 @@ namespace MR
         QMenu* menu;
         QToolButton* button;
 
-        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::North);
+        setTabPosition (Qt::AllDockWidgetAreas, QTabWidget::East);
 
         // Main toolbar:
 
+        //CONF option: InitialToolBarPosition
+        //CONF default: top
+        //CONF The starting position of the MRView toolbar. Valid values are:
+        //CONF top, bottom, left, right.
         Qt::ToolBarArea toolbar_position = Qt::TopToolBarArea;
         {
           std::string toolbar_pos_spec = lowercase (MR::File::Config::get ("InitialToolBarPosition"));
@@ -250,6 +243,10 @@ namespace MR
           }
         }
 
+        //CONF option: ToolbarStyle
+        //CONF default: 2
+        //CONF The style of the main toolbar buttons in MRView. See Qt's
+        //CONF documentation for Qt::ToolButtonStyle.
         Qt::ToolButtonStyle button_style = static_cast<Qt::ToolButtonStyle> (MR::File::Config::get_int ("ToolbarStyle", 2));
 
         toolbar = new QToolBar ("Main toolbar", this);
@@ -359,12 +356,12 @@ namespace MR
 
         // Colourmap menu:
 
-        colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+        colourmap_button = new ColourMapButton (this, *this, true, true, false);
+        colourmap_button->setText ("Colourmap");
+        colourmap_button->setToolButtonStyle (button_style);
+        colourmap_button->setPopupMode (QToolButton::InstantPopup);
 
-        ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, true);
-        connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-
-        colourmap_menu->addSeparator();
+        QMenu* colourmap_menu = colourmap_button->menu();
 
         invert_scale_action = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_scaling_slot()));
         invert_scale_action->setCheckable (true);
@@ -383,14 +380,7 @@ namespace MR
         image_interpolate_action->setChecked (true);
         addAction (image_interpolate_action);
 
-        button = new QToolButton (this);
-        button->setText ("Colourmap");
-        button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Colourmap menu"));
-        button->setIcon (QIcon (":/colourmap.svg"));
-        button->setPopupMode (QToolButton::InstantPopup);
-        button->setMenu (colourmap_menu);
-        toolbar->addWidget (button);
+        toolbar->addWidget (colourmap_button);
 
 
 
@@ -509,7 +499,6 @@ namespace MR
 #undef TOOL
 #define TOOL(classname, name, description) \
         menu->addAction (new Action<Tool::classname> (tool_group, #name, #description, n++));
-#define TOOL_OPTION(classname, name, description) TOOL(classname, name, description)
         {
           using namespace Tool;
           size_t n = 1;
@@ -618,6 +607,10 @@ namespace MR
 
         set_image_menu ();
 
+        //CONF option: MRViewColourBarPosition
+        //CONF default: bottomright
+        //CONF The position of the colourbar within the main window in MRView.
+        //CONF Valid values are: bottomleft, bottomright, topleft, topright.
         std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
         if (cbar_pos.size()) {
           if (cbar_pos == "bottomleft") colourbar_position_index = 1;
@@ -640,7 +633,6 @@ namespace MR
         mode = nullptr;
         delete glarea;
         delete glrefresh_timer;
-        delete [] colourmap_actions;
       }
 
 
@@ -655,10 +647,10 @@ namespace MR
         if (image_list.empty())
           return;
 
-        VecPtr<MR::Image::Header> list;
+        std::vector<std::unique_ptr<MR::Image::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (new MR::Image::Header (image_list[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -677,8 +669,8 @@ namespace MR
 
 
         try {
-          VecPtr<MR::Image::Header> list;
-          list.push_back (new MR::Image::Header (folder));
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -689,7 +681,7 @@ namespace MR
 
 
 
-      void Window::add_images (VecPtr<MR::Image::Header>& list)
+      void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*this, *list[i]);
@@ -752,7 +744,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
         set_mode_features();
         emit modeChanged();
         updateGL();
@@ -776,6 +768,8 @@ namespace MR
         if (!tool) {
           tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
+          if (MR::File::Config::get_int ("MRViewDockFloating", 0))
+            return;
           for (int i = 0; i < tool_group->actions().size(); ++i) {
             Tool::Dock* other_tool = dynamic_cast<Tool::__Action__*>(tool_group->actions()[i])->dock;
             if (other_tool && other_tool != tool) {
@@ -784,11 +778,17 @@ namespace MR
                 QMainWindow::tabifyDockWidget (list.last(), tool);
               else
                 QMainWindow::tabifyDockWidget (other_tool, tool);
-              tool->show();
+              tool->setFloating (false);
               tool->raise();
               return;
             }
           }
+          //CONF option: MRViewDockFloating
+          //CONF default: 0 (false)
+          //CONF Whether Tools should start docked in the main window, or
+          //CONF floating (detached from the main window).
+          tool->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
+          tool->show();
         }
         if (action->isChecked()) {
           if (!tool->isVisible())
@@ -801,19 +801,25 @@ namespace MR
       }
 
 
-
-
-      void Window::select_colourmap_slot ()
+      void Window::selected_colourmap (size_t colourmap, const ColourMapButton&)
       {
-        Image* imagep = image();
-        if (imagep) {
-          QAction* action = colourmap_group->checkedAction();
-          size_t n = 0;
-          while (action != colourmap_actions[n])
-            ++n;
-          imagep->set_colourmap (n);
-          updateGL();
-        }
+          Image* imagep = image();
+          if (imagep) {
+            imagep->set_colourmap (colourmap);
+            updateGL();
+          }
+      }
+
+
+
+      void Window::selected_custom_colour (const QColor& colour, const ColourMapButton&)
+      {
+          Image* imagep = image();
+          if (imagep) {
+            std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+            imagep->set_colour(c_colour);
+            updateGL();
+          }
       }
 
 
@@ -901,8 +907,15 @@ namespace MR
 
       void Window::reset_view_slot ()
       {
-        if (image())
+        if (image()) {
           mode->reset_event();
+          QList<QAction*> tools = tool_group->actions();
+          for (QAction* action : tools) {
+            Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(action)->dock;
+            if (dock)
+              dock->tool->reset_event();
+          }
+        }
       }
 
 
@@ -941,7 +954,9 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        set_image_volume (3, image()->interp[3]+1);
+        size_t vol = image()->interp[3]+1;
+        set_image_volume (3, vol);
+        emit volumeChanged(vol);
       }
 
 
@@ -949,7 +964,9 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        set_image_volume (3, image()->interp[3]-1);
+        size_t vol = image()->interp[3]-1;
+        set_image_volume (3, vol);
+        emit volumeChanged(vol);
       }
 
 
@@ -957,7 +974,9 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        set_image_volume (4, image()->interp[4]+1);
+        size_t vol = image()->interp[4]+1;
+        set_image_volume (4, vol);
+        emit volumeGroupChanged(vol);
       }
 
 
@@ -965,7 +984,9 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        set_image_volume (4, image()->interp[4]-1);
+        size_t vol = image()->interp[4]-1;
+        set_image_volume (4, vol);
+        emit volumeGroupChanged(vol);
       }
 
 
@@ -976,7 +997,7 @@ namespace MR
         action->setChecked (true);
         image_interpolate_action->setChecked (image()->interpolate());
         size_t cmap_index = image()->colourmap;
-        colourmap_group->actions()[cmap_index]->setChecked (true);
+        colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
         setWindowTitle (image()->interp.name().c_str());
@@ -1026,7 +1047,7 @@ namespace MR
         next_image_action->setEnabled (N>1);
         prev_image_action->setEnabled (N>1);
         reset_windowing_action->setEnabled (N>0);
-        colourmap_menu->setEnabled (N>0);
+        colourmap_button->setEnabled (N>0);
         save_action->setEnabled (N>0);
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
@@ -1143,7 +1164,7 @@ namespace MR
       void Window::about_slot ()
       {
         std::string message = 
-          "<h1>MRView</h1>The MRtrix viewer, version " MRTRIX_GIT_VERSION "<br>"
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + App::mrtrix_version + "<br>"
           "<em>" + str (8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
@@ -1186,11 +1207,11 @@ namespace MR
         gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
 
-        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
 
-        if (batch_commands.size()) 
-          QTimer::singleShot (0, this, SLOT (process_batch_command()));
+        if (MR::App::option.size()) 
+          QTimer::singleShot (0, this, SLOT (process_commandline_options()));
       }
 
 
@@ -1393,189 +1414,232 @@ namespace MR
       }
 
 
-      void Window::process_batch_command ()
+      void Window::process_commandline_options ()
       {
-        assert (batch_commands.size());
+#undef TOOL
+#define TOOL(classname, name, description) \
+          stub = lowercase (#classname "."); \
+          if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
+            tool_group->actions()[tool_id]->setChecked (true); \
+            select_tool_slot (tool_group->actions()[tool_id]); \
+            if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
+              continue; \
+          } \
+          ++tool_id;
+            
+        updateGL();
+        qApp->processEvents();
+
         try {
-          std::string line;
-          do {
-            if (batch_commands.empty())
-              return;
-            line = batch_commands[0];
-            batch_commands.erase (batch_commands.begin(), batch_commands.begin()+1);
-            line = strip (line.substr (0, line.find_first_of ('#')));
-          } while (line.empty());
+          for (size_t copt = 0; copt < MR::App::option.size(); ++copt) {
+            if (copt)
+              qApp->processEvents();
 
-          std::string cmd = line.substr (0, line.find_first_of (" :\t"));
-          std::string args;
-          if (line.size() > cmd.size()+1)
-            args = strip (line.substr (cmd.size()+1));
+            const MR::App::ParsedOption& opt (MR::App::option[copt]);
 
-          // starts of commands proper:
-          
-          // BATCH_COMMAND view.mode index # Switch to view mode specified by the integer index. as per the view menu.
-          if (cmd == "view.mode") { 
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= mode_group->actions().size())
-              throw Exception ("invalid mode index \"" + args + "\" in batch command");
-            select_mode_slot (mode_group->actions()[n]);
-          }
+            // see whether option is claimed by any tools:
+            size_t tool_id = 0;
+            std::string stub;
+#include "gui/mrview/tool/list.h"
 
-          // BATCH_COMMAND view.size width,height # Set the size of the view area, in pixel units.
-          else if (cmd == "view.size") { 
-            std::vector<int> glsize = parse_ints (args);
-            if (glsize.size() != 2)
-              throw Exception ("invalid argument \"" + args + "\" to view.size batch command");
-            QSize oldsize = glarea->size();
-            QSize winsize = size();
-            resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
-          }
 
-          // BATCH_COMMAND view.reset # Reset the view according to current image. This resets the FOV, projection, and focus.
-          else if (cmd == "view.reset") 
-            reset_view_slot();
+            // process general options:
+            if (opt.opt->is ("mode")) { 
+              int n = int(opt[0]) - 1;
+              if (n < 0 || n >= mode_group->actions().size())
+                throw Exception ("invalid mode index \"" + str(n) + "\" in batch command");
+              select_mode_slot (mode_group->actions()[n]);
+              continue;
+            }
 
-          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
-          else if (cmd == "view.fov") { 
-            float fov = to<float> (args);
-            set_FOV (fov);
-            updateGL();
-          }
-          
-          // BATCH_COMMAND view.focus x,y,z # Set the position of the crosshairs in scanner coordinates, with the new position supplied as a comma-separated list of floating-point values. 
-          else if (cmd == "view.focus") { 
-            std::vector<float> pos = parse_floats (args);
-            if (pos.size() != 3) 
-              throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
-            set_focus (Point<> (pos[0], pos[1], pos[2]));
-            updateGL();
-          }
-          
-          // BATCH_COMMAND view.voxel x,y,z # Set the position of the crosshairs in voxel coordinates, relative the image currently displayed. The new position should be supplied as a comma-separated list of floating-point values. 
-          else if (cmd == "view.voxel") { 
-            if (image()) {
-              std::vector<float> pos = parse_floats (args);
+            if (opt.opt->is ("size")) { 
+              std::vector<int> glsize = opt[0];
+              if (glsize.size() != 2)
+                throw Exception ("invalid argument \"" + std::string(opt.args[0]) + "\" to view.size batch command");
+              QSize oldsize = glarea->size();
+              QSize winsize = size();
+              resize (winsize.width() - oldsize.width() + glsize[0], winsize.height() - oldsize.height() + glsize[1]);
+              continue;
+            }
+
+            if (opt.opt->is ("reset")) {
+              reset_view_slot();
+              continue;
+            }
+
+            else if (opt.opt->is ("fov")) { 
+              float fov = opt[0];
+              set_FOV (fov);
+              updateGL();
+              continue;
+            }
+
+            if (opt.opt->is ("focus")) { 
+              std::vector<float> pos = opt[0];
               if (pos.size() != 3) 
-                throw Exception ("batch command \"" + cmd + "\" expects a comma-separated list of 3 floating-point values");
-              set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
+                throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
+              set_focus (Point<> (pos[0], pos[1], pos[2]));
               updateGL();
+              continue;
             }
-          }
 
-          // BATCH_COMMAND view.fov num # Set the field of view, in mm.
-          else if (cmd == "view.fov") { 
-            float fov = to<float> (args);
-            set_FOV (fov);
-            updateGL();
-          }
-          
-          // BATCH_COMMAND view.plane num # Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.
-          else if (cmd == "view.plane") { 
-            int n = to<int> (args);
-            set_plane (n);
-            updateGL();
-          }
+            if (opt.opt->is ("voxel")) { 
+              if (image()) {
+                std::vector<float> pos = opt[0];
+                if (pos.size() != 3) 
+                  throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
+                set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
+                updateGL();
+              }
+              continue;
+            }
 
-          // BATCH_COMMAND view.lock # Set whether view is locked to image axes (0: no, 1: yes).
-          else if (cmd == "view.lock") { 
-            bool n = to<bool> (args);
-            snap_to_image_action->setChecked (n);
-            snap_to_image_slot();
-          }
-
-          // BATCH_COMMAND image.select index # Switch to image number specified, with reference to the list of currently loaded images.
-          else if (cmd == "image.select") {
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= image_group->actions().size())
-              throw Exception ("invalid image index requested in batch command");
-            image_select_slot (image_group->actions()[n]);
-          }
-
-          // BATCH_COMMAND image.load path # Load image specified and make it current.
-          else if (cmd == "image.load") { 
-            VecPtr<MR::Image::Header> list; 
-            try { list.push_back (new MR::Image::Header (args)); }
-            catch (Exception& e) { e.display(); }
-            add_images (list);
-          }
-
-          // BATCH_COMMAND image.reset # Reset the image scaling.
-          else if (cmd == "image.reset") 
-            image_reset_slot();
-
-          // BATCH_COMMAND image.colourmap index # Switch the image colourmap to that specified, as per the colourmap menu.
-          else if (cmd == "image.colourmap") { 
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= colourmap_group->actions().size())
-              throw Exception ("invalid image colourmap index \"" + args + "\" requested in batch command");
-            colourmap_group->actions()[n]->setChecked (true);
-            select_colourmap_slot ();
-          }
-
-          // BATCH_COMMAND image.range min max # Set the image intensity range to that specified
-          else if (cmd == "image.range") { 
-            if (image()) {
-              std::vector<std::string> param = split (args);
-              if (param.size() != 2) 
-                throw Exception ("batch command image.range expects two arguments");
-              image()->set_windowing (to<float> (param[0]), to<float> (param[1]));
+            if (opt.opt->is ("fov")) { 
+              float fov = opt[0];
+              set_FOV (fov);
               updateGL();
+              continue;
             }
-          }
 
-          // BATCH_COMMAND tool.open index # Start the tool specified, indexed as per the tool menu
-          else if (cmd == "tool.open") {
-            int n = to<int> (args) - 1;
-            if (n < 0 || n >= tool_group->actions().size())
-              throw Exception ("invalid tool index \"" + args + "\" requested in batch command");
-            tool_group->actions()[n]->setChecked (true);
-            select_tool_slot (tool_group->actions()[n]);
-          }
-
-          // BATCH_COMMAND window.position x,y # Set the position of the main window, in pixel units.
-          else if (cmd == "window.position") { 
-            std::vector<int> pos = parse_ints (args);
-            if (pos.size() != 2)
-              throw Exception ("invalid argument \"" + args + "\" to view.position batch command");
-            move (pos[0], pos[1]);
-          }
-
-          // BATCH_COMMAND window.fullscreen # Show fullscreen or windowed (0: windowed, 1: fullscreen).
-          else if (cmd == "window.fullscreen") { 
-            bool n = to<bool> (args);
-            full_screen_action->setChecked (n);
-            full_screen_slot();
-          }
-
-          // BATCH_COMMAND exit # quit MRView.
-          else if (cmd == "exit") 
-            qApp->quit();
-
-          else { // process by tool
-            int n = 0; 
-            while (n < tools()->actions().size()) {
-              Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools()->actions()[n])->dock;
-              if (dock)
-                if (dock->tool->process_batch_command (cmd, args)) 
-                  break;
-              ++n;
+            if (opt.opt->is ("plane")) { 
+              int n = opt[0];
+              set_plane (n);
+              updateGL();
+              continue;
             }
-            if (n >= tools()->actions().size())
-              WARN ("batch command \"" + cmd + "\" unclaimed by main window or any active tool - ignored");
+
+            if (opt.opt->is ("lock")) { 
+              bool n = opt[0];
+              snap_to_image_action->setChecked (n);
+              snap_to_image_slot();
+              continue;
+            }
+
+            if (opt.opt->is ("select_image")) {
+              int n = int(opt[0]) - 1;
+              if (n < 0 || n >= image_group->actions().size())
+                throw Exception ("invalid image index requested for option -select_image");
+              image_select_slot (image_group->actions()[n]);
+              continue;
+            }
+
+            if (opt.opt->is ("load")) { 
+              std::vector<std::unique_ptr<MR::Image::Header>> list; 
+              try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+              catch (Exception& e) { e.display(); }
+              add_images (list);
+              continue;
+            }
+
+            if (opt.opt->is ("autoscale")) {
+              image_reset_slot();
+              continue;
+            }
+
+            if (opt.opt->is ("colourmap")) { 
+              int n = int(opt[0]) - 1;
+              if (n < 0 || n >= static_cast<int>(colourmap_button->colourmap_actions.size()))
+                throw Exception ("invalid image colourmap index \"" + str(n+1) + "\" requested in batch command");
+              colourmap_button->set_colourmap_index(n);
+              continue;
+            }
+
+            if (opt.opt->is ("intensity_range")) { 
+              if (image()) {
+                std::vector<float> param = opt[0];
+                if (param.size() != 2) 
+                  throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
+                image()->set_windowing (param[0], param[1]);
+                updateGL();
+              }
+              continue;
+            }
+
+            if (opt.opt->is ("position")) { 
+              std::vector<int> pos = opt[0];
+              if (pos.size() != 2)
+                throw Exception ("invalid argument \"" + std::string(opt[0]) + "\" to -position option");
+              move (pos[0], pos[1]);
+              continue;
+            }
+
+            if (opt.opt->is ("fullscreen")) { 
+              full_screen_action->setChecked (true);
+              full_screen_slot();
+              continue;
+            }
+
+            if (opt.opt->is ("exit")) {
+              qApp->processEvents();
+              qApp->quit();
+            }
+
           }
-
-
-          // end of commands
         }
-
         catch (Exception& E) {
           E.display();
           qApp->quit();
         }
-
-        if (batch_commands.size())
-          QTimer::singleShot (0, this, SLOT (process_batch_command()));
       }
+
+
+      void Window::add_commandline_options (MR::App::OptionList& options) 
+      {
+        options 
+          + OptionGroup ("View options")
+
+          + Option ("mode", "Switch to view mode specified by the integer index. as per the view menu.")
+          +   Argument ("index").type_integer()
+
+          + Option ("load", "Load image specified and make it current.")
+          +   Argument ("image").type_image_in()
+
+          + Option ("reset", "Reset the view according to current image. This resets the FOV, projection, and focus.")
+
+          + Option ("fov", "Set the field of view, in mm.")
+          +   Argument ("value").type_float()
+
+          + Option ("focus", "Set the position of the crosshairs in scanner coordinates, "
+              "with the new position supplied as a comma-separated list of floating-point values.")
+          +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("voxel", "Set the position of the crosshairs in voxel coordinates, "
+              "relative the image currently displayed. The new position should be supplied "
+              "as a comma-separated list of floating-point values.")
+          +   Argument ("x,y,z").type_sequence_float()
+
+          + Option ("plane", "Set the viewing plane, according to the mappping 0: sagittal; 1: coronal; 2: axial.")
+          +   Argument ("index").type_integer (0,0,3)
+
+          + Option ("lock", "Set whether view is locked to image axes (0: no, 1: yes).")
+          +   Argument ("yesno").type_bool()
+
+          + Option ("select_image", "Switch to image number specified, with reference to the list of currently loaded images.")
+          +   Argument ("index").type_integer (0)
+
+          + Option ("autoscale", "Reset the image scaling to automatically determined range.")
+
+          + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
+          +   Argument ("index").type_integer (0)
+
+          + Option ("intensity_range", "Set the image intensity range to that specified")
+          +   Argument ("min,max").type_sequence_int()
+
+
+          + OptionGroup ("Window management options")
+
+          + Option ("size", "Set the size of the view area, in pixel units.")
+          +   Argument ("width,height").type_sequence_int()
+
+          + Option ("position", "Set the position of the main window, in pixel units.")
+          +   Argument ("x,y").type_sequence_int()
+
+          + Option ("fullscreen", "Start fullscreen.")
+
+          + Option ("exit", "quit MRView");
+
+      }
+
 
     }
   }

@@ -23,6 +23,7 @@
 #ifndef __image_handler_pipe_h__
 #define __image_handler_pipe_h__
 
+#include "memory.h"
 #include "image/handler/base.h"
 #include "file/mmap.h"
 
@@ -41,7 +42,7 @@ namespace MR
           ~Pipe ();
 
         protected:
-          Ptr<File::MMap> mmap;
+          std::unique_ptr<File::MMap> mmap;
 
           virtual void load ();
           virtual void unload ();

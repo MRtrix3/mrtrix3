@@ -45,6 +45,7 @@ namespace MR
     extern OptionList OPTIONS;
     extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
     extern OptionGroup __standard_options;
+    extern const char* mrtrix_version;
     extern const char* AUTHOR;
     extern const char* COPYRIGHT;
     extern Description REFERENCES;
@@ -53,9 +54,11 @@ namespace MR
     extern bool overwrite_files;
     extern void (*check_overwrite_files_func) (const std::string& name);
     extern bool fail_on_warn;
+    extern bool terminal_use_colour;
 
     extern int argc;
     extern char** argv;
+    extern bool stderr_to_file;
 
 
 
@@ -189,6 +192,7 @@ namespace MR
           throw Exception (e, msg);
         }
 
+        friend class ParsedOption;
         friend class Options;
         friend class Options::Opt;
         friend void  MR::App::init (int argc, char** argv);
@@ -209,6 +213,11 @@ namespace MR
         const Option* opt;
         //! pointer into \c argv corresponding to the option's first argument
         const char* const* args;
+
+        const ParsedArgument operator[] (size_t num) const {
+          assert (num < opt->size());
+          return ParsedArgument (opt, & (*opt) [num], args[num]);
+        }
 
         //! check whether this option matches the name supplied
         bool operator== (const char* match) const {

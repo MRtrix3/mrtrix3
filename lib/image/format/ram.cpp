@@ -34,10 +34,10 @@ namespace MR
     namespace Format
     {
 
-      RefPtr<Handler::Base> RAM::read (Header& H) const
+      std::shared_ptr<Handler::Base> RAM::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".R"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
         H = *R_header;
@@ -56,11 +56,11 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> RAM::create (Header& H) const
+      std::shared_ptr<Handler::Base> RAM::create (Header& H) const
       {
         Header* R_header = (Header*) to<size_t> (H.name().substr (0, H.name().size()-2));
         *R_header = H;
-        RefPtr<Handler::RAM> handler (new Handler::RAM (H));
+        std::shared_ptr<Handler::RAM> handler (new Handler::RAM (H));
         R_header->__set_handler (handler);
         return handler;
       }

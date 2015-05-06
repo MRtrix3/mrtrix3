@@ -50,19 +50,19 @@ namespace MR
 
         DEBUG ("loading image \"" + name + "\"...");
         addresses.resize (datatype.bits() == 1 && files.size() > 1 ? files.size() : 1);
-        addresses[0] = new uint8_t [files.size() * bytes_per_segment];
+        addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
         if (!addresses[0])
           throw Exception ("failed to allocate memory for image \"" + name + "\"");
 
         if (is_new)
-          memset (addresses[0], 0, files.size() * bytes_per_segment);
+          memset (addresses[0].get(), 0, files.size() * bytes_per_segment);
         else {
           ProgressBar progress ("uncompressing image \"" + name + "\"...",
                                 files.size() * bytes_per_segment / BYTES_PER_ZCALL);
           for (size_t n = 0; n < files.size(); n++) {
             File::GZ zf (files[n].name, "rb");
             zf.seek (files[n].start);
-            uint8_t* address = addresses[0] + n*bytes_per_segment;
+            uint8_t* address = addresses[0].get() + n*bytes_per_segment;
             uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
             while (address < last) {
               zf.read (reinterpret_cast<char*> (address), BYTES_PER_ZCALL);
@@ -75,8 +75,9 @@ namespace MR
         }
 
         if (addresses.size() > 1)
+          //TODO this looks like it needs to be handled explicitly in unload()...
           for (size_t n = 1; n < addresses.size(); n++)
-            addresses[n] = addresses[0] + n*bytes_per_segment;
+            addresses[n].reset (addresses[0].get() + n*bytes_per_segment);
         else
           segsize = std::numeric_limits<size_t>::max();
       }
@@ -96,7 +97,7 @@ namespace MR
               File::GZ zf (files[n].name, "wb");
               if (lead_in)
                 zf.write (reinterpret_cast<const char*> (lead_in), lead_in_size);
-              uint8_t* address = addresses[0] + n*bytes_per_segment;
+              uint8_t* address = addresses[0].get() + n*bytes_per_segment;
               uint8_t* last = address + bytes_per_segment - BYTES_PER_ZCALL;
               while (address < last) {
                 zf.write (reinterpret_cast<const char*> (address), BYTES_PER_ZCALL);

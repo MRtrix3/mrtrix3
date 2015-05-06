@@ -23,15 +23,16 @@
 #include "app.h"
 #include "progressbar.h"
 
-#ifdef MRTRIX_AS_R_LIBRARY
-# include "wrap_r.h"
-# define PROGRESS_PRINT REprintf (
+#ifdef MRTRIX_WINDOWS
+# define CLEAR_LINE_CODE 
 #else
-# define PROGRESS_PRINT fprintf (stderr, 
+# define CLEAR_LINE_CODE +"\033[0K"
 #endif
 
 namespace MR
 {
+
+  extern off_t __stderr_offset;
 
   namespace
   {
@@ -47,21 +48,39 @@ namespace MR
 
 
 
+    inline void __update_progress_cmdline (const std::string& text, bool done) 
+    {
+      if (App::stderr_to_file) {
+        if (!done && __stderr_offset == 0)
+            __stderr_offset = ftello (stderr);
+        else if (__stderr_offset)
+          fseeko (stderr, __stderr_offset, SEEK_SET);
+        __print_stderr (text.c_str());
+        if (done)
+          __stderr_offset = 0;
+      }
+      else {
+        __stderr_offset = done ? 0 : 1;
+        __print_stderr (("\r" + text CLEAR_LINE_CODE).c_str());
+      }
+    }
+
+
     void display_func_cmdline (ProgressInfo& p)
     {
-      if (p.multiplier)
-        PROGRESS_PRINT "\33[2K\r%s: [%3zu%%] %s", App::NAME.c_str(), size_t (p.value), p.text.c_str());
+      if (p.multiplier) 
+        __update_progress_cmdline (printf ("%s: [%3zu%%] %s", App::NAME.c_str(), size_t (p.value), p.text.c_str()), false);
       else
-        PROGRESS_PRINT "\33[2K\r%s: [%s] %s", App::NAME.c_str(), busy[p.value%6], p.text.c_str());
+        __update_progress_cmdline (printf ("%s: [%s] %s", App::NAME.c_str(), busy[p.value%6], p.text.c_str()), false);
     }
 
 
     void done_func_cmdline (ProgressInfo& p)
     {
       if (p.multiplier)
-        PROGRESS_PRINT "\33[2K\r%s: [%3u%%] %s\n", App::NAME.c_str(), 100, p.text.c_str());
+        __update_progress_cmdline (printf ("%s: [%3u%%] %s\n", App::NAME.c_str(), 100, p.text.c_str()), true);
       else
-        PROGRESS_PRINT "\33[2K\r%s: [done] %s\n", App::NAME.c_str(), p.text.c_str());
+        __update_progress_cmdline (printf ("%s: [done] %s\n", App::NAME.c_str(), p.text.c_str()), true);
     }
   }
 

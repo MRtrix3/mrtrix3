@@ -27,7 +27,7 @@
 
 #include "exception.h"
 #include "point.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "file/ofstream.h"
 
@@ -175,11 +175,11 @@ class FODCalcAndSeg
     Image::BufferPreload<float>::voxel_type in;
     Image::BufferScratch<bool>::voxel_type mask;
     DWI::CSDeconv<float> csd;
-    RefPtr<DWI::FMLS::Segmenter> fmls;
+    std::shared_ptr<DWI::FMLS::Segmenter> fmls;
     const size_t lmax;
     std::vector<FODSegResult>& output;
 
-    RefPtr<std::mutex> mutex;
+    std::shared_ptr<std::mutex> mutex;
 
 };
 
@@ -276,7 +276,6 @@ class ResponseEstimator
         shared (csd_shared),
         lmax (lmax),
         output (output),
-        rng (),
         mutex (new std::mutex()) { }
 
     ResponseEstimator (const ResponseEstimator& that) :
@@ -297,9 +296,9 @@ class ResponseEstimator
     const size_t lmax;
     Response& output;
 
-    mutable Math::RNG rng;
+    mutable Math::RNG::Uniform<float> rng;
 
-    RefPtr<std::mutex> mutex;
+    std::shared_ptr<std::mutex> mutex;
 
     Math::Matrix<float> gen_rotation_matrix (const Point<float>&) const;
 

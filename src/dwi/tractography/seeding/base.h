@@ -95,10 +95,9 @@ namespace MR
       class Base {
 
         public:
-          Base (const std::string& in, const Math::RNG& seed_rng, const std::string& desc, const size_t attempts) :
+          Base (const std::string& in, const std::string& desc, const size_t attempts) :
             volume (0.0),
             count (0),
-            rng (seed_rng),
             type (desc),
             name (Path::exists (in) ? Path::basename (in) : in),
             max_attempts (attempts) { }
@@ -126,7 +125,7 @@ namespace MR
           float volume;
           uint32_t count;
           // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
-          Math::RNG rng;
+          Math::RNG::Uniform<float> rng;
           std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 

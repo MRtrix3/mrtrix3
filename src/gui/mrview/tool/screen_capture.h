@@ -39,41 +39,64 @@ namespace MR
       {
 
 
-        class ScreenCapture : public Base
+        class Capture : public Base
         {
           Q_OBJECT
           public:
-            ScreenCapture (Window& main_window, Dock* parent);
-            virtual ~ScreenCapture() {}
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+            Capture (Window& main_window, Dock* parent);
+            virtual ~Capture() {}
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            void reset_event () override { reset(); }
 
           private slots:
+            void on_rotation_type (int);
+            void on_translation_type (int);
             void on_screen_capture ();
             void on_screen_preview ();
+            void on_screen_stop ();
+            void on_screen_rewind ();
             void select_output_folder_slot();
             void on_output_update ();
+            void reset ()
+            {
+              on_screen_stop();
+              rewind_press_counter = 0;
+              start_index->setValue(0);
+            }
+            void reset (int) { reset(); }
 
           private:
-
+            enum RotationType { World, Eye } rotation_type;
+            QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
+
+            enum TranslationType { Voxel, Scanner } translation_type;
+            QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
-            AdjustButton *target_volume;
+
+            QSpinBox *target_volume;
             AdjustButton *FOV_multipler;
             QSpinBox *start_index;
             QSpinBox *frames;
             QSpinBox *volume_axis;
             QLineEdit *prefix_textbox;
+            QPushButton *rewind_button;
             QPushButton *folder_button;
             int axis;
             QDir* directory;
 
-            void run (bool with_capture);
+            bool is_playing;
+            size_t rewind_press_counter;
 
+
+            void run (bool with_capture, bool reverse = false);
         };
 
       }

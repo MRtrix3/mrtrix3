@@ -25,7 +25,7 @@
 #include <set>
 
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -120,8 +120,8 @@ void run ()
   }
 
   // Get the metric & assignment mechanism for connectome construction
-  Ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
-  Ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
+  std::unique_ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
+  std::unique_ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
 
   // Prepare for reading the track data
   Tractography::Properties properties;

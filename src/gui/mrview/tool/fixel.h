@@ -40,18 +40,19 @@ namespace MR
       namespace Tool
       {
 
-        enum FixelColourType { CValue, Direction, Manual };
+        enum FixelColourType { CValue, Direction };
         enum FixelLengthType { Unity, Amplitude, LValue };
 
-        class Fixel : public Displayable {
+        class AbstractFixel : public Displayable {
           public:
-            Fixel (const std::string& filename, Vector& fixel_tool);
+            AbstractFixel (const std::string& filename, Vector& fixel_tool);
 
               class Shader : public Displayable::Shader {
                 public:
                   Shader () : do_crop_to_slice (false), color_type (Direction), length_type (Amplitude) { }
-                  virtual std::string vertex_shader_source (const Displayable& fixel_image);
-                  virtual std::string fragment_shader_source (const Displayable& fixel_image);
+                  std::string vertex_shader_source (const Displayable&) override;
+                  std::string geometry_shader_source (const Displayable& fixel_image) override;
+                  std::string fragment_shader_source (const Displayable& fixel_image) override;
                   virtual bool need_update (const Displayable& object) const;
                   virtual void update (const Displayable& object);
                 protected:
@@ -68,13 +69,10 @@ namespace MR
                   colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
               }
 
-              void load_image ();
+              void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
+              { if(show_colour_bar) visitor.render_fixel_colourbar(*this, projection); }
 
-              void set_colour (float c[3]) {
-                colour[0] = c[0];
-                colour[1] = c[1];
-                colour[2] = c[2];
-              }
+              void load_image ();
 
               void set_line_length_multiplier (float value) {
                 user_line_length_multiplier = value;
@@ -82,6 +80,14 @@ namespace MR
 
               float get_line_length_multiplier () const {
                 return user_line_length_multiplier;
+              }
+
+              void set_line_thickness (float value) {
+                line_thickness = value;
+              }
+
+              float get_line_thickenss () const {
+                return line_thickness;
               }
 
               void set_length_type (FixelLengthType value) {
@@ -100,32 +106,52 @@ namespace MR
                 return colour_type;
               }
 
-              void set_show_colour_bar (bool value) {
-                show_colour_bar = value;
-              }
-
-
-            private:
+            protected:
+              virtual void load_image_buffer() = 0;
               std::string filename;
-              Vector& fixel_tool;
               MR::Image::Header header;
-              MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
-              MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
-              MR::Image::Transform header_transform;
-              ColourMap::Renderer colourbar_renderer;
-              int colourbar_position_index;
-              GL::VertexBuffer vertex_buffer;
-              GL::VertexArrayObject vertex_array_object;
-              GL::VertexBuffer value_buffer;
+              std::vector<Point<float>> buffer_pos;
+              std::vector<Point<float>> buffer_dir;
+              std::vector<float> buffer_val;
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;
-              float colour[3];
+
+            private:
+              Vector& fixel_tool;
+              ColourMap::Renderer colourbar_renderer;
+              int colourbar_position_index;
+              GL::VertexBuffer vertex_buffer;
+              GL::VertexBuffer direction_buffer;
+              GL::VertexArrayObject vertex_array_object;
+              GL::VertexBuffer value_buffer;
               float voxel_size_length_multipler;
               float user_line_length_multiplier;
+              float line_thickness;
               FixelLengthType length_type;
               FixelColourType colour_type;
-              bool show_colour_bar;
+        };
+
+        class Fixel : public AbstractFixel
+        {
+            public:
+              Fixel (const std::string& filename, Vector& fixel_tool);
+              void load_image_buffer () override;
+            private:
+              MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
+              MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
+              MR::Image::Transform header_transform;
+        };
+
+        class PackedFixel : public AbstractFixel
+        {
+            public:
+              PackedFixel (const std::string& filename, Vector& fixel_tool);
+              void load_image_buffer () override;
+            private:
+              MR::Image::Buffer<float> packed_fixel_data;
+              MR::Image::Buffer<float>::voxel_type packed_fixel_vox;
+              MR::Image::Transform header_transform;
         };
 
       }
