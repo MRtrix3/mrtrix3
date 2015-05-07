@@ -169,8 +169,9 @@ namespace MR
 
     protected:
       value_type p[3];
-  };
 
+
+  };
 
   template <typename T> inline Point<T> operator* (T M, const Point<T>& P)
   {
@@ -200,6 +201,25 @@ namespace MR
     stream << "[ " << pt[0] << " " << pt[1] << " " << pt[2] << " ]";
     return (stream);
   }
+
+
+  //=================== Methods to compare 3-D integer point ===================
+  template <typename S = int32_t>
+  struct PointCompare : public std::binary_function< Point< S >,
+                                                     Point< S >,
+                                                     bool >
+  {
+
+    bool operator()( const Point< S >& v1, const Point< S >& v2 ) const
+    {
+
+      return ( v1[ 2 ] < v2[ 2 ] ) ||
+             ( ( v1[ 2 ] == v2[ 2 ]  ) && ( ( v1[ 1 ] < v2[ 1 ] ) ||
+                                            ( ( v1[ 1 ] == v2[ 1 ] ) && ( v1[ 0 ] < v2[ 0 ] ) ) ) );
+    }
+
+  };
+  //============================================================================
 
 
 

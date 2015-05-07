@@ -80,17 +80,16 @@ namespace MR
           memset (indices, 0, vertices * sizeof (uint32_t));
         }
 
-
         uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
         uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
 
+        // make polygon accessible
+        uint32_t indices[ vertices ];
 
       private:
-        uint32_t indices[vertices];
+        //uint32_t indices[vertices];
 
     };
-
-
 
 
     typedef std::vector< Polygon<3> > PolygonList;
@@ -113,10 +112,13 @@ namespace MR
 
         void output_pve_image (const Image::Header&, const std::string&);
 
-
-      private:
+        // make vertices & polygons accessible
         VertexList vertices;
         PolygonList polygons;
+
+      private:
+        //VertexList vertices;
+        //PolygonList polygons;
 
 
         void load_vtk (const std::string&);

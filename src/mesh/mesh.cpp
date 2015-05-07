@@ -284,8 +284,6 @@ namespace MR
 
 
 
-
-
     void Mesh::load_vtk (const std::string& path)
     {
 
