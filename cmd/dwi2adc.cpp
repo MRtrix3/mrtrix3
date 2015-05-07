@@ -45,7 +45,7 @@ void usage ()
     + Argument ("output", "the output image.").type_image_out ();
 
   OPTIONS 
-    + DWI::GradOption;
+    + DWI::GradImportOptions();
 }
 
 
@@ -58,7 +58,7 @@ typedef Image::Buffer<value_type> OutputBufferType;
 
 class DWI2ADC {
   public:
-    DWI2ADC (InputBufferType::voxel_type& dwi_vox, OutputBufferType::voxel_type& adc_vox, const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
+    DWI2ADC (InputBufferType::voxel_type&& dwi_vox, OutputBufferType::voxel_type&& adc_vox, const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
       dwi_vox (dwi_vox), adc_vox (adc_vox), dwi (dwi_vox.dim(dwi_axis)), adc (2), binv (binv), dwi_axis (dwi_axis) { }
 
     void operator() (const Image::Iterator& pos) {
@@ -78,8 +78,8 @@ class DWI2ADC {
     }
 
   protected:
-    InputBufferType::voxel_type dwi_vox;
-    OutputBufferType::voxel_type adc_vox;
+    std::remove_reference<InputBufferType::voxel_type>::type dwi_vox;
+    std::remove_reference<OutputBufferType::voxel_type>::type adc_vox;
     Math::Vector<value_type> dwi, adc;
     const Math::Matrix<value_type>& binv;
     const size_t dwi_axis;
@@ -111,11 +111,8 @@ void run () {
 
   OutputBufferType adc_buffer (argument[1], header);
 
-  auto dwi_vox = dwi_buffer.voxel();
-  auto adc_vox = adc_buffer.voxel();
-
-  Image::ThreadedLoop ("computing ADC values...", dwi_vox, 0, 3)
-    .run (DWI2ADC (dwi_vox, adc_vox, binv, dwi_axis));
+  Image::ThreadedLoop ("computing ADC values...", dwi_buffer, 0, 3)
+    .run (DWI2ADC (dwi_buffer.voxel(), adc_buffer.voxel(), binv, dwi_axis));
 }
 
 

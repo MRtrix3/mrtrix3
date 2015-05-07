@@ -26,7 +26,7 @@
 #include "command.h"
 #include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "file/ofstream.h"
 
@@ -92,10 +92,10 @@ void run ()
       step_size = 1.0;
     }
 
-    Ptr<File::OFStream> dump;
+    std::unique_ptr<File::OFStream> dump;
     Options opt = get_options ("dump");
     if (opt.size())
-      dump = new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc);
+      dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
     ProgressBar progress ("Reading track file... ", header_count);
     Tractography::Streamline<> tck;

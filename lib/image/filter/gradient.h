@@ -23,6 +23,7 @@
 #ifndef __image_filter_gradient_h__
 #define __image_filter_gradient_h__
 
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/info.h"
 #include "image/loop.h"
@@ -140,9 +141,7 @@ namespace MR
 
               const size_t num_volumes = (in.ndim() == 3) ? 1 : in.dim(3);
 
-              Ptr<ProgressBar> progress;
-              if (message.size())
-                progress = new ProgressBar (message, 3 * num_volumes);
+              std::unique_ptr<ProgressBar> progress (message.size() ?  new ProgressBar (message, 3 * num_volumes) : nullptr);
 
               for (size_t vol = 0; vol < num_volumes; ++vol) {
                 if (in.ndim() == 4) {

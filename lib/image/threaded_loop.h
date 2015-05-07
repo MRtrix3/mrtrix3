@@ -52,10 +52,7 @@ namespace MR
       template <class Functor>
         class __Outer;
 
-      template <class Functor>
-        class __RunFunctorIter;
-
-      template <class Functor, class... VoxelType>
+      template <int N, class Functor, class... VoxelType>
         class __RunFunctor;
     }
 
@@ -354,10 +351,6 @@ namespace MR
         //! a dummy object that can be used to construct other Iterators
         const Iterator& iterator () const { return dummy; }
 
-        void start (Iterator& pos) {
-          loop.start (pos);
-        }
-
         //! get next position in the outer loop
         bool next (Iterator& pos) {
           std::lock_guard<std::mutex> lock (mutex);
@@ -380,25 +373,23 @@ namespace MR
             }
 
             __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
-            Thread::run (Thread::multi (loop_thread), "loop threads");
+            loop.start (dummy);
+            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
+            t.wait();
           }
 
 
 
 
-        template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) == 0, int>::type = 0> 
+
+        template <class Functor, class... VoxelType>
           void run (Functor&& functor, VoxelType&&... vox)
           {
-            __RunFunctorIter<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
-            run_outer (loop_thread);
-          }
-
-
-        template <class Functor, class... VoxelType, typename std::enable_if<sizeof...(VoxelType) != 0, int>::type = 0> 
-          void run (Functor&& functor, VoxelType&&... vox)
-          {
-            __RunFunctor<typename std::remove_reference<Functor>::type, typename std::remove_reference<VoxelType>::type...> 
-              loop_thread (*this, functor, vox...);
+            __RunFunctor< 
+              sizeof...(VoxelType),
+              typename std::remove_reference<Functor>::type, 
+                       typename std::remove_reference<VoxelType>::type...
+                         > loop_thread (*this, functor, vox...);
             run_outer (loop_thread);
           }
 
@@ -457,7 +448,6 @@ namespace MR
 
              void execute () {
                Iterator pos (shared.iterator());
-               shared.start (pos);
                while (shared.next (pos))
                  func (pos);
              }
@@ -471,27 +461,9 @@ namespace MR
 
 
 
-       template <class Functor>
-         class __RunFunctorIter
-         {
-           public:
-             __RunFunctorIter (ThreadedLoop& shared_info, const Functor& functor) :
-               func (functor), 
-               loop (shared_info.inner_axes()) { }
-
-             void operator() (Iterator& pos) {
-               for (auto i = loop (pos); i; ++i)
-                 func (pos);
-             }
-
-           protected:
-             typename std::remove_reference<Functor>::type func;
-             LoopInOrder loop;
-         };
 
 
-
-       template <class Functor, class... VoxelType>
+       template <int N, class Functor, class... VoxelType>
          class __RunFunctor
          {
            public:
@@ -514,6 +486,26 @@ namespace MR
              std::tuple<VoxelType...> vox;
          };
 
+
+       template <class Functor, class... VoxelType>
+         class __RunFunctor<0,Functor,VoxelType...>
+         {
+           public:
+             __RunFunctor (ThreadedLoop& shared_info, const Functor& functor, VoxelType&... voxels) :
+               func (functor), 
+               loop (shared_info.inner_axes()),
+               vox (voxels...) { }
+
+             void operator() (Iterator& pos) {
+               for (auto i = loop (pos); i; ++i)
+                 func (pos);
+             }
+
+           protected:
+             typename std::remove_reference<Functor>::type func;
+             LoopInOrder loop;
+             std::tuple<VoxelType...> vox;
+         };
 
 
      }

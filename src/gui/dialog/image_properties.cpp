@@ -156,7 +156,7 @@ namespace MR
       void ImageProperties::write_to_file ()
       {
         assert (save_target);
-        std::string name = File::get_save_name (this, "Save as...");
+        std::string name = File::get_save_name (this, "Save as...", "dwgrad.txt");
         if (name.size())
           save_target->save (name);
       }

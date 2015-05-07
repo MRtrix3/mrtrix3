@@ -111,7 +111,9 @@ namespace MR
 
         if (vox.empty())
           throw Exception ("missing \"vox\" specification for MRtrix image \"" + H.name() + "\"");
-        for (size_t n = 0; n < H.ndim(); n++) {
+        if (vox.size() < 3)
+          throw Exception ("too few entries in \"vox\" specification for MRtrix image \"" + H.name() + "\"");
+        for (size_t n = 0; n < std::min (vox.size(), H.ndim()); n++) {
           if (vox[n] < 0.0)
             throw Exception ("invalid voxel size for MRtrix image \"" + H.name() + "\"");
           H.vox(n) = vox[n];
@@ -188,9 +190,9 @@ namespace MR
         Stride::List stride = Stride::get (H);
         Stride::symbolise (stride);
 
-        out << "\nlayout: " << (stride[0] >0 ? "+" : "-") << abs (stride[0])-1;
+        out << "\nlayout: " << (stride[0] >0 ? "+" : "-") << std::abs (stride[0])-1;
         for (size_t n = 1; n < H.ndim(); ++n)
-          out << "," << (stride[n] >0 ? "+" : "-") << abs (stride[n])-1;
+          out << "," << (stride[n] >0 ? "+" : "-") << std::abs (stride[n])-1;
 
         out << "\ndatatype: " << H.datatype().specifier();
 

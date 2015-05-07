@@ -20,6 +20,7 @@
 
 */
 
+#include "app.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR
@@ -35,29 +36,37 @@ namespace MR
           QFrame (parent),
           window (main_window) { 
             QFont f = font();
-            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
+            //CONF option: MRViewToolFontSize
+            //CONF default: 2 points less than the standard system font
+            //CONF The point size for the font to use in MRView Tools.
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
             setFont (f);
-
             setFrameShadow (QFrame::Sunken); 
             setFrameShape (QFrame::Panel);
           }
 
-
-
-        QSize Base::sizeHint () const
+        void Base::adjustSize () 
         {
-          return minimumSizeHint();
+          layout()->update();
+          layout()->activate();
+          setMinimumSize (layout()->minimumSize());
         }
 
 
-        void Base::draw (const Projection& transform, bool is_3D, int axis, int slice) { }
+        QSize Base::sizeHint () const { return minimumSize(); }
 
-        void Base::drawOverlays (const Projection& transform) { }
 
-        bool Base::process_batch_command (const std::string& cmd, const std::string& args) 
-        {
-          return false;
-        }
+        void Base::draw (const Projection&, bool, int, int) { }
+
+        void Base::drawOverlays (const Projection&) { }
+
+        bool Base::mouse_press_event () { return false; }
+        bool Base::mouse_move_event () { return false; }
+        bool Base::mouse_release_event () { return false; }
+        QCursor* Base::get_cursor () { return nullptr; }
+
+        bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
+        void Base::add_commandline_options (MR::App::OptionList&) { }
 
       }
     }

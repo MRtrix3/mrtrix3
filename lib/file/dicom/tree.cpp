@@ -44,7 +44,7 @@ namespace MR {
   namespace File {
     namespace Dicom {
 
-      RefPtr<Patient> Tree::find (const std::string& patient_name, const std::string& patient_ID, const std::string& patient_DOB)
+      std::shared_ptr<Patient> Tree::find (const std::string& patient_name, const std::string& patient_ID, const std::string& patient_DOB)
       {
         for (size_t n = 0; n < size(); n++) {
           bool match = true;
@@ -62,7 +62,7 @@ namespace MR {
           }
         }
 
-        push_back (RefPtr<Patient> (new Patient (patient_name, patient_ID, patient_DOB)));
+        push_back (std::shared_ptr<Patient> (new Patient (patient_name, patient_ID, patient_DOB)));
         return back();
       }
 
@@ -113,13 +113,13 @@ namespace MR {
           return;
         }
 
-        RefPtr<Patient> patient = find (reader.patient, reader.patient_ID, reader.patient_DOB);
-        RefPtr<Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
-        RefPtr<Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
+        std::shared_ptr<Patient> patient = find (reader.patient, reader.patient_ID, reader.patient_DOB);
+        std::shared_ptr<Study> study = patient->find (reader.study, reader.study_ID, reader.study_date, reader.study_time);
+        std::shared_ptr<Series> series = study->find (reader.series, reader.series_number, reader.modality, reader.series_date, reader.series_time);
 
-        RefPtr<Image> image (new Image);
+        std::shared_ptr<Image> image (new Image);
         image->filename = filename;
-        image->series = series;
+        image->series = series.get();
         image->sequence_name = reader.sequence;
         series->push_back (image);
       }

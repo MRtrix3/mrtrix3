@@ -27,7 +27,7 @@
 #ifndef __gui_dwi_render_frame_h__
 #define __gui_dwi_render_frame_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
@@ -119,8 +119,8 @@ namespace MR
           Point<> focus;
 
           std::string screenshot_name;
-          Ptr<QImage> pix;
-          GLubyte* framebuffer;
+          std::unique_ptr<QImage> pix;
+          std::unique_ptr<GLubyte[]> framebuffer;
           int OS, OS_x, OS_y;
 
           GL::VertexBuffer axes_VB;

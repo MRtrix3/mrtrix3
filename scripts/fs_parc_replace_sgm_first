@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 
 # Script for 'repairing' a FreeSurfer parcellation image
 # FreeSurfer's sub-cortical structure segmentation has been observed to be highly variable
@@ -15,21 +15,19 @@
 #   that are being re-defined.
 
 
-import os, shutil, sys
+import os, sys
+import lib.app
 
 from lib.binaryInPath import binaryInPath
-from lib.delTempDir   import delTempDir
 from lib.errorMessage import errorMessage
-from lib.getFSLSuffix import getFSLSuffix
-from lib.loadOptions  import loadOptions
-from lib.makeTempDir  import makeTempDir
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
-num_args = 4
-
-if len(sys.argv) < num_args+1:
-  errorMessage('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <lookup table / connectome config file> <output parcellation image>')
+numArgs = 4
+if len(sys.argv) <= numArgs:
+  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <FreeSurfer lookup table / connectome config file> <output parcellation image> (options)\n')
+  exit(0)
+lib.app.initialise(numArgs)
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -46,13 +44,6 @@ first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 if not os.path.isdir(first_atlas_path):
   errorMessage('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
 
-(quiet, verbose) = loadOptions(num_args)
-
-fsl_suffix = getFSLSuffix()
-
-working_dir = os.getcwd()
-temp_dir = makeTempDir(verbose)
-  
 # Want a mapping between FreeSurfer node names and FIRST structure names
 # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.
 structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-area', 
@@ -72,20 +63,13 @@ with open(sys.argv[3]) as f:
        config[line[1]] = line[0] # This can remain as a string
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(temp_dir, 'parc.mif') + quiet, verbose)
-runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(temp_dir, 'T1.nii')   + ' -stride +1,+2,+3' + quiet, verbose)
+runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
+runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(lib.app.tempDir, 'T1.nii')   + ' -stride +1,+2,+3')
 
-if verbose:
-  printMessage('Changing to temporary directory (' + temp_dir + ')')
-os.chdir(temp_dir)
-
-# Should verbosity be turned on for FIRST?
-fsl_verbose = ''
-if verbose:
-  fsl_verbose = ' --verbose'
+lib.app.gotoTempDir()
 
 # Run FIRST
-runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii -o first' + fsl_verbose, verbose)
+runCommand(first_cmd + ' -s ' + ','.join(structure_map.keys()) + ' -i T1.nii -o first')
 
 # Convert FIRST meshes to node masks
 # In this use case, don't want the PVE images; want to threshold at 0.5
@@ -93,13 +77,13 @@ mask_list = [ ]
 for struct in structure_map.keys():
   image_path = struct + '_mask.nii'
   mask_list.append (image_path)
-  runCommand('mesh2pve first-' + struct + '_first.vtk parc.mif - -first T1.nii' + quiet + ' | mrthreshold - ' + image_path + ' -abs 0.5' + quiet, verbose)
+  runCommand('mesh2pve first-' + struct + '_first.vtk parc.mif - -first T1.nii | mrthreshold - ' + image_path + ' -abs 0.5')
   # Replace the node location in the parcellation image with the new mask image
   node_index = config[structure_map[struct]]
-  runCommand('mrcalc parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif' + quiet, verbose)
+  runCommand('mrcalc parc.mif ' + node_index + ' -neq parc.mif -mult parc_old_removed.mif')
   # Can't add images here - may have overlap with existing nodes
   # Instead, set to the desired node index value if the mask is true, or use the existing value in the image otherwise
-  runCommand('mrcalc ' + image_path + ' ' + node_index + ' parc_old_removed.mif -if parc_new_inserted.mif' + quiet, verbose)
+  runCommand('mrcalc ' + image_path + ' ' + node_index + ' parc_old_removed.mif -if parc_new_inserted.mif')
   os.remove('parc.mif')
   os.remove('parc_old_removed.mif')
   os.rename('parc_new_inserted.mif', 'parc.mif')
@@ -107,19 +91,10 @@ for struct in structure_map.keys():
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
-runCommand('mrmath ' + ' '.join(mask_list) + ' sum -' + quiet + ' | mrcalc - 1 -gt overlap_mask.nii' + quiet, verbose)
-runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + result_path + quiet, verbose)
+runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.nii')
+runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + result_path)
 
-# Move back to original directory
-if verbose:
-  printMessage('Changing back to original directory (' + working_dir + ')')
-os.chdir(working_dir)
+lib.app.moveFileToDest(result_path, sys.argv[4])
 
-# Get the final file from the temporary directory & put it in the correct location
-if verbose:
-  printMessage('Moving output file from temporary directory to user specified location')
-shutil.move(os.path.join(temp_dir, result_path), sys.argv[4])
-
-# Don't leave a trace
-delTempDir(temp_dir, verbose)
+lib.app.terminate()
 

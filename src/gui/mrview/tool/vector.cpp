@@ -27,7 +27,6 @@
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "math/rng.h"
-#include "gui/mrview/colourmap.h"
 
 namespace MR
 {
@@ -47,16 +46,33 @@ namespace MR
               ListModelBase (parent) { }
 
             void add_items (std::vector<std::string>& filenames, Vector& fixel_tool) {
-              beginInsertRows (QModelIndex(), items.size(), items.size() + filenames.size());
-              for (size_t i = 0; i < filenames.size(); ++i) {
-                Fixel* fixel_image = new Fixel (filenames[i], fixel_tool);
-                items.push_back (fixel_image);
+
+              size_t old_size = items.size();
+              for (size_t i = 0, N = filenames.size(); i < N; ++i) {
+                AbstractFixel* fixel_image(nullptr);
+
+                try
+                {
+                  if(Path::has_suffix (filenames[i], {".msf", ".msh"}))
+                    fixel_image = new Fixel (filenames[i], fixel_tool);
+                  else
+                    fixel_image = new PackedFixel (filenames[i], fixel_tool);
+                }
+                catch(InvalidImageException& e)
+                {
+                  e.display();
+                  continue;
+                }
+
+                items.push_back (std::unique_ptr<Displayable> (fixel_image));
               }
+
+              beginInsertRows (QModelIndex(), old_size, items.size());
               endInsertRows();
             }
 
-            Fixel* get_fixel_image (QModelIndex& index) {
-              return dynamic_cast<Fixel*>(items[index.row()]);
+            AbstractFixel* get_fixel_image (QModelIndex& index) {
+              return dynamic_cast<AbstractFixel*>(items[index.row()].get());
             }
         };
 
@@ -64,7 +80,6 @@ namespace MR
 
         Vector::Vector (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (2.0),
           do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
@@ -75,19 +90,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Fixel Image"));
+            button->setToolTip (tr ("Open fixel image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Fixel Image"));
+            button->setToolTip (tr ("Close fixel image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Fixel Images"));
+            hide_all_button->setToolTip (tr ("Hide all fixel images"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -124,8 +139,6 @@ namespace MR
             main_box->addLayout (hlayout);
             colour_combobox->addItem ("Value");
             colour_combobox->addItem ("Direction");
-            colour_combobox->addItem ("Manual Colour");
-            colour_combobox->addItem ("Random Colour");
             hlayout->addWidget (colour_combobox, 0);
             connect (colour_combobox, SIGNAL (activated(int)), this, SLOT (colour_changed_slot(int)));
 
@@ -134,31 +147,8 @@ namespace MR
             hlayout = new HBoxLayout;
             colourmap_option_group->setLayout (hlayout);
 
-            colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
+            colourmap_button = new ColourMapButton (this, *this, false);
 
-            ColourMap::create_menu (this, colourmap_group, colourmap_menu, colourmap_actions, false, false);
-            connect (colourmap_group, SIGNAL (triggered (QAction*)), this, SLOT (select_colourmap_slot()));
-            colourmap_actions[1]->setChecked (true);
-
-            colourmap_menu->addSeparator();
-
-            show_colour_bar = colourmap_menu->addAction (tr ("Show colour bar"), this, SLOT (show_colour_bar_slot()));
-            show_colour_bar->setCheckable (true);
-            show_colour_bar->setChecked (true);
-            addAction (show_colour_bar);
-
-            invert_scale = colourmap_menu->addAction (tr ("Invert"), this, SLOT (invert_colourmap_slot()));
-            invert_scale->setCheckable (true);
-            addAction (invert_scale);
-
-            QAction* reset_intensity = colourmap_menu->addAction (tr ("Reset intensity"), this, SLOT (reset_intensity_slot()));
-            addAction (reset_intensity);
-
-            colourmap_button = new QToolButton (this);
-            colourmap_button->setToolTip (tr ("Colourmap menu"));
-            colourmap_button->setIcon (QIcon (":/colourmap.svg"));
-            colourmap_button->setPopupMode (QToolButton::InstantPopup);
-            colourmap_button->setMenu (colourmap_menu);
             hlayout->addWidget (colourmap_button);
 
             min_value = new AdjustButton (this);
@@ -194,7 +184,7 @@ namespace MR
             //length_combobox = new QComboBox;
             length_combobox = new ComboBoxWithErrorMsg (0, "  (variable)  ");
             length_combobox->addItem ("Unity");
-            length_combobox->addItem ("Fixel amplitude");
+            length_combobox->addItem ("Fixel size");
             length_combobox->addItem ("Associated value");
             hlayout->addWidget (length_combobox, 0);
             connect (length_combobox, SIGNAL (activated(int)), this, SLOT (length_type_slot(int)));
@@ -210,8 +200,8 @@ namespace MR
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
-            line_thickness_slider->setRange (100,1500);
-            line_thickness_slider->setSliderPosition (float (200.0));
+            line_thickness_slider->setRange (1,25);
+            line_thickness_slider->setSliderPosition (10);
             connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 0, 0);
             default_opt_grid->addWidget (line_thickness_slider, 0, 1);
@@ -247,31 +237,41 @@ namespace MR
             return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Fixel*>(fixel_list_model->items[i])->render (transform, axis, slice);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform, axis, slice);
           }
         }
 
 
         void Vector::drawOverlays (const Projection& transform)
         {
+          if(hide_all_button->isChecked()) return;
+
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<Fixel*>(fixel_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->renderColourBar (transform);
           }
         }
 
 
         void Vector::fixel_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_files (this, "Select fixel images to open", "MRtrix sparse format (*.msf *.msh)");
+          std::vector<std::string> list = Dialog::File::get_files (this,
+                                                                   "Select fixel images to open",
+                                                                   "MRtrix sparse format (*.msf *.msh);;" +
+                                                                   GUI::Dialog::File::image_filter_string);
           if (list.empty())
             return;
           size_t previous_size = fixel_list_model->rowCount();
           fixel_list_model->add_items (list, *this);
-          QModelIndex first = fixel_list_model->index (previous_size, 0, QModelIndex());
-          QModelIndex last = fixel_list_model->index (fixel_list_model->rowCount()-1, 0, QModelIndex());
-          fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
-          update_selection();
+
+          // Some of the images may be invalid, so it could be the case that no images were added
+          size_t new_size = fixel_list_model->rowCount();
+          if(previous_size < new_size) {
+            QModelIndex first = fixel_list_model->index (previous_size, 0, QModelIndex());
+            QModelIndex last = fixel_list_model->index (new_size -1, 0, QModelIndex());
+            fixel_list_view->selectionModel()->select (QItemSelection (first, last), QItemSelectionModel::Select);
+            update_selection();
+          }
         }
 
 
@@ -335,10 +335,11 @@ namespace MR
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
           float line_length_multiplier = 0.0f;
+          float line_thickness(0.f);
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
-            Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            AbstractFixel* fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[i]));
             if (colourmap_index != int (fixel->colourmap)) {
               if (colourmap_index == -2)
                 colourmap_index = fixel->colourmap;
@@ -357,6 +358,7 @@ namespace MR
             lower_threshold_val += fixel->lessthan;
             upper_threshold_val += fixel->greaterthan;
             line_length_multiplier += fixel->get_line_length_multiplier();
+            line_thickness = fixel->get_line_thickenss();
           }
 
           rate /= indices.size();
@@ -378,9 +380,9 @@ namespace MR
 
           if (colourmap_index < 0) {
             for (size_t i = 0; i != colourmap_count; ++i )
-              colourmap_actions[i]->setChecked (false);
+              colourmap_button->colourmap_actions[i]->setChecked (false);
           } else {
-            colourmap_actions[colourmap_index]->setChecked (true);
+              colourmap_button->colourmap_actions[colourmap_index]->setChecked (true);
           }
 
           // FIXME Intensity windowing display values are not correctly updated
@@ -391,13 +393,13 @@ namespace MR
           length_multiplier->setValue (line_length_multiplier);
 
           // Do a better job of setting colour / length with multiple inputs
-          Fixel* first_fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[0]));
+          AbstractFixel* first_fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[0]));
           const FixelLengthType length_type = first_fixel->get_length_type();
           const FixelColourType colour_type = first_fixel->get_colour_type();
           bool consistent_length = true, consistent_colour = true;
           size_t colour_by_value_count = (first_fixel->get_colour_type() == CValue);
           for (int i = 1; i < indices.size(); ++i) {
-            Fixel* fixel = dynamic_cast<Fixel*> (fixel_list_model->get_fixel_image (indices[i]));
+            AbstractFixel* fixel = dynamic_cast<AbstractFixel*> (fixel_list_model->get_fixel_image (indices[i]));
             if (fixel->get_length_type() != length_type)
               consistent_length = false;
             if (fixel->get_colour_type() != colour_type)
@@ -456,6 +458,8 @@ namespace MR
             threshold_upper->setEnabled (false);
           }
           threshold_upper->setRate (rate);
+
+          line_thickness_slider->setValue(static_cast<int>(line_thickness * 1000));
         }
 
 
@@ -468,7 +472,9 @@ namespace MR
 
         void Vector::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1000.f);
           window.updateGL();
         }
 
@@ -519,27 +525,54 @@ namespace MR
         }
 
 
-        void Vector::show_colour_bar_slot ()
+        void Vector::toggle_show_colour_bar (bool visible, const ColourMapButton&)
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_show_colour_bar (show_colour_bar->isChecked());
+            fixel_list_model->get_fixel_image (indices[i])->show_colour_bar = visible;
           window.updateGL();
         }
 
 
-        void Vector::select_colourmap_slot ()
+        void Vector::selected_colourmap (size_t index, const ColourMapButton&)
         {
-          QAction* action = colourmap_group->checkedAction();
-          size_t n = 0;
-          while (action != colourmap_actions[n])
-            ++n;
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->colourmap = n;
+          for (int i = 0; i < indices.size(); ++i) {
+            fixel_list_model->get_fixel_image (indices[i])->colourmap = index;
+            fixel_list_model->get_fixel_image (indices[i])->set_colour_type (CValue);
+          }
           window.updateGL();
         }
 
+        void Vector::selected_custom_colour(const QColor& colour, const ColourMapButton&)
+        {
+          if (colour.isValid()) {
+            QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+            std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
+            for (int i = 0; i < indices.size(); ++i) {
+              fixel_list_model->get_fixel_image (indices[i])->set_colour (c_colour);
+            }
+            window.updateGL();
+          }
+        }
+
+        void Vector::reset_colourmap (const ColourMapButton&)
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->reset_windowing ();
+          update_selection ();
+          window.updateGL();
+        }
+
+
+        void Vector::toggle_invert_colourmap (bool inverted, const ColourMapButton&)
+        {
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_invert_scale (inverted);
+          window.updateGL();
+        }
 
 
         void Vector::colour_changed_slot (int selection)
@@ -559,58 +592,11 @@ namespace MR
                 fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Direction);
               break;
             }
-            case 2: {
-              colourmap_option_group->setEnabled (false);
-              QColor color;
-              color = QColorDialog::getColor(Qt::red, this, "Select Color", QColorDialog::DontUseNativeDialog);
-              float colour[] = {float(color.redF()), float(color.greenF()), float(color.blueF())};
-              if (color.isValid()) {
-                for (int i = 0; i < indices.size(); ++i) {
-                  fixel_list_model->get_fixel_image (indices[i])->set_colour_type (Manual);
-                  fixel_list_model->get_fixel_image (indices[i])->set_colour (colour);
-                }
-              }
-              break;
-            }
-            case 3: {
-              colourmap_option_group->setEnabled (false);
-              for (int i = 0; i < indices.size(); ++i) {
-                float colour[3];
-                Math::RNG rng;
-                do {
-                  colour[0] = rng.uniform();
-                  colour[1] = rng.uniform();
-                  colour[2] = rng.uniform();
-                } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-                dynamic_cast<Fixel*> (fixel_list_model->items[indices[i].row()])->set_colour_type (Manual);
-                dynamic_cast<Fixel*> (fixel_list_model->items[indices[i].row()])->set_colour (colour);
-              }
-              break;
-            }
             default:
               break;
           }
           window.updateGL();
 
-        }
-
-
-        void Vector::reset_intensity_slot ()
-        {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->reset_windowing ();
-          update_selection ();
-          window.updateGL();
-        }
-
-
-        void Vector::invert_colourmap_slot ()
-        {
-          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
-          for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_invert_scale (invert_scale->isChecked());
-          window.updateGL();
         }
 
 
@@ -623,7 +609,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_lower_changed (int unused)
+        void Vector::threshold_lower_changed (int)
         {
           if (threshold_lower_box->checkState() == Qt::PartiallyChecked) return;
           threshold_lower->setEnabled (threshold_lower_box->isChecked());
@@ -634,7 +620,7 @@ namespace MR
         }
 
 
-        void Vector::threshold_upper_changed (int unused)
+        void Vector::threshold_upper_changed (int)
         {
           if (threshold_upper_box->checkState() == Qt::PartiallyChecked) return;
           threshold_upper->setEnabled (threshold_upper_box->isChecked());
@@ -669,17 +655,29 @@ namespace MR
         }
 
 
-        bool Vector::process_batch_command (const std::string& cmd, const std::string& args)
+        void Vector::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Vector plot tool options")
+
+            + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
+            +   Argument ("image").type_image_in();
+        }
+
+        bool Vector::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND fixel.load path # Load the specified MRtrix sparse image file (.msf) into the fixel tool
-          if (cmd == "fixel.load") {
-            std::vector<std::string> list (1, args);
+          if (opt.opt->is ("vector.load")) {
+            std::vector<std::string> list (1, std::string(opt[0]));
             try { fixel_list_model->add_items (list , *this); }
             catch (Exception& E) { E.display(); }
             return true;
           }
+
           return false;
         }
+
+
 
 
 

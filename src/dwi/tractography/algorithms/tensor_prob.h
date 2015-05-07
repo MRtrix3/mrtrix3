@@ -65,12 +65,12 @@ namespace MR
           Tensor_Prob (const Shared& shared) :
             Tensor_Det (shared),
             S (shared),
-            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, uniform_rng.rng))) { }
 
           Tensor_Prob (const Tensor_Prob& F) :
             Tensor_Det (F.S),
             S (F.S),
-            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, rng))) { }
+            source (Bootstrap<SourceBufferType::voxel_type,WildBootstrap> (S.source_voxel, WildBootstrap (S.Hat, uniform_rng.rng))) { }
 
 
 
@@ -145,6 +145,7 @@ namespace MR
               WildBootstrap (const Math::Matrix<value_type>& hat_matrix, Math::RNG& random_number_generator) :
                 H (hat_matrix),
                 rng (random_number_generator),
+                uniform_int (0, 1),
                 residuals (H.rows()),
                 log_signal (H.rows()) { }
 
@@ -156,13 +157,14 @@ namespace MR
 
                 for (size_t i = 0; i < residuals.size(); ++i) {
                   residuals[i] = std::exp (-residuals[i]) - data[i];
-                  data[i] += rng.uniform_int (2) ? residuals[i] : -residuals[i];
+                  data[i] += uniform_int (rng) ? residuals[i] : -residuals[i];
                 }
               }
 
             private:
               const Math::Matrix<value_type>& H;
               Math::RNG& rng;
+              std::uniform_int_distribution<> uniform_int;
               Math::Vector<value_type> residuals, log_signal;
           };
 
@@ -172,10 +174,10 @@ namespace MR
               Interp (const Bootstrap<SourceBufferType::voxel_type,WildBootstrap>& bootstrap_vox) :
                 Interpolator<Bootstrap<SourceBufferType::voxel_type,WildBootstrap> >::type (bootstrap_vox) {
                   for (size_t i = 0; i < 8; ++i)
-                    raw_signals.push_back (new value_type [dim (3)]);
+                    raw_signals.push_back (std::unique_ptr<value_type[]> (new value_type [dim(3)]));
                 }
 
-              VecPtr<value_type,true> raw_signals;
+              std::vector<std::unique_ptr<value_type[]>> raw_signals;
 
               bool get (const Point<value_type>& pos, std::vector<value_type>& data) {
                 scanner (pos);
@@ -187,60 +189,42 @@ namespace MR
 
                 std::fill (data.begin(), data.end(), 0.0);
 
-                if (faaa) {
-                  get_values (raw_signals[0]); // aaa
+                auto add_values = [&](value_type fraction, int sig_index) {
+                  get_values (raw_signals[sig_index].get());
                   for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  faaa * raw_signals[0][i];
-                }
+                    data[i] +=  fraction * raw_signals[sig_index][i];
+                };
+
+                if (faaa) 
+                  add_values (faaa, 0);
 
                 ++(*this)[2];
-                if (faab) {
-                  get_values (raw_signals[1]); // aab
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  faab * raw_signals[1][i];
-                }
+                if (faab) 
+                  add_values (faab, 1);
 
                 ++(*this)[1];
-                if (fabb) {
-                  get_values (raw_signals[3]); // abb
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  fabb * raw_signals[3][i];
-                }
+                if (fabb) 
+                  add_values (fabb, 3);
 
                 --(*this)[2];
-                if (faba) {
-                  get_values (raw_signals[2]); // aba
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  faba * raw_signals[2][i];
-                }
+                if (faba) 
+                  add_values (faba, 2);
 
                 ++(*this)[0];
-                if (fbba) {
-                  get_values (raw_signals[6]); // bba
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  fbba * raw_signals[6][i];
-                }
+                if (fbba) 
+                  add_values (fbba, 6);
 
                 --(*this)[1];
-                if (fbaa) {
-                  get_values (raw_signals[4]); // baa
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  fbaa * raw_signals[4][i];
-                }
+                if (fbaa) 
+                  add_values (fbaa, 4);
 
                 ++(*this)[2];
-                if (fbab) {
-                  get_values (raw_signals[5]); // bab
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  fbab * raw_signals[5][i];
-                }
+                if (fbab) 
+                  add_values (fbab, 5);
 
                 ++(*this)[1];
-                if (fbbb) {
-                  get_values (raw_signals[7]); // bbb
-                  for (size_t i = 0; i < data.size(); ++i)
-                    data[i] +=  fbbb * raw_signals[7][i];
-                }
+                if (fbbb) 
+                  add_values (fbbb, 7);
 
                 --(*this)[0];
                 --(*this)[1];

@@ -23,32 +23,22 @@
 #ifndef __dwi_tractography_seeding_dynamic_h__
 #define __dwi_tractography_seeding_dynamic_h__
 
-
-#include "image/transform.h"
-
-#include "thread_queue.h"
-
-#include "dwi/fmls.h"
-
-#include "dwi/directions/set.h"
-
-#include "dwi/tractography/ACT/tissues.h"
-#include "dwi/tractography/ACT/gmwmi.h"
-
-#include "dwi/tractography/mapping/voxel.h"
-
-#include "dwi/tractography/seeding/base.h"
-
-#include "dwi/tractography/SIFT/model_base.h"
-
-#include "dwi/tractography/tracking/generated_track.h"
-#include "dwi/tractography/tracking/write_kernel.h"
-
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/properties.h"
-
 #include <fstream>
 #include <queue>
+
+#include "image/transform.h"
+#include "thread_queue.h"
+#include "dwi/fmls.h"
+#include "dwi/directions/set.h"
+#include "dwi/tractography/ACT/tissues.h"
+#include "dwi/tractography/ACT/gmwmi.h"
+#include "dwi/tractography/mapping/voxel.h"
+#include "dwi/tractography/seeding/base.h"
+#include "dwi/tractography/SIFT/model_base.h"
+#include "dwi/tractography/tracking/generated_track.h"
+#include "dwi/tractography/tracking/write_kernel.h"
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
 
 
 
@@ -146,7 +136,7 @@ namespace MR
 
 
         public:
-        Dynamic (const std::string&, Image::Buffer<float>&, const Math::RNG&, const DWI::Directions::FastLookupSet&);
+        Dynamic (const std::string&, Image::Buffer<float>&, const DWI::Directions::FastLookupSet&);
 
         ~Dynamic();
 
@@ -184,7 +174,7 @@ namespace MR
 
         Image::Transform transform;
 
-        Ptr<Dynamic_ACT_additions> act;
+        std::unique_ptr<Dynamic_ACT_additions> act;
 
       };
 

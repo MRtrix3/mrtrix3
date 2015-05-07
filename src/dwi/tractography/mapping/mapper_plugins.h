@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "point.h"
-#include "ptr.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/interp/linear.h"
@@ -71,7 +70,7 @@ class TODMappingPlugin
         generator (that.generator) { }
     void operator() (Math::Vector<float>& sh, const Point<float>& d) const { (*generator) (sh, d); }
   private:
-    RefPtr< Math::SH::aPSF<float> > generator;
+    std::shared_ptr< Math::SH::aPSF<float> > generator;
 };
 
 
@@ -101,7 +100,7 @@ class TWIImagePluginBase
 
 
   protected:
-    RefPtr< Image::BufferPreload<float> > data;
+    std::shared_ptr< Image::BufferPreload<float> > data;
     const input_voxel_type voxel;
     // Each instance of the class has its own interpolator for obtaining values
     //   in a thread-safe fashion
@@ -123,13 +122,19 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
         TWIImagePluginBase (input_image),
         statistic (track_statistic)
     {
-      if (data->ndim() != 3)
+      if (!((data->ndim() == 3) || (data->ndim() == 4 && data->dim(3) == 1)))
         throw Exception ("Scalar image used for TWI must be a 3D image");
+      if (data->ndim() == 4)
+        interp[3] = 0;
     }
 
     TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
         TWIImagePluginBase (that),
-        statistic (that.statistic) { }
+        statistic (that.statistic)
+    {
+      if (data->ndim() == 4)
+        interp[3] = 0;
+    }
 
     ~TWIScalarImagePlugin() { }
 
@@ -150,32 +155,24 @@ class TWIFODImagePlugin : public TWIImagePluginBase
   public:
     TWIFODImagePlugin (const std::string& input_image) :
         TWIImagePluginBase (input_image),
-        sh_coeffs (NULL),
+        N (data->dim(3)),
+        sh_coeffs (new float[N]),
         precomputer (new Math::SH::PrecomputedAL<float> ())
     {
-      if (data->ndim() != 4)
-        throw Exception ("Image used for TWI with FOD_AMP contrast be a 4D image");
-      lmax = Math::SH::LforN (data->dim (3));
-      N = Math::SH::NforL (lmax);
-      if (int(N) != data->dim (3))
-        throw Exception ("Image used for TWI with FOD_AMP contrast be an SH image");
-      sh_coeffs = new float[N];
-      precomputer->init (lmax);
+      Math::SH::check (*data);
+      precomputer->init (Math::SH::LforN (N));
     }
 
     TWIFODImagePlugin (const TWIFODImagePlugin& that) :
         TWIImagePluginBase (that),
-        lmax (that.lmax),
         N (that.N),
         sh_coeffs (new float[N]),
         precomputer (that.precomputer) { }
 
     ~TWIFODImagePlugin()
     {
-      if (sh_coeffs) {
-        delete[] sh_coeffs;
-        sh_coeffs = NULL;
-      }
+      delete[] sh_coeffs;
+      sh_coeffs = NULL;
     }
 
 
@@ -183,9 +180,9 @@ class TWIFODImagePlugin : public TWIImagePluginBase
 
 
   private:
-    size_t lmax, N;
+    const size_t N;
     float* sh_coeffs;
-    RefPtr< Math::SH::PrecomputedAL<float> > precomputer;
+    std::shared_ptr< Math::SH::PrecomputedAL<float> > precomputer;
 
 };
 

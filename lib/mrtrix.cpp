@@ -35,23 +35,40 @@ namespace MR
   std::vector<float> parse_floats (const std::string& spec)
   {
     std::vector<float> V;
-
     if (!spec.size()) throw Exception ("floating-point sequence specifier is empty");
     std::string::size_type start = 0, end;
+    float range_spec[3];
+    int i = 0;
     try {
       do {
-        end = spec.find_first_of (',', start);
+        end = spec.find_first_of (",:", start);
         std::string sub (spec.substr (start, end-start));
-        float num = ( sub.empty() || sub == "nan" ) ? NAN : to<float> (spec.substr (start, end-start));
-        V.push_back (num);
+        range_spec[i] = (sub.empty() || sub == "nan") ? NAN : to<float> (sub);
+        char last_char = end < spec.size() ? spec[end] : '\0';
+        if (last_char == ':') {
+          i++;
+          if (i > 2) throw Exception ("invalid number range in number sequence \"" + spec + "\"");
+        } else {
+          if (i) {
+            if (i != 2)
+              throw Exception ("For floating-point ranges, must specify three numbers (start:step:end)");
+            float first = range_spec[0], inc = range_spec[1], last = range_spec[2];
+            if (!inc || (inc * (last-first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) || !std::isfinite(last))
+              throw Exception ("Floating-point range does not form a finite set");
+            float value = first;
+            for (size_t mult = 0; (inc>0.0f ? value < last - 0.5f*inc : value > last + 0.5f*inc); ++mult)
+              V.push_back ((value = first + (mult * inc)));
+          } else {
+            V.push_back (range_spec[0]);
+          }
+          i = 0;
+        }
         start = end+1;
-      }
-      while (end < spec.size());
+      } while (end < spec.size());
     }
     catch (Exception& E) {
       throw Exception (E, "can't parse floating-point sequence specifier \"" + spec + "\"");
     }
-
     return (V);
   }
 

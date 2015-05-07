@@ -2,6 +2,7 @@
 *_moc.cpp
 *.so
 *.dll
+*.dylib
 *.a
 *~
 *.swp
@@ -19,9 +20,13 @@ icons.cpp
 /config.*
 /configure.log
 /build.log
-/lib/version.h
+/test/build.log
+/lib/version.cpp
 /src/project_version.h
+/test/src/project_version.h
 /bin/
+/test/bin/
+/dev/
 .cproject
 .project
 .settings

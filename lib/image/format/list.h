@@ -29,9 +29,9 @@
   class format : public Base { \
     public:  \
       format () : Base (desc) { } \
-      virtual RefPtr<Handler::Base> read (Header& H) const; \
+      virtual std::shared_ptr<Handler::Base> read (Header& H) const; \
       virtual bool check (Header& H, size_t num_axes) const; \
-      virtual RefPtr<Handler::Base> create (Header& H) const; \
+      virtual std::shared_ptr<Handler::Base> create (Header& H) const; \
   }
 
 namespace MR
@@ -71,7 +71,7 @@ namespace MR
            * H with all the relevant information as read from the images before
            * returning.
            * \note this function should throw an Exception in case of error. */
-          virtual RefPtr<Handler::Base> read (Header& H) const = 0;
+          virtual std::shared_ptr<Handler::Base> read (Header& H) const = 0;
 
           /*! \brief check whether the Image::Header \c H can be created using
            * this handler.
@@ -94,7 +94,7 @@ namespace MR
            * beforehand.
            *
            * \note this function should throw an Exception in case of error. */
-          virtual RefPtr<Handler::Base> create (Header& H) const = 0;
+          virtual std::shared_ptr<Handler::Base> create (Header& H) const = 0;
       };
 
 #ifdef MRTRIX_AS_R_LIBRARY

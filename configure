@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re
 
@@ -80,18 +80,18 @@ the compiler, use:
 
 The following environment variables can be set:
 
-CXX             The compiler command-line to use. The default is "g++" ("clang" on MacOSX)
+CXX             The compiler command to use. The default is "g++" ("clang" on MacOSX)
 
 CXX_ARGS        The arguments expected by the compiler. The default is:
                 "-c CFLAGS SRC -o OBJECT"
 
-LD              The linker command-line to use. The default is:
+LD              The linker command to use. The default is:
                 "g++" ("clang++" on MacOSX)
 
-LD_ARGS         The linker command-line to use. The default is:
+LD_ARGS         The arguments expected by the linker. The default is:
                 "LDFLAGS OBJECTS -o EXECUTABLE"
 
-LDLIB_ARGS      The linker command-line to use for generating a shared library.
+LDLIB_ARGS      The arguments expected by the linker for generating a shared library.
                 The default is:
                 "-shared LDLIB_FLAGS OBJECTS -o LIB"
 
@@ -145,7 +145,7 @@ if not profile_name:
 
 
 global logfile, config_report
-logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'w')
+logfile = open (os.path.join (os.path.dirname(sys.argv[0]), 'configure.log'), 'wb')
 config_report = ''
 
 
@@ -185,17 +185,17 @@ global cpp, cpp_cmd, ld, ld_args, ld_cmd
 
 cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
-cpp_flags = [ '-std=c++11', '-pthread' ]
+cpp_flags = [ '-std=c++11' ]
 
 ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
-ld_flags = [ '-pthread' ]
+ld_flags = [ ]
 
 if static:
-  ld_flags += [ '-static' ] 
+  ld_flags += [ '-static', '-Wl,-u,pthread_cancel,-u,pthread_cond_broadcast,-u,pthread_cond_destroy,-u,pthread_cond_signal,-u,pthread_cond_wait,-u,pthread_create,-u,pthread_detach,-u,pthread_cond_signal,-u,pthread_equal,-u,pthread_join,-u,pthread_mutex_lock,-u,pthread_mutex_unlock,-u,pthread_once,-u,pthread_setcancelstate' ] 
 
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
-ld_lib_flags = [ '-pthread' ]
+ld_lib_flags = [ ]
 
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
@@ -219,6 +219,9 @@ class TempFile:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
+    except:
+      raise
+  
 
 
 class DeleteAfter:
@@ -233,6 +236,8 @@ class DeleteAfter:
       os.unlink (self.name)
     except OSError as error:
       log ('error deleting temporary file "' + self.name + '": ' + error.strerror)
+    except:
+      raise
     
     
 class TempDir:
@@ -254,6 +259,8 @@ class TempDir:
        
     except OSError as error:
       log ('error deleting temporary folder "' + self.name + '": ' + error.strerror)
+    except:
+      raise
 
 
 
@@ -297,12 +304,16 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
   
-    if raise_on_non_zero_exit_code and process.returncode != 0: 
-      raise exception (stderr)
-
   except OSError as error: 
     log ('error invoking command "' + cmd[0] + '": ' + error.strerror + '\n>>\n\n')
     raise exception
+  except:
+    print ('Unexpected error:', str(sys.exc_info()))
+    raise
+  else:
+    if raise_on_non_zero_exit_code and process.returncode != 0: 
+      raise exception (stderr)
+
 
   return (process.returncode, stdout, stderr)
 
@@ -334,6 +345,15 @@ def compile (source, compiler_flags = [], linker_flags = []):
   return ret[1]
 
 
+def compare_version (needed, observed):
+  needed = [ float(n) for n in needed.split()[0].split('.') ]
+  observed = [ float(n) for n in observed.split()[0].split('.') ]
+  for n in zip (needed, observed):
+    if n[0] > n[1]:
+      return False
+  return True
+
+
 
 
 
@@ -349,17 +369,18 @@ lib_prefix = 'lib'
 system = platform.system().lower()
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
-  cpp_flags += [ '-fPIC' ]
+  cpp_flags += [ '-pthread', '-fPIC' ]
   lib_suffix = '.so'
-  ld_lib_flags += [ '-shared' ]
+  ld_flags += [ '-pthread' ]
+  ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = '-Wl,-rpath,$ORIGIN/'
 elif system == 'windows':
-  cpp_flags += [ '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
+  cpp_flags += [ '-pthread', '-DMRTRIX_WINDOWS', '-mms-bitfields' ]
   exe_suffix = '.exe'
   lib_prefix = ''
   lib_suffix = '.dll'
-  ld_flags += [ '-Wl,--allow-multiple-definition' ]
-  ld_lib_flags += [ '-shared' ]
+  ld_flags += [ '-pthread', '-Wl,--allow-multiple-definition' ]
+  ld_lib_flags += [ '-pthread', '-shared' ]
   runpath = ''
 elif system == 'darwin':
   cxx = [ 'clang++' ]
@@ -436,6 +457,8 @@ except (LinkError, RuntimeError):
 
 Use LD environment variable to set path to compiler, as follows:
      LD=/usr/bin/g++-4.2 ./configure''')
+except:
+  raise
 
 
 
@@ -571,6 +594,7 @@ if 'GSL_CFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
+    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
     
@@ -579,6 +603,7 @@ if 'GSL_LDFLAGS' in os.environ.keys():
 else:
   try: 
     gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
+    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
   except:
     log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
     
@@ -680,6 +705,8 @@ if not noshared:
         error ('''compiler not found!
 
   an unexpected error occurred''')
+      except:
+        raise
   
       with DeleteAfter (lib_prefix + 'test' + lib_suffix) as lib:
         cmd = fillin (ld_lib, {
@@ -692,6 +719,8 @@ if not noshared:
 
   Use the LDLIB_ARGS environment variable to set the command-line
   for shared library generation''')
+        except:
+          raise
 
         report ('yes\n')
 
@@ -732,6 +761,8 @@ if not nogui:
 
   Use the MOC environment variable to specify the Qt meta-object compiler,
   or set PATH to include its location''')
+  except:
+    raise
   
     
 
@@ -752,6 +783,8 @@ if not nogui:
 
   Use the QMAKE environment variable to specify the Qt qmake executable,
   or set PATH to include its location''')
+  except:
+    raise
   
   
   
@@ -773,6 +806,8 @@ if not nogui:
 
   Use the RCC environment variable to specify the Qt rcc executable,
   or set PATH to include its location''')
+  except:
+    raise
   
     
 
@@ -843,6 +878,8 @@ int main() { Foo f; }
         error ('''error issuing qmake command!
 
   Use the QMAKE environment variable to set the correct qmake command for use with Qt''')
+      except:
+        raise
 
 
       qt_defines = [] 
@@ -887,6 +924,7 @@ int main() { Foo f; }
       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
       try: process = subprocess.Popen (cmd, cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       except OSError: raise CompileError('oserror')
+      except: raise
       retcode = process.wait()
       if retcode != 0: raise CompileError('process not terminated properly (exit code = %s)'%str(retcode))
 
@@ -894,12 +932,14 @@ int main() { Foo f; }
       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
       try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       except OSError: raise CompileError('oserror')
+      except: raise
       if process.wait() != 0: raise CompileError('process not terminated properly')
 
       cmd = cxx + ld_flags + [ 'qt_moc.o', 'qt.o', '-o', 'qt' ] + qt_ldflags
       log ('\nexecuting "' + ' ' .join(cmd) + '"...\n')
       try: process = subprocess.Popen (cmd , cwd=qt_dir.name, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       except OSError: raise LinkError('oserror')
+      except: raise
       if process.wait() != 0: raise LinkError('process not terminated properly')
 
       cmd = os.path.join(qt_dir.name, 'qt')
@@ -929,6 +969,8 @@ use the MOC environment variable to specify the Qt moc command''')
     error ('error compiling Qt application! ' + str(e))
   except OSError as e:
     error ('Unexpected error! Unable to configure Qt environment: ' + str(e))
+  except:
+    raise
 
 
 
@@ -956,11 +998,10 @@ class GLWidget : public QGLWidget {
   protected:
     void initializeGL () { 
       std::cout << glGetString (GL_VERSION) << "\\n";
-      exit (0); 
     }
 
-    void paintGL () { }
-    void resizeGL (int width, int height) { }
+    void paintGL () { qApp->quit(); }
+    void resizeGL (int, int) { }
 };
 
 int main (int argc, char *argv[]) {
@@ -971,19 +1012,34 @@ int main (int argc, char *argv[]) {
 }
 ''', cpp_flags + qt_cflags, ld_flags + qt_ldflags)
     report (gl_test.strip() + '\n')
-    if 'NOT SUPPORTED' in gl_test:
-      report ('''
-WARNING: not all required OpenGL extensions are supported (see above).
-         Some of the graphical user interface components may not be stable on
-         this system.
-''')
+    if not compare_version ('3.3', gl_test):
+      raise RuntimeError
   except:
-    report ('''not found
+    try:
+      gl_test
+      report ('''
+WARNING: your OpenGL implementation does not support version 3.3.
+''')
+    except:
+      report ('''not found
 
 WARNING: no OpenGL implementation found.
-         Some of the graphical user interface components may not be stable on
-         this system.
 ''')
+
+    report ('''
+         You will still be able to build MRtrix3, but you will NOT be
+         able to run the graphical user interface components in this
+         environment.
+
+         For more information, please refer to:
+         https://github.com/MRtrix3/mrtrix3/wiki/troubleshooting-on-Linux#opengl-version-33-not-supported
+
+         If you are running within a remote X11 forwarding environment, please
+         refer to: https://github.com/MRtrix3/mrtrix3/wiki/Remote-display
+''')
+
+
+
   if system == "darwin":
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')
@@ -1040,6 +1096,8 @@ if R_module:
        R_LDFLAGS="-L/usr/local/R/lib -lR" ./configure''')
   except RuntimeError:
     error ('''error running command - check configure.log for details''')
+  except: 
+    raise
   
   cpp_flags += R_cflags + [ '-DMRTRIX_AS_R_LIBRARY' ]
   ld_lib_flags += R_ldflags
@@ -1052,7 +1110,7 @@ if R_module:
 
 # add debugging or profiling flags if requested:
 
-cpp_flags += [ '-Wall', '-Wno-unused-function', '-Wno-unused-parameter' ]
+cpp_flags += [ '-Wall' ]
 
 if profile:
   cpp_flags += [ '-g', '-pg', '-DNDEBUG' ]

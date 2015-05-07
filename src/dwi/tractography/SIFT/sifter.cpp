@@ -3,7 +3,7 @@
 
 #include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "timer.h"
 
 #include "dwi/tractography/file.h"
@@ -71,6 +71,8 @@ namespace MR
 
         const double init_cf = calc_cost_function();
         unsigned int iteration = 0;
+        double cf_end_iteration = init_cf;
+        unsigned int removed_this_iteration = 0;
 
         if (!csv_path.empty()) {
           File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::trunc);
@@ -78,10 +80,9 @@ namespace MR
           csv_out << "0,0,0," << str (tracks_remaining) << "," << str (init_cf) << "," << str (TD_sum) << "," << str (mu()) << ",Start,\n";
         }
 
-        if (App::log_level) {
-          fprintf (stderr, "%s:   Iteration    Tracks removed     Tracks remaining     Cost function %%\n", App::NAME.c_str());
-          fprintf (stderr, "%s:    %6u           %7u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, 0, tracks_remaining, 100.0);
-        }
+        auto display_func = [&](){ return printf(" %6u      %7u     %9u       %.2f%%", iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf); };
+        CONSOLE ("       Iteration     Removed     Remaining     Cost fn");
+        ProgressBar progress ("");
 
         bool another_iteration = true;
         recalc_reason recalculate (UNDEFINED);
@@ -118,7 +119,7 @@ namespace MR
           MT_gradient_vector_sorter sorter (gradient_vector, sort_size);
 
           // Remove candidate streamlines one at a time, and correspondingly modify the fixels to which they were attributed
-          unsigned int removed_this_iteration = 0;
+          removed_this_iteration = 0;
           recalculate = UNDEFINED;
           do {
 
@@ -250,10 +251,9 @@ namespace MR
 
           end_iteration:
 
-          const float cf_end_iteration = calc_cost_function();
+          cf_end_iteration = calc_cost_function();
 
-          if (App::log_level)
-            fprintf (stderr, "\r%s:   %6u           %6u            %9u              %.2f%%  ", App::NAME.c_str(), iteration, removed_this_iteration, tracks_remaining, 100.0 * cf_end_iteration / init_cf);
+          progress.update (display_func);
 
           if (!csv_path.empty()) {
             File::OFStream csv_out (csv_path, std::ios_base::out | std::ios_base::app | std::ios_base::ate);
@@ -272,8 +272,7 @@ namespace MR
 
         } while (another_iteration);
 
-        if (App::log_level)
-          fprintf (stderr, "\n");
+        progress.done();
 
         switch (recalculate) {
           case UNDEFINED:    throw Exception ("Encountered undefined recalculation at end of iteration!");
@@ -357,13 +356,13 @@ namespace MR
       void SIFTer::test_sorting_block_size (const size_t num_tracks) const
       {
 
-        Math::RNG rng;
+        Math::RNG::Normal<float> rng;
 
         std::vector<Cost_fn_gradient_sort> gradient_vector;
         gradient_vector.assign (num_tracks, Cost_fn_gradient_sort (num_tracks, 0.0, 0.0));
         // Fill the gradient vector with random Gaussian data
         for (track_t index = 0; index != num_tracks; ++index) {
-          const float value = rng.normal();
+          const float value = rng();
           gradient_vector[index].set (index, value, value);
         }
 

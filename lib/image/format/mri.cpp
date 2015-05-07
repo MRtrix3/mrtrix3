@@ -123,10 +123,6 @@ namespace MR
         {
           return (get<uint32_t> (pos + sizeof (uint32_t), is_BE));
         }
-        inline uint8_t* data (uint8_t* pos)
-        {
-          return (pos + 2*sizeof (uint32_t));
-        }
         inline const uint8_t* data (const uint8_t* pos)
         {
           return (pos + 2*sizeof (uint32_t));
@@ -151,6 +147,21 @@ namespace MR
           out.write ( (const char*) &val, sizeof (T));
         }
 
+        // needed to get around changes in hard-coded enum types in datatype.h:
+        DataType fetch_datatype (uint8_t c) {
+          uint8_t d = c & 0x07U;
+          uint8_t t = c & ~(0x07U);
+          if (d >= 0x05U) ++d;
+          return { uint8_t (d | t) };
+        }
+
+        uint8_t store_datatype (DataType& dt) {
+          uint8_t d = dt() & 0x07U;
+          uint8_t t = dt() & ~(0x07U);
+          if (d >= 0x05U) --d;
+          return (d | t);
+        }
+
       }
 
 
@@ -160,10 +171,10 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> MRI::read (Header& H) const
+      std::shared_ptr<Handler::Base> MRI::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mri"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         File::MMap fmap (H.name());
 
@@ -185,7 +196,7 @@ namespace MR
         while (current <= last) {
           switch (type (current, is_BE)) {
             case MRI_DATA:
-              H.datatype() = (reinterpret_cast<const char*> (data (current))) [-4];
+              H.datatype() = fetch_datatype (data(current)[-4]);
               data_offset = current + 5 - (uint8_t*) fmap.address();
               break;
             case MRI_DIMENSIONS:
@@ -243,7 +254,7 @@ namespace MR
         if (!data_offset)
           throw Exception ("no data field found in MRI image \"" + H.name() + "\"");
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 
         return handler;
@@ -272,7 +283,7 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> MRI::create (Header& H) const
+      std::shared_ptr<Handler::Base> MRI::create (Header& H) const
       {
         File::OFStream out (H.name());
 
@@ -295,7 +306,7 @@ namespace MR
         size_t n;
         char order[4];
         for (n = 0; n < H.ndim(); ++n)
-          order[abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
+          order[std::abs (H.stride (n))-1] = order2char (n, H.stride (n) >0);
         for (; n < 4; ++n)
           order[n] = order2char (n, true);
         out.write (order, 4);
@@ -328,12 +339,12 @@ namespace MR
         }
 
         write_tag (out, MRI_DATA, 1, is_BE);
-        out.write (reinterpret_cast<const char*> (&H.datatype()()), 1);
+        out.put (store_datatype (H.datatype()));
 
         size_t data_offset = out.tellp();
         out.close();
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         File::resize (H.name(), data_offset + Image::footprint(H));
         handler->files.push_back (File::Entry (H.name(), data_offset));
 

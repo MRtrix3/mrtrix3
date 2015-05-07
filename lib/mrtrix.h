@@ -34,6 +34,7 @@
 #include <cctype>
 #include <iostream>
 #include <vector>
+#include <array>
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -74,6 +75,15 @@ namespace std
   {
     stream << "[ ";
     for (size_t n = 0; n < V.size(); n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
+  template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < N; n++) 
       stream << V[n] << " ";
     stream << "]";
     return stream;
@@ -213,6 +223,16 @@ namespace MR
   {
     for (std::string::iterator i = string.begin(); i != string.end(); ++i)
       if (*i == orig) *i = final;
+  }
+
+  inline void  replace (std::string& str, const std::string& from, const std::string& to)
+  {
+    if (from.empty()) return;
+    size_t start_pos = 0;
+    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
+      str.replace (start_pos, from.length(), to);
+      start_pos += to.length(); 
+    }
   }
 
 

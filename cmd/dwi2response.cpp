@@ -82,18 +82,18 @@ const OptionGroup TermOption = OptionGroup ("Options for terminating the optimis
 
 const OptionGroup SFOption = OptionGroup ("Thresholds for single-fibre voxel selection")
 
-    + Option ("volume_ratio", "required volume ratio between largest FOD lobe and the sum of all other positive lobes in the voxel")
+    + Option ("volume_ratio", "maximal volume ratio between the sum of all other positive lobes in the voxel, and the largest FOD lobe (default = 0.15)")
       + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_VOLUME_RATIO, 1.0)
 
-    + Option ("dispersion_multiplier", "dispersion of FOD lobe must not exceed some threshold as determined by this factor and FOD dispersion statistics. "
-                                       "The threshold is: (mean + (multiplier * (mean - min))). "
+    + Option ("dispersion_multiplier", "dispersion of FOD lobe must not exceed some threshold as determined by this multiplier and the FOD dispersion in other single-fibre voxels. "
+                                       "The threshold is: (mean + (multiplier * (mean - min))); default = 1.0. "
                                        "Criterion is only applied in second pass of RF estimation.")
       + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER, 100.0)
 
-    + Option ("integral_multiplier", "integral of FOD lobe must not be outside some range as determined by this factor and FOD lobe integral statistics. "
-                                     "The range is: (mean +- (multiplier * stdev)). "
+    + Option ("integral_multiplier", "integral of FOD lobe must not be outside some range as determined by this multiplier and FOD lobe integral in other single-fibre voxels. "
+                                     "The range is: (mean +- (multiplier * stdev)); default = 2.0. "
                                      "Criterion is only applied in second pass of RF estimation.")
-      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1.0);
+      + Argument ("value").type_float (0.0, DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER, 1e6);
 
 
 
@@ -106,9 +106,10 @@ void usage () {
   DESCRIPTION 
     + "generate an appropriate response function from the image data for spherical deconvolution";
 
-  REFERENCES = "Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. "
-               "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. "
-               "NeuroImage, 2014, 86, 67-80";
+  REFERENCES 
+    + "Tax, C. M.; Jeurissen, B.; Vos, S. B.; Viergever, M. A. & Leemans, A. "
+    "Recursive calibration of the fiber response function for spherical deconvolution of diffusion MRI data. "
+    "NeuroImage, 2014, 86, 67-80";
 
   ARGUMENTS
     + Argument ("dwi_in",       "the input diffusion-weighted images").type_image_in()
@@ -116,14 +117,14 @@ void usage () {
 
   OPTIONS
 
-    + DWI::GradOption
+    + DWI::GradImportOptions()
     + DWI::ShellOption
 
     + Option ("mask", "provide an initial mask image")
       + Argument ("image").type_image_in()
 
     + Option ("lmax", "specify the maximum harmonic degree of the response function to estimate")
-      + Argument ("value").type_integer (2, 8, 20)
+      + Argument ("value").type_integer (4, 8, 20)
 
     + Option ("sf", "output a mask highlighting the final selection of single-fibre voxels")
       + Argument ("image").type_image_out()
@@ -175,6 +176,8 @@ void run ()
   DWI::CSDeconv<float>::Shared shared (H);
 
   const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
+  if (max_lmax < 4)
+    throw Exception ("Selected b-value shell does not have an adequate number of directions (" + str(shared.dwis.size()) + ") to run dwi2response (need at least 15 for lmax=4)");
   size_t lmax = std::min (size_t(8), max_lmax);
   opt = get_options ("lmax");
   if (opt.size()) {
@@ -182,12 +185,12 @@ void run ()
     if (desired_lmax % 2)
       throw Exception ("lmax must be an even number");
     if (desired_lmax > max_lmax)
-      throw Exception ("Image data does not support estimating response function above an lmax of " + str(max_lmax));
+      throw Exception ("Image data do not support estimating response function above an lmax of " + str(max_lmax));
     lmax = desired_lmax;
   }
   shared.lmax = lmax;
 
-  Image::Buffer<float> dwi (H);
+  Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
   DWI::Directions::Set directions (1281);
 
   Math::Vector<float> response (lmax/2+1);

@@ -23,6 +23,7 @@
 #include <algorithm>
 
 #include "command.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
 #include "image/voxel.h"
@@ -77,7 +78,7 @@ void usage ()
       "tensor elements (default = 5000). This only applies to the non-linear methods.")
     + Argument ("term").type_float (0.0, 5000.0, 1e12)
 
-    + DWI::GradOption;
+    + DWI::GradImportOptions();
 
 
 }
@@ -243,7 +244,7 @@ class Processor
     Processor (
         InputBufferType::voxel_type& dwi_vox, 
         OutputBufferType::voxel_type& dt_vox,
-        Ptr<MaskBufferType::voxel_type>& mask_vox,
+        copy_ptr<MaskBufferType::voxel_type>& mask_vox,
         const Math::Matrix<cost_value_type>& bmatrix,
         const Math::Matrix<cost_value_type>& inverse_bmatrix,
         int fitting_method, 
@@ -280,7 +281,7 @@ class Processor
   protected:
     InputBufferType::voxel_type dwi;
     OutputBufferType::voxel_type dt;
-    Ptr<MaskBufferType::voxel_type> mask;
+    copy_ptr<MaskBufferType::voxel_type> mask;
     Math::Matrix<cost_value_type> signals, logsignals, tensors;
     Cost cost;
 
@@ -404,12 +405,12 @@ void run()
   if (opt.size()) regularisation = opt[0][0];
 
   opt = get_options ("mask");
-  Ptr<MaskBufferType> mask_buffer;
-  Ptr<MaskBufferType::voxel_type> mask_vox;
+  std::unique_ptr<MaskBufferType> mask_buffer;
+  copy_ptr<MaskBufferType::voxel_type> mask_vox;
   if (opt.size()){
-    mask_buffer = new MaskBufferType (opt[0][0]);
+    mask_buffer.reset (new MaskBufferType (opt[0][0]));
     Image::check_dimensions (*mask_buffer, dwi_buffer, 0, 3);
-    mask_vox = new MaskBufferType::voxel_type (*mask_buffer);
+    mask_vox.reset (new MaskBufferType::voxel_type (*mask_buffer));
   }
 
 

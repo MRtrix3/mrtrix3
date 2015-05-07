@@ -23,9 +23,9 @@
 #ifndef __args_h__
 #define __args_h__
 
+#include <string>
 #include <vector>
 #include <limits>
-#include "ptr.h"
 
 #ifdef None
 # undef None
@@ -67,9 +67,9 @@ namespace MR
     const char* argtype_description (ArgType type);
 
     typedef int ArgFlags;
-    const ArgFlags None = 0;
-    const ArgFlags Optional = 0x1;
-    const ArgFlags AllowMultiple = 0x2;
+    constexpr ArgFlags None = 0;
+    constexpr ArgFlags Optional = 0x1;
+    constexpr ArgFlags AllowMultiple = 0x2;
     //! \endcond
 
 
@@ -124,9 +124,9 @@ namespace MR
         /*! this is used to construct a command-line argument object, with a name
          * and description. If default arguments are used, the object corresponds
          * to the end-of-list specifier, as detailed in \ref command_line_parsing. */
-        Argument (const char* name = NULL, std::string description = std::string()) :
+        Argument (const char* name = nullptr, std::string description = std::string()) :
           id (name), desc (description), type (Text), flags (None) {
-            defaults.text = NULL;
+            defaults.text = nullptr;
           }
 
         //! the argument name
@@ -184,7 +184,7 @@ namespace MR
         //! specifies that the argument should be a text string
         /*! If desired, a default string can be specified using the \a
          * default_text argument. */
-        Argument& type_text (const char* default_text = NULL) {
+        Argument& type_text (const char* default_text = nullptr) {
           type = Text;
           defaults.text = default_text;
           return *this;
@@ -193,14 +193,14 @@ namespace MR
         //! specifies that the argument should be an input image
         Argument& type_image_in () {
           type = ImageIn;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output image
         Argument& type_image_out () {
           type = ImageOut;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
@@ -227,7 +227,8 @@ namespace MR
         //! specifies that the argument should be a floating-point value
         /*! if desired, a default value can be specified, along with a range of
          * allowed values. */
-        Argument& type_float (float min = -INFINITY, float def = 0.0, float max = INFINITY) {
+        Argument& type_float (float min = -std::numeric_limits<float>::infinity(), 
+            float def = 0.0, float max = std::numeric_limits<float>::infinity()) {
           type = Float;
           defaults.f.min = min;
           defaults.f.def = def;
@@ -236,11 +237,11 @@ namespace MR
         }
 
         //! specifies that the argument should be selected from a predefined list
-        /*! The list of allowed values must be specified as a NULL-terminated
+        /*! The list of allowed values must be specified as a nullptr-terminated
          * list of C strings.  If desired, a default value can be specified,
          * in the form of an index into the list. Here is an example usage:
          * \code
-         * const char* mode_list [] = { "standard", "pedantic", "approx", NULL };
+         * const char* mode_list [] = { "standard", "pedantic", "approx", nullptr };
          *
          * ARGUMENTS
          *   + Argument ("mode", "the mode of operation")
@@ -257,28 +258,28 @@ namespace MR
         //! specifies that the argument should be an input file
         Argument& type_file_in () {
           type = ArgFileIn;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be an output file
         Argument& type_file_out () {
           type = ArgFileOut;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated integer values
         Argument& type_sequence_int () {
           type = IntSeq;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
         //! specifies that the argument should be a sequence of comma-separated floating-point values.
         Argument& type_sequence_float () {
           type = FloatSeq;
-          defaults.text = NULL;
+          defaults.text = nullptr;
           return *this;
         }
 
@@ -341,7 +342,7 @@ namespace MR
      */
     class Option : public std::vector<Argument> {
       public:
-        Option () : id (NULL), flags (Optional) { }
+        Option () : id (nullptr), flags (Optional) { }
 
         Option (const char* name, const std::string& description) :
           id (name), desc (description), flags (Optional) { }

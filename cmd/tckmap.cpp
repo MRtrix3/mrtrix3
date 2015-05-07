@@ -26,6 +26,7 @@
 #include "command.h"
 #include "point.h"
 #include "progressbar.h"
+#include "memory.h"
 
 #include "image/buffer_preload.h"
 #include "image/header.h"
@@ -173,34 +174,41 @@ AUTHOR = "Robert E. Smith (r.smith@brain.org.au) and J-Donald Tournier (d.tourni
 DESCRIPTION
   + "Use track data as a form of contrast for producing a high-resolution image.";
 
-REFERENCES = "For TDI or DEC TDI:\n"
-             "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
-             "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
-             "NeuroImage, 2010, 53, 1233-1243\n\n"
-             "If using -contrast length and -stat_vox mean:\n"
-             "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
-             "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
-             "NeuroImage, 2011, 55, 133-141\n\n"
-             "If using -dixel option with TDI contrast only:\n"
-             "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
-             "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
-             "In proc. ISMRM, 2011, 19, 673\n\n"
-             "If using -dixel option with any other contrast:\n"
-             "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
-             "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
-             "In Proc. ISMRM, 2012, 20, 1912\n\n"
-             "If using -tod option:\n"
-             "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. "
-             "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
-             "NeuroImage, 2014, 94, 312-336\n\n"
-             "If using other contrasts / statistics:\n"
-             "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
-             "A generalised framework for super-resolution track-weighted imaging. "
-             "NeuroImage, 2012, 59, 2494-2503\n\n"
-             "If using -precise mapping option:\n"
-             "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-             "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-             "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
+REFERENCES 
+  + "* For TDI or DEC TDI:\n"
+  "Calamante, F.; Tournier, J.-D.; Jackson, G. D. & Connelly, A. "
+  "Track-density imaging (TDI): Super-resolution white matter imaging using whole-brain track-density mapping. "
+  "NeuroImage, 2010, 53, 1233-1243"
+
+  + "* If using -contrast length and -stat_vox mean:\n"
+  "Pannek, K.; Mathias, J. L.; Bigler, E. D.; Brown, G.; Taylor, J. D. & Rose, S. E. "
+  "The average pathlength map: A diffusion MRI tractography-derived index for studying brain pathology. "
+  "NeuroImage, 2011, 55, 133-141"
+
+  + "* If using -dixel option with TDI contrast only:\n"
+  "Smith, R.E., Tournier, J-D., Calamante, F., Connelly, A. "
+  "A novel paradigm for automated segmentation of very large whole-brain probabilistic tractography data sets. "
+  "In proc. ISMRM, 2011, 19, 673"
+
+  + "* If using -dixel option with any other contrast:\n"
+  "Pannek, K., Raffelt, D., Salvado, O., Rose, S. "
+  "Incorporating directional information in diffusion tractography derived maps: angular track imaging (ATI). "
+  "In Proc. ISMRM, 2012, 20, 1912"
+  
+  + "* If using -tod option:\n"
+  "Dhollander, T., Emsell, L., Van Hecke, W., Maes, F., Sunaert, S., Suetens, P. "
+  "Track Orientation Density Imaging (TODI) and Track Orientation Distribution (TOD) based tractography. "
+  "NeuroImage, 2014, 94, 312-336"
+
+  + "* If using other contrasts / statistics:\n"
+  "Calamante, F.; Tournier, J.-D.; Smith, R. E. & Connelly, A. "
+  "A generalised framework for super-resolution track-weighted imaging. "
+  "NeuroImage, 2012, 59, 2494-2503"
+
+  + "* If using -precise mapping option:\n"
+  "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+  "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+  "NeuroImage, 2013, 67, 298-312 (Appendix 3)";
 
 ARGUMENTS
   + Argument ("tracks", "the input track file.").type_file_in()
@@ -382,21 +390,23 @@ void run () {
     writer_type = DEC;
     header.set_ndim (4);
     header.dim(3) = 3;
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
-  Ptr<DWI::Directions::FastLookupSet> dirs;
+  std::unique_ptr<DWI::Directions::FastLookupSet> dirs;
   opt = get_options ("dixel");
   if (opt.size()) {
     if (writer_type != GREYSCALE)
       throw Exception ("Options for setting output image dimensionality are mutually exclusive");
     writer_type = DIXEL;
     if (Path::exists (opt[0][0]))
-      dirs = new DWI::Directions::FastLookupSet (str(opt[0][0]));
+      dirs.reset (new DWI::Directions::FastLookupSet (str(opt[0][0])));
     else
-      dirs = new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0]));
+      dirs.reset (new DWI::Directions::FastLookupSet (to<size_t>(opt[0][0])));
     header.set_ndim (4);
     header.dim(3) = dirs->size();
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
     // Write directions to image header as diffusion encoding
     Math::Matrix<float> grad (dirs->size(), 4);
@@ -419,6 +429,7 @@ void run () {
       throw Exception ("lmax for TODI must be an even number");
     header.set_ndim (4);
     header.dim(3) = Math::SH::NforL (lmax);
+    header.sanitise();
     Image::Stride::set (header, Image::Stride::contiguous_along_axis (3, header));
   }
 
@@ -589,7 +600,7 @@ void run () {
   // Start initialising members for multi-threaded calculation
   TrackLoader loader (file, num_tracks);
 
-  Ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (header, contrast)) : (new TrackMapperTWI (header, contrast, stat_tck)));
+  std::unique_ptr<TrackMapperTWI> mapper ((stat_tck == GAUSSIAN) ? (new Gaussian::TrackMapper (header, contrast)) : (new TrackMapperTWI (header, contrast, stat_tck)));
   mapper->set_upsample_ratio      (upsample_ratio);
   mapper->set_map_zero            (map_zero);
   mapper->set_use_precise_mapping (precise);
@@ -615,13 +626,13 @@ void run () {
     header["twi_assoc_image"] = str(opt[0][0]);
   }
 
-  Ptr<MapWriterBase> writer;
+  std::unique_ptr<MapWriterBase> writer;
   switch (writer_type) {
     case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-    case GREYSCALE: writer = make_greyscale_writer (header, argument[1], stat_vox);      break;
-    case DEC:       writer = new MapWriter<float>  (header, argument[1], stat_vox, DEC); break;
-    case DIXEL:     writer = make_dixel_writer     (header, argument[1], stat_vox);      break;
-    case TOD:       writer = new MapWriter<float>  (header, argument[1], stat_vox, TOD); break;
+    case GREYSCALE: writer.reset (make_greyscale_writer (header, argument[1], stat_vox));      break;
+    case DEC:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, DEC)); break;
+    case DIXEL:     writer.reset (make_dixel_writer     (header, argument[1], stat_vox));      break;
+    case TOD:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, TOD)); break;
   }
 
   writer->set_direct_dump (dump);
@@ -630,7 +641,7 @@ void run () {
   // Complete branch here for Gaussian track-wise statistic; it's a nightmare to manage, so am
   //   keeping the code as separate as possible
   if (stat_tck == GAUSSIAN) {
-    Gaussian::TrackMapper* const mapper_ptr = dynamic_cast<Gaussian::TrackMapper*>((TrackMapperTWI*)mapper);
+    Gaussian::TrackMapper* const mapper_ptr = dynamic_cast<Gaussian::TrackMapper*>(mapper.get());
     mapper_ptr->set_gaussian_FWHM (gaussian_fwhm_tck);
     switch (writer_type) {
       case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");

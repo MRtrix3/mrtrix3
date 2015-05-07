@@ -48,8 +48,9 @@ ARGUMENTS
 OPTIONS
   + Option ("axis",
   "specify axis along which concatenation should be performed. By default, "
-  "the program will use the axis after the last non-singleton axis of any "
-  "of the input images")
+  "the program will use the last non-singleton, non-spatial axis of any of "
+  "the input images - in other words axis 3 or whichever axis (greater than 3) "
+  "of the input images has size greater than one.")
   + Argument ("axis").type_integer (0, std::numeric_limits<int>::max(), std::numeric_limits<int>::max())
 
   + DataType::options();
@@ -67,22 +68,22 @@ void run () {
     axis = opt[0][0];
 
   int num_images = argument.size()-1;
-  std::vector<Ptr<Image::Buffer<value_type> > > in (num_images);
-  in[0] = new Image::Buffer<value_type> (argument[0]);
+  std::vector<std::unique_ptr<Image::Buffer<value_type>>> in (num_images);
+  in[0].reset (new Image::Buffer<value_type> (argument[0]));
   Image::ConstHeader& header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i] = new Image::Buffer<value_type> (argument[i]);
+    in[i].reset (new Image::Buffer<value_type> (argument[i]));
     for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
   }
-  ndims++;
 
-  if (axis < 0) axis = ndims-1;
+  if (axis < 0) axis = std::max (3, ndims);
+  ++ndims;
 
   for (int i = 0; i < ndims; i++)
     if (i != axis)
@@ -145,29 +146,29 @@ void run () {
 
 
 
-
   Image::Buffer<value_type> data_out (argument[num_images], header_out);
   auto out_vox = data_out.voxel();
-
-  ProgressBar progress ("concatenating...", Image::voxel_count (out_vox));
   int axis_offset = 0;
+
 
   for (int i = 0; i < num_images; i++) {
     auto in_vox = in[i]->voxel();
 
-    for (auto l = Image::Loop() (in_vox); l; ++l) {
-      for (size_t dim = 0; dim < out_vox.ndim(); dim++) {
-        if (static_cast<int> (dim) == axis)
-          out_vox[dim] = dim < in_vox.ndim() ? axis_offset + in_vox[dim] : i;
-        else
-          out_vox[dim] = in_vox[dim];
-      }
-      out_vox.value() = in_vox.value();
-      progress++;
-    }
-    if (axis < static_cast<int> (in_vox.ndim()))
+    auto copy_func = [&axis, &axis_offset](decltype(out_vox)& out, decltype(in_vox)& in) 
+    {
+      if (axis < int(in.ndim())) 
+        out[axis] = in[axis] + axis_offset;
+      out.value() = in.value();
+    };
+
+    Image::ThreadedLoop ("concatenating \"" + in_vox.name() + "\"...", in_vox, 0, std::min (in_vox.ndim(), out_vox.ndim()))
+      .run (copy_func, out_vox, in_vox);
+    if (axis < int(in_vox.ndim()))
       axis_offset += in_vox.dim (axis);
-    else
-      axis_offset++;
+    else {
+      ++axis_offset;
+      out_vox[axis] = axis_offset;
+    }
   }
 }
+

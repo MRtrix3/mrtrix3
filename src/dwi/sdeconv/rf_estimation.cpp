@@ -214,21 +214,25 @@ bool ResponseEstimator::operator() (const FODSegResult& in)
   }
 
   // Convert directions from Euclidean space to azimuth/elevation pairs
-  Math::Matrix<float> dirs;
-  DWI::gen_direction_matrix (dirs, rotated_grad, shared.dwis);
+  Math::Matrix<float> dirs = DWI::gen_direction_matrix (rotated_grad, shared.dwis);
 
-  // Convert the DWI signal to spherical harmonics in the new reference frame
-  Math::SH::Transform<float> transform (dirs, lmax);
-  Math::Vector<float> SH;
-  transform.A2SH (SH, dwi_data);
+  try {
 
-  // Extract the m=0 components and save
-  Math::Vector<float> response (lmax/2+1);
-  for (size_t l = 0; l <= lmax; l += 2)
-    response[l/2] = SH[Math::SH::index (l, 0)];
-  {
+    // Convert the DWI signal to spherical harmonics in the new reference frame
+    Math::SH::Transform<float> transform (dirs, lmax);
+    Math::Vector<float> SH;
+    transform.A2SH (SH, dwi_data);
+
+    // Extract the m=0 components and save
+    Math::Vector<float> response (lmax/2+1);
+    for (size_t l = 0; l <= lmax; l += 2)
+      response[l/2] = SH[Math::SH::index (l, 0)];
+
     std::lock_guard<std::mutex> lock (*mutex);
     output += response;
+
+  } catch (...) {
+    WARN ("Invalid rotated-gradient SH transformation in voxel " + str(in.get_vox()));
   }
 
   return true;
@@ -244,7 +248,7 @@ Math::Matrix<float> ResponseEstimator::gen_rotation_matrix (const Point<float>& 
   // Here the other two axes are determined at random (but both are orthogonal to the FOD peak direction)
   Math::Matrix<float> R (3, 3);
   R (2, 0) = dir[0]; R (2, 1) = dir[1]; R (2, 2) = dir[2];
-  Point<float> vec2 (rng.uniform(), rng.uniform(), rng.uniform());
+  Point<float> vec2 (rng(), rng(), rng());
   vec2 = dir.cross (vec2);
   vec2.normalise();
   R (0, 0) = vec2[0]; R (0, 1) = vec2[1]; R (0, 2) = vec2[2];

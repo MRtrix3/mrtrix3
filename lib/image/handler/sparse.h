@@ -29,7 +29,7 @@
 #include <typeinfo>
 
 #include "debug.h"
-#include "ptr.h"
+#include "memory.h"
 #include "file/config.h"
 #include "file/mmap.h"
 #include "file/utils.h"
@@ -106,7 +106,7 @@ namespace MR
           const size_t class_size;
           const File::Entry file;
           uint64_t data_end;
-          Ptr<File::MMap> mmap;
+          std::unique_ptr<File::MMap> mmap;
 
 
           uint64_t size() const { return (mmap ? mmap->size() : 0); }

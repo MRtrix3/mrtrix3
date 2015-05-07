@@ -54,17 +54,21 @@ namespace MR
 
         if (current_sparse_data_size) {
 
-          mmap = new File::MMap (file, Base::writable, true, current_sparse_data_size);
+          mmap.reset (new File::MMap (file, Base::writable, true, current_sparse_data_size));
           data_end = current_sparse_data_size;
 
         } else if (Base::writable) {
+
+          //CONF option: SparseDataInitialSize
+          //CONF default: 16777216
+          //CONF initial buffer size for data in MRtrix sparse image format file (in bytes).
 
           // Default = initialise 16MB, this is enough to store whole-brain fixel data at 2.5mm resolution
           const uint64_t init_sparse_data_size = File::Config::get_int ("SparseDataInitialSize", 16777216);
           const size_t new_file_size = file.start + init_sparse_data_size;
           DEBUG ("Initialising output sparse data file " + file.name + ": new file size " + str(new_file_size) + " (" + str(init_sparse_data_size) + " of which is initial sparse data buffer)");
           File::resize (file.name, new_file_size);
-          mmap = new File::MMap (file, Base::writable, false, init_sparse_data_size);
+          mmap.reset (new File::MMap (file, Base::writable, false, init_sparse_data_size));
 
           // Writes a single uint32_t(0) to the start of the sparse data region
           // Any voxel that has its value initialised to 0 will point here, and therefore dereferencing of any
@@ -79,7 +83,7 @@ namespace MR
         //   raw image data - otherwise any random data could be misinterpreted as a large
         //   pointer offset from the start of the sparse image data
         if (Base::is_new) {
-          for (std::vector< RefPtr<File::MMap> >::iterator i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
+          for (auto i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
             memset ((*i)->address(), 0x00, (*i)->size());
         }
 
@@ -96,7 +100,7 @@ namespace MR
         // Null the excess data before closing the memory map to prevent std::ofstream from giving an error
         //   (writing uninitialised values)
         memset (off2mem(data_end), 0x00, size() - data_end);
-        mmap = NULL;
+        mmap.reset();
 
         if (truncate_file_size) {
           DEBUG ("truncating sparse image data file " + file.name + " to " + str(truncate_file_size) + " bytes");
@@ -172,12 +176,12 @@ namespace MR
           //   (this does not prohibit the use of this memory for subsequent sparse data though)
           memset (off2mem(data_end), 0x00, size() - data_end);
 
-          mmap = NULL;
+          mmap.reset();
 
           const size_t new_file_size = file.start + new_sparse_data_size;
           DEBUG ("Resizing sparse data file " + file.name + ": new file size " + str(new_file_size) + " (" + str(new_sparse_data_size) + " of which is for sparse data)");
           File::resize (file.name, new_file_size);
-          mmap = new File::MMap (file, Base::writable, true, new_sparse_data_size);
+          mmap.reset (new File::MMap (file, Base::writable, true, new_sparse_data_size));
 
         }
 

@@ -30,7 +30,7 @@
 #include "command.h"
 #include "datatype.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -72,7 +72,7 @@ void usage ()
 
 
   ARGUMENTS
-    + Argument ("SH", "the input image of SH coefficients.").allow_multiple().type_image_in();
+    + Argument ("SH", "the input image(s) of SH coefficients.").allow_multiple().type_image_in();
 
 
   OPTIONS
@@ -155,9 +155,9 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Each order has a different power, and a different number of m!=0 volumes.
   // Therefore, calculate the mean-square intensity for the m==0 and m!=0
   // volumes independently, and report ratio for each harmonic order
-  Ptr<ProgressBar> progress;
+  std::unique_ptr<ProgressBar> progress;
   if (App::log_level > 0 && App::log_level < 2)
-    progress = new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1);
+    progress.reset (new ProgressBar ("Evaluating SH basis of image \"" + H.name() + "\"...", N-1));
 
   std::vector<float> ratios;
 

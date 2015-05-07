@@ -34,35 +34,6 @@ namespace MR
   namespace Image
   {
 
-    namespace
-    {
-
-      inline size_t not_any_of (size_t a, size_t b)
-      {
-        for (size_t i = 0; i < 3; ++i) {
-          if (a == i || b == i)
-            continue;
-          return i;
-        }
-        assert (0);
-        return UINT_MAX;
-      }
-
-      void disambiguate_permutation (Math::Permutation& permutation)
-      {
-        if (permutation[0] == permutation[1])
-          permutation[1] = not_any_of (permutation[0], permutation[2]);
-
-        if (permutation[0] == permutation[2])
-          permutation[2] = not_any_of (permutation[0], permutation[1]);
-
-        if (permutation[1] == permutation[2])
-          permutation[2] = not_any_of (permutation[0], permutation[1]);
-      }
-
-    }
-
-
     bool Header::do_not_realign_transform = false;
 
 
@@ -139,7 +110,7 @@ namespace MR
 
         while (++item < list.size()) {
           Header header (*this);
-          RefPtr<Handler::Base> H_handler;
+          std::shared_ptr<Handler::Base> H_handler;
           header.name() = list[item].name();
           if (!(H_handler = (*format_handler)->read (header)))
             throw Exception ("image specifier contains mixed format files");
@@ -185,6 +156,10 @@ namespace MR
       try {
         INFO ("creating image \"" + image_name + "\"...");
 
+        (*this)["mrtrix_version"] = App::mrtrix_version;
+        if (App::project_version)
+          (*this)["project_version"] = App::project_version;
+
         sanitise();
 
         NameParser parser;
@@ -228,7 +203,7 @@ namespace MR
 
         while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
-          RefPtr<Handler::Base> H_handler ((*format_handler)->create (header));
+          std::shared_ptr<Handler::Base> H_handler ((*format_handler)->create (header));
           assert (H_handler);
           merge (header);
           handler_->merge (*H_handler);

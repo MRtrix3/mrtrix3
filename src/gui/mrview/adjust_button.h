@@ -57,8 +57,12 @@ namespace MR
             max = val;
           }
 
+          float getMin() const { return min; }
+          float getMax() const { return max; }
+
         signals:
           void valueChanged ();
+          void valueChanged (float val);
 
         protected slots:
           void onSetValue ();

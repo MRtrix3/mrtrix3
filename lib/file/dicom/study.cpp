@@ -36,7 +36,7 @@ namespace MR {
         bool series_time_mismatch_warning_issued = false;
       }
 
-      RefPtr<Series> Study::find (const std::string& series_name, size_t series_number,
+      std::shared_ptr<Series> Study::find (const std::string& series_name, size_t series_number,
           const std::string& series_modality, const std::string& series_date, const std::string& series_time)
       {
         for (size_t n = 0; n < size(); n++) {
@@ -63,7 +63,7 @@ namespace MR {
           }
         }
 
-        push_back (RefPtr<Series> (new Series (this, series_name, series_number, series_modality, series_date, series_time)));
+        push_back (std::shared_ptr<Series> (new Series (this, series_name, series_number, series_modality, series_date, series_time)));
         return back();
       }
 

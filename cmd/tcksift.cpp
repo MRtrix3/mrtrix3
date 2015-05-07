@@ -27,6 +27,8 @@
 
 #include "image/buffer.h"
 
+#include "math/SH.h"
+
 #include "dwi/directions/set.h"
 
 #include "dwi/tractography/SIFT/proc_mask.h"
@@ -55,9 +57,10 @@ void usage ()
   DESCRIPTION
   + "filter a whole-brain fibre-tracking data set such that the streamline densities match the FOD lobe integrals.";
 
-  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-               "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-               "NeuroImage, 2013, 67, 298-312";
+  REFERENCES 
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT: Spherical-deconvolution informed filtering of tractograms. "
+    "NeuroImage, 2013, 67, 298-312";
 
   ARGUMENTS
   + Argument ("in_tracks",  "the input track file").type_file_in()
@@ -92,6 +95,7 @@ void run ()
   const bool out_debug = opt.size();
 
   Image::Buffer<float> in_dwi (argument[1]);
+  Math::SH::check (in_dwi);
   DWI::Directions::FastLookupSet dirs (1281);
 
   SIFTer sifter (in_dwi, dirs);
@@ -103,7 +107,7 @@ void run ()
   }
 
   sifter.perform_FOD_segmentation (in_dwi);
-  sifter.scale_FODs_by_GM();
+  sifter.scale_FDs_by_GM();
 
   sifter.map_streamlines (argument[0]);
 

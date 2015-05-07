@@ -27,7 +27,6 @@
 
 #include "app.h"
 #include "point.h"
-#include "ptr.h"
 
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
@@ -161,13 +160,14 @@ namespace MR
             H.info() = dwi.info();
             H.set_ndim (3);
           }
+          ModelBase (const ModelBase& that) = delete;
 
           virtual ~ModelBase () { }
 
 
           template <class BufferType>
           void perform_FOD_segmentation (BufferType&);
-          void scale_FODs_by_GM ();
+          void scale_FDs_by_GM ();
 
           void map_streamlines (const std::string&);
 
@@ -177,7 +177,7 @@ namespace MR
           double calc_cost_function() const;
 
           double mu() const { return FOD_sum / TD_sum; }
-          bool have_act_data() const { return act_5tt; }
+          bool have_act_data() const { return bool (act_5tt); }
 
           void output_proc_mask (const std::string&);
           void output_5tt_image (const std::string&);
@@ -191,7 +191,7 @@ namespace MR
           using Fixel_map<Fixel>::fixels;
           using Mapping::Fixel_TD_map<Fixel>::dirs;
 
-          Ptr< Image::BufferScratch<float> > act_5tt;
+          std::unique_ptr< Image::BufferScratch<float> > act_5tt;
           Image::BufferScratch<float> proc_mask_buffer;
           Image::BufferScratch<float>::voxel_type proc_mask;
           Image::Header H;
@@ -211,11 +211,6 @@ namespace MR
           void output_scatterplot (const std::string&) const;
           void output_fixel_count_image (const std::string&) const;
           void output_untracked_fixels (const std::string&, const std::string&) const;
-
-
-          ModelBase (const ModelBase& that) : 
-            Mapping::Fixel_TD_map<Fixel> (that), act_5tt (NULL), proc_mask_buffer (that.proc_mask.info()), 
-            proc_mask (proc_mask_buffer), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
 
       };
 
@@ -239,12 +234,12 @@ namespace MR
 
 
       template <class Fixel>
-      void ModelBase<Fixel>::scale_FODs_by_GM ()
+      void ModelBase<Fixel>::scale_FDs_by_GM ()
       {
-        if (App::get_options("no_fod_scaling").size())
+        if (App::get_options("no_fd_scaling").size())
           return;
         if (!act_5tt) {
-          INFO ("Cannot scale FOD amplitudes according to GM fraction; no ACT image data provided");
+          INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
           return;
         }
         // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
@@ -272,11 +267,10 @@ namespace MR
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
 
-        const float upsample_ratio = Mapping::determine_upsample_ratio (H, properties, 0.1);
-
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperBase mapper (H, dirs);
-        mapper.set_upsample_ratio (upsample_ratio);
+        mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (H, properties, 0.1));
+        mapper.set_use_precise_mapping (true);
         Thread::run_queue (
             loader,
             Thread::batch (Tractography::Streamline<float>()),
@@ -352,8 +346,9 @@ namespace MR
       void ModelBase<Fixel>::output_5tt_image (const std::string& path)
       {
         if (!have_act_data())
-          throw Exception ("Cannot export 5TT image; none exists!");
-        act_5tt->voxel().save (path);
+          throw Exception ("Cannot export 5TT image; no such data present");
+        Image::BufferScratch<float>::voxel_type v (*act_5tt);
+        v.save (path);
       }
 
 

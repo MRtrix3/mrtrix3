@@ -59,7 +59,7 @@ namespace MR
         }
 
 
-      void AdjustButton::onSetValue () { emit valueChanged(); }
+      void AdjustButton::onSetValue () { emit valueChanged(); emit valueChanged(value()); }
 
 
 
@@ -86,10 +86,12 @@ namespace MR
                 if (value() != deadzone_value) {
                   setValue (deadzone_value);
                   emit valueChanged();
+                  emit valueChanged(value());
                 }
               } else if (mevent->y() != previous_y) {
                 setValue (value() - rate * (mevent->y() - previous_y));
                 emit valueChanged();
+                emit valueChanged(value());
               }
               previous_y = mevent->y();
               return true;

@@ -24,6 +24,7 @@
 #define __mrtrix_thread_h__
 
 #include <thread>
+#include <future>
 #include <mutex>
 
 #include "debug.h"
@@ -56,41 +57,52 @@ namespace MR
         __Backend();
         ~__Backend();
 
-        size_t refcount;
+        static void register_thread () { 
+          if (!backend)
+            backend = new __Backend;
+          std::lock_guard<std::mutex> lock (get_lock());
+          ++backend->refcount; 
+        }
+        static void unregister_thread () {
+          std::lock_guard<std::mutex> lock (get_lock());
+          --backend->refcount;
+          if (!backend->refcount) {
+            delete backend;
+            backend = nullptr;
+          }
+        }
 
-        std::mutex mutex;
+        static std::mutex& get_lock () {
+          return backend->mutex;
+        }
+
+
         static void thread_print_func (const std::string& msg);
         static void thread_report_to_user_func (const std::string& msg, int type);
 
         static void (*previous_print_func) (const std::string& msg);
         static void (*previous_report_to_user_func) (const std::string& msg, int type);
+
+      protected:
+        size_t refcount;
+        std::mutex mutex;
+
+        static __Backend* backend;
     };
 
-    extern __Backend* __backend;
 
     namespace {
 
       class __thread_base {
         public:
-          __thread_base (const std::string& name = "unnamed") : name (name) { init(); }
-          ~__thread_base () { done(); }
+          __thread_base (const std::string& name = "unnamed") : name (name) { __Backend::register_thread(); }
+          __thread_base (const __thread_base&) = delete;
+          __thread_base (__thread_base&&) = default;
+          ~__thread_base () { __Backend::unregister_thread(); }
 
 
         protected:
           const std::string name;
-
-          void init() {
-            if (!__backend)
-              __backend = new __Backend;
-            ++__backend->refcount;
-          }
-          void done() {
-            --__backend->refcount;
-            if (!__backend->refcount) {
-              delete __backend;
-              __backend = nullptr;
-            }
-          }
       };
 
 
@@ -101,19 +113,26 @@ namespace MR
             __thread_base (name) { 
               DEBUG ("launching thread \"" + name + "\"...");
               typedef typename std::remove_reference<Functor>::type F;
-              thread = std::thread (&F::execute, std::ref (functor));
+              thread = std::async (std::launch::async, &F::execute, &functor);
             }
-          __single_thread (const __single_thread& s) = delete;
-          __single_thread (__single_thread&& s) = default;
+          __single_thread (const __single_thread&) = delete;
+          __single_thread (__single_thread&&) = default;
 
-          ~__single_thread () { 
+          void wait () noexcept (false) {
             DEBUG ("waiting for completion of thread \"" + name + "\"...");
-            thread.join(); 
+            thread.get(); 
             DEBUG ("thread \"" + name + "\" completed OK");
           }
 
+          ~__single_thread () {
+            if (thread.valid()) {
+              try { wait(); }
+              catch (Exception& E) { E.display(); }
+            }
+          }
+
         protected:
-          std::thread thread;
+          std::future<void> thread;
       };
 
 
@@ -126,21 +145,45 @@ namespace MR
                 typedef typename std::remove_reference<Functor>::type F;
                 threads.reserve (nthreads);
                 for (auto& f : functors) 
-                  threads.push_back (std::thread (&F::execute, std::ref (f)));
-                threads.push_back (std::thread (&F::execute, std::ref (functor)));
+                  threads.push_back (std::async (std::launch::async, &F::execute, &f));
+                threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
 
             __multi_thread (const __multi_thread& m) = delete;
             __multi_thread (__multi_thread&& m) = default;
 
-            ~__multi_thread () { 
+            void wait () noexcept (false) {
               DEBUG ("waiting for completion of threads \"" + name + "\"...");
-              for (auto& t : threads) 
-                t.join();
+              bool exception_thrown = false;
+              for (auto& t : threads) {
+                if (!t.valid()) 
+                  continue;
+                try { t.get(); }
+                catch (Exception& E) { 
+                  exception_thrown = true;
+                  E.display(); 
+                }
+              }
+              if (exception_thrown) 
+                throw Exception ("exception thrown from one or more threads \"" + name + "\"");
               DEBUG ("threads \"" + name + "\" completed OK");
             }
+
+            bool any_valid () const {
+              for (auto& t : threads) 
+                if (t.valid()) 
+                  return true;
+              return false;
+            }
+
+            ~__multi_thread () {
+              if (any_valid()) {
+                try { wait(); }
+                catch (Exception& E) { E.display(); }
+              }
+            }
           protected:
-            std::vector<std::thread> threads;
+            std::vector<std::future<void>> threads;
             std::vector<typename std::remove_reference<Functor>::type> functors;
 
         };
@@ -151,9 +194,9 @@ namespace MR
           public:
             __Multi (Functor& object, size_t number) : functor (object), num (number) { }
             __Multi (__Multi&& m) = default;
-            template <class X> bool operator() (const X& x) { assert (0); return false; }
-            template <class X> bool operator() (X& x) { assert (0); return false; }
-            template <class X, class Y> bool operator() (const X& x, Y& y) { assert (0); return false; }
+            template <class X> bool operator() (const X&) { assert (0); return false; }
+            template <class X> bool operator() (X&) { assert (0); return false; }
+            template <class X, class Y> bool operator() (const X&, Y&) { assert (0); return false; }
             typename std::remove_reference<Functor>::type& functor;
             size_t num;
         };
@@ -258,11 +301,42 @@ namespace MR
      * auto my_threads = Thread::run (Thread::multi (func), "my function");
      * ...
      * \endcode
+     *
+     * \par Exception handling
+     *
+     * Proper handling of exceptions in a multi-threaded context is
+     * non-trivial, and in general you should take every precaution to prevent
+     * threads from throwing exceptions. This means you should perform all
+     * error checking within a single-threaded context, before starting
+     * processing-intensive threads, so as to minimise the chances of anything
+     * going wrong at that stage. 
+     *
+     * In this implementation, the wait() function can be used to wait until
+     * all threads have completed, at which point any exceptions thrown will be
+     * displayed, and a futher exception re-thrown to allow the main
+     * application to catch the error (this could be the same exception that
+     * was originally thrown if a single thread was run). This means the
+     * application will continue processing if any of the remaining threads
+     * remain active, and it may be a while before the application itself is
+     * allowed to handle the error appropriately. If this is behaviour is not
+     * appropriate, and you expect exceptions to be thrown occasionally, you
+     * should take steps to handle these yourself (e.g. by setting / checking
+     * some flag within your threads, etc.).
+     *
+     * \note while the wait() function will also be invoked in the destructor,
+     * any exceptions thrown will be caught and \e not re-thrown (throwing in
+     * the destructor is considered bad practice). This is to prevent undefined
+     * behaviour (i.e. crashes) when multiple thread objects are launched
+     * within the same scope, each of which might throw. In these cases, it is
+     * best to explicitly call wait() for each of the objects returned by
+     * Thread::run(), rather than relying on the destructor alone (note
+     * Thread::Queue already does this). 
+     *
      */
     template <class Functor>
       inline typename __run<Functor>::type run (Functor&& functor, const std::string& name = "unnamed") 
       {
-        return __run<typename std::remove_reference<Functor>::type>() (functor, name); 
+        return __run<typename std::remove_reference<Functor>::type>() (functor, name);
       }
 
     /** @} */

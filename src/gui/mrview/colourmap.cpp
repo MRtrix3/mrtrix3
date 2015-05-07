@@ -52,6 +52,10 @@ namespace MR
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
 
+          Entry ("Colour", 
+              "color.rgb = 2.7213 * amplitude * colourmap_colour;\n",
+              NULL, false, true),
+
           Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
               "length (color.rgb)",
@@ -110,9 +114,23 @@ namespace MR
         Renderer::Renderer () : 
           current_index (0),
           current_inverted (false),
+          //CONF option: MRViewColourBarWidth
+          //CONF default: 20
+          //CONF The width of the colourbar in MRView, in pixels.
           width (MR::File::Config::get_float ("MRViewColourBarWidth", 20.0f)), 
+          //CONF option: MRViewColourBarHeight
+          //CONF default: 100
+          //CONF The height of the colourbar in MRView, in pixels.
           height (MR::File::Config::get_float ("MRViewColourBarHeight", 100.0f)), 
+          //CONF option: MRViewColourBarInset
+          //CONF default: 20
+          //CONF How far away from the edge of the main window to place the
+          //CONF colourbar in MRView, in pixels.
           inset (MR::File::Config::get_float ("MRViewColourBarInset", 20.0f)), 
+          //CONF option: MRViewColourBarTextOffset
+          //CONF default: 10
+          //CONF How far away from the colourbar to place the associated text,
+          //CONF in pixels.
           text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)) { } 
 
 
@@ -141,12 +159,15 @@ namespace MR
 
           GL::Shader::Vertex vertex_shader (source);
 
-          GL::Shader::Fragment fragment_shader (
+          std::string shader = 
               "in float amplitude;\n"
               "out vec3 color;\n"
+              "uniform vec3 colourmap_colour;\n"
               "void main () {\n"
               "  " + std::string(maps[index].mapping) +
-              "}\n");
+              "}\n";
+
+          GL::Shader::Fragment fragment_shader (shader);
 
           program.attach (vertex_shader);
           program.attach (fragment_shader);
@@ -232,12 +253,15 @@ namespace MR
           program.start();
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          if (maps[object.colourmap].is_colour)
+            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
+                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 
           frame_program.start();
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / projection.width());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / projection.height());
           gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 

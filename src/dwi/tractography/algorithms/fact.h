@@ -96,10 +96,11 @@ namespace MR
         if (!get_data (source)) return false;
         if (!S.init_dir) {
           if (!dir.valid())
-            dir.set (rng.normal(), rng.normal(), rng.normal());
-        } else {
+            dir = random_direction();
+        } 
+        else 
           dir = S.init_dir;
-        }
+        
         return do_next (dir) >= S.threshold;
       }
 

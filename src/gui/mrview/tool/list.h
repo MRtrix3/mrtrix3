@@ -1,8 +1,8 @@
-# ifndef TOOL
+#ifndef TOOL
 
 // place #include files in here:
 #include "gui/mrview/tool/view.h"
-//#include "gui/mrview/tool/roi_analysis.h"
+#include "gui/mrview/tool/roi_analysis/roi.h"
 #include "gui/mrview/tool/overlay.h"
 #include "gui/mrview/tool/odf.h"
 #include "gui/mrview/tool/vector.h"
@@ -17,12 +17,12 @@ The second argument is the name of the mode as displayed in the menu.
 The third argument is the text to be shown in the menu tooltip. */
 
 TOOL(View, View options, Adjust view settings)
-//TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
+TOOL(ROI, ROI analysis, Draw & analyse regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(Tractography, Tractography, Display tracks over the current image)
-TOOL(ODF, ODF Display, Display orientation density functions)
-TOOL(Vector, Vector Plot, Plot vector images)
-TOOL(ScreenCapture, Screen capture, Capture the screen as a png file)
+TOOL(ODF, ODF display, Display orientation density functions)
+TOOL(Vector, Vector plot, Plot vector images)
+TOOL(Capture, Screen capture, Capture the screen as a png file)
 
 #endif
 

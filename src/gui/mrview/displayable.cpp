@@ -45,10 +45,14 @@ namespace MR
         alpha (NAN),
         colourmap (0),
         show (true),
+        show_colour_bar (true),
         filename (filename),
         value_min (NAN),
         value_max (NAN),
-        flags_ (0x00000000) { }
+        flags_ (0x00000000) { 
+          colour[0] = colour[1] = 255;
+          colour[2] = 0;
+        }
 
 
       Displayable::Displayable (Window& window, const std::string& filename) :
@@ -62,11 +66,14 @@ namespace MR
         alpha (NAN),
         colourmap (0), 
         show (true),
+        show_colour_bar (true),
         filename (filename),
         value_min (NAN),
         value_max (NAN),
         flags_ (0x00000000) {
           connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
+          colour[0] = colour[1] = 255;
+          colour[2] = 0;
       }
 
 

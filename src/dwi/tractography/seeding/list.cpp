@@ -89,7 +89,7 @@ namespace MR
 
           do {
             float incrementer = 0.0;
-            const float sample = rng.uniform() * total_volume;
+            const float sample = rng() * total_volume;
             for (std::vector<Base*>::iterator i = seeders.begin(); i != seeders.end(); ++i) {
               if ((incrementer += (*i)->vol()) > sample)
                 return (*i)->get_seed (p, d);

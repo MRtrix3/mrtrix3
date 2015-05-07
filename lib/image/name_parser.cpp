@@ -32,22 +32,6 @@ namespace MR
     namespace
     {
 
-      inline bool is_seq_char (char c)
-      {
-        return isdigit (c) || c == ',' || c == ':' || c == '%';
-      }
-
-
-
-      inline int last_bracket (const std::string& str, int from, char c)
-      {
-        while (str[from] != c && from >= 0)
-          from--;
-        return from;
-      }
-
-
-
       inline bool in_seq (const std::vector<int>& seq, int val)
       {
         if (seq.size() == 0) 
@@ -256,7 +240,7 @@ namespace MR
     std::string NameParser::get_next_match (std::vector<int>& indices, bool return_seq_index)
     {
       if (!folder)
-        folder = new Path::Dir (folder_name);
+        folder.reset (new Path::Dir (folder_name));
 
       std::string fname;
       while ( (fname = folder->read_name()).size()) {
@@ -295,7 +279,7 @@ namespace MR
       parser.parse (specifier);
 
       scan (parser);
-      std::sort (list.begin(), list.end(), PtrComp());
+      std::sort (list.begin(), list.end(), compare_ptr_contents());
       std::vector<int> dim = count();
 
       for (size_t n = 0; n < dim.size(); n++)
@@ -315,14 +299,14 @@ namespace MR
     {
       std::vector<int> index;
       if (parser.ndim() == 0) {
-        list.push_back (RefPtr<ParsedName> (new ParsedName (parser.name (index), index)));
+        list.push_back (std::shared_ptr<ParsedName> (new ParsedName (parser.name (index), index)));
         return;
       }
 
       std::string entry;
 
       while ( (entry = parser.get_next_match (index, true)).size())
-        list.push_back (RefPtr<ParsedName> (new ParsedName (entry, index)));
+        list.push_back (std::shared_ptr<ParsedName> (new ParsedName (entry, index)));
 
       if (!size())
         throw Exception ("no matching files found for image specifier \"" + parser.spec() + "\"");
@@ -355,7 +339,7 @@ namespace MR
     {
       int n;
       bool stop = false;
-      RefPtr<const ParsedName> first_entry ( list[current_entry]);
+      std::shared_ptr<const ParsedName> first_entry ( list[current_entry]);
 
       for (n = 0; current_entry < size(); n++) {
         for (size_t d = 0; d < current_dim; d++)

@@ -49,7 +49,7 @@ void usage ()
 
   OPTIONS
     + Option ("bzero", "output b=0 volumes instead of the diffusion weighted volumes.")
-    + DWI::GradOption
+    + DWI::GradImportOptions()
     + DWI::ShellOption;
 }
 
@@ -94,14 +94,10 @@ void run() {
   else
     header.dim (3) = volumes.size();
 
-  if (bzero) {
-    header.DW_scheme().clear();
-  } else {
-    Math::Matrix<value_type> new_grad (volumes.size(), 4);
-    for (size_t i = 0; i < volumes.size(); i++)
-      new_grad.row (i) = grad.row (volumes[i]);
-    header.DW_scheme() = new_grad;
-  }
+  Math::Matrix<value_type> new_grad (volumes.size(), 4);
+  for (size_t i = 0; i < volumes.size(); i++)
+    new_grad.row (i) = grad.row (volumes[i]);
+  header.DW_scheme() = new_grad;
 
   Image::Buffer<value_type> data_out (argument[1], header);
   auto voxel_out = data_out.voxel();

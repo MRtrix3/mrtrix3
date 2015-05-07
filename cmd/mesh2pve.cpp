@@ -44,9 +44,10 @@ void usage ()
   DESCRIPTION
   + "convert a mesh surface to a partial volume estimation image.";
 
-  REFERENCES = "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-               "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
-               "NeuroImage, 2012, 62, 1924-1938";
+  REFERENCES 
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "Anatomically-constrained tractography: Improved diffusion MRI streamlines tractography through effective use of anatomical information. "
+    "NeuroImage, 2012, 62, 1924-1938";
 
   ARGUMENTS
   + Argument ("source",   "the mesh file (currently only .vtk files are supported)").type_file_in()

@@ -35,6 +35,11 @@
 
 namespace MR
 {
+  namespace App { 
+    class OptionList; 
+    class Options;
+  }
+
   namespace GUI
   {
     namespace MRView
@@ -57,7 +62,21 @@ namespace MR
             Base (Window& main_window, Dock* parent);
             Window& window;
 
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+
             virtual QSize sizeHint () const;
+
+            void grab_focus () {
+              window.tool_has_focus = this;
+              window.set_cursor();
+            }
+            void release_focus () {
+              if (window.tool_has_focus == this) {
+                window.tool_has_focus = nullptr;
+                window.set_cursor();
+              }
+            }
 
             class HBoxLayout : public QHBoxLayout {
               public:
@@ -104,9 +123,16 @@ namespace MR
                 }
             };
 
+            void adjustSize();
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
             virtual void drawOverlays (const Projection& transform);
-            virtual bool process_batch_command (const std::string& cmd, const std::string& args);
+            virtual int draw_tool_labels (int, int, const Projection&) const { return 0; }
+            virtual bool mouse_press_event ();
+            virtual bool mouse_move_event ();
+            virtual bool mouse_release_event ();
+            virtual void reset_event () {}
+            virtual QCursor* get_cursor ();
+            void update_cursor() { window.set_cursor(); }
         };
 
 
@@ -138,8 +164,9 @@ namespace MR
             Dock* dock = new Dock (&main_window, text);
             main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
             dock->tool = new T (main_window, dock);
+            dock->tool->adjustSize();
             dock->setWidget (dock->tool);
-            dock->setFloating (MR::File::Config::get_int ("MRViewDockFloating", 0));
+            dock->setFloating (true);
             dock->show();
             return dock;
           }
@@ -165,8 +192,8 @@ namespace MR
 
 
       }
+    }
   }
-}
 }
 
 #endif

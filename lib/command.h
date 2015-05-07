@@ -31,19 +31,19 @@
 
 extern "C" void R_main (int* cmdline_argc, char** cmdline_argv) 
 { 
-  MR::App::build_date = __DATE__; 
+  ::MR::App::build_date = __DATE__; 
 #ifdef MRTRIX_PROJECT_VERSION
-  MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   SET_MRTRIX_PROJECT_VERSION 
-  MR::App::AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"; 
-  MR::App::DESCRIPTION.clear(); 
-  MR::App::ARGUMENTS.clear(); 
-  MR::App::OPTIONS.clear(); 
+  ::MR::App::AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au)"; 
+  ::MR::App::DESCRIPTION.clear(); 
+  ::MR::App::ARGUMENTS.clear(); 
+  ::MR::App::OPTIONS.clear(); 
   try { 
     usage(); 
-    MR::App::init (*cmdline_argc, cmdline_argv); 
-    MR::App::parse (); 
+    ::MR::App::init (*cmdline_argc, cmdline_argv); 
+    ::MR::App::parse (); 
     run (); 
   } 
   catch (MR::Exception& E) { 
@@ -57,9 +57,9 @@ extern "C" void R_main (int* cmdline_argc, char** cmdline_argv)
 
 extern "C" void R_usage (char** output) 
 { 
-  MR::App::DESCRIPTION.clear(); 
-  MR::App::ARGUMENTS.clear(); 
-  MR::App::OPTIONS.clear(); 
+  ::MR::App::DESCRIPTION.clear(); 
+  ::MR::App::ARGUMENTS.clear(); 
+  ::MR::App::OPTIONS.clear(); 
   usage(); 
   std::string s = MR::App::full_usage(); 
   *output = new char [s.size()+1]; 
@@ -70,17 +70,20 @@ extern "C" void R_usage (char** output)
 
 int main (int cmdline_argc, char** cmdline_argv) 
 { 
-  MR::App::build_date = __DATE__; 
+#ifdef __gui_app_h__
+  ::MR::GUI::App app (cmdline_argc, cmdline_argv);
+#endif
+  ::MR::App::build_date = __DATE__; 
 #ifdef MRTRIX_PROJECT_VERSION
-  MR::App::project_version = MRTRIX_PROJECT_VERSION;
+  ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
 #endif
   try {
-    MR::App::init (cmdline_argc, cmdline_argv); 
+    ::MR::App::init (cmdline_argc, cmdline_argv); 
     usage (); 
-    MR::App::parse (); 
-    run (); 
+    ::MR::App::parse (); 
+    run ();
   } 
-  catch (MR::Exception& E) { 
+  catch (::MR::Exception& E) {
     E.display(); 
     return 1;
   } 

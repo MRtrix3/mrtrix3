@@ -273,6 +273,7 @@ namespace MR
           }
 
           size_t num_subjects () const { return y.columns(); }
+          size_t num_elements () const { return y.rows(); }
 
         protected:
           const Math::Matrix<value_type>& y;

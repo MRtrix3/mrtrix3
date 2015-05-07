@@ -56,6 +56,24 @@ namespace MR
         const int ShaderLighting = 0x40000000;
         const int ShaderClipping = 0x80000008;
 
+
+
+        class Slice;
+        class Ortho;
+        class Volume;
+        class LightBox;
+        class ModeGuiVisitor
+        {
+          public:
+            virtual void update_base_mode_gui(const Base&) {}
+            virtual void update_slice_mode_gui(const Slice&) {}
+            virtual void update_ortho_mode_gui(const Ortho&) {}
+            virtual void update_volume_mode_gui(const Volume&) {}
+            virtual void update_lightbox_mode_gui(const LightBox&) {}
+        };
+
+
+
         class Base : public QObject
         {
           public:
@@ -79,7 +97,11 @@ namespace MR
             virtual void panthrough_event ();
             virtual void tilt_event ();
             virtual void rotate_event ();
+            virtual void image_changed_event () {}
             virtual const Projection* get_current_projection() const;
+
+            virtual void request_update_mode_gui(ModeGuiVisitor& visitor) const {
+              visitor.update_base_mode_gui(*this); }
 
             void paintGL ();
 
@@ -152,7 +174,7 @@ namespace MR
 
             Point<> voxel_at (const Point<>& pos) const {
               if (!image()) return Point<>();
-              return image()->interp.scanner2voxel (pos);
+              return image()->transform().scanner2voxel (pos);
             }
 
             void draw_crosshairs (const Projection& with_projection) const {
@@ -165,10 +187,8 @@ namespace MR
                 with_projection.draw_orientation_labels();
             }
 
-            int slice (int axis) const { return std::round<int> (voxel_at (focus())[axis]); }
+            int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
-
-            void project_target_onto_current_slice();
 
             bool in_paint () const { return painting; } 
             void updateGL () { window.updateGL(); } 

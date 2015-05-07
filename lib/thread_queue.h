@@ -27,7 +27,7 @@
 #include <stack>
 #include <condition_variable>
 
-#include "ptr.h"
+#include "memory.h"
 #include "thread.h"
 
 #define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
@@ -547,7 +547,7 @@ namespace MR
         size_t capacity;
         size_t writer_count, reader_count;
         std::stack<T*,std::vector<T*> > item_stack;
-        VecPtr<T> items;
+        std::vector<std::unique_ptr<T>> items;
         std::string name;
 
         Queue (const Queue& queue) {
@@ -607,8 +607,8 @@ namespace MR
 
         T* get_item () {
           std::lock_guard<std::mutex> lock (mutex);
-          T* item = new T;
-          items.push_back (item);
+          T* item (new T);
+          items.push_back (std::unique_ptr<T> (item));
           return item;
         }
 
@@ -621,7 +621,7 @@ namespace MR
             back = inc (back);
             if (item_stack.empty()) {
               item = new T;
-              items.push_back (item);
+              items.push_back (std::unique_ptr<T> (item));
             }
             else {
               item = item_stack.top();
@@ -1071,6 +1071,9 @@ namespace MR
 
         auto t1 = run (__job<Source>::get (source, source_functor), "source");
         auto t2 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
       }
 
 
@@ -1150,6 +1153,10 @@ namespace MR
         auto t1 = run (__job<Source>::get (source, source_functor), "source");
         auto t2 = run (__job<Pipe>::get (pipe, pipe_functor), "pipe");
         auto t3 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
+        t3.wait();
       }
 
 
@@ -1195,6 +1202,11 @@ namespace MR
         auto t2 = run (__job<Pipe1>::get (pipe1, pipe1_functor), "pipe1");
         auto t3 = run (__job<Pipe2>::get (pipe2, pipe2_functor), "pipe2");
         auto t4 = run (__job<Sink>::get (sink, sink_functor), "sink");
+
+        t1.wait();
+        t2.wait();
+        t3.wait();
+        t4.wait();
       }
 
 

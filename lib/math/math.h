@@ -37,10 +37,10 @@ namespace MR
     /** @defgroup mathconstants Mathematical constants
       @{ */
 
-    constexpr double pi = std::acos (-1.0); 
+    constexpr double pi = 3.14159265358979323846;
     constexpr double pi_2 = pi / 2.0;
     constexpr double pi_4 = pi / 4.0;
-    constexpr double sqrt2 = std::sqrt (2.0); 
+    constexpr double sqrt2 = 1.41421356237309504880;
     constexpr double sqrt1_2 = 1.0 / sqrt2;
 
     /** @} */
@@ -81,7 +81,7 @@ namespace MR
      */
     template <typename I, typename T> inline I floor (const T x) throw ()
     {
-      return static_cast<I> (floor (x));
+      return static_cast<I> (std::floor (x));
     }
     //! template function with cast to different type
     /** example:
@@ -92,7 +92,7 @@ namespace MR
      */
     template <typename I, typename T> inline I ceil (const T x) throw ()
     {
-      return static_cast<I> (ceil (x));
+      return static_cast<I> (std::ceil (x));
     }
 
     //! swap values in arrays

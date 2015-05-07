@@ -533,13 +533,13 @@ namespace MR
         //! return a subvector of the vector
         View sub (size_t from, size_t to, size_t skip) throw () {
           assert (from <= to && to <= size());
-          return View (ptr() + from*stride(), ceil<size_t> ( (to-from) /float (skip)), stride() *skip);
+          return View (ptr() + from*stride(), size_t (std::ceil ( (to-from) /float (skip))), stride() *skip);
         }
 
         //! return a subvector of the vector
         const View sub (size_t from, size_t to, size_t skip) const throw () {
           assert (from <= to && to <= size());
-          return View (ptr() + from*stride(), ceil<size_t> ( (to-from) /float (skip)), stride() *skip);
+          return View (ptr() + from*stride(), size (std::ceil ( (to-from) /float (skip))), stride() *skip);
         }
 
         //! write the vector \a V to \a stream as text
@@ -633,12 +633,8 @@ namespace MR
           View () {
             assert (0);
           }
-          View (const Vector<ValueType>& V) {
-            assert (0);
-          }
-          template <typename U> View (const Vector<U>& V) {
-            assert (0);
-          }
+          View (const Vector<ValueType>&) { assert (0); }
+          template <typename U> View (const Vector<U>&) { assert (0); }
 
           View (ValueType* vector_data, size_t nelements, size_t skip = 1) throw () {
             GSLVector<ValueType>::size = nelements;
@@ -801,11 +797,11 @@ namespace MR
     //! find the maximum absolute value of any elements within a vector
     template <typename ValueType> inline ValueType absmax (const Vector<ValueType>& V, size_t& i)
     {
-      ValueType val (abs (V[0]));
+      ValueType val (std::abs (V[0]));
       i = 0;
       for (size_t j = 0; j < V.size(); j++) {
-        if (val < abs (V[j])) {
-          val = abs (V[j]);
+        if (val < std::abs (V[j])) {
+          val = std::abs (V[j]);
           i = j;
         }
       }

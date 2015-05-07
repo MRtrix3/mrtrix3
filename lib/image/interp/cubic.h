@@ -45,10 +45,10 @@ namespace MR
        * and scanner().
        * For example:
        * \code
-       * Image::Voxel<float> voxel (image);
+       * auto voxel = image_buffer.voxel();
        *
        * // create an Interp::Cubic object using voxel as the parent data set:
-       * DataSet::Interp::Cubic<Image::Voxel<float> > interp (voxel);
+       * DataSet::Interp::Cubic<decltype(voxel) > interp (voxel);
        *
        * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
        * interp.scanner (10.2, 3.59, 54.1);

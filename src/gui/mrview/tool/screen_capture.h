@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include <deque>
 
 namespace MR
 {
@@ -39,36 +40,75 @@ namespace MR
       {
 
 
-        class ScreenCapture : public Base
+        class Capture : public Base
         {
           Q_OBJECT
           public:
-            ScreenCapture (Window& main_window, Dock* parent);
-            virtual ~ScreenCapture() {}
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+            Capture (Window& main_window, Dock* parent);
+            virtual ~Capture() {}
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
+            void on_image_changed ();
+            void on_num_frames_changed (int);
+            void on_rotation_type (int);
+            void on_translation_type (int);
             void on_screen_capture ();
+            void on_screen_preview ();
+            void on_screen_stop ();
             void select_output_folder_slot();
             void on_output_update ();
+            void on_restore_capture_state ();
 
           private:
-
+            enum RotationType { World, Eye } rotation_type;
+            QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
+
+            enum TranslationType { Voxel, Scanner } translation_type;
+            QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
+
+            QSpinBox *target_volume;
             AdjustButton *FOV_multipler;
             QSpinBox *start_index;
             QSpinBox *frames;
+            QSpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
             QDir* directory;
 
+            bool is_playing;
+
+            class CaptureState {
+              public:
+                Math::Versor<float> orientation;
+                Point<> focus, target;
+                float fov;
+                size_t volume, volume_axis;
+                size_t frame_index;
+                int plane;
+                CaptureState(const Math::Versor<float> &orientation,
+                  const Point<> &focus, const Point<> &target, float fov,
+                  size_t volume, size_t volume_axis,
+                  size_t frame_index, int plane)
+                  : orientation(orientation), focus(focus), target(target), fov(fov),
+                    volume(volume), volume_axis(volume_axis),
+                    frame_index(frame_index), plane(plane) {}
+            };
+            constexpr static size_t max_cache_size = 1;
+            std::deque<CaptureState> cached_state;
+
+            void run (bool with_capture);
+            void cache_capture_state ();
         };
 
       }

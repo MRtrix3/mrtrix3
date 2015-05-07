@@ -186,7 +186,7 @@ void run ()
   // (worker needs to be able to set max & min number of points based on step size in input file,
   //  receiver needs "output_step_size" field to have been updated before file creation)
   update_output_step_size (properties, upsample, downsample);
-  Receiver receiver (output_path, properties, count, number, skip);
+  Receiver receiver (output_path, properties, number, skip);
 
   Thread::run_queue (
       loader, 

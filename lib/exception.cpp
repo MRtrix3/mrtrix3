@@ -22,10 +22,13 @@
 
 #include "app.h"
 #include "exception.h"
+#include "file/config.h"
+#include "debug.h"
 
 #ifdef MRTRIX_AS_R_LIBRARY
 # include "wrap_r.h"
 #endif
+
 
 namespace MR
 {
@@ -37,16 +40,19 @@ namespace MR
         report_to_user_func (E.description[n], log_level);
   }
 
+  off_t __stderr_offset = 0;
+
 
   namespace {
 
-    inline const char* console_prefix (int type) { 
+    inline const char* console_prefix (int type) 
+    { 
       switch (type) {
-        case 0: return " [ERROR]: ";
-        case 1: return " [WARNING]: ";
-        case 2: return " [INFO]: ";
-        case 3: return " [DEBUG]: ";
-        default: return ": ";
+        case 0: return "[ERROR] ";
+        case 1: return "[WARNING] ";
+        case 2: return "[INFO] ";
+        case 3: return "[DEBUG] ";
+        default: return "";
       }
     }
 
@@ -54,11 +60,23 @@ namespace MR
 
   void cmdline_report_to_user_func (const std::string& msg, int type)
   {
-#ifdef MRTRIX_AS_R_LIBRARY
-    REprintf ("%s%s%s\n", App::NAME.c_str(), console_prefix (type), msg.c_str());
-#else
-    std::cerr << App::NAME << console_prefix (type) << msg << "\n";
-#endif
+    static constexpr const char* colour_format_strings[] = {
+      "%s: %s%s\n",
+      "%s: \033[01;31m%s%s\033[0m\n",
+      "%s: \033[00;31m%s%s\033[0m\n",
+      "%s: \033[03;32m%s%s\033[0m\n",
+      "%s: \033[03;34m%s%s\033[0m\n"
+    };
+
+    if (__stderr_offset) {
+      __print_stderr ("\n");
+      __stderr_offset = 0;
+    }
+
+    auto clamp = [](int t) { if (t < -1 || t > 3) t = -1; return t+1; };
+
+    __print_stderr (printf (colour_format_strings[App::terminal_use_colour ? clamp(type) : 0], 
+          App::NAME.c_str(), console_prefix (type), msg.c_str()));
     if (type == 1 && App::fail_on_warn)
       throw Exception ("terminating due to request to fail on warning");
   }
