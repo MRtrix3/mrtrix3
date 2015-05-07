@@ -68,6 +68,7 @@ namespace MR
             void colour_by_direction_slot (int unused);
             void hide_negative_lobes_slot (int unused);
             void lmax_slot (int value);
+            void use_lighting_slot (int unused);
             void lighting_settings_slot (bool unused);
 
             void updateGL ();

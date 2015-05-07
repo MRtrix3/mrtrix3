@@ -150,15 +150,8 @@ namespace MR
           lmax (0),
           level_of_detail (0) { 
 
-            preview = new Dock (&main_window, "ODF preview pane");
-            main_window.addDockWidget (Qt::RightDockWidgetArea, preview);
-            preview->tool = new ODF_Preview (window, preview, this);
-            preview->tool->adjustSize();
-            preview->setWidget (preview->tool);
-            preview->setFloating (true);
-            preview->hide();
-
             lighting = new GL::Lighting (this);
+
             VBoxLayout *main_box = new VBoxLayout (this);
 
             HBoxLayout* layout = new HBoxLayout;
@@ -262,7 +255,7 @@ namespace MR
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
-            connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
+            connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
             box_layout->addWidget (use_lighting_box, 3, 0, 1, 2);
 
 
@@ -298,6 +291,15 @@ namespace MR
             colour_by_direction_slot (0);
             lmax_slot (0);
             adjust_scale_slot ();
+
+            preview = new Dock (&main_window, "ODF preview pane");
+            main_window.addDockWidget (Qt::RightDockWidgetArea, preview);
+            preview->tool = new ODF_Preview (window, preview, this);
+            preview->tool->adjustSize();
+            preview->setWidget (preview->tool);
+            preview->setFloating (true);
+            preview->hide();
+            connect (lighting, SIGNAL (changed()), preview->tool, SLOT (lighting_update_slot()));
           }
 
         ODF::~ODF()
@@ -305,6 +307,10 @@ namespace MR
           if (renderer) {
             delete renderer;
             renderer = nullptr;
+          }
+          if (lighting_dialog) {
+            delete lighting_dialog;
+            lighting_dialog = nullptr;
           }
         }
 
@@ -527,6 +533,9 @@ namespace MR
           if (!settings)
             return;
           settings->color_by_direction = colour_by_direction_box->isChecked();
+          assert (preview);
+          assert (preview->tool);
+          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
           updateGL();
         }
 
@@ -540,6 +549,9 @@ namespace MR
           if (!settings)
             return;
           settings->hide_negative_lobes = hide_negative_lobes_box->isChecked();
+          assert (preview);
+          assert (preview->tool);
+          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
           updateGL();
         }
 
@@ -555,9 +567,21 @@ namespace MR
           if (!settings)
             return;
           settings->lmax = lmax_selector->value();
+          assert (preview);
+          assert (preview->tool);
+          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_lmax (lmax_selector->value());
           updateGL();
         }
 
+
+
+        void ODF::use_lighting_slot (int)
+        {
+          assert (preview);
+          assert (preview->tool);
+          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_use_lighting (use_lighting_box->isChecked());
+          updateGL();
+        }
 
 
 
@@ -565,7 +589,7 @@ namespace MR
         void ODF::lighting_settings_slot (bool)
         {
           if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Advanced Lighting", *lighting);
+            lighting_dialog = new Dialog::Lighting (&window, "Advanced ODF lighting", *lighting);
           lighting_dialog->show();
         }
 
@@ -587,6 +611,8 @@ namespace MR
         {
           assert (preview);
           preview->hide();
+          if (lighting_dialog)
+            lighting_dialog->hide();
         }
 
 
@@ -607,7 +633,7 @@ namespace MR
             return;
           MRView::Image& image (settings->image);
           ODF_Preview* preview_tool = dynamic_cast<ODF_Preview*>(preview->tool);
-          Math::Vector<float> values (Math::SH::NforL (preview_tool->lmax()));
+          Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
           get_values (values, image, window.focus(), preview_tool->interpolate());
           preview_tool->set (values);
         }
