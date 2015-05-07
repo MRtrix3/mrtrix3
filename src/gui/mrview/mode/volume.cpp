@@ -210,10 +210,11 @@ namespace MR
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
-            if(!ColourMap::maps[image->colourmap].is_colour)
-              source += std::string ("        ") + ColourMap::maps[image->colourmap].mapping;
-            else
-              source += std::string ("         color.rgb = 2.7213 * amplitude * overlay"+str(n)+"_colourmap_colour;\n");
+            std::string mapping (ColourMap::maps[image->colourmap].mapping);
+            replace (mapping, "scale", "overlay"+str(n)+"_scale");
+            replace (mapping, "offset", "overlay"+str(n)+"_offset");
+            replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");
+            source += std::string ("        ") + mapping;
 
             source += 
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
