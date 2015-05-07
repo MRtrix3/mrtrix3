@@ -363,7 +363,7 @@ namespace MR
           group_box->setLayout (gridlayout);
 
           QLabel* label = new QLabel ("Geometry: ");
-          gridlayout->addWidget (label, 0, 0);
+          gridlayout->addWidget (label, 0, 0, 1, 2);
           node_geometry_combobox = new QComboBox (this);
           node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
           node_geometry_combobox->addItem ("Sphere");
@@ -371,7 +371,7 @@ namespace MR
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
-          gridlayout->addWidget (node_geometry_combobox, 0, 1);
+          gridlayout->addWidget (node_geometry_combobox, 0, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -389,10 +389,10 @@ namespace MR
           node_geometry_overlay_interp_checkbox->setVisible (false);
           connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
           hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
-          gridlayout->addLayout (hlayout, 0, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 0, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
-          gridlayout->addWidget (label, 1, 0);
+          gridlayout->addWidget (label, 1, 0, 1, 2);
           node_colour_combobox = new QComboBox (this);
           node_colour_combobox->setToolTip (tr ("Set how the colour of each node is determined"));
           node_colour_combobox->addItem ("Fixed");
@@ -400,7 +400,7 @@ namespace MR
           node_colour_combobox->addItem ("Lookup table");
           node_colour_combobox->addItem ("From vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
-          gridlayout->addWidget (node_colour_combobox, 1, 1);
+          gridlayout->addWidget (node_colour_combobox, 1, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -410,17 +410,17 @@ namespace MR
           node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           node_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (node_colour_colourmap_button, 1);
-          gridlayout->addLayout (hlayout, 1, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 1, 3, 1, 2);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 2, 0);
+          gridlayout->addWidget (label, 2, 0, 1, 2);
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
           node_size_combobox->addItem ("From vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
-          gridlayout->addWidget (node_size_combobox, 2, 1);
+          gridlayout->addWidget (node_size_combobox, 2, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -429,10 +429,10 @@ namespace MR
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
           hlayout->addWidget (node_size_button, 1);
-          gridlayout->addLayout (hlayout, 2, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 3, 0);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
@@ -441,7 +441,7 @@ namespace MR
           node_visibility_combobox->addItem ("Degree >= 1");
           node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
-          gridlayout->addWidget (node_visibility_combobox, 3, 1);
+          gridlayout->addWidget (node_visibility_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -460,17 +460,17 @@ namespace MR
           node_visibility_threshold_label->setVisible (false);
           node_visibility_threshold_button->setVisible (false);
           node_visibility_threshold_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 3);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 5, 0);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Lookup table");
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          gridlayout->addWidget (node_alpha_combobox, 5, 1);
+          gridlayout->addWidget (node_alpha_combobox, 5, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -479,7 +479,7 @@ namespace MR
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 5, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -487,13 +487,13 @@ namespace MR
           group_box->setLayout (gridlayout);
 
           label = new QLabel ("Geometry: ");
-          gridlayout->addWidget (label, 0, 0);
+          gridlayout->addWidget (label, 0, 0, 1, 2);
           edge_geometry_combobox = new QComboBox (this);
           edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
           edge_geometry_combobox->addItem ("Line");
           edge_geometry_combobox->addItem ("Cylinder");
           connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
-          gridlayout->addWidget (edge_geometry_combobox, 0, 1);
+          gridlayout->addWidget (edge_geometry_combobox, 0, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -508,17 +508,17 @@ namespace MR
           edge_geometry_cylinder_lod_spinbox->setVisible (false);
           connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
           hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
-          gridlayout->addLayout (hlayout, 0, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 0, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
-          gridlayout->addWidget (label, 1, 0);
+          gridlayout->addWidget (label, 1, 0, 1, 2);
           edge_colour_combobox = new QComboBox (this);
           edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
           edge_colour_combobox->addItem ("Fixed");
           edge_colour_combobox->addItem ("By direction");
           edge_colour_combobox->addItem ("From matrix file");
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
-          gridlayout->addWidget (edge_colour_combobox, 1, 1);
+          gridlayout->addWidget (edge_colour_combobox, 1, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -528,16 +528,16 @@ namespace MR
           edge_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
           edge_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (edge_colour_colourmap_button, 1);
-          gridlayout->addLayout (hlayout, 1, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 1, 3, 1, 2);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 2, 0);
+          gridlayout->addWidget (label, 2, 0, 1, 2);
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
           edge_size_combobox->addItem ("Fixed");
           edge_size_combobox->addItem ("From matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
-          gridlayout->addWidget (edge_size_combobox, 2, 1);
+          gridlayout->addWidget (edge_size_combobox, 2, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -546,10 +546,10 @@ namespace MR
           edge_size_button->setMin (0.0f);
           connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
           hlayout->addWidget (edge_size_button, 1);
-          gridlayout->addLayout (hlayout, 2, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 3, 0);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           edge_visibility_combobox = new QComboBox (this);
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
@@ -558,16 +558,16 @@ namespace MR
           edge_visibility_combobox->addItem ("From matrix file");
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
-          gridlayout->addWidget (edge_visibility_combobox, 3, 1);
+          gridlayout->addWidget (edge_visibility_combobox, 3, 2);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 4, 0);
+          gridlayout->addWidget (label, 4, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("From matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
-          gridlayout->addWidget (edge_alpha_combobox, 4, 1);
+          gridlayout->addWidget (edge_alpha_combobox, 4, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -576,7 +576,7 @@ namespace MR
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 4, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 4, 3, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
