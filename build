@@ -83,13 +83,13 @@ if sys.stderr.isatty():
 
 def disp (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode (errors='ignore'))
   sys.stdout.write (msg)
   print_lock.release()
   
 def log (msg):
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode (errors='ignore'))
   if verbose:
     sys.stderr.write (msg)
   print_lock.release()
@@ -97,7 +97,7 @@ def log (msg):
 def error (msg):
   global error_stream
   print_lock.acquire()
-  logfile.write (msg)
+  logfile.write (msg.encode (errors='ignore'))
   if error_stream is not None:
     error_stream += msg
   else:
