@@ -43,7 +43,7 @@ void usage ()
 
   + "The values are written to the output file as ASCII text, in the same order "
   "as the track vertices, with all values for each track on the same line (space "
-  "separated), and individual tracks on seperate lines."; 
+  "separated), and individual tracks on separate lines."; 
 
   ARGUMENTS
   + Argument ("tracks",  "the input track file").type_file_in()
@@ -260,11 +260,11 @@ void run ()
 
   File::OFStream out (argument[2]);
 
-  Ptr<Image::BufferPreload<value_type>> warp_buffer;
-  Ptr<decltype(warp_buffer)::value_type::voxel_type> warp_vox;
-  Ptr<Image::Interp::Linear<decltype(warp_vox)::value_type>> warp;
+  std::unique_ptr<Image::BufferPreload<value_type>> warp_buffer;
+  std::unique_ptr<decltype(warp_buffer)::element_type::voxel_type> warp_vox;
+  std::unique_ptr<Image::Interp::Linear<decltype(warp_vox)::element_type>> warp;
 
-  Resampler<decltype(warp)::value_type> resample;
+  Resampler<decltype(warp)::element_type> resample;
 
   Options opt = get_options ("resample");
   bool resampling = opt.size();
@@ -280,14 +280,14 @@ void run ()
 
     opt = get_options ("warp");
     if (opt.size()) {
-      warp_buffer = new decltype(warp_buffer)::value_type (opt[0][0]); 
+      warp_buffer.reset (new decltype(warp_buffer)::element_type (opt[0][0]));
       if (warp_buffer->ndim() < 4) 
         throw Exception ("warp image should contain at least 4 dimensions");
       if (warp_buffer->dim(3) < 3) 
         throw Exception ("4th dimension of warp image should have length 3");
-      warp_vox = new decltype(warp_vox)::value_type (*warp_buffer);
-      warp = new decltype(warp)::value_type (*warp_vox);
-      resample.warp = warp;
+      warp_vox.reset (new decltype(warp_vox)::element_type (*warp_buffer));
+      warp.reset (new decltype(warp)::element_type (*warp_vox));
+      resample.warp = warp.get();
     }
 
     opt = get_options ("waypoint");
@@ -298,6 +298,7 @@ void run ()
   }
 
   size_t skipped = 0, count = 0;
+  auto progress_message = [&](){ return "sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")..."; };
   ProgressBar progress ("sampling streamlines...");
 
   DWI::Tractography::Streamline<value_type> tck;
@@ -309,8 +310,8 @@ void run ()
     sample (out, interp, tck);
 
     ++count;
-    progress.set_message ("sampling streamlines (count: " + str(count) + ", skipped: " + str(skipped) + ")...");
-    ++progress;
+    progress.update (progress_message);
   }
+  progress.set_text (progress_message());
 }
 
