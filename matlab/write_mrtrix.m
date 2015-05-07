@@ -75,9 +75,7 @@ else
 end
 fprintf (fid, [ '\ndatatype: ' datatype ]);
 
-if isstruct (image) && isfield (image, 'mrtrix_version')
-    fprintf (fid, '\nmrtrix_version: %s', image.mrtrix_version);
-end
+fprintf (fid, '\nmrtrix_version: %s', 'matlab');
 
 if isstruct (image) && isfield (image, 'comments')
   for i=1:numel(image.comments)
