@@ -39,6 +39,8 @@ while 1
       image.vox = str2num(char(split_strings (value, ',')))';
     elseif strcmp(key, 'layout')
       image.layout = value;
+    elseif strcmp(key, 'mrtrix_version')
+      image.mrtrix_version = value;
     elseif strcmp(key, 'datatype')
       image.datatype = value;
     elseif strcmp(key, 'labels')
