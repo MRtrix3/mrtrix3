@@ -62,6 +62,17 @@
 // * Drawing edges
 //   - Display options:
 //     * Colour by: Corresponding nodes? Would require some plotting cleverness
+//   - Draw as streamlines
+//     This would probably require some cross-talk with the tractography tool,
+//     but the theory would essentially be:
+//     * Read in a tractogram, assigning streamlines to node pairs; and for
+//       every edge in the connectome, build a mean exemplar streamline path,
+//       constrain to start & end at the node centres
+//     * Re-sample the resulting exemplars to an appropriate step size, and
+//       store this as an entry in the tractography tool
+//     * The Connectome tool would retain access to streamline lengths etc., so
+//       that it can write to the scalar & colour buffers
+//
 //
 // * Drawing nodes
 //   - Implement for GL what's missing currently from the plotting capabilities,
@@ -235,6 +246,7 @@ namespace MR
             void overlay_interp_slot (int);
             void node_colour_change_slot();
             void node_size_value_slot();
+            void node_visibility_parameter_slot();
             void node_alpha_value_slot (int);
 
             void edge_geometry_selection_slot (int);
@@ -264,6 +276,10 @@ namespace MR
             ColourMapButton *node_colour_colourmap_button;
 
             AdjustButton *node_size_button;
+
+            QLabel *node_visibility_threshold_label;
+            AdjustButton *node_visibility_threshold_button;
+            QCheckBox *node_visibility_threshold_invert_checkbox;
 
             QSlider *node_alpha_slider;
 
@@ -333,18 +349,6 @@ namespace MR
                     GL::IndexBuffer index_buffer;
                 } mesh;
 
-                // TODO Helper class to manage the storage and display of the mask volume for each node
-                // These may not be plotted individually, but will be used whenever the primary
-                //   volume needs to be updated
-                // Also: Once the raw data has been loaded, this should have a reduced FOV to only
-                //   encompass the node and no more
-                // This will enable:
-                //   * Faster update of primary node overlay image (smaller loop)
-                //   * In 2D mode, detect whether or not this bounding box crosses the focus
-                //     plane; if not, no need to send any data to the shader
-                //   * Run the vox2mesh conversion on the reduced volume; this will reduce the
-                //     overhead of looping through mostly-empty images
-
             };
 
             // Stores all information relating to the drawing of individual edges, both fixed and variable
@@ -404,6 +408,9 @@ namespace MR
 
                 const QString& get_name() const { return name; }
                 void set_name (const std::string& s) { name = s.c_str(); }
+
+                float get_min() const { return min; }
+                float get_max() const { return max; }
 
               private:
                 QString name;

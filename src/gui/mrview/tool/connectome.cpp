@@ -442,16 +442,35 @@ namespace MR
           node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
           gridlayout->addWidget (node_visibility_combobox, 3, 1);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          node_visibility_threshold_label = new QLabel ("Threshold: ");
+          hlayout->addWidget (node_visibility_threshold_label);
+          node_visibility_threshold_button = new AdjustButton (this);
+          node_visibility_threshold_button->setValue (0.0f);
+          node_visibility_threshold_button->setMin (0.0f);
+          node_visibility_threshold_button->setMax (0.0f);
+          connect (node_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (node_visibility_parameter_slot()));
+          hlayout->addWidget (node_visibility_threshold_button);
+          node_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
+          node_visibility_threshold_invert_checkbox->setTristate (false);
+          connect (node_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_visibility_parameter_slot()));
+          hlayout->addWidget (node_visibility_threshold_invert_checkbox);
+          node_visibility_threshold_label->setVisible (false);
+          node_visibility_threshold_button->setVisible (false);
+          node_visibility_threshold_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 3);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 4, 0);
+          gridlayout->addWidget (label, 5, 0);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Lookup table");
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          gridlayout->addWidget (node_alpha_combobox, 4, 1);
+          gridlayout->addWidget (node_alpha_combobox, 5, 1);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -460,7 +479,7 @@ namespace MR
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 4, 2, 1, 2);
+          gridlayout->addLayout (hlayout, 5, 2, 1, 2);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -1069,11 +1088,17 @@ namespace MR
               if (node_visibility == NODE_VIS_ALL) return;
               node_visibility = NODE_VIS_ALL;
               node_visibility_combobox->removeItem (5);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 1:
               if (node_visibility == NODE_VIS_NONE) return;
               node_visibility = NODE_VIS_NONE;
               node_visibility_combobox->removeItem (5);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 2:
               try {
@@ -1086,10 +1111,21 @@ namespace MR
                 else
                   node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
                 node_visibility_combobox->setCurrentIndex (5);
+                node_visibility_threshold_label->setVisible (true);
+                node_visibility_threshold_button->setVisible (true);
+                node_visibility_threshold_invert_checkbox->setVisible (true);
+                node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
+                node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
+                node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
+                node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
+
               } else {
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = NODE_VIS_ALL;
                 node_visibility_combobox->removeItem (5);
+                node_visibility_threshold_label->setVisible (false);
+                node_visibility_threshold_button->setVisible (false);
+                node_visibility_threshold_invert_checkbox->setVisible (false);
               }
               break;
             case 3:
@@ -1106,10 +1142,16 @@ namespace MR
                 node_visibility = NODE_VIS_DEGREE;
               }
               node_visibility_combobox->removeItem (5);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 4:
               node_visibility = NODE_VIS_MANUAL;
               node_visibility_combobox->removeItem (5);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
               // TODO Here is where the corresponding list view should be made visible
               // Ideally the current node colours would also be presented within this list...
               break;
@@ -1189,6 +1231,12 @@ namespace MR
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
+          window.updateGL();
+        }
+
+        void Connectome::node_visibility_parameter_slot()
+        {
+          calculate_node_visibility();
           window.updateGL();
         }
 
@@ -1474,7 +1522,7 @@ namespace MR
           normals.reserve (3 * in.num_vertices());
           for (size_t n = 0; n != in.num_vertices(); ++n) {
             for (size_t axis = 0; axis != 3; ++axis)
-              normals.push_back (-in.norm(n)[axis]);
+              normals.push_back (in.norm(n)[axis]);
           }
           normal_buffer.gen();
           normal_buffer.bind (gl::ARRAY_BUFFER);
@@ -2122,8 +2170,12 @@ namespace MR
           } else if (node_visibility == NODE_VIS_FILE) {
 
             assert (node_values_from_file_visibility.size());
-            for (size_t i = 1; i <= num_nodes(); ++i)
-              nodes[i].set_visible (node_values_from_file_visibility[i-1]);
+            const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
+            const float threshold = node_visibility_threshold_button->value();
+            for (size_t i = 1; i <= num_nodes(); ++i) {
+              const bool above_threshold = (node_values_from_file_visibility[i-1] >= threshold);
+              nodes[i].set_visible (above_threshold != invert);
+            }
 
           } else if (node_visibility == NODE_VIS_DEGREE) {
 

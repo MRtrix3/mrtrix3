@@ -510,8 +510,11 @@ namespace MR
             // OK, so now the relevant edges have an output vertex index associated with them
             // Based on the code for this voxel, now we use the table cube_triangle_table to see
             //   which edges need to have triangles constructed from the relevant generated vertices
+            // Note that flipping the last two vertex indices is deliberate; the provided
+            //   lookup table does not use a right-hand rule axis convention, so this is necessary
+            //   to calculate the correct surface normals
             for (const int8_t* first_edge = cube_triangle_table[code]; *first_edge >= 0; first_edge += 3) {
-              const uint32_t indices[3] { edge_to_output_vertex[*first_edge], edge_to_output_vertex[*(first_edge+1)], edge_to_output_vertex[*(first_edge+2)] };
+              const uint32_t indices[3] { edge_to_output_vertex[*first_edge], edge_to_output_vertex[*(first_edge+2)], edge_to_output_vertex[*(first_edge+1)] };
               polygons.push_back (Triangle (indices));
             }
 
