@@ -90,6 +90,19 @@ namespace MR
         offset_ (0.0),
         scale_ (1.0) { }
 
+      //! \copydoc Header (const Header&)
+      template <class HeaderType>
+        Header (const HeaderType& original) :
+          Header (original.header()) {
+            name() = original.name();
+            set_ndim (original.ndim());
+            for (size_t n = 0; n < original.ndim(); ++n) {
+              size(n) = original.size(n);
+              stride(n) = original.stride(n);
+              voxsize(n) = original.voxsize(n);
+            }
+            transform() = original.transform();
+          }
 
       //! assignment operator
       /*! This copies everything over apart from the IO handler and the
@@ -105,6 +118,23 @@ namespace MR
         io.reset();
         return *this;
       }
+
+      //! \copydoc operator=(const Header&)
+      template <class HeaderType>
+        Header& operator= (const HeaderType& original) {
+          *this = original.header();
+          set_ndim (original.ndim());
+          for (size_t n = 0; n < ndim(); ++n) {
+            size(n) = original.size(n);
+            voxsize(n) = original.voxsize(n);
+            stride(n) = original.stride(n);
+          }
+          transform() = original.transform();
+          offset_ = 0.0;
+          scale_ = 1.0;
+          io.reset();
+          return *this;
+        }
 
       ~Header () { 
         if (io) {
@@ -195,7 +225,7 @@ namespace MR
        * available (i.e. it will be mapped, loaded or allocated into memory).
        *
        * \warning do not modify the Header between its instantiation with the
-       * open(), create() or allocate() calls, and obtaining an image via the
+       * open(), create() or scratch() calls, and obtaining an image via the
        * get_image() method. The latter will use the information in the Header
        * to access the data, and any mismatch in the information may cause
        * problems.
@@ -244,11 +274,10 @@ namespace MR
         }
 
       static Header open (const std::string& image_name);
-      static Header create (const std::string& image_name, const Header& template_header);
-      static Header allocate (const Header& template_header, const std::string& label = "scratch image");
       template <class HeaderType>
-        static Header copy (const HeaderType& template_header);
-      static Header empty ();
+        static Header create (const std::string& image_name, const HeaderType& template_header);
+      template <class HeaderType>
+        static Header scratch (const HeaderType& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -321,30 +350,18 @@ namespace MR
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
 
   template <class HeaderType>
-    inline Header Header::copy (const HeaderType& original) {
-      Header H = original.header();
-      H.name() = original.name();
-      H.set_ndim (original.ndim());
-      for (size_t n = 0; n < H.ndim(); ++n) {
-        H.size(n) = original.size(n);
-        H.stride(n) = original.stride(n);
-        H.voxsize(n) = original.voxsize(n);
-      }
-      H.transform() = original.transform();
-
-      return H;
+    inline Header Header::create (const std::string& image_name, const HeaderType& template_header) {
+      return create (image_name, Header (template_header)); 
     }
+  template <> Header Header::create (const std::string& image_name, const Header& template_header);
+  extern template Header Header::create<Header> (const std::string& image_name, const Header& template_header);
 
-  template <> inline Header Header::copy<Header> (const Header& original) { return original; }
-
-  inline Header Header::empty ()
-  {
-    return { };
-  }
-
-
-
-
+  template <class HeaderType>
+    inline Header Header::scratch (const HeaderType& template_header, const std::string& label) {
+      return scratch (Header (template_header), label);
+    }
+  template<> Header Header::scratch (const Header& template_header, const std::string& label);
+  extern template Header Header::scratch<Header> (const Header& template_header, const std::string& label);
 
   //! @}
 }

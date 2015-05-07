@@ -44,10 +44,10 @@ void run ()
   if (opt.size())
     noise = opt[0][0];
 
-  auto in = Header::open (argument[0]).get_image<value_type>().with_direct_io ();
+  auto in = Image<value_type>::open (argument[0]).with_direct_io ();
   auto header = in.header();
 
-  auto scratch = Header::allocate (header).get_image<value_type>();
+  auto scratch = Image<value_type>::scratch (header);
   struct noisify {
     const value_type noise;
     Math::RNG::Normal<value_type> rng;
@@ -59,7 +59,7 @@ void run ()
 
 
   header.datatype() = DataType::Float32;
-  auto out = Header::create (argument[1], header).get_image<value_type>().with_direct_io(); 
+  auto out = Image<value_type>::create (argument[1], header).with_direct_io(); 
 
   timer.start();
   ThreadedLoop ("raising to power " + str(power) + "...", scratch).run ([&](decltype(in)& in, decltype(out)& out) {

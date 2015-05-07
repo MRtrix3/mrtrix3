@@ -290,7 +290,7 @@ class ImageKernel : public ImageKernelBase {
 
   public:
     ImageKernel (const Header& header) :
-      image (Header::allocate (header).get_image<Operation>()) {
+      image (Header::scratch (header).get_image<Operation>()) {
         ThreadedLoop (image).run (InitFunctor(), image);
       }
 
@@ -339,8 +339,6 @@ void run ()
     squeeze_dim (header_out);
 
     auto image_out = Header::create (output_path, header_out).get_image<float>();
-    // auto image_out = Header::allocate (header_out).get_image<float>();
-    // Image image_out (output_path, header_out);
 
     ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
 

@@ -66,7 +66,7 @@ void usage ()
 void run ()
 {
 
-  auto in = Header::open (argument[0]).get_image<float>();
+  auto in = Image<float>::open (argument[0]);
 
   std::vector<std::vector<ssize_t>> bounds (in.ndim(), std::vector<ssize_t> (2));
   for (size_t axis = 0; axis < in.ndim(); axis++) {
@@ -77,7 +77,7 @@ void run ()
   auto opt = get_options ("mask");
   if (opt.size()) {
 
-    auto mask = Header::open (opt[0][0]).get_image<bool>();
+    auto mask = Image<bool>::open (opt[0][0]);
     check_dimensions (in, mask, 0, 3);
 
     for (size_t axis = 0; axis != 3; ++axis) {
@@ -96,7 +96,6 @@ void run ()
         }
       }
       void operator() (const decltype(mask)& m) { 
-        VAR (m);
         if (m.value()) {
           for (size_t axis = 0; axis != 3; ++axis) {
             bounds[axis][0] = std::min (bounds[axis][0], m.index(axis));
@@ -150,7 +149,7 @@ void run ()
   }
 
   auto cropped = Adapter::make<Adapter::Subset> (in, from, size);
-  auto out = Header::create (argument[1], Header::copy (cropped)).get_image<float>();
+  auto out = Image<float>::create (argument[1], cropped);
   threaded_copy_with_progress_message ("cropping image...", cropped, out);
 }
 

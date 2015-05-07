@@ -151,6 +151,18 @@ namespace MR
         // TODO do we need this??
         //ValueType* address () const { return data_pointer ? data_pointer + data_offset : nullptr; }
 
+        static Image open (const std::string& image_name) {
+          return Header::open (image_name).get_image<ValueType>();
+        }
+        template <class HeaderType>
+          static Image create (const std::string& image_name, const HeaderType& template_header) {
+            return Header::create (image_name, Header (template_header)).get_image<ValueType>();
+          }
+        template <class HeaderType>
+          static Image scratch (const HeaderType& template_header, const std::string& label = "scratch image") {
+            return Header::scratch (Header (template_header), label).get_image<ValueType>();
+          }
+
       protected:
         //! shared reference to header/buffer
         std::shared_ptr<Buffer> buffer;
