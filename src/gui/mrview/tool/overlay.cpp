@@ -577,8 +577,8 @@ namespace MR
           options
             + OptionGroup ("Overlay tool options")
 
-            + Option ("overlay.load", "Loads the specified image on the overlay tool.")
-            +   Argument ("image").type_image_in().allow_multiple()
+            + Option ("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple()
+            +   Argument ("image").type_image_in()
 
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
             +   Argument ("value").type_float (0.0, 1.0, 1.0)
