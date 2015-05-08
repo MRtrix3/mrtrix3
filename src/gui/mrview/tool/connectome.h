@@ -96,6 +96,7 @@
 //       -> e.g. "Non-Iterative, Feature-Preserving Mesh Smoothing"
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
+//     (leave this until necessary, i.e. trying to do a full polygon depth search)
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
@@ -239,6 +240,7 @@ namespace MR
             void node_size_value_slot();
             void node_visibility_parameter_slot();
             void node_alpha_value_slot (int);
+            void node_alpha_parameter_slot();
 
             void edge_geometry_selection_slot (int);
             void edge_colour_selection_slot (int);
@@ -273,6 +275,9 @@ namespace MR
             QCheckBox *node_visibility_threshold_invert_checkbox;
 
             QSlider *node_alpha_slider;
+            QLabel *node_alpha_range_label;
+            AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
+            QCheckBox *node_alpha_invert_checkbox;
 
             QComboBox *edge_geometry_combobox, *edge_colour_combobox, *edge_size_combobox, *edge_visibility_combobox, *edge_alpha_combobox;
 

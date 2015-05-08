@@ -173,8 +173,7 @@ namespace MR
 
           if (use_alpha) {
             fragment_shader_source +=
-              "  color.xyz = node_colour;\n"
-              "  color.a = node_alpha;\n";
+              "  color.xyz = node_colour;\n";
           } else {
             fragment_shader_source +=
               "  color = node_colour;\n";
@@ -184,6 +183,11 @@ namespace MR
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
+          }
+
+          if (use_alpha) {
+            fragment_shader_source +=
+              "  color.a = node_alpha;\n";
           }
 
           fragment_shader_source +=
@@ -266,8 +270,7 @@ namespace MR
 
           if (use_alpha) {
             fragment_shader_source +=
-              "  color.xyz = edge_colour;\n"
-              "  color.a = edge_alpha;\n";
+              "  color.xyz = edge_colour;\n";
           } else {
             fragment_shader_source +=
               "  color = edge_colour;\n";
@@ -277,6 +280,11 @@ namespace MR
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
+          }
+
+          if (use_alpha) {
+            fragment_shader_source +=
+              "  color.a = edge_alpha;\n";
           }
 
           fragment_shader_source +=
@@ -497,6 +505,32 @@ namespace MR
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
           gridlayout->addLayout (hlayout, 5, 3, 1, 2);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          node_alpha_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (node_alpha_range_label);
+          node_alpha_lower_button = new AdjustButton (this);
+          node_alpha_lower_button->setValue (0.0f);
+          node_alpha_lower_button->setMin (-std::numeric_limits<float>::max());
+          node_alpha_lower_button->setMax (0.0f);
+          connect (node_alpha_lower_button, SIGNAL (valueChanged()), this, SLOT (node_alpha_parameter_slot()));
+          hlayout->addWidget (node_alpha_lower_button);
+          node_alpha_upper_button = new AdjustButton (this);
+          node_alpha_upper_button->setValue (0.0f);
+          node_alpha_upper_button->setMin (0.0f);
+          node_alpha_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (node_alpha_upper_button, SIGNAL (valueChanged()), this, SLOT (node_alpha_parameter_slot()));
+          hlayout->addWidget (node_alpha_upper_button);
+          node_alpha_invert_checkbox = new QCheckBox ("Invert");
+          node_alpha_invert_checkbox->setTristate (false);
+          connect (node_alpha_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_alpha_parameter_slot()));
+          hlayout->addWidget (node_alpha_invert_checkbox);
+          node_alpha_range_label->setVisible (false);
+          node_alpha_lower_button->setVisible (false);
+          node_alpha_upper_button->setVisible (false);
+          node_alpha_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -669,7 +703,8 @@ namespace MR
                 gl::Enable (gl::BLEND);
                 gl::DepthMask (gl::FALSE_);
                 gl::BlendEquation (gl::FUNC_ADD);
-                gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+                //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
                 gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
                 //gl::Disable (gl::CULL_FACE);
               } else {
@@ -722,7 +757,7 @@ namespace MR
                 if (node.is_visible()) {
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                   if (use_alpha)
-                    gl::Uniform1f (node_alpha_ID, node.get_alpha());
+                    gl::Uniform1f (node_alpha_ID, node.get_alpha() * node_fixed_alpha);
                   if (node_geometry != NODE_GEOM_OVERLAY) {
                     gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
                     gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
@@ -775,7 +810,8 @@ namespace MR
               gl::Enable (gl::BLEND);
               gl::DepthMask (gl::FALSE_);
               gl::BlendEquation (gl::FUNC_ADD);
-              gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
+              //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+              gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
               gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
             } else {
               gl::Disable (gl::BLEND);
@@ -814,7 +850,7 @@ namespace MR
               if (edge.is_visible()) {
                 gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
                 if (use_alpha)
-                  gl::Uniform1f (edge_alpha_ID, edge.get_alpha());
+                  gl::Uniform1f (edge_alpha_ID, edge.get_alpha() * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case EDGE_GEOM_LINE:
                     glLineWidth (edge.get_size() * edge_size_scale_factor);
@@ -975,6 +1011,8 @@ namespace MR
             case 2:
               if (node_geometry == NODE_GEOM_OVERLAY) return;
               node_geometry = NODE_GEOM_OVERLAY;
+              node_size = NODE_SIZE_FIXED;
+              calculate_node_sizes();
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
               node_size_button->setVisible (false);
@@ -986,6 +1024,8 @@ namespace MR
             case 3:
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
+              node_size = NODE_SIZE_FIXED;
+              calculate_node_sizes();
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
               node_size_button->setVisible (true);
@@ -1194,14 +1234,20 @@ namespace MR
             case 0:
               if (node_alpha == NODE_ALPHA_FIXED) return;
               node_alpha = NODE_ALPHA_FIXED;
-              //node_alpha_slider->setVisible (true);
               node_alpha_combobox->removeItem (3);
+              node_alpha_range_label->setVisible (false);
+              node_alpha_lower_button->setVisible (false);
+              node_alpha_upper_button->setVisible (false);
+              node_alpha_invert_checkbox->setVisible (false);
               break;
             case 1:
               if (node_alpha == NODE_ALPHA_LUT) return;
               node_alpha = NODE_ALPHA_LUT;
-              //node_alpha_slider->setVisible (false);
               node_alpha_combobox->removeItem (3);
+              node_alpha_range_label->setVisible (false);
+              node_alpha_lower_button->setVisible (false);
+              node_alpha_upper_button->setVisible (false);
+              node_alpha_invert_checkbox->setVisible (false);
               break;
             case 2:
               try {
@@ -1209,17 +1255,30 @@ namespace MR
               } catch (...) { }
               if (node_values_from_file_alpha.size()) {
                 node_alpha = NODE_ALPHA_FILE;
-                //node_alpha_slider->setVisible (false);
                 if (node_alpha_combobox->count() == 3)
                   node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
                 else
                   node_alpha_combobox->setItemText (3, node_values_from_file_alpha.get_name());
                 node_alpha_combobox->setCurrentIndex (3);
+                node_alpha_range_label->setVisible (true);
+                node_alpha_lower_button->setVisible (true);
+                node_alpha_upper_button->setVisible (true);
+                node_alpha_invert_checkbox->setVisible (true);
+                node_alpha_lower_button->setValue (node_values_from_file_alpha.get_min());
+                node_alpha_upper_button->setValue (node_values_from_file_alpha.get_max());
+                node_alpha_lower_button->setMax (node_values_from_file_alpha.get_max());
+                node_alpha_upper_button->setMin (node_values_from_file_alpha.get_min());
+                node_alpha_lower_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
+                node_alpha_upper_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
+                node_alpha_invert_checkbox->setChecked (false);
               } else {
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = NODE_ALPHA_FIXED;
-                //node_alpha_slider->setVisible (true);
                 node_alpha_combobox->removeItem (3);
+                node_alpha_range_label->setVisible (false);
+                node_alpha_lower_button->setVisible (false);
+                node_alpha_upper_button->setVisible (false);
+                node_alpha_invert_checkbox->setVisible (false);
               }
               break;
             case 3:
@@ -1271,6 +1330,14 @@ namespace MR
           node_fixed_alpha = position / 1000.0f;
           if (node_overlay)
             node_overlay->alpha = node_fixed_alpha;
+          window.updateGL();
+        }
+
+        void Connectome::node_alpha_parameter_slot()
+        {
+          node_alpha_lower_button->setMax (node_alpha_upper_button->value());
+          node_alpha_upper_button->setMin (node_alpha_lower_button->value());
+          calculate_node_alphas();
           window.updateGL();
         }
 
@@ -2247,8 +2314,14 @@ namespace MR
           } else if (node_alpha == NODE_ALPHA_FILE) {
 
             assert (node_values_from_file_alpha.size());
-            for (size_t i = 1; i <= num_nodes(); ++i)
-              nodes[i].set_alpha (node_values_from_file_alpha[i-1]);
+            const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
+            const bool invert = node_alpha_invert_checkbox->isChecked();
+            for (size_t i = 1; i <= num_nodes(); ++i) {
+              float factor = (node_values_from_file_alpha[i-1]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = invert ? 1.0f-factor : factor;
+              nodes[i].set_alpha (factor);
+            }
 
           }
           update_node_overlay();
