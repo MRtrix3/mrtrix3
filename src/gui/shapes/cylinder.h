@@ -46,7 +46,7 @@ namespace MR
         void LOD (const size_t);
 
         size_t num_indices;
-        GL::VertexBuffer vertex_buffer;
+        GL::VertexBuffer vertex_buffer, normal_buffer;
         GL::IndexBuffer index_buffer;
 
     };

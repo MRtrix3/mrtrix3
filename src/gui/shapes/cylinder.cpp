@@ -40,44 +40,67 @@ namespace MR
     void Cylinder::LOD (const size_t level_of_detail)
     {
 
-      std::vector< Point<GLfloat> > vertices;
+      std::vector< Point<GLfloat> > vertices, normals;
+      std::vector< Point<GLuint> > indices;
 
       // Want to be able to display using a single DrawElements call; not worth faffing about
       //   with combinations of GL_TRIANGLES and GL_TRIANGLE_FAN
-      // Also need to figure out how to deal with shifting the second set of vertices
-      // Might be easiest to do using a second array buffer; this will determine which of the
-      //   two provided endpoints to use
-      // Actually, can probably just use the Z-coordinate
+
+      // Want to do appropriate lighting on the cylinder, but without
+      //   toggling between flat and interpolated normals
+      // To do this, just duplicate the vertices, and store the normals manually
+      //   (normals will also need to be rotated in the vertex shader)
 
       const size_t N = Math::pow2 (level_of_detail + 1);
       const float angle_multiplier = 2.0 * Math::pi / float(N);
 
+      // The near face
       vertices.push_back (Point<GLfloat> (0.0f, 0.0f, 0.0f));
-      for (size_t i = 0; i != N; ++i)
+      normals.push_back (Point<GLfloat> (0.0f, 0.0f, -1.0f));
+      for (size_t i = 0; i != N; ++i) {
         vertices.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f));
+        normals.push_back (Point<GLfloat> (0.0f, 0.0f, -1.0f));
+        if (i == N-1)
+          indices.push_back (Point<GLuint> (0, i, 1));
+        else if (i)
+          indices.push_back (Point<GLuint> (0, i, i+1));
+      }
 
+      // The far face
+      const size_t far_face_centre_index = vertices.size();
       vertices.push_back (Point<GLfloat> (0.0f, 0.0f, 1.0f));
-      for (size_t i = 1; i <= N; ++i)
-        vertices.push_back (Point<GLfloat> (vertices[i][0], vertices[i][1], 1.0f));
+      normals.push_back (Point<GLfloat> (0.0f, 0.0f, 1.0f));
+      for (size_t i = 0; i != N; ++i) {
+        vertices.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 1.0f));
+        normals.push_back (Point<GLfloat> (0.0f, 0.0f, 1.0f));
+        if (i == N-1)
+          indices.push_back (Point<GLuint> (far_face_centre_index, far_face_centre_index+1, far_face_centre_index+i));
+        else if (i)
+          indices.push_back (Point<GLuint> (far_face_centre_index, far_face_centre_index+i+1, far_face_centre_index+i));
+      }
 
-      std::vector< Point<GLuint> > indices;
-
+      // The length of the cylinder
+      vertices.push_back (Point<GLfloat> (1.0f, 0.0f, 0.0f));
+      normals.push_back (Point<GLfloat> (1.0f, 0.0f, 0.0f));
+      vertices.push_back (Point<GLfloat> (1.0f, 0.0f, 1.0f));
+      normals.push_back (Point<GLfloat> (1.0f, 0.0f, 0.0f));
       for (size_t i = 1; i <= N; ++i) {
-        const size_t next_near = (i == N) ? 1 : i+1;
-        const size_t far = i + N + 1;
-        const size_t next_far  = (i == N) ? N+2 : far+1;
-        // Triangles along the length of the cylinder
-        indices.push_back (Point<GLuint> (i, far, next_far));
-        indices.push_back (Point<GLuint> (i, next_far, next_near));
-        // At the near face
-        indices.push_back (Point<GLuint> (0, i, next_near));
-        // At the far face
-        indices.push_back (Point<GLuint> (N+1, next_far, far));
+        const GLuint V = vertices.size();
+        vertices.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f));
+        normals.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f));
+        vertices.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 1.0f));
+        normals.push_back (Point<GLfloat> (std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f));
+        indices.push_back (Point<GLuint> (V-2, V-1, V));
+        indices.push_back (Point<GLuint> (V, V-1, V+1));
       }
 
       vertex_buffer.gen();
       vertex_buffer.bind (gl::ARRAY_BUFFER);
       gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Point<GLfloat>), &vertices[0][0], gl::STATIC_DRAW);
+
+      normal_buffer.gen();
+      normal_buffer.bind (gl::ARRAY_BUFFER);
+      gl::BufferData (gl::ARRAY_BUFFER, normals.size()*sizeof(Point<GLfloat>), &normals[0][0], gl::STATIC_DRAW);
 
       num_indices = 3*indices.size();
       index_buffer.gen();

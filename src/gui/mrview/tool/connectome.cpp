@@ -135,12 +135,12 @@ namespace MR
 
           // =================================================================
 
-          const bool per_node_alpha = (parent.node_alpha != NODE_ALPHA_FIXED);
+          const bool use_alpha = !(parent.node_alpha == NODE_ALPHA_FIXED && parent.node_fixed_alpha == 1.0f);
 
           fragment_shader_source =
               "uniform vec3 node_colour;\n";
 
-          if (per_node_alpha) {
+          if (use_alpha) {
             fragment_shader_source +=
               "uniform float node_alpha;\n"
               "out vec4 color;\n";
@@ -171,7 +171,7 @@ namespace MR
           fragment_shader_source +=
               "void main() {\n";
 
-          if (per_node_alpha) {
+          if (use_alpha) {
             fragment_shader_source +=
               "  color.xyz = node_colour;\n"
               "  color.a = node_alpha;\n";
@@ -205,9 +205,11 @@ namespace MR
 
           if (parent.edge_geometry == EDGE_GEOM_CYLINDER) {
             vertex_shader_source +=
+              "layout (location = 1) in vec3 vertexNormal_modelspace;\n"
               "uniform vec3 centre_one, centre_two;\n"
               "uniform mat3 rot_matrix;\n"
-              "uniform float radius;\n";
+              "uniform float radius;\n"
+              "out vec3 normal;\n";
           }
 
           vertex_shader_source +=
@@ -227,6 +229,7 @@ namespace MR
               "    offset[2] = 0.0;\n"
               "  }\n"
               "  offset = offset * rot_matrix;\n"
+              "  normal = vertexNormal_modelspace * rot_matrix;\n"
               "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
               break;
           }
@@ -236,12 +239,12 @@ namespace MR
 
           // =================================================================
 
-          const bool per_edge_alpha = (parent.edge_alpha != EDGE_ALPHA_FIXED);
+          const bool use_alpha = !(parent.edge_alpha == EDGE_ALPHA_FIXED && parent.edge_fixed_alpha == 1.0f);
 
           fragment_shader_source =
               "uniform vec3 edge_colour;\n";
 
-          if (per_edge_alpha) {
+          if (use_alpha) {
             fragment_shader_source +=
               "uniform float edge_alpha;\n"
               "out vec4 color;\n";
@@ -250,16 +253,30 @@ namespace MR
               "out vec3 color;\n";
           }
 
+          if (parent.edge_geometry == EDGE_GEOM_CYLINDER) {
+            fragment_shader_source +=
+              "in vec3 normal;\n"
+              "uniform float ambient, diffuse, specular, shine;\n"
+              "uniform vec3 light_pos;\n"
+              "uniform vec3 screen_normal;\n";
+          }
+
           fragment_shader_source +=
               "void main() {\n";
 
-          if (per_edge_alpha) {
+          if (use_alpha) {
             fragment_shader_source +=
               "  color.xyz = edge_colour;\n"
               "  color.a = edge_alpha;\n";
           } else {
             fragment_shader_source +=
               "  color = edge_colour;\n";
+          }
+
+          if (parent.edge_geometry == EDGE_GEOM_CYLINDER) {
+            fragment_shader_source +=
+              "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
+              "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
           }
 
           fragment_shader_source +=
@@ -597,6 +614,9 @@ namespace MR
           cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          cylinder.normal_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
           sphere.LOD (4);
           sphere_VAO.gen();
@@ -661,7 +681,7 @@ namespace MR
               const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
 
               GLuint node_alpha_ID = 0;
-              if (node_alpha != NODE_ALPHA_FIXED)
+              if (use_alpha)
                 node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
               GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
@@ -701,7 +721,7 @@ namespace MR
                 const Node& node (nodes[it->second]);
                 if (node.is_visible()) {
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
-                  if (node_alpha != NODE_ALPHA_FIXED)
+                  if (use_alpha)
                     gl::Uniform1f (node_alpha_ID, node.get_alpha());
                   if (node_geometry != NODE_GEOM_OVERLAY) {
                     gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
@@ -756,7 +776,7 @@ namespace MR
               gl::DepthMask (gl::FALSE_);
               gl::BlendEquation (gl::FUNC_ADD);
               gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
-              gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+              gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
             } else {
               gl::Disable (gl::BLEND);
               gl::DepthMask (gl::TRUE_);
@@ -771,12 +791,18 @@ namespace MR
               node_centre_two_ID = gl::GetUniformLocation (edge_shader, "centre_two");
               rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
               radius_ID          = gl::GetUniformLocation (edge_shader, "radius");
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "specular"), lighting.specular);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
             }
 
             const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
 
             GLuint edge_alpha_ID = 0;
-            if (edge_alpha != EDGE_ALPHA_FIXED)
+            if (use_alpha)
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
             std::map<float, size_t> edge_ordering;
@@ -787,7 +813,7 @@ namespace MR
               const Edge& edge (edges[it->second]);
               if (edge.is_visible()) {
                 gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
-                if (edge_alpha != EDGE_ALPHA_FIXED)
+                if (use_alpha)
                   gl::Uniform1f (edge_alpha_ID, edge.get_alpha());
                 switch (edge_geometry) {
                   case EDGE_GEOM_LINE:

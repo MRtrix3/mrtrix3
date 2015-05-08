@@ -75,8 +75,6 @@
 //
 //
 // * Drawing nodes
-//   - Implement for GL what's missing currently from the plotting capabilities,
-//     e.g. mesh lighting, overlay
 //   - When in 2D mode, mesh mode should detect triangles intersecting with the
 //     focus plane, and draw the projections on that plane as lines
 //     (preferably with adjustable thickness)
@@ -94,29 +92,25 @@
 //   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling
-//     * Look into an alternative mesh conversion that isn't axis-constrained, i.e.
-//       introduce some smoothness into the mesh with 45-degree angles
-//       -> e.g. Marching Cubes
-//          http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html
-//     * Pre-calculate vertex normals based on connected polygons & use for lighting
 //     * Some kind of mesh smoothing
-//       -> e.g. Laplacian Smooth
+//       -> e.g. "Non-Iterative, Feature-Preserving Mesh Smoothing"
+//   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
+//     and store normals for each; keep things simple
 //
 // * OpenGL drawing general:
-//   - Add lighting capability, using similar code to ODF renderer
-//     * May want to have a single GL::Lighting class for which the settings apply
-//       to all geometries -> Actually there already is one, Window::lighting()
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
 //     (arose with implementation of the node overlay image)
 //   - Make transparency sliders a little more sensible
 //     (may need linear scale in 2D mode, non-linear in 3D)
+//   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
+//     update index vector accordingly, do a single draw call for both edges and nodes
+//     (this is the only way transparency of both nodes and edges can work)
 //
 // * Nodes GUI section
 //   - For colour by file: Need additional elements to appear: Colour map picker w. option
 //     to invert colourmap, and upper / lower threshold adjustbars
 //   - For size by file, need upper / lower threshold adjustbars in addition to the
 //     size slider
-//   - Will also want lower & upper thresholds for the visibility option
 //   - Prevent other non-sensible behaviour, e.g.:
 //     * Trying to colour by LUT when no LUT is provided
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
@@ -125,9 +119,6 @@
 //   - Speed up the node tessellation; either doing it all in a single pass, or multi-threading
 //
 // * Toolbar
-//   - Use grid layout for node / edge options: try to keep it neat as GUI elements
-//     appear and disappear
-//   - Only start drawing toolbar after parcellation image has been imported
 //   - Figure out why the toolbar is initially being drawn twice
 //     -> May be something to do with dual screen...
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
