@@ -88,12 +88,11 @@ namespace MR
              Model* image_list_model;
              QListView* image_list_view;
              QPushButton *show_preview_button, *hide_all_button;
-             QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box;
+             QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box, *main_grid_box;
              QCheckBox *colour_by_direction_box, *interpolation_box;
              QSpinBox *lmax_selector, *level_of_detail_selector;
 
              AdjustButton *scale;
-             QComboBox *grid_selector;
 
              Dialog::Lighting *lighting_dialog;
              GL::Lighting* lighting;

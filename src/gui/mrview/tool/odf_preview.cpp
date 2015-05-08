@@ -106,7 +106,7 @@ namespace MR
           level_of_detail_selector->setMinimum (1);
           level_of_detail_selector->setMaximum (7);
           level_of_detail_selector->setSingleStep (1);
-          level_of_detail_selector->setValue (4);
+          level_of_detail_selector->setValue (5);
           connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(level_of_detail_slot(int)));
           box_layout->addWidget (level_of_detail_selector, 1, 3, 1, 1);
 
@@ -120,7 +120,7 @@ namespace MR
           lock_orientation_to_image_slot (1);
           interpolation_slot (0);
           show_axes_slot (1);
-          level_of_detail_slot (4);
+          level_of_detail_slot (5);
 
         }
 

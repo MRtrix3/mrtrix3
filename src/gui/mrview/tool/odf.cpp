@@ -157,25 +157,25 @@ namespace MR
             HBoxLayout* layout = new HBoxLayout;
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open ODF image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close ODF image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
             show_preview_button = new QPushButton (this);
-            show_preview_button->setToolTip (tr ("Show preview window"));
+            show_preview_button->setToolTip (tr ("Inspect ODF at focus (separate window)"));
             show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
             connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
             layout->addWidget (show_preview_button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide All"));
+            hide_all_button->setToolTip (tr ("Hide all ODFs"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -233,11 +233,10 @@ namespace MR
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
             box_layout->addWidget (lmax_selector, 1, 1);
 
-            colour_by_direction_box = new QCheckBox ("colour by direction");
-            colour_by_direction_box->setChecked (true);
-            connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 1, 2, 1, 2);
-
+            hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
+            hide_negative_lobes_box->setChecked (true);
+            connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
+            box_layout->addWidget (hide_negative_lobes_box, 1, 2, 1, 2);
 
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
@@ -245,40 +244,30 @@ namespace MR
             box_layout->addWidget (interpolation_box, 2, 0, 1, 2);
 
 
-            hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
-            hide_negative_lobes_box->setChecked (true);
-            connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
-            box_layout->addWidget (hide_negative_lobes_box, 2, 2, 1, 2);
+            colour_by_direction_box = new QCheckBox ("colour by direction");
+            colour_by_direction_box->setChecked (true);
+            connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
+            box_layout->addWidget (colour_by_direction_box, 2, 2, 1, 2);
 
-
+            lock_to_grid_box = new QCheckBox ("lock to grid");
+            lock_to_grid_box->setChecked (true);
+            connect (lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
+            box_layout->addWidget (lock_to_grid_box, 3, 0, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 3, 0, 1, 2);
+            box_layout->addWidget (use_lighting_box, 3, 2, 1, 2);
 
+            main_grid_box = new QCheckBox ("use main grid");
+            main_grid_box->setChecked (false);
+            connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
+            box_layout->addWidget (main_grid_box, 4, 0, 1, 2);
 
             QPushButton *lighting_settings_button = new QPushButton ("adjust lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 3, 2, 1, 2);
-
-
-
-            lock_to_grid_box = new QCheckBox ("lock to grid");
-            lock_to_grid_box->setChecked (true);
-            connect (lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (lock_to_grid_box, 4, 0, 1, 2);
-
-            label = new QLabel ("grid");
-            label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 4, 2);
-            grid_selector = new QComboBox (this);
-            grid_selector->addItem ("overlay");
-            grid_selector->addItem ("main");
-            connect (grid_selector, SIGNAL (activated(int)), this, SLOT(updateGL()));
-            box_layout->addWidget (grid_selector, 4, 3);
-
+            box_layout->addWidget (lighting_settings_button, 4, 2, 1, 2);
 
 
             connect (image_list_view->selectionModel(),
@@ -292,7 +281,7 @@ namespace MR
             lmax_slot (0);
             adjust_scale_slot ();
 
-            preview = new Dock (&main_window, "ODF preview pane");
+            preview = new Dock (&main_window,nullptr);
             main_window.addDockWidget (Qt::RightDockWidgetArea, preview);
             preview->tool = new ODF_Preview (window, preview, this);
             preview->tool->adjustSize();
@@ -329,7 +318,7 @@ namespace MR
           if (!settings)
             return;
 
-          MRView::Image& image (grid_selector->currentIndex() ? *window.image() : settings->image);
+          MRView::Image& image (main_grid_box->isChecked() ? *window.image() : settings->image);
 
           if (!hide_all_button->isChecked()) {
 
