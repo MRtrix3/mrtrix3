@@ -704,7 +704,8 @@ namespace MR
                 gl::DepthMask (gl::FALSE_);
                 gl::BlendEquation (gl::FUNC_ADD);
                 //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-                gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+                //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+                gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
                 gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
                 //gl::Disable (gl::CULL_FACE);
               } else {
@@ -811,7 +812,8 @@ namespace MR
               gl::DepthMask (gl::FALSE_);
               gl::BlendEquation (gl::FUNC_ADD);
               //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-              gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+              //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+              gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
               gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
             } else {
               gl::Disable (gl::BLEND);
