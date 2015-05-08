@@ -455,9 +455,35 @@ namespace MR
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
           hlayout->addWidget (node_size_button, 1);
           gridlayout->addLayout (hlayout, 2, 3, 1, 2);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          node_size_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (node_size_range_label);
+          node_size_lower_button = new AdjustButton (this);
+          node_size_lower_button->setValue (0.0f);
+          node_size_lower_button->setMin (-std::numeric_limits<float>::max());
+          node_size_lower_button->setMax (0.0f);
+          connect (node_size_lower_button, SIGNAL (valueChanged()), this, SLOT (node_size_parameter_slot()));
+          hlayout->addWidget (node_size_lower_button);
+          node_size_upper_button = new AdjustButton (this);
+          node_size_upper_button->setValue (0.0f);
+          node_size_upper_button->setMin (0.0f);
+          node_size_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (node_size_upper_button, SIGNAL (valueChanged()), this, SLOT (node_size_parameter_slot()));
+          hlayout->addWidget (node_size_upper_button);
+          node_size_invert_checkbox = new QCheckBox ("Invert");
+          node_size_invert_checkbox->setTristate (false);
+          connect (node_size_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_size_parameter_slot()));
+          hlayout->addWidget (node_size_invert_checkbox);
+          node_size_range_label->setVisible (false);
+          node_size_lower_button->setVisible (false);
+          node_size_upper_button->setVisible (false);
+          node_size_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 3, 1, 1, 4);
 
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 3, 0, 1, 2);
+          gridlayout->addWidget (label, 4, 0, 1, 2);
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
@@ -466,7 +492,7 @@ namespace MR
           node_visibility_combobox->addItem ("Degree >= 1");
           node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
-          gridlayout->addWidget (node_visibility_combobox, 3, 2);
+          gridlayout->addWidget (node_visibility_combobox, 4, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -485,17 +511,17 @@ namespace MR
           node_visibility_threshold_label->setVisible (false);
           node_visibility_threshold_button->setVisible (false);
           node_visibility_threshold_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 5, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 5, 0, 1, 2);
+          gridlayout->addWidget (label, 6, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Lookup table");
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          gridlayout->addWidget (node_alpha_combobox, 5, 2);
+          gridlayout->addWidget (node_alpha_combobox, 6, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -504,7 +530,7 @@ namespace MR
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -530,7 +556,7 @@ namespace MR
           node_alpha_lower_button->setVisible (false);
           node_alpha_upper_button->setVisible (false);
           node_alpha_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 7, 1, 1, 4);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -1018,6 +1044,10 @@ namespace MR
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
               node_size_button->setVisible (false);
+              node_size_range_label->setVisible (false);
+              node_size_lower_button->setVisible (false);
+              node_size_upper_button->setVisible (false);
+              node_size_invert_checkbox->setVisible (false);
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (true);
@@ -1026,10 +1056,16 @@ namespace MR
             case 3:
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
-              node_size = NODE_SIZE_FIXED;
-              calculate_node_sizes();
-              node_size_combobox->setCurrentIndex (0);
-              node_size_combobox->setEnabled (false);
+              if (node_size == NODE_SIZE_VOLUME) {
+                node_size = NODE_SIZE_FIXED;
+                node_size_combobox->setCurrentIndex (0);
+                calculate_node_sizes();
+                node_size_range_label->setVisible (false);
+                node_size_lower_button->setVisible (false);
+                node_size_upper_button->setVisible (false);
+                node_size_invert_checkbox->setVisible (false);
+              }
+              node_size_combobox->setEnabled (true);
               node_size_button->setVisible (true);
               if (node_size_scale_factor > 1.0f) {
                 node_size_scale_factor = 1.0f;
@@ -1113,17 +1149,25 @@ namespace MR
 
         void Connectome::node_size_selection_slot (int index)
         {
-          assert (node_geometry == NODE_GEOM_SPHERE || node_geometry == NODE_GEOM_CUBE);
+          assert (node_geometry != NODE_GEOM_OVERLAY);
           switch (index) {
             case 0:
               if (node_size == NODE_SIZE_FIXED) return;
               node_size = NODE_SIZE_FIXED;
               node_size_combobox->removeItem (3);
+              node_size_range_label->setVisible (false);
+              node_size_lower_button->setVisible (false);
+              node_size_upper_button->setVisible (false);
+              node_size_invert_checkbox->setVisible (false);
               break;
             case 1:
               if (node_size == NODE_SIZE_VOLUME) return;
               node_size = NODE_SIZE_VOLUME;
               node_size_combobox->removeItem (3);
+              node_size_range_label->setVisible (false);
+              node_size_lower_button->setVisible (false);
+              node_size_upper_button->setVisible (false);
+              node_size_invert_checkbox->setVisible (false);
               break;
             case 2:
               try {
@@ -1136,10 +1180,25 @@ namespace MR
                 else
                   node_size_combobox->setItemText (3, node_values_from_file_size.get_name());
                 node_size_combobox->setCurrentIndex (3);
+                node_size_range_label->setVisible (true);
+                node_size_lower_button->setVisible (true);
+                node_size_upper_button->setVisible (true);
+                node_size_invert_checkbox->setVisible (true);
+                node_size_lower_button->setValue (node_values_from_file_size.get_min());
+                node_size_upper_button->setValue (node_values_from_file_size.get_max());
+                node_size_lower_button->setMax (node_values_from_file_size.get_max());
+                node_size_upper_button->setMin (node_values_from_file_size.get_min());
+                node_size_lower_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
+                node_size_upper_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
+                node_size_invert_checkbox->setChecked (false);
               } else {
                 node_size_combobox->setCurrentIndex (0);
                 node_size = NODE_SIZE_FIXED;
                 node_size_combobox->removeItem (3);
+                node_size_range_label->setVisible (false);
+                node_size_lower_button->setVisible (false);
+                node_size_upper_button->setVisible (false);
+                node_size_invert_checkbox->setVisible (false);
               }
               break;
             case 3:
@@ -1318,6 +1377,12 @@ namespace MR
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
+          window.updateGL();
+        }
+
+        void Connectome::node_size_parameter_slot()
+        {
+          calculate_node_sizes();
           window.updateGL();
         }
 
@@ -2242,8 +2307,14 @@ namespace MR
           } else if (node_size == NODE_SIZE_FILE) {
 
             assert (node_values_from_file_size.size());
-            for (size_t i = 1; i <= num_nodes(); ++i)
-              nodes[i].set_size (std::cbrt (node_values_from_file_size[i-1] / (4.0 * Math::pi)));
+            const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
+            const bool invert = node_size_invert_checkbox->isChecked();
+            for (size_t i = 1; i <= num_nodes(); ++i) {
+              float factor = (node_values_from_file_size[i-1]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = invert ? 1.0f-factor : factor;
+              nodes[i].set_size (factor);
+            }
 
           }
         }

@@ -238,6 +238,7 @@ namespace MR
             void overlay_interp_slot (int);
             void node_colour_change_slot();
             void node_size_value_slot();
+            void node_size_parameter_slot();
             void node_visibility_parameter_slot();
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
@@ -269,6 +270,9 @@ namespace MR
             ColourMapButton *node_colour_colourmap_button;
 
             AdjustButton *node_size_button;
+            QLabel *node_size_range_label;
+            AdjustButton *node_size_lower_button, *node_size_upper_button;
+            QCheckBox *node_size_invert_checkbox;
 
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
