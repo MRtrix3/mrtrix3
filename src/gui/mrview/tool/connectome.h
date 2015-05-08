@@ -108,10 +108,6 @@
 //     (this is the only way transparency of both nodes and edges can work)
 //
 // * Nodes GUI section
-//   - For colour by file: Need additional elements to appear: Colour map picker w. option
-//     to invert colourmap, and upper / lower threshold adjustbars
-//   - For size by file, need upper / lower threshold adjustbars in addition to the
-//     size slider
 //   - Prevent other non-sensible behaviour, e.g.:
 //     * Trying to colour by LUT when no LUT is provided
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
@@ -149,7 +145,7 @@ namespace MR
     {
       namespace Tool
       {
-        class Connectome : public Base, public ColourMapButtonObserver
+        class Connectome : public Base
         {
             Q_OBJECT
 
@@ -237,6 +233,7 @@ namespace MR
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
             void node_colour_change_slot();
+            void node_colour_parameter_slot();
             void node_size_value_slot();
             void node_size_parameter_slot();
             void node_visibility_parameter_slot();
@@ -268,6 +265,9 @@ namespace MR
 
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
+
+            QLabel *node_colour_range_label;
+            AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             AdjustButton *node_size_button;
             QLabel *node_size_range_label;
@@ -444,6 +444,32 @@ namespace MR
                 } slice_shader;
             };
 
+            // Classes to receive input from the colourmap buttons and act accordingly
+            class NodeColourObserver : public ColourMapButtonObserver
+            {
+              public:
+                NodeColourObserver (Connectome& connectome) : master (connectome) { }
+                void selected_colourmap (size_t, const ColourMapButton&) override;
+                void selected_custom_colour (const QColor&, const ColourMapButton&) override;
+                void toggle_show_colour_bar (bool, const ColourMapButton&) override;
+                void toggle_invert_colourmap (bool, const ColourMapButton&) override;
+                void reset_colourmap (const ColourMapButton&) override;
+              private:
+                Connectome& master;
+            };
+            class EdgeColourObserver : public ColourMapButtonObserver
+            {
+              public:
+                EdgeColourObserver (Connectome& connectome) : master (connectome) { }
+                void selected_colourmap (size_t, const ColourMapButton&) override;
+                void selected_custom_colour (const QColor&, const ColourMapButton&) override;
+                void toggle_show_colour_bar (bool, const ColourMapButton&) override;
+                void toggle_invert_colourmap (bool, const ColourMapButton&) override;
+                void reset_colourmap (const ColourMapButton&) override;
+              private:
+                Connectome& master;
+            };
+
 
 
 
@@ -504,6 +530,8 @@ namespace MR
 
             // Other values that need to be stored w.r.t. node visualisation
             Point<float> node_fixed_colour;
+            size_t node_colourmap_index;
+            bool node_colourmap_invert;
             float node_fixed_alpha;
             float node_size_scale_factor;
             float voxel_volume;
@@ -529,6 +557,9 @@ namespace MR
             FileDataVector edge_values_from_file_visibility;
             FileDataVector edge_values_from_file_alpha;
 
+            // Classes to receive inputs from the colourmap buttons and act accordingly
+            NodeColourObserver node_colourmap_observer;
+            EdgeColourObserver edge_colourmap_observer;
 
             // Helper functions
             void clear_all();

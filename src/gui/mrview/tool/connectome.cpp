@@ -24,6 +24,7 @@
 
 #include "file/path.h"
 #include "gui/dialog/file.h"
+#include "gui/mrview/colourmap.h"
 #include "image/adapter/extract.h"
 #include "image/buffer.h"
 #include "image/header.h"
@@ -168,15 +169,32 @@ namespace MR
               "in vec3 position;\n";
           }
 
+          if (parent.node_colour == NODE_COLOUR_FILE && ColourMap::maps[parent.node_colourmap_index].is_colour) {
+            fragment_shader_source +=
+              "in vec3 colourmap_colour;\n";
+          }
+
           fragment_shader_source +=
               "void main() {\n";
 
-          if (use_alpha) {
+          if (parent.node_colour == NODE_COLOUR_FILE) {
+
+            // Red component of node_colour is the position within the range [0, 1] based on the current settings;
+            //   use this to derive the actual colour based on the selected mapping
             fragment_shader_source +=
-              "  color.xyz = node_colour;\n";
+              "  float amplitude = node_colour.r;\n";
+            fragment_shader_source += std::string("  ") + ColourMap::maps[parent.node_colourmap_index].mapping;
+
           } else {
-            fragment_shader_source +=
-              "  color = node_colour;\n";
+
+            if (use_alpha) {
+              fragment_shader_source +=
+                  "  color.rgb = node_colour;\n";
+            } else {
+              fragment_shader_source +=
+                  "  color = node_colour;\n";
+            }
+
           }
 
           if (parent.node_geometry != NODE_GEOM_OVERLAY) {
@@ -314,6 +332,8 @@ namespace MR
             node_visibility (NODE_VIS_ALL),
             node_alpha (NODE_ALPHA_FIXED),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
+            node_colourmap_index (1),
+            node_colourmap_invert (false),
             node_fixed_alpha (1.0f),
             node_size_scale_factor (1.0f),
             voxel_volume (0.0f),
@@ -324,42 +344,37 @@ namespace MR
             edge_alpha (EDGE_ALPHA_FIXED),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
             edge_fixed_alpha (1.0f),
-            edge_size_scale_factor (1.0f)
+            edge_size_scale_factor (1.0f),
+            node_colourmap_observer (*this),
+            edge_colourmap_observer (*this)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
-
-          HBoxLayout* hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
 
           QGroupBox* group_box = new QGroupBox ("Basic setup");
           main_box->addWidget (group_box);
           VBoxLayout* vlayout = new VBoxLayout;
           group_box->setLayout (vlayout);
 
+          HBoxLayout* hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          hlayout->addWidget (new QLabel ("Node image: "));
           image_button = new QPushButton (this);
           image_button->setToolTip (tr ("Change primary parcellation image"));
-          // TODO New icons
-          // TODO Have the icons always there, but add the opened file name as text
-          //image_button->setIcon (QIcon (":/open.svg"));
           connect (image_button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
           hlayout->addWidget (image_button, 1);
-
           hide_all_button = new QPushButton (this);
           hide_all_button->setToolTip (tr ("Hide all connectome visualisation"));
           hide_all_button->setIcon (QIcon (":/hide.svg"));
           hide_all_button->setCheckable (true);
           connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
           hlayout->addWidget (hide_all_button, 1);
-
           vlayout->addLayout (hlayout);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-
           hlayout->addWidget (new QLabel ("LUT: "));
-
           lut_combobox = new QComboBox (this);
           lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)"));
           for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
@@ -371,9 +386,7 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-
           hlayout->addWidget (new QLabel ("Config: "));
-
           config_button = new QPushButton (this);
           config_button->setToolTip (tr ("Open connectome config file"));
           //config_button->setIcon (QIcon (":/close.svg"));
@@ -432,20 +445,42 @@ namespace MR
           node_colour_fixedcolour_button = new QColorButton;
           connect (node_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (node_colour_change_slot()));
           hlayout->addWidget (node_colour_fixedcolour_button, 1);
-          node_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
+          node_colour_colourmap_button = new ColourMapButton (this, node_colourmap_observer, false, false, true);
           node_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (node_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 1, 3, 1, 2);
 
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          node_colour_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (node_colour_range_label);
+          node_colour_lower_button = new AdjustButton (this);
+          node_colour_lower_button->setValue (0.0f);
+          node_colour_lower_button->setMin (-std::numeric_limits<float>::max());
+          node_colour_lower_button->setMax (0.0f);
+          connect (node_colour_lower_button, SIGNAL (valueChanged()), this, SLOT (node_colour_parameter_slot()));
+          hlayout->addWidget (node_colour_lower_button);
+          node_colour_upper_button = new AdjustButton (this);
+          node_colour_upper_button->setValue (0.0f);
+          node_colour_upper_button->setMin (0.0f);
+          node_colour_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (node_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (node_colour_parameter_slot()));
+          hlayout->addWidget (node_colour_upper_button);
+          node_colour_range_label->setVisible (false);
+          node_colour_lower_button->setVisible (false);
+          node_colour_upper_button->setVisible (false);
+          gridlayout->addLayout (hlayout, 2, 1, 1, 4);
+
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 2, 0, 1, 2);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
           node_size_combobox->addItem ("From vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
-          gridlayout->addWidget (node_size_combobox, 2, 2);
+          gridlayout->addWidget (node_size_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -454,7 +489,8 @@ namespace MR
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
           hlayout->addWidget (node_size_button, 1);
-          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
+
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -480,10 +516,10 @@ namespace MR
           node_size_lower_button->setVisible (false);
           node_size_upper_button->setVisible (false);
           node_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 3, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
 
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 4, 0, 1, 2);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           node_visibility_combobox = new QComboBox (this);
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
@@ -492,7 +528,8 @@ namespace MR
           node_visibility_combobox->addItem ("Degree >= 1");
           node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
-          gridlayout->addWidget (node_visibility_combobox, 4, 2);
+          gridlayout->addWidget (node_visibility_combobox, 5, 2);
+
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -511,17 +548,17 @@ namespace MR
           node_visibility_threshold_label->setVisible (false);
           node_visibility_threshold_button->setVisible (false);
           node_visibility_threshold_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 5, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 6, 0, 1, 2);
+          gridlayout->addWidget (label, 7, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("Lookup table");
           node_alpha_combobox->addItem ("From vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          gridlayout->addWidget (node_alpha_combobox, 6, 2);
+          gridlayout->addWidget (node_alpha_combobox, 7, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -530,7 +567,8 @@ namespace MR
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 7, 3, 1, 2);
+
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -556,7 +594,7 @@ namespace MR
           node_alpha_lower_button->setVisible (false);
           node_alpha_upper_button->setVisible (false);
           node_alpha_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 7, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 8, 1, 1, 4);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -602,7 +640,7 @@ namespace MR
           edge_colour_fixedcolour_button = new QColorButton;
           connect (edge_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (edge_colour_change_slot()));
           hlayout->addWidget (edge_colour_fixedcolour_button, 1);
-          edge_colour_colourmap_button = new ColourMapButton (this, *this, false, false, true);
+          edge_colour_colourmap_button = new ColourMapButton (this, edge_colourmap_observer, false, false, true);
           edge_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (edge_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 1, 3, 1, 2);
@@ -751,6 +789,9 @@ namespace MR
                 node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
                 node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
               }
+
+              if (node_colour == NODE_COLOUR_FILE && ColourMap::maps[node_colourmap_index].is_colour)
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
 
               if (node_geometry == NODE_GEOM_SPHERE) {
                 sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -1089,6 +1130,9 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (4);
+              node_colour_range_label->setVisible (false);
+              node_colour_lower_button->setVisible (false);
+              node_colour_upper_button->setVisible (false);
               break;
             case 1:
               // Regenerate random colours on repeat selection
@@ -1096,6 +1140,9 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (4);
+              node_colour_range_label->setVisible (false);
+              node_colour_lower_button->setVisible (false);
+              node_colour_upper_button->setVisible (false);
               break;
             case 2:
               if (node_colour == NODE_COLOUR_LUT) return;
@@ -1117,6 +1164,9 @@ namespace MR
               }
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (4);
+              node_colour_range_label->setVisible (false);
+              node_colour_lower_button->setVisible (false);
+              node_colour_upper_button->setVisible (false);
               break;
             case 3:
               try {
@@ -1124,7 +1174,6 @@ namespace MR
               } catch (...) { }
               if (node_values_from_file_colour.size()) {
                 node_colour = NODE_COLOUR_FILE;
-                // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
                 node_colour_colourmap_button->setVisible (true);
                 node_colour_fixedcolour_button->setVisible (false);
                 if (node_colour_combobox->count() == 4)
@@ -1132,12 +1181,24 @@ namespace MR
                 else
                   node_colour_combobox->setItemText (4, node_values_from_file_colour.get_name());
                 node_colour_combobox->setCurrentIndex (4);
+                node_colour_range_label->setVisible (true);
+                node_colour_lower_button->setVisible (true);
+                node_colour_upper_button->setVisible (true);
+                node_colour_lower_button->setValue (node_values_from_file_colour.get_min());
+                node_colour_upper_button->setValue (node_values_from_file_colour.get_max());
+                node_colour_lower_button->setMax (node_values_from_file_colour.get_max());
+                node_colour_upper_button->setMin (node_values_from_file_colour.get_min());
+                node_colour_lower_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
+                node_colour_upper_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
               } else {
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (4);
+                node_colour_range_label->setVisible (false);
+                node_colour_lower_button->setVisible (false);
+                node_colour_upper_button->setVisible (false);
               }
               break;
             case 4:
@@ -1374,6 +1435,14 @@ namespace MR
           window.updateGL();
         }
 
+        void Connectome::node_colour_parameter_slot()
+        {
+          node_colour_lower_button->setMax (node_colour_upper_button->value());
+          node_colour_upper_button->setMin (node_colour_lower_button->value());
+          calculate_node_colours();
+          window.updateGL();
+        }
+
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
@@ -1382,6 +1451,8 @@ namespace MR
 
         void Connectome::node_size_parameter_slot()
         {
+          node_size_lower_button->setMax (node_size_upper_button->value());
+          node_size_upper_button->setMin (node_size_lower_button->value());
           calculate_node_sizes();
           window.updateGL();
         }
@@ -1993,6 +2064,63 @@ namespace MR
 
 
 
+        void Connectome::NodeColourObserver::selected_colourmap (size_t index, const ColourMapButton&)
+        {
+          master.node_colourmap_index = index;
+          master.window.updateGL();
+        }
+        void Connectome::NodeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
+        {
+          master.node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.window.updateGL();
+        }
+        void Connectome::NodeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
+        {
+          // TODO
+        }
+        void Connectome::NodeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
+        {
+          master.node_colourmap_invert = invert;
+          master.calculate_node_colours();
+          master.window.updateGL();
+        }
+        void Connectome::NodeColourObserver::reset_colourmap (const ColourMapButton&)
+        {
+          assert (master.node_values_from_file_colour.size());
+          master.node_colour_lower_button->setValue (master.node_values_from_file_colour.get_min());
+          master.node_colour_upper_button->setValue (master.node_values_from_file_colour.get_max());
+          master.calculate_node_colours();
+          master.window.updateGL();
+        }
+
+        void Connectome::EdgeColourObserver::selected_colourmap (size_t /*index*/, const ColourMapButton&)
+        {
+
+        }
+        void Connectome::EdgeColourObserver::selected_custom_colour (const QColor&, const ColourMapButton&)
+        {
+           assert (0);
+        }
+        void Connectome::EdgeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
+        {
+
+        }
+        void Connectome::EdgeColourObserver::toggle_invert_colourmap (bool /*invert*/, const ColourMapButton&)
+        {
+
+        }
+        void Connectome::EdgeColourObserver::reset_colourmap (const ColourMapButton&)
+        {
+
+        }
+
+
+
+
+
+
+
+
 
 
         void Connectome::clear_all()
@@ -2279,12 +2407,14 @@ namespace MR
 
           } else if (node_colour == NODE_COLOUR_FILE) {
 
-            // TODO Probably actually nothing to do here;
-            //   shader will branch in order to feed the raw value from the imported file into a colour
-            //   (will need to send the shader a scalar rather than a vec3)
-            // This will then enable use of all possible colour maps
-            for (auto i = nodes.begin(); i != nodes.end(); ++i)
-              i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
+            assert (node_values_from_file_colour.size());
+            const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
+            for (size_t i = 1; i <= num_nodes(); ++i) {
+              float factor = (node_values_from_file_colour[i-1]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = node_colourmap_invert ? 1.0f-factor : factor;
+              nodes[i].set_colour (Point<float> (factor, 0.0f, 0.0f));
+            }
 
           }
           update_node_overlay();
