@@ -165,13 +165,13 @@ config_file = open('config.txt', 'w')
 #config_line = [ 0, 0, 0, 0.1 ]
 #config_line[PEAxis] = 1
 config_line = [ 0, 1, 0, 0.1 ]
-for line_count in xrange(0,DWI1_b0_count):
+for line_count in range(0,DWI1_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
 config_file.write('\n')
 #config_line[PEAxis] = -1
 config_line = [ 0, -1, 0, 0.1 ]
-for line_count in xrange(0,DWI2_b0_count):
+for line_count in range(0,DWI2_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
 config_file.write('\n')
@@ -207,9 +207,9 @@ runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals')
 #   that is closest in time (this is because eddy uses the motion parameters from topup as an initial estimate)
 DWI2_config_index = str(DWI1_b0_count + 1)
 indices = ''
-for volume in xrange(0,int(num_volumes)):
+for volume in range(0,int(num_volumes)):
   indices = indices + '1 '
-for volume in xrange(0,int(num_volumes)):
+for volume in range(0,int(num_volumes)):
   indices = indices + DWI2_config_index + ' '
 with open('indices.txt', 'w') as index_file:
   index_file.write(indices);
@@ -234,7 +234,7 @@ with open( 'dwi1_transform.txt', 'w' ) as f:
 runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
-#   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
+#   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
 # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
 runCommand('mrcalc field_map_flip.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
 runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
