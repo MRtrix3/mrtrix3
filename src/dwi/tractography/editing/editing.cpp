@@ -58,7 +58,9 @@ const OptionGroup ResampleOption = OptionGroup ("Streamline resampling options")
 
   + Option ("downsample", "increase the density of points along the length of the streamline by some factor "
                           "(decreases required storage space)")
-    + Argument ("ratio").type_integer (1, 1, 1e6);
+    + Argument ("ratio").type_integer (1, 1, 1e6)
+
+  + Option ("out_ends_only", "only output the two endpoints of each streamline");
 
 
 
