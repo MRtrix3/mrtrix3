@@ -21,6 +21,7 @@
 */
 
 #include "command.h"
+#include "math/math.h"
 
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
@@ -194,7 +195,7 @@ class Resampler {
       value_type ex (x.dot (e)), ey (y.dot (e));
 
       value_type angle = std::atan2 (ey, ex);
-      if (angle < 0.0) angle += 2.0 * M_PI;
+      if (angle < 0.0) angle += 2.0 * Math::pi;
 
       for (size_t n = 0; n < nsamples; n++) {
         value_type f = angle * value_type(n) / value_type (nsamples-1);
