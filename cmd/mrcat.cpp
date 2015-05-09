@@ -156,8 +156,7 @@ void run () {
 
     auto copy_func = [&axis, &axis_offset](decltype(in_vox)& in, decltype(out_vox)& out)
     {
-      if (axis < int(in.ndim())) 
-        out[axis] = in[axis] + axis_offset;
+      out[axis] = axis < int(in.ndim()) ? in[axis] + axis_offset : axis_offset;
       out.value() = in.value();
     };
 
