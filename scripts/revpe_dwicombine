@@ -132,8 +132,8 @@ runCommand('dwiextract dwi2p.mif -bzero dwi2b0.mif')
 runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4')
 
 # Find out how many b=0 volumes there are
-DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions')
-DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions')
+DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions').split()
+DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions').split()
 DWI1_b0_count = int(1)
 if len(DWI1_b0_dims) == 4:
   DWI1_b0_count = int(DWI1_b0_dims[3])
@@ -168,13 +168,13 @@ config_line = [ 0, 1, 0, 0.1 ]
 for line_count in range(0,DWI1_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
-config_file.write('\n')
+  config_file.write('\n')
 #config_line[PEAxis] = -1
 config_line = [ 0, -1, 0, 0.1 ]
 for line_count in range(0,DWI2_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
-config_file.write('\n')
+  config_file.write('\n')
 config_file.close()
 
 # Perform the field estimation
