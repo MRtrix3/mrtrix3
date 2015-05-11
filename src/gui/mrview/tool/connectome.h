@@ -89,6 +89,9 @@
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
 //       plane and draw as lines
+//     * Rename current Shapes::Sphere class to Halfsphere, use in the DWI renderer,
+//       but derive a full-sphere for use here
+//       (no point using a full-sphere in the DWI renderer as you'd still have the issue of negative lobes)
 //   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling

@@ -1715,6 +1715,8 @@ namespace MR
             MR::LogLevelLatch latch (0);
             MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
             temp.transform_voxel_to_realspace (img);
+            //const float dist = std::cbrt (img.vox (0) * img.vox (1) * img.vox (2));
+            //temp.smooth (5 * dist, 5 * dist);
             temp.calculate_normals();
           }
           mesh = Node::Mesh (temp);

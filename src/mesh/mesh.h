@@ -82,8 +82,8 @@ namespace MR
         }
 
 
-        uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
         uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
+        uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
 
         size_t size() const { return vertices; }
 
@@ -137,6 +137,8 @@ namespace MR
 
         void output_pve_image (const Image::Header&, const std::string&);
 
+        void smooth (const float, const float);
+
         size_t num_vertices() const { return vertices.size(); }
         size_t num_triangles() const { return triangles.size(); }
         size_t num_quads() const { return quads.size(); }
@@ -171,6 +173,9 @@ namespace MR
 
         Point<float> calc_normal (const Triangle&) const;
         Point<float> calc_normal (const Quad&) const;
+
+        float calc_area (const Triangle&) const;
+        float calc_area (const Quad&) const;
 
     };
 

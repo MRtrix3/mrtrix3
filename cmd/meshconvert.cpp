@@ -63,8 +63,8 @@ void usage ()
   + Option ("binary", "write the output file in binary format")
 
   + Option ("smooth", "apply a feature-preserving mesh smoothing algorithm")
-    + Argument ("spatial_factor").type_float (0.0f, 1.0f, 1e6)
-    + Argument ("influence_factor").type_float (0.0f, 1.0f, 1e6)
+    + Argument ("spatial_factor").type_float (0.0f, 10.0f, 1e6)
+    + Argument ("influence_factor").type_float (0.0f, 10.0f, 1e6)
 
   + transform_options;
 
@@ -99,7 +99,7 @@ void run ()
   // Apply smoothing if requested - always done in real space
   opt = get_options ("smooth");
   if (opt.size())
-    mesh.smooth (opt[0][1], opt[0][2]);
+    mesh.smooth (opt[0][0], opt[0][1]);
 
   opt = get_options ("transform_real2voxel");
   if (opt.size()) {

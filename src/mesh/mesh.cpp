@@ -23,6 +23,8 @@
 
 #include "mesh/mesh.h"
 
+#include "get_set.h"
+
 
 #include <ctime>
 
@@ -36,9 +38,9 @@ namespace MR
 
     Mesh::Mesh (const std::string& path)
     {
-      if (path.substr (path.size() - 4) == ".vtk")
+      if (path.substr (path.size() - 4) == ".vtk" || path.substr (path.size() - 4) == ".VTK")
         load_vtk (path);
-      else if (path.substr (path.size() - 4) == ".stl")
+      else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL")
         load_stl (path);
       else
         throw Exception ("Input mesh file not in supported format");
@@ -374,6 +376,99 @@ namespace MR
 
 
 
+    void Mesh::smooth (const float spatial_factor, const float influence_factor)
+    {
+      ProgressBar progress ("Performing mesh smoothing... ", 2 * vertices.size() + 1);
+
+      // Pre-compute polygon centroids and areas
+      VertexList centroids;
+      std::vector<float> areas;
+      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p) {
+        centroids.push_back ((vertices[(*p)[0]] + vertices[(*p)[1]] + vertices[(*p)[2]]) * (1.0f/3.0f));
+        areas.push_back (calc_area (*p));
+      }
+      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p) {
+        centroids.push_back ((vertices[(*p)[0]] + vertices[(*p)[1]] + vertices[(*p)[2]] + vertices[(*p)[3]]) * 0.25f);
+        areas.push_back (calc_area (*p));
+      }
+
+      // TODO Perform pre-calculation of an appropriate mesh neighbourhood for each vertex
+      //
+
+      // Need to perform a first mollification pass, where the polygon normals are
+      //   smoothed but the vertices are not perturbed
+      // However, in order to calculate these new normals, we need to calculate new vertex positions!
+      // Make a copy of the original vertices
+      const VertexList orig_vertices (vertices);
+      // Use half standard spatial factor for mollification
+      // Denominator = 2(SF/2)^2
+      const float spatial_mollification_power_multiplier = -2.0f / Math::pow2 (spatial_factor);
+      // No need to normalise the Gaussian; have to explicitly normalise afterwards
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+
+        Vertex new_pos (0.0f, 0.0f, 0.0f);
+        float sum_weights = 0.0f;
+
+        // For now, just use every polygon as part of the estimate
+        // TODO Eventually, restrict this to some form of mesh neighbourhood
+        for (size_t i = 0; i != centroids.size(); ++i) {
+          float this_weight = areas[i];
+          const float distance_sq = (centroids[i] - *v).norm2();
+          this_weight *= std::exp (distance_sq * spatial_mollification_power_multiplier);
+          const Vertex prediction = centroids[i];
+          new_pos += this_weight * prediction;
+          sum_weights += this_weight;
+        }
+
+        new_pos *= (1.0f / sum_weights);
+        *v = new_pos;
+        ++progress;
+
+      }
+
+      // Have new vertices; compute polygon normals based on these vertices
+      VertexList tangents;
+      for (TriangleList::const_iterator p = triangles.begin(); p != triangles.end(); ++p)
+        tangents.push_back (calc_normal (*p));
+      for (QuadList::const_iterator p = quads.begin(); p != quads.end(); ++p)
+        tangents.push_back (calc_normal (*p));
+
+      // Restore the original vertices
+      vertices = orig_vertices;
+
+      // Now perform the actual smoothing
+      const float spatial_power_multiplier = -0.5f / Math::pow2 (spatial_factor);
+      const float influence_power_multiplier = -0.5f / Math::pow2 (influence_factor);
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+
+        Vertex new_pos (0.0f, 0.0f, 0.0f);
+        float sum_weights = 0.0f;
+
+        for (size_t i = 0; i != centroids.size(); ++i) {
+          float this_weight = areas[i];
+          const float distance_sq = (centroids[i] - *v).norm2();
+          this_weight *= std::exp (distance_sq * spatial_power_multiplier);
+          const float prediction_distance = (centroids[i] - *v).dot (tangents[i]);
+          const Vertex prediction = *v - (tangents[i] * prediction_distance);
+          this_weight *= std::exp (Math::pow2 (prediction_distance) * influence_power_multiplier);
+          new_pos += this_weight * prediction;
+          sum_weights += this_weight;
+        }
+
+        new_pos *= (1.0f / sum_weights);
+        *v = new_pos;
+        ++progress;
+
+      }
+
+      // If the vertex normals were calculated previously, re-calculate them
+      if (normals.size())
+        calculate_normals();
+
+    }
+
+
+
 
     void Mesh::calculate_normals()
     {
@@ -468,7 +563,6 @@ namespace MR
             line = line.substr (ws + 1);
             const int num_elements = to<int> (line);
 
-            //polygons.reserve (num_polygons);
             int polygon_count = 0, element_count = 0;
             while (polygon_count < num_polygons && element_count < num_elements) {
 
@@ -511,6 +605,14 @@ namespace MR
         }
       }
 
+      // TODO If reading a binary file, may want to test endianness of data
+      // There's no explicit flag for this, but just calculating the standard
+      //   deviations of all vertex positions may be adequate
+      //   (likely to be huge if the endianness is wrong)
+      // Alternatively, just test the polygon indices: if there's at least one that exceeds the
+      //   number of vertices, it may be saved in big-endian format, so try flipping everything
+      // Actually, should pop up at the first polygon read: number of points in polygon won't be 3 or 4
+
       verify_data();
     }
 
@@ -530,6 +632,41 @@ namespace MR
       in.get (init, 6);
 
       if (strncmp (init, "solid ", 6)) {
+
+        // File is stored as binary
+        in.close();
+        in.open (path.c_str(), std::ios_base::in | std::ios_base::binary);
+        char header[80];
+        in.read (header, 80);
+
+        uint32_t count;
+        in.read (reinterpret_cast<char*>(&count), sizeof(uint32_t));
+
+        uint16_t attribute_byte_count;
+        bool warn_attribute = false;
+
+        while (in.read (reinterpret_cast<char*>(&normal[0]), 3 * sizeof(float))) {
+          for (size_t index = 0; index != 3; ++index) {
+            if (!in.read (reinterpret_cast<char*>(&vertex[0]), 3 * sizeof(float)))
+              throw Exception ("Error in parsing STL file");
+            vertices.push_back (vertex);
+          }
+          in.read (reinterpret_cast<char*>(&attribute_byte_count), sizeof(uint16_t));
+          if (attribute_byte_count)
+            warn_attribute = true;
+          triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
+          const Point<float> computed_normal = calc_normal (triangles.back());
+          if (computed_normal.dot (normal) < 0.0)
+            warn_right_hand_rule = true;
+          if (std::abs (computed_normal.dot (normal)) < 0.99)
+            warn_nonstandard_normals = true;
+        }
+        if (triangles.size() != count)
+          WARN ("Number of triangles indicated in file " + Path::basename (path) + "(" + str(count) + ") does not match number actually read (" + str(triangles.size()) + ")");
+        if (warn_attribute)
+          WARN ("Some facets in file " + Path::basename (path) + " have extended attributes; ignoring");
+
+      } else {
 
         // File is stored as ASCII
         std::string rest_of_header;
@@ -593,41 +730,6 @@ namespace MR
           throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to close loop");
         if (vertex_index)
           throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to complete triangle");
-
-      } else {
-
-        // File is stored as binary
-        char rest_of_header[74];
-        in.get (rest_of_header, 74);
-
-        uint32_t count;
-        in >> count;
-
-        uint16_t attribute_byte_count;
-        bool warn_attribute = false;
-
-        while (!in.eof()) {
-          in >> normal[0] >> normal[1] >> normal[2];
-          for (size_t index = 0; index != 3; ++index) {
-            in >> vertex[0] >> vertex[1] >> vertex[2];
-            vertices.push_back (vertex);
-          }
-          in >> attribute_byte_count;
-          if (attribute_byte_count)
-            warn_attribute = true;
-          if (!in.eof()) {
-            triangles.push_back ( std::vector<uint32_t> { uint32_t(vertices.size()-3), uint32_t(vertices.size()-2), uint32_t(vertices.size()-1) } );
-            const Point<float> computed_normal = calc_normal (triangles.back());
-            if (computed_normal.dot (normal) < 0.0)
-              warn_right_hand_rule = true;
-            if (std::abs (computed_normal.dot (normal)) < 0.99)
-              warn_nonstandard_normals = true;
-          }
-        }
-        if (triangles.size() != count)
-          WARN ("Number of triangles indicated in file " + Path::basename (path) + "(" + str(count) + ") does not match number actually read (" + str(triangles.size()) + ")");
-        if (warn_attribute)
-          WARN ("Some facets in file " + Path::basename (path) + " have extended attributes; ignoring");
       }
 
       if (warn_right_hand_rule)
@@ -642,7 +744,7 @@ namespace MR
 
     void Mesh::save_vtk (const std::string& path, const bool binary) const
     {
-      File::OFStream out (path, (binary ? std::ios_base::binary | std::ios_base::out : std::ios_base::out));
+      File::OFStream out (path, std::ios_base::out);
       out << "# vtk DataFile Version 1.0\n";
       out << "\n";
       if (binary)
@@ -650,34 +752,66 @@ namespace MR
       else
         out << "ASCII\n";
       out << "DATASET POLYDATA\n";
-      out << "POINTS " << str(vertices.size()) << " float\n";
+
       ProgressBar progress ("writing mesh to file... ", vertices.size() + triangles.size() + quads.size());
-      // FIXME Binary output not working (crashes ParaView)
-      for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
-        if (binary)
-          out.write (reinterpret_cast<const char*>(&(*i)), 3 * sizeof(float));
-        else
+      if (binary) {
+
+        // FIXME Binary VTK output _still_ not working (crashes ParaView)
+        // Can however export as binary then -reconvert to ASCII and al is well...?
+        // Changed to big-endian output, doesn't seem to have fixed...
+
+        out.close();
+        out.open (path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
+        const std::string points_header ("POINTS " + str(vertices.size()) + " float\n");
+        out.write (points_header.c_str(), points_header.size());
+        for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
+          //float temp[3];
+          //for (size_t id = 0; id != 3; ++id)
+          //  MR::putBE ((*i)[id], &temp[id]);
+          const float temp[3] { (*i)[0], (*i)[1], (*i)[2] };
+          out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
+          ++progress;
+        }
+        const std::string polygons_header ("POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n");
+        out.write (polygons_header.c_str(), polygons_header.size());
+        const uint32_t num_points_triangle = 3;
+        for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
+          out.write (reinterpret_cast<const char*>(&num_points_triangle), sizeof(uint32_t));
+          //uint32_t temp[3];
+          //for (size_t id = 0; id != 3; ++id)
+          //  MR::putBE ((*i)[id], &temp[id]);
+          const uint32_t temp[3] { (*i)[0], (*i)[1], (*i)[2] };
+          out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(uint32_t));
+          ++progress;
+        }
+        const uint32_t num_points_quad = 4;
+        for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
+          out.write (reinterpret_cast<const char*>(&num_points_quad), sizeof(uint32_t));
+          //uint32_t temp[4];
+          //for (size_t id = 0; id != 4; ++id)
+          //  MR::putBE ((*i)[id], &temp[id]);
+          const uint32_t temp[4] { (*i)[0], (*i)[1], (*i)[2], (*i)[3] };
+          out.write (reinterpret_cast<const char*>(temp), 4 * sizeof(uint32_t));
+          ++progress;
+        }
+
+      } else {
+
+        out << "POINTS " << str(vertices.size()) << " float\n";
+        for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
           out << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
-        ++progress;
-      }
-      out << "POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n";
-      for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
-        if (binary) {
-          const Point<int> temp (*i);
-          out.write (reinterpret_cast<const char*>(&temp), 3 * sizeof(int));
-        } else {
+          ++progress;
+        }
+        out << "POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n";
+        for (TriangleList::const_iterator i = triangles.begin(); i != triangles.end(); ++i) {
           out << "3 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << "\n";
+          ++progress;
         }
-        ++progress;
-      }
-      for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
-        if (binary) {
-          const std::vector<int> temp { int((*i)[0]), int((*i)[1]), int((*i)[2]), int((*i)[3]) };
-          out.write (reinterpret_cast<const char*>(&temp), 4 * sizeof(int));
-        } else {
+        for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
           out << "4 " << str((*i)[0]) << " " << str((*i)[1]) << " " << str((*i)[2]) << " " << str((*i)[3]) << "\n";
+          ++progress;
         }
-        ++progress;
+
       }
     }
 
@@ -687,6 +821,8 @@ namespace MR
     {
       if (quads.size())
           throw Exception ("STL binary file format does not support quads; only triangles");
+
+      ProgressBar progress ("writing mesh to file... ", triangles.size());
 
       if (binary) {
 
@@ -706,6 +842,7 @@ namespace MR
             out.write (reinterpret_cast<const char*>(&p), 3 * sizeof(float));
           }
           out.write (reinterpret_cast<const char*>(&attribute_byte_count), sizeof(uint16_t));
+          ++progress;
         }
 
       } else {
@@ -721,18 +858,8 @@ namespace MR
             out << "        vertex " << str (p[0]) << " " << str (p[1]) << " " << str (p[2]) << "\n";
           }
           out << "    endloop\n";
-          out << "endfacet";
-        }
-        for (QuadList::const_iterator i = quads.begin(); i != quads.end(); ++i) {
-          const Point<float> n (calc_normal (*i));
-          out << "facet normal " << str (n[0]) << " " << str (n[1]) << " " << str (n[2]) << "\n";
-          out << "    outer loop\n";
-          for (size_t v = 0; v != 4; ++v) {
-            const Point<float> p (vertices[(*i)[v]]);
-            out << "        vertex " << str (p[0]) << " " << str (p[1]) << " " << str (p[2]) << "\n";
-          }
-          out << "    endloop\n";
-          out << "endfacet";
+          out << "endfacet\n";
+          ++progress;
         }
         out << "endsolid \n";
 
@@ -788,6 +915,20 @@ namespace MR
       return ((((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[1]])).normalise()
              + ((vertices[in[2]] - vertices[in[0]]).cross (vertices[in[3]] - vertices[in[2]])).normalise())
              .normalise());
+    }
+
+
+
+    float Mesh::calc_area (const Triangle& in) const
+    {
+      return 0.5 * ((vertices[in[1]] - vertices[in[0]]).cross (vertices[in[2]] - vertices[in[0]]).norm());
+    }
+    float Mesh::calc_area (const Quad& in) const
+    {
+      const std::vector<uint32_t> v_one { in[0], in[1], in[2] };
+      const std::vector<uint32_t> v_two { in[0], in[2], in[3] };
+      const Triangle one (v_one), two (v_two);
+      return (calc_area (one) + calc_area (two));
     }
 
 
