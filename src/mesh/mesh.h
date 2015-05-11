@@ -87,10 +87,14 @@ namespace MR
 
         size_t size() const { return vertices; }
 
+        bool shares_edge (const Polygon&) const;
+
       private:
         uint32_t indices[vertices];
 
     };
+
+    template <> bool Polygon<3>::shares_edge (const Polygon<3>&) const;
 
     typedef Polygon<3> Triangle;
     typedef std::vector<Triangle> TriangleList;

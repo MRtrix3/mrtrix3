@@ -27,12 +27,26 @@
 
 
 #include <ctime>
+#include <set>
 
 
 namespace MR
 {
   namespace Mesh
   {
+
+
+
+    template <>
+    bool Polygon<3>::shares_edge (const Polygon<3>& that) const
+    {
+      uint32_t shared_vertices = 0;
+      if (indices[0] == that[0] || indices[0] == that[1] || indices[0] == that[2]) ++shared_vertices;
+      if (indices[1] == that[0] || indices[1] == that[1] || indices[1] == that[2]) ++shared_vertices;
+      if (indices[2] == that[0] || indices[2] == that[1] || indices[2] == that[2]) ++shared_vertices;
+      return (shared_vertices == 2);
+    }
+
 
 
 
@@ -378,6 +392,11 @@ namespace MR
 
     void Mesh::smooth (const float spatial_factor, const float influence_factor)
     {
+      if (quads.size())
+        throw Exception ("For now, mesh smoothing is only supported for triangular meshes");
+      if (vertices.size() == 3 * vertices.size())
+        throw Exception ("Cannot perform smoothing on this mesh: no triangulation information");
+
       ProgressBar progress ("Performing mesh smoothing... ", 2 * vertices.size() + 1);
 
       // Pre-compute polygon centroids and areas
@@ -392,8 +411,62 @@ namespace MR
         areas.push_back (calc_area (*p));
       }
 
-      // TODO Perform pre-calculation of an appropriate mesh neighbourhood for each vertex
+      // Perform pre-calculation of an appropriate mesh neighbourhood for each vertex
+      // Use knowledge of the connections between vertices provided by the triangles/quads to
+      //   perform an iterative search outward from each vertex, selecting a subset of
+      //   polygons for each vertex
+      // Extent of window should be approximately the value of spatial_factor, though only an
+      //   approximate windowing is likely to be used (i.e. number of iterations)
       //
+      // Initialisation is different to iterations: Need a single pass to find those
+      //   polygons that actually use the vertex
+      std::set<uint32_t> vert_polys[vertices.size()];
+      // For each vertex, don't just want to store the polygons within the neighbourhood;
+      //   also want to store those that will be expanded from in the next iteration
+      std::vector<uint32_t> vert_polys_to_expand[vertices.size()];
+
+      for (uint32_t t = 0; t != triangles.size(); ++t) {
+        for (uint32_t i = 0; i != 3; ++i) {
+          vert_polys[(triangles[t])[i]].insert (t);
+          vert_polys_to_expand[(triangles[t])[i]].push_back (t);
+        }
+      }
+
+      // Now, we want to expand this selection outwards for each vertex
+      // To do this, also want to produce a list for each polygon: containing those polygons
+      //   that share a common edge (i.e. two vertices)
+      std::vector<uint32_t> poly_neighbours[triangles.size()];
+      for (uint32_t i = 0; i != triangles.size(); ++i) {
+        for (uint32_t j = i+1; j != triangles.size(); ++j) {
+          if (triangles[i].shares_edge (triangles[j])) {
+            poly_neighbours[i].push_back (j);
+            poly_neighbours[j].push_back (i);
+
+          }
+        }
+      }
+
+      // TODO Will want to develop a better heuristic for this
+      for (size_t iter = 0; iter != 5; ++iter) {
+        for (uint32_t v = 0; v != vertices.size(); ++v) {
+
+          // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
+          std::vector<uint32_t> next_front;
+          for (std::vector<uint32_t>::const_iterator front = vert_polys_to_expand[v].begin(); front != vert_polys_to_expand[v].end(); ++front) {
+            for (std::vector<uint32_t>::const_iterator expansion = poly_neighbours[*front].begin(); expansion != poly_neighbours[*front].end(); ++expansion) {
+              const std::set<uint32_t>::const_iterator existing = vert_polys[v].find (*expansion);
+              if (existing == vert_polys[v].end()) {
+                vert_polys[v].insert (*expansion);
+                next_front.push_back (*expansion);
+              }
+            }
+          }
+          vert_polys_to_expand[v] = std::move (next_front);
+
+        }
+      }
+
+
 
       // Need to perform a first mollification pass, where the polygon normals are
       //   smoothed but the vertices are not perturbed
@@ -404,16 +477,18 @@ namespace MR
       // Denominator = 2(SF/2)^2
       const float spatial_mollification_power_multiplier = -2.0f / Math::pow2 (spatial_factor);
       // No need to normalise the Gaussian; have to explicitly normalise afterwards
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+      for (uint32_t v = 0; v != vertices.size(); ++v) {
 
         Vertex new_pos (0.0f, 0.0f, 0.0f);
         float sum_weights = 0.0f;
 
         // For now, just use every polygon as part of the estimate
-        // TODO Eventually, restrict this to some form of mesh neighbourhood
-        for (size_t i = 0; i != centroids.size(); ++i) {
+        // Eventually, restrict this to some form of mesh neighbourhood
+        //for (size_t i = 0; i != centroids.size(); ++i) {
+        for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
+          const uint32_t i = *it;
           float this_weight = areas[i];
-          const float distance_sq = (centroids[i] - *v).norm2();
+          const float distance_sq = (centroids[i] - vertices[v]).norm2();
           this_weight *= std::exp (distance_sq * spatial_mollification_power_multiplier);
           const Vertex prediction = centroids[i];
           new_pos += this_weight * prediction;
@@ -421,7 +496,7 @@ namespace MR
         }
 
         new_pos *= (1.0f / sum_weights);
-        *v = new_pos;
+        vertices[v] = new_pos;
         ++progress;
 
       }
@@ -439,24 +514,26 @@ namespace MR
       // Now perform the actual smoothing
       const float spatial_power_multiplier = -0.5f / Math::pow2 (spatial_factor);
       const float influence_power_multiplier = -0.5f / Math::pow2 (influence_factor);
-      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+      for (size_t v = 0; v != vertices.size(); ++v) {
 
         Vertex new_pos (0.0f, 0.0f, 0.0f);
         float sum_weights = 0.0f;
 
-        for (size_t i = 0; i != centroids.size(); ++i) {
+        //for (size_t i = 0; i != centroids.size(); ++i) {
+        for (std::set<uint32_t>::const_iterator it = vert_polys[v].begin(); it != vert_polys[v].end(); ++it) {
+          const uint32_t i = *it;
           float this_weight = areas[i];
-          const float distance_sq = (centroids[i] - *v).norm2();
+          const float distance_sq = (centroids[i] - vertices[v]).norm2();
           this_weight *= std::exp (distance_sq * spatial_power_multiplier);
-          const float prediction_distance = (centroids[i] - *v).dot (tangents[i]);
-          const Vertex prediction = *v - (tangents[i] * prediction_distance);
+          const float prediction_distance = (centroids[i] - vertices[v]).dot (tangents[i]);
+          const Vertex prediction = vertices[v] - (tangents[i] * prediction_distance);
           this_weight *= std::exp (Math::pow2 (prediction_distance) * influence_power_multiplier);
           new_pos += this_weight * prediction;
           sum_weights += this_weight;
         }
 
         new_pos *= (1.0f / sum_weights);
-        *v = new_pos;
+        vertices[v] = new_pos;
         ++progress;
 
       }
