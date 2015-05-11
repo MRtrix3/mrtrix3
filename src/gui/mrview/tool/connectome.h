@@ -72,6 +72,8 @@
 //       store this as an entry in the tractography tool
 //     * The Connectome tool would retain access to streamline lengths etc., so
 //       that it can write to the scalar & colour buffers
+//     Alternatively this could be done by drawing actual streamtubes:
+//     use the streamline tangent at each point to rotate a hollow cylinder
 //
 //
 // * Drawing nodes
@@ -100,6 +102,8 @@
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
+//   - Only mesh nodes when it is necessary to do so (i.e. user has selected that option),
+//     rather than meshing them all at image load
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
@@ -251,6 +255,7 @@ namespace MR
 
             void cylinder_lod_slot (int);
             void edge_colour_change_slot();
+            void edge_colour_parameter_slot();
             void edge_size_value_slot();
             void edge_alpha_value_slot (int);
 
@@ -268,7 +273,6 @@ namespace MR
 
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
-
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
@@ -293,6 +297,8 @@ namespace MR
 
             QColorButton *edge_colour_fixedcolour_button;
             ColourMapButton *edge_colour_colourmap_button;
+            QLabel *edge_colour_range_label;
+            AdjustButton *edge_colour_lower_button, *edge_colour_upper_button;
 
             AdjustButton *edge_size_button;
 
@@ -415,11 +421,11 @@ namespace MR
                 float get_min() const { return min; }
                 float get_max() const { return max; }
 
+                void calc_minmax();
+
               private:
                 QString name;
                 float min, max;
-
-                void calc_minmax();
 
             };
 
@@ -551,8 +557,10 @@ namespace MR
             edge_visibility_t edge_visibility;
             edge_alpha_t edge_alpha;
 
-            // Other values that need to be stored w.r.t. node visualisation
+            // Other values that need to be stored w.r.t. edge visualisation
             Point<float> edge_fixed_colour;
+            size_t edge_colourmap_index;
+            bool edge_colourmap_invert;
             float edge_fixed_alpha;
             float edge_size_scale_factor;
             FileDataVector edge_values_from_file_colour;

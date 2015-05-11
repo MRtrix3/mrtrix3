@@ -283,15 +283,30 @@ namespace MR
               "uniform vec3 screen_normal;\n";
           }
 
+          if (parent.edge_colour == EDGE_COLOUR_FILE && ColourMap::maps[parent.edge_colourmap_index].is_colour) {
+            fragment_shader_source +=
+              "in vec3 colourmap_colour;\n";
+          }
+
           fragment_shader_source +=
               "void main() {\n";
 
-          if (use_alpha) {
+          if (parent.edge_colour == EDGE_COLOUR_FILE) {
+
             fragment_shader_source +=
-              "  color.xyz = edge_colour;\n";
+              "  float amplitude = edge_colour.r;\n";
+            fragment_shader_source += std::string("  ") + ColourMap::maps[parent.edge_colourmap_index].mapping;
+
           } else {
-            fragment_shader_source +=
-              "  color = edge_colour;\n";
+
+            if (use_alpha) {
+              fragment_shader_source +=
+                  "  color.xyz = edge_colour;\n";
+            } else {
+              fragment_shader_source +=
+                  "  color = edge_colour;\n";
+            }
+
           }
 
           if (parent.edge_geometry == EDGE_GEOM_CYLINDER) {
@@ -343,6 +358,8 @@ namespace MR
             edge_visibility (EDGE_VIS_NONE),
             edge_alpha (EDGE_ALPHA_FIXED),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
+            edge_colourmap_index (1),
+            edge_colourmap_invert (false),
             edge_fixed_alpha (1.0f),
             edge_size_scale_factor (1.0f),
             node_colourmap_observer (*this),
@@ -458,12 +475,12 @@ namespace MR
           node_colour_lower_button = new AdjustButton (this);
           node_colour_lower_button->setValue (0.0f);
           node_colour_lower_button->setMin (-std::numeric_limits<float>::max());
-          node_colour_lower_button->setMax (0.0f);
+          node_colour_lower_button->setMax (std::numeric_limits<float>::max());
           connect (node_colour_lower_button, SIGNAL (valueChanged()), this, SLOT (node_colour_parameter_slot()));
           hlayout->addWidget (node_colour_lower_button);
           node_colour_upper_button = new AdjustButton (this);
           node_colour_upper_button->setValue (0.0f);
-          node_colour_upper_button->setMin (0.0f);
+          node_colour_upper_button->setMin (-std::numeric_limits<float>::max());
           node_colour_upper_button->setMax (std::numeric_limits<float>::max());
           connect (node_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (node_colour_parameter_slot()));
           hlayout->addWidget (node_colour_upper_button);
@@ -645,14 +662,36 @@ namespace MR
           hlayout->addWidget (edge_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 1, 3, 1, 2);
 
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_colour_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (edge_colour_range_label);
+          edge_colour_lower_button = new AdjustButton (this);
+          edge_colour_lower_button->setValue (0.0f);
+          edge_colour_lower_button->setMin (-std::numeric_limits<float>::max());
+          edge_colour_lower_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_colour_lower_button, SIGNAL (valueChanged()), this, SLOT (edge_colour_parameter_slot()));
+          hlayout->addWidget (edge_colour_lower_button);
+          edge_colour_upper_button = new AdjustButton (this);
+          edge_colour_upper_button->setValue (0.0f);
+          edge_colour_upper_button->setMin (-std::numeric_limits<float>::max());
+          edge_colour_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_colour_parameter_slot()));
+          hlayout->addWidget (edge_colour_upper_button);
+          edge_colour_range_label->setVisible (false);
+          edge_colour_lower_button->setVisible (false);
+          edge_colour_upper_button->setVisible (false);
+          gridlayout->addLayout (hlayout, 2, 1, 1, 4);
+
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 2, 0, 1, 2);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
           edge_size_combobox->addItem ("Fixed");
           edge_size_combobox->addItem ("From matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
-          gridlayout->addWidget (edge_size_combobox, 2, 2);
+          gridlayout->addWidget (edge_size_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -661,10 +700,10 @@ namespace MR
           edge_size_button->setMin (0.0f);
           connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
           hlayout->addWidget (edge_size_button, 1);
-          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 3, 0, 1, 2);
+          gridlayout->addWidget (label, 4, 0, 1, 2);
           edge_visibility_combobox = new QComboBox (this);
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
@@ -673,16 +712,16 @@ namespace MR
           edge_visibility_combobox->addItem ("From matrix file");
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
-          gridlayout->addWidget (edge_visibility_combobox, 3, 2);
+          gridlayout->addWidget (edge_visibility_combobox, 4, 2);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 4, 0, 1, 2);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("From matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
-          gridlayout->addWidget (edge_alpha_combobox, 4, 2);
+          gridlayout->addWidget (edge_alpha_combobox, 5, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -691,7 +730,7 @@ namespace MR
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 4, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -909,6 +948,9 @@ namespace MR
             GLuint edge_alpha_ID = 0;
             if (use_alpha)
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
+
+            if (edge_colour == EDGE_COLOUR_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
+                gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
 
             std::map<float, size_t> edge_ordering;
             for (size_t i = 0; i != num_edges(); ++i)
@@ -1513,6 +1555,9 @@ namespace MR
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (true);
               edge_colour_combobox->removeItem (3);
+              edge_colour_range_label->setVisible (false);
+              edge_colour_lower_button->setVisible (false);
+              edge_colour_upper_button->setVisible (false);
               break;
             case 1:
               if (edge_colour == EDGE_COLOUR_DIR) return;
@@ -1520,6 +1565,9 @@ namespace MR
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (false);
               edge_colour_combobox->removeItem (3);
+              edge_colour_range_label->setVisible (false);
+              edge_colour_lower_button->setVisible (false);
+              edge_colour_upper_button->setVisible (false);
               break;
             case 2:
               try {
@@ -1527,7 +1575,6 @@ namespace MR
               } catch (...) { }
               if (edge_values_from_file_colour.size()) {
                 edge_colour = EDGE_COLOUR_FILE;
-                // TODO Make other relevant GUI elements visible: lower & upper thresholds, colour map selection & invert option, ...
                 edge_colour_colourmap_button->setVisible (true);
                 edge_colour_fixedcolour_button->setVisible (false);
                 if (edge_colour_combobox->count() == 3)
@@ -1535,12 +1582,24 @@ namespace MR
                 else
                   edge_colour_combobox->setItemText (3, edge_values_from_file_colour.get_name());
                 edge_colour_combobox->setCurrentIndex (3);
+                edge_colour_range_label->setVisible (true);
+                edge_colour_lower_button->setVisible (true);
+                edge_colour_upper_button->setVisible (true);
+                edge_colour_lower_button->setValue (edge_values_from_file_colour.get_min());
+                edge_colour_upper_button->setValue (edge_values_from_file_colour.get_max());
+                edge_colour_lower_button->setMax (edge_values_from_file_colour.get_max());
+                edge_colour_upper_button->setMin (edge_values_from_file_colour.get_min());
+                edge_colour_lower_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
+                edge_colour_upper_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
               } else {
                 edge_colour_combobox->setCurrentIndex (0);
                 edge_colour = EDGE_COLOUR_FIXED;
                 edge_colour_colourmap_button->setVisible (false);
                 edge_colour_fixedcolour_button->setVisible (true);
                 edge_colour_combobox->removeItem (3);
+                edge_colour_range_label->setVisible (false);
+                edge_colour_lower_button->setVisible (false);
+                edge_colour_upper_button->setVisible (false);
               }
               break;
             case 3:
@@ -1681,6 +1740,11 @@ namespace MR
           calculate_edge_colours();
           window.updateGL();
         }
+        void Connectome::edge_colour_parameter_slot()
+        {
+          calculate_edge_colours();
+          window.updateGL();
+        }
         void Connectome::edge_size_value_slot()
         {
           edge_size_scale_factor = edge_size_button->value();
@@ -1716,7 +1780,7 @@ namespace MR
             MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
             temp.transform_voxel_to_realspace (img);
             //const float dist = std::cbrt (img.vox (0) * img.vox (1) * img.vox (2));
-            //temp.smooth (5 * dist, 5 * dist);
+            //temp.smooth (10.0f * dist, 10.0f * dist);
             temp.calculate_normals();
           }
           mesh = Node::Mesh (temp);
@@ -2095,25 +2159,33 @@ namespace MR
           master.window.updateGL();
         }
 
-        void Connectome::EdgeColourObserver::selected_colourmap (size_t /*index*/, const ColourMapButton&)
+        void Connectome::EdgeColourObserver::selected_colourmap (size_t index, const ColourMapButton&)
         {
-
+          master.edge_colourmap_index = index;
+          master.window.updateGL();
         }
-        void Connectome::EdgeColourObserver::selected_custom_colour (const QColor&, const ColourMapButton&)
+        void Connectome::EdgeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
-           assert (0);
+          master.edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.window.updateGL();
         }
         void Connectome::EdgeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
         {
-
+          // TODO
         }
-        void Connectome::EdgeColourObserver::toggle_invert_colourmap (bool /*invert*/, const ColourMapButton&)
+        void Connectome::EdgeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {
-
+          master.edge_colourmap_invert = invert;
+          master.calculate_edge_colours();
+          master.window.updateGL();
         }
         void Connectome::EdgeColourObserver::reset_colourmap (const ColourMapButton&)
         {
-
+          assert (master.edge_values_from_file_colour.size());
+          master.edge_colour_lower_button->setValue (master.edge_values_from_file_colour.get_min());
+          master.edge_colour_upper_button->setValue (master.edge_values_from_file_colour.get_max());
+          master.calculate_edge_colours();
+          master.window.updateGL();
         }
 
 
@@ -2180,6 +2252,14 @@ namespace MR
           lut_mapping.clear();
           if (node_overlay)
             delete node_overlay.release();
+          node_values_from_file_colour.clear();
+          node_values_from_file_size.clear();
+          node_values_from_file_visibility.clear();
+          node_values_from_file_alpha.clear();
+          edge_values_from_file_colour.clear();
+          edge_values_from_file_size.clear();
+          edge_values_from_file_visibility.clear();
+          edge_values_from_file_alpha.clear();
         }
 
         void Connectome::initialise (const std::string& path)
@@ -2321,6 +2401,7 @@ namespace MR
           Math::Matrix<float> temp (path);
           MR::Connectome::verify_matrix (temp, num_nodes());
           mat2vec (temp, data);
+          data.calc_minmax();
           data.set_name (Path::basename (path));
         }
 
@@ -2597,8 +2678,14 @@ namespace MR
 
           } else if (edge_colour == EDGE_COLOUR_FILE) {
 
-            for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_colour (Point<float> (0.0f, 0.0f, 0.0f));
+            assert (edge_values_from_file_colour.size());
+            const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              float factor = (edge_values_from_file_colour[i]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = edge_colourmap_invert ? 1.0f-factor : factor;
+              edges[i].set_colour (Point<float> (factor, 0.0f, 0.0f));
+            }
 
           }
         }
