@@ -20,6 +20,14 @@ SceneModeller::SceneModeller( const BoundingBox< float >& boundingBox,
                 _bresenhamLineAlgorithm( boundingBox, cacheSize ),
                 _sceneMeshCache( this )
 {
+
+  _resolution[ 0 ] = ( boundingBox.getUpperX() -
+                       boundingBox.getLowerX() ) / ( float )( cacheSize[ 0 ] );
+  _resolution[ 1 ] = ( boundingBox.getUpperY() -
+                       boundingBox.getLowerY() ) / ( float )( cacheSize[ 1 ] );
+  _resolution[ 2 ] = ( boundingBox.getUpperZ() -
+                       boundingBox.getLowerZ() ) / ( float )( cacheSize[ 2 ] );
+
 }
 
 
@@ -36,10 +44,26 @@ const BoundingBox< float >& SceneModeller::getBoundingBox() const
 }
 
 
+const BoundingBox< int32_t >& SceneModeller::getIntegerBoundingBox() const
+{
+
+  return _integerBoundingBox;
+
+}
+
+
 const Point< int32_t >& SceneModeller::getCacheSize() const
 {
 
   return _cacheSize;
+
+}
+
+
+const Point< float >& SceneModeller::getResolution() const
+{
+
+  return _resolution;
 
 }
 
@@ -82,6 +106,14 @@ SceneMesh* SceneModeller::getSceneMesh( int32_t index )
 {
 
   return _meshes[ index ];
+
+}
+
+
+const std::vector< SceneMesh* >& SceneModeller::getSceneMeshes() const
+{
+
+  return _meshes;
 
 }
 
