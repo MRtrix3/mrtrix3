@@ -52,7 +52,6 @@ namespace MR
 
           private slots:
             void on_image_changed ();
-            void on_num_frames_changed (int);
             void on_rotation_type (int);
             void on_translation_type (int);
             void on_screen_capture ();

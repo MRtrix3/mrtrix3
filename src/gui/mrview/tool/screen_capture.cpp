@@ -162,7 +162,7 @@ namespace MR
           capture_grid_layout->addWidget (new QLabel (tr("Start Index: ")), 0, 0);
           start_index = new QSpinBox (this);
           start_index->setMinimum (0);
-          start_index->setMaximum (1);
+          start_index->setMaximum (std::numeric_limits<int>::max());
           start_index->setMinimumWidth(50);
           start_index->setValue (0);
           capture_grid_layout->addWidget (start_index, 0, 1);
@@ -174,7 +174,6 @@ namespace MR
           frames->setMaximum (std::numeric_limits<int>::max());
           frames->setValue (1);
           capture_grid_layout->addWidget (frames, 0, 3);
-          connect (frames, SIGNAL (valueChanged(int)), this, SLOT (on_num_frames_changed(int)));
 
 
           QPushButton* preview = new QPushButton (this);
@@ -221,16 +220,6 @@ namespace MR
           int max_axis = std::max((int)vox.ndim() - 1, 0);
           volume_axis->setMaximum(max_axis);
           volume_axis->setValue(std::min(volume_axis->value(), max_axis));
-        }
-
-
-
-
-        void Capture::on_num_frames_changed (int value) {
-          start_index->setMaximum(value);
-          start_index->setValue(std::min(start_index->value(), value));
-          // We're caching the start index, so we can't guarantee that cached indices will be < value
-          cached_state.clear();
         }
 
 
@@ -331,8 +320,6 @@ namespace MR
 
 
           size_t frames_value = frames->value();
-          if(start_index->value() == (int)frames_value)
-            start_index->setValue(0);
 
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
@@ -347,8 +334,8 @@ namespace MR
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
-
-          for (size_t i = first_index; i < frames_value; ++i) {
+          size_t i = first_index;
+          do {
             if (!is_playing)
               break;
 
@@ -401,7 +388,9 @@ namespace MR
             start_index->setValue (i + 1);
             this->window.updateGL();
             qApp->processEvents();
-          }
+
+            i+=1;
+          } while((i % frames_value));
 
           is_playing = false;
         }
