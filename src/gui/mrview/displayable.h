@@ -85,6 +85,14 @@ namespace MR
             return display_midpoint + 0.5f * display_range;
           }
 
+          float scaling_min_thresholded () const {
+            return std::max(scaling_min(), lessthan);
+          }
+
+          float scaling_max_thresholded () const {
+            return std::min(scaling_max(), greaterthan);
+          }
+
           float scaling_rate () const {
             return 1e-3 * (value_max - value_min);
           }

@@ -248,8 +248,23 @@ namespace MR
 
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this, transform);
           }
+        }
+
+
+        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel, const Projection& transform)
+        {
+            float min_value = threshold_lower_box->isChecked() ?
+                        fixel.scaling_min_thresholded() :
+                        fixel.scaling_min();
+
+            float max_value = threshold_upper_box->isChecked() ?
+                          fixel.scaling_max_thresholded() :
+                          fixel.scaling_max();
+
+            colourbar_renderer.render (transform, fixel, 4, fixel.scale_inverted(),
+                                       min_value, max_value, fixel.scaling_min(), fixel.display_range);
         }
 
 
