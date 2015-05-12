@@ -20,10 +20,9 @@ TckMeshMapper::TckMeshMapper( Mesh::SceneModeller* sceneModeller,
                 _distanceLimit( distanceLimit )
 {
 
-  // preparing a polygon lut & allocating the output connectivity matrix
+  // preparing a polygon lut
   int32_t polygonIndex = 0;
   int32_t polygonCount = 0;
-  int32_t globalPolygonCount = 0;
   int32_t sceneMeshCount = _sceneModeller->getSceneMeshCount();
   for ( int32_t m = 0; m < sceneMeshCount; m++ )
   {
@@ -41,10 +40,8 @@ TckMeshMapper::TckMeshMapper( Mesh::SceneModeller* sceneModeller,
       ++ polygonIndex;
 
     }
-    globalPolygonCount += polygonCount;
 
   }
-  _matrix.allocate( globalPolygonCount, globalPolygonCount );
 
 }
 
@@ -54,7 +51,8 @@ TckMeshMapper::~TckMeshMapper()
 }
 
 
-void TckMeshMapper::findNodePair( const Streamline< float >& tck )
+void TckMeshMapper::findNodePair( const Streamline< float >& tck,
+                                  NodePair& nodePair )
 {
 
   int32_t node1 = getNodeIndex( tck.front() );
@@ -65,12 +63,92 @@ void TckMeshMapper::findNodePair( const Streamline< float >& tck )
     if ( node2 >= 0 )
     {
 
-      update( std::pair< uint32_t, uint32_t >( ( uint32_t )node1,
-                                               ( uint32_t )node2 ) );
+      if ( node1 <= node2 )
+      {
+
+        nodePair.setNodePair( node1, node2 );
+
+      }
+      else
+      {
+
+        nodePair.setNodePair( node2, node1 );
+
+      }
+
+    }
+    else
+    {
+
+      // node not found
+      nodePair.setNodePair( -1, -1 );
 
     }
 
   }
+  else
+  {
+
+    // node not found
+    nodePair.setNodePair( -1, -1 );
+
+  }
+
+}
+
+
+// functor for multithreading application
+bool TckMeshMapper::operator() ( const Streamline< float >& tck,
+                                 NodePair& nodePair )
+{
+
+  int32_t node1 = getNodeIndex( tck.front() );
+  if ( node1 >= 0 )
+  {
+
+    int32_t node2 = getNodeIndex( tck.back() );
+    if ( node2 >= 0 )
+    {
+
+      if ( node1 <= node2 )
+      {
+
+        nodePair.setNodePair( node1, node2 );
+
+      }
+      else
+      {
+
+        nodePair.setNodePair( node2, node1 );
+
+      }
+
+    }
+    else
+    {
+
+      // node not found
+      nodePair.setNodePair( -1, -1 );
+
+    }
+
+  }
+  else
+  {
+
+    // node not found
+    nodePair.setNodePair( -1, -1 );
+
+  }
+  return true;
+
+}
+
+
+int32_t TckMeshMapper::getNodeCount() const
+{
+
+  return _polygonLut.size();
 
 }
 

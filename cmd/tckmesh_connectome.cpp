@@ -28,11 +28,15 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/connectomics/tckmesh_mapper.h"
+#include "dwi/tractography/connectomics/connectome.h"
 #include "progressbar.h"
+#include "thread_queue.h"
 
 
 using namespace MR;
 using namespace App;
+using namespace MR::DWI;
+using namespace MR::DWI::Tractography;
 
 
 void usage ()
@@ -76,15 +80,6 @@ void usage ()
 void run ()
 {
 
-  // Reading track data
-  DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader< float > reader( argument[ 0 ], properties );
-
-  // Reading the mesh data
-  std::cout << "Reading input vtk mesh: " << std::flush;
-  Mesh::Mesh* mesh = new MR::Mesh::Mesh( argument[ 1 ] );
-  std::cout << "[ Done ]" << std::endl;
-
   // Reading the cache size
   Options opt = get_options( "cache_size" );
   Point< int32_t > cacheSize( 100, 100, 100 );
@@ -93,7 +88,7 @@ void run ()
 
     std::vector< int32_t > cache_size_in = opt[ 0 ][ 0 ];
     cacheSize[ 0 ] = cache_size_in[ 0 ];
-    cacheSize[ 1 ] = cache_size_in[ 1];
+    cacheSize[ 1 ] = cache_size_in[ 1 ];
     cacheSize[ 2 ] = cache_size_in[ 2 ];
 
   }
@@ -108,6 +103,11 @@ void run ()
     distanceThreshold = threshold;
 
   }
+
+  // Reading the mesh data
+  std::cout << "Reading input vtk mesh: " << std::flush;
+  Mesh::Mesh* mesh = new Mesh::Mesh( argument[ 1 ] );
+  std::cout << "[ Done ]" << std::endl;
 
   // Collecting the vertices
   Mesh::VertexList vertices = mesh->vertices;
@@ -176,25 +176,30 @@ void run ()
   std::cout << "[ Done ]" << std::endl;
 
   // Building a connectome mapper
-  DWI::Tractography::Connectomics::TckMeshMapper
-    tckMeshMapper( sceneModeller, distanceThreshold );
+  Connectomics::TckMeshMapper tckMeshMapper( sceneModeller, distanceThreshold );
 
-  // Processing connectivity matrix
-  ProgressBar progress( "Assigning streamline endpoints to closest polygon...",
-                        properties[ "count" ].empty() ?
-                        0 : to< unsigned int >( properties[ "count" ] ) );
-  DWI::Tractography::Streamline<> tck;
-  while ( reader( tck ) )
-  {
+  // Preparing output connectome
+  int32_t nodeCount = tckMeshMapper.getNodeCount();
+  Connectomics::Connectome connectome( nodeCount );
 
-    tckMeshMapper.findNodePair( tck );
-    ++ progress; 
+  // Reading track data
+  Tractography::Properties properties;
+  Tractography::Reader< float > reader( argument[ 0 ], properties );
 
-  }
+  // Supporting multi-threading application
+  Mapping::TrackLoader loader( reader,
+                               properties[ "count" ].empty() ?
+                                 0 : to< size_t >( properties[ "count" ] ),
+                               "Constructing connectome... " );
+  Thread::run_queue( loader, 
+                     Thread::batch( Tractography::Streamline< float >() ),
+                     Thread::multi( tckMeshMapper ),
+                     Thread::batch( Connectomics::NodePair() ),
+                     connectome );
 
-  /*// Saving the output connectome
-  std::cout << "starting writing the output file" << std::endl;
-  tck2MeshMapper.write( argument[ 3 ] );*/
+  // Saving the output connectome
+  /*std::cout << "starting writing the output file" << std::endl;
+  connectome.write( argument[ 2 ] );*/
 
 }
 

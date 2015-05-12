@@ -27,14 +27,14 @@ class TckMeshMapper : public ConnectomeMapper
                    float distanceLimit );
     virtual ~TckMeshMapper();
 
-    void findNodePair( const Streamline< float >& tck );
+    void findNodePair( const Streamline< float >& tck,
+                       NodePair& nodePair );
 
-  protected:
+    // functor for supporting multithreading application
+    bool operator() ( const Streamline< float >& tck,
+                      NodePair& nodePair );
 
-    Mesh::SceneModeller* _sceneModeller;
-    float _distanceLimit;
-
-    std::map< Point< int32_t >, int32_t > _polygonLut;
+    int32_t getNodeCount() const;
     Point< int32_t > getPolygonIndices(
                                       const Mesh::Polygon< 3 >& polygon ) const;
 
@@ -43,6 +43,12 @@ class TckMeshMapper : public ConnectomeMapper
                    float& distance,
                    Mesh::SceneMesh*& sceneMesh,
                    Mesh::Polygon< 3 >& polygon ) const;
+
+  protected:
+
+    Mesh::SceneModeller* _sceneModeller;
+    float _distanceLimit;
+    std::map< Point< int32_t >, int32_t > _polygonLut;
 
 };
 

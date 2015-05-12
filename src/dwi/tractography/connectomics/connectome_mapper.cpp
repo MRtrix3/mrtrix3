@@ -14,6 +14,50 @@ namespace Connectomics
 {
 
 
+//
+// class NodePair
+//
+
+NodePair::NodePair()
+{
+}
+
+
+NodePair::~NodePair()
+{
+}
+
+
+void NodePair::setNodePair( const int32_t firstNode,
+                            const int32_t secondNode )
+{
+
+  _nodePair.first = firstNode;
+  _nodePair.second = secondNode;
+
+}
+
+
+const int32_t& NodePair::getFirstNode() const
+{
+
+  return _nodePair.first;
+
+}
+
+
+const int32_t& NodePair::getSecondNode() const
+{
+
+  return _nodePair.second;
+
+}
+
+
+//
+// class ConnectomeMapper
+//
+
 ConnectomeMapper::ConnectomeMapper()
 {
 }
@@ -21,33 +65,6 @@ ConnectomeMapper::ConnectomeMapper()
 
 ConnectomeMapper::~ConnectomeMapper()
 {
-}
-
-
-void ConnectomeMapper::update( std::pair< uint32_t, uint32_t > nodePair )
-{
-
-  if ( nodePair.first < nodePair.second )
-  {
-
-    ++ _matrix( nodePair.first, nodePair.second );
-
-  }
-  else
-  {
-
-    ++ _matrix( nodePair.second, nodePair.first );
-
-  }
-
-}
-
-
-void ConnectomeMapper::write( const std::string& path )
-{
-
-  _matrix.save( path );
-
 }
 
 
