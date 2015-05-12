@@ -258,6 +258,7 @@ namespace MR
             void edge_colour_parameter_slot();
             void edge_size_value_slot();
             void edge_size_parameter_slot();
+            void edge_visibility_parameter_slot();
             void edge_alpha_value_slot (int);
 
           protected:
@@ -305,6 +306,10 @@ namespace MR
             QLabel *edge_size_range_label;
             AdjustButton *edge_size_lower_button, *edge_size_upper_button;
             QCheckBox *edge_size_invert_checkbox;
+
+            QLabel *edge_visibility_threshold_label;
+            AdjustButton *edge_visibility_threshold_button;
+            QCheckBox *edge_visibility_threshold_invert_checkbox;
 
             QSlider *edge_alpha_slider;
 

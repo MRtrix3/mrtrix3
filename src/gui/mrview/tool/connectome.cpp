@@ -741,14 +741,34 @@ namespace MR
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 5, 2);
 
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_visibility_threshold_label = new QLabel ("Threshold: ");
+          hlayout->addWidget (edge_visibility_threshold_label);
+          edge_visibility_threshold_button = new AdjustButton (this);
+          edge_visibility_threshold_button->setValue (0.0f);
+          edge_visibility_threshold_button->setMin (0.0f);
+          edge_visibility_threshold_button->setMax (0.0f);
+          connect (edge_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (edge_visibility_parameter_slot()));
+          hlayout->addWidget (edge_visibility_threshold_button);
+          edge_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
+          edge_visibility_threshold_invert_checkbox->setTristate (false);
+          connect (edge_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
+          hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
+          edge_visibility_threshold_label->setVisible (false);
+          edge_visibility_threshold_button->setVisible (false);
+          edge_visibility_threshold_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
+
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 6, 0, 1, 2);
+          gridlayout->addWidget (label, 7, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("From matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
-          gridlayout->addWidget (edge_alpha_combobox, 6, 2);
+          gridlayout->addWidget (edge_alpha_combobox, 7, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -757,7 +777,7 @@ namespace MR
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 7, 3, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -1374,8 +1394,7 @@ namespace MR
                 node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
                 node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
                 node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
-                node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
-
+                node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
               } else {
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = NODE_VIS_ALL;
@@ -1693,11 +1712,17 @@ namespace MR
               if (edge_visibility == EDGE_VIS_ALL) return;
               edge_visibility = EDGE_VIS_ALL;
               edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 1:
               if (edge_visibility == EDGE_VIS_NONE) return;
               edge_visibility = EDGE_VIS_NONE;
               edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 2:
               if (edge_visibility == EDGE_VIS_NODES) return;
@@ -1713,6 +1738,9 @@ namespace MR
                 edge_visibility = EDGE_VIS_NODES;
               }
               edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 3:
               try {
@@ -1725,10 +1753,21 @@ namespace MR
                 else
                   edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
                 edge_visibility_combobox->setCurrentIndex (4);
+                edge_visibility_threshold_label->setVisible (true);
+                edge_visibility_threshold_button->setVisible (true);
+                edge_visibility_threshold_invert_checkbox->setVisible (true);
+                edge_visibility_threshold_button->setRate (0.001 * (edge_values_from_file_visibility.get_max() - edge_values_from_file_visibility.get_min()));
+                edge_visibility_threshold_button->setMin (edge_values_from_file_visibility.get_min());
+                edge_visibility_threshold_button->setMax (edge_values_from_file_visibility.get_max());
+                edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
+
               } else {
                 edge_visibility_combobox->setCurrentIndex (1);
                 edge_visibility = EDGE_VIS_NONE;
                 edge_visibility_combobox->removeItem (4);
+                edge_visibility_threshold_label->setVisible (false);
+                edge_visibility_threshold_button->setVisible (false);
+                edge_visibility_threshold_invert_checkbox->setVisible (false);
               }
               break;
             case 4:
@@ -1800,7 +1839,11 @@ namespace MR
           calculate_edge_sizes();
           window.updateGL();
         }
-
+        void Connectome::edge_visibility_parameter_slot()
+        {
+          calculate_edge_visibility();
+          window.updateGL();
+        }
         void Connectome::edge_alpha_value_slot (int position)
         {
           edge_fixed_alpha = position / 1000.0f;
@@ -2786,8 +2829,16 @@ namespace MR
           } else if (edge_visibility == EDGE_VIS_FILE) {
 
             assert (edge_values_from_file_visibility.size());
-            for (size_t i = 0; i != edges.size(); ++i)
-              edges[i].set_visible (edge_values_from_file_visibility[i] && !edges[i].is_diagonal());
+            const bool invert = edge_visibility_threshold_invert_checkbox->isChecked();
+            const float threshold = edge_visibility_threshold_button->value();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              if (edges[i].is_diagonal()) {
+                edges[i].set_visible (false);
+              } else {
+                const bool above_threshold = (edge_values_from_file_visibility[i] >= threshold);
+                edges[i].set_visible (above_threshold != invert);
+              }
+            }
 
           }
           if (node_visibility == NODE_VIS_DEGREE)
