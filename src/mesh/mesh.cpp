@@ -526,7 +526,7 @@ namespace MR
           const float distance_sq = (centroids[i] - vertices[v]).norm2();
           this_weight *= std::exp (distance_sq * spatial_power_multiplier);
           const float prediction_distance = (centroids[i] - vertices[v]).dot (tangents[i]);
-          const Vertex prediction = vertices[v] - (tangents[i] * prediction_distance);
+          const Vertex prediction = vertices[v] + (tangents[i] * prediction_distance);
           this_weight *= std::exp (Math::pow2 (prediction_distance) * influence_power_multiplier);
           new_pos += this_weight * prediction;
           sum_weights += this_weight;
