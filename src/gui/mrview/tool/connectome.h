@@ -257,6 +257,7 @@ namespace MR
             void edge_colour_change_slot();
             void edge_colour_parameter_slot();
             void edge_size_value_slot();
+            void edge_size_parameter_slot();
             void edge_alpha_value_slot (int);
 
           protected:
@@ -301,6 +302,9 @@ namespace MR
             AdjustButton *edge_colour_lower_button, *edge_colour_upper_button;
 
             AdjustButton *edge_size_button;
+            QLabel *edge_size_range_label;
+            AdjustButton *edge_size_lower_button, *edge_size_upper_button;
+            QCheckBox *edge_size_invert_checkbox;
 
             QSlider *edge_alpha_slider;
 

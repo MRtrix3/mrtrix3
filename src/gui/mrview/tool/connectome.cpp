@@ -702,8 +702,35 @@ namespace MR
           hlayout->addWidget (edge_size_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_size_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (edge_size_range_label);
+          edge_size_lower_button = new AdjustButton (this);
+          edge_size_lower_button->setValue (0.0f);
+          edge_size_lower_button->setMin (-std::numeric_limits<float>::max());
+          edge_size_lower_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_size_lower_button, SIGNAL (valueChanged()), this, SLOT (edge_size_parameter_slot()));
+          hlayout->addWidget (edge_size_lower_button);
+          edge_size_upper_button = new AdjustButton (this);
+          edge_size_upper_button->setValue (0.0f);
+          edge_size_upper_button->setMin (-std::numeric_limits<float>::max());
+          edge_size_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_size_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_size_parameter_slot()));
+          hlayout->addWidget (edge_size_upper_button);
+          edge_size_invert_checkbox = new QCheckBox ("Invert");
+          edge_size_invert_checkbox->setTristate (false);
+          connect (edge_size_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_size_parameter_slot()));
+          hlayout->addWidget (edge_size_invert_checkbox);
+          edge_size_range_label->setVisible (false);
+          edge_size_lower_button->setVisible (false);
+          edge_size_upper_button->setVisible (false);
+          edge_size_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
+
           label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 4, 0, 1, 2);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           edge_visibility_combobox = new QComboBox (this);
           edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
           edge_visibility_combobox->addItem ("All");
@@ -712,16 +739,16 @@ namespace MR
           edge_visibility_combobox->addItem ("From matrix file");
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
-          gridlayout->addWidget (edge_visibility_combobox, 4, 2);
+          gridlayout->addWidget (edge_visibility_combobox, 5, 2);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 5, 0, 1, 2);
+          gridlayout->addWidget (label, 6, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("From matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
-          gridlayout->addWidget (edge_alpha_combobox, 5, 2);
+          gridlayout->addWidget (edge_alpha_combobox, 6, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -730,7 +757,7 @@ namespace MR
           edge_alpha_slider->setSliderPosition (1000);
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -971,7 +998,7 @@ namespace MR
                     gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
                     gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
-                    gl::Uniform1f        (radius_ID,                    edge.get_size() * edge_size_scale_factor);
+                    gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                 }
@@ -1616,6 +1643,10 @@ namespace MR
               if (edge_size == EDGE_SIZE_FIXED) return;
               edge_size = EDGE_SIZE_FIXED;
               edge_size_combobox->removeItem (2);
+              edge_size_range_label->setVisible (false);
+              edge_size_lower_button->setVisible (false);
+              edge_size_upper_button->setVisible (false);
+              edge_size_invert_checkbox->setVisible (false);
               break;
             case 1:
               try {
@@ -1628,10 +1659,24 @@ namespace MR
                 else
                   edge_size_combobox->setItemText (2, edge_values_from_file_size.get_name());
                 edge_size_combobox->setCurrentIndex (2);
+                edge_size_range_label->setVisible (true);
+                edge_size_lower_button->setVisible (true);
+                edge_size_upper_button->setVisible (true);
+                edge_size_invert_checkbox->setVisible (true);
+                edge_size_lower_button->setValue (edge_values_from_file_size.get_min());
+                edge_size_upper_button->setValue (edge_values_from_file_size.get_max());
+                edge_size_lower_button->setMax (edge_values_from_file_size.get_max());
+                edge_size_upper_button->setMin (edge_values_from_file_size.get_min());
+                edge_size_lower_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
+                edge_size_upper_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
               } else {
                 edge_size_combobox->setCurrentIndex (0);
                 edge_size = EDGE_SIZE_FIXED;
                 edge_size_combobox->removeItem (2);
+                edge_size_range_label->setVisible (false);
+                edge_size_lower_button->setVisible (false);
+                edge_size_upper_button->setVisible (false);
+                edge_size_invert_checkbox->setVisible (false);
               }
               break;
             case 2:
@@ -1748,6 +1793,11 @@ namespace MR
         void Connectome::edge_size_value_slot()
         {
           edge_size_scale_factor = edge_size_button->value();
+          window.updateGL();
+        }
+        void Connectome::edge_size_parameter_slot()
+        {
+          calculate_edge_sizes();
           window.updateGL();
         }
 
@@ -2702,8 +2752,14 @@ namespace MR
           } else if (edge_size == EDGE_SIZE_FILE) {
 
             assert (edge_values_from_file_size.size());
-            for (size_t i = 0; i != edges.size(); ++i)
-              edges[i].set_size (std::sqrt (edge_values_from_file_size[i] / Math::pi));
+            const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
+            const bool invert = edge_size_invert_checkbox->isChecked();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              float factor = (edge_values_from_file_size[i]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = invert ? 1.0f-factor : factor;
+              edges[i].set_size (factor);
+            }
 
           }
         }
