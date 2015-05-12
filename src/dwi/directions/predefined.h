@@ -43,7 +43,10 @@ namespace MR {
       namespace {
         inline Eigen::MatrixXd copy (const default_type* p, ssize_t rows) {
           Eigen::MatrixXd d (rows, 2);
-          memcpy (d.data(), p, rows*2*sizeof(default_type));
+          for (ssize_t i = 0; i < rows; ++i) {
+            d(i,0) = *p++;
+            d(i,1) = *p++;
+          }
           return d;
         }
       }

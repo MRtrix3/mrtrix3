@@ -158,9 +158,7 @@ void run ()
   Stride::set_from_command_line (header);
   auto fod = Image<value_type>::create (argument[2], header);
 
-  TRACE;
   Processor processor (shared, mask);
-  TRACE;
   ThreadedLoop ("performing constrained spherical deconvolution...", dwi, 0, 3)
     .run (processor, dwi, fod);
 }

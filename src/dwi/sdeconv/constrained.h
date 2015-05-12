@@ -173,7 +173,7 @@ namespace MR
               M.rightCols (M.cols() - fconv.cols()).setZero();
               Mt_M.resize (M.cols(), M.cols());
               Mt_M.triangularView<Eigen::Lower>() = M.transpose() * M;
-              VAR (Mt_M);
+
 
               INFO ("constrained spherical deconvolution initialised successfully");
             }
@@ -210,9 +210,7 @@ namespace MR
           llt (work.rows()),
           old_neg (shared.HR_trans.rows()),
           computed_once (false) {
-                TRACE;
             norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
-                TRACE;
           }
 
         CSDeconv (const CSDeconv&) = default;
@@ -253,7 +251,7 @@ namespace MR
             if (old_neg == neg)
               return true;
 
-          work.triangularView<Eigen::Lower>() = shared.Mt_M.selfadjointView<Eigen::Lower>();
+          work.triangularView<Eigen::Lower>() = shared.Mt_M.triangularView<Eigen::Lower>();
 
           // min-norm constraint:
           if (norm_lambda) {
