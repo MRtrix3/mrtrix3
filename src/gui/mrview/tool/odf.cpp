@@ -168,12 +168,6 @@ namespace MR
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
-            show_preview_button = new QPushButton (this);
-            show_preview_button->setToolTip (tr ("Inspect ODF at focus (separate window)"));
-            show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
-            connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
-            layout->addWidget (show_preview_button, 1);
-
             hide_all_button = new QPushButton (this);
             hide_all_button->setToolTip (tr ("Hide all ODFs"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
@@ -182,6 +176,7 @@ namespace MR
             layout->addWidget (hide_all_button, 1);
 
             main_box->addLayout (layout, 0);
+
 
             image_list_view = new QListView (this);
             image_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
@@ -192,14 +187,19 @@ namespace MR
             image_list_model = new Model (this);
             image_list_view->setModel (image_list_model);
 
-            main_box->addWidget (image_list_view, 1);
 
+            main_box->addWidget (image_list_view, 1);
+            show_preview_button = new QPushButton ("Inspect ODF at focus",this);
+            show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
+            show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
+            connect (show_preview_button, SIGNAL (clicked()), this, SLOT (show_preview_slot ()));
+            main_box->addWidget (show_preview_button, 1);
+            
 
             QGroupBox* group_box = new QGroupBox (tr("Display settings"));
             main_box->addWidget (group_box);
             GridLayout* box_layout = new GridLayout;
             group_box->setLayout (box_layout);
-
 
             QLabel* label = new QLabel ("scale");
             label->setAlignment (Qt::AlignHCenter);
@@ -208,66 +208,65 @@ namespace MR
             scale->setValue (1.0);
             scale->setMin (0.0);
             connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
-            box_layout->addWidget (scale, 0, 1);
+            box_layout->addWidget (scale, 0, 1, 1, 3);
 
             label = new QLabel ("detail");
             label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 0, 2);
+            box_layout->addWidget (label, 1, 0);
             level_of_detail_selector = new QSpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
             level_of_detail_selector->setSingleStep (1);
             level_of_detail_selector->setValue (3);
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(updateGL()));
-            box_layout->addWidget (level_of_detail_selector, 0, 3);
-
+            box_layout->addWidget (level_of_detail_selector, 1, 1);
 
             label = new QLabel ("lmax");
             label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 1, 0);
+            box_layout->addWidget (label, 1, 2);
             lmax_selector = new QSpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
             lmax_selector->setValue (8);
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
-            box_layout->addWidget (lmax_selector, 1, 1);
-
-            hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
-            hide_negative_lobes_box->setChecked (true);
-            connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
-            box_layout->addWidget (hide_negative_lobes_box, 1, 2, 1, 2);
-
+            box_layout->addWidget (lmax_selector, 1, 3);
+            
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (interpolation_box, 2, 0, 1, 2);
 
-
-            colour_by_direction_box = new QCheckBox ("colour by direction");
-            colour_by_direction_box->setChecked (true);
-            connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 2, 2, 1, 2);
+            hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
+            hide_negative_lobes_box->setChecked (true);
+            connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
+            box_layout->addWidget (hide_negative_lobes_box, 2, 2, 1, 2);
 
             lock_to_grid_box = new QCheckBox ("lock to grid");
             lock_to_grid_box->setChecked (true);
             connect (lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (lock_to_grid_box, 3, 0, 1, 2);
 
-            use_lighting_box = new QCheckBox ("use lighting");
-            use_lighting_box->setCheckable (true);
-            use_lighting_box->setChecked (true);
-            connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 3, 2, 1, 2);
+            colour_by_direction_box = new QCheckBox ("colour by direction");
+            colour_by_direction_box->setChecked (true);
+            connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
+            box_layout->addWidget (colour_by_direction_box, 3, 2, 1, 2);
 
             main_grid_box = new QCheckBox ("use main grid");
+            main_grid_box->setToolTip (tr ("Show individual ODFs using the grid of the main image instead of the ODF image's own grid"));
             main_grid_box->setChecked (false);
             connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (main_grid_box, 4, 0, 1, 2);
 
-            QPushButton *lighting_settings_button = new QPushButton ("adjust lighting...", this);
+            use_lighting_box = new QCheckBox ("use lighting");
+            use_lighting_box->setCheckable (true);
+            use_lighting_box->setChecked (true);
+            connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
+            box_layout->addWidget (use_lighting_box, 4, 2, 1, 2);
+
+            QPushButton *lighting_settings_button = new QPushButton ("ODF colour and lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 4, 2, 1, 2);
+            box_layout->addWidget (lighting_settings_button, 5, 0, 1, 4);
 
 
             connect (image_list_view->selectionModel(),
@@ -275,6 +274,7 @@ namespace MR
                 SLOT (selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
 
             connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
+
 
             hide_negative_lobes_slot (0);
             colour_by_direction_slot (0);
