@@ -445,7 +445,7 @@ namespace MR {
         const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
-          std::array<default_type,4> g = { 0.0, 0.0, 0.0, frame.bvalue };
+          std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
           if (g[3] && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
 
             if (rotate_DW_scheme) {

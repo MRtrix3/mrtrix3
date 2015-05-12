@@ -89,7 +89,7 @@ namespace MR
               const std::vector<int>& oversample = AutoOverSample,
               const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
-            x ({ 0, 0, 0 }),
+            x { 0, 0, 0 },
             dim ({ reference.size(0), reference.size(1), reference.size(2) }),
             vox ({ reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) }),
             transform_ (reference.transform()),
