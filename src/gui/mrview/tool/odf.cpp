@@ -187,8 +187,9 @@ namespace MR
             image_list_model = new Model (this);
             image_list_view->setModel (image_list_model);
 
-
             main_box->addWidget (image_list_view, 1);
+
+
             show_preview_button = new QPushButton ("Inspect ODF at focus",this);
             show_preview_button->setToolTip (tr ("Inspect ODF at focus<br>(opens separate window)"));
             show_preview_button->setIcon (QIcon (":/odf_preview.svg"));
@@ -593,6 +594,9 @@ namespace MR
           if (!settings)
             return;
           settings->scale = scale->value();
+          assert (preview);
+          assert (preview->tool);
+          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_scale (scale->value());
           updateGL();
         }
 
@@ -635,10 +639,10 @@ namespace MR
           Image* settings = get_image();
           if (!settings)
             return;
+          scale->setValue (settings->scale);
           lmax_selector->setValue (settings->lmax);
           hide_negative_lobes_box->setChecked (settings->hide_negative_lobes);
           colour_by_direction_box->setChecked (settings->color_by_direction);
-          scale->setValue (settings->scale);
           updateGL();
           update_preview();
         }

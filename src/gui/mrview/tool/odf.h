@@ -65,15 +65,14 @@ namespace MR
             void show_preview_slot ();
             void hide_all_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void adjust_scale_slot ();
             void colour_by_direction_slot (int unused);
             void hide_negative_lobes_slot (int unused);
             void lmax_slot (int value);
             void use_lighting_slot (int unused);
             void lighting_settings_slot (bool unused);
-
             void updateGL ();
             void update_preview();
-            void adjust_scale_slot ();
 
             void hide_event() override;
 

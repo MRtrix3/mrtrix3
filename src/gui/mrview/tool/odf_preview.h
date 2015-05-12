@@ -47,11 +47,18 @@ namespace MR
             {
               public:
                 RenderFrame (QWidget* parent, Window& window);
+                
+                void set_scale (float sc) {
+                  scale = sc;
+                  updateGL();
+                }
+                
               protected:
                 Window& window;
                 virtual void resizeGL (const int w, const int h);
                 virtual void initializeGL();
                 virtual void paintGL();
+                virtual void wheelEvent (QWheelEvent*);
             };
 
           public:

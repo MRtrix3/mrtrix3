@@ -61,7 +61,9 @@ namespace MR
           window.makeGLcurrent();
         }
 
-
+        void ODF_Preview::RenderFrame::wheelEvent (QWheelEvent*) {
+          //Talk to the hand, 'cause the scroll wheel ain't listening.      
+        }
 
 
 
@@ -90,7 +92,7 @@ namespace MR
           box_layout->addWidget (lock_orientation_to_image_box, 0, 0, 1, 2);
 
           interpolation_box = new QCheckBox ("interpolation");
-          interpolation_box->setChecked (false);
+          interpolation_box->setChecked (true);
           connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (interpolation_slot(int)));
           box_layout->addWidget (interpolation_box, 0, 2, 1, 2);
 
@@ -113,12 +115,13 @@ namespace MR
           main_box->setStretchFactor (render_frame, 1);
           main_box->setStretchFactor (group_box, 0);
 
+          render_frame->set_scale (parent->scale->value());
           render_frame->set_color_by_dir (parent->colour_by_direction_box->isChecked());
           render_frame->set_hide_neg_lobes (parent->hide_negative_lobes_box->isChecked());
           render_frame->set_use_lighting (parent->use_lighting_box->isChecked());
           render_frame->set_lmax (parent->lmax_selector->value());
           lock_orientation_to_image_slot (1);
-          interpolation_slot (0);
+          interpolation_slot (1);
           show_axes_slot (1);
           level_of_detail_slot (5);
 
