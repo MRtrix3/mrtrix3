@@ -516,12 +516,12 @@ namespace MR
           node_size_lower_button = new AdjustButton (this);
           node_size_lower_button->setValue (0.0f);
           node_size_lower_button->setMin (-std::numeric_limits<float>::max());
-          node_size_lower_button->setMax (0.0f);
+          node_size_lower_button->setMax (std::numeric_limits<float>::max());
           connect (node_size_lower_button, SIGNAL (valueChanged()), this, SLOT (node_size_parameter_slot()));
           hlayout->addWidget (node_size_lower_button);
           node_size_upper_button = new AdjustButton (this);
           node_size_upper_button->setValue (0.0f);
-          node_size_upper_button->setMin (0.0f);
+          node_size_upper_button->setMin (-std::numeric_limits<float>::max());
           node_size_upper_button->setMax (std::numeric_limits<float>::max());
           connect (node_size_upper_button, SIGNAL (valueChanged()), this, SLOT (node_size_parameter_slot()));
           hlayout->addWidget (node_size_upper_button);
@@ -594,12 +594,12 @@ namespace MR
           node_alpha_lower_button = new AdjustButton (this);
           node_alpha_lower_button->setValue (0.0f);
           node_alpha_lower_button->setMin (-std::numeric_limits<float>::max());
-          node_alpha_lower_button->setMax (0.0f);
+          node_alpha_lower_button->setMax (std::numeric_limits<float>::max());
           connect (node_alpha_lower_button, SIGNAL (valueChanged()), this, SLOT (node_alpha_parameter_slot()));
           hlayout->addWidget (node_alpha_lower_button);
           node_alpha_upper_button = new AdjustButton (this);
           node_alpha_upper_button->setValue (0.0f);
-          node_alpha_upper_button->setMin (0.0f);
+          node_alpha_upper_button->setMin (-std::numeric_limits<float>::max());
           node_alpha_upper_button->setMax (std::numeric_limits<float>::max());
           connect (node_alpha_upper_button, SIGNAL (valueChanged()), this, SLOT (node_alpha_parameter_slot()));
           hlayout->addWidget (node_alpha_upper_button);
@@ -778,6 +778,33 @@ namespace MR
           connect (edge_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (edge_alpha_value_slot (int)));
           hlayout->addWidget (edge_alpha_slider, 1);
           gridlayout->addLayout (hlayout, 7, 3, 1, 2);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_alpha_range_label = new QLabel ("Range: ");
+          hlayout->addWidget (edge_alpha_range_label);
+          edge_alpha_lower_button = new AdjustButton (this);
+          edge_alpha_lower_button->setValue (0.0f);
+          edge_alpha_lower_button->setMin (-std::numeric_limits<float>::max());
+          edge_alpha_lower_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_alpha_lower_button, SIGNAL (valueChanged()), this, SLOT (edge_alpha_parameter_slot()));
+          hlayout->addWidget (edge_alpha_lower_button);
+          edge_alpha_upper_button = new AdjustButton (this);
+          edge_alpha_upper_button->setValue (0.0f);
+          edge_alpha_upper_button->setMin (-std::numeric_limits<float>::max());
+          edge_alpha_upper_button->setMax (std::numeric_limits<float>::max());
+          connect (edge_alpha_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_alpha_parameter_slot()));
+          hlayout->addWidget (edge_alpha_upper_button);
+          edge_alpha_invert_checkbox = new QCheckBox ("Invert");
+          edge_alpha_invert_checkbox->setTristate (false);
+          connect (edge_alpha_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_alpha_parameter_slot()));
+          hlayout->addWidget (edge_alpha_invert_checkbox);
+          edge_alpha_range_label->setVisible (false);
+          edge_alpha_lower_button->setVisible (false);
+          edge_alpha_upper_button->setVisible (false);
+          edge_alpha_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 8, 1, 1, 4);
 
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
@@ -1783,8 +1810,11 @@ namespace MR
             case 0:
               if (edge_alpha == EDGE_ALPHA_FIXED) return;
               edge_alpha = EDGE_ALPHA_FIXED;
-              edge_alpha_slider->setVisible (true);
               edge_alpha_combobox->removeItem (2);
+              edge_alpha_range_label->setVisible (false);
+              edge_alpha_lower_button->setVisible (false);
+              edge_alpha_upper_button->setVisible (false);
+              edge_alpha_invert_checkbox->setVisible (false);
               break;
             case 1:
               try {
@@ -1792,17 +1822,30 @@ namespace MR
               } catch (...) { }
               if (edge_values_from_file_alpha.size()) {
                 edge_alpha = EDGE_ALPHA_FILE;
-                edge_alpha_slider->setVisible (false);
                 if (edge_alpha_combobox->count() == 2)
                   edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
                 else
                   edge_alpha_combobox->setItemText (2, edge_values_from_file_alpha.get_name());
                 edge_alpha_combobox->setCurrentIndex (2);
+                edge_alpha_range_label->setVisible (true);
+                edge_alpha_lower_button->setVisible (true);
+                edge_alpha_upper_button->setVisible (true);
+                edge_alpha_invert_checkbox->setVisible (true);
+                edge_alpha_lower_button->setValue (edge_values_from_file_alpha.get_min());
+                edge_alpha_upper_button->setValue (edge_values_from_file_alpha.get_max());
+                edge_alpha_lower_button->setMax (edge_values_from_file_alpha.get_max());
+                edge_alpha_upper_button->setMin (edge_values_from_file_alpha.get_min());
+                edge_alpha_lower_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
+                edge_alpha_upper_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
+                edge_alpha_invert_checkbox->setChecked (false);
               } else {
                 edge_alpha_combobox->setCurrentIndex (0);
                 edge_alpha = EDGE_ALPHA_FIXED;
-                edge_alpha_slider->setVisible (true);
                 edge_alpha_combobox->removeItem (2);
+                edge_alpha_range_label->setVisible (false);
+                edge_alpha_lower_button->setVisible (false);
+                edge_alpha_upper_button->setVisible (false);
+                edge_alpha_invert_checkbox->setVisible (false);
               }
               break;
             case 2:
@@ -1847,10 +1890,13 @@ namespace MR
         void Connectome::edge_alpha_value_slot (int position)
         {
           edge_fixed_alpha = position / 1000.0f;
+          window.updateGL();
+        }
+        void Connectome::edge_alpha_parameter_slot()
+        {
           calculate_edge_alphas();
           window.updateGL();
         }
-
 
 
 
@@ -2857,8 +2903,14 @@ namespace MR
           } else if (edge_alpha == EDGE_ALPHA_FILE) {
 
             assert (edge_values_from_file_alpha.size());
-            for (size_t i = 0; i != edges.size(); ++i)
-              edges[i].set_alpha (edge_values_from_file_alpha[i]);
+            const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
+            const bool invert = edge_alpha_invert_checkbox->isChecked();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              float factor = (edge_values_from_file_alpha[i]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = invert ? 1.0f-factor : factor;
+              edges[i].set_alpha (factor);
+            }
 
           }
         }

@@ -110,6 +110,7 @@
 //     (arose with implementation of the node overlay image)
 //   - Make transparency sliders a little more sensible
 //     (may need linear scale in 2D mode, non-linear in 3D)
+//     Think this only applies to the volume render
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
@@ -127,7 +128,7 @@
 //     -> May be something to do with dual screen...
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Implement check for determining when the shader needs to be updated
-//   - Disable LUT and config file options if no image is loaded
+//   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
 //
 // * Additional functionalities:
@@ -135,9 +136,6 @@
 //     How to get access to shorter node names? Rely on user making a new LUT?
 //   - External window with capability of showing bar plots for different node parameters,
 //     clicking on a node in the main GL window highlights that node in those external plots
-//
-// * Icons
-//   - Main parcellation image
 
 
 
@@ -260,6 +258,7 @@ namespace MR
             void edge_size_parameter_slot();
             void edge_visibility_parameter_slot();
             void edge_alpha_value_slot (int);
+            void edge_alpha_parameter_slot();
 
           protected:
 
@@ -312,6 +311,9 @@ namespace MR
             QCheckBox *edge_visibility_threshold_invert_checkbox;
 
             QSlider *edge_alpha_slider;
+            QLabel *edge_alpha_range_label;
+            AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
+            QCheckBox *edge_alpha_invert_checkbox;
 
 
           private:
