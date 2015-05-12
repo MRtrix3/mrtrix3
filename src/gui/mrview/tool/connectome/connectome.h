@@ -20,13 +20,14 @@
 
 */
 
-#ifndef __gui_mrview_tool_connectome_h__
-#define __gui_mrview_tool_connectome_h__
+#ifndef __gui_mrview_tool_connectome_connectome_h__
+#define __gui_mrview_tool_connectome_connectome_h__
 
 #include <map>
 #include <vector>
 
 #include "point.h"
+#include "ptr.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
@@ -53,6 +54,12 @@
 #include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
+#include "gui/mrview/tool/connectome/colourmap_observers.h"
+#include "gui/mrview/tool/connectome/edge.h"
+#include "gui/mrview/tool/connectome/file_data_vector.h"
+#include "gui/mrview/tool/connectome/node.h"
+#include "gui/mrview/tool/connectome/node_overlay.h"
+#include "gui/mrview/tool/connectome/shaders.h"
 
 
 
@@ -97,8 +104,6 @@
 //   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling
-//     * Some kind of mesh smoothing
-//       -> e.g. "Non-Iterative, Feature-Preserving Mesh Smoothing"
 //     * Have both original and smoothed meshes available from the drop-down list
 //     * Only mesh nodes when it is necessary to do so (i.e. user has selected that option),
 //       rather than meshing them all at image load
@@ -151,6 +156,7 @@ namespace MR
     {
       namespace Tool
       {
+
         class Connectome : public Base
         {
             Q_OBJECT
@@ -170,46 +176,6 @@ namespace MR
             enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
             enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_NODES, EDGE_VIS_FILE };
             enum edge_alpha_t      { EDGE_ALPHA_FIXED, EDGE_ALPHA_FILE };
-
-          private:
-
-            class Shader : public GL::Shader::Program {
-              public:
-                Shader() : GL::Shader::Program () { }
-                virtual ~Shader() { }
-
-                bool need_update (const Connectome&) const;
-                virtual void update (const Connectome&) = 0;
-
-                void start (const Connectome& parent) {
-                  if (*this == 0 || need_update (parent))
-                    recompile (parent);
-                  GL::Shader::Program::start();
-                }
-
-              protected:
-                std::string vertex_shader_source, fragment_shader_source;
-
-              private:
-                void recompile (const Connectome& parent);
-            };
-
-            class NodeShader : public Shader
-            {
-              public:
-                NodeShader() : Shader () { }
-                ~NodeShader() { }
-                void update (const Connectome&) override;
-            } node_shader;
-
-            class EdgeShader : public Shader
-            {
-              public:
-                EdgeShader() : Shader () { }
-                ~EdgeShader() { }
-                void update (const Connectome&) override;
-            } edge_shader;
-
 
           public:
 
@@ -316,183 +282,10 @@ namespace MR
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
             QCheckBox *edge_alpha_invert_checkbox;
 
-
           private:
 
-            // Stores all information relating to the drawing of individual nodes, both fixed and variable
-            class Node
-            {
-              public:
-                Node (const Point<float>&, const size_t, MR::Image::BufferScratch<bool>&);
-                Node ();
-
-                void render_mesh() const { mesh.render(); }
-
-                const Point<float>& get_com() const { return centre_of_mass; }
-                size_t get_volume() const { return volume; }
-
-                void set_name (const std::string& i) { name = i; }
-                const std::string& get_name() const { return name; }
-                void set_size (const float i) { size = i; }
-                float get_size() const { return size; }
-                void set_colour (const Point<float>& i) { colour = i; }
-                const Point<float>& get_colour() const { return colour; }
-                void set_alpha (const float i) { alpha = i; }
-                float get_alpha() const { return alpha; }
-                void set_visible (const bool i) { visible = i; }
-                bool is_visible() const { return visible; }
-
-
-              private:
-                const Point<float> centre_of_mass;
-                const size_t volume;
-
-                std::string name;
-                float size;
-                Point<float> colour;
-                float alpha;
-                bool visible;
-
-                // Helper class to manage the storage and display of the mesh for each node
-                class Mesh {
-                  public:
-                    Mesh (const MR::Mesh::Mesh&);
-                    Mesh (const Mesh&) = delete;
-                    Mesh (Mesh&&);
-                    Mesh ();
-                    ~Mesh() { }
-                    Mesh& operator= (Mesh&&);
-                    void render() const;
-                  private:
-                    GLsizei count;
-                    GL::VertexBuffer vertex_buffer, normal_buffer;
-                    GL::VertexArrayObject vertex_array_object;
-                    GL::IndexBuffer index_buffer;
-                } mesh;
-
-            };
-
-            // Stores all information relating to the drawing of individual edges, both fixed and variable
-            // Try to store more than would otherwise be optimal in here, in order to simplify the drawing process
-            class Edge
-            {
-              public:
-                Edge (const Connectome&, const node_t, const node_t);
-                Edge (Edge&&);
-                Edge ();
-                ~Edge();
-
-                void render_line() const;
-
-                node_t get_node_index (const size_t i) const { assert (i==0 || i==1); return node_indices[i]; }
-                const Point<float> get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
-                Point<float> get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
-
-                const GLfloat* get_rot_matrix() const { return rot_matrix; }
-
-                const Point<float>& get_dir() const { return dir; }
-                void set_size (const float i) { size = i; }
-                float get_size() const { return size; }
-                void set_colour (const Point<float>& i) { colour = i; }
-                const Point<float>& get_colour() const { return colour; }
-                void set_alpha (const float i) { alpha = i; }
-                float get_alpha() const { return alpha; }
-                void set_visible (const bool i) { visible = i; }
-                bool is_visible() const { return visible; }
-                bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
-
-              private:
-                const node_t node_indices[2];
-                const Point<float> node_centres[2];
-                const Point<float> dir;
-
-                GLfloat* rot_matrix;
-
-                float size;
-                Point<float> colour;
-                float alpha;
-                bool visible;
-
-            };
-
-            // Vector that stores the name of the file imported, so it can be displayed in the GUI
-            class FileDataVector : public Math::Vector<float>
-            {
-              public:
-                FileDataVector () : Math::Vector<float>(), min (NAN), max (NAN) { }
-                FileDataVector (const FileDataVector& V) : Math::Vector<float> (V), name (V.name), min (V.min), max (V.max) { }
-                FileDataVector (size_t nelements) : Math::Vector<float> (nelements), min (NAN), max (NAN) { }
-                FileDataVector (const std::string& file) : Math::Vector<float> (file), name (Path::basename (file).c_str()), min (NAN), max (NAN) { calc_minmax(); }
-
-                FileDataVector& load (const std::string&);
-                FileDataVector& clear();
-
-                const QString& get_name() const { return name; }
-                void set_name (const std::string& s) { name = s.c_str(); }
-
-                float get_min() const { return min; }
-                float get_max() const { return max; }
-
-                void calc_minmax();
-
-              private:
-                QString name;
-                float min, max;
-
-            };
-
-            // Class to handle the node image overlay
-            class NodeOverlay : public MR::GUI::MRView::ImageBase
-            {
-              public:
-                NodeOverlay (const MR::Image::Info&);
-
-                void update_texture2D (const int, const int) override;
-                void update_texture3D() override;
-
-                typedef MR::Image::BufferScratch<float>::voxel_type voxel_type;
-                voxel_type voxel() { need_update = true; return voxel_type (data); }
-
-              private:
-                MR::Image::BufferScratch<float> data;
-                bool need_update;
-
-              public:
-                class Shader : public Displayable::Shader {
-                  public:
-                    virtual std::string vertex_shader_source (const Displayable&);
-                    virtual std::string fragment_shader_source (const Displayable&);
-                } slice_shader;
-            };
-
-            // Classes to receive input from the colourmap buttons and act accordingly
-            class NodeColourObserver : public ColourMapButtonObserver
-            {
-              public:
-                NodeColourObserver (Connectome& connectome) : master (connectome) { }
-                void selected_colourmap (size_t, const ColourMapButton&) override;
-                void selected_custom_colour (const QColor&, const ColourMapButton&) override;
-                void toggle_show_colour_bar (bool, const ColourMapButton&) override;
-                void toggle_invert_colourmap (bool, const ColourMapButton&) override;
-                void reset_colourmap (const ColourMapButton&) override;
-              private:
-                Connectome& master;
-            };
-            class EdgeColourObserver : public ColourMapButtonObserver
-            {
-              public:
-                EdgeColourObserver (Connectome& connectome) : master (connectome) { }
-                void selected_colourmap (size_t, const ColourMapButton&) override;
-                void selected_custom_colour (const QColor&, const ColourMapButton&) override;
-                void toggle_show_colour_bar (bool, const ColourMapButton&) override;
-                void toggle_invert_colourmap (bool, const ColourMapButton&) override;
-                void reset_colourmap (const ColourMapButton&) override;
-              private:
-                Connectome& master;
-            };
-
-
-
+            NodeShader node_shader;
+            EdgeShader edge_shader;
 
             // For the sake of viewing nodes as an overlay, need to ALWAYS
             // have access to the parcellation image
@@ -580,9 +373,11 @@ namespace MR
             FileDataVector edge_values_from_file_visibility;
             FileDataVector edge_values_from_file_alpha;
 
+
             // Classes to receive inputs from the colourmap buttons and act accordingly
             NodeColourObserver node_colourmap_observer;
             EdgeColourObserver edge_colourmap_observer;
+
 
             // Helper functions
             void clear_all();
@@ -604,6 +399,12 @@ namespace MR
             void calculate_edge_sizes();
             void calculate_edge_visibility();
             void calculate_edge_alphas();
+
+            friend class NodeColourObserver;
+            friend class EdgeColourObserver;
+
+            friend class NodeShader;
+            friend class EdgeShader;
 
         };
 

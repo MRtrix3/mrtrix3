@@ -8,7 +8,7 @@
 #include "gui/mrview/tool/vector.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
-#include "gui/mrview/tool/connectome.h"
+#include "gui/mrview/tool/connectome/connectome.h"
 
 #else
 
