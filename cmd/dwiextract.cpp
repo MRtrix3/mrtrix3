@@ -94,7 +94,7 @@ void run() {
   else
     header.dim (3) = volumes.size();
 
-  Math::Matrix<value_type> new_grad (volumes.size(), 4);
+  Math::Matrix<value_type> new_grad (volumes.size(), grad.columns());
   for (size_t i = 0; i < volumes.size(); i++)
     new_grad.row (i) = grad.row (volumes[i]);
   header.DW_scheme() = new_grad;
