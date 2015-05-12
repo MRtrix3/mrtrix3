@@ -24,6 +24,7 @@
 #define __gui_mrview_tool_connectome_node_h__
 
 #include "point.h"
+#include "ptr.h"
 #include "image/buffer_scratch.h"
 
 #include "gui/opengl/gl.h"
@@ -43,10 +44,14 @@ namespace MR
       class Node
       {
         public:
-          Node (const Point<float>&, const size_t, MR::Image::BufferScratch<bool>&);
+          Node (const Point<float>&, const size_t, RefPtr< MR::Image::BufferScratch<bool> >&);
           Node ();
 
-          void render_mesh() const { mesh.render(); }
+          void calculate_mesh();
+          void render_mesh() const { if (!mesh) return; mesh->render(); }
+
+          void calculate_smooth_mesh();
+          void render_smooth_mesh() const { if (!smooth_mesh) return; smooth_mesh->render(); }
 
           const Point<float>& get_com() const { return centre_of_mass; }
           size_t get_volume() const { return volume; }
@@ -66,6 +71,7 @@ namespace MR
         private:
           const Point<float> centre_of_mass;
           const size_t volume;
+          RefPtr< MR::Image::BufferScratch<bool> > mask;
 
           std::string name;
           float size;
@@ -88,7 +94,8 @@ namespace MR
               GL::VertexBuffer vertex_buffer, normal_buffer;
               GL::VertexArrayObject vertex_array_object;
               GL::IndexBuffer index_buffer;
-          } mesh;
+          };
+          std::unique_ptr<Mesh> mesh, smooth_mesh;
 
       };
 

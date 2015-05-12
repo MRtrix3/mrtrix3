@@ -62,7 +62,7 @@ namespace MR
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
-          if (parent.node_geometry == Connectome::NODE_GEOM_CUBE || parent.node_geometry == Connectome::NODE_GEOM_MESH) {
+          if (parent.node_geometry == Connectome::NODE_GEOM_CUBE || parent.node_geometry == Connectome::NODE_GEOM_MESH || parent.node_geometry == Connectome::NODE_GEOM_SMOOTH_MESH) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
           }
@@ -81,7 +81,7 @@ namespace MR
               "uniform int reverse;\n";
           }
 
-          if (parent.node_geometry == Connectome::NODE_GEOM_SPHERE || parent.node_geometry == Connectome::NODE_GEOM_MESH) {
+          if (parent.node_geometry == Connectome::NODE_GEOM_SPHERE || parent.node_geometry == Connectome::NODE_GEOM_MESH || parent.node_geometry == Connectome::NODE_GEOM_SMOOTH_MESH) {
             vertex_shader_source +=
               "out vec3 normal;\n";
           } else if (parent.node_geometry == Connectome::NODE_GEOM_CUBE) {
@@ -112,6 +112,7 @@ namespace MR
             case Connectome::NODE_GEOM_OVERLAY:
               break;
             case Connectome::NODE_GEOM_MESH:
+            case Connectome::NODE_GEOM_SMOOTH_MESH:
               vertex_shader_source +=
               "  normal = vertexNormal_modelspace;\n"
               "  vec3 pos = (node_size * (vertexPosition_modelspace - node_centre));\n"
@@ -144,7 +145,7 @@ namespace MR
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
           }
-          if (parent.node_geometry == Connectome::NODE_GEOM_SPHERE || parent.node_geometry == Connectome::NODE_GEOM_MESH) {
+          if (parent.node_geometry == Connectome::NODE_GEOM_SPHERE || parent.node_geometry == Connectome::NODE_GEOM_MESH || parent.node_geometry == Connectome::NODE_GEOM_SMOOTH_MESH) {
             fragment_shader_source +=
               "in vec3 normal;\n";
           } else if (parent.node_geometry == Connectome::NODE_GEOM_CUBE) {

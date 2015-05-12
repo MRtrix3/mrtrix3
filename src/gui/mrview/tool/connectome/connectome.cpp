@@ -63,6 +63,8 @@ namespace MR
             node_size (NODE_SIZE_FIXED),
             node_visibility (NODE_VIS_ALL),
             node_alpha (NODE_ALPHA_FIXED),
+            have_meshes (false),
+            have_smooth_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
             node_colourmap_invert (false),
@@ -142,6 +144,7 @@ namespace MR
           node_geometry_combobox->addItem ("Cube");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
+          node_geometry_combobox->addItem ("Smooth mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
           gridlayout->addWidget (node_geometry_combobox, 0, 2);
           hlayout = new HBoxLayout;
@@ -674,6 +677,9 @@ namespace MR
                     case NODE_GEOM_MESH:
                       node.render_mesh();
                       break;
+                    case NODE_GEOM_SMOOTH_MESH:
+                      node.render_smooth_mesh();
+                      break;
                   }
                 }
               }
@@ -928,6 +934,45 @@ namespace MR
             case 3:
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
+              if (!have_meshes) {
+                ProgressBar progress ("Generating node meshes... ", num_nodes()+1);
+                for (auto i = nodes.begin(); i != nodes.end(); ++i) {
+                  i->calculate_mesh();
+                  ++progress;
+                }
+                have_meshes = true;
+              }
+              if (node_size == NODE_SIZE_VOLUME) {
+                node_size = NODE_SIZE_FIXED;
+                node_size_combobox->setCurrentIndex (0);
+                calculate_node_sizes();
+                node_size_range_label->setVisible (false);
+                node_size_lower_button->setVisible (false);
+                node_size_upper_button->setVisible (false);
+                node_size_invert_checkbox->setVisible (false);
+              }
+              node_size_combobox->setEnabled (true);
+              node_size_button->setVisible (true);
+              if (node_size_scale_factor > 1.0f) {
+                node_size_scale_factor = 1.0f;
+                node_size_button->setValue (node_size_scale_factor);
+              }
+              node_size_button->setMax (1.0f);
+              node_geometry_sphere_lod_label->setVisible (false);
+              node_geometry_sphere_lod_spinbox->setVisible (false);
+              node_geometry_overlay_interp_checkbox->setVisible (false);
+              break;
+            case 4:
+              if (node_geometry == NODE_GEOM_SMOOTH_MESH) return;
+              node_geometry = NODE_GEOM_SMOOTH_MESH;
+              if (!have_smooth_meshes) {
+                ProgressBar progress ("Generating smooth node meshes... ", num_nodes()+1);
+                for (auto i = nodes.begin(); i != nodes.end(); ++i) {
+                  i->calculate_smooth_mesh();
+                  ++progress;
+                }
+                have_meshes = have_smooth_meshes = true;
+              }
               if (node_size == NODE_SIZE_VOLUME) {
                 node_size = NODE_SIZE_FIXED;
                 node_size_combobox->setCurrentIndex (0);
@@ -1732,37 +1777,15 @@ namespace MR
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
 
-                // Determine the sub-volume occupied by this node, and update the image transform appropriately
-                MR::Image::Info info (H.info());
-                Math::Vector<float> a (4), b (4);
-                for (size_t axis = 0; axis != 3; ++axis) {
-                  info.dim (axis) = node_upper_corners[node_index][axis] - node_lower_corners[node_index][axis] + 1;
-                  a[axis] = node_lower_corners[node_index][axis] * info.vox (axis);
-                }
-                a[3] = 1.0;
-                Math::mult (b, info.transform(), a);
-                info.transform().column (3) = b;
+                MR::Image::Adapter::Subset<decltype(voxel)> subset (voxel, node_lower_corners[node_index], node_upper_corners[node_index] - node_lower_corners[node_index] + Point<int> (1, 1, 1));
 
-                // Construct a scratch buffer into which the volume for this node will be copied
-                MR::Image::BufferScratch<bool> scratch_data (info);
-                auto scratch = scratch_data.voxel();
+                RefPtr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
+                auto voxel = node_mask->voxel();
 
-                // Use an image adapter to only access the relevant portion of the input image
-                std::vector< std::vector<int> > per_axis_indices;
-                for (size_t axis = 0; axis != 3; ++axis) {
-                  std::vector<int> indices;
-                  for (int i = node_lower_corners[node_index][axis]; i <= node_upper_corners[node_index][axis]; ++i)
-                    indices.push_back (i);
-                  per_axis_indices.push_back (indices);
-                }
-                MR::Image::Adapter::Extract<decltype(voxel)> extract (voxel, per_axis_indices);
+                auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
+                MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
 
-                // Generate the boolean scratch buffer
-                MR::Image::Loop loop;
-                for (loop.start (extract, scratch); loop.ok(); loop.next (extract, scratch))
-                  scratch.value() = (extract.value() == node_index);
-
-                nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], scratch_data));
+                nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], node_mask));
 
               } else {
                 nodes.push_back (Node());

@@ -40,27 +40,15 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, MR::Image::BufferScratch<bool>& img) :
+        Node::Node (const Point<float>& com, const size_t vol, RefPtr< MR::Image::BufferScratch<bool> >& image) :
             centre_of_mass (com),
             volume (vol),
+            mask (image),
+            name (image->name()),
             size (1.0f),
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
-            visible (true)
-        {
-          MR::Mesh::Mesh temp;
-          auto voxel = img.voxel();
-          {
-            MR::LogLevelLatch latch (0);
-            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
-            temp.transform_voxel_to_realspace (img);
-            //const float dist = std::cbrt (img.vox (0) * img.vox (1) * img.vox (2));
-            //temp.smooth (10.0f * dist, 10.0f * dist);
-            temp.calculate_normals();
-          }
-          mesh = Node::Mesh (temp);
-          name = img.name();
-        }
+            visible (true) { }
 
         Node::Node () :
             centre_of_mass (),
@@ -69,6 +57,39 @@ namespace MR
             colour (0.0f, 0.0f, 0.0f),
             alpha (0.0f),
             visible (false) { }
+
+
+
+
+
+        void Node::calculate_mesh()
+        {
+          if (!mask || mesh) return;
+          auto voxel = mask->voxel();
+          MR::Mesh::Mesh temp;
+          {
+            MR::LogLevelLatch latch (0);
+            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
+            temp.transform_voxel_to_realspace (voxel);
+            temp.calculate_normals();
+          }
+          mesh.reset (new Node::Mesh (temp));
+        }
+
+        void Node::calculate_smooth_mesh()
+        {
+          if (!mask || smooth_mesh) return;
+          auto voxel = mask->voxel();
+          MR::Mesh::Mesh temp;
+          {
+            MR::LogLevelLatch latch (0);
+            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
+            temp.transform_voxel_to_realspace (voxel);
+            temp.smooth (10.0, 10.0);
+            temp.calculate_normals();
+          }
+          smooth_mesh.reset (new Node::Mesh (temp));
+        }
 
 
 

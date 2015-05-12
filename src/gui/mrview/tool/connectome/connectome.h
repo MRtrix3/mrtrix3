@@ -165,7 +165,7 @@ namespace MR
             typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
             typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
-            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_CUBE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH };
+            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_CUBE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH, NODE_GEOM_SMOOTH_MESH };
             enum node_colour_t     { NODE_COLOUR_FIXED, NODE_COLOUR_RANDOM, NODE_COLOUR_LUT, NODE_COLOUR_FILE };
             enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
             enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE };
@@ -343,6 +343,7 @@ namespace MR
             node_alpha_t node_alpha;
 
             // Other values that need to be stored w.r.t. node visualisation
+            bool have_meshes, have_smooth_meshes;
             Point<float> node_fixed_colour;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
