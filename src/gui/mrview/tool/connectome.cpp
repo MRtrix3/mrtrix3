@@ -452,8 +452,8 @@ namespace MR
           node_colour_combobox->setToolTip (tr ("Set how the colour of each node is determined"));
           node_colour_combobox->addItem ("Fixed");
           node_colour_combobox->addItem ("Random");
-          node_colour_combobox->addItem ("Lookup table");
-          node_colour_combobox->addItem ("From vector file");
+          node_colour_combobox->addItem ("LUT");
+          node_colour_combobox->addItem ("Vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
           gridlayout->addWidget (node_colour_combobox, 1, 2);
           hlayout = new HBoxLayout;
@@ -495,7 +495,7 @@ namespace MR
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
-          node_size_combobox->addItem ("From vector file");
+          node_size_combobox->addItem ("Vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
           gridlayout->addWidget (node_size_combobox, 3, 2);
           hlayout = new HBoxLayout;
@@ -541,7 +541,7 @@ namespace MR
           node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
           node_visibility_combobox->addItem ("All");
           node_visibility_combobox->addItem ("None");
-          node_visibility_combobox->addItem ("From vector file");
+          node_visibility_combobox->addItem ("Vector file");
           node_visibility_combobox->addItem ("Degree >= 1");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
           gridlayout->addWidget (node_visibility_combobox, 5, 2);
@@ -571,8 +571,8 @@ namespace MR
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
-          node_alpha_combobox->addItem ("Lookup table");
-          node_alpha_combobox->addItem ("From vector file");
+          node_alpha_combobox->addItem ("LUT");
+          node_alpha_combobox->addItem ("Vector file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
           gridlayout->addWidget (node_alpha_combobox, 7, 2);
           hlayout = new HBoxLayout;
@@ -647,7 +647,7 @@ namespace MR
           edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
           edge_colour_combobox->addItem ("Fixed");
           edge_colour_combobox->addItem ("By direction");
-          edge_colour_combobox->addItem ("From matrix file");
+          edge_colour_combobox->addItem ("Matrix file");
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
           gridlayout->addWidget (edge_colour_combobox, 1, 2);
           hlayout = new HBoxLayout;
@@ -688,7 +688,7 @@ namespace MR
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
           edge_size_combobox->addItem ("Fixed");
-          edge_size_combobox->addItem ("From matrix file");
+          edge_size_combobox->addItem ("Matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
           gridlayout->addWidget (edge_size_combobox, 3, 2);
           hlayout = new HBoxLayout;
@@ -735,7 +735,7 @@ namespace MR
           edge_visibility_combobox->addItem ("All");
           edge_visibility_combobox->addItem ("None");
           edge_visibility_combobox->addItem ("By nodes");
-          edge_visibility_combobox->addItem ("From matrix file");
+          edge_visibility_combobox->addItem ("Matrix file");
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 5, 2);
@@ -765,7 +765,7 @@ namespace MR
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
-          edge_alpha_combobox->addItem ("From matrix file");
+          edge_alpha_combobox->addItem ("Matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
           gridlayout->addWidget (edge_alpha_combobox, 7, 2);
           hlayout = new HBoxLayout;

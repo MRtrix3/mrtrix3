@@ -99,11 +99,12 @@
 //     * Get right hand rule working, use face culling
 //     * Some kind of mesh smoothing
 //       -> e.g. "Non-Iterative, Feature-Preserving Mesh Smoothing"
+//     * Have both original and smoothed meshes available from the drop-down list
+//     * Only mesh nodes when it is necessary to do so (i.e. user has selected that option),
+//       rather than meshing them all at image load
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
-//   - Only mesh nodes when it is necessary to do so (i.e. user has selected that option),
-//     rather than meshing them all at image load
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
