@@ -543,7 +543,6 @@ namespace MR
           node_visibility_combobox->addItem ("None");
           node_visibility_combobox->addItem ("From vector file");
           node_visibility_combobox->addItem ("Degree >= 1");
-          node_visibility_combobox->addItem ("Manual");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
           gridlayout->addWidget (node_visibility_combobox, 5, 2);
 
@@ -1111,7 +1110,6 @@ namespace MR
           if (!index) {
             lut.clear();
             lut_mapping.clear();
-            //lut_namebox->setText (QString::fromStdString ("(none)"));
             lut_combobox->removeItem (5);
             load_properties();
             return;
@@ -1391,7 +1389,7 @@ namespace MR
             case 0:
               if (node_visibility == NODE_VIS_ALL) return;
               node_visibility = NODE_VIS_ALL;
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1399,7 +1397,7 @@ namespace MR
             case 1:
               if (node_visibility == NODE_VIS_NONE) return;
               node_visibility = NODE_VIS_NONE;
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1410,11 +1408,11 @@ namespace MR
               } catch (...) { }
               if (node_values_from_file_visibility.size()) {
                 node_visibility = NODE_VIS_FILE;
-                if (node_visibility_combobox->count() == 5)
+                if (node_visibility_combobox->count() == 4)
                   node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
                 else
-                  node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
-                node_visibility_combobox->setCurrentIndex (5);
+                  node_visibility_combobox->setItemText (4, node_values_from_file_visibility.get_name());
+                node_visibility_combobox->setCurrentIndex (4);
                 node_visibility_threshold_label->setVisible (true);
                 node_visibility_threshold_button->setVisible (true);
                 node_visibility_threshold_invert_checkbox->setVisible (true);
@@ -1425,7 +1423,7 @@ namespace MR
               } else {
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = NODE_VIS_ALL;
-                node_visibility_combobox->removeItem (5);
+                node_visibility_combobox->removeItem (4);
                 node_visibility_threshold_label->setVisible (false);
                 node_visibility_threshold_button->setVisible (false);
                 node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1444,21 +1442,12 @@ namespace MR
               } else {
                 node_visibility = NODE_VIS_DEGREE;
               }
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 4:
-              node_visibility = NODE_VIS_MANUAL;
-              node_visibility_combobox->removeItem (5);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
-              // TODO Here is where the corresponding list view should be made visible
-              // Ideally the current node colours would also be presented within this list...
-              break;
-            case 5:
               return;
           }
           calculate_node_visibility();
@@ -2705,11 +2694,6 @@ namespace MR
                 nodes[i->get_node_index(1)].set_visible (true);
               }
             }
-
-          } else if (node_visibility == NODE_VIS_MANUAL) {
-
-            // TODO This needs to read from the corresponding list view (which doesn't exist yet),
-            //   and set the visibilities accordingly
 
           }
           update_node_overlay();
