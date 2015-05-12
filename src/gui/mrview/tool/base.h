@@ -133,6 +133,7 @@ namespace MR
             virtual bool mouse_move_event ();
             virtual bool mouse_release_event ();
             virtual void hide_event() { }
+            virtual void reset_event () { }
             virtual QCursor* get_cursor ();
             void update_cursor() { window.set_cursor(); }
         };

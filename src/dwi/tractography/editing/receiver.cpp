@@ -55,7 +55,7 @@ namespace MR {
               progress.update (display_func);
               return true;
             }
-            writer (in);
+            output (in);
 
           } else {
 
@@ -68,7 +68,7 @@ namespace MR {
               if (p->valid()) {
                 temp.push_back (*p);
               } else if (temp.size()) {
-                writer (temp);
+                output (temp);
                 temp.clear();
               }
             }
@@ -79,6 +79,20 @@ namespace MR {
           progress.update (display_func);
           return (!(number && (count == number)));
 
+        }
+
+
+
+        void Receiver::output (const Tractography::Streamline<>& in)
+        {
+          if (ends_only) {
+            Tractography::Streamline<> temp;
+            temp.push_back (in.front());
+            temp.push_back (in.back());
+            writer (temp);
+          } else {
+            writer (in);
+          }
         }
 
 

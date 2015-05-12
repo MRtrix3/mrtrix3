@@ -38,7 +38,8 @@ namespace MR
           projection (window.glarea, window.font),
           features (flags),
           update_overlays (false),
-          painting (false) { } 
+          painting (false),
+          visible (true) { }
 
 
         Base::~Base ()
@@ -86,8 +87,8 @@ namespace MR
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
               std::string value_str = "value: ";
               cfloat value = image()->interpolate() ?
-                image()->nearest_neighbour_value(window.focus()) :
-                image()->trilinear_value(window.focus());
+                image()->trilinear_value(window.focus()) :
+                image()->nearest_neighbour_value(window.focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
@@ -136,7 +137,11 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          const auto &header = image()->header();
+          float increment = snap_to_image() ?
+            x * header.vox(plane()) :
+            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+          move_in_out (increment, *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
         }

@@ -45,7 +45,7 @@ namespace MR
           C.setRgbF (info.object_color[0], info.object_color[1], info.object_color[2]);
           cbutton = new QColorButton (C);
           connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (object_color_slot (const QColor&)));
-          grid_layout->addWidget (new QLabel ("Object Colour"), 0, 0);
+          grid_layout->addWidget (new QLabel ("Object colour"), 0, 0);
           grid_layout->addWidget (cbutton, 0, 1);
         }
 
@@ -71,8 +71,8 @@ namespace MR
         grid_layout->addWidget (slider, 3, 1);
 
         slider = new QSlider (Qt::Horizontal);
-        slider->setRange (10,1000);
-        slider->setSliderPosition (int (info.shine * 10.0));
+        slider->setRange (10,10000);
+        slider->setSliderPosition (int (info.shine * 1000.0));
         connect (slider, SIGNAL (valueChanged (int)), this, SLOT (shine_slot (int)));
         grid_layout->addWidget (new QLabel ("Specular exponent"), 4, 0);
         grid_layout->addWidget (slider, 4, 1);
@@ -121,7 +121,7 @@ namespace MR
       }
       void LightingSettings::shine_slot (int value)
       {
-        info.shine = float (value) /10.0;
+        info.shine = float (value) /1000.0;
         info.update();
       }
 

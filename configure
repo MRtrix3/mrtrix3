@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
 import subprocess, sys, os, platform, tempfile, shutil, shlex, re
 
@@ -151,7 +151,7 @@ config_report = ''
 
 def log (message):
   global logfile
-  logfile.write (message.encode ('utf-8', 'ignore'))
+  logfile.write (message)
   if (verbose): 
     sys.stdout.write (message)
     sys.stdout.flush()
@@ -161,11 +161,11 @@ def report (message):
   config_report += message
   sys.stdout.write (message)
   sys.stdout.flush()
-  logfile.write (('\nREPORT: ' + message.rstrip() + '\n').encode ('utf-8', 'ignore'))
+  logfile.write ('\nREPORT: ' + message.rstrip() + '\n')
 
 def error (message):
   global logfile
-  logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode ('utf-8', 'ignore'))
+  logfile.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.exit (1)
 
@@ -298,9 +298,9 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     ( stdout, stderr ) = process.communicate()
 
     log ('EXIT: ' + str(process.returncode) + '\n')
-    stdout = stdout.decode('utf-8', 'ignore').rstrip()
+    stdout = stdout.decode(errors='ignore').rstrip()
     if len (stdout): log ('STDOUT:\n' + stdout + '\n')
-    stderr = stderr.decode('utf-8', 'ignore').rstrip()
+    stderr = stderr.decode(errors='ignore').rstrip()
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
   
@@ -343,6 +343,15 @@ def compile (source, compiler_flags = [], linker_flags = []):
         ret = execute ([ './'+out.name ], RuntimeError)
 
   return ret[1]
+
+
+def compare_version (needed, observed):
+  needed = [ float(n) for n in needed.split()[0].split('.') ]
+  observed = [ float(n) for n in observed.split()[0].split('.') ]
+  for n in zip (needed, observed):
+    if n[0] > n[1]:
+      return False
+  return True
 
 
 
@@ -937,7 +946,7 @@ int main() { Foo f; }
       log ('\nexecuting "' + cmd + '"...\n')
       process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       if process.wait() != 0: raise LinkError('process not terminated properly')
-      report (process.stdout.read().decode('utf-8', 'ignore').strip() + '\n')
+      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
 
     
   except QMakeError:
@@ -1003,19 +1012,34 @@ int main (int argc, char *argv[]) {
 }
 ''', cpp_flags + qt_cflags, ld_flags + qt_ldflags)
     report (gl_test.strip() + '\n')
-    if 'NOT SUPPORTED' in gl_test:
-      report ('''
-WARNING: not all required OpenGL extensions are supported (see above).
-         Some of the graphical user interface components may not be stable on
-         this system.
-''')
+    if not compare_version ('3.3', gl_test):
+      raise RuntimeError
   except:
-    report ('''not found
+    try:
+      gl_test
+      report ('''
+WARNING: your OpenGL implementation does not support version 3.3.
+''')
+    except:
+      report ('''not found
 
 WARNING: no OpenGL implementation found.
-         Some of the graphical user interface components may not be stable on
-         this system.
 ''')
+
+    report ('''
+         You will still be able to build MRtrix3, but you will NOT be
+         able to run the graphical user interface components in this
+         environment.
+
+         For more information, please refer to:
+         https://github.com/MRtrix3/mrtrix3/wiki/troubleshooting-on-Linux#opengl-version-33-not-supported
+
+         If you are running within a remote X11 forwarding environment, please
+         refer to: https://github.com/MRtrix3/mrtrix3/wiki/Remote-display
+''')
+
+
+
   if system == "darwin":
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')

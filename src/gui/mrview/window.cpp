@@ -120,11 +120,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (new MR::Image::Header (urlList.at (i).path().toUtf8().constData()));
+              list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (urlList.at (i).path().toUtf8().constData())));
             }
             catch (Exception& e) {
               e.display();
@@ -308,6 +308,12 @@ namespace MR
 
         image_menu->addSeparator();
 
+        image_visible_action = image_menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
+        image_visible_action->setShortcut (tr ("M"));
+        image_visible_action->setCheckable (true);
+        image_visible_action->setChecked (true);
+        addAction (image_visible_action);
+
         next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
         next_slice_action->setShortcut (tr ("Up"));
         addAction (next_slice_action);
@@ -467,6 +473,11 @@ namespace MR
         addAction (show_colourbar_action);
 
         menu->addSeparator();
+
+        action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
+        action->setShortcut (tr ("G"));
+        action->setCheckable (false);
+        addAction (action);
 
         full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
         full_screen_action->setShortcut (tr ("F11"));
@@ -647,10 +658,10 @@ namespace MR
         if (image_list.empty())
           return;
 
-        VecPtr<MR::Image::Header> list;
+        std::vector<std::unique_ptr<MR::Image::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (new MR::Image::Header (image_list[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (image_list[n])));
           }
           catch (Exception& E) {
             E.display();
@@ -669,8 +680,8 @@ namespace MR
 
 
         try {
-          VecPtr<MR::Image::Header> list;
-          list.push_back (new MR::Image::Header (folder));
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (folder)));
           add_images (list);
         }
         catch (Exception& E) {
@@ -681,7 +692,7 @@ namespace MR
 
 
 
-      void Window::add_images (VecPtr<MR::Image::Header>& list)
+      void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*this, *list[i]);
@@ -744,7 +755,8 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode = dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this);
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
+        mode->set_visible(image_visible_action->isChecked());
         set_mode_features();
         emit modeChanged();
         updateGL();
@@ -907,9 +919,39 @@ namespace MR
 
       void Window::reset_view_slot ()
       {
-        if (image())
+        if (image()) {
           mode->reset_event();
+          QList<QAction*> tools = tool_group->actions();
+          for (QAction* action : tools) {
+            Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(action)->dock;
+            if (dock)
+              dock->tool->reset_event();
+          }
+        }
       }
+
+
+
+      void Window::background_colour_slot ()
+      {
+        QColor colour = QColorDialog::getColor(Qt::black, this, "Select background colour", QColorDialog::DontUseNativeDialog);
+
+        if (colour.isValid()) {
+          background_colour[0] = GLubyte(colour.red()) / 255.0f;
+          background_colour[1] = GLubyte(colour.green()) / 255.0f;
+          background_colour[2] = GLubyte(colour.blue()) / 255.0f;
+          updateGL();
+        }
+
+      }
+
+
+
+      void Window::show_image_slot ()
+      {
+        mode->set_visible(image_visible_action->isChecked());
+      }
+
 
 
       void Window::slice_next_slot () 
@@ -947,7 +989,9 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        set_image_volume (3, image()->interp[3]+1);
+        size_t vol = image()->interp[3]+1;
+        set_image_volume (3, vol);
+        emit volumeChanged(vol);
       }
 
 
@@ -955,7 +999,9 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        set_image_volume (3, image()->interp[3]-1);
+        size_t vol = image()->interp[3]-1;
+        set_image_volume (3, vol);
+        emit volumeChanged(vol);
       }
 
 
@@ -963,7 +1009,9 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        set_image_volume (4, image()->interp[4]+1);
+        size_t vol = image()->interp[4]+1;
+        set_image_volume (4, vol);
+        emit volumeGroupChanged(vol);
       }
 
 
@@ -971,7 +1019,9 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        set_image_volume (4, image()->interp[4]-1);
+        size_t vol = image()->interp[4]-1;
+        set_image_volume (4, vol);
+        emit volumeGroupChanged(vol);
       }
 
 
@@ -1173,7 +1223,8 @@ namespace MR
 
 
       void Window::paintGL ()
-      {
+      {  
+        gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
           return;
@@ -1188,11 +1239,10 @@ namespace MR
         GL::init ();
 
         font.initGL();
-
-        gl::ClearColor (0.0, 0.0, 0.0, 0.0);
         gl::Enable (gl::DEPTH_TEST);
-
-        mode = dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this);
+        File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
+        gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
 
         if (MR::App::option.size()) 
@@ -1412,6 +1462,8 @@ namespace MR
           } \
           ++tool_id;
             
+        updateGL();
+        qApp->processEvents();
 
         try {
           for (size_t copt = 0; copt < MR::App::option.size(); ++copt) {
@@ -1507,8 +1559,8 @@ namespace MR
             }
 
             if (opt.opt->is ("load")) { 
-              VecPtr<MR::Image::Header> list; 
-              try { list.push_back (new MR::Image::Header (opt[0])); }
+              std::vector<std::unique_ptr<MR::Image::Header>> list; 
+              try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
               catch (Exception& e) { e.display(); }
               add_images (list);
               continue;

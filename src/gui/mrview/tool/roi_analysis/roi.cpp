@@ -83,7 +83,7 @@ namespace MR
           layout->addWidget (close_button, 1);
 
           hide_all_button = new QPushButton (this);
-          hide_all_button->setToolTip (tr ("Hide All"));
+          hide_all_button->setToolTip (tr ("Hide all ROIs"));
           hide_all_button->setIcon (QIcon (":/hide.svg"));
           hide_all_button->setCheckable (true);
           connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -288,9 +288,9 @@ namespace MR
           std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (new MR::Image::Header (names[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (names[n])));
 
           load (list);
         }
@@ -308,6 +308,8 @@ namespace MR
           try {
             MR::Image::Header header;
             header.info() = roi->info();
+            header.set_ndim(3);
+            header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
             if (name.size()) {
               MR::Image::Buffer<bool> buffer (name, header);
@@ -344,7 +346,7 @@ namespace MR
 
 
 
-        void ROI::load (VecPtr<MR::Image::Header>& list) 
+        void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           list_model->load (list);
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
@@ -468,7 +470,7 @@ namespace MR
 
           for (int i = 0; i < list_model->rowCount(); ++i) {
             if (list_model->items[i]->show && !hide_all_button->isChecked()) {
-              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i]);
+              ROI_Item* roi = dynamic_cast<ROI_Item*>(list_model->items[i].get());
               //if (is_3D) 
               //window.get_current_mode()->overlays_for_3D.push_back (image);
               //else
@@ -722,7 +724,7 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("ROI Analysis tool options")
+            + OptionGroup ("ROI analysis tool options")
 
             + Option ("roi.load", "Loads the specified image on the overlay tool.")
             +   Argument ("image").type_image_in()
@@ -734,8 +736,8 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
-            VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (opt[0])); }
+            std::vector<std::unique_ptr<MR::Image::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;

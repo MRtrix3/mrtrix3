@@ -120,7 +120,8 @@ void LightBox::update_slices_focusdelta()
 
 void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
 {
-    image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+    if(visible)
+      image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
     render_tools (with_projection, false, axis, slice (axis));
 }
 
@@ -134,7 +135,7 @@ void LightBox::paint(Projection&)
 
     GLint x = projection.x_position(), y = projection.y_position();
     GLint w = projection.width(), h = projection.height();
-    GLint dw = w / n_cols, dh = h / n_rows;
+    GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
 
     const Point<> orig_focus = window.focus();
 

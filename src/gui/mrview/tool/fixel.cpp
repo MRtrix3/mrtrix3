@@ -41,9 +41,9 @@ namespace MR
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
           fixel_tool (fixel_tool),
-          colourbar_position_index (4),
-          voxel_size_length_multipler (1.0),
-          user_line_length_multiplier (1.0),
+          voxel_size_length_multipler (1.f),
+          user_line_length_multiplier (1.f),
+          line_thickness (0.005f),
           length_type (Unity),
           colour_type (CValue)
         {
@@ -57,6 +57,7 @@ namespace MR
           voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
         }
 
+
         Fixel::Fixel (const std::string& filename, Vector& fixel_tool) :
           AbstractFixel(filename, fixel_tool),
           fixel_data (header),
@@ -65,6 +66,7 @@ namespace MR
         {
           load_image();
         }
+
 
         PackedFixel::PackedFixel (const std::string& filename, Vector& fixel_tool) :
           AbstractFixel (filename, fixel_tool),
@@ -76,80 +78,112 @@ namespace MR
         }
 
 
-        std::string AbstractFixel::Shader::vertex_shader_source (const Displayable& fixel)
+        std::string AbstractFixel::Shader::vertex_shader_source (const Displayable&)
         {
-           std::string source =
-               "layout (location = 0) in vec3 this_vertex;\n"
-               "layout (location = 1) in vec3 prev_vertex;\n"
-               "layout (location = 2) in vec3 next_vertex;\n"
-               "layout (location = 3) in float this_value;\n"
-               "layout (location = 4) in float prev_value;\n"
-               "layout (location = 5) in float next_value;\n"
-               "uniform mat4 MVP;\n"
-               "uniform float length_mult;\n"
-               "uniform vec3 colourmap_colour;\n"
+          std::string source =
+               "layout (location = 0) in vec3 centre;\n"
+               "layout (location = 1) in vec3 direction;\n"
+               "layout (location = 2) in vec2 fixel_metrics;\n"
+               "out vec3 v_dir;"
+               "out vec2 v_fixel_metrics;"
+               "void main() { "
+               "    gl_Position = vec4(centre, 1);\n"
+               "    v_dir = direction;"
+               "    v_fixel_metrics = fixel_metrics;"
+               "}\n";
+
+          return source;
+        }
+
+
+        std::string AbstractFixel::Shader::geometry_shader_source (const Displayable& fixel)
+        {
+          std::string source =
+              "layout(points) in;\n"
+              "layout(triangle_strip, max_vertices = 4) out;\n"
+              "in vec3 v_dir[];\n"
+              "in vec2 v_fixel_metrics[];\n"
+              "uniform mat4 MVP;\n"
+              "uniform float length_mult;\n"
+              "uniform vec3 colourmap_colour;\n"
+              "uniform float line_thickness;\n";
+
+          switch (color_type) {
+            case Direction: break;
+            case CValue:
+              source += "uniform float offset, scale;\n";
+              break;
+          }
+
+          source +=
+               "out vec3 fColour;\n"
                "flat out float value_out;\n"
-               "out vec3 fragmentColour;\n";
+               "void main() {\n";
 
-           switch (color_type) {
-             case Direction: break;
-             case CValue:
-               source += "uniform float offset, scale;\n";
-               break;
-           }
+          // Make sure we pass our output parameters before ending the primitive!
+          switch (length_type) {
+            case Unity:
+              source += "   value_out = v_fixel_metrics[0].y;\n"
+                        "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
+              break;
+            case Amplitude:
+              source += "   value_out = v_fixel_metrics[0].x;\n"
+                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              break;
+            case LValue:
+              source += "   value_out = v_fixel_metrics[0].y;\n"
+                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              break;
+          }
 
-           source +=
-               "void main() {\n"
-               "  vec3 centre = this_vertex;\n"
-               "  vec3 dir = next_vertex;\n"
-               "  float amp = this_value;\n"
-               "  float value = next_value;\n"
-               "  if ((gl_VertexID % 2) > 0) {\n"
-               "    centre = prev_vertex;\n"
-               "    dir = -this_vertex;\n"
-               "    amp = prev_value;\n"
-               "    value = this_value;\n"
-               "  }\n"
-               "  value_out = value;\n";
+          switch (color_type) {
+            case CValue:
+              if (!ColourMap::maps[colourmap].special) {
+                source += "    float amplitude = clamp (";
+                if (fixel.scale_inverted())
+                  source += "1.0 -";
+                source += " scale * (v_fixel_metrics[0].y - offset), 0.0, 1.0);\n";
+              }
+              source +=
+                std::string ("    vec3 color;\n") +
+                ColourMap::maps[colourmap].mapping +
+                "   fColour = color;\n";
+              break;
+            case Direction:
+              source +=
+                "   fColour = normalize (abs (v_dir[0]));\n";
+              break;
+            default:
+              break;
+          }
 
-           switch (length_type) {
-             case Unity:      source += "  gl_Position = MVP * vec4 (centre + length_mult * dir, 1);\n";         break;
-             case Amplitude:  source += "  gl_Position = MVP * vec4 (centre + length_mult * amp * dir, 1);\n";   break;
-             case LValue:     source += "  gl_Position = MVP * vec4 (centre + length_mult * value * dir, 1);\n"; break;
-           }
+          source +=
+               "    vec4 start = MVP * (gl_in[0].gl_Position - line_offset);\n"
+               "    vec4 end = MVP * (gl_in[0].gl_Position + line_offset);\n"
+               "    vec4 line = end - start;\n"
+               "    vec4 normal =  normalize(vec4(-line.y, line.x, 0.0, 0.0));\n"
+               "    vec4 thick_vec =  line_thickness * normal;\n"
+               "    gl_Position = start - thick_vec;\n"
+               "    EmitVertex();\n"
+               "    gl_Position = start + thick_vec;\n"
+               "    EmitVertex();\n"
+               "    gl_Position = end - thick_vec;\n"
+               "    EmitVertex();\n"
+               "    gl_Position = end + thick_vec;\n"
+               "    EmitVertex();\n"
+               "    EndPrimitive();\n"
+               "}\n";
 
-           switch (color_type) {
-             case CValue:
-               if (!ColourMap::maps[colourmap].special) {
-                 source += "  float amplitude = clamp (";
-                 if (fixel.scale_inverted())
-                   source += "1.0 -";
-                 source += " scale * (value_out - offset), 0.0, 1.0);\n";
-               }
-               source +=
-                 std::string ("  vec3 color;\n") +
-                 ColourMap::maps[colourmap].mapping +
-                 "  fragmentColour = color;\n";
-               break;
-             case Direction:
-               source +=
-                 "  fragmentColour = normalize (abs (dir));\n";
-               break;
-             default:
-               break;
-           }
-           source += "}\n";
-           return source;
+          return source;
         }
 
 
         std::string AbstractFixel::Shader::fragment_shader_source (const Displayable& fixel)
         {
           std::string source =
-              "in float include; \n"
-              "out vec3 color;\n"
-              "flat in float value_out;\n"
-              "in vec3 fragmentColour;\n";
+              "out vec3 outColour;\n"
+              "in vec3 fColour;\n"
+              "flat in float value_out;\n";
 
           if (fixel.use_discard_lower())
             source += "uniform float lower;\n";
@@ -159,15 +193,17 @@ namespace MR
           source +=
               "void main(){\n";
 
+
           if (fixel.use_discard_lower())
             source += "  if (value_out < lower) discard;\n";
           if (fixel.use_discard_upper())
             source += "  if (value_out > upper) discard;\n";
 
           source +=
-            std::string("  color = fragmentColour;\n");
+            std::string("  outColour = fColour;\n");
 
           source += "}\n";
+
           return source;
         }
 
@@ -203,6 +239,7 @@ namespace MR
           projection.set (fixel_shader);
 
           gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "length_mult"), voxel_size_length_multipler * user_line_length_multiplier);
+          gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "line_thickness"), line_thickness);
 
           if (use_discard_lower())
             gl::Uniform1f (gl::GetUniformLocation (fixel_shader, "lower"), lessthan);
@@ -226,15 +263,13 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
           }
 
-          gl::LineWidth (fixel_tool.line_thickness);
-
           vertex_array_object.bind();
 
           if (!fixel_tool.do_crop_to_slice) {
             for (size_t x = 0; x < slice_fixel_indices[0].size(); ++x)
-              gl::MultiDrawArrays (gl::LINES, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
+              gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
           } else {
-            gl::MultiDrawArrays (gl::LINES, &slice_fixel_indices[axis][slice][0], &slice_fixel_sizes[axis][slice][0], slice_fixel_counts[axis][slice]);
+            gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[axis][slice][0], &slice_fixel_sizes[axis][slice][0], slice_fixel_counts[axis][slice]);
           }
 
           if (fixel_tool.line_opacity < 1.0) {
@@ -251,30 +286,30 @@ namespace MR
         {
           load_image_buffer ();
 
-          // voxel centres and fixel directions
+          // voxel centres
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer_dir.size() * sizeof(Point<float>), &buffer_dir[0][0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_pos.size() * sizeof(Point<float>), &buffer_pos[0][0], gl::STATIC_DRAW);
           vertex_array_object.gen();
           vertex_array_object.bind();
           gl::EnableVertexAttribArray (0);
-          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+
+          // fixel directions
+          direction_buffer.gen();
+          direction_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer_dir.size() * sizeof(Point<float>), &buffer_dir[0][0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
-          gl::EnableVertexAttribArray (2);
-          gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
           // fixel sizes and values
           value_buffer.gen();
           value_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
-          gl::EnableVertexAttribArray (3);
-          gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
-          gl::EnableVertexAttribArray (4);
-          gl::VertexAttribPointer (4, 1, gl::FLOAT, gl::FALSE_, 0, (void*)0);
-          gl::EnableVertexAttribArray (5);
-          gl::VertexAttribPointer (5, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(2*sizeof(float)));
+          gl::EnableVertexAttribArray (2);
+          gl::VertexAttribPointer (2, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
         }
+
 
         void Fixel::load_image_buffer()
         {
@@ -286,8 +321,7 @@ namespace MR
           }
 
           MR::Image::LoopInOrder loop (fixel_vox);
-          buffer_dir.push_back(Point<float>());
-          buffer_val.push_back(NAN);
+
           Point<float> voxel_pos;
           for (auto l = loop (fixel_vox); l; ++l) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
@@ -299,25 +333,25 @@ namespace MR
           }
           for (loop.start (fixel_vox); loop.ok(); loop.next (fixel_vox)) {
             for (size_t f = 0; f != fixel_vox.value().size(); ++f) {
-              for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_dir.size() - 1);
-                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(2);
-                slice_fixel_counts[dim][fixel_vox[dim]]++;
-              }
               header_transform.voxel2scanner (fixel_vox, voxel_pos);
-              buffer_dir.push_back (voxel_pos);
+              buffer_pos.push_back (voxel_pos);
               buffer_dir.push_back (fixel_vox.value()[f].dir);
               buffer_val.push_back (fixel_vox.value()[f].size);
               buffer_val.push_back (fixel_vox.value()[f].value);
+
+              for (size_t dim = 0; dim < 3; ++dim) {
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_pos.size() - 1);
+                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(1);
+                slice_fixel_counts[dim][fixel_vox[dim]]++;
+              }
             }
           }
 
-          buffer_dir.push_back (Point<float>());
-          buffer_val.push_back (NAN);
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
         }
+
 
         void PackedFixel::load_image_buffer()
         {
@@ -342,18 +376,12 @@ namespace MR
           }
 
           MR::Image::LoopInOrder loop (packed_fixel_vox, 0, 3);
-          buffer_dir.push_back(Point<float>());
-          buffer_val.push_back(NAN);
+
           Point<float> voxel_pos;
           size_t n_fixels = dim4_len / 3;
 
           for (auto l = loop (packed_fixel_vox); l; ++l) {
             for (size_t f = 0; f < n_fixels; ++f) {
-              for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][packed_fixel_vox[dim]].push_back (buffer_dir.size() - 1);
-                slice_fixel_sizes[dim][packed_fixel_vox[dim]].push_back(2);
-                slice_fixel_counts[dim][packed_fixel_vox[dim]]++;
-              }
 
               // Fetch the vector components
               float x_comp, y_comp, z_comp;
@@ -370,17 +398,21 @@ namespace MR
               value_max = std::max(value_max, length);
 
               header_transform.voxel2scanner (packed_fixel_vox, voxel_pos);
-              buffer_dir.push_back (voxel_pos);
+              buffer_pos.push_back (voxel_pos);
               buffer_dir.push_back (vector.normalise());
 
               // Use the vector length to represent both fixel amplitude and value
               buffer_val.push_back (length);
               buffer_val.push_back (length);
+
+              for (size_t dim = 0; dim < 3; ++dim) {
+                slice_fixel_indices[dim][packed_fixel_vox[dim]].push_back (buffer_pos.size() - 1);
+                slice_fixel_sizes[dim][packed_fixel_vox[dim]].push_back(1);
+                slice_fixel_counts[dim][packed_fixel_vox[dim]]++;
+              }
             }
           }
 
-          buffer_dir.push_back (Point<float>());
-          buffer_val.push_back (NAN);
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;

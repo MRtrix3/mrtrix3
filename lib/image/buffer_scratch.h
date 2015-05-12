@@ -41,7 +41,7 @@ namespace MR
     {
       public:
         template <class Template>
-          BufferScratch (const Template& info) :
+          explicit BufferScratch (const Template& info) :
             ConstInfo (info),
             data_ (Image::voxel_count (*this)) {
               datatype_ = DataType::from<value_type>();
@@ -49,7 +49,7 @@ namespace MR
             }
 
         template <class Template>
-          BufferScratch (const Template& info, const std::string& label) :
+          explicit BufferScratch (const Template& info, const std::string& label) :
             ConstInfo (info),
             data_ (Image::voxel_count (*this)) {
               datatype_ = DataType::from<value_type>();

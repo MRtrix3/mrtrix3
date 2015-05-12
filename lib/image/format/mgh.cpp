@@ -36,10 +36,10 @@ namespace MR
     namespace Format
     {
 
-      RefPtr<Handler::Base> MGH::read (Header& H) const
+      std::shared_ptr<Handler::Base> MGH::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".mgh"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
         File::MMap fmap (H.name());
         bool is_BE = File::MGH::read_header (H, * ( (const mgh_header*) fmap.address()));
 
@@ -77,7 +77,7 @@ namespace MR
 
         } // End reading other data beyond the end of the image data
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
         return handler;
@@ -102,7 +102,7 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> MGH::create (Header& H) const
+      std::shared_ptr<Handler::Base> MGH::create (Header& H) const
       {
         if (H.ndim() > 4)
           throw Exception ("MGH format cannot support more than 4 dimensions for image \"" + H.name() + "\"");
@@ -123,7 +123,7 @@ namespace MR
 
         File::MGH::write_other_to_file (H.name(), MGHO);
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name(), MGH_DATA_OFFSET));
 
         return handler;

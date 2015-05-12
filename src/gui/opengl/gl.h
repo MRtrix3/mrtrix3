@@ -50,6 +50,12 @@
 # define GL_DEBUG(msg) (void)0
 #endif
 
+#ifdef NDEBUG
+# define GL_CHECK_ERROR
+#else 
+# define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
+#endif
+
 namespace MR
 {
   namespace GUI
@@ -60,6 +66,14 @@ namespace MR
       void init ();
 
       const char* ErrorString (GLenum errorcode);
+
+      inline void check_error (const char* filename, int line) {
+        GLenum err = gl::GetError();
+        while (err) {
+          FAIL (std::string ("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString (err));
+          err = gl::GetError();
+        }
+      }
 
 
       class Texture {

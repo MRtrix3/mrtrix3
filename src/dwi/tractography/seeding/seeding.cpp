@@ -90,31 +90,31 @@ namespace MR
 
         App::Options opt = get_options ("seed_sphere");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Sphere* seed = new Sphere (opt[i][0], list.get_rng());
+          Sphere* seed = new Sphere (opt[i][0]);
           list.add (seed);
         }
 
         opt = get_options ("seed_image");
         for (size_t i = 0; i < opt.size(); ++i) {
-          SeedMask* seed = new SeedMask (opt[i][0], list.get_rng());
+          SeedMask* seed = new SeedMask (opt[i][0]);
           list.add (seed);
         }
 
         opt = get_options ("seed_random_per_voxel");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Random_per_voxel* seed = new Random_per_voxel (opt[i][0], list.get_rng(), opt[i][1]);
+          Random_per_voxel* seed = new Random_per_voxel (opt[i][0], opt[i][1]);
           list.add (seed);
         }
 
         opt = get_options ("seed_grid_per_voxel");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Grid_per_voxel* seed = new Grid_per_voxel (opt[i][0], list.get_rng(), opt[i][1]);
+          Grid_per_voxel* seed = new Grid_per_voxel (opt[i][0], opt[i][1]);
           list.add (seed);
         }
 
         opt = get_options ("seed_rejection");
         for (size_t i = 0; i < opt.size(); ++i) {
-          Rejection* seed = new Rejection (opt[i][0], list.get_rng());
+          Rejection* seed = new Rejection (opt[i][0]);
           list.add (seed);
         }
 
@@ -124,7 +124,7 @@ namespace MR
           if (!opt_act.size())
             throw Exception ("Cannot perform GM-WM Interface seeding without ACT segmented tissue image");
           for (size_t i = 0; i < opt.size(); ++i) {
-            GMWMI* seed = new GMWMI (opt[i][0], list.get_rng(), str(opt_act[0][0]));
+            GMWMI* seed = new GMWMI (opt[i][0], str(opt_act[0][0]));
             list.add (seed);
           }
         }

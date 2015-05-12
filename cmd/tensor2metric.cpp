@@ -110,10 +110,10 @@ class ImagePair
     }
 };
 
-class ImagePairPtr : public Ptr<ImagePair>
+class ImagePairPtr : public std::unique_ptr<ImagePair>
 {
   public:
-    ImagePairPtr (ImagePair* pair) : Ptr<ImagePair> (pair) { }
+    ImagePairPtr (ImagePair* pair) : std::unique_ptr<ImagePair> (pair) { }
 
     typedef ImagePair::value_type value_type;
 
@@ -173,7 +173,7 @@ class Processor
     }
 
     void compute_FA (const std::string& name) {
-      fa_header = new Image::Header (dt.header());
+      fa_header.reset (new Image::Header (dt.header()));
       fa_header->set_ndim (3);
       fa_header->set_datatype (DataType::Float32);
       fa_header->create (name);
@@ -181,7 +181,7 @@ class Processor
     }
 
     void compute_ADC (const std::string& name) {
-      adc_header = new Image::Header (dt.header());
+      adc_header.reset (new Image::Header (dt.header()));
       adc_header->set_ndim (3);
       adc_header->set_datatype (DataType::Float32);
       adc_header->create (name);
@@ -189,7 +189,7 @@ class Processor
     }
 
     void compute_EVALS (const std::string& name) {
-      eval_header = new Image::Header (dt.header());
+      eval_header.reset (new Image::Header (dt.header()));
       eval_header->set_ndim (4);
       eval_header->set_dim (3, vals.size());
       eval_header->set_datatype (DataType::Float32);
@@ -198,7 +198,7 @@ class Processor
     }
 
     void compute_EVEC (const std::string& name) {
-      evec_header = new Image::Header (dt.header());
+      evec_header.reset (new Image::Header (dt.header()));
       evec_header->set_ndim (4);
       evec_header->set_dim (3, 3*vals.size());
       evec_header->set_datatype (DataType::Float32);
@@ -224,17 +224,22 @@ class Processor
   private:
     Iterator& next;
     Image::Voxel<value_type> dt;
-    RefPtr<Image::Header> fa_header, adc_header, evec_header, eval_header;
-    Ptr<Image::Voxel<value_type> > fa, adc, evec, eval;
-    Ptr<Math::Eigen::Symm<double> > eig;
-    Ptr<Math::Eigen::SymmV<double> > eigv;
+    std::shared_ptr<Image::Header> fa_header, adc_header, evec_header, eval_header;
+    std::unique_ptr<Image::Voxel<value_type> > fa, adc, evec, eval;
+    std::unique_ptr<Math::Eigen::Symm<double> > eig;
+    std::unique_ptr<Math::Eigen::SymmV<double> > eigv;
     std::vector<int> vals;
     int modulate;
 };
 */
 // TO HERE
 
-inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
+inline void set_zero (size_t axis, 
+    std::unique_ptr<ImagePair>& i0, 
+    std::unique_ptr<ImagePair>& i1, 
+    std::unique_ptr<ImagePair>& i2, 
+    std::unique_ptr<ImagePair>& i3, 
+    std::unique_ptr<ImagePair>& i4)
 {
   if (i0) i0->vox[axis] = 0;
   if (i1) i1->vox[axis] = 0;
@@ -243,7 +248,12 @@ inline void set_zero (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<I
   if (i4) i4->vox[axis] = 0;
 }
 
-inline void increment (size_t axis, Ptr<ImagePair>& i0, Ptr<ImagePair>& i1, Ptr<ImagePair>& i2, Ptr<ImagePair>& i3, Ptr<ImagePair>& i4)
+inline void increment (size_t axis, 
+    std::unique_ptr<ImagePair>& i0, 
+    std::unique_ptr<ImagePair>& i1, 
+    std::unique_ptr<ImagePair>& i2, 
+    std::unique_ptr<ImagePair>& i3, 
+    std::unique_ptr<ImagePair>& i4)
 {
   if (i0) ++i0->vox[axis];
   if (i1) ++i1->vox[axis];
@@ -277,26 +287,27 @@ void run ()
         throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
-  Ptr<ImagePair> adc, fa, eval, evec, mask;
+  std::unique_ptr<ImagePair> adc, fa, eval, evec, mask;
 
   opt = get_options ("vector");
   if (opt.size())
-    evec = new ImagePair (dt_data, opt[0][0], 3*vals.size());
+    evec.reset (new ImagePair (dt_data, opt[0][0], 3*vals.size()));
 
   opt = get_options ("value");
   if (opt.size())
-    eval = new ImagePair (dt_data, opt[0][0], vals.size());
+    eval.reset (new ImagePair (dt_data, opt[0][0], vals.size()));
 
   opt = get_options ("adc");
   if (opt.size())
-    adc = new ImagePair (dt_data, opt[0][0], 0);
+    adc.reset (new ImagePair (dt_data, opt[0][0], 0));
 
   opt = get_options ("fa");
-  if (opt.size()) fa = new ImagePair (dt_data, opt[0][0], 0);
+  if (opt.size()) 
+    fa.reset (new ImagePair (dt_data, opt[0][0], 0));
 
   opt = get_options ("mask");
   if (opt.size()) {
-    mask = new ImagePair (opt[0][0]);
+    mask.reset (new ImagePair (opt[0][0]));
     Image::check_dimensions (mask->data, dt_data, 0, 3);
   }
 
@@ -317,12 +328,12 @@ void run ()
   Math::Vector<double> ev (3);
   float el[6], faval = NAN;
 
-  Ptr<Math::Eigen::Symm<double> > eig;
-  Ptr<Math::Eigen::SymmV<double> > eigv;
+  std::unique_ptr<Math::Eigen::Symm<double> > eig;
+  std::unique_ptr<Math::Eigen::SymmV<double> > eigv;
   if (evec)
-    eigv = new Math::Eigen::SymmV<double> (3);
+    eigv.reset (new Math::Eigen::SymmV<double> (3));
   else
-    eig = new Math::Eigen::Symm<double> (3);
+    eig.reset (new Math::Eigen::Symm<double> (3));
 
   auto dt = dt_data.voxel();
 

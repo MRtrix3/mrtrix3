@@ -26,6 +26,7 @@
 #include <complex>
 
 #include "datatype.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/info.h"
@@ -103,9 +104,7 @@ namespace MR
           void operator() (InputComplexVoxelType& input, OutputComplexVoxelType& output)
           {
 
-              Ptr<ProgressBar> progress;
-              if (message.size())
-                progress = new ProgressBar (message, axes_to_process.size() + 2);
+            std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, axes_to_process.size() + 2) : nullptr);
 
               Image::BufferScratch<cdouble> temp_data (info());
               auto temp_voxel = temp_data.voxel();

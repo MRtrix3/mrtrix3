@@ -27,7 +27,7 @@
 #include <stack>
 #include <condition_variable>
 
-#include "ptr.h"
+#include "memory.h"
 #include "thread.h"
 
 #define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
@@ -547,7 +547,7 @@ namespace MR
         size_t capacity;
         size_t writer_count, reader_count;
         std::stack<T*,std::vector<T*> > item_stack;
-        VecPtr<T> items;
+        std::vector<std::unique_ptr<T>> items;
         std::string name;
 
         Queue (const Queue& queue) {
@@ -607,8 +607,8 @@ namespace MR
 
         T* get_item () {
           std::lock_guard<std::mutex> lock (mutex);
-          T* item = new T;
-          items.push_back (item);
+          T* item (new T);
+          items.push_back (std::unique_ptr<T> (item));
           return item;
         }
 
@@ -621,7 +621,7 @@ namespace MR
             back = inc (back);
             if (item_stack.empty()) {
               item = new T;
-              items.push_back (item);
+              items.push_back (std::unique_ptr<T> (item));
             }
             else {
               item = item_stack.top();

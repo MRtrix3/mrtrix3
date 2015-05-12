@@ -3,7 +3,7 @@
 
 #include "point.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "timer.h"
 
 #include "dwi/tractography/file.h"
@@ -356,13 +356,13 @@ namespace MR
       void SIFTer::test_sorting_block_size (const size_t num_tracks) const
       {
 
-        Math::RNG rng;
+        Math::RNG::Normal<float> rng;
 
         std::vector<Cost_fn_gradient_sort> gradient_vector;
         gradient_vector.assign (num_tracks, Cost_fn_gradient_sort (num_tracks, 0.0, 0.0));
         // Fill the gradient vector with random Gaussian data
         for (track_t index = 0; index != num_tracks; ++index) {
-          const float value = rng.normal();
+          const float value = rng();
           gradient_vector[index].set (index, value, value);
         }
 

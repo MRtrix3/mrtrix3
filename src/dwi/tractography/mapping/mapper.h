@@ -110,13 +110,13 @@ class TrackMapperBase
     void create_dixel_plugin (const DWI::Directions::FastLookupSet& dirs)
     {
       assert (!dixel_plugin && !tod_plugin);
-      dixel_plugin = new DixelMappingPlugin (dirs);
+      dixel_plugin.reset (new DixelMappingPlugin (dirs));
     }
 
     void create_tod_plugin (const size_t N)
     {
       assert (!dixel_plugin && !tod_plugin);
-      tod_plugin = new TODMappingPlugin (N);
+      tod_plugin.reset (new TODMappingPlugin (N));
     }
 
 
@@ -150,8 +150,8 @@ class TrackMapperBase
     bool precise;
     bool ends_only;
 
-    RefPtr<DixelMappingPlugin> dixel_plugin;
-    RefPtr<TODMappingPlugin>   tod_plugin;
+    std::shared_ptr<DixelMappingPlugin> dixel_plugin;
+    std::shared_ptr<TODMappingPlugin>   tod_plugin;
 
 
     // Specialist version of voxelise() is provided for the SetVoxel container:

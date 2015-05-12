@@ -1,7 +1,7 @@
 #ifndef __gui_mrview_window_h__
 #define __gui_mrview_window_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
@@ -39,7 +39,7 @@ namespace MR
           Window();
           ~Window();
 
-          void add_images (VecPtr<MR::Image::Header>& list);
+          void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
           const QPoint& mouse_position () const { return mouse_position_; }
           const QPoint& mouse_displacement () const { return mouse_displacement_; }
@@ -63,7 +63,7 @@ namespace MR
               return std::round (image()->transform().scanner2voxel (focus())[anatomical_plane]);
           }
 
-          Mode::Base* get_current_mode () const { return mode; }
+          Mode::Base* get_current_mode () const { return mode.get(); }
           const Point<>& focus () const { return focal_point; }
           const Point<>& target () const { return camera_target; }
           float FOV () const { return field_of_view; }
@@ -122,6 +122,8 @@ namespace MR
           void modeChanged ();
           void imageChanged ();
           void scalingChanged ();
+          void volumeChanged (size_t);
+          void volumeGroupChanged (size_t);
 
         public slots:
           void on_scaling_changed ();
@@ -143,6 +145,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
+          void show_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -156,6 +159,7 @@ namespace MR
           void image_select_slot (QAction* action);
 
           void reset_view_slot ();
+          void background_colour_slot ();
 
           void OpenGL_slot ();
           void about_slot ();
@@ -205,7 +209,7 @@ namespace MR
 
           GLArea* glarea;
           QTimer* glrefresh_timer;
-          Ptr<Mode::Base> mode;
+          std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
 
@@ -217,6 +221,8 @@ namespace MR
           float field_of_view;
           int anatomical_plane, annotations, colourbar_position_index;
           bool snap_to_image_axes_and_voxel;
+
+          float background_colour[3];
 
           QMenu *image_menu;
 
@@ -236,7 +242,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-
+                  *image_visible_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,

@@ -23,7 +23,7 @@
 #ifndef __image_filter_optimal_threshold_h__
 #define __image_filter_optimal_threshold_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/threaded_loop.h"
 #include "image/min_max.h"

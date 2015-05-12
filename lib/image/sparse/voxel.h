@@ -25,7 +25,6 @@
 
 #include <typeinfo>
 
-#include "ptr.h"
 #include "image/buffer.h"
 #include "image/buffer_sparse.h"
 #include "image/voxel.h"
@@ -71,11 +70,11 @@ namespace MR
 
 
         protected:
-          RefPtr<Handler::Base> handler_;
+          std::shared_ptr<Handler::Base> handler_;
 
           Handler::Sparse& get_handler()
           {
-            Handler::Base* ptr (handler_);
+            Handler::Base* ptr (handler_.get());
             return *(dynamic_cast<Handler::Sparse*> (ptr));
           }
 

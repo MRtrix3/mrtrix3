@@ -57,7 +57,7 @@ namespace MR
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
         normalise (false), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), framebuffer (NULL), OS (0), OS_x (0), OS_y (0),
+        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
         glrefresh_timer (new QTimer (this))
       {
         setMinimumSize (128, 128);
@@ -328,8 +328,8 @@ namespace MR
         screenshot_name = image_name;
         OS = oversampling;
         OS_x = OS_y = 0;
-        framebuffer = new GLubyte [3*projection.width()*projection.height()];
-        pix = new QImage (OS*projection.width(), OS*projection.height(), QImage::Format_RGB32);
+        framebuffer.reset (new GLubyte [3*projection.width()*projection.height()]);
+        pix.reset (new QImage (OS*projection.width(), OS*projection.height(), QImage::Format_RGB32));
         updateGL();
       }
 
@@ -339,14 +339,14 @@ namespace MR
       {
         makeCurrent();
         gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
-        gl::ReadPixels (0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer);
+        gl::ReadPixels (0, 0, projection.width(), projection.height(), gl::RGB, gl::UNSIGNED_BYTE, framebuffer.get());
 
         int start_i = projection.width()*OS_x;
         int start_j = projection.height()* (OS-OS_y-1);
         for (int j = 0; j < projection.height(); j++) {
           int j2 = projection.height()-j-1;
           for (int i = 0; i < projection.width(); i++) {
-            GLubyte* p = framebuffer + 3* (i+projection.width()*j);
+            GLubyte* p = framebuffer.get() + 3* (i+projection.width()*j);
             pix->setPixel (start_i + i, start_j + j2, qRgb (p[0], p[1], p[2]));
           }
         }
@@ -360,7 +360,7 @@ namespace MR
           OS_y++;
           if (OS_y >= OS) {
             pix = NULL;
-            delete [] framebuffer;
+            framebuffer.reset();
             OS = OS_x = OS_y = 0;
             QApplication::restoreOverrideCursor();
           }

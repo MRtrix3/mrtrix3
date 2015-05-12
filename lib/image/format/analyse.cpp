@@ -36,15 +36,15 @@ namespace MR
     namespace Format
     {
 
-      RefPtr<Handler::Base> Analyse::read (Header& H) const
+      std::shared_ptr<Handler::Base> Analyse::read (Header& H) const
       {
         if (!Path::has_suffix (H.name(), ".img"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         File::MMap fmap (H.name().substr (0, H.name().size()-4) + ".hdr");
         File::NIfTI::read (H, * ( (const nifti_1_header*) fmap.address()));
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name()));
 
         return handler;
@@ -75,7 +75,7 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> Analyse::create (Header& H) const
+      std::shared_ptr<Handler::Base> Analyse::create (Header& H) const
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -90,7 +90,7 @@ namespace MR
 
         File::create (H.name(), Image::footprint(H));
 
-        RefPtr<Handler::Base> handler (new Handler::Default (H));
+        std::shared_ptr<Handler::Base> handler (new Handler::Default (H));
         handler->files.push_back (File::Entry (H.name()));
 
         return handler;

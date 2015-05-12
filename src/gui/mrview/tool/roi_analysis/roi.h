@@ -25,7 +25,7 @@
 
 #include <vector>
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/header.h"
 #include "image/transform.h"
 
@@ -109,7 +109,7 @@ namespace MR
                window.updateGL();
              }
              
-             void load (VecPtr<MR::Image::Header>& list); 
+             void load (std::vector<std::unique_ptr<MR::Image::Header>>& list); 
              void save (ROI_Item*);
 
              int normal2axis (const Point<>&, const MR::Image::Transform&) const;

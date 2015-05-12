@@ -24,8 +24,6 @@
 #define __dwi_tractography_seeding_list_h__
 
 
-#include "math/rng.h"
-
 #include "dwi/tractography/seeding/base.h"
 
 #include <vector>
@@ -70,7 +68,6 @@ namespace MR
           const Base* operator[] (const size_t n) const { return seeders[n]; }
           bool is_finite() const { return total_count; }
           uint32_t get_total_count() const { return total_count; }
-          const Math::RNG& get_rng() const { return rng; }
 
 
           friend inline std::ostream& operator<< (std::ostream& stream, const List& S) {
@@ -86,7 +83,7 @@ namespace MR
 
         private:
           std::vector<Base*> seeders;
-          Math::RNG rng;
+          Math::RNG::Uniform<float> rng;
           float total_volume;
           uint32_t total_count;
 
