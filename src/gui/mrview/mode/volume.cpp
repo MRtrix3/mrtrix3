@@ -340,7 +340,11 @@ namespace MR
 
           draw_crosshairs (projection);
 
-
+          if(!visible) {
+            gl::Disable (gl::BLEND);
+            draw_orientation_labels (projection);
+            return;
+          }
 
 
           GL::mat4 T2S = get_tex_to_scanner_matrix (*image());
@@ -504,7 +508,6 @@ namespace MR
 
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
           image()->stop (volume_shader);
-
           gl::Disable (gl::BLEND);
 
           draw_orientation_labels (projection);

@@ -120,7 +120,8 @@ void LightBox::update_slices_focusdelta()
 
 void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
 {
-    image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+    if(visible)
+      image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
     render_tools (with_projection, false, axis, slice (axis));
 }
 

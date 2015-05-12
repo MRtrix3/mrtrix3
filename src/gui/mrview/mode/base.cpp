@@ -38,7 +38,8 @@ namespace MR
           projection (window.glarea, window.font),
           features (flags),
           update_overlays (false),
-          painting (false) { } 
+          painting (false),
+          visible (true) { }
 
 
         Base::~Base ()

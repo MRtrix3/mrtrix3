@@ -132,10 +132,12 @@ namespace MR
         void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
           // render image:
-          if (snap_to_image())
-            image()->render2D (shader_program, with_projection, axis, slice (axis));
-          else
-            image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+          if (visible) {
+            if (snap_to_image())
+              image()->render2D (shader_program, with_projection, axis, slice (axis));
+            else
+              image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
+          }
 
           render_tools (with_projection, false, axis, slice (axis));
         }
