@@ -27,7 +27,6 @@
 
 namespace MR
 {
-
   class Transform
   {
     public:
@@ -57,7 +56,7 @@ namespace MR
         static inline transform_type get_default (const HeaderType& header) {
           transform_type M;
           M.setIdentity();
-          M.translation() = Vector3 (
+          M.translation() = Eigen::Vector3d (
               -0.5 * (header.size (0)-1) * header.voxsize (0), 
               -0.5 * (header.size (1)-1) * header.voxsize (1), 
               -0.5 * (header.size (2)-1) * header.voxsize (2)
@@ -72,7 +71,7 @@ namespace MR
       default_type  bounds[3];
       bool   out_of_bounds;
 
-      bool check_bounds (const Vector3& pos) const {
+      bool check_bounds (const Eigen::Vector3d& pos) const {
         if (pos[0] <= -0.5 || pos[0] >= bounds[0] ||
             pos[1] <= -0.5 || pos[1] >= bounds[1] ||
             pos[2] <= -0.5 || pos[2] >= bounds[2]) {
@@ -81,12 +80,12 @@ namespace MR
         return false;
       }
 
-      Vector3 set_to_nearest (const Vector3& pos) {
+      Eigen::Vector3d set_to_nearest (const Eigen::Vector3d& pos) {
         out_of_bounds = check_bounds (pos);
         if (out_of_bounds)
-          return Vector3 (default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>());
+          return Eigen::Vector3d (default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>());
         else
-          return Vector3 (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
+          return Eigen::Vector3d (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
       }
 
   };

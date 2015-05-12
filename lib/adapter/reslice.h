@@ -94,6 +94,7 @@ namespace MR
             vox ({ reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) }),
             transform_ (reference.transform()),
             direct_transform (Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
+              using namespace Eigen;
               assert (ndim() >= 3);
 
               if (oversample.size()) {
@@ -105,12 +106,12 @@ namespace MR
                 OS[2] = oversample[2];
               }
               else {
-                Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
-                Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
+                Vector3d y = direct_transform * Vector3d (0.0, 0.0, 0.0);
+                Vector3d x0 = direct_transform * Vector3d (1.0, 0.0, 0.0);
                 OS[0] = std::ceil (0.999 * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
+                x0 = direct_transform * Vector3d (0.0, 1.0, 0.0);
                 OS[1] = std::ceil (0.999 * (y-x0).norm());
-                x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
+                x0 = direct_transform * Vector3d (0.0, 0.0, 1.0);
                 OS[2] = std::ceil (0.999 * (y-x0).norm());
               }
 
@@ -132,7 +133,7 @@ namespace MR
         size_t ndim () const { return interp.ndim(); }
         int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
         default_type voxsize (size_t axis) const { return axis < 3 ? vox[axis] : interp.voxsize (axis); }
-        const Math::Matrix<default_type>& transform () const { return transform_; }
+        const transform_type& transform () const { return transform_; }
         const std::string& name () const { return interp.name(); }
 
         void reset () {
@@ -142,10 +143,11 @@ namespace MR
         }
 
         value_type value () const {
+          using namespace Eigen;
           if (oversampling) {
-            Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+            Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             value_type result = 0.0;
-            Vector3 s;
+            Vector3d s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
               for (int y = 0; y < OS[1]; ++y) {
@@ -162,7 +164,7 @@ namespace MR
             return result;
           }
 
-          interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
+          interp.voxel (direct_transform * Vector3d (x[0], x[1], x[2]));
           return interp.value();
         }
         value_type value () { const auto* _this = this; _this->value(); }

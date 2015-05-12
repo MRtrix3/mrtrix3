@@ -156,11 +156,11 @@ namespace MR
         }
         template <class HeaderType>
           static Image create (const std::string& image_name, const HeaderType& template_header) {
-            return Header::create (image_name, Header (template_header)).get_image<ValueType>();
+            return Header::create (image_name, template_header).template get_image<ValueType>();
           }
         template <class HeaderType>
           static Image scratch (const HeaderType& template_header, const std::string& label = "scratch image") {
-            return Header::scratch (Header (template_header), label).get_image<ValueType>();
+            return Header::scratch (template_header, label).template get_image<ValueType>();
           }
 
       protected:

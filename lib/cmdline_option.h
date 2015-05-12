@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __args_h__
-#define __args_h__
+#ifndef __cmdline_option_h__
+#define __cmdline_option_h__
 
 #include <string>
 #include <vector>
@@ -31,8 +31,12 @@
 # undef None
 #endif
 
+#include "mrtrix.h"
+
 namespace MR
 {
+  namespace App
+  {
 
   /*! \defgroup CmdParse Command-Line Parsing
    * \brief Classes and functions to parse command-line arguments and options.
@@ -40,14 +44,6 @@ namespace MR
    * For a detailed description of the command-line parsing interface, see the
    * \ref command_line_parsing page.
    * */
-
-  //! \addtogroup CmdParse
-  // @{
-
-  namespace App {
-
-    extern const char* project_version;
-    extern const char* build_date;
 
     //! \cond skip
     typedef enum {
@@ -64,8 +60,6 @@ namespace MR
       FloatSeq
     } ArgType;
 
-    const char* argtype_description (ArgType type);
-
     typedef int ArgFlags;
     constexpr ArgFlags None = 0;
     constexpr ArgFlags Optional = 0x1;
@@ -73,20 +67,10 @@ namespace MR
     //! \endcond
 
 
-    std::string help_head (int format);
-    std::string help_tail (int format);
-    std::string help_syntax (int format);
 
-    class Description : public std::vector<const char*>
-    {
-      public:
-        Description& operator+ (const char* text) {
-          push_back (text);
-          return *this;
-        }
 
-        std::string syntax (int format) const;
-    };
+    //! \addtogroup CmdParse
+    // @{
 
     //! A class to specify a command-line argument
     /*! Command-line arguments that are accepted by a particular command are
@@ -149,7 +133,7 @@ namespace MR
             int def, min, max;
           } i;
           struct {
-            float def, min, max;
+            default_type def, min, max;
           } f;
         } defaults;
 
@@ -227,8 +211,8 @@ namespace MR
         //! specifies that the argument should be a floating-point value
         /*! if desired, a default value can be specified, along with a range of
          * allowed values. */
-        Argument& type_float (float min = -std::numeric_limits<float>::infinity(), 
-            float def = 0.0, float max = std::numeric_limits<float>::infinity()) {
+        Argument& type_float (default_type min = -std::numeric_limits<float>::infinity(), 
+            default_type def = 0.0, default_type max = std::numeric_limits<default_type>::infinity()) {
           type = Float;
           defaults.f.min = min;
           defaults.f.def = def;
@@ -290,16 +274,6 @@ namespace MR
 
 
 
-
-    class ArgumentList : public std::vector<Argument> {
-      public:
-        ArgumentList& operator+ (const Argument& argument) {
-          push_back (argument);
-          return *this;
-        }
-
-        std::string syntax (int format) const;
-    };
 
 
 
@@ -400,6 +374,20 @@ namespace MR
 
 
 
+    //! a class to hold a named list of Option's
+    /*! the name is used as the section heading for the options that follow.
+     * For example:
+     * \code
+     * void usage () {
+     *   ...
+     *   OPTIONS
+     *   + Option (...)
+     *
+     *   + OptionGroup ("Special options")
+     *   + Option ("option1", ...)
+     *   + Option ("option2", ...);
+     * }
+     */  
     class OptionGroup : public std::vector<Option> {
       public:
         OptionGroup (const char* group_name = "OPTIONS") : name (group_name) { }
@@ -428,39 +416,9 @@ namespace MR
 
 
 
-
-
-    class OptionList : public std::vector<OptionGroup> {
-      public:
-        OptionList& operator+ (const OptionGroup& option_group) {
-          push_back (option_group);
-          return *this;
-        }
-
-        OptionList& operator+ (const Option& option) {
-          back() + option;
-          return *this;
-        }
-
-        OptionList& operator+ (const Argument& argument) {
-          back() + argument;
-          return *this;
-        }
-
-        OptionGroup& back () {
-          if (empty())
-            push_back (OptionGroup());
-          return std::vector<OptionGroup>::back();
-        }
-
-        std::string syntax (int format) const;
-    };
-
-
-
   }
-  // @}
+
+  //! @}
 }
 
 #endif
-

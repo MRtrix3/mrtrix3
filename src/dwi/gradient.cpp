@@ -6,6 +6,7 @@ namespace MR
   {
 
     using namespace App;
+    using namespace Eigen;
 
     OptionGroup GradImportOptions (bool include_bvalue_scaling)
     {
@@ -54,36 +55,136 @@ namespace MR
 
 
 
+    MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
+    {
+      auto bvals = load_matrix<> (bvals_path);
+      auto bvecs = load_matrix<> (bvecs_path);
+
+      if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
+      if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
+
+      if (bvals.cols() != bvecs.cols() || bvals.cols() != header.size (3))
+        throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
+
+      // account for the fact that bvecs are specified wrt original image axes,
+      // which may have been re-ordered and/or inverted by MRtrix to match the
+      // expected anatomical frame of reference:
+      std::vector<size_t> order = Stride::order (header, 0, 3);
+      MatrixXd G (bvecs.cols(), 3);
+      for (ssize_t n = 0; n < G.rows(); ++n) {
+        G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
+        G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
+        G(n,order[2]) = header.stride(order[2]) > 0 ? bvecs(2,n) : -bvecs(2,n);
+      }
+
+      // rotate gradients into scanner coordinate system:
+      MatrixXd grad (G.rows(), 4);
+      //Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
+      //Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
+      //Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
+
+      grad.leftCols<3>().transpose() = header.transform().rotation() * G.transpose();
+      grad.col(3) = bvals.row(0);
+
+      return grad;
+    }
+
+
+
 
 
     void save_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
     {
-
-      const auto grad = header.parse_DW_scheme<>();
-      Math::Matrix<default_type> G (grad.rows(), 3);
+      const auto grad = header.parse_DW_scheme();
 
       // rotate vectors from scanner space to image space
-      Math::Matrix<default_type> grad_G = grad.sub (0, grad.rows(), 0, 3);
-      Math::Matrix<default_type> rotation = header.transform().sub (0,3,0,3);
-      Math::mult (G, 0.0f, 1.0f, CblasNoTrans, grad_G, CblasNoTrans, rotation);
+      MatrixXd G = grad.leftCols<3>() * header.transform().rotation();
 
       // deal with FSL requiring gradient directions to coincide with data strides
       // also transpose matrices in preparation for file output
-      std::vector<size_t> order = Stride::order (header, 0, 3);
-      Math::Matrix<default_type> bvecs (3, grad.rows());
-      Math::Matrix<default_type> bvals (1, grad.rows());
-      for (size_t n = 0; n < G.rows(); ++n) {
+      auto order = Stride::order (header, 0, 3);
+      MatrixXd bvecs (3, grad.rows());
+      MatrixXd bvals (1, grad.rows());
+      for (ssize_t n = 0; n < G.rows(); ++n) {
         bvecs(0,n) = header.stride(order[0]) > 0 ? G(n,order[0]) : -G(n,order[0]);
         bvecs(1,n) = header.stride(order[1]) > 0 ? G(n,order[1]) : -G(n,order[1]);
         bvecs(2,n) = header.stride(order[2]) > 0 ? G(n,order[2]) : -G(n,order[2]);
         bvals(0,n) = grad(n,3);
       }
 
-      bvecs.save (bvecs_path);
-      bvals.save (bvals_path);
-
+      save_matrix (bvecs, bvecs_path);
+      save_matrix (bvals, bvals_path);
     }
 
+
+
+
+
+
+    MatrixXd get_DW_scheme (const Header& header)
+    {
+      DEBUG ("searching for suitable gradient encoding...");
+      using namespace App;
+      MatrixXd grad;
+
+      try {
+        const auto opt_mrtrix = get_options ("grad");
+        if (opt_mrtrix.size())
+          grad = load_matrix<> (opt_mrtrix[0][0]);
+        const auto opt_fsl = get_options ("fslgrad");
+        if (opt_fsl.size()) {
+          if (opt_mrtrix.size())
+            throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
+          grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
+        }
+        if (!opt_mrtrix.size() && !opt_fsl.size())
+          grad = header.parse_DW_scheme();
+      }
+      catch (Exception& E) {
+        E.display (3);
+        throw Exception ("error importing diffusion encoding for image \"" + header.name() + "\"");
+      }
+
+      if (!grad.rows())
+        return grad;
+
+      if (grad.cols() < 4)
+        throw Exception ("unexpected diffusion encoding matrix dimensions");
+
+      INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion-weighted encoding");
+
+      return grad;
+    }
+
+
+
+
+
+    MatrixXd get_valid_DW_scheme (const Header& header)
+    {
+      auto grad = get_DW_scheme (header);
+      check_DW_scheme (header, grad);
+
+      //CONF option: BValueScaling
+      //CONF default: 1 (true)
+      //CONF specifies whether the b-values should be scaled by the squared
+      //CONF norm of the gradient vectors when loading a DW gradient scheme. 
+      //CONF This is commonly required to correctly interpret images acquired
+      //CONF on scanners that nominally only allow a single b-value, as the
+      //CONF common workaround is to scale the gradient vectors to modulate
+      //CONF the actual b-value. 
+      bool scale_bvalues = true;
+      auto opt = App::get_options ("bvalue_scaling");
+      if (opt.size()) 
+        scale_bvalues = opt[0][0];
+      else
+        scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
+
+      if (scale_bvalues)
+        scale_bvalue_by_G_squared (grad);
+      normalise_grad (grad);
+      return grad;
+    }
 
 
 
@@ -95,7 +196,7 @@ namespace MR
         return h;
       };
 
-      App::Options opt = get_options ("export_grad_mrtrix");
+      auto opt = get_options ("export_grad_mrtrix");
       if (opt.size()) {
         File::OFStream out (opt[0][0]);
         out << check(header).keyval().find ("dw_scheme")->second << "\n";;

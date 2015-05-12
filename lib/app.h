@@ -24,10 +24,16 @@
 #define __app_h__
 
 #include <string.h>
+#include <string>
+#include <vector>
+#include <limits>
 
-#include "mrtrix.h"
+#ifdef None
+# undef None
+#endif
+
+#include "cmdline_option.h"
 #include "file/path.h"
-#include "args.h"
 
 
 extern void usage ();
@@ -35,20 +41,11 @@ extern void run ();
 
 namespace MR
 {
-
-
   namespace App
   {
 
-    extern Description DESCRIPTION;
-    extern ArgumentList ARGUMENTS;
-    extern OptionList OPTIONS;
-    extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
-    extern OptionGroup __standard_options;
+
     extern const char* mrtrix_version;
-    extern const char* AUTHOR;
-    extern const char* COPYRIGHT;
-    extern Description REFERENCES;
     extern int log_level;
     extern std::string NAME;
     extern bool overwrite_files;
@@ -59,6 +56,81 @@ namespace MR
     extern int argc;
     extern char** argv;
     extern bool stderr_to_file;
+
+    extern const char* project_version;
+    extern const char* build_date;
+
+
+    const char* argtype_description (ArgType type);
+
+    std::string help_head (int format);
+    std::string help_tail (int format);
+    std::string help_syntax (int format);
+    
+
+
+
+
+    //! \addtogroup CmdParse
+    // @{
+
+    //! vector of strings to hold the command-line description
+    class Description : public std::vector<const char*>
+    {
+      public:
+        Description& operator+ (const char* text) {
+          push_back (text);
+          return *this;
+        }
+
+        std::string syntax (int format) const;
+    };
+
+
+
+
+    //! a class to hold the list of Argument's
+    class ArgumentList : public std::vector<Argument> {
+      public:
+        ArgumentList& operator+ (const Argument& argument) {
+          push_back (argument);
+          return *this;
+        }
+
+        std::string syntax (int format) const;
+    };
+
+
+
+
+
+    //! a class to hold the list of option groups
+    class OptionList : public std::vector<OptionGroup> {
+      public:
+        OptionList& operator+ (const OptionGroup& option_group) {
+          push_back (option_group);
+          return *this;
+        }
+
+        OptionList& operator+ (const Option& option) {
+          back() + option;
+          return *this;
+        }
+
+        OptionList& operator+ (const Argument& argument) {
+          back() + argument;
+          return *this;
+        }
+
+        OptionGroup& back () {
+          if (empty())
+            push_back (OptionGroup());
+          return std::vector<OptionGroup>::back();
+        }
+
+        std::string syntax (int format) const;
+    };
+
 
 
 
@@ -75,21 +147,29 @@ namespace MR
 
 
 
-    //! \addtogroup CmdParse
-    // @{
-
     //! initialise MRtrix and parse command-line arguments
     /*! this function must be called from within main(), immediately after the
      * argument and options have been specified, and before any further
      * processing takes place. */
     void init (int argc, char** argv);
+
+    //! do the actual parsing of the command-line [used internally]
     void parse ();
+
+    //! sort command-line tokens into arguments and options [used internally]
     void sort_arguments (int argc, const char* const* argv);
+
+    //! uniquely match option stub to Option
     const Option* match_option (const char* stub);
+
+    //! dump formatted help page [used internally]
     std::string full_usage ();
 
+
+    /*
     class ParsedArgument;
 
+    //! object returned by App::get_options()
     class Options
     {
       public:
@@ -125,7 +205,7 @@ namespace MR
         std::vector<const char* const*> args;
         friend const Options get_options (const std::string& name);
     };
-
+    */
 
 
 
@@ -133,46 +213,41 @@ namespace MR
     class ParsedArgument
     {
       public:
-        operator std::string () const {
-          return p;
-        }
-        operator int () const;
-        operator unsigned int () const { return operator int(); }
-        operator long int () const { return operator int(); }
-        operator long unsigned int () const { return operator int(); }
-        operator long long int () const { return operator int(); }
-        operator long long unsigned int () const { return operator int(); }
-        operator float () const;
-        operator double () const;
+        operator std::string () const { return p; }
 
-        operator bool () const {
-          return to<bool> (p);
-        }
+        const char* as_text () const { return p; }
+        bool as_bool () const { return to<bool> (p); }
+        int64_t as_int () const;
+        uint64_t as_uint () const { return uint64_t (as_int()); }
+        default_type as_float () const;
 
-        operator std::vector<int> () const {
+        std::vector<int> as_sequence_int () const {
           assert (arg->type == IntSeq);
-          try {
-            return parse_ints (p);
-          }
-          catch (Exception& e) {
-            error (e);
-          }
+          try { return parse_ints (p); }
+          catch (Exception& e) { error (e); }
           return std::vector<int>();
         }
-        operator std::vector<float> () const {
+
+        std::vector<default_type> as_sequence_float () const {
           assert (arg->type == FloatSeq);
-          try {
-            return parse_floats (p);
-          }
-          catch (Exception& e) {
-            error (e);
-          }
-          return std::vector<float>();
+          try { return parse_floats (p); }
+          catch (Exception& e) { error (e); }
+          return std::vector<default_type>();
         }
 
-        const char* c_str () const {
-          return p;
-        }
+        operator bool () const { return as_bool(); }
+        operator int () const { return as_int(); }
+        operator unsigned int () const { return as_uint(); }
+        operator long int () const { return as_int(); }
+        operator long unsigned int () const { return as_uint(); }
+        operator long long int () const { return as_int(); }
+        operator long long unsigned int () const { return as_uint(); }
+        operator float () const { return as_float(); }
+        operator double () const { return as_float(); }
+        operator std::vector<int> () const { return as_sequence_int(); }
+        operator std::vector<default_type> () const { return as_sequence_float(); }
+
+        const char* c_str () const { return p; }
 
       private:
         const Option* opt;
@@ -194,7 +269,6 @@ namespace MR
 
         friend class ParsedOption;
         friend class Options;
-        friend class Options::Opt;
         friend void  MR::App::init (int argc, char** argv);
         friend void  MR::App::parse ();
         friend void  MR::App::sort_arguments (int argc, const char* const* argv);
@@ -203,6 +277,9 @@ namespace MR
 
 
 
+    //! object storing information about option parsed from command-line
+    /*! this is the object stored in the App::options vector, and the type
+     * returned by App::get_options(). */
     class ParsedOption
     {
       public:
@@ -233,14 +310,91 @@ namespace MR
     //! the list of options parsed from the command-line
     extern std::vector<ParsedOption> option;
 
+    //! the description of the command
+    /*! This is designed to be used within each command's usage() function. Add
+     * a paragraph to the description using the '+' operator, e.g.:
+     * \code
+     * void usage() {
+     *   DESCRIPTION 
+     *   + "A command to do stuff. It can be used in lots of ways "
+     *     "and very versatile."
+     *
+     *   + "More description in this paragraph. It has lots of options "
+     *     "and arguments.";
+     * }
+     * \endcode
+     */
+    extern Description DESCRIPTION;
+
+
+    //! the arguments expected by the command
+    /*! This is designed to be used within each command's usage() function. Add
+     * argument and their description using the Argument class and the'+'
+     * operator, e.g.:
+     * \code
+     * void usage() {
+     *   ...
+     *
+     *   ARGUMENTS
+     *   + Argument ("in", "the input image").type_image_in()
+     *   + Argument ("factor", "the factor to use in the analysis").type_float()
+     *   + Argument ("out", "the output image").type_image_out(); 
+     * }
+     * \endcode
+     */
+    extern ArgumentList ARGUMENTS;
+
+    //! the options accepted by the command
+    /*! This is designed to be used within each command's usage() function. Add
+     * options, their arguments, and their description using the Option and
+     * Argument classes and the'+' operator, e.g.:
+     * \code
+     * void usage() {
+     *   ...
+     *
+     *   OPTIONS
+     *   + Option ("advanced", "use advanced analysis")
+     *
+     *   + Option ("range", "the range to use in the analysis")
+     *   +   Argument ("min").type_float()
+     *   +   Argument ("max").type_float();
+     * }
+     * \endcode
+     */
+    extern OptionList OPTIONS;
+
+    //! set to false if command can operate with no arguments
+    /*! By default, the help page is shown command is invoked without
+     * arguments. Some commands (e.g. MRView) can operate without arguments. */
+    extern bool REQUIRES_AT_LEAST_ONE_ARGUMENT;
+
+    //! set the author of the command
+    /*! By default, this is set to "J-Donald Tournier (jdtournier@gmail.com)".
+     * Set to your own name & email to override. */
+    extern const char* AUTHOR;
+
+    //! set the copyright notice if different from that used in MRtrix
+    extern const char* COPYRIGHT;
+
+    //! add references to command help page
+    /*! Like the description, use the '+' operator to add paragraphs (typically
+     * one citation per paragraph)." */
+    extern Description REFERENCES;
+
+
+    //! the group of standard options for all commands
+    extern OptionGroup __standard_options;
+
+
+
     //! return all command-line options matching \c name
     /*! This returns a vector of vectors, where each top-level entry
      * corresponds to a distinct instance of the option, and each entry within
      * a top-level entry corresponds to a argument supplied to that option.
      *
-     * Individual options can be retrieved easily using implicit type-casting.
-     * Any relevant range checks are performed at this point, based on the
-     * original App::Option specification. For example:
+     * Individual options can be retrieved easily using the as_* methods, or
+     * implicit type-casting.  Any relevant range checks are performed at this
+     * point, based on the original App::Option specification. For example:
      * \code
      * Options opt = get_options ("myopt");
      * if (opt.size()) {
@@ -248,9 +402,10 @@ namespace MR
      *    int arg2 = opt[0][1];
      *    float arg3 = opt[0][2];
      *    std::vector<int> arg4 = opt[0][3];
+     *    auto values = opt[0][4].as_sequence_float();
      * }
      * \endcode */
-    const Options get_options (const std::string& name);
+    const std::vector<ParsedOption> get_options (const std::string& name);
 
 
 
@@ -260,12 +415,6 @@ namespace MR
       std::string retval (left);
       retval += std::string (right);
       return retval;
-    }
-
-    inline const App::ParsedArgument App::Options::Opt::operator[] (size_t num) const
-    {
-      assert (num < opt->size());
-      return ParsedArgument (opt, & (*opt) [num], args[num]);
     }
 
 

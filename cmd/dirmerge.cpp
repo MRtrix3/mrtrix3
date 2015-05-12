@@ -85,7 +85,7 @@ void run ()
     bvalue[nb] = to<value_type> (argument[current++]);
     std::vector<DirectionSet> d;
     for (size_t i = 0; i < num_subsets; ++i) {
-      auto m = DWI::Directions::load_cartesian<value_type> (argument[current++]);
+      auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
       for (size_t r = 0; r < m.rows(); ++r)
         set.push_back ({ { m(r,0), m(r,1), m(r,2) } });

@@ -318,7 +318,7 @@ void run ()
   const int op = argument[num_inputs];
   const std::string& output_path = argument.back();
 
-  Options opt = get_options ("axis");
+  auto opt = get_options ("axis");
   if (opt.size()) {
 
     if (num_inputs != 1)

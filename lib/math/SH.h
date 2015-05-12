@@ -89,11 +89,11 @@ namespace MR
        * coefficients up to maximum harmonic degree \a lmax onto directions \a
        * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
       template <class MatrixType>
-        Matrix init_transform (const MatrixType& dirs, int lmax)
+        Eigen::MatrixXd init_transform (const MatrixType& dirs, int lmax)
         {
           if (dirs.cols() != 2) 
             throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
-          Matrix SHT (dirs.rows(), NforL (lmax));
+          Eigen::MatrixXd SHT (dirs.rows(), NforL (lmax));
           Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
             default_type x = std::cos (dirs (i,1));
@@ -154,9 +154,9 @@ namespace MR
 
       //! invert any non-zero coefficients in \a coefs
       template <typename VectorType>
-        inline Vector invert (const VectorType& coefs)
+        inline Eigen::VectorXd invert (const VectorType& coefs)
         {
-          Vector ret (coefs.size());
+          Eigen::VectorXd ret (coefs.size());
           for (size_t n = 0; n < coefs.size(); ++n)
             ret[n] = ( coefs[n] ? 1.0 / coefs[n] : 0.0 );
           return ret;
@@ -191,15 +191,15 @@ namespace MR
             return SHT.rows();
           }
 
-          const Matrix& mat_A2SH () const {
+          const Eigen::MatrixXd& mat_A2SH () const {
             return iSHT;
           }
-          const Matrix& mat_SH2A () const {
+          const Eigen::MatrixXd& mat_SH2A () const {
             return SHT;
           }
 
         protected:
-          Matrix SHT, iSHT;
+          Eigen::MatrixXd SHT, iSHT;
       };
 
 
@@ -286,15 +286,15 @@ namespace MR
           int lmax = 2*sh.size() +1;
           Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, 1.0);
-          for (size_t l = 0; l < sh.size(); l++)
+          for (ssize_t l = 0; l < sh.size(); l++)
             RH[l] = sh[l]/ AL[2*l];
           return RH;
         }
 
       template <class VectorType>
-        inline Vector SH2RH (const VectorType& sh)
+        inline Eigen::VectorXd SH2RH (const VectorType& sh)
         {
-          Vector RH (sh.size());
+          Eigen::VectorXd RH (sh.size());
           SH2RH (RH, sh);
           return RH;
         }
@@ -304,130 +304,126 @@ namespace MR
       //! perform spherical convolution
       /*! perform spherical convolution of SH coefficients \a sh with response
        * function \a RH, storing the results in vector \a C. */
-//      template <typename ValueType>
-//        inline Vector<ValueType>& sconv (Vector<ValueType>& C, const Vector<ValueType>& RH, const Vector<ValueType>& sh)
-//        {
-//          assert (sh.size() >= NforL (2* (RH.size()-1)));
-//          C.allocate (NforL (2* (RH.size()-1)));
-//          for (int i = 0; i < int (RH.size()); ++i) {
-//            int l = 2*i;
-//            for (int m = -l; m <= l; ++m)
-//              C[index (l,m)] = RH[i] * sh[index (l,m)];
-//          }
-//          return C;
-//        }
-//
-//
-//      namespace {
-//        template <typename> struct __dummy { typedef int type; };
-//      }
-//
-//
-//      //! convert spherical coordinates to Cartesian coordinates
-//      template <class VectorType1, class VectorType2>
-//        inline void s2c (const VectorType1& az_el_r, VectorType2&& xyz)
-//        {
-//          if (az_el_r.size() == 3) {
-//            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-//            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-//            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
-//          }
-//          else {
-//            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
-//            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
-//            xyz[2] = cos (az_el_r[1]);
-//          }
-//        }
-//
-//
-//      //! convert matrix of spherical coordinates to Cartesian coordinates
-//      template <typename ValueType>
-//        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>& cartesian)
-//        {
-//          cartesian.allocate (az_el.rows(), 3);
-//          for (size_t dir = 0; dir < az_el.rows(); ++dir) 
-//            s2c (az_el.row (dir), cartesian.row (dir));
-//        }
-//
-//      //! convert matrix of spherical coordinates to Cartesian coordinates
-//      template <typename ValueType>
-//        inline void S2C (const Matrix<ValueType>& az_el, Matrix<ValueType>&& cartesian) {
-//          S2C (az_el, cartesian);
-//        }
-//
-//      //! convert matrix of spherical coordinates to Cartesian coordinates
-//      template <typename ValueType>
-//        inline Math::Matrix<ValueType> S2C (const Matrix<ValueType>& az_el)
-//        {
-//          Math::Matrix<ValueType> tmp;
-//          Math::SH::S2C (az_el, tmp);
-//          return tmp;
-//        }
-//
-//
-//
-//      //! convert Cartesian coordinates to spherical coordinates
-//      template <class VectorType1, class VectorType2>
-//        inline void c2s (const VectorType1& xyz, VectorType2&& az_el_r)
-//        {
-//          typename std::remove_reference<decltype(az_el_r[0])>::type r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
-//          az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
-//          az_el_r[1] = std::acos (xyz[2] / r);
-//          if (az_el_r.size() == 3) 
-//            az_el_r[2] = r;
-//        }
-//
-//      //! convert matrix of Cartesian coordinates to spherical coordinates
-//      template <typename ValueType>
-//        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>& az_el, bool include_r = false)
-//        {
-//          az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
-//          for (size_t dir = 0; dir < cartesian.rows(); ++dir) 
-//            c2s (cartesian.row (dir), az_el.row (dir));
-//        }
-//      //! convert matrix of Cartesian coordinates to spherical coordinates
-//      template <typename ValueType>
-//        inline void C2S (const Matrix<ValueType>& cartesian, Matrix<ValueType>&& az_el, bool include_r = false) {
-//          C2S (cartesian, az_el, include_r);
-//        }
-//
-//      //! convert matrix of Cartesian coordinates to spherical coordinates
-//      template <typename ValueType>
-//        inline Math::Matrix<ValueType> C2S (const Matrix<ValueType>& cartesian, bool include_r = false)
-//        {
-//          Math::Matrix<ValueType> az_el;
-//          Math::SH::C2S (cartesian, az_el, include_r);
-//          return az_el;
-//        }
-//
-//
-//
-//
-//      //! compute axially-symmetric SH coefficients corresponding to specified tensor
-//      template <typename ValueType>
-//        inline Vector<ValueType>& FA2SH (
-//            Vector<ValueType>& sh, ValueType FA, ValueType ADC, ValueType bvalue, int lmax, int precision = 100)
-//        {
-//          ValueType a = FA/sqrt (3.0 - 2.0*FA*FA);
-//          ValueType ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
-//
-//          Vector<ValueType> sigs (precision);
-//          Matrix<ValueType> SHT (precision, lmax/2+1);
-//          VLA_MAX (AL, ValueType, lmax+1, 64);
-//
-//          for (int i = 0; i < precision; i++) {
-//            ValueType el = i*Math::pi / (2.0* (precision-1));
-//            sigs[i] = exp (-bvalue* (ev1*std::cos (el) *std::cos (el) + ev2*std::sin (el) *std::sin (el)));
-//            Legendre::Plm_sph (AL, lmax, 0, std::cos (el));
-//            for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
-//          }
-//
-//          Matrix<ValueType> SHinv (SHT.columns(), SHT.rows());
-//          return mult (sh, pinv (SHinv, SHT), sigs);
-//        }
-//
-//
-//
+      template <class VectorType1, class VectorType2, class VectorType3>
+        inline VectorType1& sconv (VectorType1& C, const VectorType2& RH, const VectorType3& sh)
+        {
+          assert (sh.size() >= NforL (2* (RH.size()-1)));
+          C.allocate (NforL (2* (RH.size()-1)));
+          for (ssize_t i = 0; i < RH.size(); ++i) {
+            int l = 2*i;
+            for (int m = -l; m <= l; ++m)
+              C[index (l,m)] = RH[i] * sh[index (l,m)];
+          }
+          return C;
+        }
+
+
+      namespace {
+        template <typename> struct __dummy { typedef int type; };
+      }
+
+
+      //! convert spherical coordinates to Cartesian coordinates
+      template <class VectorType1, class VectorType2>
+        inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
+        spherical2cartesian (const VectorType1& az_el_r, VectorType2&& xyz)
+        {
+          if (az_el_r.size() == 3) {
+            xyz[0] = az_el_r[2] * std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = az_el_r[2] * std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = az_el_r[2] * cos (az_el_r[1]);
+          }
+          else {
+            xyz[0] = std::sin (az_el_r[1]) * std::cos (az_el_r[0]);
+            xyz[1] = std::sin (az_el_r[1]) * std::sin (az_el_r[0]);
+            xyz[2] = cos (az_el_r[1]);
+          }
+        }
+
+
+      //! convert matrix of spherical coordinates to Cartesian coordinates
+      template <class MatrixType1, class MatrixType2>
+        inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
+        spherical2cartesian (const MatrixType1& az_el, MatrixType2&& cartesian)
+        {
+          cartesian.resize (az_el.rows(), 3);
+          for (ssize_t dir = 0; dir < az_el.rows(); ++dir) 
+            spherical2cartesian (az_el.row (dir), cartesian.row (dir));
+        }
+
+      //! convert matrix of spherical coordinates to Cartesian coordinates
+      template <class MatrixType>
+        inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+        spherical2cartesian (const MatrixType& az_el)
+        {
+          Eigen::MatrixXd cartesian (az_el.rows(), 3);
+          for (ssize_t dir = 0; dir < az_el.rows(); ++dir) 
+            spherical2cartesian (az_el.row (dir), cartesian.row (dir));
+          return cartesian;
+        }
+
+
+
+      //! convert Cartesian coordinates to spherical coordinates
+      template <class VectorType1, class VectorType2>
+        inline typename std::enable_if<VectorType1::IsVectorAtCompileTime, void>::type
+        cartesian2spherical (const VectorType1& xyz, VectorType2&& az_el_r)
+        {
+          auto r = std::sqrt (Math::pow2(xyz[0]) + Math::pow2(xyz[1]) + Math::pow2(xyz[2]));
+          az_el_r[0] = std::atan2 (xyz[1], xyz[0]);
+          az_el_r[1] = std::acos (xyz[2] / r);
+          if (az_el_r.size() == 3) 
+            az_el_r[2] = r;
+        }
+
+      //! convert matrix of Cartesian coordinates to spherical coordinates
+      template <class MatrixType1, class MatrixType2>
+        inline typename std::enable_if<!MatrixType1::IsVectorAtCompileTime, void>::type
+        cartesian2spherical (const MatrixType1& cartesian, MatrixType2&& az_el, bool include_r = false)
+        {
+          az_el.allocate (cartesian.rows(), include_r ? 3 : 2);
+          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir) 
+            cartesian2spherical (cartesian.row (dir), az_el.row (dir));
+        }
+
+      //! convert matrix of Cartesian coordinates to spherical coordinates
+      template <class MatrixType>
+        inline typename std::enable_if<!MatrixType::IsVectorAtCompileTime, Eigen::MatrixXd>::type
+        cartesian2spherical (const MatrixType& cartesian, bool include_r = false)
+        {
+          Eigen::MatrixXd az_el (cartesian.rows(), include_r ? 3 : 2);
+          for (ssize_t dir = 0; dir < cartesian.rows(); ++dir) 
+            cartesian2spherical (cartesian.row (dir), az_el.row (dir));
+          return az_el;
+        }
+
+
+
+
+      //! compute axially-symmetric SH coefficients corresponding to specified tensor
+      template <class VectorType>
+        inline VectorType& FA2SH (
+            VectorType& sh, default_type FA, default_type ADC, default_type bvalue, int lmax, int precision = 100)
+        {
+          default_type a = FA/sqrt (3.0 - 2.0*FA*FA);
+          default_type ev1 = ADC* (1.0+2.0*a), ev2 = ADC* (1.0-a);
+
+          Eigen::VectorXd sigs (precision);
+          Eigen::MatrixXd SHT (precision, lmax/2+1);
+          Eigen::Matrix<default_type,Eigen::Dynamic,1,64> AL;
+
+          for (int i = 0; i < precision; i++) {
+            default_type el = i*Math::pi / (2.0* (precision-1));
+            sigs[i] = exp (-bvalue* (ev1*std::cos (el) *std::cos (el) + ev2*std::sin (el) *std::sin (el)));
+            Legendre::Plm_sph (AL, lmax, 0, std::cos (el));
+            for (int l = 0; l < lmax/2+1; l++) SHT (i,l) = AL[2*l];
+          }
+
+          return (sh = pinv(SHT) * sigs); 
+        }
+
+
+
 //
 //      //! used to speed up SH calculation
 //      template <typename ValueType > class PrecomputedFraction
@@ -748,20 +744,20 @@ namespace MR
 //      };
 //
 //
-//      //! convenience function to check if an input image can contain SH coefficients
-//      template <class Infotype>
-//        void check (const Infotype& info) {
-//          if (info.datatype().is_complex()) 
-//            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - contains complex data");
-//          if (!info.datatype().is_floating_point()) 
-//            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - data type is not floating-point");
-//          if (info.ndim() < 4)
-//            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - not 4D");
-//          size_t l = LforN (info.dim(3));
-//          if (l%2 || NforL (l) != size_t (info.dim(3)))
-//            throw Exception ("image \"" + info.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
-//        }
-//      /** @} */
+      //! convenience function to check if an input image can contain SH coefficients
+      template <class HeaderType>
+        void check (const HeaderType& H) {
+          if (H.datatype().is_complex()) 
+            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - contains complex data");
+          if (!H.datatype().is_floating_point()) 
+            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - data type is not floating-point");
+          if (H.ndim() < 4)
+            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
+          size_t l = LforN (H.dim(3));
+          if (l%2 || NforL (l) != size_t (H.dim(3)))
+            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
+        }
+      /** @} */
 
     }
   }

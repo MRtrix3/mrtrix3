@@ -25,7 +25,6 @@
 */
 
 #include "app.h"
-#include "args.h"
 #include "datatype.h"
 
 namespace MR
@@ -363,7 +362,7 @@ namespace MR
 
   DataType DataType::from_command_line (DataType default_datatype)
   {
-    App::Options opt = App::get_options ("datatype");
+    auto opt = App::get_options ("datatype");
     if (opt.size()) 
       default_datatype = parse (opt[0][0]);
     return default_datatype;

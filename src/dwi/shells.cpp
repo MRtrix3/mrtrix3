@@ -1,4 +1,5 @@
 
+#include "math/math.h"
 #include "dwi/shells.h"
 
 
@@ -7,10 +8,8 @@ namespace MR
 {
   namespace DWI
   {
-
-
-
     using namespace App;
+    using namespace Eigen;
 
     const OptionGroup ShellOption = OptionGroup ("DW Shell selection options")
       + Option ("shell",
@@ -25,21 +24,21 @@ namespace MR
 
 
 
-    Shell::Shell (const Math::Matrix<float>& grad, const std::vector<size_t>& indices) :
+    Shell::Shell (const MatrixXd& grad, const std::vector<size_t>& indices) :
         volumes (indices),
         mean (0.0),
         stdev (0.0),
-        min (std::numeric_limits<float>::max()),
+        min (std::numeric_limits<default_type>::max()),
         max (0.0)
     {
       assert (volumes.size());
       for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++) {
-        const float b = grad (*i, 3);
+        const default_type b = grad (*i, 3);
         mean += b;
         min = std::min (min, b);
         max = std::max (min, b);
       }
-      mean /= float(volumes.size());
+      mean /= default_type(volumes.size());
       for (std::vector<size_t>::const_iterator i = volumes.begin(); i != volumes.end(); i++)
         stdev += Math::pow2 (grad (*i, 3) - mean);
       stdev = std::sqrt (stdev / (volumes.size() - 1));
@@ -60,14 +59,14 @@ namespace MR
       if (keep_bzero && smallest().is_bzero())
         to_retain[0] = true;
 
-      App::Options opt = App::get_options ("shell");
+      auto opt = App::get_options ("shell");
       if (opt.size()) {
 
-        std::vector<float> desired_bvalues = opt[0][0];
+        std::vector<default_type> desired_bvalues = opt[0][0];
         if (desired_bvalues.size() > 1 && !(desired_bvalues.front() == 0) && force_single_shell)
           throw Exception ("Command not compatible with multiple non-zero b-shells");
 
-        for (std::vector<float>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
+        for (std::vector<default_type>::const_iterator b = desired_bvalues.begin(); b != desired_bvalues.end(); ++b) {
 
           if (*b < 0)
             throw Exception ("Cannot select shells corresponding to negative b-values");
@@ -111,10 +110,10 @@ namespace MR
               }
 
               size_t best_shell = 0;
-              float best_num_stdevs = std::numeric_limits<float>::max();
+              default_type best_num_stdevs = std::numeric_limits<default_type>::max();
               bool ambiguous = false;
               for (size_t s = 0; s != shells.size(); ++s) {
-                const float num_stdev = std::abs ((*b - shells[s].get_mean()) / (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
+                const default_type num_stdev = std::abs ((*b - shells[s].get_mean()) / (zero_stdev ? std::sqrt (shells[s].get_mean()) : shells[s].get_stdev()));
                 const bool within_range = (num_stdev < (zero_stdev ? 1.0 : 5.0));
                 if (within_range) {
                   if (!shell_selected) {
@@ -193,13 +192,13 @@ namespace MR
 
 
 
-    void Shells::Shells (const Math::Matrix<float>& grad)
+    Shells::Shells (const MatrixXd& grad)
     {
-      BValueList bvals (grad.column (3));
+      BValueList bvals = grad.col (3);
       std::vector<size_t> clusters (bvals.size(), 0);
       const size_t num_shells = clusterBvalues (bvals, clusters);
 
-      if ((num_shells < 1) || (num_shells > std::sqrt (float(grad.rows()))))
+      if ((num_shells < 1) || (num_shells > std::sqrt (default_type(grad.rows()))))
         throw Exception ("Gradient encoding matrix does not represent a HARDI sequence");
 
       for (size_t shellIdx = 0; shellIdx <= num_shells; shellIdx++) {
@@ -245,11 +244,11 @@ namespace MR
       BitSet visited (bvals.size(), false);
       size_t clusterIdx = 0;
 
-      for (size_t ii = 0; ii != bvals.size(); ii++) {
+      for (ssize_t ii = 0; ii != bvals.size(); ii++) {
         if (!visited[ii]) {
 
           visited[ii] = true;
-          const float b = bvals[ii];
+          const default_type b = bvals[ii];
           std::vector<size_t> neighborIdx;
           regionQuery (bvals, b, neighborIdx);
 
@@ -283,9 +282,9 @@ namespace MR
 
 
 
-    void Shells::regionQuery (const BValueList& bvals, const float b, std::vector<size_t>& idx) const
+    void Shells::regionQuery (const BValueList& bvals, const default_type b, std::vector<size_t>& idx) const
     {
-      for (size_t i = 0; i < bvals.size(); i++) {
+      for (ssize_t i = 0; i < bvals.size(); i++) {
         if (std::abs (b - bvals[i]) < DWI_SHELLS_EPSILON)
           idx.push_back (i);
       }

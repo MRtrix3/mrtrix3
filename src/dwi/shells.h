@@ -61,6 +61,7 @@ namespace MR
 
   namespace DWI
   {
+    using namespace Eigen;
 
 
     extern const App::OptionGroup ShellOption;
@@ -78,19 +79,7 @@ namespace MR
       public:
 
         Shell() : mean (0.0), stdev (0.0), min (0.0), max (0.0) { }
-
-        Shell (const Matrix& grad, const std::vector<size_t>& indices);
-
-        Shell& operator= (const Shell& rhs)
-        {
-          volumes = rhs.volumes;
-          mean = rhs.mean;
-          stdev = rhs.stdev;
-          min = rhs.min;
-          max = rhs.max;
-          return *this;
-        }
-
+        Shell (const MatrixXd& grad, const std::vector<size_t>& indices);
 
         const std::vector<size_t>& get_volumes() const { return volumes; }
         size_t count() const { return volumes.size(); }
@@ -125,9 +114,8 @@ namespace MR
 
     class Shells
     {
-
       public:
-        Shells (const Matrix& grad);
+        Shells (const MatrixXd& grad);
 
         const Shell& operator[] (const size_t i) const { return shells[i]; }
         const Shell& smallest() const { return shells.front(); }
@@ -178,11 +166,11 @@ namespace MR
 
       private:
 
-        typedef decltype(std::declval<Matrix>().row(0)) BValueList;
+        typedef decltype(std::declval<const MatrixXd>().col(0)) BValueList;
 
         // Functions for current b-value clustering implementation
         size_t clusterBvalues (const BValueList&, std::vector<size_t>&) const;
-        void regionQuery (const BValueList&, const float, std::vector<size_t>&) const;
+        void regionQuery (const BValueList&, const default_type, std::vector<size_t>&) const;
 
 
     };

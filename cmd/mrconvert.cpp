@@ -94,9 +94,9 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   header.reset_intensity_scaling();
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header.set_DW_scheme (DWI::get_DW_scheme<default_type> (header));
+    header.set_DW_scheme (DWI::get_DW_scheme (header));
 
-  Options opt = get_options ("axes");
+  auto opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
@@ -202,14 +202,14 @@ void run ()
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
       pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
-      auto grad = DWI::get_DW_scheme<default_type> (header_in);
-      if (axis == 3 && grad.is_set()) {
+      auto grad = DWI::get_DW_scheme (header_in);
+      if (axis == 3 && grad.rows()) {
         if ((ssize_t)grad.rows() != header_in.size(3)) {
           WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
           header_out.keyval().erase ("dw_scheme");
         }
         else {
-          Math::Matrix<default_type> extract_grad (pos[3].size(), grad.columns());
+          Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
             extract_grad.row (dir) = grad.row (pos[3][dir]);
           header_out.set_DW_scheme (extract_grad);

@@ -64,7 +64,7 @@ typedef double cost_value_type;
 class Processor
 {
   public:
-    Processor (const DWI::CSDeconv<value_type>::Shared& shared, Image<bool>& mask) :
+    Processor (const DWI::CSDeconv::Shared& shared, Image<bool>& mask) :
       sdeconv (shared),
       data (shared.dwis.size()),
       mask (mask) { }
@@ -91,8 +91,8 @@ class Processor
 
 
   private:
-    DWI::CSDeconv<value_type> sdeconv;
-    Math::Vector<value_type> data;
+    DWI::CSDeconv sdeconv;
+    Eigen::VectorXd data;
     Image<bool> mask;
 
 
@@ -134,31 +134,33 @@ class Processor
 
 void run ()
 {
-  auto dwi = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis(3));
+  auto dwi = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
 
   auto mask = Image<bool>();
 
-  Options opt = get_options ("mask");
+  auto opt = get_options ("mask");
   if (opt.size()) {
     mask = Header::open (opt[0][0]).get_image<bool>();
     check_dimensions (dwi, mask, 0, 3);
   }
 
 
-  DWI::CSDeconv<value_type>::Shared shared (dwi.header());
+  DWI::CSDeconv::Shared shared (dwi.header());
   shared.parse_cmdline_options();
   shared.set_response (argument[1]);
   shared.init();
 
 
-  auto header = dwi.header();
+  auto header = Header(dwi);
   header.set_ndim (4);
   header.size(3) = shared.nSH();
   header.datatype() = DataType::Float32;
   Stride::set_from_command_line (header);
-  auto fod = Header::create (argument[2], header).get_image<value_type>();
+  auto fod = Image<value_type>::create (argument[2], header);
 
+  TRACE;
   Processor processor (shared, mask);
+  TRACE;
   ThreadedLoop ("performing constrained spherical deconvolution...", dwi, 0, 3)
     .run (processor, dwi, fod);
 }

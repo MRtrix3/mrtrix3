@@ -39,60 +39,63 @@ namespace MR
 
   namespace DWI
   {
+    using namespace Eigen;
+
     App::OptionGroup GradImportOptions (bool include_bvalue_scaling = true);
     App::OptionGroup GradExportOptions();
 
 
     //! ensure each non-b=0 gradient vector is normalised to unit amplitude
-    Matrix& normalise_grad (Matrix& grad)
-    {
-      if (grad.cols() < 3)
-        throw Exception ("invalid gradient matrix dimensions");
-      for (ssize_t i = 0; i < grad.rows(); i++) {
-        auto norm = grad.row(i).head<3>().norm();
-        if (norm) 
-          grad.row(i).head<3>().array() /= norm;
+    template <class MatrixType>
+      Eigen::MatrixXd& normalise_grad (MatrixType& grad)
+      {
+        if (grad.cols() < 3)
+          throw Exception ("invalid gradient matrix dimensions");
+        for (ssize_t i = 0; i < grad.rows(); i++) {
+          auto norm = grad.row(i).template head<3>().norm();
+          if (norm) 
+            grad.row(i).template head<3>().array() /= norm;
+        }
+        return grad;
       }
-      return grad;
-    }
 
 
     /*! \brief convert the DW encoding matrix in \a grad into a
      * azimuth/elevation direction set, using only the DWI volumes as per \a
      * dwi */
-    inline Matrix gen_direction_matrix (
-        const Matrix& grad, 
-        const std::vector<size_t>& dwi)
-    {
-      Matrix dirs (dwi.size(),2);
-      for (size_t i = 0; i < dwi.size(); i++) {
-        dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
-        auto z = grad (dwi[i],2) / grad.row (dwi[i]).head<3>().norm();
-        if (z >= 1.0) 
-          dirs(i,1) = 0.0;
-        else if (z <= -1.0)
-          dirs (i,1) = Math::pi;
-        else 
-          dirs (i,1) = std::acos (z);
+    template <class MatrixType, class IndexVectorType> 
+      inline Eigen::MatrixXd gen_direction_matrix (
+          const MatrixType& grad, 
+          const IndexVectorType& dwi)
+      {
+        Eigen::MatrixXd dirs (dwi.size(),2);
+        for (size_t i = 0; i < dwi.size(); i++) {
+          dirs (i,0) = std::atan2 (grad (dwi[i],1), grad (dwi[i],0));
+          auto z = grad (dwi[i],2) / grad.row (dwi[i]).template head<3>().norm();
+          if (z >= 1.0) 
+            dirs(i,1) = 0.0;
+          else if (z <= -1.0)
+            dirs (i,1) = Math::pi;
+          else 
+            dirs (i,1) = std::acos (z);
+        }
+        return dirs;
       }
-      return dirs;
-    }
 
 
 
 
 
-    default_type condition_number_for_lmax (const Matrix& dirs, int lmax) 
+    template <class MatrixType>
+    default_type condition_number_for_lmax (const MatrixType& dirs, int lmax) 
     {
-      Matrix g;
+      Eigen::MatrixXd g;
       if (dirs.cols() == 2) // spherical coordinates:
         g = dirs;
       else // Cartesian to spherical:
         g = Math::SH::cartesian2spherical (dirs).block<0,0>(dirs.rows(), 2);
 
-      Matrix A = Math::SH::init_transform (g, lmax);
-
-      auto v = Eigen::JacobiSVD<Matrix> (A).singularValues();
+      auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (Math::SH::init_transform (g, lmax)).singularValues();
       return v[0] / v[v.size()-1];
     }
 
@@ -104,38 +107,7 @@ namespace MR
      * vectors into the scanner frame of reference, and may also involve
      * re-ordering and/or inverting of the vector elements to match the
      * re-ordering performed by MRtrix for non-axial scans. */
-    template <typename ValueType> 
-      void load_bvecs_bvals (Math::Matrix<ValueType>& grad, const Header& header, const std::string& bvecs_path, const std::string& bvals_path)
-      {
-        Math::Matrix<ValueType> bvals, bvecs;
-        bvals.load (bvals_path);
-        bvecs.load (bvecs_path);
-
-        if (bvals.rows() != 1) throw Exception ("bvals file must contain 1 row only");
-        if (bvecs.rows() != 3) throw Exception ("bvecs file must contain exactly 3 rows");
-
-        if (bvals.columns() != bvecs.columns() || bvals.columns() != size_t (header.size (3)))
-          throw Exception ("bvals and bvecs files must have same number of diffusion directions as DW-image");
-
-        // account for the fact that bvecs are specified wrt original image axes,
-        // which may have been re-ordered and/or inverted by MRtrix to match the
-        // expected anatomical frame of reference:
-        std::vector<size_t> order = Stride::order (header, 0, 3);
-        Math::Matrix<ValueType> G (bvecs.columns(), 3);
-        for (size_t n = 0; n < G.rows(); ++n) {
-          G(n,order[0]) = header.stride(order[0]) > 0 ? bvecs(0,n) : -bvecs(0,n);
-          G(n,order[1]) = header.stride(order[1]) > 0 ? bvecs(1,n) : -bvecs(1,n);
-          G(n,order[2]) = header.stride(order[2]) > 0 ? bvecs(2,n) : -bvecs(2,n);
-        }
-
-        // rotate gradients into scanner coordinate system:
-        grad.allocate (G.rows(), 4);
-        Math::Matrix<ValueType> grad_G = grad.sub (0, grad.rows(), 0, 3);
-        Math::Matrix<ValueType> rotation = header.transform().sub (0,3,0,3);
-        Math::mult (grad_G, ValueType(0.0), ValueType(1.0), CblasNoTrans, G, CblasTrans, rotation);
-
-        grad.column(3) = bvals.row(0);
-      }
+    Eigen::MatrixXd load_bvecs_bvals (const Header& header, const std::string& bvecs_path, const std::string& bvals_path);
 
 
 
@@ -151,16 +123,13 @@ namespace MR
 
 
     //! scale b-values by square of gradient norm 
-    template <typename ValueType>
-      void scale_bvalue_by_G_squared (Math::Matrix<ValueType>& G) 
+    template <class MatrixType>
+      void scale_bvalue_by_G_squared (MatrixType& G) 
       {
         INFO ("b-values will be scaled by the square of DW gradient norm");
-        for (size_t n = 0; n < G.rows(); ++n) {
-          if (G(n,3)) {
-            float norm = Math::norm (G.row(n).sub(0,3));
-            G(n,3) *= norm*norm;
-          }
-        }
+        for (ssize_t n = 0; n < G.rows(); ++n) 
+          if (G(n,3)) 
+            G(n,3) *= G.row(n).template head<3>().squaredNorm();
       }
 
     //! get the DW gradient encoding matrix
@@ -173,46 +142,12 @@ namespace MR
      * - if the DW_scheme member of the header is non-empty, return it;
      * - if no source of gradient encoding is found, return an empty matrix.
      */
-    template <typename ValueType> 
-      Math::Matrix<ValueType> get_DW_scheme (const Header& header)
-      {
-        DEBUG ("searching for suitable gradient encoding...");
-        using namespace App;
-        Math::Matrix<ValueType> grad;
-
-        try {
-          const Options opt_mrtrix = get_options ("grad");
-          if (opt_mrtrix.size())
-            grad.load (opt_mrtrix[0][0]);
-          const Options opt_fsl = get_options ("fslgrad");
-          if (opt_fsl.size()) {
-            if (opt_mrtrix.size())
-              throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
-            load_bvecs_bvals (grad, header, opt_fsl[0][0], opt_fsl[0][1]);
-          }
-          if (!opt_mrtrix.size() && !opt_fsl.size())
-            grad = header.parse_DW_scheme<ValueType>();
-        }
-        catch (Exception& E) {
-          E.display (3);
-          throw Exception ("error importing diffusion encoding for image \"" + header.name() + "\"");
-        }
-
-        if (!grad.rows())
-          return grad;
-
-        if (grad.columns() < 4)
-          throw Exception ("unexpected diffusion encoding matrix dimensions");
-
-        INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
-
-        return grad;
-      }
+    Eigen::MatrixXd get_DW_scheme (const Header& header);
 
 
     //! check that the DW scheme matches the DWI data in \a header
-    template <typename ValueType> 
-      inline void check_DW_scheme (const Header& header, const Math::Matrix<ValueType>& grad)
+    template <class MatrixType> 
+      inline void check_DW_scheme (const Header& header, const MatrixType& grad)
       {
         if (!grad.rows())
           throw Exception ("no valid diffusion encoding scheme found");
@@ -231,43 +166,13 @@ namespace MR
     void export_grad_commandline (const Header& header);
 
 
-    //CONF option: BValueScaling
-    //CONF default: yes
-    //CONF specifies whether b-values should be scaled according the DW gradient
-    //CONF amplitudes - see the -bvalue_scaling option for details.
-
 
     /*! \brief get the DW encoding matrix as per get_DW_scheme(), and
      * check that it matches the DW header in \a header 
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    template <typename ValueType> 
-      inline Math::Matrix<ValueType> get_valid_DW_scheme (const Header& header)
-      {
-        Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
-        check_DW_scheme (header, grad);
-
-        //CONF option: BValueScaling
-        //CONF default: 1 (true)
-        //CONF specifies whether the b-values should be scaled by the squared
-        //CONF norm of the gradient vectors when loading a DW gradient scheme. 
-        //CONF This is commonly required to correctly interpret images acquired
-        //CONF on scanners that nominally only allow a single b-value, as the
-        //CONF common workaround is to scale the gradient vectors to modulate
-        //CONF the actual b-value. 
-        bool scale_bvalues = true;
-        App::Options opt = App::get_options ("bvalue_scaling");
-        if (opt.size()) 
-          scale_bvalues = opt[0][0];
-        else
-          scale_bvalues = File::Config::get_bool ("BValueScaling", scale_bvalues);
-
-        if (scale_bvalues)
-          scale_bvalue_by_G_squared (grad);
-        normalise_grad (grad);
-        return grad;
-      }
+    Eigen::MatrixXd get_valid_DW_scheme (const Header& header);
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes
@@ -282,18 +187,18 @@ namespace MR
      *
      * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
      * check for the -grad option as required. */
-    template <typename ValueType>
-      inline Math::Matrix<ValueType> compute_SH2amp_mapping (
-          const Math::Matrix<ValueType>& directions,
+    template <class MatrixType>
+      Eigen::MatrixXd compute_SH2amp_mapping (
+          const MatrixType& directions,
           bool lmax_from_command_line = true, 
           int default_lmax = 8, 
-          ValueType max_cond = 2.0)
+          default_type max_cond = 2.0)
       {
         int lmax = -1;
         int lmax_from_ndir = Math::SH::LforN (directions.rows());
         bool lmax_set_from_commandline = false;
         if (lmax_from_command_line) {
-          App::Options opt = App::get_options ("lmax");
+          auto opt = App::get_options ("lmax");
           if (opt.size()) {
             lmax_set_from_commandline = true;
             lmax = to<int> (opt[0][0]);
@@ -313,10 +218,11 @@ namespace MR
         INFO ("computing SH transform using lmax = " + str (lmax));
 
         int lmax_prev = lmax;
-        Math::Matrix<ValueType> mapping;
+        Eigen::MatrixXd mapping;
         do {
-          Math::SH::init_transform (mapping, directions, lmax);
-          double cond = Math::cond (mapping);
+          mapping = Math::SH::init_transform (directions, lmax);
+          auto v = Eigen::JacobiSVD<Eigen::MatrixXd> (mapping).singularValues();
+          auto cond = v[0] / v[v.size()-1];
           if (cond < 10.0) 
             break;
           WARN ("directions are poorly distributed for lmax = " + str(lmax) + " (condition number = " + str (cond) + ")");

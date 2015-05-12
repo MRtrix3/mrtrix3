@@ -73,7 +73,7 @@ namespace MR
     template <class HeaderType> 
       void set_from_command_line (HeaderType& header, const List& default_strides = List())
       {
-        App::Options opt = App::get_options ("stride");
+        auto opt = App::get_options ("stride");
         size_t n;
         if (opt.size()) {
           std::vector<int> strides = opt[0][0];

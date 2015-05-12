@@ -25,7 +25,6 @@
 
 #include "image.h"
 #include "dwi/gradient.h"
-#include "math/matrix.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
 #include "dwi/Sn_scale_estimator.h"
@@ -36,25 +35,20 @@ namespace MR {
 
     namespace {
 
-      template <class InputImageType, class OutputImageType, typename ValueType>
+      template <class InputImageType, class OutputImageType, class MatrixType>
         class NoiseEstimatorFunctor {
           public:
 
-            NoiseEstimatorFunctor (const Math::Matrix<ValueType>& SH2amp_mapping, int axis, InputImageType& dwi, OutputImageType& noise) :
+            NoiseEstimatorFunctor (const MatrixType& SH2amp_mapping, int axis, InputImageType& dwi, OutputImageType& noise) :
               dwi (dwi),
               noise (noise),
+              H (SH2amp_mapping * Math::pinv (SH2amp_mapping)),
+              S (H.cols(), dwi.size (axis)),
+              R (S.cols(), S.rows()),
+              leverage (H.rows()), 
               axis (axis) {
-
-                Math::Matrix<ValueType> iSH = Math::pinv (SH2amp_mapping);
-                Math::mult (H, SH2amp_mapping, iSH);
-
-                S.allocate (H.columns(), dwi.size (axis));
-                R.allocate (S);
-
-                leverage.allocate (H.rows());
-                for (size_t n = 0; n < leverage.size(); ++n) 
+                for (ssize_t n = 0; n < leverage.size(); ++n) 
                   leverage[n] = H(n,n) < 1.0 ? 1.0 / std::sqrt (1.0 - H(n,n)) : 1.0;
-
               }
 
             void operator () (const Iterator& pos) {
@@ -63,21 +57,20 @@ namespace MR {
                 for (auto l2 = Loop (3) (dwi); l2; ++l2) 
                   S(dwi.index(3), dwi.index(axis)) = dwi.value();
 
-              Math::mult (R, CblasLeft, ValueType(0.0), ValueType(1.0), CblasUpper, H, S);
-              R -= S;
+              R.noalias() = H.selfadjointView<Lower>() * S - S;
 
               for (auto l = Loop (axis, axis+1) (noise); l; ++l) {
-                R.column (noise.index (axis)) *= leverage;
-                noise.value() = scale_estimator (R.column (noise.index (axis)));
+                R.col (noise.index (axis)).array() *= leverage.array();
+                noise.value() = scale_estimator (R.col (noise.index (axis)));
               }
             }
 
           protected:
             InputImageType dwi;
             OutputImageType noise;
-            Math::Matrix<ValueType> H, S, R;
-            Math::Vector<ValueType> leverage;
-            Sn_scale_estimator<ValueType> scale_estimator;
+            Eigen::MatrixXd H, S, R;
+            Eigen::VectorXd leverage;
+            Sn_scale_estimator<default_type> scale_estimator;
             int axis;
         };
     }
@@ -85,10 +78,10 @@ namespace MR {
 
 
 
-    template <class InputImageType, class OutputImageType, class ValueType> 
-      inline void estimate_noise (InputImageType& dwi, OutputImageType& noise, const Math::Matrix<ValueType>& SH2amp_mapping) {
+    template <class InputImageType, class OutputImageType, class MatrixType> 
+      inline void estimate_noise (InputImageType& dwi, OutputImageType& noise, const MatrixType& SH2amp_mapping) {
         ThreadedLoop loop ("estimating noise level...", dwi, 0, 3);
-        NoiseEstimatorFunctor<InputImageType,OutputImageType,ValueType> functor (SH2amp_mapping, loop.inner_axes()[0], dwi, noise);
+        NoiseEstimatorFunctor<InputImageType,OutputImageType,MatrixType> functor (SH2amp_mapping, loop.inner_axes()[0], dwi, noise);
         loop.run_outer (functor);
       } 
 

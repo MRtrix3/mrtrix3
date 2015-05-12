@@ -113,7 +113,7 @@ void run () {
   size_t niter = 10000;
   float target_power = 2.0;
 
-  Options opt = get_options ("power");
+  auto opt = get_options ("power");
   if (opt.size())
     target_power = opt[0][0];
 

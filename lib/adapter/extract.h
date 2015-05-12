@@ -46,12 +46,9 @@ namespace MR
             reset();
 
             if (extract_axis < 3) {
-              Math::Vector<default_type> a (4), b (4);
-              a = 0.0;
+              Eigen::Vector3d a (0.0, 0.0, 0.0);
               a[extract_axis] = indices[0] * voxsize (extract_axis);
-              a[3] = 1.0;
-              Math::mult (b, trans, a);
-              trans.column (3) = b;
+              trans.translation() = trans * a;
             }
           }
 
@@ -65,7 +62,7 @@ namespace MR
           return ( axis == extract_axis ? indices.size() : Base<ImageType>::size (axis) );
         }
 
-        const Math::Matrix<default_type>& transform () const { return trans; } 
+        const transform_type& transform () const { return trans; } 
 
         ssize_t index (size_t axis) const { return ( axis == extract_axis ? current_pos : parent().index(axis) ); }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
@@ -91,7 +88,7 @@ namespace MR
       private:
         const size_t extract_axis;
         const std::vector<int> indices;
-        Math::Matrix<default_type> trans;
+        transform_type trans;
         ssize_t current_pos;
 
     };
@@ -119,19 +116,16 @@ namespace MR
           indices (indices),
           trans (original.transform()) {
             reset();
-
-            Math::Vector<default_type> a (4), b (4);
-            a[0] = indices[0][0] * voxsize (0);
-            a[1] = indices[1][0] * voxsize (1);
-            a[2] = indices[2][0] * voxsize (2);
-            a[3] = 1.0;
-            Math::mult (b, trans, a);
-            trans.column (3) = b;
+            trans.translation() = trans * Eigen::Vector3d (
+                indices[0][0] * voxsize (0), 
+                indices[1][0] * voxsize (1), 
+                indices[2][0] * voxsize (2) 
+                );
           }
 
         ssize_t size (size_t axis) const { return indices[axis].size(); }
 
-        const Math::Matrix<default_type>& transform () const { return trans; }
+        const transform_type& transform () const { return trans; }
 
         void reset () {
           for (size_t n = 0; n < ndim(); ++n) {
@@ -151,7 +145,7 @@ namespace MR
       private:
         std::vector<size_t> current_pos;
         const std::vector<std::vector<int> > indices;
-        Math::Matrix<default_type> trans;
+        transform_type trans;
     };
 
   }

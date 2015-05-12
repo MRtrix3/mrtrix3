@@ -30,7 +30,7 @@ namespace MR {
 
 
 
-      const float electrostatic_repulsion_60_data[] = {
+      const default_type electrostatic_repulsion_60_data[] = {
         2.101909835, 0.5787523099, 
         1.329393935, 0.9997406558, 
         -0.9818393321, 1.566527183, 
@@ -96,7 +96,7 @@ namespace MR {
 
 
 
-      const float electrostatic_repulsion_300_data[] = {
+      const default_type electrostatic_repulsion_300_data[] = {
         2.832910411, 1.21211455, 
         -2.74511538, 1.363952022, 
         -2.204084013, 1.425059005, 
@@ -403,7 +403,7 @@ namespace MR {
 
 
 
-      const float tesselation_129_data[] = {
+      const default_type tesselation_129_data[] = {
         0.00000, 0.00000,
         1.57080, 1.57080,
         0.00000, 1.57080,
@@ -540,7 +540,7 @@ namespace MR {
 
 
 
-      const float tesselation_321_data[] = {
+      const default_type tesselation_321_data[] = {
         0.55357, 1.57080,
         2.58802, 1.57080,
         0.00000, 0.55357,
@@ -867,7 +867,7 @@ namespace MR {
 
 
 
-      const float tesselation_469_data[] = {
+      const default_type tesselation_469_data[] = {
         0.78540, 0.95532,
         -2.35619, 0.95532,
         2.35619, 2.18628,
@@ -1341,7 +1341,7 @@ namespace MR {
 
 
 
-      const float tesselation_513_data[] = {
+      const default_type tesselation_513_data[] = {
         0.00000, 0.00000,
         1.57080, 1.57080,
         0.00000, 1.57080,
@@ -1860,7 +1860,7 @@ namespace MR {
 
 
 
-      const float tesselation_1281_data[] = {
+      const default_type tesselation_1281_data[] = {
         0.55357, 1.57080,
         2.58802, 1.57080,
         0.00000, 0.55357,

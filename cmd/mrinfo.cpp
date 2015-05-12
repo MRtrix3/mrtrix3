@@ -192,9 +192,9 @@ void run ()
     auto header = Header::open (argument[i]);
     if (import_grad) {
       if (validate) 
-        header.set_DW_scheme (DWI::get_valid_DW_scheme<default_type> (header));
+        header.set_DW_scheme (DWI::get_valid_DW_scheme (header));
       else 
-        header.set_DW_scheme (DWI::get_DW_scheme<default_type> (header));
+        header.set_DW_scheme (DWI::get_DW_scheme (header));
     }
 
     if (format)     std::cout << header.format() << "\n";
@@ -205,7 +205,7 @@ void run ()
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (transform)  std::cout << header.transform();
+    if (transform)  std::cout << header.transform().matrix();
     if (dwgrad)     std::cout << header.parse_DW_scheme();
     if (shells || shellcounts)     { 
       DWI::Shells dwshells (header.parse_DW_scheme()); 

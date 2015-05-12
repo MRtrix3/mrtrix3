@@ -27,7 +27,9 @@
 #include <cstdlib>
 
 #include "types.h"
+#include "mrtrix.h"
 #include "exception.h"
+#include "file/ofstream.h"
 
 namespace MR
 {
@@ -165,6 +167,93 @@ namespace MR
 
     /** @} */
   }
+
+
+
+
+  //! write the matrix \a M to file
+  template <class MatrixType>
+    void save_matrix (const MatrixType& M, const std::string& filename) 
+    {
+      File::OFStream out (filename);
+      for (ssize_t i = 0; i < M.rows(); i++) {
+        for (ssize_t j = 0; j < M.cols(); j++)
+          out << str(M(i,j), 10) << " ";
+        out << "\n";
+      }
+    }
+
+  //! read the matrix data from \a filename
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename) 
+    {
+      std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
+      std::vector<std::vector<ValueType>> V;
+      std::string sbuf, entry;
+
+      while (getline (stream, sbuf)) {
+        sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
+        if (sbuf.empty()) 
+          continue;
+
+        V.push_back (std::vector<ValueType>());
+
+        std::istringstream line (sbuf);
+        while (line >> entry) 
+          V.back().push_back (to<ValueType> (entry));
+        if (line.bad())
+          throw Exception (strerror (errno));
+
+        if (V.size() > 1)
+          if (V.back().size() != V[0].size())
+            throw Exception ("uneven rows in matrix");
+      }
+      if (stream.bad()) 
+        throw Exception (strerror (errno));
+
+      if (!V.size())
+        throw Exception ("no data in file");
+
+      Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
+
+      for (ssize_t i = 0; i < M.rows(); i++) 
+        for (ssize_t j = 0; j < M.cols(); j++)
+          M(i,j) = V[i][j];
+
+      return M;
+    }
+
+
+        //! write the vector \a V to file
+  template <class VectorType>
+    void save_vector (const VectorType& V, const std::string& filename) 
+    {
+      File::OFStream out (filename);
+      for (ssize_t i = 0; i < V.size() - 1; i++)
+        out << str(V[i], 10) << " ";
+      out << str(V[V.size() - 1], 10);
+    }
+
+  //! read the vector data from \a filename
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector (const std::string& filename) 
+    {
+      std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
+      std::vector<ValueType> vec;
+      std::string entry;
+      while (stream >> entry) 
+        vec.push_back (to<ValueType> (entry));
+      if (stream.bad()) 
+        throw Exception (strerror (errno));
+
+      Eigen::Matrix<ValueType, Eigen::Dynamic, 1> V (vec.size());
+      for (ssize_t n = 0; n < V.size(); n++)
+        V[n] = vec[n];
+      return V;
+    }
+
+
+
 }
 
 #endif

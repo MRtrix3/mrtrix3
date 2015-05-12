@@ -253,10 +253,10 @@ namespace MR
     return ret;
   }
 
-  std::vector<float> parse_floats (const std::string& spec);
+  std::vector<default_type> parse_floats (const std::string& spec);
   std::vector<int>   parse_ints (const std::string& spec, int last = std::numeric_limits<int>::max());
 
-  inline int round (float x)
+  inline int round (default_type x)
   {
     return int (x + (x > 0.0 ? 0.5 : -0.5));
   }
@@ -406,7 +406,7 @@ namespace MR
 
     stream >> imag;
     if (stream.fail()) 
-      return cfloat (real, 0.0);
+      return cdouble (real, 0.0);
     else if (stream.peek() != 'i')
       throw Exception ("error converting string \"" + string + "\"");
     return cdouble (real, imag);

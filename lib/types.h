@@ -118,19 +118,7 @@ namespace MR
     };
 
   //! the default type used throughout MRtrix
-  typedef float default_type;
-
-  //! the default matrix type used throughout MRtrix
-  typedef Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-  //! the default vector type used throughout MRtrix
-  typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> Vector;
-  //! the default 3-vector type used throughout MRtrix
-  typedef Eigen::Matrix<default_type, 3, 1> Vector3;
-  //! static 3x3 matrix type
-  typedef Eigen::Matrix<default_type, 3, 3> Matrix33;
-  //! static 4x4 matrix type
-  typedef Eigen::Matrix<default_type, 4, 4> Matrix44;
-
+  typedef double default_type;
 
   constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
   constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
@@ -144,13 +132,17 @@ namespace MR
 
 
   //! check whether type is compatible with MRtrix3's file IO backend:
-  template <class ValueType> struct is_data_type : std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
+  template <class ValueType> 
+    struct is_data_type : 
+      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
 
 
 }
 
 namespace std 
 {
+  // these are not defined in the standard, but are needed 
+  // for use in generic templates:
   inline uint8_t abs (uint8_t x) { return x; }
   inline uint16_t abs (uint16_t x) { return x; }
   inline uint32_t abs (uint32_t x) { return x; }

@@ -23,7 +23,6 @@
 #ifndef __algo_adapter_base_h__
 #define __algo_adapter_base_h__
 
-#include "math/matrix.h"
 #include "image_helpers.h"
 
 namespace MR

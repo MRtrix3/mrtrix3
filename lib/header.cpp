@@ -464,7 +464,7 @@ namespace MR
     // switch and/or invert rows if needed:
     for (size_t i = 0; i < 3; ++i) {
       auto row = M.matrix().row(i).head<3>();
-      row = Vector3 (row[perm[0]], row[perm[1]], row[perm[2]]);
+      row = Eigen::RowVector3d (row[perm[0]], row[perm[1]], row[perm[2]]);
 
       if (flip[i])
         stride(i) = -stride(i);
@@ -486,5 +486,24 @@ namespace MR
   }
 
 
+
+  Eigen::MatrixXd Header::parse_DW_scheme () const
+  {
+    Eigen::MatrixXd G;
+    const auto it = keyval().find ("dw_scheme");
+    if (it != keyval().end()) {
+      const auto lines = split_lines (it->second);
+      for (size_t row = 0; row < lines.size(); ++row) {
+        const auto values = parse_floats (lines[row]);
+        if (G.cols() == 0)
+          G.resize (lines.size(), values.size());
+        else if (G.cols() != ssize_t (values.size()))
+          throw Exception ("malformed DW scheme in image \"" + name() + "\" - uneven number of entries per row");
+        for (size_t col = 0; col < values.size(); ++col)
+          G(row, col) = values[col];
+      }
+    }
+    return G;
+  }
 
 }

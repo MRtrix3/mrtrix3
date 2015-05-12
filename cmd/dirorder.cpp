@@ -66,24 +66,24 @@ inline std::function<value_type()> get_rng_uniform (value_type from, value_type 
 
 void run () 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+  auto directions = DWI::Directions::load_cartesian (argument[0]);
   auto rng = get_rng_uniform<size_t> (0, directions.rows()-1);
 
-  std::vector<size_t> indices (1, rng());
-  std::vector<size_t> remaining;
-  for (size_t n = 0; n < directions.rows(); ++n)
+  std::vector<ssize_t> indices (1, rng());
+  std::vector<ssize_t> remaining;
+  for (ssize_t n = 0; n < directions.rows(); ++n)
     if (n != indices[0])
       remaining.push_back (n);
 
   while (remaining.size()) {
-    size_t best = 0;
+    ssize_t best = 0;
     value_type best_E = std::numeric_limits<value_type>::max();
 
     for (size_t n = 0; n < remaining.size(); ++n) {
       value_type E = 0.0;
-      size_t a = remaining[n];
+      ssize_t a = remaining[n];
       for (size_t i = 0; i < indices.size(); ++i) {
-        size_t b = indices[i];
+        ssize_t b = indices[i];
         E += 1.0 / (
             Math::pow2 (directions(a,0)-directions(b,0)) + 
             Math::pow2 (directions(a,1)-directions(b,1)) + 
@@ -105,7 +105,7 @@ void run ()
 
 
   decltype(directions) output (directions.rows(), 3);
-  for (size_t n = 0; n < directions.rows(); ++n)
+  for (ssize_t n = 0; n < directions.rows(); ++n)
     output.row(n) = directions.row (indices[n]);
 
   DWI::Directions::save (output, argument[1], get_options("cartesian").size());

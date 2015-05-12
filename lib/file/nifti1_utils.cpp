@@ -24,8 +24,6 @@
 #include "raw.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
-#include "math/LU.h"
-#include "math/permutation.h"
 #include "math/versor.h"
 
 namespace MR

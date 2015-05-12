@@ -23,6 +23,8 @@
 #ifndef __math_least_squares_h__
 #define __math_least_squares_h__
 
+#include <Eigen/Cholesky>
+
 #include "types.h"
 
 namespace MR
@@ -101,7 +103,7 @@ namespace MR
 
     //! return Moore-Penrose pseudo-inverse of M
     template <class MatrixType>
-      inline Matrix pinv (const MatrixType& M)
+      inline Eigen::MatrixXd pinv (const MatrixType& M)
       {
         if (M.rows() >= M.cols()) 
          return (M.transpose()*M).ldlt().solve (M.transpose());                                                                                

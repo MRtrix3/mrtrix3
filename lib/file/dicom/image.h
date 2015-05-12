@@ -26,7 +26,6 @@
 #include <memory>
 
 #include "datatype.h"
-#include "math/vector.h"
 #include "math/matrix.h"
 #include "file/dicom/element.h"
 

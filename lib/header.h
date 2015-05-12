@@ -37,6 +37,7 @@
 
 namespace MR
 {
+
   /*! \defgroup ImageAPI Image access
    * \brief Classes and functions providing access to image data. */
   // @{
@@ -188,21 +189,21 @@ namespace MR
       DataType& datatype () { return datatype_; }
 
       //! get the offset applied to raw intensities
-      float intensity_offset () const { return offset_; }
+      default_type intensity_offset () const { return offset_; }
       //! get/set the offset applied to raw intensities
-      float& intensity_offset () { return offset_; }
+      default_type& intensity_offset () { return offset_; }
       //! get the scaling applied to raw intensities
-      float intensity_scale () const { return scale_; }
+      default_type intensity_scale () const { return scale_; }
       //! get/set the scaling applied to raw intensities
-      float& intensity_scale () { return scale_; }
+      default_type& intensity_scale () { return scale_; }
 
       //! update existing intensity offset & scale with values supplied
-      void apply_intensity_scaling (float scaling, float bias = 0.0) {
+      void apply_intensity_scaling (default_type scaling, default_type bias = 0.0) {
         scale_ *= scaling;
         offset_ = scaling * offset_ + bias;
       }
       //! replace existing intensity offset & scale with values supplied
-      void set_intensity_scaling (float scaling = 1.0, float bias = 0.0) {
+      void set_intensity_scaling (default_type scaling = 1.0, default_type bias = 0.0) {
         scale_ = scaling;
         offset_ = bias;
       }
@@ -239,33 +240,15 @@ namespace MR
       //! get/set generic key/value text attributes
       std::map<std::string, std::string>& keyval () { return keyval_; }
 
-      template <typename ValueType=default_type> 
-        Math::Matrix<ValueType> parse_DW_scheme () const
-        {
-          Math::Matrix<ValueType> G;
-          const auto it = keyval().find ("dw_scheme");
-          if (it != keyval().end()) {
-            const auto lines = split_lines (it->second);
-            for (size_t row = 0; row < lines.size(); ++row) {
-              const auto values = parse_floats (lines[row]);
-              if (!G.is_set())
-                G.allocate (lines.size(), values.size());
-              else if (G.columns() != values.size())
-                throw Exception ("malformed DW scheme in image \"" + name() + "\" - uneven number of entries per row");
-              for (size_t col = 0; col < values.size(); ++col)
-                G(row, col) = values[col];
-            }
-          }
-          return G;
-        }
+      Eigen::MatrixXd parse_DW_scheme () const;
 
-      template <typename ValueType> 
-        void set_DW_scheme (const Math::Matrix<ValueType>& G)
+      template <class MatrixType> 
+        void set_DW_scheme (const MatrixType& G)
         {
           std::string dw_scheme;
-          for (size_t row = 0; row < G.rows(); ++row) {
+          for (ssize_t row = 0; row < G.rows(); ++row) {
             std::string line;
-            for (size_t col = 0; col < G.columns(); ++col) {
+            for (ssize_t col = 0; col < G.cols(); ++col) {
               if (col == 0) line += ",";
               line += str(G(row,col));
             }

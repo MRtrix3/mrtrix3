@@ -23,8 +23,7 @@
 #ifndef __data_type_h__
 #define __data_type_h__
 
-#include "args.h"
-#include "mrtrix.h"
+#include "cmdline_option.h"
 
 #ifdef Complex
 # undef Complex

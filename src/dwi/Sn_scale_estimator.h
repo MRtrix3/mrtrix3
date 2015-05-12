@@ -34,16 +34,16 @@ namespace MR {
     // Sn robust estimator of scale to get solid estimate of standard deviation:
     // for details, see: Rousseeuw PJ, Croux C. Alternatives to the Median Absolute Deviation. Journal of the American Statistical Association 1993;88:1273–1283. 
 
-    template <typename value_type> 
+    template <typename value_type = default_type> 
       class Sn_scale_estimator {
         public:
-          template <class Container>
-            value_type operator() (const Container& vec)
+          template <class VectorType>
+            value_type operator() (const VectorType& vec)
             {
               diff.resize (vec.size());
               med_diff.resize (vec.size());
-              for (size_t j = 0; j < vec.size(); ++j) {
-                for (size_t i = 0; i < vec.size(); ++i) 
+              for (ssize_t j = 0; j < vec.size(); ++j) {
+                for (ssize_t i = 0; i < vec.size(); ++i) 
                   diff[i] = std::abs (vec[i] - vec[j]);
                 med_diff[j] = Math::median (diff);
               }

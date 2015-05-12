@@ -60,13 +60,13 @@ typedef double value_type;
 
 class Shared {
   public:
-    Shared (const Math::Matrix<value_type>& directions, size_t num_subsets, size_t target_num_permutations) :
+    Shared (const Eigen::MatrixXd& directions, size_t num_subsets, size_t target_num_permutations) :
       directions (directions), subset (num_subsets), 
       best_energy (std::numeric_limits<value_type>::max()),
       target_num_permutations (target_num_permutations),
       num_permutations (0) {
         size_t s = 0;
-        for (size_t n = 0; n < directions.rows(); ++n) {
+        for (ssize_t n = 0; n < directions.rows(); ++n) {
           subset[s++].push_back (n);
           if (s >= num_subsets) s = 0;
         }
@@ -105,7 +105,7 @@ class Shared {
 
 
   protected:
-    const Math::Matrix<value_type>& directions;
+    const Eigen::MatrixXd& directions;
     std::mutex mutex;
     std::vector<std::vector<size_t>> subset, best_subset;
     value_type best_energy;
@@ -174,12 +174,12 @@ class EnergyCalculator {
 
 void run () 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+  auto directions = DWI::Directions::load_cartesian (argument[0]);
 
   size_t num_subsets = argument.size() - 1;
 
   size_t num_permutations = 1e8;
-  Options opt = get_options ("permutations");
+  auto opt = get_options ("permutations");
   if (opt.size())
     num_permutations = opt[0][0];
 
@@ -194,7 +194,7 @@ void run ()
 
   bool cartesian = get_options("cartesian").size();
   for (size_t i = 0; i < best.size(); ++i) {
-    Math::Matrix<value_type> output (best[i].size(), 3);
+    Eigen::MatrixXd output (best[i].size(), 3);
     for (size_t n = 0; n < best[i].size(); ++n) 
       output.row(n) = directions.row (best[i][n]);
     DWI::Directions::save (output, argument[i+1], cartesian);
