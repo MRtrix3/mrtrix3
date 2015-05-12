@@ -41,7 +41,9 @@ namespace MR
 
         ODF_Preview::RenderFrame::RenderFrame (QWidget* parent, Window& window) :
             DWI::RenderFrame (parent),
-            window (window) { }
+            window (window) {
+          setMinimumSize (300, 300);    
+        }
 
         void ODF_Preview::RenderFrame::resizeGL (const int w, const int h) {
           makeCurrent();
