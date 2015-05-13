@@ -20,13 +20,7 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_model_h__
-#define __gui_mrview_tool_roi_analysis_model_h__
-
-#include "memory.h"
-#include "image/header.h"
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/roi_analysis/item.h"
+#include "gui/mrview/tool/roi_editor/model.h"
 
 
 namespace MR
@@ -37,23 +31,31 @@ namespace MR
     {
       namespace Tool
       {
-
             
 
 
-        class ROI_Model : public ListModelBase
+
+
+        void ROI_Model::load (std::vector<std::unique_ptr<MR::Image::Header>>& list)
         {
-          public:
-            ROI_Model (QObject* parent) : 
-              ListModelBase (parent) { }
+          beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
+          for (size_t i = 0; i < list.size(); ++i) {
+            ROI_Item* roi = new ROI_Item (*list[i]);
+            roi->load (*list[i]);
+            items.push_back (std::unique_ptr<Displayable> (roi));
+          }
+          endInsertRows();
+        }
 
-            void load (std::vector<std::unique_ptr<MR::Image::Header>>& list);
-            void create (MR::Image::Header& image);
+        void ROI_Model::create (MR::Image::Header& image)
+        {
+          beginInsertRows (QModelIndex(), items.size(), items.size()+1);
+          ROI_Item* roi = new ROI_Item (image);
+          roi->zero ();
+          items.push_back (std::unique_ptr<Displayable> (roi));
+          endInsertRows();
+        }
 
-            ROI_Item* get (QModelIndex& index) {
-              return dynamic_cast<ROI_Item*>(items[index.row()].get());
-            }
-        };
 
 
 
@@ -63,6 +65,6 @@ namespace MR
   }
 }
 
-#endif
+
 
 

@@ -31,7 +31,7 @@
 #include "gui/cursor.h"
 #include "gui/projection.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/tool/roi_analysis/roi.h"
+#include "gui/mrview/tool/roi_editor/roi.h"
 
 
 namespace MR
@@ -730,9 +730,9 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("ROI analysis tool options")
+            + OptionGroup ("ROI editor tool options")
 
-            + Option ("roi.load", "Loads the specified image on the overlay tool.")
+            + Option ("roi.load", "Loads the specified image on the ROI editor tool.")
             +   Argument ("image").type_image_in()
 
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")

@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_item_h__
-#define __gui_mrview_tool_roi_analysis_item_h__
+#ifndef __gui_mrview_tool_roi_editor_item_h__
+#define __gui_mrview_tool_roi_editor_item_h__
 
 
 #include <array>
@@ -32,7 +32,7 @@
 #include "image/loop.h"
 #include "image/voxel.h"
 #include "gui/mrview/volume.h"
-#include "gui/mrview/tool/roi_analysis/undoentry.h"
+#include "gui/mrview/tool/roi_editor/undoentry.h"
 
 
 namespace MR

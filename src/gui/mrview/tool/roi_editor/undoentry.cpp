@@ -24,8 +24,8 @@
 
 #include "image/transform.h"
 
-#include "gui/mrview/tool/roi_analysis/item.h"
-#include "gui/mrview/tool/roi_analysis/undoentry.h"
+#include "gui/mrview/tool/roi_editor/item.h"
+#include "gui/mrview/tool/roi_editor/undoentry.h"
 
 
 namespace MR
