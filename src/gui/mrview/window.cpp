@@ -308,12 +308,6 @@ namespace MR
 
         image_menu->addSeparator();
 
-        image_visible_action = image_menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
-        image_visible_action->setShortcut (tr ("M"));
-        image_visible_action->setCheckable (true);
-        image_visible_action->setChecked (true);
-        addAction (image_visible_action);
-
         next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
         next_slice_action->setShortcut (tr ("Up"));
         addAction (next_slice_action);
@@ -473,6 +467,12 @@ namespace MR
         addAction (show_colourbar_action);
 
         menu->addSeparator();
+
+        image_visible_action = menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
+        image_visible_action->setShortcut (tr ("M"));
+        image_visible_action->setCheckable (true);
+        image_visible_action->setChecked (true);
+        addAction (image_visible_action);
 
         action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
         action->setShortcut (tr ("G"));
