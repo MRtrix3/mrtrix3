@@ -175,6 +175,24 @@ namespace MR
               Mt_M.triangularView<Eigen::Lower>() = M.transpose() * M;
 
 
+              // min-norm constraint:
+              if (norm_lambda) {
+                norm_lambda *= NORM_LAMBDA_MULTIPLIER * Mt_M (0,0);
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+                Mt_M.diagonal().array() += norm_lambda;
+#else
+                int l = 0;
+                for (size_t i = 0; i < Mt_M.rows(); ++i) {
+                  if (Math::SH::index (l,0) == i) {
+                    Mt_M(i,i) += norm_lambda;
+                    l+=2;
+                  }
+                  else 
+                    Mt_M(i,i) += 0.5 * norm_lambda;
+                }
+#endif
+              }
+
               INFO ("constrained spherical deconvolution initialised successfully");
             }
 
@@ -210,7 +228,6 @@ namespace MR
           llt (work.rows()),
           old_neg (shared.HR_trans.rows()),
           computed_once (false) {
-            norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
           }
 
         CSDeconv (const CSDeconv&) = default;
@@ -225,7 +242,6 @@ namespace MR
            Mt_b (shared.HR_trans.cols()),
            old_neg (shared.HR_trans.rows()),
            computed_once (false) {
-           norm_lambda = NORM_LAMBDA_MULTIPLIER * shared.norm_lambda * shared.Mt_M (0,0);
            }
            */
         ~CSDeconv() { }
@@ -253,34 +269,12 @@ namespace MR
 
           work.triangularView<Eigen::Lower>() = shared.Mt_M.triangularView<Eigen::Lower>();
 
-          // min-norm constraint:
-          if (norm_lambda) {
-#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-            work.diagonal().array() += norm_lambda;
-#else
-            int l = 0;
-            for (size_t i = 0; i < work.rows(); ++i) {
-              if (Math::SH::index (l,0) == i) {
-                work(i,i) += norm_lambda;
-                l+=2;
-              }
-              else 
-                work(i,i) += 0.5 * norm_lambda;
-            }
-#endif
-          }
-
-          // TODO check whether this is more efficient than forming the full
-          // matrix of negative rows and doing a rankN update
-          for (auto n : neg)
-            work.selfadjointView<Eigen::Lower>().rankUpdate (shared.HR_trans.row (n).transpose());
-
-          /*if (neg.size()) {
-            HR_T.allocate (neg.size(), shared.HR_trans.cols());
+          if (neg.size()) {
+            HR_T.resize (neg.size(), shared.HR_trans.cols());
             for (size_t i = 0; i < neg.size(); i++)
             HR_T.row (i) = shared.HR_trans.row (neg[i]);
-            rankN_update (work, HR_T, CblasTrans, CblasLower, default_type (1.0), default_type (1.0));
-            }*/
+            work.selfadjointView<Eigen::Lower>().rankUpdate (HR_T.transpose());
+          }
 
           F.noalias() = llt.compute (work.selfadjointView<Eigen::Lower>()).solve (Mt_b);
 
@@ -296,7 +290,6 @@ namespace MR
         const Shared& shared;
 
       protected:
-        default_type norm_lambda;
         Eigen::MatrixXd work, HR_T;
         Eigen::VectorXd F, init_F, HR_amps, Mt_b;
         Eigen::LLT<Eigen::MatrixXd> llt;
