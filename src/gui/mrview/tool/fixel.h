@@ -64,13 +64,10 @@ namespace MR
 
               void render (const Projection& projection, int axis, int slice);
 
-              void renderColourBar (const Projection& transform) {
-                if (colour_type == CValue && show_colour_bar)
-                  colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+              void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override {
+                if(colour_type == CValue && show_colour_bar)
+                  visitor.render_fixel_colourbar(*this, projection);
               }
-
-              void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
-              { if(show_colour_bar) visitor.render_fixel_colourbar(*this, projection); }
 
               void load_image ();
 
@@ -119,8 +116,6 @@ namespace MR
 
             private:
               Vector& fixel_tool;
-              ColourMap::Renderer colourbar_renderer;
-              int colourbar_position_index;
               GL::VertexBuffer vertex_buffer;
               GL::VertexBuffer direction_buffer;
               GL::VertexArrayObject vertex_array_object;

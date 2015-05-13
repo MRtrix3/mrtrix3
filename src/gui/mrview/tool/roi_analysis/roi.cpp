@@ -83,7 +83,7 @@ namespace MR
           layout->addWidget (close_button, 1);
 
           hide_all_button = new QPushButton (this);
-          hide_all_button->setToolTip (tr ("Hide All"));
+          hide_all_button->setToolTip (tr ("Hide all ROIs"));
           hide_all_button->setIcon (QIcon (":/hide.svg"));
           hide_all_button->setCheckable (true);
           connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -308,6 +308,7 @@ namespace MR
           try {
             MR::Image::Header header;
             header.info() = roi->info();
+            header.set_ndim(3);
             header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
             if (name.size()) {
@@ -723,7 +724,7 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("ROI Analysis tool options")
+            + OptionGroup ("ROI analysis tool options")
 
             + Option ("roi.load", "Loads the specified image on the overlay tool.")
             +   Argument ("image").type_image_in()

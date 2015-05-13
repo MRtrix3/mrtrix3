@@ -127,6 +127,7 @@ namespace MR
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
             }
+            void set_visible (bool v) { if(visible != v) { visible = v; updateGL(); } }
             void set_focus (const Point<>& p) { window.set_focus (p); }
             void set_target (const Point<>& p) { window.set_target (p); }
             void set_FOV (float value) { window.set_FOV (value); }
@@ -203,6 +204,7 @@ namespace MR
             void reset_view ();
 
             bool painting;
+            bool visible;
         };
 
 

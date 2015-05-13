@@ -114,6 +114,8 @@ namespace MR
         class Renderer {
           public:
             Renderer();
+            void render (const Projection& projection, const Displayable& object, int position, bool inverted,
+                         float min_value, float max_value, float abs_min_value, float range);
             void render (const Projection& projection, const Displayable& object, int position, bool inverted);
 
           protected:

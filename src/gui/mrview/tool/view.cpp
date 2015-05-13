@@ -352,7 +352,7 @@ namespace MR
           QToolButton* button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("add new clip planes");
+          button->setToolTip ("Add new clip planes");
           button->setIcon (QIcon (":/new.svg"));
           toolbar->addWidget (button);
 
@@ -375,7 +375,7 @@ namespace MR
           button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("reset selected clip planes");
+          button->setToolTip ("Reset selected clip planes");
           button->setIcon (QIcon (":/reset.svg"));
           toolbar->addWidget (button);
 
@@ -393,7 +393,7 @@ namespace MR
 
 
           clip_planes_invert_action = new QAction("&Invert", this);
-          clip_planes_invert_action->setToolTip ("invert selected clip planes");
+          clip_planes_invert_action->setToolTip ("Invert selected clip planes");
           clip_planes_invert_action->setIcon (QIcon (":/invert.svg"));
           connect (clip_planes_invert_action, SIGNAL (triggered()), this, SLOT (clip_planes_invert_slot()));
           clip_planes_option_menu->addAction (clip_planes_invert_action);
@@ -403,7 +403,7 @@ namespace MR
           toolbar->addWidget (button);
 
           clip_planes_remove_action = new QAction("R&emove", this);
-          clip_planes_remove_action->setToolTip ("remove selected clip planes");
+          clip_planes_remove_action->setToolTip ("Remove selected clip planes");
           clip_planes_remove_action->setIcon (QIcon (":/close.svg"));
           connect (clip_planes_remove_action, SIGNAL (triggered()), this, SLOT (clip_planes_remove_slot()));
           clip_planes_option_menu->addAction (clip_planes_remove_action);
@@ -415,7 +415,7 @@ namespace MR
           clip_planes_option_menu->addSeparator();
 
           clip_planes_clear_action = new QAction("&Clear", this);
-          clip_planes_clear_action->setToolTip ("clear all clip planes");
+          clip_planes_clear_action->setToolTip ("Clear all clip planes");
           clip_planes_clear_action->setIcon (QIcon (":/clear.svg"));
           connect (clip_planes_clear_action, SIGNAL (triggered()), this, SLOT (clip_planes_clear_slot()));
           clip_planes_option_menu->addAction (clip_planes_clear_action);
@@ -485,12 +485,12 @@ namespace MR
             volume_box->setVisible(true);
             vol_index->setEnabled(true);
             vol_index->setMaximum(image->interp.dim(3) - 1);
-            vol_index->setValue(0);
+            vol_index->setValue(image->interp[3]);
 
             if(dim > 4) {
               vol_group->setEnabled(true);
               vol_group->setMaximum(image->interp.dim(4) - 1);
-              vol_group->setValue(0);
+              vol_group->setValue(image->interp[4]);
             } else
               vol_group->setEnabled(false);
           } else {

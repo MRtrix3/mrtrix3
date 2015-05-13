@@ -45,7 +45,7 @@ namespace MR
           C.setRgbF (info.object_color[0], info.object_color[1], info.object_color[2]);
           cbutton = new QColorButton (C);
           connect (cbutton, SIGNAL (changed (const QColor&)), this, SLOT (object_color_slot (const QColor&)));
-          grid_layout->addWidget (new QLabel ("Object Colour"), 0, 0);
+          grid_layout->addWidget (new QLabel ("Object colour"), 0, 0);
           grid_layout->addWidget (cbutton, 0, 1);
         }
 

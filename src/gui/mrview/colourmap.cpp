@@ -194,11 +194,16 @@ namespace MR
 
 
 
-
-
-
-
         void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
+        {
+          render (projection, object, position, inverted,
+            object.scaling_min (), object.scaling_max (), object.scaling_min (), object.display_range);
+        }
+
+
+
+        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted,
+                               float min_value, float max_value, float abs_min_value, float range)
         {
           if (!position) return;
           if (maps[object.colourmap].special) return;
@@ -221,12 +226,15 @@ namespace MR
             VAO.bind();
           }
 
+          // Clamp the min/max fractions
+          float max_frac = std::min(std::max(0.0f, (max_value - abs_min_value) / range), 1.0f);
+          float min_frac = std::min(std::max(0.0f, (min_value - abs_min_value) / range), max_frac);
 
           GLfloat data[] = {
-            0.0f,   0.0f,  0.0f,
-            0.0f,   height, 1.0f,
-            width, height, 1.0f,
-            width, 0.0f,  0.0f
+            0.0f,   0.0f,  min_frac,
+            0.0f,   height, max_frac,
+            width, height, max_frac,
+            width, 0.0f,  min_frac
           };
           float x_offset = inset;
           float y_offset = inset;
@@ -267,8 +275,8 @@ namespace MR
 
           projection.setup_render_text();
           int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-          projection.render_text_align (x, data[1], str(object.scaling_min()), halign, 0);
-          projection.render_text_align (x, data[4], str(object.scaling_max()), halign, 0);
+          projection.render_text_align (x, data[1], str(min_value), halign, 0);
+          projection.render_text_align (x, data[4], str(max_value), halign, 0);
           projection.done_render_text();
 
           gl::DepthMask (gl::TRUE_);

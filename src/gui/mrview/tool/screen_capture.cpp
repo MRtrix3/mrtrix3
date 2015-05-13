@@ -36,7 +36,9 @@ namespace MR
       {
 
         Capture::Capture (Window& main_window, Dock* parent) :
-          Base (main_window, parent)
+          Base (main_window, parent),
+          rotation_type(RotationType::World),
+          translation_type(TranslationType::Voxel)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
@@ -75,11 +77,6 @@ namespace MR
           degrees_button->setValue (0.0);
           degrees_button->setRate (0.1);
 
-          connect (rotation_axis_x, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (rotation_axis_y, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (rotation_axis_z, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (degrees_button, SIGNAL (valueChanged()), this, SLOT (reset()));
-
           QGroupBox* translate_group_box = new QGroupBox (tr("Translate"));
           GridLayout* translate_layout = new GridLayout;
           translate_layout->setContentsMargins (5, 5, 5, 5);
@@ -109,10 +106,6 @@ namespace MR
           translate_z->setValue (0.0);
           translate_z->setRate (0.1);
 
-          connect (translate_x, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (translate_y, SIGNAL (valueChanged()), this, SLOT (reset()));
-          connect (translate_z, SIGNAL (valueChanged()), this, SLOT (reset()));
-
           QGroupBox* volume_group_box = new QGroupBox (tr("Volume"));
           GridLayout* volume_layout = new GridLayout;
           volume_layout->setContentsMargins (5, 5, 5, 5);
@@ -130,10 +123,8 @@ namespace MR
           target_volume = new QSpinBox (this);
           volume_layout->addWidget (target_volume, 0, 3);
           target_volume->setMinimum (0);
+          target_volume->setMaximum (std::numeric_limits<int>::max());
           target_volume->setValue (0);
-
-          connect (volume_axis, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
-          connect (target_volume, SIGNAL (valueChanged(int)), this, SLOT (reset(int)));
 
           QGroupBox* FOV_group_box = new QGroupBox (tr("FOV"));
           GridLayout* FOV_layout = new GridLayout;
@@ -148,8 +139,6 @@ namespace MR
           FOV_multipler->setValue (1.0);
           FOV_multipler->setRate (0.01);
 
-          connect (FOV_multipler, SIGNAL (valueChanged()), this, SLOT (reset()));
-
           QGroupBox* output_group_box = new QGroupBox (tr("Output"));
           main_box->addWidget (output_group_box);
           GridLayout* output_grid_layout = new GridLayout;
@@ -161,7 +150,7 @@ namespace MR
           connect (prefix_textbox, SIGNAL (textChanged(const QString&)), this, SLOT (on_output_update()));
 
           folder_button = new QPushButton (tr("Select output folder"), this);
-          folder_button->setToolTip (tr ("Output Folder"));
+          folder_button->setToolTip (tr ("Output folder"));
           connect (folder_button, SIGNAL (clicked()), this, SLOT (select_output_folder_slot ()));
           output_grid_layout->addWidget (folder_button, 1, 0, 1, 2);
 
@@ -173,18 +162,19 @@ namespace MR
           capture_grid_layout->addWidget (new QLabel (tr("Start Index: ")), 0, 0);
           start_index = new QSpinBox (this);
           start_index->setMinimum (0);
-          start_index->setMinimumWidth(50);
           start_index->setMaximum (std::numeric_limits<int>::max());
+          start_index->setMinimumWidth(50);
           start_index->setValue (0);
           capture_grid_layout->addWidget (start_index, 0, 1);
 
           capture_grid_layout->addWidget (new QLabel (tr("Frames: ")), 0, 2);
           frames = new QSpinBox (this);
           frames->setMinimumWidth(50);
-          frames->setMinimum (0);
+          frames->setMinimum (1);
           frames->setMaximum (std::numeric_limits<int>::max());
           frames->setValue (1);
           capture_grid_layout->addWidget (frames, 0, 3);
+
 
           QPushButton* preview = new QPushButton (this);
           preview->setToolTip(tr("Preview play"));
@@ -198,12 +188,11 @@ namespace MR
           connect (stop, SIGNAL (clicked()), this, SLOT (on_screen_stop()));
           capture_grid_layout->addWidget (stop, 2, 1);
 
-          rewind_button= new QPushButton (this);
-          rewind_button->setToolTip (tr ("Rewind"));
-          rewind_button->setIcon(QIcon (":/rewind.svg"));
-          rewind_button->setAutoRepeat(true);
-          connect (rewind_button, SIGNAL (clicked()), this, SLOT (on_screen_rewind()));
-          capture_grid_layout->addWidget (rewind_button, 2, 2);
+          QPushButton* restore = new QPushButton (this);
+          restore->setToolTip (tr ("Restore"));
+          restore->setIcon(QIcon (":/restore.svg"));
+          connect (restore, SIGNAL (clicked()), this, SLOT (on_restore_capture_state()));
+          capture_grid_layout->addWidget (restore, 2, 2);
 
           QPushButton* capture = new QPushButton (this);
           capture->setToolTip (tr ("Record"));
@@ -214,18 +203,34 @@ namespace MR
           main_box->addStretch ();
 
           directory = new QDir();
+
+          connect (&window, SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
+          on_image_changed();
         }
+
+
+
+
+        void Capture::on_image_changed() {
+          cached_state.clear();
+          const auto image = window.image();
+          if(!image) return;
+
+          Image::VoxelType& vox (image->interp);
+          int max_axis = std::max((int)vox.ndim() - 1, 0);
+          volume_axis->setMaximum(max_axis);
+          volume_axis->setValue(std::min(volume_axis->value(), max_axis));
+        }
+
 
 
 
         void Capture::on_rotation_type(int index) {
           rotation_type = static_cast<RotationType>(rotation_type_combobox->itemData(index).toInt());
-          reset();
         }
 
         void Capture::on_translation_type(int index) {
           translation_type = static_cast<TranslationType>(translation_type_combobox->itemData(index).toInt());
-          reset();
         }
 
 
@@ -236,21 +241,55 @@ namespace MR
 
         void Capture::on_screen_stop () { is_playing = false; }
 
-        void Capture::on_screen_rewind ()
+
+        void Capture::cache_capture_state()
         {
-          if(!is_playing) {
-            rewind_press_counter = rewind_button->isDown() ? rewind_press_counter + 1 : 1;
-            rewind_button->setAutoRepeatInterval(std::max(200 / (int)rewind_press_counter, 25));
-            run (false, true);
-          }
+            if (!window.image())
+              return;
+            Image::VoxelType& vox (window.image()->interp);
+
+            cached_state.emplace( cached_state.end(),
+              window.orientation(), window.focus(), window.target(), window.FOV(),
+              volume_axis->value() < ssize_t (vox.ndim()) ? vox[volume_axis->value()] : 0,
+              volume_axis->value(), start_index->value(), window.plane()
+            );
+
+            if(cached_state.size() > max_cache_size)
+              cached_state.pop_front();
         }
 
-        void Capture::run (bool with_capture, bool reverse)
+
+
+
+        void Capture::on_restore_capture_state()
+        {
+            if (!window.image() || !cached_state.size())
+              return;
+
+            const CaptureState& state = cached_state.back();
+
+            window.set_plane(state.plane);
+            window.set_orientation(state.orientation);
+            window.set_focus(state.focus);
+            window.set_target(state.target);
+            window.set_FOV(state.fov);
+            window.set_image_volume(state.volume_axis, state.volume);
+            start_index->setValue(state.frame_index);
+
+            cached_state.pop_back();
+        }
+
+
+
+
+        void Capture::run (bool with_capture)
         {
           if (!window.image())
             return;
 
           is_playing = true;
+
+          cache_capture_state();
 
           Image::VoxelType& vox (window.image()->interp);
 
@@ -280,31 +319,23 @@ namespace MR
             window.set_snap_to_image (false);
 
 
-          float frames_value = reverse ? -frames->value() : frames->value();
-
-          int volume = 0, volume_inc = 0;
-          if (volume_axis->value() < ssize_t (vox.ndim())) {
-            if (target_volume->value() >= vox.dim(volume_axis->value()))
-              target_volume->setValue (vox.dim(volume_axis->value())-1);
-            volume = vox[volume_axis->value()];
-            volume_inc = target_volume->value() / frames_value;
-          }
+          size_t frames_value = frames->value();
 
           std::string folder (directory->path().toUtf8().constData());
           std::string prefix (prefix_textbox->text().toUtf8().constData());
           float radians = degrees_button->value() * (Math::pi / 180.0) / frames_value;
           size_t first_index = start_index->value();
-          size_t i, upper_limit;
 
-          if(reverse) {
-            i = 0;
-            upper_limit = std::min(first_index, rewind_press_counter * rewind_press_counter);
-          } else {
-            i = first_index;
-            upper_limit = frames_value;
+          float volume = 0, volume_inc = 0;
+          if (volume_axis->value() < ssize_t (vox.ndim())) {
+            if (target_volume->value() >= vox.dim(volume_axis->value()))
+              target_volume->setValue (vox.dim(volume_axis->value())-1);
+            volume = vox[volume_axis->value()];
+            volume_inc = target_volume->value() / (float)frames_value;
           }
 
-          for (; i < upper_limit; ++i) {
+          size_t i = first_index;
+          do {
             if (!is_playing)
               break;
 
@@ -348,16 +379,18 @@ namespace MR
             // Volume
             if (volume_axis->value() < ssize_t (vox.ndim())) {
               volume += volume_inc;
-              window.set_image_volume (volume_axis->value(), volume);
+              window.set_image_volume (volume_axis->value(), std::round(volume));
             }
 
             // FOV
             window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
 
-            start_index->setValue (reverse ? first_index - i - 1: i + 1);
+            start_index->setValue (i + 1);
             this->window.updateGL();
             qApp->processEvents();
-          }
+
+            i+=1;
+          } while((i % frames_value));
 
           is_playing = false;
         }

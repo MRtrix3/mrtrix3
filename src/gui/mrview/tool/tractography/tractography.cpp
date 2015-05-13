@@ -97,19 +97,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Tracks"));
+            button->setToolTip (tr ("Open tractogram"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Tracks"));
+            button->setToolTip (tr ("Close tractogram"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Tracks"));
+            hide_all_button->setToolTip (tr ("Hide all tractograms"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -400,7 +400,7 @@ namespace MR
             msgBox.exec();
           } else {
             if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
+              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options", window);
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {

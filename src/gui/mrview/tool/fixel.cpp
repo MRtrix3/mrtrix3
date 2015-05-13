@@ -41,7 +41,6 @@ namespace MR
           slice_fixel_sizes (3),
           slice_fixel_counts (3),
           fixel_tool (fixel_tool),
-          colourbar_position_index (4),
           voxel_size_length_multipler (1.f),
           user_line_length_multiplier (1.f),
           line_thickness (0.005f),

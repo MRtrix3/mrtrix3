@@ -145,6 +145,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
+          void show_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -158,6 +159,7 @@ namespace MR
           void image_select_slot (QAction* action);
 
           void reset_view_slot ();
+          void background_colour_slot ();
 
           void OpenGL_slot ();
           void about_slot ();
@@ -220,6 +222,8 @@ namespace MR
           int anatomical_plane, annotations, colourbar_position_index;
           bool snap_to_image_axes_and_voxel;
 
+          float background_colour[3];
+
           QMenu *image_menu;
 
           ColourMapButton *colourmap_button;
@@ -238,7 +242,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-
+                  *image_visible_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,

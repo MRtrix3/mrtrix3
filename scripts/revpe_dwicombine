@@ -132,8 +132,8 @@ runCommand('dwiextract dwi2p.mif -bzero dwi2b0.mif')
 runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4')
 
 # Find out how many b=0 volumes there are
-DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions')
-DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions')
+DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions').split()
+DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions').split()
 DWI1_b0_count = int(1)
 if len(DWI1_b0_dims) == 4:
   DWI1_b0_count = int(DWI1_b0_dims[3])
@@ -165,16 +165,16 @@ config_file = open('config.txt', 'w')
 #config_line = [ 0, 0, 0, 0.1 ]
 #config_line[PEAxis] = 1
 config_line = [ 0, 1, 0, 0.1 ]
-for line_count in xrange(0,DWI1_b0_count):
+for line_count in range(0,DWI1_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
-config_file.write('\n')
+  config_file.write('\n')
 #config_line[PEAxis] = -1
 config_line = [ 0, -1, 0, 0.1 ]
-for line_count in xrange(0,DWI2_b0_count):
+for line_count in range(0,DWI2_b0_count):
   for column_value in config_line:
     config_file.write(str(column_value) + ' ')
-config_file.write('\n')
+  config_file.write('\n')
 config_file.close()
 
 # Perform the field estimation
@@ -189,9 +189,9 @@ with open('grad_combined.b', 'w') as outfile:
 
 # Generate an initial distortion-corrected volume
 # TODO The string '[ 0 0 0 1 ]' is being written to stdout somewhere here...
-runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup.' + fsl_suffix + ' --method=jac')
-runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup.' + fsl_suffix + ' --method=jac')
-runCommand('mrcat dwi1_topup.' + fsl_suffix + ' dwi2_topup.' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
+runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup' + fsl_suffix + ' --method=jac')
+runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup' + fsl_suffix + ' --method=jac')
+runCommand('mrcat dwi1_topup' + fsl_suffix + ' dwi2_topup' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
 
 # Produce a brain mask based on this initial correction
 runCommand('dwi2mask topup_combined.mif mask.mif -grad grad_combined.b')
@@ -207,9 +207,9 @@ runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals')
 #   that is closest in time (this is because eddy uses the motion parameters from topup as an initial estimate)
 DWI2_config_index = str(DWI1_b0_count + 1)
 indices = ''
-for volume in xrange(0,int(num_volumes)):
+for volume in range(0,int(num_volumes)):
   indices = indices + '1 '
-for volume in xrange(0,int(num_volumes)):
+for volume in range(0,int(num_volumes)):
   indices = indices + DWI2_config_index + ' '
 with open('indices.txt', 'w') as index_file:
   index_file.write(indices);
@@ -234,7 +234,7 @@ with open( 'dwi1_transform.txt', 'w' ) as f:
 runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
-#   (converts Hz to pixel count; that way a simple image gradient can be used to ge the Jacobians)
+#   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
 # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
 runCommand('mrcalc field_map_flip.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
 runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
@@ -244,8 +244,8 @@ runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif')
 runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif')
 
 # Manually combine corresponding volumes from EDDY output
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option)
-runCommand('mrconvert eddy_output.' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option)
+runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option)
+runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option)
 result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - ' + result_path + ' -grad grad1.b' + axis_permute_option + vox_permute_option)
 
