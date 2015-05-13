@@ -53,26 +53,18 @@ void usage ()
   AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
-  + "Crop tractogram based on a fixel image. This can be useful for displaying "
-    "fixel images in 3D using a tractogram. The output tracks can also be coloured "
-    "by outputting a track scalar file derived from the fixel values.";
+  + "Map fixel values to a track scalar file based on an input tractogram. "
+    "This is useful for visualising the output from fixelcfestats in 3D.";
 
   ARGUMENTS
-  + Argument ("tracks",   "the input track file ").type_file_in ()
   + Argument ("fixel_in", "the input fixel image").type_image_in ()
-  + Argument ("tracks",   "the output track file ").type_file_out ();
+  + Argument ("tracks",   "the input track file ").type_file_in ()
+  + Argument ("tsf",   "the output track file ").type_file_out ();
 
 
   OPTIONS
-  + Option ("tsf", "output an accompanying track scalar file containing the fixel values")
-  + Argument ("path").type_image_out ()
-
   + Option ("angle", "the max anglular threshold for computing correspondence between a fixel direction and track tangent")
-  + Argument ("value").type_float (0.001, 30, 90)
-
-  + Option ("threshold", "don't include fixels below the specified threshold")
-  + Argument ("value").type_float (std::numeric_limits<float>::min(), 0.0, std::numeric_limits<float>::max());
-
+  + Argument ("value").type_float (0.001, 30, 90);
 
 }
 
@@ -83,32 +75,23 @@ void run ()
 {
   DWI::Tractography::Properties properties;
 
-  DWI::Tractography::Reader<float> reader (argument[0], properties);
-  properties.comments.push_back ("Created using tckfixelcrop");
-  properties.comments.push_back ("Source track file: " + Path::basename (argument[0]));
-  properties.comments.push_back ("Source fixel image: " + Path::basename (argument[1]));
-
-  Image::Header input_header (argument[1]);
+  Image::Header input_header (argument[0]);
   Image::BufferSparse<FixelMetric> input_data (input_header);
   Image::BufferSparse<FixelMetric>::voxel_type input_fixel (input_data);
 
-  DWI::Tractography::Writer<float> tck_writer (argument[2], properties);
+  DWI::Tractography::Reader<float> reader (argument[1], properties);
+  properties.comments.push_back ("Created using fixel2tsf");
+  properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
+  properties.comments.push_back ("Source track file: " + Path::basename (argument[1]));
 
-  std::unique_ptr< DWI::Tractography::ScalarWriter<float> > tsf_writer;
-  Options opt = get_options ("tsf");
-  if (opt.size())
-    tsf_writer.reset (new DWI::Tractography::ScalarWriter<float> (opt[0][0], properties));
+
+  DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], properties);
 
   float angular_threshold = 30.0;
-  opt = get_options ("angle");
+  Options opt = get_options ("angle");
   if (opt.size())
     angular_threshold = opt[0][0];
   const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
-
-  float fixel_threshold = 0.0;
-  opt = get_options ("threshold");
-  if (opt.size())
-    fixel_threshold = opt[0][0];
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 
@@ -116,7 +99,7 @@ void run ()
   mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
   mapper.set_use_precise_mapping (true);
 
-  ProgressBar progress ("cropping tracks by fixels...", num_tracks);
+  ProgressBar progress ("mapping fixel values to streamline points...", num_tracks);
   DWI::Tractography::Streamline<float> tck;
 
   Image::Transform transform (input_fixel);
@@ -125,8 +108,7 @@ void run ()
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
-    DWI::Tractography::Streamline<float> temp_tck;
-    std::vector<float> temp_scalars;
+    std::vector<float> scalars (tck.size(), 0.0);
     for (size_t p = 0; p < tck.size(); ++p) {
       transform.scanner2voxel (tck[p], voxel_pos);
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
@@ -143,23 +125,14 @@ void run ()
               closest_fixel_index = f;
             }
           }
-          if (largest_dp > angular_threshold_dp) {
-            if (input_fixel.value()[closest_fixel_index].value > fixel_threshold) {
-              temp_tck.push_back(tck[p]);
-              if (tsf_writer)
-                temp_scalars.push_back (input_fixel.value()[closest_fixel_index].value);
-            } else if (temp_tck.size()) {
-              tck_writer (temp_tck);
-              temp_tck.clear();
-              if (tsf_writer) {
-                (*tsf_writer) (temp_scalars);
-                temp_scalars.clear();
-              }
-            }
-          }
+          if (largest_dp > angular_threshold_dp)
+            scalars[p] = input_fixel.value()[closest_fixel_index].value;
+          else
+            scalars[p] = 0.0; //TODO should we make this a NaN?
         }
       }
     }
+    tsf_writer (scalars);
     progress++;
   }
 }
