@@ -1240,6 +1240,9 @@ namespace MR
 
         font.initGL();
         gl::Enable (gl::DEPTH_TEST);
+        //CONF option: ImageBackgroundColour
+        //CONF default: 0,0,0 (black)
+        //CONF The default image background colour
         File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
