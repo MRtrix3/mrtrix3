@@ -25,7 +25,7 @@
 #define __dwi_directions_predefined_h__
 
 
-#include "math/matrix.h"
+#include "types.h"
 
 
 namespace MR {

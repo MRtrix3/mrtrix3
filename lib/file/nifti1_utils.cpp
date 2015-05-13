@@ -24,7 +24,6 @@
 #include "raw.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
-#include "math/versor.h"
 
 namespace MR
 {
@@ -250,25 +249,19 @@ namespace MR
           }
           else if (Raw::fetch<int16_t> (&NH.qform_code, is_BE)) {
             { // TODO update with Eigen3 Quaternions
-              Math::Versor<double> Q (Raw::fetch<float32> (&NH.quatern_b, is_BE), Raw::fetch<float32> (&NH.quatern_c, is_BE), Raw::fetch<float32> (&NH.quatern_d, is_BE));
-              Math::Matrix<double> R (3,3);
-              Q.to_matrix (R);
-              for (size_t i = 0; i < 3; ++i)
-                for (size_t j = 0; j < 3; ++j)
-                  H.transform()(i,j) = R(i,j);
+              Eigen::Quaterniond Q (0.0, Raw::fetch<float32> (&NH.quatern_b, is_BE), Raw::fetch<float32> (&NH.quatern_c, is_BE), Raw::fetch<float32> (&NH.quatern_d, is_BE));
+              Q.w() = std::sqrt (1.0 - Q.squaredNorm());
+              H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
             }
 
-            H.transform()(0,3) = Raw::fetch<float32> (&NH.qoffset_x, is_BE);
-            H.transform()(1,3) = Raw::fetch<float32> (&NH.qoffset_y, is_BE);
-            H.transform()(2,3) = Raw::fetch<float32> (&NH.qoffset_z, is_BE);
+            H.transform().translation()[0] = Raw::fetch<float32> (&NH.qoffset_x, is_BE);
+            H.transform().translation()[1] = Raw::fetch<float32> (&NH.qoffset_y, is_BE);
+            H.transform().translation()[2] = Raw::fetch<float32> (&NH.qoffset_z, is_BE);
 
             // qfac:
             float qfac = Raw::fetch<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
-            if (qfac < 0.0) {
-              H.transform()(0,2) *= qfac;
-              H.transform()(1,2) *= qfac;
-              H.transform()(2,2) *= qfac;
-            }
+            if (qfac < 0.0) 
+              H.transform().matrix().topLeftCorner<3,3>().col(2) *= qfac;
           }
         }
         else {
@@ -464,20 +457,16 @@ namespace MR
         Raw::store<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        auto R = M.matrix().topLeftCorner<3,3>();
+        Eigen::MatrixXd R = M.matrix().topLeftCorner<3,3>();
         if (R.determinant() < 0.0) {
-          R.col(2) *= -1.0;
+          R.col(2) = -R.col(2);
           NH.pixdim[0] = -1.0;
         }
-        Math::Matrix<double> R2 (3,3);
-        for (size_t i = 0; i < 3; ++i)
-          for (size_t j = 0; j < 3; ++j)
-            R2(i,j) = R(i,j);
-        const Math::Versor<double> Q (R2);
+        Eigen::Quaterniond Q (M.rotation());
 
-        Raw::store<float32> (Q[1], &NH.quatern_b, is_BE);
-        Raw::store<float32> (Q[2], &NH.quatern_c, is_BE);
-        Raw::store<float32> (Q[3], &NH.quatern_d, is_BE);
+        Raw::store<float32> (Q.x(), &NH.quatern_b, is_BE);
+        Raw::store<float32> (Q.y(), &NH.quatern_c, is_BE);
+        Raw::store<float32> (Q.z(), &NH.quatern_d, is_BE);
 
 
         // sform:

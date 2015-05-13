@@ -28,7 +28,6 @@
 #include "image_io/scratch.h"
 #include "file/name_parser.h"
 #include "formats/list.h"
-#include "math/permutation.h"
 
 namespace MR
 {

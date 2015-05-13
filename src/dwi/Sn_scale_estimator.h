@@ -23,7 +23,6 @@
 #ifndef __dwi_Sn_scale_estimator_h__
 #define __dwi_Sn_scale_estimator_h__
 
-#include "math/vector.h"
 #include "math/median.h"
 
 

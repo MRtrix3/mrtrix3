@@ -26,7 +26,6 @@
 #include <memory>
 
 #include "datatype.h"
-#include "math/matrix.h"
 #include "file/dicom/element.h"
 
 namespace MR {
@@ -54,9 +53,8 @@ namespace MR {
           }
 
           size_t acq_dim[2], dim[2], series_num, instance, acq, sequence;
-          float position_vector[3], orientation_x[3], orientation_y[3], orientation_z[3], distance;
-          float pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept;
-          float bvalue, G[3];
+          Eigen::Vector3f position_vector, orientation_x, orientation_y, orientation_z, G;
+          float distance, pixel_size[2], slice_thickness, slice_spacing, scale_slope, scale_intercept, bvalue;
           size_t data, bits_alloc, data_size, frame_offset;
           std::string filename;
           bool DW_scheme_wrt_image;
@@ -85,24 +83,17 @@ namespace MR {
           void calc_distance ()
           {
             if (!std::isfinite (orientation_z[0])) 
-              Math::cross (orientation_z, orientation_x, orientation_y);
+              orientation_z = orientation_x.cross (orientation_y);
             else {
-              float normal[3];
-              Math::cross (normal, orientation_x, orientation_y);
-              if (Math::dot (normal, orientation_z) < 0.0) {
-                orientation_z[0] = -normal[0];
-                orientation_z[1] = -normal[1];
-                orientation_z[2] = -normal[2];
-              }
-              else {
-                orientation_z[0] = normal[0];
-                orientation_z[1] = normal[1];
-                orientation_z[2] = normal[2];
-              }
+              Eigen::Vector3f normal = orientation_x.cross (orientation_y);
+              if (normal.dot (orientation_z) < 0.0)
+                orientation_z = -normal;
+              else 
+                orientation_z = normal;
             }
 
-            Math::normalise (orientation_z);
-            distance = Math::dot (orientation_z, position_vector);
+            orientation_z.normalize();
+            distance = orientation_z.dot (position_vector);
           }
 
           static std::vector<size_t> count (const std::vector<Frame*>& frames);

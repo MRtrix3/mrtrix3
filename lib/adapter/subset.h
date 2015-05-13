@@ -23,7 +23,6 @@
 #ifndef __adapter_subset_h__
 #define __adapter_subset_h__
 
-#include "math/matrix.h"
 #include "image.h"
 #include "adapter/base.h"
 

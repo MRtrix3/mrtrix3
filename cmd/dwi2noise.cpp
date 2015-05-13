@@ -24,7 +24,6 @@
 #include "image.h"
 #include "adapter/extract.h"
 #include "dwi/gradient.h"
-#include "math/matrix.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
 

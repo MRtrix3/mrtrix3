@@ -109,7 +109,7 @@ namespace MR {
               return NAN;
             }
 
-            void get_float (float* v) const { 
+            void get_float (Eigen::Vector3f& v) const { 
               const uint8_t* p = start + 84;
               for (uint32_t m = 0; m < nitems; m++) {
                 uint32_t length = Raw::fetch_LE<uint32_t> (p);

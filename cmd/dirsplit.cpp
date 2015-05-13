@@ -22,12 +22,9 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
 #include "thread.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 
@@ -55,6 +52,7 @@ OPTIONS
 
 
 typedef double value_type;
+typedef Eigen::Vector3d vector3_type;
 
 
 
@@ -94,9 +92,9 @@ class Shared {
 
 
     value_type energy (size_t i, size_t j) const {
-      Point<value_type> a = { directions(i,0), directions(i,1), directions(i,2) };
-      Point<value_type> b = { directions(j,0), directions(j,1), directions(j,2) };
-      return 1.0 / (a-b).norm2() + 1.0 / (a+b).norm2();
+      vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
+      vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
+      return 1.0 / (a-b).squaredNorm() + 1.0 / (a+b).squaredNorm();
     }
 
 

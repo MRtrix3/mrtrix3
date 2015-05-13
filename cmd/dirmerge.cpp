@@ -22,10 +22,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 #include "file/ofstream.h"
 
@@ -87,7 +84,7 @@ void run ()
     for (size_t i = 0; i < num_subsets; ++i) {
       auto m = DWI::Directions::load_cartesian (argument[current++]);
       DirectionSet set;
-      for (size_t r = 0; r < m.rows(); ++r)
+      for (ssize_t r = 0; r < m.rows(); ++r)
         set.push_back ({ { m(r,0), m(r,1), m(r,2) } });
       d.push_back (set);
     }

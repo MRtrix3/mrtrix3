@@ -25,7 +25,6 @@
 #define __dwi_directions_load_h__
 
 #include "math/SH.h"
-#include "math/matrix.h"
 
 namespace MR {
   namespace DWI {

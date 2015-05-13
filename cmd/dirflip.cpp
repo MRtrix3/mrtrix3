@@ -22,13 +22,10 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
 #include "file/utils.h"
 #include "thread.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 
@@ -59,6 +56,7 @@ void usage () {
 
 
 typedef double value_type;
+typedef Eigen::Vector3d vector3_type;
 
 
 
@@ -86,11 +84,11 @@ class Shared {
 
 
     value_type eddy (size_t i, size_t j, const std::vector<int>& signs) const {
-      Point<value_type> a = { directions(i,0), directions(i,1), directions(i,2) };
-      Point<value_type> b = { directions(j,0), directions(j,1), directions(j,2) };
+      vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
+      vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
       if (signs[i] < 0) a = -a;
       if (signs[j] < 0) b = -b;
-      return 1.0 / (a-b).norm2();
+      return 1.0 / (a-b).squaredNorm();
     }
 
 

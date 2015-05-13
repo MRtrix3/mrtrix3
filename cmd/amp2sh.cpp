@@ -23,7 +23,6 @@
 #include "command.h"
 #include "progressbar.h"
 #include "image.h"
-#include "math/matrix.h"
 #include "math/SH.h"
 #include "dwi/gradient.h"
 #include "dwi/shells.h"

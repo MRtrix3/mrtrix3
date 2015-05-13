@@ -110,8 +110,8 @@ namespace MR {
                   orientation_y[0] = item.get_float()[3];
                   orientation_y[1] = item.get_float()[4];
                   orientation_y[2] = item.get_float()[5];
-                  Math::normalise (orientation_x);
-                  Math::normalise (orientation_y);
+                  orientation_x.normalize();
+                  orientation_y.normalize();
                   return;
                 case 0x9157U: 
                   index = item.get_uint();

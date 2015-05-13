@@ -22,11 +22,8 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 #include <random>
