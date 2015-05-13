@@ -225,9 +225,14 @@ namespace MR
 
         void Tractography::drawOverlays (const Projection& transform)
         {
+          if(!scalar_file_options)
+            return;
+
+          const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
+
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool, transform);
           }
         }
 
@@ -401,6 +406,8 @@ namespace MR
           } else {
             if (!scalar_file_options) {
               scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options", window);
+              scalar_file_options->setFloating (false);
+              scalar_file_options->raise();
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {

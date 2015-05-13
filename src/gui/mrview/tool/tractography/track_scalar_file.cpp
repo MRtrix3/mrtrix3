@@ -131,6 +131,22 @@ namespace MR
         }
 
 
+
+        void TrackScalarFile::render_tractogram_colourbar(const Tractogram &tractogram, const Projection &transform) {
+          float min_value = threshold_lower_box->isChecked() ?
+            tractogram.scaling_min_thresholded() :
+            tractogram.scaling_min();
+
+          float max_value = threshold_upper_box->isChecked() ?
+            tractogram.scaling_max_thresholded() :
+            tractogram.scaling_max();
+
+          colourbar_renderer.render (transform, tractogram, 4, tractogram.scale_inverted(),
+            min_value, max_value, tractogram.scaling_min(), tractogram.display_range);
+        }
+
+
+
         void TrackScalarFile::clear_tool_display () {
           file_button->setText ("");
           file_button->setEnabled (false);

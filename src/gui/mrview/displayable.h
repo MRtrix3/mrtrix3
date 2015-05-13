@@ -54,11 +54,13 @@ namespace MR
 
       class Image;
       namespace Tool { class AbstractFixel; }
+      namespace Tool { class Tractogram; }
       class DisplayableVisitor
       {
         public:
           virtual void render_image_colourbar(const Image&, const Projection&) {}
           virtual void render_fixel_colourbar(const Tool::AbstractFixel&, const Projection&) {}
+          virtual void render_tractogram_colourbar(const Tool::Tractogram&, const Projection&) {}
       };
 
       class Displayable : public QAction

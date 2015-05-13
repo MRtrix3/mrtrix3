@@ -57,9 +57,9 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
+            void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override {
               if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+                visitor.render_tractogram_colourbar(*this, projection);
             }
 
             void load_tracks();
@@ -110,8 +110,6 @@ namespace MR
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,

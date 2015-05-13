@@ -377,8 +377,7 @@ namespace MR
             scalar_filename (""),
             window (window),
             tractography_tool (tool),
-            filename (filename),
-            colourbar_position_index (4)
+            filename (filename)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
