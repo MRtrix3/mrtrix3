@@ -146,7 +146,7 @@ namespace MR
             source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
 
           if(color_type == ScalarFile)
-            source += "  v_amp = amp";
+            source += "  v_amp = amp;\n";
 
           source +=
           "  v_dir = normalize(p2-p1);\n"
