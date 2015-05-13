@@ -83,7 +83,7 @@ namespace MR
                 DWI::Directions::FastLookupSet dirs (1281);
                 Image::Buffer<float> fod_data (fod_path);
                 Math::SH::check (fod_data);
-                Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, properties.seeds.get_rng(), dirs);
+                Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
 
                 typename Method::Shared shared (diff_path, properties);

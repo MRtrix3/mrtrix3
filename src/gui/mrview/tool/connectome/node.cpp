@@ -40,7 +40,7 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, RefPtr< MR::Image::BufferScratch<bool> >& image) :
+        Node::Node (const Point<float>& com, const size_t vol, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
             centre_of_mass (com),
             volume (vol),
             mask (image),

@@ -55,7 +55,7 @@ namespace MR
                 try {
                   tractogram->load_tracks();
                   beginInsertRows (QModelIndex(), items.size(), items.size() + 1);
-                  items.push_back (tractogram);
+                  items.push_back (std::unique_ptr<Displayable> (tractogram));
                   endInsertRows();
                 } catch (Exception& e) {
                   delete tractogram;
@@ -65,14 +65,14 @@ namespace MR
             }
 
             Tractogram* get_tractogram (QModelIndex& index) {
-              return dynamic_cast<Tractogram*>(items[index.row()]);
+              return dynamic_cast<Tractogram*>(items[index.row()].get());
             }
         };
 
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (1.0),
+          line_thickness (0.001f),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -97,19 +97,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Tracks"));
+            button->setToolTip (tr ("Open tractogram"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Tracks"));
+            button->setToolTip (tr ("Close tractogram"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Tracks"));
+            hide_all_button->setToolTip (tr ("Hide all tractograms"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -159,7 +159,7 @@ namespace MR
             QGroupBox* slab_group_box = new QGroupBox (tr("crop to slab"));
             slab_group_box->setCheckable (true);
             slab_group_box->setChecked (true);
-            default_opt_grid->addWidget (slab_group_box, 2, 0, 1, 2);
+            default_opt_grid->addWidget (slab_group_box, 3, 0, 1, 2);
 
             connect (slab_group_box, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slab_slot (bool)));
 
@@ -175,7 +175,7 @@ namespace MR
             QGroupBox* lighting_group_box = new QGroupBox (tr("lighting"));
             lighting_group_box->setCheckable (true);
             lighting_group_box->setChecked (false);
-            default_opt_grid->addWidget (lighting_group_box, 3, 0, 1, 2);
+            default_opt_grid->addWidget (lighting_group_box, 4, 0, 1, 2);
 
             connect (lighting_group_box, SIGNAL (clicked (bool)), this, SLOT (on_use_lighting_slot (bool)));
 
@@ -218,7 +218,7 @@ namespace MR
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->render (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->render (transform);
           }
         }
 
@@ -227,7 +227,7 @@ namespace MR
         {
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i])->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->renderColourBar (transform);
           }
         }
 
@@ -317,7 +317,7 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          line_thickness = static_cast<float>(thickness) / 100000.0f;
           window.updateGL();
         }
 
@@ -377,15 +377,15 @@ namespace MR
           QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i) {
             float colour[3];
-            Math::RNG rng;
+            Math::RNG::Uniform<float> rng;
             do {
-              colour[0] = rng.uniform();
-              colour[1] = rng.uniform();
-              colour[2] = rng.uniform();
+              colour[0] = rng();
+              colour[1] = rng();
+              colour[2] = rng();
             } while (colour[0] < 0.5 && colour[1] < 0.5 && colour[2] < 0.5);
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->erase_nontrack_data();
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->color_type = Manual;
-            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()])->set_colour (colour);
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->erase_nontrack_data();
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->color_type = Manual;
+            dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->set_colour (colour);
           }
           window.updateGL();
         }
@@ -400,15 +400,15 @@ namespace MR
             msgBox.exec();
           } else {
             if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
+              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options", window);
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
-            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->scalar_filename.length() == 0) {
+            if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {
               if (!dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->open_track_scalar_file_slot())
                 return;
             } else {
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->erase_nontrack_data();
-              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()])->color_type = ScalarFile;
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->erase_nontrack_data();
+              dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->color_type = ScalarFile;
             }
             scalar_file_options->show();
             window.updateGL();
@@ -429,11 +429,22 @@ namespace MR
         }
 
 
-        bool Tractography::process_batch_command (const std::string& cmd, const std::string& args)
+
+
+        void Tractography::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Tractography tool options")
+
+            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.")
+            +   Argument ("tracks").type_file_in();
+        }
+
+        bool Tractography::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-          // BATCH_COMMAND tractography.load path # Load the specified tracks file into the tractography tool
-          if (cmd == "tractography.load") {
-            std::vector<std::string> list (1, args);
+          if (opt.opt->is ("tractography.load")) {
+            std::vector<std::string> list (1, std::string(opt[0]));
             try { 
               tractogram_list_model->add_items (list, window, *this); 
               window.updateGL();
@@ -444,6 +455,7 @@ namespace MR
 
           return false;
         }
+
 
 
       }

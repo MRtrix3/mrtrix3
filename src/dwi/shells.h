@@ -159,9 +159,9 @@ namespace MR
           return b;
         }
 
-        void select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
+        Shells& select_shells (const bool keep_bzero = false, const bool force_single_shell = true);
 
-        void reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
+        Shells& reject_small_shells (const size_t min_volumes = DWI_SHELLS_MIN_DIRECTIONS);
 
         bool is_single_shell() const {
           return ((shells.size() == 1) || ((shells.size() == 2 && smallest().is_bzero())));

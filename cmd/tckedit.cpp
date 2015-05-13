@@ -72,6 +72,8 @@ void usage ()
   + Option ("inverse", "output the inverse selection of streamlines based on the criteria provided, "
                        "i.e. only those streamlines that fail at least one criterion will be written to file.")
 
+  + Option ("test_ends_only", "only test the ends of each streamline against the provided include/exclude ROIs")
+
   // TODO Input weights with multiple input files currently not supported
   + Tractography::TrackWeightsInOption
   + Tractography::TrackWeightsOutOption;
@@ -173,6 +175,8 @@ void run ()
   opt = get_options ("downsample");
   const int downsample = opt.size() ? int(opt[0][0]) : 1;
   const bool inverse = get_options ("inverse").size();
+  const bool test_ends_only = get_options ("test_ends_only").size();
+  const bool out_ends_only = get_options ("out_ends_only").size();
 
   // Parameters that the output thread needs to be aware of
   opt = get_options ("number");
@@ -181,12 +185,12 @@ void run ()
   const size_t skip   = opt.size() ? size_t(opt[0][0]) : 0;
 
   Loader loader (input_file_list);
-  Worker worker (properties, upsample, downsample, inverse);
+  Worker worker (properties, upsample, downsample, inverse, test_ends_only);
   // This needs to be run AFTER creation of the Worker class
   // (worker needs to be able to set max & min number of points based on step size in input file,
   //  receiver needs "output_step_size" field to have been updated before file creation)
   update_output_step_size (properties, upsample, downsample);
-  Receiver receiver (output_path, properties, count, number, skip);
+  Receiver receiver (output_path, properties, number, skip, out_ends_only);
 
   Thread::run_queue (
       loader, 

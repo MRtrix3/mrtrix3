@@ -92,15 +92,15 @@ namespace MR
             }
 
             size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
-              VecPtr<MR::Image::Header> hlist;
+              std::vector<std::unique_ptr<MR::Image::Header>> hlist;
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
-                  Ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
+                  std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
                   if (header->ndim() < 4) 
                     throw Exception ("image \"" + header->name() + "\" is not 4D");
                   if (header->dim(3) < 6)
                     throw Exception ("image \"" + header->name() + "\" does not contain enough SH coefficients (too few volumes along 4th axis)");
-                  hlist.push_back (header.release());
+                  hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
                   E.display();
@@ -110,7 +110,7 @@ namespace MR
               if (hlist.size()) {
                 beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
                 for (size_t i = 0; i < hlist.size(); ++i) 
-                  items.push_back (new Image (*hlist[i], lmax, scale, hide_negative_lobes, colour_by_direction));
+                  items.push_back (std::unique_ptr<Image> (new Image (*hlist[i], lmax, scale, hide_negative_lobes, colour_by_direction)));
                 endInsertRows();
               }
 
@@ -129,10 +129,10 @@ namespace MR
             }
 
             Image* get_image (QModelIndex& index) {
-              return index.isValid() ? dynamic_cast<Image*>(items[index.row()]) : NULL;
+              return index.isValid() ? dynamic_cast<Image*>(items[index.row()].get()) : NULL;
             }
 
-            VecPtr<Image> items;
+            std::vector<std::unique_ptr<Image>> items;
         };
 
 
@@ -189,13 +189,13 @@ namespace MR
             HBoxLayout* layout = new HBoxLayout;
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open ODF image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close ODF image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);

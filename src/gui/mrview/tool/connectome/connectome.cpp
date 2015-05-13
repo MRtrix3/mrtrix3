@@ -25,7 +25,7 @@
 #include "file/path.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/colourmap.h"
-#include "image/adapter/extract.h"
+#include "image/adapter/subset.h"
 #include "image/buffer.h"
 #include "image/header.h"
 #include "image/info.h"
@@ -569,7 +569,7 @@ namespace MR
             if (node_geometry == NODE_GEOM_OVERLAY) {
 
               if (is_3D) {
-                window.get_current_mode()->overlays_for_3D.push_back (node_overlay);
+                window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
               } else {
                 // set up OpenGL environment:
                 gl::Enable (gl::BLEND);
@@ -804,6 +804,30 @@ namespace MR
               window.updateGL();
             }
             catch (Exception& E) { clear_all(); E.display(); }
+            return true;
+          }
+          return false;
+        }
+
+
+        void Connectome::add_commandline_options (MR::App::OptionList& options)
+        {
+          using namespace MR::App;
+          options
+            + OptionGroup ("Connectome tool options")
+
+            + Option ("connectome.load", "Loads the specified parcellation image on the connectome tool.")
+            +   Argument ("image").type_image_in();
+        }
+
+        bool Connectome::process_commandline_option (const MR::App::ParsedOption& opt)
+        {
+          if (opt.opt->is ("connectome.load")) {
+            try {
+              initialise (opt[0]);
+              image_button->setText (QString::fromStdString (Path::basename (opt[0])));
+              load_properties();
+            } catch (Exception& e) { e.display(); clear_all(); }
             return true;
           }
           return false;
@@ -1732,7 +1756,7 @@ namespace MR
           if (H.ndim() != 3)
             throw Exception ("Input parcellation image must be a 3D image");
           voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
-          buffer = new MR::Image::BufferPreload<node_t> (path);
+          buffer.reset (new MR::Image::BufferPreload<node_t> (path));
           auto voxel = buffer->voxel();
           MR::Image::Transform transform (H);
           std::vector< Point<float> > node_coms;
@@ -1779,7 +1803,7 @@ namespace MR
 
                 MR::Image::Adapter::Subset<decltype(voxel)> subset (voxel, node_lower_corners[node_index], node_upper_corners[node_index] - node_lower_corners[node_index] + Point<int> (1, 1, 1));
 
-                RefPtr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
+                std::shared_ptr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
                 auto voxel = node_mask->voxel();
 
                 auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
@@ -1810,7 +1834,7 @@ namespace MR
           overlay_info.dim (3) = 4; // RGBA
           overlay_info.stride (3) = 0;
           overlay_info.sanitise();
-          node_overlay = new NodeOverlay (overlay_info);
+          node_overlay.reset (new NodeOverlay (overlay_info));
           update_node_overlay();
 
         }
@@ -1912,10 +1936,10 @@ namespace MR
           } else if (node_colour == NODE_COLOUR_RANDOM) {
 
             Point<float> rgb;
-            Math::RNG rng;
+            Math::RNG::Uniform<float> rng;
             for (auto i = nodes.begin(); i != nodes.end(); ++i) {
               do {
-                rgb.set (rng.uniform(), rng.uniform(), rng.uniform());
+                rgb.set (rng(), rng(), rng());
               } while (rgb[0] < 0.5 && rgb[1] < 0.5 && rgb[2] < 0.5);
               i->set_colour (rgb);
             }

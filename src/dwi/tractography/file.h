@@ -29,6 +29,7 @@
 #include "app.h"
 #include "file/config.h"
 #include "types.h"
+#include "memory.h"
 #include "point.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
@@ -60,7 +61,7 @@ namespace MR
               open (file, "tracks", properties);
               App::Options opt = App::get_options ("tck_weights_in");
               if (opt.size()) {
-                weights_file = new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in);
+                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
                 if (!weights_file->good())
                   throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
               }
@@ -121,7 +122,7 @@ namespace MR
           using __ReaderBase__::dtype;
 
           uint64_t current_index;
-          Ptr<std::ifstream> weights_file;
+          std::unique_ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
           Point<value_type> get_next_point ()
@@ -212,6 +213,7 @@ namespace MR
           File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
           const_cast<Properties&> (properties).set_timestamp();
+          const_cast<Properties&> (properties).set_version_info();
 
           create (out, properties, "tracks");
           barrier_addr = out.tellp();
@@ -385,7 +387,7 @@ namespace MR
 
         protected:
           const size_t buffer_capacity;
-          Ptr<Point<value_type>,true> buffer;
+          std::unique_ptr<Point<value_type>[]> buffer;
           size_t buffer_size;
           std::string weights_buffer;
 
@@ -395,7 +397,7 @@ namespace MR
           }
 
           void commit () {
-            WriterUnbuffered<T>::commit (buffer, buffer_size);
+            WriterUnbuffered<T>::commit (buffer.get(), buffer_size);
             buffer_size = 0;
 
             if (weights_name.size()) {

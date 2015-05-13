@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 
 # Script for 'repairing' a FreeSurfer parcellation image
 # FreeSurfer's sub-cortical structure segmentation has been observed to be highly variable
@@ -20,7 +20,6 @@ import lib.app
 
 from lib.binaryInPath import binaryInPath
 from lib.errorMessage import errorMessage
-from lib.getFSLSuffix import getFSLSuffix
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
@@ -44,8 +43,6 @@ first_atlas_path = os.path.join(fsl_path, 'data', 'first', 'models_336_bin')
 
 if not os.path.isdir(first_atlas_path):
   errorMessage('Atlases required for FSL\'s FIRST program not installed;\nPlease install fsl-first-data using your relevant package manager')
-
-fsl_suffix = getFSLSuffix()
 
 # Want a mapping between FreeSurfer node names and FIRST structure names
 # Just deal with the 5 that are used in ACT; FreeSurfer's hippocampus / amygdala segmentations look good enough.

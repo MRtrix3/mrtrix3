@@ -67,8 +67,13 @@ namespace MR
           private slots:
             void onImageChanged ();
             void onFocusChanged ();
+            void onVolumeIndexChanged(size_t value) { vol_index->setValue(value); }
+            void onVolumeGroupChanged(size_t value) { vol_group->setValue(value); }
             void onFOVChanged ();
             void onSetFocus ();
+            void onSetVoxel ();
+            void onSetVolumeIndex (int value);
+            void onSetVolumeGroup (int value);
             void onPlaneChanged ();
             void onSetPlane (int index);
             void onSetScaling ();
@@ -97,13 +102,14 @@ namespace MR
 
           private:
             AdjustButton *focus_x, *focus_y, *focus_z;
-            QSpinBox **voxel_pos;
+            AdjustButton *voxel_x, *voxel_y, *voxel_z;
+            QSpinBox *vol_index, *vol_group;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
             QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
             QComboBox *plane_combobox;
-            QGroupBox *transparency_box, *threshold_box, *clip_box, *lightbox_box;
+            QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;
             QMenu *clip_planes_option_menu, *clip_planes_reset_submenu;
             QAction *clip_planes_new_axial_action, *clip_planes_new_sagittal_action, *clip_planes_new_coronal_action;

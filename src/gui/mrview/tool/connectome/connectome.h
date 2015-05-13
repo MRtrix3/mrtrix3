@@ -27,7 +27,6 @@
 #include <vector>
 
 #include "point.h"
-#include "ptr.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
@@ -104,9 +103,6 @@
 //   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling
-//     * Have both original and smoothed meshes available from the drop-down list
-//     * Only mesh nodes when it is necessary to do so (i.e. user has selected that option),
-//       rather than meshing them all at image load
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
@@ -189,6 +185,9 @@ namespace MR
 
             size_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
             size_t num_edges() const { return edges.size(); }
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
             void image_open_slot ();
@@ -287,9 +286,10 @@ namespace MR
             NodeShader node_shader;
             EdgeShader edge_shader;
 
+
             // For the sake of viewing nodes as an overlay, need to ALWAYS
             // have access to the parcellation image
-            Ptr< MR::Image::BufferPreload<node_t> > buffer;
+            std::unique_ptr< MR::Image::BufferPreload<node_t> > buffer;
 
 
             std::vector<Node> nodes;
@@ -324,7 +324,7 @@ namespace MR
             GL::VertexArrayObject cube_VAO;
 
             // Used when the geometry of node visualisation is an image overlay
-            Ptr<NodeOverlay> node_overlay;
+            std::unique_ptr<NodeOverlay> node_overlay;
 
             // Used when the geometry of edge visualisation is a cylinder
             Shapes::Cylinder cylinder;

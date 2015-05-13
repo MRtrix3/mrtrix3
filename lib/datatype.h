@@ -125,52 +125,52 @@ namespace MR
       static DataType from_command_line (DataType default_datatype = Undefined);
 
 
-      static const uint8_t     Attributes    = 0xF0U;
-      static const uint8_t     Type          = 0x0FU;
+      static constexpr uint8_t     Attributes    = 0xF0U;
+      static constexpr uint8_t     Type          = 0x0FU;
 
-      static const uint8_t     Complex       = 0x10U;
-      static const uint8_t     Signed        = 0x20U;
-      static const uint8_t     LittleEndian  = 0x40U;
-      static const uint8_t     BigEndian     = 0x80U;
+      static constexpr uint8_t     Complex       = 0x10U;
+      static constexpr uint8_t     Signed        = 0x20U;
+      static constexpr uint8_t     LittleEndian  = 0x40U;
+      static constexpr uint8_t     BigEndian     = 0x80U;
 
-      static const uint8_t     Undefined     = 0x00U;
-      static const uint8_t     Bit           = 0x01U;
-      static const uint8_t     UInt8         = 0x02U;
-      static const uint8_t     UInt16        = 0x03U;
-      static const uint8_t     UInt32        = 0x04U;
-      static const uint8_t     UInt64        = 0x05U;
-      static const uint8_t     Float32       = 0x06U;
-      static const uint8_t     Float64       = 0x07U;
+      static constexpr uint8_t     Undefined     = 0x00U;
+      static constexpr uint8_t     Bit           = 0x01U;
+      static constexpr uint8_t     UInt8         = 0x02U;
+      static constexpr uint8_t     UInt16        = 0x03U;
+      static constexpr uint8_t     UInt32        = 0x04U;
+      static constexpr uint8_t     UInt64        = 0x05U;
+      static constexpr uint8_t     Float32       = 0x06U;
+      static constexpr uint8_t     Float64       = 0x07U;
 
 
-      static const uint8_t     Int8          = UInt8  | Signed;
-      static const uint8_t     Int16         = UInt16 | Signed;
-      static const uint8_t     Int16LE       = UInt16 | Signed | LittleEndian;
-      static const uint8_t     UInt16LE      = UInt16 | LittleEndian;
-      static const uint8_t     Int16BE       = UInt16 | Signed | BigEndian;
-      static const uint8_t     UInt16BE      = UInt16 | BigEndian;
-      static const uint8_t     Int32         = UInt32 | Signed;
-      static const uint8_t     Int32LE       = UInt32 | Signed | LittleEndian;
-      static const uint8_t     UInt32LE      = UInt32 | LittleEndian;
-      static const uint8_t     Int32BE       = UInt32 | Signed | BigEndian;
-      static const uint8_t     UInt32BE      = UInt32 | BigEndian;
-      static const uint8_t     Int64         = UInt64 | Signed;
-      static const uint8_t     Int64LE       = UInt64 | Signed | LittleEndian;
-      static const uint8_t     UInt64LE      = UInt64 | LittleEndian;
-      static const uint8_t     Int64BE       = UInt64 | Signed | BigEndian;
-      static const uint8_t     UInt64BE      = UInt64 | BigEndian;
-      static const uint8_t     Float32LE     = Float32 | LittleEndian;
-      static const uint8_t     Float32BE     = Float32 | BigEndian;
-      static const uint8_t     Float64LE     = Float64 | LittleEndian;
-      static const uint8_t     Float64BE     = Float64 | BigEndian;
-      static const uint8_t     CFloat32      = Complex | Float32;
-      static const uint8_t     CFloat32LE    = Complex | Float32 | LittleEndian;
-      static const uint8_t     CFloat32BE    = Complex | Float32 | BigEndian;
-      static const uint8_t     CFloat64      = Complex | Float64;
-      static const uint8_t     CFloat64LE    = Complex | Float64 | LittleEndian;
-      static const uint8_t     CFloat64BE    = Complex | Float64 | BigEndian;
+      static constexpr uint8_t     Int8          = UInt8  | Signed;
+      static constexpr uint8_t     Int16         = UInt16 | Signed;
+      static constexpr uint8_t     Int16LE       = UInt16 | Signed | LittleEndian;
+      static constexpr uint8_t     UInt16LE      = UInt16 | LittleEndian;
+      static constexpr uint8_t     Int16BE       = UInt16 | Signed | BigEndian;
+      static constexpr uint8_t     UInt16BE      = UInt16 | BigEndian;
+      static constexpr uint8_t     Int32         = UInt32 | Signed;
+      static constexpr uint8_t     Int32LE       = UInt32 | Signed | LittleEndian;
+      static constexpr uint8_t     UInt32LE      = UInt32 | LittleEndian;
+      static constexpr uint8_t     Int32BE       = UInt32 | Signed | BigEndian;
+      static constexpr uint8_t     UInt32BE      = UInt32 | BigEndian;
+      static constexpr uint8_t     Int64         = UInt64 | Signed;
+      static constexpr uint8_t     Int64LE       = UInt64 | Signed | LittleEndian;
+      static constexpr uint8_t     UInt64LE      = UInt64 | LittleEndian;
+      static constexpr uint8_t     Int64BE       = UInt64 | Signed | BigEndian;
+      static constexpr uint8_t     UInt64BE      = UInt64 | BigEndian;
+      static constexpr uint8_t     Float32LE     = Float32 | LittleEndian;
+      static constexpr uint8_t     Float32BE     = Float32 | BigEndian;
+      static constexpr uint8_t     Float64LE     = Float64 | LittleEndian;
+      static constexpr uint8_t     Float64BE     = Float64 | BigEndian;
+      static constexpr uint8_t     CFloat32      = Complex | Float32;
+      static constexpr uint8_t     CFloat32LE    = Complex | Float32 | LittleEndian;
+      static constexpr uint8_t     CFloat32BE    = Complex | Float32 | BigEndian;
+      static constexpr uint8_t     CFloat64      = Complex | Float64;
+      static constexpr uint8_t     CFloat64LE    = Complex | Float64 | LittleEndian;
+      static constexpr uint8_t     CFloat64BE    = Complex | Float64 | BigEndian;
 
-      static const uint8_t     Native        = Float32 |
+      static constexpr uint8_t     Native        = Float32 |
 #ifdef MRTRIX_BYTE_ORDER_BIG_ENDIAN
           BigEndian;
 #else
@@ -196,19 +196,19 @@ namespace MR
 
   template <> inline float DataType::default_out_of_bounds_value ()
   {
-    return NAN;
+    return std::numeric_limits<float>::quiet_NaN();
   }
   template <> inline double DataType::default_out_of_bounds_value ()
   {
-    return NAN;
+    return std::numeric_limits<double>::quiet_NaN();
   }
   template <> inline cfloat DataType::default_out_of_bounds_value ()
   {
-    return NAN;
+    return std::numeric_limits<float>::quiet_NaN();
   }
   template <> inline cdouble DataType::default_out_of_bounds_value ()
   {
-    return NAN;
+    return std::numeric_limits<cdouble>::quiet_NaN();
   }
 
 

@@ -179,11 +179,7 @@ namespace MR
       void write_mrtrix_header (const Header& H, StreamType& out)
       {
 
-        out << "mrtrix_version: " << App::mrtrix_version;
-        if (App::project_version)
-          out << "\nproject_version: " << App::project_version;
-
-        out << "\ndim: " << H.dim (0);
+        out << "dim: " << H.dim (0);
         for (size_t n = 1; n < H.ndim(); ++n)
           out << "," << H.dim (n);
 

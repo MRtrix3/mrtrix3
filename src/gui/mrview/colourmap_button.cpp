@@ -86,7 +86,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
 
 void ColourMapButton::init_custom_colour_menu_items()
 {
-    custom_colour_action = new QAction(tr("Custom colour..."), nullptr);
+    custom_colour_action = new QAction(tr("Custom colour..."), this);
     custom_colour_action->setCheckable(true);
     connect(custom_colour_action, SIGNAL(triggered ()), this, SLOT(select_colour_slot()));
 
@@ -95,7 +95,7 @@ void ColourMapButton::init_custom_colour_menu_items()
     addAction(custom_colour_action);
     colourmap_actions.push_back(custom_colour_action);
 
-    auto choose_random_colour = new QAction(tr("Random colour"), nullptr);
+    auto choose_random_colour = new QAction(tr("Random colour"), this);
     connect(choose_random_colour, SIGNAL(triggered ()), this, SLOT(select_random_colour_slot()));
 
     colourmap_menu->addAction(choose_random_colour);
@@ -195,12 +195,12 @@ void ColourMapButton::select_random_colour_slot()
 {
     size_t colour[3];
     Math::RNG rng;
-    size_t max = std::numeric_limits<unsigned char>::max();
-    size_t max_half = max/2;
+    std::uniform_int_distribution<unsigned char> uniform_int;
+    constexpr size_t max_half = std::numeric_limits<unsigned char>::max()/2;
     do {
-      colour[0] = rng.uniform_int(max);
-      colour[1] = rng.uniform_int(max);
-      colour[2] = rng.uniform_int(max);
+      colour[0] = uniform_int(rng);
+      colour[1] = uniform_int(rng);
+      colour[2] = uniform_int(rng);
     } while (colour[0] < max_half && colour[1] < max_half && colour[2] < max_half);
 
     custom_colour_action->setChecked(true);

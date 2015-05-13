@@ -210,10 +210,11 @@ namespace MR
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
-            if(!ColourMap::maps[image->colourmap].is_colour)
-              source += std::string ("        ") + ColourMap::maps[image->colourmap].mapping;
-            else
-              source += std::string ("         color.rgb = 2.7213 * amplitude * overlay"+str(n)+"_colourmap_colour;\n");
+            std::string mapping (ColourMap::maps[image->colourmap].mapping);
+            replace (mapping, "scale", "overlay"+str(n)+"_scale");
+            replace (mapping, "offset", "overlay"+str(n)+"_offset");
+            replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");
+            source += std::string ("        ") + mapping;
 
             source += 
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
@@ -570,9 +571,13 @@ namespace MR
         {
          
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
-          if (clip.size()) 
-            move_clip_planes_in_out (clip, x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)));
-          else
+          if (clip.size()) {
+            const auto &header = image()->header();
+            float increment = snap_to_image() ?
+              x * header.vox(plane()) :
+              x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+            move_clip_planes_in_out (clip, increment);
+          } else
             Base::slice_move_event (x);
         }
 

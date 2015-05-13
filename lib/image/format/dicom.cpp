@@ -20,6 +20,8 @@
 
 */
 
+#include <memory>
+
 #include "file/path.h"
 #include "file/config.h"
 #include "get_set.h"
@@ -40,18 +42,18 @@ namespace MR
     namespace Format
     {
 
-      RefPtr<Handler::Base> DICOM::read (Header& H) const
+      std::shared_ptr<Handler::Base> DICOM::read (Header& H) const
       {
         if (!Path::is_dir (H.name())) 
           if (!Path::has_suffix (H.name(), ".dcm"))
-            return RefPtr<Handler::Base>();
+            return std::shared_ptr<Handler::Base>();
 
         File::Dicom::Tree dicom;
 
         dicom.read (H.name());
         dicom.sort();
 
-        std::vector< RefPtr<File::Dicom::Series> > series = File::Dicom::select_func (dicom);
+        auto series = File::Dicom::select_func (dicom);
         if (series.empty()) 
           throw Exception ("no DICOM series selected");
 
@@ -64,10 +66,10 @@ namespace MR
         return false;
       }
 
-      RefPtr<Handler::Base> DICOM::create (Header& H) const
+      std::shared_ptr<Handler::Base> DICOM::create (Header& H) const
       {
         assert (0);
-        return RefPtr<Handler::Base>();
+        return std::shared_ptr<Handler::Base>();
       }
 
 

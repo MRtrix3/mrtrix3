@@ -98,7 +98,7 @@ namespace MR
               endRemoveRows();
             }
 
-            VecPtr<Displayable> items;
+            std::vector<std::unique_ptr<Displayable>> items;
         };
 
 

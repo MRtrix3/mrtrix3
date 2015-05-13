@@ -23,7 +23,7 @@
 #ifndef __image_filter_dwi_brain_mask_h__
 #define __image_filter_dwi_brain_mask_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/voxel.h"
@@ -97,9 +97,7 @@ namespace MR
               BufferScratch<bool> mask_data (info, "DWI mask");
               auto mask_voxel = mask_data.voxel();
 
-              Ptr<ProgressBar> progress;
-              if (message.size())
-                progress = new ProgressBar (message);
+              std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
 
               // Loop over each shell, including b=0, in turn
               DWI::Shells shells (grad);

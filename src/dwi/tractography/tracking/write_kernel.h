@@ -27,7 +27,6 @@
 #include <vector>
 #include <cinttypes>
 
-#include "ptr.h"
 #include "timer.h"
 #include "file/ofstream.h"
 
@@ -64,10 +63,12 @@ namespace MR
           {
             DWI::Tractography::Properties::const_iterator seed_output = properties.find ("seed_output");
             if (seed_output != properties.end()) {
-              seeds = new File::OFStream (seed_output->second, std::ios_base::out | std::ios_base::trunc);
+              seeds.reset (new File::OFStream (seed_output->second, std::ios_base::out | std::ios_base::trunc));
               (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
             }
           }
+
+          WriteKernel (const WriteKernel&) = delete;
 
           ~WriteKernel ()
           {
@@ -88,7 +89,7 @@ namespace MR
         protected:
           const SharedBase& S;
           Writer<value_type> writer;
-          Ptr<File::OFStream> seeds;
+          std::unique_ptr<File::OFStream> seeds;
           ProgressBar progress;
       };
 

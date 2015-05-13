@@ -25,6 +25,7 @@
 #include "datatype.h"
 #include "get_set.h"
 #include "file/mgh_utils.h"
+#include "file/nifti1_utils.h"
 #include "image/header.h"
 #include "math/vector.h"
 
@@ -149,10 +150,13 @@ namespace MR
         if (ndim > 4)
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
+        std::vector<size_t> axes;
+        Math::Matrix<float> M = File::NIfTI::adjust_transform (H, axes);
+
         put<int32_t> (1, &MGHH.version, is_BE);
-        put<int32_t> (H.dim (0), &MGHH.width, is_BE);
-        put<int32_t> ((ndim > 1) ? H.dim (1) : 1, &MGHH.height, is_BE);
-        put<int32_t> ((ndim > 2) ? H.dim (2) : 1, &MGHH.depth, is_BE);
+        put<int32_t> (H.dim (axes[0]), &MGHH.width, is_BE);
+        put<int32_t> ((ndim > 1) ? H.dim (axes[1]) : 1, &MGHH.height, is_BE);
+        put<int32_t> ((ndim > 2) ? H.dim (axes[2]) : 1, &MGHH.depth, is_BE);
         put<int32_t> ((ndim > 3) ? H.dim (3) : 1, &MGHH.nframes, is_BE);
 
         const DataType& dt = H.datatype();
@@ -182,11 +186,11 @@ namespace MR
 
         put<int32_t> (0, &MGHH.dof, is_BE);
         put<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        put<float> (H.vox (0), &MGHH.spacing_x, is_BE);
-        put<float> (H.vox (1), &MGHH.spacing_y, is_BE);
-        put<float> (H.vox (2), &MGHH.spacing_z, is_BE);
+        put<float> (H.vox (axes[0]), &MGHH.spacing_x, is_BE);
+        put<float> (H.vox (axes[1]), &MGHH.spacing_y, is_BE);
+        put<float> (H.vox (axes[2]), &MGHH.spacing_z, is_BE);
 
-        const Math::Matrix<float>& M (H.transform());
+        //const Math::Matrix<float>& M (H.transform());
         put<float> (M (0,0), &MGHH.x_r, is_BE); put<float> (M (0,1), &MGHH.y_r, is_BE); put<float> (M (0,2), &MGHH.z_r, is_BE);
         put<float> (M (1,0), &MGHH.x_a, is_BE); put<float> (M (1,1), &MGHH.y_a, is_BE); put<float> (M (1,2), &MGHH.z_a, is_BE);
         put<float> (M (2,0), &MGHH.x_s, is_BE); put<float> (M (2,1), &MGHH.y_s, is_BE); put<float> (M (2,2), &MGHH.z_s, is_BE);
@@ -194,7 +198,7 @@ namespace MR
         for (size_t i = 0; i != 3; ++i) {
           float offset = M (i, 3);
           for (size_t j = 0; j != 3; ++j)
-            offset += 0.5 * H.dim(j) * H.vox(j) * M (i,j);
+            offset += 0.5 * H.dim(axes[j]) * H.vox(axes[j]) * M (i,j);
           switch (i) {
             case 0: put<float> (offset, &MGHH.c_r, is_BE); break;
             case 1: put<float> (offset, &MGHH.c_a, is_BE); break;

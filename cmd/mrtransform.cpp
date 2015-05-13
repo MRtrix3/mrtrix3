@@ -123,7 +123,7 @@ void usage ()
     + Option ("directions", 
         "the directions used for FOD reorientation using apodised point spread functions "
         "(Default: 60 directions)")
-    + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in()
+    + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
     + Option ("noreorientation", 
         "turn off FOD reorientation. Reorientation is on by default if the number "

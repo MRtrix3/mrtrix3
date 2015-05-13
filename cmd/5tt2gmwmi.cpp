@@ -25,6 +25,7 @@
 
 
 #include "command.h"
+#include "memory.h"
 #include "image/buffer.h"
 #include "image/header.h"
 #include "image/loop.h"
@@ -82,14 +83,14 @@ void run ()
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
 
-  Ptr< Image::Buffer<bool> > image_mask;
-  Ptr< Image::Buffer<bool>::voxel_type > v_mask;
+  std::unique_ptr< Image::Buffer<bool> > image_mask;
+  std::unique_ptr< Image::Buffer<bool>::voxel_type > v_mask;
   Options opt = get_options ("mask_in");
   if (opt.size()) {
-    image_mask = new Image::Buffer<bool> (opt[0][0]);
+    image_mask.reset (new Image::Buffer<bool> (opt[0][0]));
     if (!Image::dimensions_match (image_in, *image_mask, 0, 3))
       throw Exception ("Mask image provided using the -mask option must match the input 5TT image");
-    v_mask = new Image::Buffer<bool>::voxel_type (*image_mask);
+    v_mask.reset (new Image::Buffer<bool>::voxel_type (*image_mask));
   }
 
   Image::Header H_out;

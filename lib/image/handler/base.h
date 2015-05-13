@@ -28,7 +28,7 @@
 #include <unistd.h>
 #include <cassert>
 
-#include "ptr.h"
+#include "memory.h"
 #include "datatype.h"
 #include "file/entry.h"
 
@@ -53,6 +53,16 @@ namespace MR
       {
         public:
           Base (const Image::Header& header);
+          Base (const Base& base) :
+            files (base.files), 
+          name (base.name),
+          datatype (base.datatype),
+          segsize (base.segsize),
+          is_new (base.is_new), 
+          writable (base.writable) { 
+            assert (base.addresses.empty()); 
+          }
+
           virtual ~Base ();
 
           void open ();
@@ -67,7 +77,7 @@ namespace MR
 
           uint8_t* segment (size_t n) const {
             assert (n < addresses.size());
-            return addresses[n];
+            return addresses[n].get();
           }
           size_t nsegments () const {
             return addresses.size();
@@ -101,7 +111,7 @@ namespace MR
           std::string name;
           const DataType datatype;
           size_t segsize;
-          VecPtr<uint8_t,true> addresses;
+          std::vector<std::unique_ptr<uint8_t[]>> addresses;
           bool is_new, writable;
 
           void check () const {

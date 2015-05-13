@@ -59,14 +59,29 @@ namespace MR {
           if (properties.include.size() || properties.exclude.size()) {
 
             include_visited.assign (properties.include.size(), false);
-            for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-              properties.include.contains (*p, include_visited);
-              if (properties.exclude.contains (*p)) {
-                if (inverse) {
-                  downsampler (tck);
-                  tck.swap (out);
+
+            if (ends_only) {
+              for (size_t i = 0; i != 2; ++i) {
+                const Point<float>& p (i ? tck.back() : tck.front());
+                properties.include.contains (p, include_visited);
+                if (properties.exclude.contains (p)) {
+                  if (inverse) {
+                    downsampler (tck);
+                    tck.swap (out);
+                  }
+                  return true;
                 }
-                return true;
+              }
+            } else {
+              for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
+                properties.include.contains (*p, include_visited);
+                if (properties.exclude.contains (*p)) {
+                  if (inverse) {
+                    downsampler (tck);
+                    tck.swap (out);
+                  }
+                  return true;
+                }
               }
             }
 

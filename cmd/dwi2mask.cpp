@@ -22,7 +22,6 @@
 
 #include "command.h"
 #include "point.h"
-#include "ptr.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/voxel.h"

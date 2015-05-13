@@ -84,8 +84,9 @@ namespace MR
             class Shader : public Displayable::Shader {
               public:
                 Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                virtual std::string vertex_shader_source (const Displayable& tractogram);
-                virtual std::string fragment_shader_source (const Displayable& tractogram);
+                std::string vertex_shader_source (const Displayable& displayable) override;
+                std::string fragment_shader_source (const Displayable& displayable) override;
+                std::string geometry_shader_source (const Displayable&) override;
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
               protected:
@@ -121,6 +122,8 @@ namespace MR
             void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
+
+            void render_streamlines ();
 
         };
       }

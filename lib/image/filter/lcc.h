@@ -24,6 +24,7 @@
 #define __image_filter_lcc_h__
 
 #include "point.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/nav.h"
@@ -85,9 +86,7 @@ namespace MR
 
               typedef typename InputVoxelType::value_type value_type;
 
-              Ptr<ProgressBar> progress;
-              if (message.size())
-                progress = new ProgressBar (message);
+              std::unique_ptr<ProgressBar> progress ( message.size() ? new ProgressBar (message) : nullptr);
 
               // Force calling the templated constructor instead of the copy-constructor
               BufferScratch<bool> visited_data (input, "visited");

@@ -79,6 +79,7 @@ namespace MR
           {
             Track_fixel_contribution::set_scaling (dwi);
           }
+          Model (const Model& that) = delete;
 
           virtual ~Model ();
 
@@ -113,9 +114,6 @@ namespace MR
           using ModelBase<Fixel>::TD_sum;
 
 
-          Model (const Model& that) : ModelBase<Fixel> (that) { assert (0); }
-
-
         private:
           // Some member classes to support multi-threaded processes
           class MappedTrackReceiver
@@ -135,7 +133,7 @@ namespace MR
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
-              RefPtr<std::mutex> mutex;
+              std::shared_ptr<std::mutex> mutex;
               double TD_sum;
               std::vector<double> fixel_TDs;
           };

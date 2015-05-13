@@ -322,13 +322,13 @@ namespace MR
 
           switch (header().datatype() ()) {
             case DataType::Bit:
-            case DataType::Int8:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::BYTE;
-              break;
             case DataType::UInt8:
               internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
               type = gl::UNSIGNED_BYTE;
+              break;
+            case DataType::Int8:
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::BYTE;
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
