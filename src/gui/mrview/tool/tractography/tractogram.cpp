@@ -146,7 +146,7 @@ namespace MR
             source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
 
           if(color_type == ScalarFile)
-            source += "  v_amp = amp";
+            source += "  v_amp = amp;\n";
 
           source +=
           "  v_dir = normalize(p2-p1);\n"
@@ -478,7 +478,7 @@ namespace MR
         inline void Tractogram::render_streamlines () {
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
-            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
+            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
         }
 
