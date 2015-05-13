@@ -101,7 +101,7 @@ void update_output_step_size (Tractography::Properties& properties, const int up
     step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
   else
     step_size = to<float>(properties["output_step_size"]);
-  properties["output_step_size"] = step_size * float(downsample_ratio) / float(upsample_ratio);
+  properties["output_step_size"] = str(step_size * float(downsample_ratio) / float(upsample_ratio));
 }
 
 
