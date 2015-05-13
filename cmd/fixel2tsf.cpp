@@ -96,7 +96,6 @@ void run ()
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 
   DWI::Tractography::Mapping::TrackMapperBase mapper (input_header);
-  mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (input_header, properties, 0.333f));
   mapper.set_use_precise_mapping (true);
 
   ProgressBar progress ("mapping fixel values to streamline points...", num_tracks);
@@ -128,7 +127,8 @@ void run ()
           if (largest_dp > angular_threshold_dp)
             scalars[p] = input_fixel.value()[closest_fixel_index].value;
           else
-            scalars[p] = 0.0; //TODO should we make this a NaN?
+            scalars[p] = 0.0;
+          break;
         }
       }
     }
