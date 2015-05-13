@@ -151,7 +151,7 @@ config_report = ''
 
 def log (message):
   global logfile
-  logfile.write (message)
+  logfile.write (message.encode (errors='ignore'))
   if (verbose): 
     sys.stdout.write (message)
     sys.stdout.flush()
@@ -161,11 +161,11 @@ def report (message):
   config_report += message
   sys.stdout.write (message)
   sys.stdout.flush()
-  logfile.write ('\nREPORT: ' + message.rstrip() + '\n')
+  logfile.write (('\nREPORT: ' + message.rstrip() + '\n').encode (errors='ignore'))
 
 def error (message):
   global logfile
-  logfile.write ('\nERROR: ' + message.rstrip() + '\n\n')
+  logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode (errors='ignore'))
   sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.exit (1)
 
