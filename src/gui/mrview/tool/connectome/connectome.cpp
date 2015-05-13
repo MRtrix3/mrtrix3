@@ -589,7 +589,7 @@ namespace MR
 
             } else {
 
-              node_shader.start (*this);
+              node_shader.start (*this, is_3D);
               projection.set (node_shader);
 
               const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
@@ -606,7 +606,10 @@ namespace MR
                 //gl::Disable (gl::CULL_FACE);
               } else {
                 gl::Disable (gl::BLEND);
-                gl::DepthMask (gl::TRUE_);
+                 if (is_3D)
+                  gl::DepthMask (gl::TRUE_);
+                else
+                  gl::DepthMask (gl::FALSE_);
                 //gl::Enable (gl::CULL_FACE);
               }
 
@@ -703,7 +706,7 @@ namespace MR
 
           if (edge_visibility != EDGE_VIS_NONE) {
 
-            edge_shader.start (*this);
+            edge_shader.start (*this, is_3D);
             projection.set (edge_shader);
 
             const bool use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
@@ -719,7 +722,10 @@ namespace MR
               gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
             } else {
               gl::Disable (gl::BLEND);
-              gl::DepthMask (gl::TRUE_);
+               if (is_3D)
+                  gl::DepthMask (gl::TRUE_);
+                else
+                  gl::DepthMask (gl::FALSE_);
             }
 
             GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0, radius_ID = 0;

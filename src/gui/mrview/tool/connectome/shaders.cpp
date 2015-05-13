@@ -141,6 +141,39 @@ namespace MR
           // =================================================================
 
           geometry_shader_source = std::string("");
+          if (!is_3D) {
+
+            geometry_shader_source +=
+                "layout(triangles) in;\n"
+                "layout(line_strip, max_vertices=2) out;\n";
+
+            if (geometry == NODE_GEOM_SPHERE || geometry == NODE_GEOM_MESH || geometry == NODE_GEOM_SMOOTH_MESH) {
+              geometry_shader_source +=
+                "in vec3 normal[];\n";
+            } else if (geometry == NODE_GEOM_CUBE) {
+              geometry_shader_source +=
+                "flat in vec3 normal[];\n";
+            }
+
+            // Need to detect whether or not this triangle intersects the viewing plane
+            // If it does, need to emit two vertices; one for each of the two interpolated
+            //   points that intersect the viewing plane
+            // Following MVP multiplication, the viewing plane should be at a Z-coordinate of zero...
+            // If one edge intersects the viewing plane, it is guaranteed that a second does also
+            geometry_shader_source +=
+                "void main() {\n"
+                "  for (int v1 = 0; v1 != 3; ++v1) {\n"
+                "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
+                "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
+                "    if (mu >= 0.0 && mu <= 1.0) {\n"
+                "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
+                "      EmitVertex();\n"
+                "    }\n"
+                "  }\n"
+                "  EndPrimitive();\n"
+                "}\n";
+
+          }
 
           // =================================================================
 
@@ -281,6 +314,50 @@ namespace MR
           // =================================================================
 
           geometry_shader_source = std::string("");
+          if (!is_3D) {
+
+            if (geometry == EDGE_GEOM_LINE) {
+              geometry_shader_source +=
+                "layout(lines) in;\n"
+                "layout(points, max_vertices=1) out;\n";
+            } else if (geometry == EDGE_GEOM_CYLINDER) {
+              geometry_shader_source +=
+                "layout(triangles) in;\n"
+                "layout(line_strip, max_vertices=2) out;\n";
+            }
+            if (geometry == EDGE_GEOM_CYLINDER) {
+              geometry_shader_source +=
+                "in vec3 normal[];\n";
+            }
+
+            geometry_shader_source +=
+                "void main() {\n";
+
+            if (geometry == EDGE_GEOM_LINE) {
+              geometry_shader_source +=
+                "  float mu = gl_in[0].gl_Position.z / (gl_in[0].gl_Position.z - gl_in[1].gl_Position.z);\n"
+                "  if (mu >= 0.0 && mu <= 1.0) {\n"
+                "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n"
+                "    EmitVertex();\n"
+                "  }\n"
+                "  EndPrimitive();\n";
+            } else if (geometry == EDGE_GEOM_CYLINDER) {
+              geometry_shader_source +=
+                "  for (int v1 = 0; v1 != 3; ++v1) {\n"
+                "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
+                "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
+                "    if (mu >= 0.0 && mu <= 1.0) {\n"
+                "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
+                "      EmitVertex();\n"
+                "    }\n"
+                "  }\n"
+                "  EndPrimitive();\n";
+            }
+
+            geometry_shader_source +=
+                "}\n";
+
+          }
 
           // =================================================================
 

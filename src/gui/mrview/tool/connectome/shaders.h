@@ -48,14 +48,17 @@ namespace MR
           virtual bool need_update (const Connectome&) const = 0;
           virtual void update (const Connectome&) = 0;
 
-          void start (const Connectome& parent) {
-            if (*this == 0 || need_update (parent))
+          void start (const Connectome& parent, const bool draw_3D) {
+            if (*this == 0 || is_3D != draw_3D || need_update (parent)) {
+              is_3D = draw_3D;
               recompile (parent);
+            }
             GL::Shader::Program::start();
           }
 
         protected:
           std::string vertex_shader_source, geometry_shader_source, fragment_shader_source;
+          bool is_3D;
 
         private:
           void recompile (const Connectome& parent);

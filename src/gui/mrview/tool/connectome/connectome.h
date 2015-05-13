@@ -83,20 +83,11 @@
 //
 //
 // * Drawing nodes
-//   - When in 2D mode, mesh mode should detect triangles intersecting with the
-//     focus plane, and draw the projections on that plane as lines
-//     (preferably with adjustable thickness)
-//     This may be best handled within a geometry shader: Detect that polygon
-//     intersects viewing plane, emit two vertices, draw with GL_LINES
-//     (shader will need access to the following two vertices, and run on only
-//     every third vertex)
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
 //   - In 2D mode, use mask image extent / node location & size to detect when there is no
 //     need to process a particular node (need to save the image extent from construction)
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//     * When in 2D mode, as with mesh mode, detect triangles intersecting with the viewing
-//       plane and draw as lines
 //     * Rename current Shapes::Sphere class to Halfsphere, use in the DWI renderer,
 //       but derive a full-sphere for use here
 //       (no point using a full-sphere in the DWI renderer as you'd still have the issue of negative lobes)
@@ -135,8 +126,6 @@
 // * Additional functionalities:
 //   - Print node name in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?
-//   - External window with capability of showing bar plots for different node parameters,
-//     clicking on a node in the main GL window highlights that node in those external plots
 
 
 
