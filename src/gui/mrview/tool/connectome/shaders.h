@@ -25,6 +25,8 @@
 
 #include "gui/opengl/shader.h"
 
+#include "gui/mrview/tool/connectome/types.h"
+
 namespace MR
 {
   namespace GUI
@@ -43,7 +45,7 @@ namespace MR
           ShaderBase() : GL::Shader::Program () { }
           virtual ~ShaderBase() { }
 
-          bool need_update (const Connectome&) const;
+          virtual bool need_update (const Connectome&) const = 0;
           virtual void update (const Connectome&) = 0;
 
           void start (const Connectome& parent) {
@@ -53,7 +55,7 @@ namespace MR
           }
 
         protected:
-          std::string vertex_shader_source, fragment_shader_source;
+          std::string vertex_shader_source, geometry_shader_source, fragment_shader_source;
 
         private:
           void recompile (const Connectome& parent);
@@ -66,7 +68,13 @@ namespace MR
         public:
           NodeShader() : ShaderBase () { }
           ~NodeShader() { }
+          bool need_update (const Connectome&) const override;
           void update (const Connectome&) override;
+        private:
+          node_geometry_t geometry;
+          node_colour_t colour;
+          size_t colourmap_index;
+          bool use_alpha;
       };
 
 
@@ -76,7 +84,13 @@ namespace MR
         public:
           EdgeShader() : ShaderBase () { }
           ~EdgeShader() { }
+          bool need_update (const Connectome&) const override;
           void update (const Connectome&) override;
+        private:
+          edge_geometry_t geometry;
+          edge_colour_t colour;
+          size_t colourmap_index;
+          bool use_alpha;
       };
 
 

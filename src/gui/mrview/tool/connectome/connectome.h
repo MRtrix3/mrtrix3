@@ -50,7 +50,6 @@
 #include "connectome/mat2vec.h"
 
 #include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/connectomics.h"
 #include "dwi/tractography/connectomics/lut.h"
 
 #include "gui/mrview/tool/connectome/colourmap_observers.h"
@@ -59,6 +58,7 @@
 #include "gui/mrview/tool/connectome/node.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
 #include "gui/mrview/tool/connectome/shaders.h"
+#include "gui/mrview/tool/connectome/types.h"
 
 
 
@@ -129,7 +129,6 @@
 //   - Figure out why the toolbar is initially being drawn twice
 //     -> May be something to do with dual screen...
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
-//   - Implement check for determining when the shader needs to be updated
 //   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
 //
@@ -156,22 +155,6 @@ namespace MR
         class Connectome : public Base
         {
             Q_OBJECT
-
-            typedef MR::DWI::Tractography::Connectomics::node_t    node_t;
-            typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
-            typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
-
-            enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_CUBE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH, NODE_GEOM_SMOOTH_MESH };
-            enum node_colour_t     { NODE_COLOUR_FIXED, NODE_COLOUR_RANDOM, NODE_COLOUR_LUT, NODE_COLOUR_FILE };
-            enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
-            enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE };
-            enum node_alpha_t      { NODE_ALPHA_FIXED, NODE_ALPHA_LUT, NODE_ALPHA_FILE };
-
-            enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER };
-            enum edge_colour_t     { EDGE_COLOUR_FIXED, EDGE_COLOUR_DIR, EDGE_COLOUR_FILE };
-            enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
-            enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_NODES, EDGE_VIS_FILE };
-            enum edge_alpha_t      { EDGE_ALPHA_FIXED, EDGE_ALPHA_FILE };
 
           public:
 
