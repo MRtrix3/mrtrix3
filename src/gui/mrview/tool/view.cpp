@@ -168,6 +168,7 @@ namespace MR
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
+          // FoV
           QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
           HBoxLayout* hlayout = new HBoxLayout;
@@ -184,6 +185,7 @@ namespace MR
           connect (plane_combobox, SIGNAL (activated(int)), this, SLOT (onSetPlane(int)));
           hlayout->addWidget (plane_combobox);
 
+          // Focus
           group_box = new QGroupBox ("Focus");
           main_box->addWidget (group_box);
           GridLayout* layout = new GridLayout;
@@ -225,6 +227,26 @@ namespace MR
           connect (focus_z, SIGNAL (valueChanged()), this, SLOT (onSetFocus()));
           layout->addWidget (focus_z, 1, 3);
 
+          // Volume
+          volume_box = new QGroupBox ("Volume");
+          main_box->addWidget (volume_box);
+          layout = new GridLayout;
+          volume_box->setLayout (layout);
+
+          layout->addWidget (new QLabel (tr("Index: ")), 0, 0);
+          vol_index = new QSpinBox(this);
+          vol_index->setMinimum(0);
+          layout->addWidget (vol_index, 0, 1);
+
+          layout->addWidget (new QLabel (tr("Group: ")), 0, 2);
+          vol_group = new QSpinBox(this);
+          vol_group->setMinimum(0);
+          layout->addWidget (vol_group, 0, 3);
+
+          connect(vol_index, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeIndex(int)));
+          connect(vol_group, SIGNAL (valueChanged(int)), this, SLOT (onSetVolumeGroup(int)));
+
+          // Intensity
           group_box = new QGroupBox ("Intensity scaling");
           main_box->addWidget (group_box);
           hlayout = new HBoxLayout;
@@ -237,13 +259,6 @@ namespace MR
           max_entry = new AdjustButton (this);
           connect (max_entry, SIGNAL (valueChanged()), this, SLOT (onSetScaling()));
           hlayout->addWidget (max_entry);
-
-
-
-          layout = new GridLayout;
-          main_box->addLayout (layout);
-
-
 
           transparency_box = new QGroupBox ("Transparency");
           main_box->addWidget (transparency_box);
@@ -337,7 +352,7 @@ namespace MR
           QToolButton* button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("add new clip planes");
+          button->setToolTip ("Add new clip planes");
           button->setIcon (QIcon (":/new.svg"));
           toolbar->addWidget (button);
 
@@ -360,7 +375,7 @@ namespace MR
           button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("reset selected clip planes");
+          button->setToolTip ("Reset selected clip planes");
           button->setIcon (QIcon (":/reset.svg"));
           toolbar->addWidget (button);
 
@@ -378,7 +393,7 @@ namespace MR
 
 
           clip_planes_invert_action = new QAction("&Invert", this);
-          clip_planes_invert_action->setToolTip ("invert selected clip planes");
+          clip_planes_invert_action->setToolTip ("Invert selected clip planes");
           clip_planes_invert_action->setIcon (QIcon (":/invert.svg"));
           connect (clip_planes_invert_action, SIGNAL (triggered()), this, SLOT (clip_planes_invert_slot()));
           clip_planes_option_menu->addAction (clip_planes_invert_action);
@@ -388,7 +403,7 @@ namespace MR
           toolbar->addWidget (button);
 
           clip_planes_remove_action = new QAction("R&emove", this);
-          clip_planes_remove_action->setToolTip ("remove selected clip planes");
+          clip_planes_remove_action->setToolTip ("Remove selected clip planes");
           clip_planes_remove_action->setIcon (QIcon (":/close.svg"));
           connect (clip_planes_remove_action, SIGNAL (triggered()), this, SLOT (clip_planes_remove_slot()));
           clip_planes_option_menu->addAction (clip_planes_remove_action);
@@ -400,7 +415,7 @@ namespace MR
           clip_planes_option_menu->addSeparator();
 
           clip_planes_clear_action = new QAction("&Clear", this);
-          clip_planes_clear_action->setToolTip ("clear all clip planes");
+          clip_planes_clear_action->setToolTip ("Clear all clip planes");
           clip_planes_clear_action->setIcon (QIcon (":/clear.svg"));
           connect (clip_planes_clear_action, SIGNAL (triggered()), this, SLOT (clip_planes_clear_slot()));
           clip_planes_option_menu->addAction (clip_planes_clear_action);
@@ -427,6 +442,8 @@ namespace MR
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
           connect (&window, SIGNAL (modeChanged()), this, SLOT (onModeChanged()));
           connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (onFOVChanged()));
+          connect (&window, SIGNAL (volumeChanged(size_t)), this, SLOT (onVolumeIndexChanged(size_t)));
+          connect (&window, SIGNAL (volumeGroupChanged(size_t)), this, SLOT (onVolumeGroupChanged(size_t)));
           onPlaneChanged();
           onFocusChanged();
           onScalingChanged();
@@ -449,20 +466,41 @@ namespace MR
 
         void View::onImageChanged () 
         {
-          setEnabled (window.image());
+          const auto image = window.image();
 
-          if (!window.image()) 
+          setEnabled (image);
+
+          if (!image)
             return;
 
           onScalingChanged();
 
-          float rate = window.image()->focus_rate();
+          float rate = image->focus_rate();
           focus_x->setRate (rate);
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          lower_threshold_check_box->setChecked (window.image()->use_discard_lower());
-          upper_threshold_check_box->setChecked (window.image()->use_discard_upper());
+          size_t dim = image->interp.ndim();
+          if(dim > 3) {
+            volume_box->setVisible(true);
+            vol_index->setEnabled(true);
+            vol_index->setMaximum(image->interp.dim(3) - 1);
+            vol_index->setValue(image->interp[3]);
+
+            if(dim > 4) {
+              vol_group->setEnabled(true);
+              vol_group->setMaximum(image->interp.dim(4) - 1);
+              vol_group->setValue(image->interp[4]);
+            } else
+              vol_group->setEnabled(false);
+          } else {
+            volume_box->setVisible(false);
+            vol_index->setEnabled(false);
+            vol_group->setEnabled(false);
+          }
+
+          lower_threshold_check_box->setChecked (image->use_discard_lower());
+          upper_threshold_check_box->setChecked (image->use_discard_upper());
         }
 
 
@@ -519,6 +557,26 @@ namespace MR
           }
           catch (Exception) { }
         }
+
+
+
+
+        void View::onSetVolumeIndex (int value)
+        {
+          if(window.image())
+            window.set_image_volume (3, value);
+        }
+
+
+
+
+        void View::onSetVolumeGroup (int value)
+        {
+          if(window.image())
+            window.set_image_volume (4, value);
+        }
+
+
 
 
         void View::onModeChanged () 

@@ -144,6 +144,21 @@ namespace MR
         out.write ( (const char*) &val, sizeof (T));
       }
 
+      // needed to get around changes in hard-coded enum types in datatype.h:
+      DataType fetch_datatype (uint8_t c) {
+        uint8_t d = c & 0x07U;
+        uint8_t t = c & ~(0x07U);
+        if (d >= 0x05U) ++d;
+        return { uint8_t (d | t) };
+      }
+
+      uint8_t store_datatype (DataType& dt) {
+        uint8_t d = dt() & 0x07U;
+        uint8_t t = dt() & ~(0x07U);
+        if (d >= 0x05U) --d;
+        return (d | t);
+      }
+
     }
 
 
@@ -178,7 +193,7 @@ namespace MR
       while (current <= last) {
         switch (type (current, is_BE)) {
           case MRI_DATA:
-            H.datatype() = (reinterpret_cast<const char*> (data (current))) [-4];
+            H.datatype() = fetch_datatype (data(current)[-4]);
             data_offset = current + 5 - (uint8_t*) fmap.address();
             break;
           case MRI_DIMENSIONS:
@@ -334,7 +349,7 @@ namespace MR
       }
 
       write_tag (out, MRI_DATA, 1, is_BE);
-      out.write (reinterpret_cast<const char*> (&H.datatype()()), 1);
+      out.put (store_datatype (H.datatype()));
 
       size_t data_offset = out.tellp();
       out.close();

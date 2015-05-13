@@ -57,9 +57,9 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
+            void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override {
               if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+                visitor.render_tractogram_colourbar(*this, projection);
             }
 
             void load_tracks();
@@ -84,8 +84,9 @@ namespace MR
             class Shader : public Displayable::Shader {
               public:
                 Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                virtual std::string vertex_shader_source (const Displayable& tractogram);
-                virtual std::string fragment_shader_source (const Displayable& tractogram);
+                std::string vertex_shader_source (const Displayable& displayable) override;
+                std::string fragment_shader_source (const Displayable& displayable) override;
+                std::string geometry_shader_source (const Displayable&) override;
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
               protected:
@@ -109,8 +110,6 @@ namespace MR
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
@@ -121,6 +120,8 @@ namespace MR
             void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
+
+            void render_streamlines ();
 
         };
       }

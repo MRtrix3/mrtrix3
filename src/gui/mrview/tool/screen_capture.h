@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include <deque>
 
 namespace MR
 {
@@ -50,22 +51,31 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
+            void on_image_changed ();
+            void on_rotation_type (int);
+            void on_translation_type (int);
             void on_screen_capture ();
             void on_screen_preview ();
+            void on_screen_stop ();
             void select_output_folder_slot();
             void on_output_update ();
+            void on_restore_capture_state ();
 
           private:
-
+            enum RotationType { World, Eye } rotation_type;
+            QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
-            QCheckBox* scanner_coord_check;
+
+            enum TranslationType { Voxel, Scanner } translation_type;
+            QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
-            AdjustButton *target_volume;
+
+            QSpinBox *target_volume;
             AdjustButton *FOV_multipler;
             QSpinBox *start_index;
             QSpinBox *frames;
@@ -75,8 +85,29 @@ namespace MR
             int axis;
             QDir* directory;
 
-            void run (bool with_capture);
+            bool is_playing;
 
+            class CaptureState {
+              public:
+                Math::Versor<float> orientation;
+                Point<> focus, target;
+                float fov;
+                size_t volume, volume_axis;
+                size_t frame_index;
+                int plane;
+                CaptureState(const Math::Versor<float> &orientation,
+                  const Point<> &focus, const Point<> &target, float fov,
+                  size_t volume, size_t volume_axis,
+                  size_t frame_index, int plane)
+                  : orientation(orientation), focus(focus), target(target), fov(fov),
+                    volume(volume), volume_axis(volume_axis),
+                    frame_index(frame_index), plane(plane) {}
+            };
+            constexpr static size_t max_cache_size = 1;
+            std::deque<CaptureState> cached_state;
+
+            void run (bool with_capture);
+            void cache_capture_state ();
         };
 
       }

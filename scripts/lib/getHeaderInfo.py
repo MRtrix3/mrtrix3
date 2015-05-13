@@ -6,7 +6,7 @@ def getHeaderInfo(image_path, header_item):
     printMessage('Command: \'' + command + '\' (piping data to local storage)')
   proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=None, shell=True)
   result = proc.stdout.read()
-  result = result.rstrip()
+  result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
     printMessage ('Result: ' + result)
   return result

@@ -82,10 +82,10 @@ else:
   runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b')
 
 # BET
-runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R')
+runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_bet' + fsl_suffix + ' -f 0.15 -R')
 
 # FAST
-runCommand(fast_cmd + ' T1_bet.' + fsl_suffix)
+runCommand(fast_cmd + ' T1_bet' + fsl_suffix)
 
 # FIRST
 runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first')
@@ -97,7 +97,7 @@ for struct in sgm_structures:
   vtk_path = 'first-' + struct + '_first.vtk'
   if not os.path.exists(vtk_path):
     errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
-  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii')
+  runCommand('mesh2pve ' + vtk_path + ' T1_preBET' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii')
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
@@ -108,8 +108,8 @@ runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
 if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
-  fast_suffix = 'nii.gz'
-runCommand('5ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
+  fast_suffix = '.nii.gz'
+runCommand('5ttgen T1_bet_pve_0' + fast_suffix + ' T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
 result_path = 'result' + os.path.splitext(sys.argv[2])[1]

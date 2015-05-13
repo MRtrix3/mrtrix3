@@ -80,7 +80,6 @@ namespace MR
 
         Vector::Vector (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (2.0),
           do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
@@ -91,19 +90,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Fixel Image"));
+            button->setToolTip (tr ("Open fixel image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Fixel Image"));
+            button->setToolTip (tr ("Close fixel image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Fixel Images"));
+            hide_all_button->setToolTip (tr ("Hide all fixel images"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -201,8 +200,8 @@ namespace MR
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
-            line_thickness_slider->setRange (100,1500);
-            line_thickness_slider->setSliderPosition (float (200.0));
+            line_thickness_slider->setRange (1,25);
+            line_thickness_slider->setSliderPosition (10);
             connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 0, 0);
             default_opt_grid->addWidget (line_thickness_slider, 0, 1);
@@ -249,8 +248,23 @@ namespace MR
 
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this, transform);
           }
+        }
+
+
+        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel, const Projection& transform)
+        {
+            float min_value = threshold_lower_box->isChecked() ?
+                        fixel.scaling_min_thresholded() :
+                        fixel.scaling_min();
+
+            float max_value = threshold_upper_box->isChecked() ?
+                          fixel.scaling_max_thresholded() :
+                          fixel.scaling_max();
+
+            colourbar_renderer.render (transform, fixel, 4, fixel.scale_inverted(),
+                                       min_value, max_value, fixel.scaling_min(), fixel.display_range);
         }
 
 
@@ -336,6 +350,7 @@ namespace MR
           float rate = 0.0f, min_val = 0.0f, max_val = 0.0f;
           float lower_threshold_val = 0.0f, upper_threshold_val = 0.0f;
           float line_length_multiplier = 0.0f;
+          float line_thickness(0.f);
           int num_lower_threshold = 0, num_upper_threshold = 0;
           int colourmap_index = -2;
           for (int i = 0; i < indices.size(); ++i) {
@@ -358,6 +373,7 @@ namespace MR
             lower_threshold_val += fixel->lessthan;
             upper_threshold_val += fixel->greaterthan;
             line_length_multiplier += fixel->get_line_length_multiplier();
+            line_thickness = fixel->get_line_thickenss();
           }
 
           rate /= indices.size();
@@ -457,6 +473,8 @@ namespace MR
             threshold_upper->setEnabled (false);
           }
           threshold_upper->setRate (rate);
+
+          line_thickness_slider->setValue(static_cast<int>(line_thickness * 1000));
         }
 
 
@@ -469,7 +487,9 @@ namespace MR
 
         void Vector::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 200.0f;
+          QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
+          for (int i = 0; i < indices.size(); ++i)
+            fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1000.f);
           window.updateGL();
         }
 
@@ -654,7 +674,7 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("Vector Plot tool options")
+            + OptionGroup ("Vector plot tool options")
 
             + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
             +   Argument ("image").type_image_in();

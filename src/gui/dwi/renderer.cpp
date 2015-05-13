@@ -298,6 +298,7 @@ namespace MR
             indices[n].set (index1, index2, index3);
           }
         }
+        edges.clear();
 
         update_transform (vertices, lmax);
 

@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_undoentry_h__
-#define __gui_mrview_tool_roi_analysis_undoentry_h__
+#ifndef __gui_mrview_tool_roi_editor_undoentry_h__
+#define __gui_mrview_tool_roi_editor_undoentry_h__
 
 #include <array>
 #include <vector>

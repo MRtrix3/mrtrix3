@@ -146,6 +146,7 @@ inline void copy_permute (Header& header_in, Header& header_out, const std::vect
 
   auto in = header_in.get_image<T>();
 
+
   if (pos.empty()) {
 
     const auto axes = set_header (header_out, in);

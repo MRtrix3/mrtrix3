@@ -367,8 +367,6 @@ void run ()
     // std::vector<std::unique_ptr<Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    // auto header = Header::open (argument[0]);
-    // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (argument[0]))));
     headers_in.push_back (Header::open (argument[0]));
     Header header (headers_in[0]);
     header.datatype() = DataType::from_command_line (DataType::Float32);

@@ -85,19 +85,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open overlay image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close overlay image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide All"));
+            hide_all_button->setToolTip (tr ("Hide all overlays"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -348,17 +348,34 @@ namespace MR
         void Overlay::reset_colourmap(const ColourMapButton&)
         {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            Image* overlay = nullptr;
             for (size_t i = 0, N = indices.size(); i < N; ++i) {
-              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
               overlay->reset_windowing();
             }
+
+            // Reset the min/max adjust button fields of last selected overlay
+            if(overlay) {
+             min_value->setValue(overlay->intensity_min());
+             max_value->setValue(overlay->intensity_max());
+            }
+
             updateGL();
         }
 
 
         void Overlay::render_image_colourbar (const Image& image, const Projection& transform)
         {
-            colourbar_renderer.render (transform, image, 4, image.scale_inverted());
+            float min_value = lower_threshold_check_box->isChecked() ?
+                        image.scaling_min_thresholded() :
+                        image.scaling_min();
+
+            float max_value = upper_threshold_check_box->isChecked() ?
+                        image.scaling_max_thresholded() :
+                        image.scaling_max();
+
+            colourbar_renderer.render (transform, image, 4, image.scale_inverted(),
+                                       min_value, max_value, image.scaling_min(), image.display_range);
         }
 
 
@@ -577,7 +594,7 @@ namespace MR
           options
             + OptionGroup ("Overlay tool options")
 
-            + Option ("overlay.load", "Loads the specified image on the overlay tool.")
+            + Option ("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple()
             +   Argument ("image").type_image_in()
 
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")

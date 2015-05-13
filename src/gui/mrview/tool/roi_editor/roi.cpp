@@ -31,7 +31,7 @@
 #include "gui/cursor.h"
 #include "gui/projection.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/tool/roi_analysis/roi.h"
+#include "gui/mrview/tool/roi_editor/roi.h"
 
 
 namespace MR
@@ -83,7 +83,7 @@ namespace MR
           layout->addWidget (close_button, 1);
 
           hide_all_button = new QPushButton (this);
-          hide_all_button->setToolTip (tr ("Hide All"));
+          hide_all_button->setToolTip (tr ("Hide all ROIs"));
           hide_all_button->setIcon (QIcon (":/hide.svg"));
           hide_all_button->setCheckable (true);
           connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -308,6 +308,8 @@ namespace MR
           try {
             MR::Image::Header header;
             header.info() = roi->info();
+            header.set_ndim(3);
+            header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window, "Select name of ROI to save", roi->get_filename());
             if (name.size()) {
               MR::Image::Buffer<bool> buffer (name, header);
@@ -685,8 +687,14 @@ namespace MR
           if (brush_button->isChecked()) {
             if (brush_size_button->value() == brush_size_button->getMin())
               roi->current().draw_line (*roi, prev_pos, pos_adj, insert_mode_value);
-            else
-              roi->current().draw_circle (*roi, pos_adj, insert_mode_value, brush_size_button->value());
+            else {
+              const auto diameter = brush_size_button->value();
+              Point<> current_pos = prev_pos;
+              for(float i = 0; i <= 1.f; i+= 0.1f) {
+                current_pos = prev_pos * (1.0 - i) + pos_adj * i;
+                roi->current().draw_circle (*roi, current_pos, insert_mode_value, diameter);
+              }
+            }
           } else if (rectangle_button->isChecked()) {
             roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);
           } else if (fill_button->isChecked()) {
@@ -722,9 +730,9 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("ROI Analysis tool options")
+            + OptionGroup ("ROI editor tool options")
 
-            + Option ("roi.load", "Loads the specified image on the overlay tool.")
+            + Option ("roi.load", "Loads the specified image on the ROI editor tool.")
             +   Argument ("image").type_image_in()
 
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")

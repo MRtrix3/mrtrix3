@@ -37,7 +37,7 @@ namespace MR
     {
       namespace Tool
       {
-        class Vector : public Base, public ColourMapButtonObserver
+        class Vector : public Base, public ColourMapButtonObserver, public DisplayableVisitor
         {
             Q_OBJECT
 
@@ -50,6 +50,7 @@ namespace MR
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void drawOverlays (const Projection& transform) override;
+            void render_fixel_colourbar(const Tool::AbstractFixel& fixel, const Projection& transform) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
@@ -61,7 +62,6 @@ namespace MR
             void reset_colourmap(const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
-            float line_thickness;
             bool do_crop_to_slice;
             bool not_3D;
             float line_opacity;
@@ -107,6 +107,8 @@ namespace MR
 
             QGroupBox *crop_to_slice;
 
+          private:
+            ColourMap::Renderer colourbar_renderer;
         };
       }
     }
