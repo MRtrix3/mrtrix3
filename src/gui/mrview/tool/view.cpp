@@ -169,21 +169,21 @@ namespace MR
           VBoxLayout* main_box = new VBoxLayout (this);
 
           HBoxLayout* hlayout  = new HBoxLayout;
-          QGroupBox* group_box = new QGroupBox("Visibility");
-          group_box->setLayout (hlayout);
-          hide_button = new QPushButton (this);
-          hide_button->setToolTip (tr ("Hide image"));
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          
+          hide_button = new QPushButton ("Hide main image",this);
+          hide_button->setToolTip (tr ("Hide all main images"));
           hide_button->setIcon (QIcon (":/hide.svg"));
           hide_button->setCheckable (true);
           hide_button->setChecked (!window.get_image_visibility());
-          hide_button->setMaximumWidth (200);
           connect (hide_button, SIGNAL (clicked(bool)), this, SLOT (hide_image_slot (bool)));
-          hlayout->addWidget (new QLabel(tr("Hide image: ")));
-          hlayout->addWidget (hide_button);
-          main_box->addWidget (group_box);
-
+          hlayout->addWidget (hide_button, 1);
+          
+          main_box->addLayout (hlayout, 0);
+          
           // FoV
-          group_box = new QGroupBox ("FOV");
+          QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
           hlayout = new HBoxLayout;
           group_box->setLayout (hlayout);
