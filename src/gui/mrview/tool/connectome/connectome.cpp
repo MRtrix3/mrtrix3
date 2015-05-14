@@ -22,6 +22,8 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
+#include "thread_queue.h"
+
 #include "file/path.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/colourmap.h"
@@ -965,11 +967,18 @@ namespace MR
               if (node_geometry == NODE_GEOM_MESH) return;
               node_geometry = NODE_GEOM_MESH;
               if (!have_meshes) {
-                ProgressBar progress ("Generating node meshes... ", num_nodes()+1);
-                for (auto i = nodes.begin(); i != nodes.end(); ++i) {
-                  i->calculate_mesh();
-                  ++progress;
-                }
+                // Can't generate GL buffer objects in a separate thread: OpenGL context is
+                //   specific to one thread only. Therefore, do the heavy work in a
+                //   multi-threaded fashion (calculate_mesh()), then create the buffers themselves
+                //   in the master thread (assign_mesh())
+                std::vector<MR::Mesh::Mesh> meshes (num_nodes()+1, MR::Mesh::Mesh());
+                auto source = [&] (uint32_t& out) { static uint32_t i = 1; out = i++; return (out <= num_nodes()); };
+                std::mutex mutex;
+                ProgressBar progress ("Generating node meshes... ", num_nodes());
+                auto sink = [&] (uint32_t& in) { meshes[in] = nodes[in].calculate_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+                Thread::run_queue (source, uint32_t(), Thread::multi (sink));
+                for (uint32_t i = 1; i <= num_nodes(); ++i)
+                  nodes[i].assign_mesh (meshes[i]);
                 have_meshes = true;
               }
               if (node_size == NODE_SIZE_VOLUME) {
@@ -996,12 +1005,15 @@ namespace MR
               if (node_geometry == NODE_GEOM_SMOOTH_MESH) return;
               node_geometry = NODE_GEOM_SMOOTH_MESH;
               if (!have_smooth_meshes) {
-                ProgressBar progress ("Generating smooth node meshes... ", num_nodes()+1);
-                for (auto i = nodes.begin(); i != nodes.end(); ++i) {
-                  i->calculate_smooth_mesh();
-                  ++progress;
-                }
-                have_meshes = have_smooth_meshes = true;
+                std::vector<MR::Mesh::Mesh> smooth_meshes (num_nodes()+1, MR::Mesh::Mesh());
+                auto source = [&] (uint32_t& out) { static uint32_t i = 1; out = i++; return (out <= num_nodes()); };
+                std::mutex mutex;
+                ProgressBar progress ("Generating smooth node meshes... ", num_nodes());
+                auto sink = [&] (uint32_t& in) { smooth_meshes[in] = nodes[in].calculate_smooth_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+                Thread::run_queue (source, uint32_t(), Thread::multi (sink));
+                for (uint32_t i = 1; i <= num_nodes(); ++i)
+                  nodes[i].assign_smooth_mesh (smooth_meshes[i]);
+                have_smooth_meshes = true;
               }
               if (node_size == NODE_SIZE_VOLUME) {
                 node_size = NODE_SIZE_FIXED;

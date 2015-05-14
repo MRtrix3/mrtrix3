@@ -107,27 +107,48 @@ namespace MR
 
       public:
         Mesh (const std::string&);
+
+        Mesh (const Mesh& that) = default;
+
+        Mesh (Mesh&& that) :
+            vertices (std::move (that.vertices)),
+            normals (std::move (that.normals)),
+            triangles (std::move (that.triangles)),
+            quads (std::move (that.quads)) { }
+
         Mesh() { }
+
+        Mesh& operator= (Mesh&& that) {
+          vertices = std::move (that.vertices);
+          normals = std::move (that.normals);
+          triangles = std::move (that.triangles);
+          quads = std::move (that.quads);
+          return *this;
+        }
 
 
         void load (VertexList&& v, TriangleList&& p) {
-          vertices = v;
-          triangles = p;
+          vertices = std::move (v);
+          normals.clear();
+          triangles = std::move (p);
           quads.clear();
         }
         void load (const VertexList& v, const TriangleList& p) {
           vertices = v;
+          normals.clear();
           triangles = p;
           quads.clear();
         }
 
         void load (VertexList&& v, QuadList&& p) {
-          vertices = v;
+          vertices = std::move (v);
+          normals.clear();
           triangles.clear();
-          quads = p;
+          quads = std::move (p);
         }
         void load (const VertexList& v, const QuadList& p) {
           vertices = v;
+          normals.clear();
           triangles.clear();
           quads = p;
         }

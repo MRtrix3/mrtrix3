@@ -113,12 +113,7 @@
 //     * Trying to colour by LUT when no LUT is provided
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
 //
-// * Toolbar load
-//   - Speed up the node tessellation; either doing it all in a single pass, or multi-threading
-//
 // * Toolbar
-//   - Figure out why the toolbar is initially being drawn twice
-//     -> May be something to do with dual screen...
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions

@@ -46,10 +46,12 @@ namespace MR
           Node (const Point<float>&, const size_t, std::shared_ptr< MR::Image::BufferScratch<bool> >&);
           Node ();
 
-          void calculate_mesh();
+          MR::Mesh::Mesh calculate_mesh();
+          void assign_mesh (const MR::Mesh::Mesh&);
           void render_mesh() const { if (!mesh) return; mesh->render(); }
 
-          void calculate_smooth_mesh();
+          MR::Mesh::Mesh calculate_smooth_mesh();
+          void assign_smooth_mesh (const MR::Mesh::Mesh&);
           void render_smooth_mesh() const { if (!smooth_mesh) return; smooth_mesh->render(); }
 
           const Point<float>& get_com() const { return centre_of_mass; }

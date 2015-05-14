@@ -62,9 +62,11 @@ namespace MR
 
 
 
-        void Node::calculate_mesh()
+        MR::Mesh::Mesh Node::calculate_mesh()
         {
-          if (!mask || mesh) return;
+          if (!mask) return MR::Mesh::Mesh();
+          if (mesh)
+            throw Exception ("Repeated calculation of node mesh");
           auto voxel = mask->voxel();
           MR::Mesh::Mesh temp;
           {
@@ -73,12 +75,19 @@ namespace MR
             temp.transform_voxel_to_realspace (voxel);
             temp.calculate_normals();
           }
-          mesh.reset (new Node::Mesh (temp));
+          return temp;
         }
 
-        void Node::calculate_smooth_mesh()
+        void Node::assign_mesh (const MR::Mesh::Mesh& in)
         {
-          if (!mask || smooth_mesh) return;
+          mesh.reset (new Node::Mesh (in));
+        }
+
+        MR::Mesh::Mesh Node::calculate_smooth_mesh()
+        {
+          if (!mask) return MR::Mesh::Mesh();
+          if (smooth_mesh)
+            throw Exception ("Repeated calculation of node smooth mesh");
           auto voxel = mask->voxel();
           MR::Mesh::Mesh temp;
           {
@@ -88,7 +97,12 @@ namespace MR
             temp.smooth (10.0, 10.0);
             temp.calculate_normals();
           }
-          smooth_mesh.reset (new Node::Mesh (temp));
+          return temp;
+        }
+
+        void Node::assign_smooth_mesh (const MR::Mesh::Mesh& in)
+        {
+          smooth_mesh.reset (new Node::Mesh (in));
         }
 
 
@@ -175,6 +189,8 @@ namespace MR
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
         }
+
+        std::mutex Node::Mesh::mutex;
 
 
 
