@@ -155,6 +155,8 @@ namespace MR
             VBoxLayout *main_box = new VBoxLayout (this);
 
             HBoxLayout* layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
             button->setToolTip (tr ("Open ODF image"));
