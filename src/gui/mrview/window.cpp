@@ -598,7 +598,7 @@ namespace MR
 
         menu = new QMenu (tr ("Help"), this);
 
-        menu->addAction (tr ("About MRview"), this, SLOT (about_slot()));
+        menu->addAction (tr ("About MRView"), this, SLOT (about_slot()));
         menu->addAction (tr ("OpenGL"), this, SLOT (OpenGL_slot()));
         menu->addAction (tr ("About Qt"), this, SLOT (aboutQt_slot()));
 
