@@ -25,7 +25,6 @@
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/tool/view.h"
 
 namespace MR

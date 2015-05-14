@@ -34,9 +34,9 @@ namespace MR
       class Renderer;
       class RenderFrame;
     }
-    namespace Dialog {
-      class Lighting;
-    }
+
+    class LightingDock;
+
 
     namespace MRView
     {
@@ -93,7 +93,7 @@ namespace MR
 
              AdjustButton *scale;
 
-             Dialog::Lighting *lighting_dialog;
+             LightingDock *lighting_dock;
              GL::Lighting* lighting;
 
              int lmax, level_of_detail;

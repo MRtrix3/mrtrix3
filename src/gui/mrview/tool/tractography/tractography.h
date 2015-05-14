@@ -34,9 +34,8 @@ namespace MR
     namespace GL {
       class Lighting;
     }
-    namespace Dialog {
-      class Lighting;
-    }
+
+    class LightingDock;
 
     namespace MRView
     {
@@ -96,7 +95,7 @@ namespace MR
             AdjustButton* slab_entry;
             QMenu* track_option_menu;
             Dock* scalar_file_options;
-            Dialog::Lighting *lighting_dialog;
+            LightingDock *lighting_dock;
 
         };
       }

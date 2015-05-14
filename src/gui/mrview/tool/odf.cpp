@@ -22,7 +22,7 @@
 
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
@@ -146,7 +146,7 @@ namespace MR
         ODF::ODF (Window& main_window, Dock* parent) :
           Base (main_window, parent),
           renderer (nullptr),
-          lighting_dialog (nullptr),
+          lighting_dock (nullptr),
           lmax (0),
           level_of_detail (0) { 
 
@@ -298,9 +298,9 @@ namespace MR
             delete renderer;
             renderer = nullptr;
           }
-          if (lighting_dialog) {
-            delete lighting_dialog;
-            lighting_dialog = nullptr;
+          if (lighting_dock) {
+            delete lighting_dock;
+            lighting_dock = nullptr;
           }
         }
 
@@ -578,9 +578,11 @@ namespace MR
 
         void ODF::lighting_settings_slot (bool)
         {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Advanced ODF lighting", *lighting);
-          lighting_dialog->show();
+          if (!lighting_dock) {
+            lighting_dock = new LightingDock("Advanced ODF lighting", *lighting);
+            window.addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+          }
+          lighting_dock->show();
         }
 
 
@@ -604,8 +606,8 @@ namespace MR
         {
           assert (preview);
           preview->hide();
-          if (lighting_dialog)
-            lighting_dialog->hide();
+          if (lighting_dock)
+            lighting_dock->hide();
         }
 
 

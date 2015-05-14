@@ -28,7 +28,7 @@
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/opengl/lighting.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
 
 namespace MR
 {
@@ -77,8 +77,8 @@ namespace MR
           use_lighting (false),
           not_3D (true),
           line_opacity (1.0),
-          scalar_file_options (NULL),
-          lighting_dialog (NULL) {
+          scalar_file_options (nullptr),
+          lighting_dock (nullptr) {
 
             float voxel_size;
             if (main_window.image()) {
@@ -300,9 +300,11 @@ namespace MR
 
         void Tractography::on_lighting_settings ()
         {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Tractogram lighting", *lighting);
-          lighting_dialog->show();
+          if (!lighting_dock) {
+            lighting_dock = new LightingDock("Tractogram lighting", *lighting);
+            window.addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+          }
+          lighting_dock->show();
         }
 
 
