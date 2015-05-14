@@ -45,7 +45,7 @@ namespace MR
       enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE };
       enum node_alpha_t      { NODE_ALPHA_FIXED, NODE_ALPHA_LUT, NODE_ALPHA_FILE };
 
-      enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER };
+      enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER, EDGE_GEOM_EXEMPLAR };
       enum edge_colour_t     { EDGE_COLOUR_FIXED, EDGE_COLOUR_DIR, EDGE_COLOUR_FILE };
       enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
       enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_NODES, EDGE_VIS_FILE };

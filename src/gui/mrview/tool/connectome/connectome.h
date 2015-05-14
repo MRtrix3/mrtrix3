@@ -69,18 +69,13 @@
 //   - Display options:
 //     * Colour by: Corresponding nodes? Would require some plotting cleverness
 //   - Draw as streamlines
-//     This would probably require some cross-talk with the tractography tool,
-//     but the theory would essentially be:
-//     * Read in a tractogram, assigning streamlines to node pairs; and for
-//       every edge in the connectome, build a mean exemplar streamline path,
-//       constrain to start & end at the node centres
-//     * Re-sample the resulting exemplars to an appropriate step size, and
-//       store this as an entry in the tractography tool
-//     * The Connectome tool would retain access to streamline lengths etc., so
-//       that it can write to the scalar & colour buffers
-//     Alternatively this could be done by drawing actual streamtubes:
-//     use the streamline tangent at each point to rotate a hollow cylinder
-//
+//     * Implement lighting for exemplars
+//     * Draw as streamtubes
+//     * Consider a cross-talk solution with the tractography tool;
+//       make use of more advanced tractography shaders
+//       Would however require additions to tractography shaders, e.g.
+//       - variable radius between exemplars
+//       - manually providing tangents (not really required?)
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -333,6 +328,7 @@ namespace MR
             edge_alpha_t edge_alpha;
 
             // Other values that need to be stored w.r.t. edge visualisation
+            bool have_exemplars;
             Point<float> edge_fixed_colour;
             size_t edge_colourmap_index;
             bool edge_colourmap_invert;

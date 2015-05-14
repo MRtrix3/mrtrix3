@@ -286,6 +286,12 @@ namespace MR
               "out vec3 normal;\n";
           }
 
+          if (geometry == EDGE_GEOM_EXEMPLAR) {
+            vertex_shader_source +=
+              "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
+              "out vec3 tangent;\n";
+          }
+
           vertex_shader_source +=
               "void main() {\n";
 
@@ -305,6 +311,10 @@ namespace MR
               "  offset = offset * rot_matrix;\n"
               "  normal = vertexNormal_modelspace * rot_matrix;\n"
               "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
+            case EDGE_GEOM_EXEMPLAR:
+              vertex_shader_source +=
+              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n"
+              "  tangent = vertexTangent_modelspace;\n";
               break;
           }
 
@@ -316,33 +326,37 @@ namespace MR
           geometry_shader_source = std::string("");
           if (!is_3D) {
 
-            if (geometry == EDGE_GEOM_LINE) {
-              geometry_shader_source +=
+            switch (geometry) {
+              case EDGE_GEOM_LINE:
+              case EDGE_GEOM_EXEMPLAR:
+                geometry_shader_source +=
                 "layout(lines) in;\n"
                 "layout(points, max_vertices=1) out;\n";
-            } else if (geometry == EDGE_GEOM_CYLINDER) {
-              geometry_shader_source +=
+                break;
+              case EDGE_GEOM_CYLINDER:
+                geometry_shader_source +=
                 "layout(triangles) in;\n"
-                "layout(line_strip, max_vertices=2) out;\n";
-            }
-            if (geometry == EDGE_GEOM_CYLINDER) {
-              geometry_shader_source +=
+                "layout(line_strip, max_vertices=2) out;\n"
                 "in vec3 normal[];\n";
+                break;
             }
 
             geometry_shader_source +=
                 "void main() {\n";
 
-            if (geometry == EDGE_GEOM_LINE) {
-              geometry_shader_source +=
+            switch (geometry) {
+              case EDGE_GEOM_LINE:
+              case EDGE_GEOM_EXEMPLAR:
+                geometry_shader_source +=
                 "  float mu = gl_in[0].gl_Position.z / (gl_in[0].gl_Position.z - gl_in[1].gl_Position.z);\n"
                 "  if (mu >= 0.0 && mu <= 1.0) {\n"
                 "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n"
                 "    EmitVertex();\n"
                 "  }\n"
                 "  EndPrimitive();\n";
-            } else if (geometry == EDGE_GEOM_CYLINDER) {
-              geometry_shader_source +=
+                break;
+              case EDGE_GEOM_CYLINDER:
+                geometry_shader_source +=
                 "  for (int v1 = 0; v1 != 3; ++v1) {\n"
                 "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
                 "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
@@ -352,6 +366,7 @@ namespace MR
                 "    }\n"
                 "  }\n"
                 "  EndPrimitive();\n";
+                break;
             }
 
             geometry_shader_source +=
@@ -379,6 +394,9 @@ namespace MR
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
+          } else if (geometry == EDGE_GEOM_EXEMPLAR) {
+            fragment_shader_source +=
+              "in vec3 tangent;\n";
           }
 
           if (colour == EDGE_COLOUR_FILE && ColourMap::maps[colourmap_index].is_colour) {
@@ -395,14 +413,24 @@ namespace MR
               "  float amplitude = edge_colour.r;\n";
             fragment_shader_source += std::string("  ") + ColourMap::maps[colourmap_index].mapping;
 
+          } else if (colour == EDGE_COLOUR_DIR && geometry == EDGE_GEOM_EXEMPLAR) {
+
+            if (use_alpha) {
+              fragment_shader_source +=
+              "  color.rgb = vec3 (abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));\n";
+            } else {
+              fragment_shader_source +=
+              "  color = vec3 (abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));\n";
+            }
+
           } else {
 
             if (use_alpha) {
               fragment_shader_source +=
-                  "  color.xyz = edge_colour;\n";
+              "  color.rgb = edge_colour;\n";
             } else {
               fragment_shader_source +=
-                  "  color = edge_colour;\n";
+              "  color = edge_colour;\n";
             }
 
           }
@@ -412,6 +440,8 @@ namespace MR
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
           }
+
+          // TODO Lighting for exemplar rendering
 
           if (use_alpha) {
             fragment_shader_source +=

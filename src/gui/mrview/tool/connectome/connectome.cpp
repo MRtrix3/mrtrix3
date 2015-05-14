@@ -78,6 +78,7 @@ namespace MR
             edge_size (EDGE_SIZE_FIXED),
             edge_visibility (EDGE_VIS_NONE),
             edge_alpha (EDGE_ALPHA_FIXED),
+            have_exemplars (false),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
             edge_colourmap_index (1),
             edge_colourmap_invert (false),
@@ -345,6 +346,7 @@ namespace MR
           edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
           edge_geometry_combobox->addItem ("Line");
           edge_geometry_combobox->addItem ("Cylinder");
+          edge_geometry_combobox->addItem ("Exemplar");
           connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
           gridlayout->addWidget (edge_geometry_combobox, 0, 2);
           hlayout = new HBoxLayout;
@@ -778,6 +780,10 @@ namespace MR
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
+                  case EDGE_GEOM_EXEMPLAR:
+                    glLineWidth (edge.get_size() * edge_size_scale_factor);
+                    edge.render_exemplar();
+                    break;
                 }
               }
             }
@@ -912,11 +918,12 @@ namespace MR
           window.updateGL();
         }
 
-
         void Connectome::hide_all_slot()
         {
           window.updateGL();
         }
+
+
 
 
 
@@ -1408,6 +1415,47 @@ namespace MR
               edge_geometry_cylinder_lod_label->setVisible (true);
               edge_geometry_cylinder_lod_spinbox->setVisible (true);
               break;
+            case 2:
+              try {
+                if (!have_exemplars) {
+                  // Request directory path from the user
+                  const std::string dir = GUI::Dialog::File::get_folder (this, "Select directory where command tcknodeextract has generated its output");
+                  if (!dir.size()) break;
+                  // Build a vector of track file paths, and verify their presence
+                  std::vector<std::string> paths (num_edges(), std::string());
+                  for (size_t edge_index = 0; edge_index != num_edges(); ++edge_index) {
+                    std::pair<node_t, node_t> node_indices = mat2vec (edge_index);
+                    if (node_indices.first != node_indices.second) {
+                      ++node_indices.first; ++node_indices.second; // Compensate for node 1 appearing at index 1
+                      const std::string basename = str(node_indices.first) + "-" + str(node_indices.second) + ".tck";
+                      const std::string expected = MR::Path::join (dir, basename);
+                      if (!MR::Path::exists (expected))
+                        throw Exception ("Missing track file: " + basename);
+                      paths[edge_index] = expected;
+                    }
+                  }
+                  auto source = [&] (uint32_t& out) { static uint32_t i = 0; out = i++; return (out != num_edges()); };
+                  std::mutex mutex;
+                  ProgressBar progress ("Generating connection exemplars... ", num_edges());
+                  auto sink = [&] (uint32_t& in) { edges[in].create_exemplar (paths[in]); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+                  Thread::run_queue (source, uint32_t(), Thread::multi (sink));
+                  for (auto i = edges.begin(); i != edges.end(); ++i)
+                    i->buffer_exemplar();
+                  have_exemplars = true;
+                  edge_geometry = EDGE_GEOM_EXEMPLAR;
+                  edge_geometry_cylinder_lod_label->setVisible (false);
+                  edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                }
+              } catch (Exception& e) {
+                e.display();
+                for (auto i = edges.begin(); i != edges.end(); ++i)
+                  i->clear_exemplar();
+                have_exemplars = false;
+                edge_geometry = EDGE_GEOM_LINE;
+                edge_geometry_combobox->setCurrentIndex (0);
+                edge_geometry_cylinder_lod_label->setVisible (false);
+                edge_geometry_cylinder_lod_spinbox->setVisible (false);
+              }
           }
           window.updateGL();
         }
@@ -1860,6 +1908,8 @@ namespace MR
 
 
 
+
+
         void Connectome::import_file_for_node_property (FileDataVector& data, const std::string& attribute)
         {
           data.clear();
@@ -1874,7 +1924,6 @@ namespace MR
           }
           data.set_name (Path::basename (path));
         }
-
 
         void Connectome::import_file_for_edge_property (FileDataVector& data, const std::string& attribute)
         {
