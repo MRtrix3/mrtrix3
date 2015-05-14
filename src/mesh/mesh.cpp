@@ -27,6 +27,7 @@
 
 
 #include <ctime>
+#include <vector>
 #include <set>
 
 
@@ -420,10 +421,10 @@ namespace MR
       //
       // Initialisation is different to iterations: Need a single pass to find those
       //   polygons that actually use the vertex
-      std::set<uint32_t> vert_polys[vertices.size()];
+      std::vector< std::set<uint32_t> > vert_polys (vertices.size(), std::set<uint32_t>());
       // For each vertex, don't just want to store the polygons within the neighbourhood;
       //   also want to store those that will be expanded from in the next iteration
-      std::vector<uint32_t> vert_polys_to_expand[vertices.size()];
+      std::vector< std::vector<uint32_t> > vert_polys_to_expand (vertices.size(), std::vector<uint32_t>());
 
       for (uint32_t t = 0; t != triangles.size(); ++t) {
         for (uint32_t i = 0; i != 3; ++i) {
@@ -435,7 +436,7 @@ namespace MR
       // Now, we want to expand this selection outwards for each vertex
       // To do this, also want to produce a list for each polygon: containing those polygons
       //   that share a common edge (i.e. two vertices)
-      std::vector<uint32_t> poly_neighbours[triangles.size()];
+      std::vector< std::vector<uint32_t> > poly_neighbours (triangles.size(), std::vector<uint32_t>());
       for (uint32_t i = 0; i != triangles.size(); ++i) {
         for (uint32_t j = i+1; j != triangles.size(); ++j) {
           if (triangles[i].shares_edge (triangles[j])) {

@@ -190,8 +190,6 @@ namespace MR
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
         }
 
-        std::mutex Node::Mesh::mutex;
-
 
 
 

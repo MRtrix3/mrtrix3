@@ -465,7 +465,8 @@ namespace MR
             // Now we find out which edges are intersected, based on this flag
             // For all relevant output vertices, we need to store the output index
             //   of that vertex
-            std::array<uint32_t, 12> edge_to_output_vertex { 0 };
+            std::array<uint32_t, 12> edge_to_output_vertex;
+            edge_to_output_vertex.fill (0);
             for (size_t edge_index = 0; edge_index != 12; ++edge_index) {
               if (edge_flags & (1 << edge_index)) {
 

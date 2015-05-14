@@ -121,7 +121,9 @@
 // * Additional functionalities:
 //   - Print node name in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?
-
+//
+// * Miscellaneous
+//   - Change primary enums in types.h to strongly-typed enums, shorten variable names
 
 
 
