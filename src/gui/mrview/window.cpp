@@ -946,10 +946,18 @@ namespace MR
       }
 
 
+      void Window::set_image_visibility (bool flag) {
+        image_visible_action->setChecked(flag);
+        mode->set_visible(flag);
+      }
+
+
 
       void Window::show_image_slot ()
       {
-        mode->set_visible(image_visible_action->isChecked());
+        bool visible = image_visible_action->isChecked();
+        mode->set_visible(visible);
+        emit imageVisibilityChanged(visible);
       }
 
 

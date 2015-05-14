@@ -94,6 +94,9 @@ namespace MR
             updateGL();
           }
 
+          bool get_image_visibility () const { return image_visible_action->isChecked(); }
+          void set_image_visibility (bool flag);
+
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
           bool show_comments () const { return show_comments_action->isChecked(); }
           bool show_voxel_info () const { return show_voxel_info_action->isChecked(); }
@@ -121,6 +124,7 @@ namespace MR
           void fieldOfViewChanged ();
           void modeChanged ();
           void imageChanged ();
+          void imageVisibilityChanged (bool);
           void scalingChanged ();
           void volumeChanged (size_t);
           void volumeGroupChanged (size_t);
