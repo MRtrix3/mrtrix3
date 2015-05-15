@@ -1,4 +1,4 @@
-#include "dwi/tractography/connectomics/tckmesh_mapper.h"
+#include "dwi/tractography/connectomics/point2mesh_mapper.h"
 
 
 namespace MR
@@ -14,10 +14,10 @@ namespace Connectomics
 {
 
 
-TckMeshMapper::TckMeshMapper( Mesh::SceneModeller* sceneModeller,
+Point2MeshMapper::Point2MeshMapper( Mesh::SceneModeller* sceneModeller,
                               float distanceLimit )
-              : _sceneModeller( sceneModeller ),
-                _distanceLimit( distanceLimit )
+                 : _sceneModeller( sceneModeller ),
+                   _distanceLimit( distanceLimit )
 {
 
   // preparing a polygon lut
@@ -46,60 +46,13 @@ TckMeshMapper::TckMeshMapper( Mesh::SceneModeller* sceneModeller,
 }
 
 
-TckMeshMapper::~TckMeshMapper()
+Point2MeshMapper::~Point2MeshMapper()
 {
 }
 
 
-void TckMeshMapper::findNodePair( const Streamline< float >& tck,
-                                  NodePair& nodePair )
-{
-
-  int32_t node1 = getNodeIndex( tck.front() );
-  if ( node1 >= 0 )
-  {
-
-    int32_t node2 = getNodeIndex( tck.back() );
-    if ( node2 >= 0 )
-    {
-
-      if ( node1 <= node2 )
-      {
-
-        nodePair.setNodePair( node1, node2 );
-
-      }
-      else
-      {
-
-        nodePair.setNodePair( node2, node1 );
-
-      }
-
-    }
-    else
-    {
-
-      // node not found
-      nodePair.setNodePair( -1, -1 );
-
-    }
-
-  }
-  else
-  {
-
-    // node not found
-    nodePair.setNodePair( -1, -1 );
-
-  }
-
-}
-
-
-// functor for multithreading application
-bool TckMeshMapper::operator() ( const Streamline< float >& tck,
-                                 NodePair& nodePair )
+void Point2MeshMapper::findNodePair( const Streamline< float >& tck,
+                                     NodePair& nodePair )
 {
 
   int32_t node1 = getNodeIndex( tck.front() );
@@ -140,12 +93,11 @@ bool TckMeshMapper::operator() ( const Streamline< float >& tck,
     nodePair.setNodePair( -1, -1 );
 
   }
-  return true;
 
 }
 
 
-int32_t TckMeshMapper::getNodeCount() const
+int32_t Point2MeshMapper::getNodeCount() const
 {
 
   return _polygonLut.size();
@@ -153,7 +105,7 @@ int32_t TckMeshMapper::getNodeCount() const
 }
 
 
-Point< int32_t > TckMeshMapper::getPolygonIndices(
+Point< int32_t > Point2MeshMapper::getPolygonIndices(
                                        const Mesh::Polygon< 3 >& polygon ) const
 {
 
@@ -164,7 +116,7 @@ Point< int32_t > TckMeshMapper::getPolygonIndices(
 }
 
 
-int32_t TckMeshMapper::getNodeIndex( const Point< float >& point ) const
+int32_t Point2MeshMapper::getNodeIndex( const Point< float >& point ) const
 {
 
   float distance = std::numeric_limits< float >::infinity();
@@ -186,10 +138,10 @@ int32_t TckMeshMapper::getNodeIndex( const Point< float >& point ) const
 }
 
 
-bool TckMeshMapper::findNode( const Point< float >& point,
-                              float& distance,
-                              Mesh::SceneMesh*& sceneMesh,
-                              Mesh::Polygon< 3 >& polygon ) const
+bool Point2MeshMapper::findNode( const Point< float >& point,
+                                 float& distance,
+                                 Mesh::SceneMesh*& sceneMesh,
+                                 Mesh::Polygon< 3 >& polygon ) const
 {
 
   // initialising empty scene mesh

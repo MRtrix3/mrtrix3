@@ -1,7 +1,7 @@
 /*
     Copyright 2015 Brain Research Institute, Melbourne, Australia
 
-    Written by Chun-Hung Jimmy Yeh, 04/2015.
+    Written by Chun-Hung Jimmy Yeh, 2015.
 
     This file is part of MRtrix.
 
@@ -27,7 +27,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/loader.h"
-#include "dwi/tractography/connectomics/tckmesh_mapper.h"
+#include "dwi/tractography/connectomics/connectome_mapper_factory.h"
 #include "dwi/tractography/connectomics/connectome.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -39,6 +39,28 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 
 
+const char* modes[] = { "search_by_endpoint",
+                        "search_by_tangent",
+                        NULL };
+
+const OptionGroup AssignmentOption =
+  OptionGroup( "Structural connectome streamline assignment option" )
+  + Option( "search_by_endpoint",
+            "find the closest polygon/node from streamline endpoint.\n"
+            "When the point-to-polygon (triangle) distance is greater the "
+            "threshold, the streamline will not contribute to the connectome "
+            "edge. (default threshold = 2mm)" )
+    + Argument( "threshold" ).type_float(
+                                  1e-9, 0.0, std::numeric_limits< int >::max() )
+
+  + Option( "search_by_tangent",
+            "find intersecting polygons/nodes from a tangent line.\n"
+            "When the distance to the first intersecting polygon/triangle is "
+            "greater the threshold, the streamline will not contribute to the "
+            "connectome edge. (default threshold = 2mm)" )
+    + Argument( "threshold" ).type_float(
+                                 1e-9, 0.0, std::numeric_limits< int >::max() );
+
 void usage ()
 {
 
@@ -48,13 +70,15 @@ void usage ()
   + "construct a connectivity matrix from a tractography file and a brain mesh."
 
   + "note: this is a test command which is NOT ready for use. It still needs "
-    "improvement (e.g. supporting multi-threading application).";
+    "improvement.";
 
   ARGUMENTS
   + Argument( "tracks_in",
               "the input track file (.tck)").type_file_in()
+
   + Argument( "mesh_in",
               "the input mesh file (must be vtk format)").type_image_in()
+
   + Argument( "connectome_out",
               "the output .csv file").type_file_out();
 
@@ -67,12 +91,7 @@ void usage ()
             "(default = 100,100,100)")
     + Argument( "x,y,z" ).type_sequence_int()
 
-  + Option( "threshold",
-            "the distance threshold. If the value is greater than the "
-            "point-to-polygon (triangle) distance, the streamline will not "
-            "contribute to the connectome edge. (default = 1mm)" )
-    + Argument( "value" ).type_float(
-                                 1e-9, 0.0, std::numeric_limits< int >::max() );
+  + AssignmentOption;
 
 };
 
@@ -90,17 +109,6 @@ void run ()
     cacheSize[ 0 ] = cache_size_in[ 0 ];
     cacheSize[ 1 ] = cache_size_in[ 1 ];
     cacheSize[ 2 ] = cache_size_in[ 2 ];
-
-  }
-
-  // Reading distance threshold
-  opt = get_options( "threshold" );
-  float distanceThreshold = 1.0;
-  if ( opt.size() )
-  {
-
-    float threshold = opt[ 0 ][ 0 ];
-    distanceThreshold = threshold;
 
   }
 
@@ -163,24 +171,65 @@ void run ()
                                                                 cacheSize );
   std::cout << "[ Done ]" << std::endl;
 
-
   // Building the scene mesh
   std::cout << "Building scene mesh: " << std::flush;
   Mesh::SceneMesh* sceneMesh = new Mesh::SceneMesh( sceneModeller, mesh, 0.0 );
   std::cout << "[ Done ]" << std::endl;
 
   // Adding the scene mesh to the scene modeller
-  std::cout << "Adding scene mesh to scene modeller and building "
-            << "polygon cache: " << std::flush;
+  std::cout << "Building " << "polygon cache: " << std::flush;
   sceneModeller->addSceneMesh( sceneMesh );
   std::cout << "[ Done ]" << std::endl;
 
   // Building a connectome mapper
-  Connectomics::TckMeshMapper tckMeshMapper( sceneModeller, distanceThreshold );
+  std::cout << "Building connectome mapper" << std::flush;
+  Connectomics::ConnectomeMapper* connectomeMapper = NULL;
+  for ( size_t index = 0; modes[ index ]; index++ )
+  {
+
+    Options opt = get_options( modes[ index ] );
+    if ( opt.size() )
+    {
+
+      if ( connectomeMapper )
+      {
+      
+        delete connectomeMapper;
+        connectomeMapper = NULL;
+        throw Exception( "Please only request one streamline assignment "
+                         "mechanism" );
+      
+      }
+      switch ( index )
+      {
+      
+        case 0: connectomeMapper =
+                  Connectomics::ConnectomeMapperFactory::getInstance().
+                   getPoint2MeshMapper( sceneModeller, float( opt[ 0 ][ 0 ] ) );
+        break;
+        
+        case 1: connectomeMapper =
+                  Connectomics::ConnectomeMapperFactory::getInstance().
+                     getRay2MeshMapper( sceneModeller, float( opt[ 0 ][ 0 ] ) );
+        break;
+      }
+
+    }
+
+  }
+  if ( !connectomeMapper )
+  {
+
+    // using default connectome mapper using endpoint search
+    connectomeMapper = Connectomics::ConnectomeMapperFactory::getInstance().
+                                      getPoint2MeshMapper( sceneModeller, 2.0 );
+
+  }
+  Connectomics::MultiThreadMapper multiThreadMapper( connectomeMapper );
+  std::cout << "[ Done ]" << std::endl;
 
   // Preparing output connectome
-  int32_t nodeCount = tckMeshMapper.getNodeCount();
-  Connectomics::Connectome connectome( nodeCount );
+  Connectomics::Connectome connectome( connectomeMapper->getNodeCount() );
 
   // Reading track data
   Tractography::Properties properties;
@@ -193,9 +242,25 @@ void run ()
                                "Constructing connectome... " );
   Thread::run_queue( loader, 
                      Thread::batch( Tractography::Streamline< float >() ),
-                     Thread::multi( tckMeshMapper ),
+                     Thread::multi( multiThreadMapper ),
                      Thread::batch( Connectomics::NodePair() ),
                      connectome );
+
+  /*// Building connectome without multithreading (for debugging)
+  ProgressBar progress( "Extracting track endpoints...",
+                        properties[ "count" ].empty() ?
+                        0 : to< unsigned int >( properties[ "count" ] ) );
+  Tractography::Streamline< float > tck;
+  while ( reader( tck ) )
+  {
+
+    Connectomics::NodePair nodePair;
+    connectomeMapper->findNodePair( tck, nodePair );
+    connectome.update( nodePair );
+    ++ progress;
+
+  }*/
+
 
   // Saving the output connectome
   /*std::cout << "starting writing the output file" << std::endl;

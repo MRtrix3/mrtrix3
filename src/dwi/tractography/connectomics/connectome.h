@@ -2,7 +2,6 @@
 #define __dwi_tractography_connectomics_connectome_h__
 
 #include "math/matrix.h"
-#include "dwi/tractography/connectomics/tckmesh_mapper.h"
 
 
 namespace MR
@@ -16,6 +15,26 @@ namespace Tractography
 
 namespace Connectomics
 {
+
+
+class NodePair
+{
+
+  public:
+
+    NodePair();
+    virtual ~NodePair();
+
+    void setNodePair( const int32_t firstNode,
+                      const int32_t secondNode );
+    const int32_t& getFirstNode() const;    
+    const int32_t& getSecondNode() const;
+
+  protected:
+
+    std::pair< int32_t, int32_t > _nodePair;
+
+};
 
 
 class Connectome

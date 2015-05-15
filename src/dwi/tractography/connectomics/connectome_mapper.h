@@ -1,8 +1,8 @@
 #ifndef __dwi_tractography_connectomics_connectome_mapper_h__
 #define __dwi_tractography_connectomics_connectome_mapper_h__
 
-#include "math/matrix.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/connectomics/connectome.h"
 
 
 namespace MR
@@ -18,27 +18,7 @@ namespace Connectomics
 {
 
 
-class NodePair
-{
-
-  public:
-
-    NodePair();
-    virtual ~NodePair();
-
-    void setNodePair( const int32_t firstNode,
-                      const int32_t secondNode );
-    const int32_t& getFirstNode() const;    
-    const int32_t& getSecondNode() const;
-
-  protected:
-
-    std::pair< int32_t, int32_t > _nodePair;
-
-};
-
-
-class ConnectomeMapper
+class ConnectomeMapper /* common interface */
 {
 
   public:
@@ -48,9 +28,25 @@ class ConnectomeMapper
 
     virtual void findNodePair( const Streamline< float >& tck,
                                NodePair& nodePair ) = 0;
-    // functor for supporting multithreading application
-    virtual bool operator() ( const Streamline< float >& tck,
-                              NodePair& nodePair ) = 0;
+    virtual int32_t getNodeCount() const = 0;
+
+};
+
+
+class MultiThreadMapper /* providing functor for supporting multithreading */
+{
+
+  public:
+
+    MultiThreadMapper( ConnectomeMapper* connectomeMapper );
+    virtual ~MultiThreadMapper();
+
+    bool operator() ( const Streamline< float >& tck,
+                      NodePair& nodePair );
+
+  protected:
+
+    ConnectomeMapper* _connectomeMapper;
 
 };
 

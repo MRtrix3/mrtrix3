@@ -66,8 +66,7 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
 {
 
   // Collecting the voxels where the ray is passing through
-  std::set< Point< int32_t >,
-            PointCompare< int32_t > > voxels;
+  std::set< Point< int32_t >, PointCompare< int32_t > > voxels;
   sceneModeller.getBresenhamLineAlgorithm().getRayVoxels( from, to, voxels,
                                                           false );
 
@@ -82,8 +81,7 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
   Point< float > fromIntersection;
   float fromIntersectionLength;
   bool hasIntersection = false;
-  std::set< Point< int32_t >,
-            PointCompare< int32_t > >::const_iterator
+  std::set< Point< int32_t >, PointCompare< int32_t > >::const_iterator
     v = voxels.begin(),
     ve = voxels.end();
   while ( v != ve )

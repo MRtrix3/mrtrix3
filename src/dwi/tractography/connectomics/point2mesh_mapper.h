@@ -1,8 +1,8 @@
-#ifndef __dwi_tractography_connectomics_tckmesh_mapper_h__
-#define __dwi_tractography_connectomics_tckmesh_mapper_h__
+#ifndef __dwi_tractography_connectomics_point2mesh_mapper_h__
+#define __dwi_tractography_connectomics_point2mesh_mapper_h__
 
-#include "mesh/scene_modeller.h"
 #include "dwi/tractography/connectomics/connectome_mapper.h"
+#include "mesh/scene_modeller.h"
 
 
 namespace MR
@@ -18,23 +18,25 @@ namespace Connectomics
 {
 
 
-class TckMeshMapper : public ConnectomeMapper
+class Point2MeshMapper : public ConnectomeMapper
 {
 
   public:
 
-    TckMeshMapper( Mesh::SceneModeller* sceneModeller,
-                   float distanceLimit );
-    virtual ~TckMeshMapper();
+    Point2MeshMapper( Mesh::SceneModeller* sceneModeller,
+                      float distanceLimit );
+    virtual ~Point2MeshMapper();
 
     void findNodePair( const Streamline< float >& tck,
                        NodePair& nodePair );
-
-    // functor for supporting multithreading application
-    bool operator() ( const Streamline< float >& tck,
-                      NodePair& nodePair );
-
     int32_t getNodeCount() const;
+
+  protected:
+
+    Mesh::SceneModeller* _sceneModeller;
+    float _distanceLimit;
+    std::map< Point< int32_t >, int32_t > _polygonLut;
+
     Point< int32_t > getPolygonIndices(
                                       const Mesh::Polygon< 3 >& polygon ) const;
 
@@ -43,12 +45,6 @@ class TckMeshMapper : public ConnectomeMapper
                    float& distance,
                    Mesh::SceneMesh*& sceneMesh,
                    Mesh::Polygon< 3 >& polygon ) const;
-
-  protected:
-
-    Mesh::SceneModeller* _sceneModeller;
-    float _distanceLimit;
-    std::map< Point< int32_t >, int32_t > _polygonLut;
 
 };
 
