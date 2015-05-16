@@ -187,7 +187,7 @@ for line_count in range(0,DWI2_b0_count):
 config_file.close()
 
 # Perform the field estimation
-runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map.nii --iout=b0_topup.nii --config=' + topup_config_path)
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map' + fsl_suffix + ' --iout=b0_topup.nii --config=' + topup_config_path)
 
 # Concatenate the diffusion gradient tables
 filenames = [ 'grad1.b', 'grad2.b' ]
@@ -239,7 +239,7 @@ transform = getHeaderInfo('dwi1.mif', 'transform')
 with open( 'dwi1_transform.txt', 'w' ) as f:
   for line in transform:
     f.write (line)
-runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
+runCommand('mrtransform field_map' + fsl_suffix + ' - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
 #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
