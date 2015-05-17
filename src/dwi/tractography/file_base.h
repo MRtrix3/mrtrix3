@@ -62,16 +62,14 @@ namespace MR
       };
 
 
-      template <typename T = float> class __WriterBase__
+      class __WriterBase__
       {
         public:
-          typedef T value_type;
-
           __WriterBase__(const std::string& name) :
             count (0),
             total_count (0),
             name (name), 
-            dtype (DataType::from<value_type>()),
+            dtype (DataType::from<float>()),
             count_offset (0)
           {
             dtype.set_byte_order_native();

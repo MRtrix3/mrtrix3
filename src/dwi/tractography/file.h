@@ -189,22 +189,20 @@ namespace MR
        * at once. For most applications (where typically one track file is
        * written at a time), the Writer class is more appropriate.
        * */
-      template <typename T = float>
-        class WriterUnbuffered : public __WriterBase__ <T>
+      class WriterUnbuffered : public __WriterBase__
       {
         public:
-          typedef T value_type;
-          using __WriterBase__<T>::count;
-          using __WriterBase__<T>::total_count;
-          using __WriterBase__<T>::name;
-          using __WriterBase__<T>::dtype;
-          using __WriterBase__<T>::create;
-          using __WriterBase__<T>::verify_stream;
-          using __WriterBase__<T>::update_counts;
+          using __WriterBase__::count;
+          using __WriterBase__::total_count;
+          using __WriterBase__::name;
+          using __WriterBase__::dtype;
+          using __WriterBase__::create;
+          using __WriterBase__::verify_stream;
+          using __WriterBase__::update_counts;
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
-            __WriterBase__<T> (file)
+            __WriterBase__ (file)
         {
           File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
@@ -262,9 +260,9 @@ namespace MR
           int64_t barrier_addr;
 
           //! indicates end of track and start of new track
-          Eigen::Vector3f delimiter () const { return { NaN, NaN, NaN }; }
+          Eigen::Vector3f delimiter () const { return { float(NaN), float(NaN), float(NaN) }; }
           //! indicates end of data
-          Eigen::Vector3f barrier   () const { return { Inf, Inf, Inf }; }
+          Eigen::Vector3f barrier   () const { return { float(Inf), float(Inf), float(Inf) }; }
 
           //! perform per-point byte-swapping if required
           void format_point (const Eigen::Vector3f src, Eigen::Vector3f dest) {
@@ -327,17 +325,15 @@ namespace MR
        * 16MB, and can be set in the config file using the
        * TrackWriterBufferSize field (in bytes). 
        * */
-      template <typename T = float> 
-        class Writer : public WriterUnbuffered<T>
+      class Writer : public WriterUnbuffered
       {
         public:
-          typedef T value_type;
-          using __WriterBase__<T>::count;
-          using __WriterBase__<T>::total_count;
-          using WriterUnbuffered<T>::delimiter;
-          using WriterUnbuffered<T>::format_point;
-          using WriterUnbuffered<T>::weights_name;
-          using WriterUnbuffered<T>::write_weights;
+          using __WriterBase__::count;
+          using __WriterBase__::total_count;
+          using WriterUnbuffered::delimiter;
+          using WriterUnbuffered::format_point;
+          using WriterUnbuffered::weights_name;
+          using WriterUnbuffered::write_weights;
 
           //! create new RAM-buffered track file with specified properties
           /*! the capacity of the RAM buffer can be specified as a config file
@@ -351,10 +347,12 @@ namespace MR
           //CONF relatively large buffer to limit the number of write() calls,
           //CONF avoid associated issues such as file fragmentation. 
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
-            WriterUnbuffered<T> (file, properties), 
+            WriterUnbuffered (file, properties), 
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Eigen::Vector3f)),
             buffer (new Eigen::Vector3f [buffer_capacity+2]),
             buffer_size (0) { }
+
+          Writer (const Writer& W) = delete;
 
           //! commits any remaining data to file
           ~Writer() {
@@ -393,7 +391,7 @@ namespace MR
           }
 
           void commit () {
-            WriterUnbuffered<T>::commit (buffer.get(), buffer_size);
+            WriterUnbuffered::commit (buffer.get(), buffer_size);
             buffer_size = 0;
 
             if (weights_name.size()) {
@@ -402,14 +400,6 @@ namespace MR
             }
           }
 
-
-          //! copy construction explicitly disabled
-          Writer (const Writer& W) : 
-            WriterUnbuffered<value_type> (W),
-            buffer_capacity (W.buffer_capacity), 
-            buffer_size (0) {
-              assert (0); 
-            }
       };
 
 

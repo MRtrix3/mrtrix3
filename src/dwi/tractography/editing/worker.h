@@ -27,8 +27,6 @@
 #include <string>
 #include <vector>
 
-#include "point.h"
-
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resample.h"
 #include "dwi/tractography/streamline.h"
@@ -66,12 +64,12 @@ namespace MR {
               include_visited (properties.include.size(), false) { }
 
 
-            bool operator() (const Tractography::Streamline<>&, Tractography::Streamline<>&) const;
+            bool operator() (const Streamline&, Streamline&) const;
 
 
           private:
             const Tractography::Properties& properties;
-            Upsampler<> upsampler;
+            Upsampler upsampler;
             Downsampler downsampler;
             const bool inverse, ends_only;
 
@@ -80,7 +78,7 @@ namespace MR {
               public:
                 Thresholds (Tractography::Properties&);
                 Thresholds (const Thresholds&);
-                bool operator() (const Tractography::Streamline<>&) const;
+                bool operator() (const Streamline&) const;
               private:
                 size_t max_num_points, min_num_points;
                 float max_weight, min_weight;

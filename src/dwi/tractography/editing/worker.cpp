@@ -32,7 +32,7 @@ namespace MR {
 
 
 
-        bool Worker::operator() (const Tractography::Streamline<>& in, Tractography::Streamline<>& out) const
+        bool Worker::operator() (const Streamline& in, Streamline& out) const
         {
 
           out.clear();
@@ -43,7 +43,7 @@ namespace MR {
             // Want to test thresholds before wasting time on upsampling; but if -inverse is set,
             //   still need to apply both the upsampler and downsampler before writing to output
             if (inverse) {
-              std::vector< Point<float> > tck (in);
+              std::vector<Eigen::Vector3f> tck (in);
               upsampler (tck);
               downsampler (tck);
               tck.swap (out);
@@ -52,7 +52,7 @@ namespace MR {
           }
 
           // Upsample track before mapping to ROIs
-          std::vector< Point<float> > tck (in);
+          std::vector<Eigen::Vector3f> tck (in);
           upsampler (tck);
 
           // Assign to ROIs
@@ -62,7 +62,7 @@ namespace MR {
 
             if (ends_only) {
               for (size_t i = 0; i != 2; ++i) {
-                const Point<float>& p (i ? tck.back() : tck.front());
+                const Eigen::Vector3f& p (i ? tck.back() : tck.front());
                 properties.include.contains (p, include_visited);
                 if (properties.exclude.contains (p)) {
                   if (inverse) {
@@ -73,9 +73,9 @@ namespace MR {
                 }
               }
             } else {
-              for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-                properties.include.contains (*p, include_visited);
-                if (properties.exclude.contains (*p)) {
+              for (const auto& p : tck) {
+                properties.include.contains (p, include_visited);
+                if (properties.exclude.contains (p)) {
                   if (inverse) {
                     downsampler (tck);
                     tck.swap (out);
@@ -86,8 +86,8 @@ namespace MR {
             }
 
             // Make sure all of the include regions were visited
-            for (std::vector<bool>::const_iterator i = include_visited.begin(); i != include_visited.end(); ++i) {
-              if (!*i) {
+            for (const auto& i : include_visited) {
+              if (!i) {
                 if (inverse) {
                   downsampler (tck);
                   tck.swap (out);
@@ -101,17 +101,17 @@ namespace MR {
           if (properties.mask.size()) {
 
             // Split tck into separate tracks based on the mask
-            std::vector< std::vector< Point<float> > > cropped_tracks;
-            std::vector< Point<float> > temp;
+            std::vector<std::vector<Eigen::Vector3f>> cropped_tracks;
+            std::vector<Eigen::Vector3f> temp;
 
-            for (std::vector< Point<float> >::const_iterator p = tck.begin(); p != tck.end(); ++p) {
-              const bool contains = properties.mask.contains (*p);
+            for (const auto& p : tck) {
+              const bool contains = properties.mask.contains (p);
               if (contains == inverse) {
                 if (temp.size() >= 2)
                   cropped_tracks.push_back (temp);
                 temp.clear();
               } else {
-                temp.push_back (*p);
+                temp.push_back (p);
               }
             }
             if (temp.size() >= 2)
@@ -121,8 +121,8 @@ namespace MR {
               return true;
 
             // Apply downsampler independently to each
-            for (std::vector< std::vector< Point<float> > >::iterator i = cropped_tracks.begin(); i != cropped_tracks.end(); ++i)
-              downsampler (*i);
+            for (auto& i : cropped_tracks)
+              downsampler (i);
 
             if (cropped_tracks.size() == 1) {
               cropped_tracks[0].swap (out);
@@ -130,13 +130,13 @@ namespace MR {
             }
 
             // Stitch back together in preparation for sending down queue as a single track
-            out.push_back (Point<float>());
-            for (std::vector< std::vector< Point<float> > >::const_iterator i = cropped_tracks.begin(); i != cropped_tracks.end(); ++i) {
-              for (std::vector< Point<float> >::const_iterator p = i->begin(); p != i->end(); ++p)
-                out.push_back (*p);
-              out.push_back (Point<float>());
+            out.push_back (Eigen::Vector3f());
+            for (const auto& i : cropped_tracks) {
+              for (const auto& p : i)
+                out.push_back (p);
+              out.push_back ({ NaN, NaN, NaN });
             }
-            out.push_back (Point<float>());
+            out.push_back ({ NaN, NaN, NaN });
             return true;
 
           } else {
@@ -217,7 +217,7 @@ namespace MR {
 
 
 
-        bool Worker::Thresholds::operator() (const Tractography::Streamline<>& in) const
+        bool Worker::Thresholds::operator() (const Streamline& in) const
         {
           return ((in.size() <= max_num_points) &&
               (in.size() >= min_num_points) &&
