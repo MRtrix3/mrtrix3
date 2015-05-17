@@ -23,8 +23,7 @@
 #ifndef __dwi_tractography_weights_h__
 #define __dwi_tractography_weights_h__
 
-#include "app.h"
-#include "point.h"
+#include "cmdline_option.h"
 
 namespace MR
 {

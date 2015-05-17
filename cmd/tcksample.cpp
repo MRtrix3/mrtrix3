@@ -80,17 +80,16 @@ void usage ()
 
 
 
-typedef float value_type;
 
 template <class Interp>
 class Resampler {
   private:
     class Plane {
       public:
-        Plane (const Point<value_type>& pos, const Point<value_type>& dir) : n (dir) { n.normalise(); d = n.dot (pos); }
-        value_type dist (const Point<value_type>& pos) { return n.dot (pos) - d; }
+        Plane (const Eigen::Vector3f& pos, const Eigen::Vector3f& dir) : n (dir) { n.normalise(); d = n.dot (pos); }
+        value_type dist (const Eigen::Vector3f& pos) { return n.dot (pos) - d; }
       private:
-        Point<value_type> n;
+        Eigen::Vector3f n;
         value_type d;
     };
 
@@ -98,20 +97,20 @@ class Resampler {
 
   public:
     Interp* warp;
-    Point<value_type> start, mid, end, start_dir, mid_dir, end_dir;
+    Eigen::Vector3f start, mid, end, start_dir, mid_dir, end_dir;
     size_t nsamples, idx_start, idx_end;
 
-    Point<value_type> position_of (const Point<value_type>& p) { 
+    Eigen::Vector3f position_of (const Eigen::Vector3f& p) { 
       if (!warp) return p;
       warp->scanner (p);
-      Point<value_type> ret;
+      Eigen::Vector3f ret;
       if (!(*warp)) return ret;
       for ((*warp)[3] = 0; (*warp)[3] < 3; ++(*warp)[3])
         ret[size_t ((*warp)[3])] = warp->value();
       return ret;
     }
 
-    int state (const Point<value_type>& p) {
+    int state (const Eigen::Vector3f& p) {
       bool after_start = start_dir.dot (p - start) >= 0;
       bool after_mid = mid_dir.dot (p - mid) > 0.0;
       bool after_end = end_dir.dot (p - end) >= 0.0;
@@ -157,7 +156,7 @@ class Resampler {
       }
     }
 
-    void init (const Point<value_type>& waypoint) {
+    void init (const Eigen::Vector3f& waypoint) {
 
       Math::Matrix<value_type> M (3,3);
 
@@ -169,7 +168,7 @@ class Resampler {
       M(1,1) = end[1] - waypoint[1];
       M(1,2) = end[2] - waypoint[2];
 
-      Point<value_type> n ((start-waypoint).cross (end-waypoint));
+      Eigen::Vector3f n ((start-waypoint).cross (end-waypoint));
       M(2,0) = n[0];
       M(2,1) = n[1];
       M(2,2) = n[2];
@@ -182,16 +181,16 @@ class Resampler {
       Math::mult (centre, M, a);
 
       Math::LU::solve (a, M);
-      Point<value_type> c (a[0], a[1], a[2]);
+      Eigen::Vector3f c (a[0], a[1], a[2]);
 
-      Point<value_type> x (start-c);
+      Eigen::Vector3f x (start-c);
       value_type R = x.norm();
       
-      Point<value_type> y (waypoint-c);
+      Eigen::Vector3f y (waypoint-c);
       y -= y.dot(x)/(x.norm()*y.norm()) * x;
       y *= R / y.norm();
 
-      Point<value_type> e (end-c);
+      Eigen::Vector3f e (end-c);
       value_type ex (x.dot (e)), ey (y.dot (e));
 
       value_type angle = std::atan2 (ey, ex);
@@ -207,12 +206,12 @@ class Resampler {
     }
 
 
-    void operator() (std::vector<Point<value_type>>& tck) {
+    void operator() (std::vector<Eigen::Vector3f>& tck) {
       assert (tck.size());
       assert (planes.size());
       bool reverse = idx_start > idx_end;
       size_t i = idx_start;
-      std::vector<Point<value_type>> rtck;
+      std::vector<Eigen::Vector3f> rtck;
 
       for (size_t n = 0; n < nsamples; n++) {
         while (i != idx_end) {
@@ -241,7 +240,7 @@ inline void sample (File::OFStream& out, Interp& interp, const Streamline& tck)
   out << "\n";
 }
 
-inline Point<value_type> get_pos (const std::vector<float>& s)
+inline Eigen::Vector3f get_pos (const std::vector<float>& s)
 {
   if (s.size() != 3)
     throw Exception ("position expected as a comma-seperated list of 3 values");
@@ -257,7 +256,7 @@ void run ()
 
   Image::BufferPreload<value_type> image_buffer (argument[1]);
   auto vox = image_buffer.voxel();
-  Image::Interp::Linear<decltype(vox)> interp (vox);
+  interp = Interp::make <Interp::Linear> (vox);
 
   File::OFStream out (argument[2]);
 
@@ -267,7 +266,7 @@ void run ()
 
   Resampler<decltype(warp)::element_type> resample;
 
-  Options opt = get_options ("resample");
+  auto opt = get_options ("resample");
   bool resampling = opt.size();
   if (resampling) {
     resample.nsamples = opt[0][0];

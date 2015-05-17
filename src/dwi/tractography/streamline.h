@@ -26,7 +26,7 @@
 
 #include <vector>
 
-#include "point.h"
+#include "types.h"
 
 
 namespace MR
@@ -37,37 +37,35 @@ namespace MR
     {
 
 
-      template <typename T = float>
-        class Streamline : public std::vector< Point<T> >
+      class Streamline : public std::vector<Eigen::Vector3f>
       {
         public:
-          typedef T value_type;
-          Streamline () : index (-1), weight (value_type (1.0)) { }
+          Streamline () : index (-1), weight (1.0f) { }
 
           Streamline (size_t size) : 
-            std::vector< Point<value_type> > (size), 
+            std::vector<Eigen::Vector3f> (size), 
             index (-1),
-            weight (value_type (1.0)) { }
+            weight (1.0f) { }
 
           Streamline (const Streamline& that) :
-            std::vector< Point<value_type> > (that),
+            std::vector<Eigen::Vector3f> (that),
             index (that.index),
             weight (that.weight) { }
 
-          Streamline (const std::vector< Point<value_type> >& tck) :
-            std::vector< Point<value_type> > (tck),
+          Streamline (const std::vector<Eigen::Vector3f>& tck) :
+            std::vector<Eigen::Vector3f> (tck),
             index (-1),
             weight (1.0) { }
 
           void clear()
           {
-            std::vector< Point<T> >::clear();
+            std::vector<Eigen::Vector3f>::clear();
             index = -1;
             weight = 1.0;
           }
 
           size_t index;
-          value_type weight;
+          float weight;
       };
 
 

@@ -20,12 +20,12 @@
 
  */
 
-#ifndef __image_interp_cubic_h__
-#define __image_interp_cubic_h__
+#ifndef __interp_cubic_h__
+#define __interp_cubic_h__
 
-#include "image/info.h"
-#include "image/transform.h"
+#include "transform.h"
 #include "math/hermite.h"
+#include "interp/make.h"
 
 namespace MR
 {

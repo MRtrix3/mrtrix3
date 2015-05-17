@@ -26,7 +26,7 @@
 #include <fstream>
 #include <queue>
 
-#include "image/transform.h"
+#include "transform.h"
 #include "thread_queue.h"
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"

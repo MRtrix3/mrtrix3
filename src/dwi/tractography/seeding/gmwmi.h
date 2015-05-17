@@ -24,10 +24,8 @@
 #define __dwi_tractography_seeding_gmwmi_h__
 
 
-#include "image/buffer.h"
-
+#include "image.h"
 #include "dwi/tractography/ACT/gmwmi.h"
-
 #include "dwi/tractography/seeding/basic.h"
 
 

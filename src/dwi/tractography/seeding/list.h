@@ -61,7 +61,7 @@ namespace MR
 
           void add (Base* const in);
           void clear();
-          bool get_seed (Point<float>& p, Point<float>& d);
+          bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d);
 
 
           size_t num_seeds() const { return seeders.size(); }

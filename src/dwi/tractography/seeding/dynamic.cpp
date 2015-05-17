@@ -22,7 +22,6 @@
 
 
 #include "app.h"
-#include "image/nav.h"
 #include "dwi/fmls.h"
 #include "math/SH.h"
 #include "dwi/tractography/seeding/dynamic.h"

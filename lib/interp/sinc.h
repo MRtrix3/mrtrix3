@@ -20,11 +20,12 @@
 
  */
 
-#ifndef __image_interp_sinc_h__
-#define __image_interp_sinc_h__
+#ifndef __interp_sinc_h__
+#define __interp_sinc_h__
 
-#include "image/transform.h"
+#include "transform.h"
 #include "math/sinc.h"
+#include "interp/make.h"
 
 
 #define SINC_WINDOW_SIZE 7

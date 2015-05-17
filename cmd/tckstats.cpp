@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
 #include "memory.h"
 
@@ -47,7 +46,7 @@ using namespace MR::DWI::Tractography;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "calculate statistics on streamlines length.";
@@ -56,7 +55,7 @@ void usage ()
   + Argument ("tracks_in", "the input track file").type_file_in();
 
   OPTIONS
-  + Option ("histogram", "output a histogram of streamline lengths")
+  + Option ("length_hist", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
@@ -79,7 +78,7 @@ void run ()
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader (argument[0], properties);
+    Tractography::Reader reader (argument[0], properties);
 
     header_count = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
 
@@ -93,12 +92,12 @@ void run ()
     }
 
     std::unique_ptr<File::OFStream> dump;
-    Options opt = get_options ("dump");
+    auto opt = get_options ("dump");
     if (opt.size())
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
     ProgressBar progress ("Reading track file... ", header_count);
-    Tractography::Streamline<> tck;
+    Tractography::Streamline tck;
     while (reader (tck)) {
       ++count;
       const size_t length = tck.size() ? (tck.size()-1) : 0;
@@ -156,9 +155,9 @@ void run ()
             << " " << std::setw(width) << std::right << (step_size * max)
             << " " << std::setw(width) << std::right << (total) << "\n";
 
-  Options opt = get_options ("length_hist");
+  auto opt = get_options ("length_hist");
   if (opt.size()) {
-    File::OFStream out (argument[1], std::ios_base::out | std::ios_base::trunc);
+    File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)
@@ -169,7 +168,6 @@ void run ()
         out << str(i * step_size) << "," << str<size_t>(histogram[i]) << "\n";
     }
     out << "\n";
-    out.close();
   }
 
 }

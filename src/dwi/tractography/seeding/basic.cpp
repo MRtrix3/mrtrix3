@@ -22,8 +22,7 @@
 
 
 #include "dwi/tractography/seeding/basic.h"
-
-#include "image/adapter/subset.h"
+#include "adapter/subset.h"
 
 
 namespace MR

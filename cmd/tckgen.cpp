@@ -22,7 +22,7 @@
 
 
 #include "command.h"
-#include "image/voxel.h"
+#include "image.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"

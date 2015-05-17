@@ -20,11 +20,12 @@
 
  */
 
-#ifndef __image_interp_nearest_h__
-#define __image_interp_nearest_h__
+#ifndef __interp_nearest_h__
+#define __interp_nearest_h__
 
-#include "image/transform.h"
+#include "transform.h"
 #include "datatype.h"
+#include "interp/make.h"
 
 namespace MR
 {

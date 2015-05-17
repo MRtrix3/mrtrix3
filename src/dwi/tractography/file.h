@@ -27,16 +27,14 @@
 #include <vector>
 
 #include "app.h"
-#include "file/config.h"
 #include "types.h"
 #include "memory.h"
-#include "point.h"
+#include "file/config.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
 #include "dwi/tractography/file_base.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
-#include "math/vector.h"
 
 
 namespace MR
@@ -49,17 +47,15 @@ namespace MR
 
 
       //! A class to read streamlines data
-      template <typename T = float> 
-        class Reader : public __ReaderBase__
+      class Reader : public __ReaderBase__
       {
         public:
-          typedef T value_type;
 
           //! open the \c file for reading and load header into \c properties
           Reader (const std::string& file, Properties& properties) :
             current_index (0) {
               open (file, "tracks", properties);
-              App::Options opt = App::get_options ("tck_weights_in");
+              auto opt = App::get_options ("tck_weights_in");
               if (opt.size()) {
                 weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
                 if (!weights_file->good())
@@ -69,14 +65,14 @@ namespace MR
 
 
           //! fetch next track from file
-          bool operator() (Streamline<value_type>& tck) {
+          bool operator() (Streamline& tck) {
             tck.clear();
 
             if (!in.is_open())
               return false;
 
             do {
-              Point<value_type> p = get_next_point();
+              auto p = get_next_point();
               if (std::isinf (p[0])) {
                 in.close();
                 check_excess_weights();
@@ -125,39 +121,39 @@ namespace MR
           std::unique_ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
-          Point<value_type> get_next_point ()
+          Eigen::Vector3f get_next_point ()
           { 
             using namespace ByteOrder;
             switch (dtype()) {
               case DataType::Float32LE: 
                 {
-                  Point<float> p;
-                  in.read ((char*) &p, sizeof (p));
-                  return (Point<value_type> (LE(p[0]), LE(p[1]), LE(p[2])));
+                  float p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { LE(p[0]), LE(p[1]), LE(p[2]) };
                 }
               case DataType::Float32BE:
                 {
-                  Point<float> p;
-                  in.read ((char*) &p, sizeof (p));
-                  return (Point<value_type> (BE(p[0]), BE(p[1]), BE(p[2])));
+                  float p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { BE(p[0]), BE(p[1]), BE(p[2]) };
                 }
               case DataType::Float64LE:
                 {
-                  Point<double> p;
-                  in.read ((char*) &p, sizeof (p));
-                  return (Point<value_type> (LE(p[0]), LE(p[1]), LE(p[2])));
+                  double p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { float (LE(p[0])), float (LE(p[1])), float (LE(p[2])) };
                 }
               case DataType::Float64BE:
                 {
-                  Point<double> p;
-                  in.read ((char*) &p, sizeof (p));
-                  return (Point<value_type> (BE(p[0]), BE(p[1]), BE(p[2])));
+                  double p[3];
+                  in.read ((char*) p, sizeof (p));
+                  return { float (BE(p[0])), float (BE(p[1])), float (BE(p[2])) };
                 }
               default:
                 assert (0);
                 break;
             }
-            return (Point<value_type>());
+            return { NaN, NaN, NaN };
           }
 
           //! Check that the weights file does not contain excess entries
@@ -218,13 +214,13 @@ namespace MR
           create (out, properties, "tracks");
           barrier_addr = out.tellp();
 
-          Point<value_type> x;
+          Eigen::Vector3f x;
           format_point (barrier(), x);
           out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
           if (!out.good())
             throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
 
-          App::Options opt = App::get_options ("tck_weights_out");
+          auto opt = App::get_options ("tck_weights_out");
           if (opt.size())
             set_weights_path (opt[0][0]);
         }
@@ -232,10 +228,10 @@ namespace MR
           //virtual ~WriterUnbuffered() { }
 
           //! append track to file
-          bool operator() (const Streamline<value_type>& tck) {
+          bool operator() (const Streamline& tck) {
             if (tck.size()) {
               // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, Point<value_type>, tck.size()+2);
+              NON_POD_VLA (buffer, Eigen::Vector3f, tck.size()+2);
               for (size_t n = 0; n < tck.size(); ++n)
                 format_point (tck[n], buffer[n]);
               format_point (delimiter(), buffer[tck.size()]);
@@ -266,17 +262,17 @@ namespace MR
           int64_t barrier_addr;
 
           //! indicates end of track and start of new track
-          Point<value_type> delimiter () const { return Point<value_type> (NAN, NAN, NAN); }
+          Eigen::Vector3f delimiter () const { return { NaN, NaN, NaN }; }
           //! indicates end of data
-          Point<value_type> barrier   () const { return Point<value_type> (INFINITY, INFINITY, INFINITY); }
+          Eigen::Vector3f barrier   () const { return { Inf, Inf, Inf }; }
 
           //! perform per-point byte-swapping if required
-          void format_point (const Point<value_type>& src, Point<value_type>& dest) {
+          void format_point (const Eigen::Vector3f src, Eigen::Vector3f dest) {
             using namespace ByteOrder;
             if (dtype.is_little_endian()) 
-              dest.set (LE(src[0]), LE(src[1]), LE(src[2]));
+              dest = { LE(src[0]), LE(src[1]), LE(src[2]) };
             else
-              dest.set (BE(src[0]), BE(src[1]), BE(src[2]));
+              dest = { BE(src[0]), BE(src[1]), BE(src[2]) };
           }
 
           //! write track weights data to file
@@ -291,7 +287,7 @@ namespace MR
           //! write track point data to file
           /*! \note \c buffer needs to be greater than \c num_points by one
            * element to add the barrier. */
-          void commit (Point<value_type>* data, size_t num_points) {
+          void commit (Eigen::Vector3f* data, size_t num_points) {
             if (num_points == 0) 
               return;
 
@@ -299,11 +295,11 @@ namespace MR
 
             format_point (barrier(), data[num_points]);
             File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            out.write (reinterpret_cast<const char* const> (data+1), sizeof (Point<value_type>) * num_points);
+            out.write (reinterpret_cast<const char* const> (data+1), sizeof (Eigen::Vector3f) * num_points);
             verify_stream (out);
-            barrier_addr = int64_t (out.tellp()) - sizeof(Point<value_type>);
+            barrier_addr = int64_t (out.tellp()) - sizeof(Eigen::Vector3f);
             out.seekp (prev_barrier_addr, out.beg);
-            out.write (reinterpret_cast<const char* const> (data), sizeof(Point<value_type>));
+            out.write (reinterpret_cast<const char* const> (data), sizeof(Eigen::Vector3f));
             verify_stream (out);
             update_counts (out);
           }
@@ -356,8 +352,8 @@ namespace MR
           //CONF avoid associated issues such as file fragmentation. 
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
             WriterUnbuffered<T> (file, properties), 
-            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Point<value_type>)),
-            buffer (new Point<value_type> [buffer_capacity+2]),
+            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Eigen::Vector3f)),
+            buffer (new Eigen::Vector3f [buffer_capacity+2]),
             buffer_size (0) { }
 
           //! commits any remaining data to file
@@ -366,13 +362,13 @@ namespace MR
           }
 
           //! append track to file
-          bool operator() (const Streamline<value_type>& tck) {
+          bool operator() (const Streamline& tck) {
             if (tck.size()) {
               if (buffer_size + tck.size() > buffer_capacity)
                 commit ();
 
-              for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin(); i != tck.end(); ++i)
-                add_point (*i);
+              for (const auto& i : tck)
+                add_point (i);
               add_point (delimiter());
 
               if (weights_name.size())
@@ -387,12 +383,12 @@ namespace MR
 
         protected:
           const size_t buffer_capacity;
-          std::unique_ptr<Point<value_type>[]> buffer;
+          std::unique_ptr<Eigen::Vector3f[]> buffer;
           size_t buffer_size;
           std::string weights_buffer;
 
           //! add point to buffer and increment buffer_size accordingly 
-          void add_point (const Point<value_type>& p) {
+          void add_point (const Eigen::Vector3f& p) {
             format_point (p, buffer[buffer_size++]);
           }
 

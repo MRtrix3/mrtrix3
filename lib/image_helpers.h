@@ -133,6 +133,16 @@ namespace MR
 
 
 
+  template <class ImageType>
+    inline bool is_out_of_bounds (const ImageType& image, 
+        ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
+    {
+      for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(image.ndim())); ++n)
+        if (image.index(n) < 0 || image.index(n) >= image.size(n))
+          return true;
+      return false;
+    }
+
   //! returns the number of voxel in the data set, or a relevant subvolume
   template <class HeaderType> 
     inline size_t voxel_count (const HeaderType& in, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())

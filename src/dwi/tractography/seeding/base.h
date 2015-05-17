@@ -24,12 +24,9 @@
 #define __dwi_tractography_seeding_base_h__
 
 
+#include "image.h"
 #include "file/path.h"
-#include "point.h"
-
-#include "image/threaded_loop.h"
-#include "image/voxel.h"
-
+#include "algo/threaded_loop.h"
 #include "math/rng.h"
 
 
@@ -69,22 +66,20 @@ namespace MR
 
 
 
-      template <typename T>
-      uint32_t get_count (T& data)
+      template <class ImageType>
+      uint32_t get_count (ImageType& data)
       {
-        auto vox = data.voxel();
         uint32_t count = 0;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) ++count; }, vox);
+        ThreadedLoop (data).run ([&] (decltype(data)& v) { if (v.value()) ++count; }, data);
         return count;
       }
 
 
-      template <typename T>
-      float get_volume (T& data)
+      template <class ImageType>
+      float get_volume (ImageType& data)
       {
-        auto vox = data.voxel();
-        float volume = 0.0f;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { volume += v.value(); }, vox);
+        default_type volume = 0.0;
+        ThreadedLoop (data).run ([&] (decltype(data)& v) { volume += v.value(); }, data);
         return volume;
       }
 
@@ -104,15 +99,15 @@ namespace MR
 
           virtual ~Base() { }
 
-          float vol() const { return volume; }
+          default_type vol() const { return volume; }
           uint32_t num() const { return count; }
           bool is_finite() const { return count; }
           const std::string& get_type() const { return type; }
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Point<float>&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
-          virtual bool get_seed (Point<float>& p, Point<float>&) { return get_seed (p); }
+          virtual bool get_seed (Eigen::Vector3f&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
+          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;

@@ -38,9 +38,8 @@ namespace MR
           voxel2scanner (info.transform() * voxelsize),
           scanner2voxel (voxel2scanner.inverse()),
           image2scanner (info.transform()),
-          scanner2voxel (image2scanner.inverse()),
-          bounds ({ info.size(0) - 0.5, info.size(1) - 0.5, info.size(2) - 0.5 }),
-          voxelsize ({ info.voxsize(0), info.voxsize(1), info.voxsize(2) }),
+          scanner2image (image2scanner.inverse()),
+          bounds { info.size(0) - 0.5, info.size(1) - 0.5, info.size(2) - 0.5 },
           out_of_bounds (true) { }
 
       //! test whether current position is within bounds.
@@ -64,14 +63,7 @@ namespace MR
           return M;
         }
 
-      const Eigen::DiagonalMatrix<default_type, 3> voxelsize;
-      const transform_type scanner2voxel, voxel2scanner, scanner2image, image2scanner;
-
-    protected:
-      default_type  bounds[3];
-      bool   out_of_bounds;
-
-      bool check_bounds (const Eigen::Vector3d& pos) const {
+      bool is_out_of_bounds (const Eigen::Vector3d& pos) const {
         if (pos[0] <= -0.5 || pos[0] >= bounds[0] ||
             pos[1] <= -0.5 || pos[1] >= bounds[1] ||
             pos[2] <= -0.5 || pos[2] >= bounds[2]) {
@@ -80,8 +72,15 @@ namespace MR
         return false;
       }
 
+      const Eigen::DiagonalMatrix<default_type, 3> voxelsize;
+      const transform_type voxel2scanner, scanner2voxel, image2scanner, scanner2image;
+
+    protected:
+      default_type  bounds[3];
+      bool   out_of_bounds;
+
       Eigen::Vector3d set_to_nearest (const Eigen::Vector3d& pos) {
-        out_of_bounds = check_bounds (pos);
+        out_of_bounds = is_out_of_bounds (pos);
         if (out_of_bounds)
           return Eigen::Vector3d (default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>());
         else
