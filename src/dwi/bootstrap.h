@@ -23,8 +23,7 @@
 #ifndef __dwi_bootstrap_h__
 #define __dwi_bootstrap_h__
 
-#include "image/position.h"
-#include "image/adapter/voxel.h"
+#include "adapter/base.h"
 
 
 namespace MR {

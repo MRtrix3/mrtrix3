@@ -32,7 +32,7 @@ namespace MR {
 
 
 
-        bool Worker::operator() (const Streamline& in, Streamline& out) const
+        bool Worker::operator() (const Streamline<>& in, Streamline<>& out) const
         {
 
           out.clear();
@@ -217,7 +217,7 @@ namespace MR {
 
 
 
-        bool Worker::Thresholds::operator() (const Streamline& in) const
+        bool Worker::Thresholds::operator() (const Streamline<>& in) const
         {
           return ((in.size() <= max_num_points) &&
               (in.size() >= min_num_points) &&

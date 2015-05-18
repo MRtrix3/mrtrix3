@@ -23,7 +23,6 @@
 #ifndef __dwi_tractography_algorithms_iFOD_calibrator_h__
 #define __dwi_tractography_algorithms_iFOD_calibrator_h__
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"

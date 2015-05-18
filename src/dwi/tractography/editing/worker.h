@@ -64,7 +64,7 @@ namespace MR {
               include_visited (properties.include.size(), false) { }
 
 
-            bool operator() (const Streamline&, Streamline&) const;
+            bool operator() (const Streamline<>&, Streamline<>&) const;
 
 
           private:
@@ -78,7 +78,7 @@ namespace MR {
               public:
                 Thresholds (Tractography::Properties&);
                 Thresholds (const Thresholds&);
-                bool operator() (const Streamline&) const;
+                bool operator() (const Streamline<>&) const;
               private:
                 size_t max_num_points, min_num_points;
                 float max_weight, min_weight;

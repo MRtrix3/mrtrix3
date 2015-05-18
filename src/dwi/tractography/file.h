@@ -65,51 +65,52 @@ namespace MR
 
 
           //! fetch next track from file
-          bool operator() (Streamline& tck) {
-            tck.clear();
+          template <class ValueType>
+            bool operator() (Streamline<ValueType>& tck) {
+              tck.clear();
 
-            if (!in.is_open())
-              return false;
-
-            do {
-              auto p = get_next_point();
-              if (std::isinf (p[0])) {
-                in.close();
-                check_excess_weights();
+              if (!in.is_open())
                 return false;
-              }
-              if (in.eof()) {
-                in.close();
-                check_excess_weights();
-                return false;
-              }
 
-              if (std::isnan (p[0])) {
-                tck.index = current_index++;
-
-                if (weights_file) {
-
-                  (*weights_file) >> tck.weight;
-                  if (weights_file->fail()) {
-                    WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
-                    in.close();
-                    tck.clear();
-                    return false;
-                  }
-
-                } else {
-                  tck.weight = 1.0;
+              do {
+                auto p = get_next_point<ValueType>();
+                if (std::isinf (p[0])) {
+                  in.close();
+                  check_excess_weights();
+                  return false;
+                }
+                if (in.eof()) {
+                  in.close();
+                  check_excess_weights();
+                  return false;
                 }
 
-                return true;
-              }
+                if (std::isnan (p[0])) {
+                  tck.index = current_index++;
 
-              tck.push_back (p);
-            } while (in.good());
+                  if (weights_file) {
 
-            in.close();
-            return false;
-          }
+                    (*weights_file) >> tck.weight;
+                    if (weights_file->fail()) {
+                      WARN ("Streamline weights file contains less entries than .tck file; only read " + str(current_index-1) + " streamlines");
+                      in.close();
+                      tck.clear();
+                      return false;
+                    }
+
+                  } else {
+                    tck.weight = 1.0;
+                  }
+
+                  return true;
+                }
+
+                tck.push_back (p);
+              } while (in.good());
+
+              in.close();
+              return false;
+            }
 
 
 
@@ -121,40 +122,42 @@ namespace MR
           std::unique_ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
-          Eigen::Vector3f get_next_point ()
-          { 
-            using namespace ByteOrder;
-            switch (dtype()) {
-              case DataType::Float32LE: 
-                {
-                  float p[3];
-                  in.read ((char*) p, sizeof (p));
-                  return { LE(p[0]), LE(p[1]), LE(p[2]) };
-                }
-              case DataType::Float32BE:
-                {
-                  float p[3];
-                  in.read ((char*) p, sizeof (p));
-                  return { BE(p[0]), BE(p[1]), BE(p[2]) };
-                }
-              case DataType::Float64LE:
-                {
-                  double p[3];
-                  in.read ((char*) p, sizeof (p));
-                  return { float (LE(p[0])), float (LE(p[1])), float (LE(p[2])) };
-                }
-              case DataType::Float64BE:
-                {
-                  double p[3];
-                  in.read ((char*) p, sizeof (p));
-                  return { float (BE(p[0])), float (BE(p[1])), float (BE(p[2])) };
-                }
-              default:
-                assert (0);
-                break;
+
+          template <typename ValueType>
+            Eigen::Matrix<ValueType,3,1> get_next_point ()
+            { 
+              using namespace ByteOrder;
+              switch (dtype()) {
+                case DataType::Float32LE: 
+                  {
+                    float p[3];
+                    in.read ((char*) p, sizeof (p));
+                    return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
+                  }
+                case DataType::Float32BE:
+                  {
+                    float p[3];
+                    in.read ((char*) p, sizeof (p));
+                    return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
+                  }
+                case DataType::Float64LE:
+                  {
+                    double p[3];
+                    in.read ((char*) p, sizeof (p));
+                    return { ValueType(LE(p[0])), ValueType(LE(p[1])), ValueType(LE(p[2])) };
+                  }
+                case DataType::Float64BE:
+                  {
+                    double p[3];
+                    in.read ((char*) p, sizeof (p));
+                    return { ValueType(BE(p[0])), ValueType(BE(p[1])), ValueType(BE(p[2])) };
+                  }
+                default:
+                  assert (0);
+                  break;
+              }
+              return { NaN, NaN, NaN };
             }
-            return { NaN, NaN, NaN };
-          }
 
           //! Check that the weights file does not contain excess entries
           void check_excess_weights()
@@ -189,47 +192,47 @@ namespace MR
        * at once. For most applications (where typically one track file is
        * written at a time), the Writer class is more appropriate.
        * */
-      class WriterUnbuffered : public __WriterBase__
+      template <class ValueType = float>
+        class WriterUnbuffered : public __WriterBase__<ValueType>
       {
         public:
-          using __WriterBase__::count;
-          using __WriterBase__::total_count;
-          using __WriterBase__::name;
-          using __WriterBase__::dtype;
-          using __WriterBase__::create;
-          using __WriterBase__::verify_stream;
-          using __WriterBase__::update_counts;
+          using __WriterBase__<ValueType>::count;
+          using __WriterBase__<ValueType>::total_count;
+          using __WriterBase__<ValueType>::name;
+          using __WriterBase__<ValueType>::dtype;
+          using __WriterBase__<ValueType>::create;
+          using __WriterBase__<ValueType>::verify_stream;
+          using __WriterBase__<ValueType>::update_counts;
+
+          typedef Eigen::Matrix<ValueType,3,1> vector_type;
 
           //! create a new track file with the specified properties
           WriterUnbuffered (const std::string& file, const Properties& properties) :
-            __WriterBase__ (file)
-        {
-          File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
+            __WriterBase__<ValueType> (file) {
+              File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
-          const_cast<Properties&> (properties).set_timestamp();
-          const_cast<Properties&> (properties).set_version_info();
+              const_cast<Properties&> (properties).set_timestamp();
+              const_cast<Properties&> (properties).set_version_info();
 
-          create (out, properties, "tracks");
-          barrier_addr = out.tellp();
+              create (out, properties, "tracks");
+              barrier_addr = out.tellp();
 
-          Eigen::Vector3f x;
-          format_point (barrier(), x);
-          out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
-          if (!out.good())
-            throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
+              vector_type x;
+              format_point (barrier(), x);
+              out.write (reinterpret_cast<char*> (&x[0]), sizeof (x));
+              if (!out.good())
+                throw Exception ("error writing tracks file \"" + name + "\": " + strerror (errno));
 
-          auto opt = App::get_options ("tck_weights_out");
-          if (opt.size())
-            set_weights_path (opt[0][0]);
-        }
-
-          //virtual ~WriterUnbuffered() { }
+              auto opt = App::get_options ("tck_weights_out");
+              if (opt.size())
+                set_weights_path (opt[0][0]);
+            }
 
           //! append track to file
-          bool operator() (const Streamline& tck) {
+          bool operator() (const Streamline<ValueType>& tck) {
             if (tck.size()) {
               // allocate buffer on the stack for performance:
-              NON_POD_VLA (buffer, Eigen::Vector3f, tck.size()+2);
+              NON_POD_VLA (buffer, vector_type, tck.size()+2);
               for (size_t n = 0; n < tck.size(); ++n)
                 format_point (tck[n], buffer[n]);
               format_point (delimiter(), buffer[tck.size()]);
@@ -260,12 +263,12 @@ namespace MR
           int64_t barrier_addr;
 
           //! indicates end of track and start of new track
-          Eigen::Vector3f delimiter () const { return { float(NaN), float(NaN), float(NaN) }; }
+          vector_type delimiter () const { return { ValueType(NaN), ValueType(NaN), ValueType(NaN) }; }
           //! indicates end of data
-          Eigen::Vector3f barrier   () const { return { float(Inf), float(Inf), float(Inf) }; }
+          vector_type barrier   () const { return { ValueType(Inf), ValueType(Inf), ValueType(Inf) }; }
 
           //! perform per-point byte-swapping if required
-          void format_point (const Eigen::Vector3f src, Eigen::Vector3f dest) {
+          void format_point (const vector_type& src, vector_type& dest) {
             using namespace ByteOrder;
             if (dtype.is_little_endian()) 
               dest = { LE(src[0]), LE(src[1]), LE(src[2]) };
@@ -285,7 +288,7 @@ namespace MR
           //! write track point data to file
           /*! \note \c buffer needs to be greater than \c num_points by one
            * element to add the barrier. */
-          void commit (Eigen::Vector3f* data, size_t num_points) {
+          void commit (vector_type* data, size_t num_points) {
             if (num_points == 0) 
               return;
 
@@ -293,11 +296,11 @@ namespace MR
 
             format_point (barrier(), data[num_points]);
             File::OFStream out (name, std::ios::in | std::ios::out | std::ios::binary | std::ios::ate);
-            out.write (reinterpret_cast<const char* const> (data+1), sizeof (Eigen::Vector3f) * num_points);
+            out.write (reinterpret_cast<const char* const> (data+1), sizeof (vector_type) * num_points);
             verify_stream (out);
-            barrier_addr = int64_t (out.tellp()) - sizeof(Eigen::Vector3f);
+            barrier_addr = int64_t (out.tellp()) - sizeof(vector_type);
             out.seekp (prev_barrier_addr, out.beg);
-            out.write (reinterpret_cast<const char* const> (data), sizeof(Eigen::Vector3f));
+            out.write (reinterpret_cast<const char* const> (data), sizeof(vector_type));
             verify_stream (out);
             update_counts (out);
           }
@@ -325,15 +328,17 @@ namespace MR
        * 16MB, and can be set in the config file using the
        * TrackWriterBufferSize field (in bytes). 
        * */
-      class Writer : public WriterUnbuffered
+      template <typename ValueType = float>
+        class Writer : public WriterUnbuffered<ValueType>
       {
         public:
-          using __WriterBase__::count;
-          using __WriterBase__::total_count;
-          using WriterUnbuffered::delimiter;
-          using WriterUnbuffered::format_point;
-          using WriterUnbuffered::weights_name;
-          using WriterUnbuffered::write_weights;
+          using __WriterBase__<ValueType>::count;
+          using __WriterBase__<ValueType>::total_count;
+          using WriterUnbuffered<ValueType>::delimiter;
+          using WriterUnbuffered<ValueType>::format_point;
+          using WriterUnbuffered<ValueType>::weights_name;
+          using WriterUnbuffered<ValueType>::write_weights;
+          typedef typename WriterUnbuffered<ValueType>::vector_type vector_type;
 
           //! create new RAM-buffered track file with specified properties
           /*! the capacity of the RAM buffer can be specified as a config file
@@ -347,9 +352,9 @@ namespace MR
           //CONF relatively large buffer to limit the number of write() calls,
           //CONF avoid associated issues such as file fragmentation. 
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
-            WriterUnbuffered (file, properties), 
-            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Eigen::Vector3f)),
-            buffer (new Eigen::Vector3f [buffer_capacity+2]),
+            WriterUnbuffered<ValueType> (file, properties), 
+            buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (vector_type)),
+            buffer (new vector_type [buffer_capacity+2]),
             buffer_size (0) { }
 
           Writer (const Writer& W) = delete;
@@ -360,7 +365,7 @@ namespace MR
           }
 
           //! append track to file
-          bool operator() (const Streamline& tck) {
+          bool operator() (const Streamline<ValueType>& tck) {
             if (tck.size()) {
               if (buffer_size + tck.size() > buffer_capacity)
                 commit ();
@@ -381,17 +386,17 @@ namespace MR
 
         protected:
           const size_t buffer_capacity;
-          std::unique_ptr<Eigen::Vector3f[]> buffer;
+          std::unique_ptr<vector_type[]> buffer;
           size_t buffer_size;
           std::string weights_buffer;
 
           //! add point to buffer and increment buffer_size accordingly 
-          void add_point (const Eigen::Vector3f& p) {
+          void add_point (const vector_type& p) {
             format_point (p, buffer[buffer_size++]);
           }
 
           void commit () {
-            WriterUnbuffered::commit (buffer.get(), buffer_size);
+            WriterUnbuffered<ValueType>::commit (buffer.get(), buffer_size);
             buffer_size = 0;
 
             if (weights_name.size()) {

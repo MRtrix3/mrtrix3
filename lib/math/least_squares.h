@@ -103,7 +103,7 @@ namespace MR
 
     //! return Moore-Penrose pseudo-inverse of M
     template <class MatrixType>
-      inline Eigen::MatrixXd pinv (const MatrixType& M)
+      inline Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> pinv (const MatrixType& M)
       {
         if (M.rows() >= M.cols()) 
          return (M.transpose()*M).ldlt().solve (M.transpose());                                                                                

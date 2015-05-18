@@ -256,7 +256,7 @@ void run ()
 
   Image::BufferPreload<value_type> image_buffer (argument[1]);
   auto vox = image_buffer.voxel();
-  interp = Interp::make <Interp::Linear> (vox);
+  interp = Interp::make_linear (vox);
 
   File::OFStream out (argument[2]);
 

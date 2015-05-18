@@ -49,7 +49,7 @@ namespace MR
                 throw Exception ("Cannot use a combination of seed types where the default maximum number "
                     "of sampling attempts per seed is unequal, unless you use the -max_seed_attempts option.");
 
-          seeders.push_back (in);
+          seeders.push_back (std::unique_ptr<Base> (in));
           total_volume += in->vol();
           total_count += in->num();
         }
@@ -58,10 +58,6 @@ namespace MR
 
         void List::clear()
         {
-          for (std::vector<Base*>::iterator i = seeders.begin(); i != seeders.end(); ++i) {
-            delete *i;
-            *i = NULL;
-          }
           seeders.clear();
           total_volume = 0.0;
           total_count = 0.0;
@@ -75,7 +71,7 @@ namespace MR
           if (is_finite()) {
 
             for (auto& i : seeders)
-              if (i->get_seed (p, d))
+              if (i->get_seed (rng, p, d))
                 return true;
 
             p = { NaN, NaN, NaN };
@@ -84,14 +80,14 @@ namespace MR
           } else {
 
             if (seeders.size() == 1)
-              return seeders.front()->get_seed (p, d);
+              return seeders.front()->get_seed (rng, p, d);
 
             do {
               float incrementer = 0.0;
               const float sample = rng() * total_volume;
               for (auto& i : seeders)
                 if ((incrementer += i->vol()) > sample)
-                  return i->get_seed (p, d);
+                  return i->get_seed (rng, p, d);
 
             } while (1);
             return false;

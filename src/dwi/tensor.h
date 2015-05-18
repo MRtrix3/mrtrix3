@@ -23,8 +23,7 @@
 #ifndef __dwi_tensor_h__
 #define __dwi_tensor_h__
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include "types.h"
 
 namespace MR
 {

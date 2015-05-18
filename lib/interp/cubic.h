@@ -25,7 +25,6 @@
 
 #include "transform.h"
 #include "math/hermite.h"
-#include "interp/make.h"
 
 namespace MR
 {
@@ -157,6 +156,17 @@ namespace MR
             return x;
           }
       };
+
+
+
+
+
+    template <class ImageType, typename... Args>
+      inline Cubic<ImageType> make_cubic (const ImageType& parent, Args&&... args) {
+        return Cubic<ImageType> (parent, std::forward<Args> (args)...);
+      }
+
+
 
       //! @}
 

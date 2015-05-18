@@ -23,21 +23,12 @@
 #ifndef __dwi_tractography_mapping_mapping_h__
 #define __dwi_tractography_mapping_mapping_h__
 
-
-
-#include "point.h"
-#include "progressbar.h"
-
-#include "dwi/tractography/properties.h"
-#include "dwi/tractography/file.h"
-
-#include "image/header.h"
-
-#include "math/matrix.h"
-
 #include <vector>
 
-
+#include "header.h"
+#include "progressbar.h"
+#include "dwi/tractography/properties.h"
+#include "dwi/tractography/file.h"
 
 namespace MR {
   namespace DWI {
@@ -47,16 +38,16 @@ namespace MR {
 
 
         // Convenience functions to figure out an appropriate upsampling ratio for streamline mapping
-        size_t determine_upsample_ratio (const Image::Info&, const float, const float);
-        size_t determine_upsample_ratio (const Image::Info&, const std::string&, const float);
-        size_t determine_upsample_ratio (const Image::Info&, const Tractography::Properties&, const float);
+        size_t determine_upsample_ratio (const Header&, const float, const float);
+        size_t determine_upsample_ratio (const Header&, const std::string&, const float);
+        size_t determine_upsample_ratio (const Header&, const Tractography::Properties&, const float);
 
 
 
 #define MAX_TRACKS_READ_FOR_HEADER 1000000
-        void generate_header (Image::Header&, const std::string&, const std::vector<float>&);
+        void generate_header (Header&, const std::string&, const std::vector<float>&);
 
-        void oversample_header (Image::Header&, const std::vector<float>&);
+        void oversample_header (Header&, const std::vector<float>&);
 
 
 

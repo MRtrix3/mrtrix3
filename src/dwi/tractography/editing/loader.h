@@ -51,7 +51,7 @@ namespace MR {
               reader (new Reader (file_list[0], dummy_properties)),
               file_index (0) { }
 
-            bool operator() (Streamline&);
+            bool operator() (Streamline<>&);
 
 
           private:
@@ -64,7 +64,7 @@ namespace MR {
 
 
 
-        bool Loader::operator() (Streamline& out)
+        bool Loader::operator() (Streamline<>& out)
         {
           out.clear();
 

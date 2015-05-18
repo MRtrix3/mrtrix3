@@ -65,19 +65,19 @@ namespace MR {
             }
 
 
-            bool operator() (const Streamline&);
+            bool operator() (const Streamline<>&);
 
 
           private:
 
-            Writer writer;
+            Writer<> writer;
             const uint64_t number;
             uint64_t skip;
             const bool ends_only;
             uint64_t count, total_count;
             ProgressBar progress;
 
-            void output (const Streamline&);
+            void output (const Streamline<>&);
 
         };
 

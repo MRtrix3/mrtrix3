@@ -31,14 +31,8 @@
 #include <stdint.h>
 #include <vector>
 
-#include "point.h"
 #include "progressbar.h"
-
 #include "dwi/directions/predefined.h"
-#include "math/matrix.h"
-
-
-
 
 namespace MR {
   namespace DWI {
@@ -59,10 +53,9 @@ namespace MR {
               dir_mask_excess_bits (0),
               dir_mask_excess_bits_mask (0)
           {
-            Math::Matrix<float> az_el_pairs;
-            az_el_pairs.load (path);
+            auto az_el_pairs = load_matrix (path);
 
-            if (az_el_pairs.columns() != 2)
+            if (az_el_pairs.cols() != 2)
               throw Exception ("Text file \"" + path + "\"does not contain directions as azimuth-elevation pairs");
 
             initialise (az_el_pairs);
@@ -73,7 +66,7 @@ namespace MR {
               dir_mask_excess_bits (0),
               dir_mask_excess_bits_mask (0)
           {
-            Math::Matrix<float> az_el_pairs;
+            Eigen::MatrixXd az_el_pairs;
             load_predefined (az_el_pairs, d);
             initialise (az_el_pairs);
           }
@@ -81,12 +74,12 @@ namespace MR {
           virtual ~Set();
 
           size_t size () const { return unit_vectors.size(); }
-          const Point<float>& get_dir (const size_t i) const { return unit_vectors[i]; }
+          const Eigen::Vector3f& get_dir (const size_t i) const { return unit_vectors[i]; }
           const std::vector<dir_t>& get_adj_dirs (const size_t i) const { return adj_dirs[i]; }
 
           bool dirs_are_adjacent (const dir_t one, const dir_t two) const {
-            for (std::vector<dir_t>::const_iterator i = adj_dirs[one].begin(); i != adj_dirs[one].end(); ++i) {
-              if (*i == two)
+            for (const auto& i : adj_dirs[one]) {
+              if (i == two)
                 return true;
             }
             return false;
@@ -94,13 +87,13 @@ namespace MR {
 
           dir_t get_min_linkage (const dir_t one, const dir_t two) const;
 
-          const std::vector< Point<float> >& get_dirs() const { return unit_vectors; }
-          const Point<float>& operator[] (const size_t i) const { return unit_vectors[i]; }
+          const std::vector<Eigen::Vector3f>& get_dirs() const { return unit_vectors; }
+          const Eigen::Vector3f& operator[] (const size_t i) const { return unit_vectors[i]; }
 
 
         protected:
 
-          std::vector< Point<float> > unit_vectors;
+          std::vector<Eigen::Vector3f> unit_vectors;
           std::vector<dir_t>* adj_dirs; // Note: not self-inclusive
 
 
@@ -112,8 +105,8 @@ namespace MR {
 
           Set ();
 
-          void load_predefined (Math::Matrix<float>& az_el_pairs, const size_t);
-          void initialise (const Math::Matrix<float>& az_el_pairs);
+          void load_predefined (Eigen::MatrixXd& az_el_pairs, const size_t);
+          void initialise (const Eigen::MatrixXd& az_el_pairs);
 
       };
 
@@ -127,21 +120,19 @@ namespace MR {
         public:
 
           FastLookupSet (const std::string& path) : 
-              Set (path)
-          {
+              Set (path) {
             initialise();
           }
 
           FastLookupSet (const size_t d) :
-              Set (d)
-          {
+              Set (d) {
             initialise();
           }
 
           FastLookupSet (const FastLookupSet&);
           ~FastLookupSet ();
 
-          dir_t select_direction (const Point<float>&) const;
+          dir_t select_direction (const Eigen::Vector3f&) const;
 
 
 
@@ -154,11 +145,11 @@ namespace MR {
 
           FastLookupSet ();
 
-          dir_t select_direction_slow (const Point<float>&) const;
+          dir_t select_direction_slow (const Eigen::Vector3f&) const;
 
           void initialise();
 
-          size_t dir2gridindex (const Point<float>&) const;
+          size_t dir2gridindex (const Eigen::Vector3f&) const;
 
           void test_lookup() const;
 

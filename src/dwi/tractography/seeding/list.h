@@ -50,14 +50,6 @@ namespace MR
             total_volume (0.0),
             total_count (0) { }
 
-          ~List()
-          {
-            for (std::vector<Base*>::iterator i = seeders.begin(); i != seeders.end(); ++i) {
-              delete *i;
-              *i = NULL;
-            }
-          }
-
 
           void add (Base* const in);
           void clear();
@@ -65,7 +57,7 @@ namespace MR
 
 
           size_t num_seeds() const { return seeders.size(); }
-          const Base* operator[] (const size_t n) const { return seeders[n]; }
+          const Base* operator[] (const size_t n) const { return seeders[n].get(); }
           bool is_finite() const { return total_count; }
           uint32_t get_total_count() const { return total_count; }
 
@@ -73,17 +65,16 @@ namespace MR
           friend inline std::ostream& operator<< (std::ostream& stream, const List& S) {
             if (S.seeders.empty())
               return stream;
-            std::vector<Base*>::const_iterator i = S.seeders.begin();
+            auto i = S.seeders.cbegin();
             stream << **i;
-            for (++i; i != S.seeders.end(); ++i)
+            for (++i; i != S.seeders.cend(); ++i)
               stream << ", " << **i;
             return (stream);
           }
 
 
         private:
-          std::vector<Base*> seeders;
-          Math::RNG::Uniform<float> rng;
+          std::vector<std::unique_ptr<Base>> seeders;
           float total_volume;
           uint32_t total_count;
 

@@ -25,7 +25,6 @@
 
 #include "transform.h"
 #include "math/sinc.h"
-#include "interp/make.h"
 
 
 #define SINC_WINDOW_SIZE 7
@@ -168,6 +167,16 @@ namespace MR
           }
 
       };
+
+
+
+
+
+    template <class ImageType, typename... Args>
+      inline Sinc<ImageType> make_sinc (const ImageType& parent, Args&&... args) {
+        return Sinc<ImageType> (parent, std::forward<Args> (args)...);
+      }
+
 
       //! @}
 

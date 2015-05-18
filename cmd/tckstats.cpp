@@ -97,7 +97,7 @@ void run ()
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
     ProgressBar progress ("Reading track file... ", header_count);
-    Tractography::Streamline tck;
+    Streamline<> tck;
     while (reader (tck)) {
       ++count;
       const size_t length = tck.size() ? (tck.size()-1) : 0;

@@ -24,14 +24,9 @@
 #define __dwi_tractography_act_gmwmi_h__
 
 
-#include "point.h"
-
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/interp/linear.h"
-
+#include "image.h"
+#include "interp/linear.h"
 #include "math/hermite.h"
-
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
@@ -56,25 +51,25 @@ namespace MR
         {
 
           protected:
-            typedef Image::Interp::Linear< Image::Buffer<float>::voxel_type > Interp;
+            typedef Interp::Linear<Image<float>> Interp;
 
           public:
-            GMWMI_finder (Image::Buffer<float>& buffer) :
-              interp_template (Image::Buffer<float>::voxel_type (buffer)),
-              min_vox (minvalue (buffer.vox(0), buffer.vox(1), buffer.vox(2))) { }
+            GMWMI_finder (Image<float>& buffer) :
+              interp_template (buffer),
+              min_vox (minvalue (buffer.voxsize(0), buffer.voxsize(1), buffer.voxsize(2))) { }
 
             GMWMI_finder (const GMWMI_finder& that) :
               interp_template (that.interp_template),
               min_vox (that.min_vox) { }
 
 
-            bool find_interface (Point<float>&) const;
-            Point<float> normal (const Point<float>&) const;
-            bool is_cgm (const Point<float>&) const;
+            bool find_interface (Eigen::Vector3d&) const;
+            Eigen::Vector3d normal (const Eigen::Vector3d&) const;
+            bool is_cgm (const Eigen::Vector3d&) const;
 
 
-            Point<float> find_interface (const std::vector< Point<float> >&, const bool) const;
-            void crop_track (std::vector< Point<float> >&) const;
+            Eigen::Vector3d find_interface (const std::vector<Eigen::Vector3d>&, const bool) const;
+            void crop_track (std::vector<Eigen::Vector3d>&) const;
 
 
           protected:
@@ -82,17 +77,17 @@ namespace MR
             const float min_vox;
 
 
-            Tissues get_tissues (const Point<float>& p, Interp& interp) const {
+            Tissues get_tissues (const Eigen::Vector3d& p, Interp& interp) const {
               if (interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }
 
-            bool find_interface (Point<float>&, Interp&) const;
-            Point<float> get_normal (const Point<float>&, Interp&) const;
-            Point<float> get_cf_min_step (const Point<float>&, Interp&) const;
+            bool find_interface (Eigen::Vector3d&, Interp&) const;
+            Eigen::Vector3d get_normal (const Eigen::Vector3d&, Interp&) const;
+            Eigen::Vector3d get_cf_min_step (const Eigen::Vector3d&, Interp&) const;
 
-            Point<float> find_interface (const std::vector< Point<float> >&, const bool, Interp&) const;
+            Eigen::Vector3d find_interface (const std::vector<Eigen::Vector3d>&, const bool, Interp&) const;
 
 
             friend class Track_extender;

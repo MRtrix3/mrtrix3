@@ -39,13 +39,14 @@ namespace MR
 
 
 
-      bool Dynamic_ACT_additions::check_seed (Point<float>& p)
+      bool Dynamic_ACT_additions::check_seed (Eigen::Vector3f& p)
       {
 
         // Needs to be thread-safe
-        Interp interp (interp_template);
+        auto interp = interp_template;
 
-        interp.scanner (p);
+        Eigen::Vector3d pd = p.cast<double>();
+        interp.scanner (pd);
         const ACT::Tissues tissues (interp);
 
         if (tissues.get_csf() > tissues.get_wm() + tissues.get_gm())
@@ -54,33 +55,34 @@ namespace MR
         if (tissues.get_wm() > tissues.get_gm())
           return true;
 
-        return gmwmi_finder.find_interface (p);
-
+        auto retval = gmwmi_finder.find_interface (pd);
+        p = pd.cast<float>();
+        return retval;
       }
 
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const DWI::Directions::FastLookupSet& dirs) :
+      Dynamic::Dynamic (const std::string& in, Image<float>& fod_data, const DWI::Directions::FastLookupSet& dirs) :
           Base (in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           total_samples (0),
           total_seeds   (0),
-          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
+          transform (SIFT::ModelBase<Fixel_TD_seed>::header())
 #ifdef DYNAMIC_SEED_DEBUGGING
         , seed_output ("seeds.tck", Tractography::Properties())
 #endif
       {
-        App::Options opt = App::get_options ("act");
+        auto opt = App::get_options ("act");
         if (opt.size())
           act.reset (new Dynamic_ACT_additions (opt[0][0]));
 
         perform_FOD_segmentation (fod_data);
 
         // Have to set a volume so that Seeding::List works correctly
-        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
-          volume += i->get_weight();
-        volume *= (fod_data.vox(0) * fod_data.vox(1) * fod_data.vox(2));
+        for (const auto& i : fixels)
+          volume += i.get_weight();
+        volume *= fod_data.voxsize(0) * fod_data.voxsize(1) * fod_data.voxsize(2);
 
         // Prevent divide-by-zero at commencement
         SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
@@ -125,7 +127,7 @@ namespace MR
 
 
 
-      bool Dynamic::get_seed (Point<float>& p, Point<float>& d)
+      bool Dynamic::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f& d)
       {
 
         uint64_t samples = 0;
@@ -139,17 +141,17 @@ namespace MR
 
           if (fixel.get_seed_prob (mu()) > rng()) {
 
-            const Point<int>& v (fixel.get_voxel());
-            const Point<float> vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
-            p = transform.voxel2scanner (vp);
+            const Eigen::Vector3i& v (fixel.get_voxel());
+            const Eigen::Vector3f vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
+            p = transform.voxel2scanner * vp;
 
             bool good_seed = !act;
             if (!good_seed) {
 
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
-                const Point<float> new_v_float (transform.scanner2voxel (p));
-                const Point<int> new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
+                const Eigen::Vector3f new_v_float (transform.scanner2voxel * p);
+                const Eigen::Vector3i new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
             }
@@ -179,7 +181,7 @@ namespace MR
         if (!SIFT::ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
         VoxelAccessor v (accessor);
-        Image::Nav::set_pos (v, in.vox);
+        assign_pos_of (in.vox).to (v);
         if (v.value()) {
           for (DWI::Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
             i().set_voxel (in.vox);
@@ -191,11 +193,11 @@ namespace MR
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-      void Dynamic::write_seed (const Point<float>& p)
+      void Dynamic::write_seed (const Eigen::Vector3f& p)
       {
         static std::mutex mutex;
         std::lock_guard<std::mutex> lock (mutex);
-        std::vector< Point<float> > tck;
+        std::vector< Eigen::Vector3f > tck;
         tck.push_back (p);
         seed_output.append (tck);
       }

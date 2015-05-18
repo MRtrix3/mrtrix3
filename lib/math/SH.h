@@ -89,14 +89,16 @@ namespace MR
        * coefficients up to maximum harmonic degree \a lmax onto directions \a
        * dirs (in spherical coordinates, with columns [ azimuth elevation ]). */
       template <class MatrixType>
-        Eigen::MatrixXd init_transform (const MatrixType& dirs, int lmax)
+        Eigen::Matrix<typename MatrixType::Scalar,Eigen::Dynamic, Eigen::Dynamic> init_transform (const MatrixType& dirs, int lmax)
         {
+          using namespace Eigen;
+          typedef typename MatrixType::Scalar value_type;
           if (dirs.cols() != 2) 
             throw Exception ("direction matrix should have 2 columns: [ azimuth elevation ]");
-          Eigen::MatrixXd SHT (dirs.rows(), NforL (lmax));
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+          Matrix<value_type,Dynamic,Dynamic> SHT (dirs.rows(), NforL (lmax));
+          Matrix<value_type,Dynamic,1,0,64> AL (lmax+1);
           for (ssize_t i = 0; i < dirs.rows(); i++) {
-            default_type x = std::cos (dirs (i,1));
+            value_type x = std::cos (dirs (i,1));
             Legendre::Plm_sph (AL, lmax, 0, x);
             for (int l = 0; l <= lmax; l+=2) 
               SHT (i,index (l,0)) = AL[l];
@@ -154,17 +156,19 @@ namespace MR
 
       //! invert any non-zero coefficients in \a coefs
       template <typename VectorType>
-        inline Eigen::VectorXd invert (const VectorType& coefs)
+        inline Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> invert (const VectorType& coefs)
         {
-          Eigen::VectorXd ret (coefs.size());
+          Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> ret (coefs.size());
           for (size_t n = 0; n < coefs.size(); ++n)
             ret[n] = ( coefs[n] ? 1.0 / coefs[n] : 0.0 );
           return ret;
         }
 
-
+      template <typename ValueType>
       class Transform {
         public:
+          typedef Eigen::Matrix<ValueType,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+
           template <class MatrixType>
             Transform (const MatrixType& dirs, int lmax) :
               SHT (init_transform (dirs, lmax)), 
@@ -191,32 +195,37 @@ namespace MR
             return SHT.rows();
           }
 
-          const Eigen::MatrixXd& mat_A2SH () const {
+          const matrix_type& mat_A2SH () const {
             return iSHT;
           }
-          const Eigen::MatrixXd& mat_SH2A () const {
+          const matrix_type& mat_SH2A () const {
             return SHT;
           }
 
         protected:
-          Eigen::MatrixXd SHT, iSHT;
+          matrix_type SHT, iSHT;
       };
 
 
 
       template <class VectorType>
-        inline default_type value (const VectorType& coefs, default_type cos_elevation, default_type cos_azimuth, default_type sin_azimuth, int lmax)
+        inline typename VectorType::Scalar value (const VectorType& coefs, 
+            typename VectorType::Scalar cos_elevation, 
+            typename VectorType::Scalar cos_azimuth, 
+            typename VectorType::Scalar sin_azimuth, 
+            int lmax) 
         {
-          default_type amplitude = 0.0;
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+          typedef typename VectorType::Scalar value_type;
+          value_type amplitude = 0.0;
+          Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, cos_elevation);
           for (int l = 0; l <= lmax; l+=2) 
             amplitude += AL[l] * coefs[index (l,0)];
-          default_type c0 (1.0), s0 (0.0);
+          value_type c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, cos_elevation);
-            default_type c = c0 * cos_azimuth - s0 * sin_azimuth;  // std::cos(m*azimuth)
-            default_type s = s0 * cos_azimuth + c0 * sin_azimuth;  // std::sin(m*azimuth)
+            value_type c = c0 * cos_azimuth - s0 * sin_azimuth;  // std::cos(m*azimuth)
+            value_type s = s0 * cos_azimuth + c0 * sin_azimuth;  // std::sin(m*azimuth)
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
               amplitude += AL[l] * Math::sqrt2 * (c * coefs[index (l,m)] + s * coefs[index (l,-m)]);
@@ -231,17 +240,21 @@ namespace MR
         }
 
       template <class VectorType>
-        inline default_type value (const VectorType& coefs, default_type cos_elevation, default_type azimuth, int lmax)
+        inline typename VectorType::Scalar value (const VectorType& coefs, 
+            typename VectorType::Scalar cos_elevation, 
+            typename VectorType::Scalar azimuth, 
+            int lmax) 
         {
           return value (coefs, cos_elevation, std::cos(azimuth), std::sin(azimuth), lmax);
         }
 
       template <class VectorType1, class VectorType2>
-        inline default_type value (const VectorType1& coefs, const VectorType2& unit_dir, int lmax)
+        inline typename VectorType1::Scalar value (const VectorType1& coefs, const VectorType2& unit_dir, int lmax)
         {
-          default_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
-          default_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
-          default_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
+          typedef typename VectorType1::Scalar value_type;
+          value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+          value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+          value_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
           return value (coefs, unit_dir[2], cp, sp, lmax);
         }
 
@@ -249,19 +262,20 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline VectorType1& delta (VectorType1& delta_vec, const VectorType2& unit_dir, int lmax)
         {
+          typedef typename VectorType1::Scalar value_type;
           delta_vec.resize (NforL (lmax));
-          default_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
-          default_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
-          default_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+          value_type rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+          value_type cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+          value_type sp = (rxy) ? unit_dir[1]/rxy : 0.0;
+          Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, unit_dir[2]);
           for (int l = 0; l <= lmax; l+=2)
             delta_vec[index (l,0)] = AL[l];
-          default_type c0 (1.0), s0 (0.0);
+          value_type c0 (1.0), s0 (0.0);
           for (int m = 1; m <= lmax; m++) {
             Legendre::Plm_sph (AL, lmax, m, unit_dir[2]);
-            default_type c = c0 * cp - s0 * sp;
-            default_type s = s0 * cp + c0 * sp;
+            value_type c = c0 * cp - s0 * sp;
+            value_type s = s0 * cp + c0 * sp;
             for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
 #ifndef USE_NON_ORTHONORMAL_SH_BASIS
               delta_vec[index (l,m)]  = AL[l] * Math::sqrt2 * c;
@@ -282,9 +296,10 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline VectorType1& SH2RH (VectorType1& RH, const VectorType2& sh)
         {
+          typedef typename VectorType2::Scalar value_type;
           RH.resize (sh.size());
           int lmax = 2*sh.size() +1;
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
+          Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> AL (lmax+1);
           Legendre::Plm_sph (AL, lmax, 0, 1.0);
           for (ssize_t l = 0; l < sh.size(); l++)
             RH[l] = sh[l]/ AL[2*l];
@@ -292,13 +307,29 @@ namespace MR
         }
 
       template <class VectorType>
-        inline Eigen::VectorXd SH2RH (const VectorType& sh)
+        inline Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> SH2RH (const VectorType& sh)
         {
-          Eigen::VectorXd RH (sh.size());
+          Eigen::Matrix<typename VectorType::Scalar,Eigen::Dynamic,1> RH (sh.size());
           SH2RH (RH, sh);
           return RH;
         }
 
+
+
+      //! perform spherical convolution, in place
+      /*! perform spherical convolution of SH coefficients \a sh with response
+       * function \a RH, storing the results in place in vector \a sh. */
+      template <class VectorType1, class VectorType2>
+        inline VectorType1& sconv (VectorType1& sh, const VectorType2& RH)
+        {
+          assert (sh.size() >= NforL (2* (RH.size()-1)));
+          for (ssize_t i = 0; i < RH.size(); ++i) {
+            int l = 2*i;
+            for (int m = -l; m <= l; ++m)
+              sh[index (l,m)] *= RH[i];
+          }
+          return sh;
+        }
 
 
       //! perform spherical convolution
@@ -308,7 +339,7 @@ namespace MR
         inline VectorType1& sconv (VectorType1& C, const VectorType2& RH, const VectorType3& sh)
         {
           assert (sh.size() >= NforL (2* (RH.size()-1)));
-          C.allocate (NforL (2* (RH.size()-1)));
+          C.resize (NforL (2* (RH.size()-1)));
           for (ssize_t i = 0; i < RH.size(); ++i) {
             int l = 2*i;
             for (int m = -l; m <= l; ++m)
@@ -410,7 +441,7 @@ namespace MR
 
           Eigen::VectorXd sigs (precision);
           Eigen::MatrixXd SHT (precision, lmax/2+1);
-          Eigen::Matrix<default_type,Eigen::Dynamic,1,64> AL;
+          Eigen::Matrix<default_type,Eigen::Dynamic,1,0,64> AL;
 
           for (int i = 0; i < precision; i++) {
             default_type el = i*Math::pi / (2.0* (precision-1));
@@ -424,326 +455,337 @@ namespace MR
 
 
 
-//
-//      //! used to speed up SH calculation
-//      template <typename ValueType > class PrecomputedFraction
-//      {
-//        public:
-//          PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
-//          ValueType f1, f2;
-//          typename std::vector<ValueType>::const_iterator p1, p2;
-//      };
-//
-//#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-//#define SH_NON_M0_SCALE_FACTOR (m ? Math::sqrt2 : 1.0)*
-//#else
-//#define SH_NON_M0_SCALE_FACTOR
-//#endif
-//
-//      //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
-//      template <typename ValueType> class PrecomputedAL
-//      {
-//        public:
-//          typedef ValueType value_type;
-//
-//          PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0) { }
-//          PrecomputedAL (int up_to_lmax, int num_dir = 512) {
-//            init (up_to_lmax, num_dir);
-//          }
-//
-//          bool operator! () const {
-//            return AL.empty();
-//          }
-//          operator bool () const {
-//            return AL.size();
-//          }
-//
-//          void init (int up_to_lmax, int num_dir = 512) {
-//            lmax = up_to_lmax;
-//            ndir = num_dir;
-//            nAL = NforL_mpos (lmax);
-//            inc = Math::pi / (ndir-1);
-//            AL.resize (ndir*nAL);
-//            VLA_MAX (buf, value_type, lmax+1, 64);
-//
-//            for (int n = 0; n < ndir; n++) {
-//              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
-//              value_type cos_el = std::cos (n*inc);
-//              for (int m = 0; m <= lmax; m++) {
-//                Legendre::Plm_sph (buf, lmax, m, cos_el);
-//                for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-//                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
-//              }
-//            }
-//          }
-//
-//          void set (PrecomputedFraction<ValueType>& f, const ValueType elevation) const {
-//            f.f2 = elevation / inc;
-//            int i = int (f.f2);
-//            if (i < 0) {
-//              i = 0;
-//              f.f1 = 1.0;
-//              f.f2 = 0.0;
-//            }
-//            else if (i >= ndir-1) {
-//              i = ndir-1;
-//              f.f1 = 1.0;
-//              f.f2 = 0.0;
-//            }
-//            else {
-//              f.f2 -= i;
-//              f.f1 = 1.0 - f.f2;
-//            }
-//
-//            f.p1 = AL.begin() + i*nAL;
-//            f.p2 = f.p1 + nAL;
-//          }
-//
-//          ValueType get (const PrecomputedFraction<ValueType>& f, int i) const {
-//            ValueType v = f.f1*f.p1[i];
-//            if (f.f2) v += f.f2*f.p2[i];
-//            return v;
-//          }
-//          ValueType get (const PrecomputedFraction<ValueType>& f, int l, int m) const {
-//            return get (f, index_mpos (l,m));
-//          }
-//
-//          void get (ValueType* dest, const PrecomputedFraction<ValueType>& f) const {
-//            for (int l = 0; l <= lmax; l+=2) {
-//              for (int m = 0; m <= l; m++) {
-//                int i = index_mpos (l,m);
-//                dest[i] = get (f,i);
-//              }
-//            }
-//          }
-//
-//          template <class ValueContainer>
-//            ValueType value (const ValueContainer& val, const Point<ValueType>& unit_dir) const {
-//              PrecomputedFraction<ValueType> f;
-//              set (f, std::acos (unit_dir[2]));
-//              ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
-//              ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
-//              ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
-//              ValueType v = 0.0;
-//              for (int l = 0; l <= lmax; l+=2)
-//                v += get (f,l,0) * val[index (l,0)];
-//              ValueType c0 (1.0), s0 (0.0);
-//              for (int m = 1; m <= lmax; m++) {
-//                ValueType c = c0 * cp - s0 * sp;
-//                ValueType s = s0 * cp + c0 * sp;
-//                for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
-//                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
-//                c0 = c;
-//                s0 = s;
-//              }
-//              return v;
-//            }
-//
-//        protected:
-//          int lmax, ndir, nAL;
-//          ValueType inc;
-//          std::vector<ValueType> AL;
-//      };
-//
-//
-//
-//
-//
-//
-//      //! estimate direction & amplitude of SH peak
-//      /*! find a peak of an SH series using Gauss-Newton optimisation, modified
-//       * to operate directly in spherical coordinates. The initial search
-//       * direction is \a unit_init_dir. If \a precomputer is not nullptr, it
-//       * will be used to speed up the calculations, at the cost of a minor
-//       * reduction in accuracy. */
-//      template <typename ValueType>
-//        inline ValueType get_peak (const ValueType* sh, int lmax, 
-//            Point<ValueType>& unit_init_dir, PrecomputedAL<ValueType>* precomputer = nullptr)
-//        {
-//          assert (unit_init_dir.valid());
-//          for (int i = 0; i < 50; i++) {
-//            ValueType az = atan2 (unit_init_dir[1], unit_init_dir[0]);
-//            ValueType el = acos (unit_init_dir[2]);
-//            ValueType amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
-//            derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
-//
-//            ValueType del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
-//            ValueType daz = dSH_daz/del;
-//            del = dSH_del/del;
-//
-//            ValueType dSH_dt = daz*dSH_daz + del*dSH_del;
-//            ValueType d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
-//            ValueType dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
-//
-//            if (dt < 0.0) dt = -dt;
-//            if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
-//
-//            del *= dt;
-//            daz *= dt;
-//
-//            unit_init_dir += Point<ValueType> (del*std::cos (az) *std::cos (el) - daz*std::sin (az), del*std::sin (az) *std::cos (el) + daz*std::cos (az), -del*std::sin (el));
-//            unit_init_dir.normalise();
-//
-//            if (dt < ANGLE_TOLERANCE) return amplitude;
-//          }
-//
-//          unit_init_dir.invalidate();
-//          DEBUG ("failed to find SH peak!");
-//          return NAN;
-//        }
-//
-//
-//
-//
-//
-//
-//      //! computes first and second order derivatives of SH series
-//      /*! This is used primarily in the get_peaks() function. */
-//      template <typename ValueType>
-//        inline void derivatives (
-//            const ValueType* sh, const int lmax, const ValueType elevation, const ValueType azimuth, ValueType& amplitude,
-//            ValueType& dSH_del, ValueType& dSH_daz, ValueType& d2SH_del2, ValueType& d2SH_deldaz,
-//            ValueType& d2SH_daz2, PrecomputedAL<ValueType>* precomputer)
-//        {
-//          ValueType sel = std::sin (elevation);
-//          ValueType cel = std::cos (elevation);
-//          bool atpole = sel < 1e-4;
-//
-//          dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
-//          VLA_MAX (AL, ValueType, NforL_mpos (lmax), 64);
-//
-//          if (precomputer) {
-//            PrecomputedFraction<ValueType> f;
-//            precomputer->set (f, elevation);
-//            precomputer->get (AL, f);
-//          }
-//          else {
-//            VLA_MAX (buf, ValueType, lmax+1, 64);
-//            for (int m = 0; m <= lmax; m++) {
-//              Legendre::Plm_sph (buf, lmax, m, cel);
-//              for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
-//                AL[index_mpos (l,m)] = buf[l];
-//            }
-//          }
-//
-//          amplitude = sh[0] * AL[0];
-//          for (int l = 2; l <= (int) lmax; l+=2) {
-//            const ValueType& v (sh[index (l,0)]);
-//            amplitude += v * AL[index_mpos (l,0)];
-//            dSH_del += v * sqrt (ValueType (l* (l+1))) * AL[index_mpos (l,1)];
-//            d2SH_del2 += v * (sqrt (ValueType (l* (l+1) * (l-1) * (l+2))) * AL[index_mpos (l,2)] - l* (l+1) * AL[index_mpos (l,0)]) /2.0;
-//          }
-//
-//          for (int m = 1; m <= lmax; m++) {
-//#ifndef USE_NON_ORTHONORMAL_SH_BASIS
-//            ValueType caz = Math::sqrt2 * std::cos (m*azimuth);
-//            ValueType saz = Math::sqrt2 * std::sin (m*azimuth);
-//#else
-//            ValueType caz = std::cos (m*azimuth);
-//            ValueType saz = std::sin (m*azimuth);
-//#endif
-//            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
-//              const ValueType& vp (sh[index (l,m)]);
-//              const ValueType& vm (sh[index (l,-m)]);
-//              amplitude += (vp*caz + vm*saz) * AL[index_mpos (l,m)];
-//
-//              ValueType tmp = sqrt (ValueType ( (l+m) * (l-m+1))) * AL[index_mpos (l,m-1)];
-//              if (l > m) tmp -= sqrt (ValueType ( (l-m) * (l+m+1))) * AL[index_mpos (l,m+1)];
-//              tmp /= -2.0;
-//              dSH_del += (vp*caz + vm*saz) * tmp;
-//
-//              ValueType tmp2 = - ( (l+m) * (l-m+1) + (l-m) * (l+m+1)) * AL[index_mpos (l,m)];
-//              if (m == 1) tmp2 -= sqrt (ValueType ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,1)];
-//              else tmp2 += sqrt (ValueType ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,m-2)];
-//              if (l > m+1) tmp2 += sqrt (ValueType ( (l-m) * (l+m+1) * (l-m-1) * (l+m+2))) * AL[index_mpos (l,m+2)];
-//              tmp2 /= 4.0;
-//              d2SH_del2 += (vp*caz + vm*saz) * tmp2;
-//
-//              if (atpole) dSH_daz += (vm*caz - vp*saz) * tmp;
-//              else {
-//                d2SH_deldaz += m * (vm*caz - vp*saz) * tmp;
-//                dSH_daz += m * (vm*caz - vp*saz) * AL[index_mpos (l,m)];
-//                d2SH_daz2 -= (vp*caz + vm*saz) * m*m * AL[index_mpos (l,m)];
-//              }
-//
-//            }
-//          }
-//
-//          if (!atpole) {
-//            dSH_daz /= sel;
-//            d2SH_deldaz /= sel;
-//            d2SH_daz2 /= sel*sel;
-//          }
-//        }
-//
-//
-//
-//      //! a class to hold the coefficients for an apodised point-spread function.
-//      template <typename ValueType> class aPSF
-//      {
-//        public:
-//          aPSF (const size_t _lmax) :
-//            lmax (_lmax)
-//        {
-//          switch (lmax) {
-//            case 2:
-//              RH.allocate (2);
-//              RH[0] = ValueType(1.0040911);
-//              RH[1] = ValueType(0.9852451);
-//              break;
-//            case 4:
-//              RH.allocate (3);
-//              RH[0] = ValueType(1.0228266);
-//              RH[1] = ValueType(0.9794163);
-//              RH[2] = ValueType(0.6336874);
-//              break;
-//            case 6:
-//              RH.allocate (4);
-//              RH[0] = ValueType(1.0317389);
-//              RH[1] = ValueType(0.9838425);
-//              RH[2] = ValueType(0.6271851);
-//              RH[3] = ValueType(0.2485668);
-//              break;
-//            case 8:
-//              RH.allocate (5);
-//              RH[0] = ValueType(1.04341398);
-//              RH[1] = ValueType(0.97096530);
-//              RH[2] = ValueType(0.67339320);
-//              RH[3] = ValueType(0.35029476);
-//              RH[4] = ValueType(0.12145668);
-//              break;
-//            case 10:
-//              RH.allocate (6);
-//              RH[0] = ValueType(1.04457094);
-//              RH[1] = ValueType(0.96687914);
-//              RH[2] = ValueType(0.73278211);
-//              RH[3] = ValueType(0.46071924);
-//              RH[4] = ValueType(0.22854642);
-//              RH[5] = ValueType(0.07630424);
-//              break;
-//            default:
-//              throw Exception ("No aPSF RH data for lmax " + str(lmax));
-//          }
-//        }
-//
-//
-//          Vector<ValueType>& operator() (Vector<ValueType>& sh, const Point<ValueType>& dir) const
-//          {
-//            sh.allocate(RH.size());
-//            Vector<ValueType> delta_coefs;
-//            delta (delta_coefs, dir, lmax);
-//            sconv (sh, RH, delta_coefs);
-//            return sh;
-//          }
-//
-//
-//        private:
-//          const size_t lmax;
-//          Vector<ValueType> RH;
-//
-//      };
-//
-//
+
+      //! used to speed up SH calculation
+      template <typename ValueType> class PrecomputedFraction
+      {
+        public:
+          PrecomputedFraction () : f1 (0.0), f2 (0.0) { }
+          ValueType f1, f2;
+          typename std::vector<ValueType>::const_iterator p1, p2;
+      };
+
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+#define SH_NON_M0_SCALE_FACTOR (m ? Math::sqrt2 : 1.0)*
+#else
+#define SH_NON_M0_SCALE_FACTOR
+#endif
+
+      //! Precomputed Associated Legrendre Polynomials - used to speed up SH calculation
+      template <typename ValueType> class PrecomputedAL
+      {
+        public:
+          typedef ValueType value_type;
+
+          PrecomputedAL () : lmax (0), ndir (0), nAL (0), inc (0.0) { }
+          PrecomputedAL (int up_to_lmax, int num_dir = 512) {
+            init (up_to_lmax, num_dir);
+          }
+
+          bool operator! () const {
+            return AL.empty();
+          }
+          operator bool () const {
+            return AL.size();
+          }
+
+          void init (int up_to_lmax, int num_dir = 512) {
+            lmax = up_to_lmax;
+            ndir = num_dir;
+            nAL = NforL_mpos (lmax);
+            inc = Math::pi / (ndir-1);
+            AL.resize (ndir*nAL);
+            Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
+
+            for (int n = 0; n < ndir; n++) {
+              typename std::vector<value_type>::iterator p = AL.begin() + n*nAL;
+              value_type cos_el = std::cos (n*inc);
+              for (int m = 0; m <= lmax; m++) {
+                Legendre::Plm_sph (buf, lmax, m, cos_el);
+                for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
+                  p[index_mpos (l,m)] = SH_NON_M0_SCALE_FACTOR buf[l];
+              }
+            }
+          }
+
+          void set (PrecomputedFraction<ValueType>& f, const ValueType elevation) const {
+            f.f2 = elevation / inc;
+            int i = int (f.f2);
+            if (i < 0) {
+              i = 0;
+              f.f1 = 1.0;
+              f.f2 = 0.0;
+            }
+            else if (i >= ndir-1) {
+              i = ndir-1;
+              f.f1 = 1.0;
+              f.f2 = 0.0;
+            }
+            else {
+              f.f2 -= i;
+              f.f1 = 1.0 - f.f2;
+            }
+
+            f.p1 = AL.begin() + i*nAL;
+            f.p2 = f.p1 + nAL;
+          }
+
+          ValueType get (const PrecomputedFraction<ValueType>& f, int i) const {
+            ValueType v = f.f1*f.p1[i];
+            if (f.f2) v += f.f2*f.p2[i];
+            return v;
+          }
+          ValueType get (const PrecomputedFraction<ValueType>& f, int l, int m) const {
+            return get (f, index_mpos (l,m));
+          }
+
+          void get (ValueType* dest, const PrecomputedFraction<ValueType>& f) const {
+            for (int l = 0; l <= lmax; l+=2) {
+              for (int m = 0; m <= l; m++) {
+                int i = index_mpos (l,m);
+                dest[i] = get (f,i);
+              }
+            }
+          }
+
+          template <class VectorType, class UnitVectorType>
+            ValueType value (const VectorType& val, const UnitVectorType& unit_dir) const {
+              PrecomputedFraction<ValueType> f;
+              set (f, std::acos (unit_dir[2]));
+              ValueType rxy = std::sqrt ( pow2(unit_dir[1]) + pow2(unit_dir[0]) );
+              ValueType cp = (rxy) ? unit_dir[0]/rxy : 1.0;
+              ValueType sp = (rxy) ? unit_dir[1]/rxy : 0.0;
+              ValueType v = 0.0;
+              for (int l = 0; l <= lmax; l+=2)
+                v += get (f,l,0) * val[index (l,0)];
+              ValueType c0 (1.0), s0 (0.0);
+              for (int m = 1; m <= lmax; m++) {
+                ValueType c = c0 * cp - s0 * sp;
+                ValueType s = s0 * cp + c0 * sp;
+                for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2)
+                  v += get (f,l,m) * (c * val[index (l,m)] + s * val[index (l,-m)]);
+                c0 = c;
+                s0 = s;
+              }
+              return v;
+            }
+
+        protected:
+          int lmax, ndir, nAL;
+          ValueType inc;
+          std::vector<ValueType> AL;
+      };
+
+
+
+
+
+
+      //! estimate direction & amplitude of SH peak
+      /*! find a peak of an SH series using Gauss-Newton optimisation, modified
+       * to operate directly in spherical coordinates. The initial search
+       * direction is \a unit_init_dir. If \a precomputer is not nullptr, it
+       * will be used to speed up the calculations, at the cost of a minor
+       * reduction in accuracy. */
+      template <class VectorType, class UnitVectorType, class ValueType = float>
+        inline typename VectorType::Scalar get_peak (
+            const VectorType& sh, 
+            int lmax, 
+            UnitVectorType& unit_init_dir,
+            PrecomputedAL<typename VectorType::Scalar>* precomputer = nullptr)
+        {
+          typedef typename VectorType::Scalar value_type;
+          assert (std::isfinite (unit_init_dir[0]));
+          for (int i = 0; i < 50; i++) {
+            value_type az = std::atan2 (unit_init_dir[1], unit_init_dir[0]);
+            value_type el = std::acos (unit_init_dir[2]);
+            value_type amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2;
+            derivatives (sh, lmax, el, az, amplitude, dSH_del, dSH_daz, d2SH_del2, d2SH_deldaz, d2SH_daz2, precomputer);
+
+            value_type del = sqrt (dSH_del*dSH_del + dSH_daz*dSH_daz);
+            value_type daz = dSH_daz/del;
+            del = dSH_del/del;
+
+            value_type dSH_dt = daz*dSH_daz + del*dSH_del;
+            value_type d2SH_dt2 = daz*daz*d2SH_daz2 + 2.0*daz*del*d2SH_deldaz + del*del*d2SH_del2;
+            value_type dt = d2SH_dt2 ? (-dSH_dt / d2SH_dt2) : 0.0;
+
+            if (dt < 0.0) dt = -dt;
+            if (dt > MAX_DIR_CHANGE) dt = MAX_DIR_CHANGE;
+
+            del *= dt;
+            daz *= dt;
+
+            unit_init_dir[0] += del*std::cos (az) *std::cos (el) - daz*std::sin (az);
+            unit_init_dir[1] += del*std::sin (az) *std::cos (el) + daz*std::cos (az);
+            unit_init_dir[2] -= del*std::sin (el);
+            unit_init_dir.normalize();
+
+            if (dt < ANGLE_TOLERANCE) 
+              return amplitude;
+          }
+
+          unit_init_dir = { NaN, NaN, NaN };
+          DEBUG ("failed to find SH peak!");
+          return NaN;
+        }
+
+
+
+
+
+
+      //! computes first and second order derivatives of SH series
+      /*! This is used primarily in the get_peaks() function. */
+      template <class VectorType>
+        inline void derivatives (
+            const VectorType& sh, 
+            const int lmax,
+            const typename VectorType::Scalar elevation, 
+            const typename VectorType::Scalar azimuth, 
+            typename VectorType::Scalar& amplitude,
+            typename VectorType::Scalar& dSH_del, 
+            typename VectorType::Scalar& dSH_daz, 
+            typename VectorType::Scalar& d2SH_del2, 
+            typename VectorType::Scalar& d2SH_deldaz,
+            typename VectorType::Scalar& d2SH_daz2, 
+            PrecomputedAL<typename VectorType::Scalar>* precomputer)
+        {
+          typedef typename VectorType::Scalar value_type;
+          value_type sel = std::sin (elevation);
+          value_type cel = std::cos (elevation);
+          bool atpole = sel < 1e-4;
+
+          dSH_del = dSH_daz = d2SH_del2 = d2SH_deldaz = d2SH_daz2 = 0.0;
+          VLA_MAX (AL, value_type, NforL_mpos (lmax), 64);
+
+          if (precomputer) {
+            PrecomputedFraction<value_type> f;
+            precomputer->set (f, elevation);
+            precomputer->get (AL, f);
+          }
+          else {
+            Eigen::Matrix<value_type,Eigen::Dynamic,1,0,64> buf (lmax+1);
+            for (int m = 0; m <= lmax; m++) {
+              Legendre::Plm_sph (buf, lmax, m, cel);
+              for (int l = ( (m&1) ?m+1:m); l <= lmax; l+=2)
+                AL[index_mpos (l,m)] = buf[l];
+            }
+          }
+
+          amplitude = sh[0] * AL[0];
+          for (int l = 2; l <= (int) lmax; l+=2) {
+            const value_type& v (sh[index (l,0)]);
+            amplitude += v * AL[index_mpos (l,0)];
+            dSH_del += v * sqrt (value_type (l* (l+1))) * AL[index_mpos (l,1)];
+            d2SH_del2 += v * (sqrt (value_type (l* (l+1) * (l-1) * (l+2))) * AL[index_mpos (l,2)] - l* (l+1) * AL[index_mpos (l,0)]) /2.0;
+          }
+
+          for (int m = 1; m <= lmax; m++) {
+#ifndef USE_NON_ORTHONORMAL_SH_BASIS
+            value_type caz = Math::sqrt2 * std::cos (m*azimuth);
+            value_type saz = Math::sqrt2 * std::sin (m*azimuth);
+#else
+            value_type caz = std::cos (m*azimuth);
+            value_type saz = std::sin (m*azimuth);
+#endif
+            for (int l = ( (m&1) ? m+1 : m); l <= lmax; l+=2) {
+              const value_type& vp (sh[index (l,m)]);
+              const value_type& vm (sh[index (l,-m)]);
+              amplitude += (vp*caz + vm*saz) * AL[index_mpos (l,m)];
+
+              value_type tmp = sqrt (value_type ( (l+m) * (l-m+1))) * AL[index_mpos (l,m-1)];
+              if (l > m) tmp -= sqrt (value_type ( (l-m) * (l+m+1))) * AL[index_mpos (l,m+1)];
+              tmp /= -2.0;
+              dSH_del += (vp*caz + vm*saz) * tmp;
+
+              value_type tmp2 = - ( (l+m) * (l-m+1) + (l-m) * (l+m+1)) * AL[index_mpos (l,m)];
+              if (m == 1) tmp2 -= sqrt (value_type ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,1)];
+              else tmp2 += sqrt (value_type ( (l+m) * (l-m+1) * (l+m-1) * (l-m+2))) * AL[index_mpos (l,m-2)];
+              if (l > m+1) tmp2 += sqrt (value_type ( (l-m) * (l+m+1) * (l-m-1) * (l+m+2))) * AL[index_mpos (l,m+2)];
+              tmp2 /= 4.0;
+              d2SH_del2 += (vp*caz + vm*saz) * tmp2;
+
+              if (atpole) dSH_daz += (vm*caz - vp*saz) * tmp;
+              else {
+                d2SH_deldaz += m * (vm*caz - vp*saz) * tmp;
+                dSH_daz += m * (vm*caz - vp*saz) * AL[index_mpos (l,m)];
+                d2SH_daz2 -= (vp*caz + vm*saz) * m*m * AL[index_mpos (l,m)];
+              }
+
+            }
+          }
+
+          if (!atpole) {
+            dSH_daz /= sel;
+            d2SH_deldaz /= sel;
+            d2SH_daz2 /= sel*sel;
+          }
+        }
+
+
+
+      //! a class to hold the coefficients for an apodised point-spread function.
+      template <typename ValueType> class aPSF
+      {
+        public:
+          aPSF (const size_t lmax) :
+            lmax (lmax),
+            RH (lmax/2 + 1)
+        {
+          switch (lmax) {
+            case 2:
+              RH[0] = ValueType(1.0040911);
+              RH[1] = ValueType(0.9852451);
+              break;
+            case 4:
+              RH[0] = ValueType(1.0228266);
+              RH[1] = ValueType(0.9794163);
+              RH[2] = ValueType(0.6336874);
+              break;
+            case 6:
+              RH[0] = ValueType(1.0317389);
+              RH[1] = ValueType(0.9838425);
+              RH[2] = ValueType(0.6271851);
+              RH[3] = ValueType(0.2485668);
+              break;
+            case 8:
+              RH[0] = ValueType(1.04341398);
+              RH[1] = ValueType(0.97096530);
+              RH[2] = ValueType(0.67339320);
+              RH[3] = ValueType(0.35029476);
+              RH[4] = ValueType(0.12145668);
+              break;
+            case 10:
+              RH[0] = ValueType(1.04457094);
+              RH[1] = ValueType(0.96687914);
+              RH[2] = ValueType(0.73278211);
+              RH[3] = ValueType(0.46071924);
+              RH[4] = ValueType(0.22854642);
+              RH[5] = ValueType(0.07630424);
+              break;
+            default:
+              throw Exception ("No aPSF RH data for lmax " + str(lmax));
+          }
+        }
+
+
+          template <class VectorType, class UnitVectorType>
+          VectorType& operator() (VectorType& sh, const UnitVectorType& dir) const
+          {
+            sh.resize (RH.size());
+            delta (sh, dir, lmax);
+            return sconv (sh, RH);
+          }
+
+
+        private:
+          const size_t lmax;
+          Eigen::Matrix<ValueType,Eigen::Dynamic,1> RH;
+
+      };
+
+
       //! convenience function to check if an input image can contain SH coefficients
       template <class HeaderType>
         void check (const HeaderType& H) {
@@ -753,8 +795,8 @@ namespace MR
             throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - data type is not floating-point");
           if (H.ndim() < 4)
             throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
-          size_t l = LforN (H.dim(3));
-          if (l%2 || NforL (l) != size_t (H.dim(3)))
+          size_t l = LforN (H.size(3));
+          if (l%2 || NforL (l) != size_t (H.size(3)))
             throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
         }
       /** @} */

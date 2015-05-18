@@ -27,7 +27,12 @@
 
 #include <stdint.h>
 #include <complex>
+
+// These lines are to silence deprecation warnings with Eigen & GCC v5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 #include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *

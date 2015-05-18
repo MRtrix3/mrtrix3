@@ -24,6 +24,7 @@
 #define __image_helpers_h__
 
 #include "datatype.h"
+#include "apply.h"
 
 namespace MR
 {
@@ -32,13 +33,36 @@ namespace MR
   //! \cond skip
   namespace {
 
+    template <class AxesType>
+      inline auto __ndim (const AxesType& axes) -> decltype (axes.size(), size_t()) { return axes.size(); }
+
+    template <class AxesType>
+      inline auto __ndim (const AxesType& axes) -> decltype (axes.ndim(), size_t()) { return axes.ndim(); }
+
+    template <class AxesType>
+      inline auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.size(), ssize_t()) 
+      { return axes[axis]; }
+
+    template <class AxesType>
+      inline auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.ndim(), ssize_t()) 
+      { return axes.index(axis); }
+
+    template <class AxesType>
+      inline auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.size(), void()) 
+      { axes[axis] = index; }
+
+    template <class AxesType>
+      inline auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.ndim(), void()) 
+      { axes.index(axis) = index; }
+
+
     template <class... DestImageType>
       struct __assign {
         __assign (size_t axis, ssize_t index) : axis (axis), index (index) { }
         const size_t axis;
         const ssize_t index;
         template <class ImageType> 
-          void operator() (ImageType& x) { x.index (axis) = index; }
+          void operator() (ImageType& x) { __set_index (x, axis, index); }
       };
 
     template <class... DestImageType>
@@ -55,7 +79,7 @@ namespace MR
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType> 
-          void operator() (ImageType& x) { if (axis > x.ndim()) axis = x.ndim(); }
+          void operator() (ImageType& x) { if (axis > __ndim(x)) axis = __ndim(x); }
       };
 
     template <class... DestImageType>
@@ -74,7 +98,7 @@ namespace MR
             size_t last_axis = to_axis;
             apply (__max_axis<DestImageType...> (last_axis), std::tie (dest...));
             for (size_t n = from_axis; n < last_axis; ++n)
-              apply (__assign<DestImageType...> (n, ref.index(n)), std::tie (dest...));
+              apply (__assign<DestImageType...> (n, __get_index (ref, n)), std::tie (dest...));
           }
         const ImageType& ref;
         const size_t from_axis, to_axis;
@@ -87,7 +111,7 @@ namespace MR
         template <class... DestImageType>
           void to (DestImageType&... dest) const {
             for (auto a : axes) 
-              apply (__assign<DestImageType...> (a, ref.index(a)), std::tie (dest...));
+              apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
           }
         const ImageType& ref;
         const std::vector<IntType> axes;
@@ -102,7 +126,11 @@ namespace MR
   /*! this can be used as follows:
    * \code
    * assign_pos_of (src_image, 0, 3).to (dest_image1, dest_image2);
-   * \endcode */
+   * \endcode 
+   * 
+   * This function will accept both ImageType objects (i.e. with ndim() &
+   * index(size_t) methods) or VectorType objects (i.e. with size() &
+   * operator[](size_t) methods). */
   template <class ImageType>
     inline __assign_pos_axis_range<ImageType> 
     assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
@@ -115,7 +143,11 @@ namespace MR
    * \code
    * std::vector<int> axes = { 0, 3, 4 };
    * assign_pos (src_image, axes) (dest_image1, dest_image2);
-   * \endcode */
+   * \endcode 
+   * 
+   * This function will accept both ImageType objects (i.e. with ndim() &
+   * index(size_t) methods) or VectorType objects (i.e. with size() &
+   * operator[](size_t) methods). */
   template <class ImageType, typename IntType>
     inline __assign_pos_axes<ImageType, IntType> 
     assign_pos_of (const ImageType& reference, const std::vector<IntType>& axes) 
@@ -139,6 +171,16 @@ namespace MR
     {
       for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(image.ndim())); ++n)
         if (image.index(n) < 0 || image.index(n) >= image.size(n))
+          return true;
+      return false;
+    }
+
+  template <class HeaderType, class VectorType>
+    inline bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
+        ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
+    {
+      for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(header.ndim())); ++n)
+        if (pos[n] < 0 || pos[n] >= header.size(n))
           return true;
       return false;
     }

@@ -194,9 +194,9 @@ void run ()
 
   Thread::run_queue (
       loader, 
-      Thread::batch (Streamline()),
+      Thread::batch (Streamline<>()),
       Thread::multi (worker), 
-      Thread::batch (Streamline()),
+      Thread::batch (Streamline<>()),
       receiver);
 
 }

@@ -25,7 +25,6 @@
 
 #include "transform.h"
 #include "datatype.h"
-#include "interp/make.h"
 
 namespace MR
 {
@@ -134,6 +133,15 @@ namespace MR
 
           const value_type out_of_bounds_value;
       };
+
+
+
+    template <class ImageType, typename... Args>
+      inline Nearest<ImageType> make_nearest (const ImageType& parent, Args&&... args) {
+        return Nearest<ImageType> (parent, std::forward<Args> (args)...);
+      }
+
+
 
       //! @}
 

@@ -51,18 +51,18 @@ namespace MR
           public:
             Sphere (const std::string& in) :
               Base (in, "sphere", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
-                std::vector<float> F (parse_floats (in));
+                auto F = parse_floats (in);
                 if (F.size() != 4)
                   throw Exception ("Could not parse seed \"" + in + "\" as a spherical seed point; needs to be 4 comma-separated values (XYZ position, then radius)");
-                pos.set (F[0], F[1], F[2]);
+                pos = { float(F[0]), float(F[1]), float(F[2]) };
                 rad = F[3];
                 volume = 4.0*Math::pi*Math::pow3(rad)/3.0;
               }
 
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) override;
 
           private:
-            Point<float> pos;
+            Eigen::Vector3f pos;
             float rad;
 
         };
@@ -73,16 +73,15 @@ namespace MR
 
           public:
             SeedMask (const std::string& in) :
-              Base (in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM) {
-                mask = Tractography::get_mask (in);
-                volume = get_count (*mask) * mask->vox(0) * mask->vox(1) * mask->vox(2);
+              Base (in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
+              mask (new Mask (in)) {
+                volume = get_count (*mask) * mask->voxsize(0) * mask->voxsize(1) * mask->voxsize(2);
               }
 
-            virtual ~SeedMask();
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
-            Mask* mask;
+            std::unique_ptr<Mask> mask;
 
         };
 
@@ -94,23 +93,22 @@ namespace MR
           public:
             Random_per_voxel (const std::string& in, const size_t num_per_voxel) :
               Base (in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (new Mask (in)),
               num (num_per_voxel),
               vox (0, 0, -1),
               inc (0),
               expired (false) {
-                mask = Tractography::get_mask (in);
                 count = get_count (*mask) * num_per_voxel;
               }
 
-            virtual ~Random_per_voxel();
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
-            Mask* mask;
+            std::unique_ptr<Mask> mask;
             const size_t num;
-            Point<int> vox;
-            uint32_t inc;
-            bool expired;
+            mutable Eigen::Vector3i vox;
+            mutable uint32_t inc;
+            mutable bool expired;
 
         };
 
@@ -122,25 +120,24 @@ namespace MR
           public:
             Grid_per_voxel (const std::string& in, const size_t os_factor) :
               Base (in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (new Mask (in)),
               os (os_factor),
               vox (0, 0, -1),
               pos (os, os, os),
               offset (-0.5 + (1.0 / (2*os))),
               step (1.0 / os),
               expired (false) {
-                mask = Tractography::get_mask (in);
                 count = get_count (*mask) * Math::pow3 (os_factor);
               }
 
-            virtual ~Grid_per_voxel();
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Math::RNG::Uniform<float>&, Eigen::Vector3f& p) const override;
 
           private:
-            Mask* mask;
+            std::unique_ptr<Mask> mask;
             const int os;
-            Point<int> vox, pos;
+            mutable Eigen::Vector3i vox, pos;
             const float offset, step;
-            bool expired;
+            mutable bool expired;
 
         };
 
@@ -148,41 +145,18 @@ namespace MR
 
         class Rejection : public Base
         {
-
-          private:
-            class FloatImage : public Image::BufferScratch<float> {
-              public:
-                typedef Image::Interp::Linear<Image::BufferScratch<float>::voxel_type> interp_type;
-                template <class InputVoxelType>
-                FloatImage (InputVoxelType& D, const Image::Info& info, const std::string& description) :
-                    Image::BufferScratch<float> (info, description),
-#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-                    voxel (*this),
-                    interp (voxel)
-#else
-                    transform (this->info())
-#endif
-                {
-                  Image::BufferScratch<float>::voxel_type this_vox (*this);
-                  Image::copy (D, this_vox);
-                }
-
-#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-                const Image::BufferScratch<float>::voxel_type voxel;
-                const interp_type interp;
-#else
-                Image::Transform transform;
-#endif
-            };
-
-
           public:
             Rejection (const std::string&);
 
-            virtual bool get_seed (Point<float>& p);
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
-            std::shared_ptr<FloatImage> image;
+            Image<float> image;
+#ifdef REJECTION_SAMPLING_USE_INTERPOLATION
+            Interp::Linear<Image<float>> interp;
+#else
+            transform_type voxel2scanner;
+#endif
             float max;
 
         };

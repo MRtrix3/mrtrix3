@@ -23,7 +23,6 @@
 #ifndef __dwi_tractography_algorithms_seedtest_h__
 #define __dwi_tractography_algorithms_seedtest_h__
 
-#include "point.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"

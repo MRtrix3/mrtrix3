@@ -24,8 +24,6 @@
 #define __dwi_tractography_tracking_tractography_h__
 
 #include "app.h"
-#include "point.h"
-
 #include "dwi/tractography/properties.h"
 
 namespace MR

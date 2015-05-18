@@ -42,6 +42,11 @@ namespace MR
           bounds { info.size(0) - 0.5, info.size(1) - 0.5, info.size(2) - 0.5 },
           out_of_bounds (true) { }
 
+      Transform (const Transform&) = default;
+      Transform (Transform&&) = default;
+      Transform& operator= (const Transform&) = default;
+      Transform& operator= (Transform&&) = default;
+
       //! test whether current position is within bounds.
       /*! \return true if the current position is out of bounds, false otherwise */
       bool operator! () const { return out_of_bounds; }
@@ -79,13 +84,14 @@ namespace MR
       default_type  bounds[3];
       bool   out_of_bounds;
 
-      Eigen::Vector3d set_to_nearest (const Eigen::Vector3d& pos) {
-        out_of_bounds = is_out_of_bounds (pos);
-        if (out_of_bounds)
-          return Eigen::Vector3d (default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>());
-        else
-          return Eigen::Vector3d (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
-      }
+      template <class VectorType>
+        Eigen::Vector3d set_to_nearest (const VectorType& pos) {
+          out_of_bounds = is_out_of_bounds (pos);
+          if (out_of_bounds)
+            return Eigen::Vector3d (default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>(), default_out_of_bounds_value<default_type>());
+          else
+            return Eigen::Vector3d (pos[0]-std::floor (pos[0]), pos[1]-std::floor (pos[1]), pos[2]-std::floor (pos[2]));
+        }
 
   };
 

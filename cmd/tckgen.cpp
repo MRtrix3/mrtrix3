@@ -52,7 +52,7 @@ using namespace App;
 
 
 
-const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "tensor_det", "tensor_prob", NULL };
+const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr };
 
 
 void usage ()

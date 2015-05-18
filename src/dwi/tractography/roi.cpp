@@ -79,7 +79,7 @@ namespace MR {
 
 
 
-      Mask* get_mask (const std::string& name)
+      Image<bool> Mask::__get_mask (const std::string& name)
       {
         auto data = Image<bool>::open (name);
         std::vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
@@ -109,16 +109,10 @@ namespace MR {
         top[1] = std::min (size_t (data.size(1)-bottom[1]), top[1]+2-bottom[1]);
         top[2] = std::min (size_t (data.size(2)-bottom[2]), top[2]+2-bottom[2]);
 
-        Header new_info (data);
-        for (size_t axis = 0; axis != 3; ++axis) {
-          new_info.size(axis) = top[axis];
-          for (size_t i = 0; i < 3; ++i)
-            new_info.transform().translation()[3] += bottom[axis] * new_info.voxsize(axis) * new_info.transform().translation()[axis];
-        }
-
         auto sub = Adapter::make<Adapter::Subset> (data, bottom, top);
-        
-        return new Mask (sub, new_info, data.name());
+        auto mask = Image<bool>::scratch (sub, data.name());
+        threaded_copy (sub, mask);
+        return mask;
       }
 
 

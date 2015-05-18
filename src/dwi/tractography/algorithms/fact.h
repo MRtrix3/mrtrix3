@@ -26,8 +26,7 @@
 #ifndef __dwi_tractography_algorithms_fact_h__
 #define __dwi_tractography_algorithms_fact_h__
 
-#include "point.h"
-#include "image/interp/nearest.h"
+#include "interp/nearest.h"
 
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"

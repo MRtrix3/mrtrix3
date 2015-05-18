@@ -25,12 +25,9 @@
 
 #include <vector>
 
-
-#include "point.h"
 #include "memory.h"
-#include "image/nav.h"
-#include "image/header.h"
-#include "image/transform.h"
+#include "header.h"
+#include "transform.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/resample.h"
 #include "dwi/tractography/roi.h"
@@ -71,19 +68,18 @@ namespace MR
 
           public:
 
-            SharedBase (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
+            SharedBase (const std::string& diff_path, Properties& property_set) :
 
-              source_buffer (diff_path, strides_by_volume()),
-              source_voxel (source_buffer),
+              source (Image<float>::open (diff_path).with_direct_io (strides_by_volume())),
               properties (property_set),
               max_num_tracks (1000),
               min_num_points (0),
               max_num_points (0),
-              max_angle (NAN),
-              max_angle_rk4 (NAN),
-              cos_max_angle (NAN),
-              cos_max_angle_rk4 (NAN),
-              step_size (NAN),
+              max_angle (NaN),
+              max_angle_rk4 (NaN),
+              cos_max_angle (NaN),
+              cos_max_angle_rk4 (NaN),
+              step_size (NaN),
               threshold (0.1),
               unidirectional (false),
               rk4 (false),
@@ -101,7 +97,7 @@ namespace MR
                 properties.set (rk4, "rk4");
                 properties.set (stop_on_all_include, "stop_on_all_include");
 
-                properties["source"] = source_buffer.name();
+                properties["source"] = source.name();
 
                 init_threshold = threshold;
                 properties.set (init_threshold, "init_threshold");
@@ -114,12 +110,12 @@ namespace MR
                 properties.set (max_seed_attempts, "max_seed_attempts");
 
                 if (properties.find ("init_direction") != properties.end()) {
-                  std::vector<float> V = parse_floats (properties["init_direction"]);
+                  auto V = parse_floats (properties["init_direction"]);
                   if (V.size() != 3) throw Exception (std::string ("invalid initial direction \"") + properties["init_direction"] + "\"");
                   init_dir[0] = V[0];
                   init_dir[1] = V[1];
                   init_dir[2] = V[2];
-                  init_dir.normalise();
+                  init_dir.normalize();
                 }
 
                 if (properties.find ("act") != properties.end()) {
@@ -156,7 +152,7 @@ namespace MR
                     case ENTER_EXCLUDE:         name = "enter_exclude";  break;
                     case TRAVERSE_ALL_INCLUDE:  name = "all_include";    break;
                   }
-                  debug_images[i] = new Image::Buffer<uint32_t>("terms_" + name + ".mif", debug_header);
+                  debug_images[i] = new Image<uint32_t> (Image<uint32_t>::create ("terms_" + name + ".mif", debug_header));
                 }
 #endif
 
@@ -219,13 +215,12 @@ namespace MR
             }
 
 
-            SourceBufferType source_buffer;
-            SourceBufferType::voxel_type source_voxel;
-            DWI::Tractography::Properties& properties;
-            Point<value_type> init_dir;
+            Image<float> source;
+            Properties& properties;
+            Eigen::Vector3f init_dir;
             size_t max_num_tracks, max_num_attempts, min_num_points, max_num_points;
-            value_type max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
-            value_type step_size, threshold, init_threshold;
+            float max_angle, max_angle_rk4, cos_max_angle, cos_max_angle_rk4;
+            float step_size, threshold, init_threshold;
             size_t max_seed_attempts;
             bool unidirectional, rk4, stop_on_all_include;
             Downsampler downsampler;
@@ -236,12 +231,12 @@ namespace MR
 
 
 
-            value_type vox () const
+            float vox () const
             {
-              return std::pow (source_buffer.vox(0)*source_buffer.vox(1)*source_buffer.vox(2), value_type (1.0/3.0));
+              return std::pow (source.voxsize(0)*source.voxsize(1)*source.voxsize(2), float (1.0/3.0));
             }
 
-            void set_step_size (value_type stepsize)
+            void set_step_size (float stepsize)
             {
               step_size = stepsize * vox();
               properties.set (step_size, "step_size");
@@ -250,11 +245,11 @@ namespace MR
               if (downsampler.get_ratio() > 1)
                 properties["output_step_size"] = str (step_size * downsampler.get_ratio());
 
-              value_type max_dist = 100.0 * vox();
+              float max_dist = 100.0 * vox();
               properties.set (max_dist, "max_dist");
               max_num_points = std::round (max_dist/step_size) + 1;
 
-              value_type min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
+              float min_dist = is_act() ? (2.0 * vox()) : (5.0 * vox());
               properties.set (min_dist, "min_dist");
               min_num_points = std::fmax (2, std::round (min_dist/step_size) + 1);
 
@@ -283,16 +278,16 @@ namespace MR
 
 
 #ifdef DEBUG_TERMINATIONS
-            void add_termination (const term_t i, const Point<value_type>& p) const
+            void add_termination (const term_t i, const Eigen::Vector3f& p) const
             {
               ++terminations[i];
               auto voxel debug_images[i]->voxel();
-              const Point<value_type> pv = transform.scanner2voxel (p);
-              const Point<int> v (std::round (pv[0]), std::round (pv[1]), std::round (pv[2]));
-              if (Image::Nav::within_bounds (voxel, v)) {
-                Image::Nav::set_pos (voxel, v);
+              const auto pv = transform.scanner2voxel (p);
+              voxel[0] = ssize_t (std::round (pv[0]));
+              voxel[1] = ssize_t (std::round (pv[1]));
+              voxel[2] = ssize_t (std::round (pv[2]));
+              if (!is_out_of_bounds (voxel))
                 voxel.value() += 1;
-              }
             }
 #endif
 
@@ -304,9 +299,9 @@ namespace MR
             std::unique_ptr<ACT::ACT_Shared_additions> act_shared_additions;
 
 #ifdef DEBUG_TERMINATIONS
-            Image::Header debug_header;
-            Image::Buffer<uint32_t>* debug_images[TERMINATION_REASON_COUNT];
-            const Image::Transform transform;
+            Header debug_header;
+            Image<uint32_t>* debug_images[TERMINATION_REASON_COUNT];
+            const Transform transform;
 #endif
 
 

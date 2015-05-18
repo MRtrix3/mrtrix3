@@ -25,7 +25,6 @@
 
 #include <algorithm>
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"

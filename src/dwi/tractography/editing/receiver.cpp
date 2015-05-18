@@ -33,7 +33,7 @@ namespace MR {
 
 
 
-        bool Receiver::operator() (const Streamline& in)
+        bool Receiver::operator() (const Streamline<>& in)
         {
           auto display_func = [&](){ return printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count); };
 
@@ -61,7 +61,7 @@ namespace MR {
 
             // Explicitly handle case where the streamline has been cropped into multiple components
             // Worker class separates track segments using invalid points as delimiters
-            Streamline temp;
+            Streamline<> temp;
             temp.index = in.index;
             temp.weight = in.weight;
             for (const auto& p : in) {
@@ -83,10 +83,10 @@ namespace MR {
 
 
 
-        void Receiver::output (const Streamline& in)
+        void Receiver::output (const Streamline<>& in)
         {
           if (ends_only) {
-            Streamline temp;
+            Streamline<> temp;
             temp.push_back (in.front());
             temp.push_back (in.back());
             writer (temp);

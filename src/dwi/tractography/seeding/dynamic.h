@@ -79,8 +79,8 @@ namespace MR
             voxel (-1, -1, -1) { }
 
 
-          void set_voxel (const Point<int>& i) { voxel = i; }
-          const Point<int>&   get_voxel() const { return voxel; }
+          void set_voxel (const Eigen::Vector3i& i) { voxel = i; }
+          const Eigen::Vector3i& get_voxel() const { return voxel; }
 
 
           float get_seed_prob (const double mu) const
@@ -93,7 +93,7 @@ namespace MR
 
 
         private:
-          Point<int> voxel;
+          Eigen::Vector3i voxel;
 
 
       };
@@ -104,19 +104,15 @@ namespace MR
       class Dynamic_ACT_additions
       {
 
-          typedef Image::Interp::Linear< Image::Buffer<float>::voxel_type > Interp;
-
         public:
           Dynamic_ACT_additions (const std::string& path) :
-            data (path),
-            interp_template (Image::Buffer<float>::voxel_type (data)),
-            gmwmi_finder (data) { }
+            interp_template (Image<float>::open (path)),
+            gmwmi_finder (static_cast<Image<float>&> (interp_template)) { }
 
-          bool check_seed (Point<float>&);
+          bool check_seed (Eigen::Vector3f&);
 
         private:
-          Image::Buffer<float> data;
-          const Interp interp_template;
+          Interp::Linear<Image<float>> interp_template;
           ACT::GMWMI_finder gmwmi_finder;
 
 
@@ -127,68 +123,68 @@ namespace MR
 
 
       class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
-      {
-
-        typedef Fixel_TD_seed Fixel;
-
-        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
-
-
-        public:
-        Dynamic (const std::string&, Image::Buffer<float>&, const DWI::Directions::FastLookupSet&);
-
-        ~Dynamic();
-
-        bool get_seed (Point<float>&, Point<float>&);
-
-        // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
-        //   includes the voxel location for easier determination of seed location
-        bool operator() (const FMLS::FOD_lobes&);
-
-        bool operator() (const Mapping::SetDixel& i)
         {
-          if (!i.weight) // Flags that tracking should terminate
-            return false;
-          return SIFT::ModelBase<Fixel_TD_seed>::operator() (i);
-        }
+          private:
+
+            typedef Fixel_TD_seed Fixel;
+
+            typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
+            typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
 
-        private:
-        using Fixel_map<Fixel>::accessor;
-        using Fixel_map<Fixel>::fixels;
+          public:
+            Dynamic (const std::string&, Image<float>&, const DWI::Directions::FastLookupSet&);
 
-        using SIFT::ModelBase<Fixel>::mu;
-        using SIFT::ModelBase<Fixel>::proc_mask;
+            ~Dynamic();
+
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&, Eigen::Vector3f&) override;
+
+            // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
+            //   includes the voxel location for easier determination of seed location
+            bool operator() (const FMLS::FOD_lobes&);
+
+            bool operator() (const Mapping::SetDixel& i)
+            {
+              if (!i.weight) // Flags that tracking should terminate
+                return false;
+              return SIFT::ModelBase<Fixel_TD_seed>::operator() (i);
+            }
 
 
-        // Want to know statistics on dynamic seeding sampling
-        uint64_t total_samples, total_seeds;
-        std::mutex mutex;
+          private:
+            using Fixel_map<Fixel>::accessor;
+            using Fixel_map<Fixel>::fixels;
+
+            using SIFT::ModelBase<Fixel>::mu;
+            using SIFT::ModelBase<Fixel>::proc_mask;
+
+
+            // Want to know statistics on dynamic seeding sampling
+            uint64_t total_samples, total_seeds;
+            std::mutex mutex;
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-        Tractography::Writer<float> seed_output;
-        void write_seed (const Point<float>&);
+            Writer<> seed_output;
+            void write_seed (const Eigen::Vector3f&);
 #endif
 
-        Image::Transform transform;
+            Transform transform;
 
-        std::unique_ptr<Dynamic_ACT_additions> act;
-
-      };
+            std::unique_ptr<Dynamic_ACT_additions> act;
+        };
 
 
 
 
 
       class WriteKernelDynamic : public Tracking::WriteKernel
-      {
-        public:
-          WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const DWI::Tractography::Properties& properties) :
+        {
+          public:
+            WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }
-          bool operator() (const Tracking::GeneratedTrack&, Tractography::Streamline<>&);
-      };
+            bool operator() (const Tracking::GeneratedTrack&, Streamline<>&);
+        };
 
 
 

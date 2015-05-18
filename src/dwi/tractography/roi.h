@@ -47,16 +47,17 @@ namespace MR
 
       class Mask : public Image<bool> {
         public:
-          template <class ImageType, class HeaderType>
-          Mask (ImageType& source, const HeaderType& info, const std::string& description) :
-              Image<bool> (Image<bool>::scratch (info, description)),
-              transform (info) {
-                threaded_copy (source, *this);
-              }
-          Transform transform;
+          Mask (const Mask&) = default;
+          Mask (const std::string& name) :
+            Image<bool> (__get_mask (name)), 
+            scanner2voxel (Transform(*this).scanner2voxel),
+            voxel2scanner (Transform (*this).voxel2scanner) { }
+          transform_type scanner2voxel, voxel2scanner;
+
+        private:
+          static Image<bool> __get_mask (const std::string& name);
       };
 
-      Mask* get_mask (const std::string& name);
 
 
 
@@ -80,7 +81,7 @@ namespace MR
             }
             catch (...) { 
               DEBUG ("could not parse spherical ROI specification \"" + spec + "\" - assuming mask image");
-              mask.reset (get_mask (spec));
+              mask.reset (new Mask (spec));
             }
           }
 
@@ -94,7 +95,7 @@ namespace MR
           {
 
             if (mask) {
-              Eigen::Vector3d v = mask->transform.scanner2voxel * p.cast<double>();
+              Eigen::Vector3d v = mask->scanner2voxel * p.cast<double>();
               mask->index(0) = std::round (v[0]);
               mask->index(1) = std::round (v[1]);
               mask->index(2) = std::round (v[2]);

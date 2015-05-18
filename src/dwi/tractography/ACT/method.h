@@ -23,17 +23,13 @@
 #ifndef __dwi_tractography_act_method_h__
 #define __dwi_tractography_act_method_h__
 
-
-
-#include "point.h"
-
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
 
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
 
-#include "image/interp/linear.h"
+#include "interp/linear.h"
 
 
 #define GMWMI_NORMAL_PERTURBATION 0.001
@@ -63,7 +59,7 @@ namespace MR
             const Tissues& tissues() const { return tissue_values; }
 
 
-            term_t check_structural (const Point<value_type>& pos)
+            term_t check_structural (const Eigen::Vector3f& pos)
             {
               if (!fetch_tissue_data (pos))
                 return EXIT_IMAGE;
@@ -83,7 +79,7 @@ namespace MR
             }
 
 
-            bool check_seed (const Point<value_type>& pos)
+            bool check_seed (const Eigen::Vector3f& pos)
             {
               if (!fetch_tissue_data (pos))
                 return false;
@@ -95,7 +91,7 @@ namespace MR
             }
 
 
-            bool seed_is_unidirectional (const Point<value_type>& pos, Point<value_type>& dir)
+            bool seed_is_unidirectional (const Eigen::Vector3f& pos, Eigen::Vector3f& dir)
             {
               // Tissue values should have already been acquired for the seed point when this function is run
               if ((tissues().get_wm() >= tissues().get_gm()) || (tissues().get_sgm() >= tissues().get_cgm()))
@@ -103,11 +99,11 @@ namespace MR
 
               const Tissues tissues_at_pos (tissues());
 
-              const Point<float> pos_plus  (pos + (dir * GMWMI_NORMAL_PERTURBATION));
+              const Eigen::Vector3f pos_plus  (pos + (dir * GMWMI_NORMAL_PERTURBATION));
               fetch_tissue_data (pos_plus);
               const Tissues tissues_plus (tissues());
 
-              const Point<float> pos_minus (pos - (dir * GMWMI_NORMAL_PERTURBATION));
+              const Eigen::Vector3f pos_minus (pos - (dir * GMWMI_NORMAL_PERTURBATION));
               fetch_tissue_data (pos_minus);
               const Tissues& tissues_minus (tissues());
 
@@ -121,7 +117,7 @@ namespace MR
             }
 
 
-            bool fetch_tissue_data (const Point<value_type>& pos)
+            bool fetch_tissue_data (const Eigen::Vector3f& pos)
             {
               act_image.scanner (pos);
               if (!act_image) {
@@ -139,7 +135,7 @@ namespace MR
 
 
           private:
-            Image::Interp::Linear< Image::Buffer<float>::voxel_type > act_image;
+            Interp::Linear<Image<float>> act_image;
             Tissues tissue_values;
 
 

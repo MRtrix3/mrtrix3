@@ -25,7 +25,6 @@
 
 #include "transform.h"
 #include "datatype.h"
-#include "interp/make.h"
 
 namespace MR
 {
@@ -76,6 +75,7 @@ namespace MR
         typedef typename ImageType::value_type value_type;
 
         using ImageType::size;
+        using ImageType::index;
         using Transform::set_to_nearest;
         using Transform::voxelsize;
         using Transform::scanner2voxel;
@@ -93,34 +93,35 @@ namespace MR
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
          * (floating-point) voxel coordinate within the dataset. */
-        bool voxel (const Eigen::Vector3f& pos) {
-          Eigen::Vector3f f = set_to_nearest (pos);
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          Eigen::Vector3d f = set_to_nearest (pos.template cast<double>());
           if (out_of_bounds)
             return true;
 
           if (pos[0] < 0.0) {
             f[0] = 0.0;
-            (*this)[0] = 0;
+            index(0) = 0;
           }
           else {
-            (*this)[0] = std::floor (pos[0]);
+            index(0) = std::floor (pos[0]);
             if (pos[0] > bounds[0]-0.5) f[0] = 0.0;
           }
           if (pos[1] < 0.0) {
             f[1] = 0.0;
-            (*this)[1] = 0;
+            index(1) = 0;
           }
           else {
-            (*this)[1] = std::floor (pos[1]);
+            index(1) = std::floor (pos[1]);
             if (pos[1] > bounds[1]-0.5) f[1] = 0.0;
           }
 
           if (pos[2] < 0.0) {
             f[2] = 0.0;
-            (*this)[2] = 0;
+            index(2) = 0;
           }
           else {
-            (*this)[2] = std::floor (pos[2]);
+            index(2) = std::floor (pos[2]);
             if (pos[2] > bounds[2]-0.5) f[2] = 0.0;
           }
 
@@ -150,15 +151,17 @@ namespace MR
          * coordinate relative to the axes of the dataset, in units of
          * millimeters. The origin is taken to be the centre of the voxel at [
          * 0 0 0 ]. */
-        bool image (const Eigen::Vector3f& pos) {
-          return voxel (voxelsize.inverse() * pos);
-        }
+        template <class VectorType>
+          bool image (const VectorType& pos) {
+            return voxel (voxelsize.inverse() * pos.template cast<double>());
+          }
         //! Set the current position to the <b>scanner space</b> position \a pos
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
          * scanner space coordinate, in units of millimeters. */
-        bool scanner (const Eigen::Vector3f& pos) {
-          return voxel (scanner2voxel * pos);
+        template <class VectorType>
+        bool scanner (const VectorType& pos) {
+          return voxel (scanner2voxel * pos.template cast<double>());
         }
 
         value_type value () {
@@ -166,23 +169,23 @@ namespace MR
             return out_of_bounds_value;
           value_type val = 0.0;
           if (faaa) val  = faaa * value_type (ImageType::value());
-          (*this)[2]++;
+          index(2)++;
           if (faab) val += faab * value_type (ImageType::value());
-          (*this)[1]++;
+          index(1)++;
           if (fabb) val += fabb * value_type (ImageType::value());
-          (*this)[2]--;
+          index(2)--;
           if (faba) val += faba * value_type (ImageType::value());
-          (*this)[0]++;
+          index(0)++;
           if (fbba) val += fbba * value_type (ImageType::value());
-          (*this)[1]--;
+          index(1)--;
           if (fbaa) val += fbaa * value_type (ImageType::value());
-          (*this)[2]++;
+          index(2)++;
           if (fbab) val += fbab * value_type (ImageType::value());
-          (*this)[1]++;
+          index(1)++;
           if (fbbb) val += fbbb * value_type (ImageType::value());
-          (*this)[0]--;
-          (*this)[1]--;
-          (*this)[2]--;
+          index(0)--;
+          index(1)--;
+          index(2)--;
           return val;
         }
 
@@ -191,6 +194,11 @@ namespace MR
       protected:
         float  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
     };
+
+    template <class ImageType, typename... Args>
+      inline Linear<ImageType> make_linear (const ImageType& parent, Args&&... args) {
+        return Linear<ImageType> (parent, std::forward<Args> (args)...);
+      }
 
     //! @}
 

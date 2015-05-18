@@ -106,8 +106,8 @@ namespace MR
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Eigen::Vector3f&) { throw Exception ("Calling empty virtual function Seeder_base::get_seed()!"); return false; }
-          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (p); }
+          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&) = 0;
+          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (rng, p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;
@@ -119,9 +119,7 @@ namespace MR
           // Finite seeds are defined by the number of seeds; non-limited are defined by volume
           float volume;
           uint32_t count;
-          // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
-          Math::RNG::Uniform<float> rng;
-          std::mutex mutex;
+          mutable std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 
         private:

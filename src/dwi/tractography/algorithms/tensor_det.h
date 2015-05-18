@@ -23,8 +23,6 @@
 #ifndef __dwi_tractography_algorithms_tensor_det_h__
 #define __dwi_tractography_algorithms_tensor_det_h__
 
-#include "point.h"
-#include "math/eigen.h"
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
