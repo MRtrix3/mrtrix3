@@ -70,12 +70,13 @@
 //     * Colour by: Corresponding nodes? Would require some plotting cleverness
 //   - Draw as streamlines
 //     * Implement lighting for exemplars
-//     * Draw as streamtubes
 //     * Consider a cross-talk solution with the tractography tool;
 //       make use of more advanced tractography shaders
 //       Would however require additions to tractography shaders, e.g.
 //       - variable radius between exemplars
 //       - manually providing tangents (not really required?)
+//   - Clean up behaviour with unusual sequences of inputs
+//   - Need to pass tangent and normal through geometry shader when activated
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -328,7 +329,7 @@ namespace MR
             edge_alpha_t edge_alpha;
 
             // Other values that need to be stored w.r.t. edge visualisation
-            bool have_exemplars;
+            bool have_exemplars, have_streamtubes;
             Point<float> edge_fixed_colour;
             size_t edge_colourmap_index;
             bool edge_colourmap_invert;
@@ -365,6 +366,9 @@ namespace MR
             void calculate_edge_sizes();
             void calculate_edge_visibility();
             void calculate_edge_alphas();
+
+            void get_exemplars();
+            void get_streamtubes();
 
             friend class NodeColourObserver;
             friend class EdgeColourObserver;

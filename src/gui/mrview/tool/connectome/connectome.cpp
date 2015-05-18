@@ -346,7 +346,8 @@ namespace MR
           edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
           edge_geometry_combobox->addItem ("Line");
           edge_geometry_combobox->addItem ("Cylinder");
-          edge_geometry_combobox->addItem ("Exemplar");
+          edge_geometry_combobox->addItem ("Streamline");
+          edge_geometry_combobox->addItem ("Streamtube");
           connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
           gridlayout->addWidget (edge_geometry_combobox, 0, 2);
           hlayout = new HBoxLayout;
@@ -558,6 +559,8 @@ namespace MR
           sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+
+          Edge::set_streamtube_LOD (3);
         }
 
 
@@ -740,7 +743,10 @@ namespace MR
               node_centre_one_ID = gl::GetUniformLocation (edge_shader, "centre_one");
               node_centre_two_ID = gl::GetUniformLocation (edge_shader, "centre_two");
               rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
-              radius_ID          = gl::GetUniformLocation (edge_shader, "radius");
+            }
+
+            if (edge_geometry == EDGE_GEOM_CYLINDER || edge_geometry == EDGE_GEOM_STREAMTUBE) {
+              radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
@@ -771,6 +777,7 @@ namespace MR
                 switch (edge_geometry) {
                   case EDGE_GEOM_LINE:
                     glLineWidth (edge.get_size() * edge_size_scale_factor);
+                    glColor3f (edge.get_colour()[0], edge.get_colour()[1], edge.get_colour()[2]);
                     edge.render_line();
                     break;
                   case EDGE_GEOM_CYLINDER:
@@ -780,10 +787,13 @@ namespace MR
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
-                  case EDGE_GEOM_EXEMPLAR:
+                  case EDGE_GEOM_STREAMLINE:
                     glLineWidth (edge.get_size() * edge_size_scale_factor);
-                    edge.render_exemplar();
+                    edge.render_streamline();
                     break;
+                  case EDGE_GEOM_STREAMTUBE:
+                    gl::Uniform1f        (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
+                    edge.render_streamtube();
                 }
               }
             }
@@ -794,7 +804,11 @@ namespace MR
               gl::DepthMask (gl::TRUE_);
             }
 
-            if (edge_geometry == EDGE_GEOM_LINE)
+            if (edge_geometry == EDGE_GEOM_STREAMTUBE) {
+              gl::Disable (gl::PRIMITIVE_RESTART);
+            }
+
+            if (edge_geometry == EDGE_GEOM_LINE || edge_geometry == EDGE_GEOM_STREAMLINE)
               glLineWidth (1.0f);
 
             edge_shader.stop();
@@ -1096,8 +1110,6 @@ namespace MR
             case 3:
               try {
                 import_file_for_node_property (node_values_from_file_colour, "colours");
-              } catch (...) { }
-              if (node_values_from_file_colour.size()) {
                 node_colour = NODE_COLOUR_FILE;
                 node_colour_colourmap_button->setVisible (true);
                 node_colour_fixedcolour_button->setVisible (false);
@@ -1115,7 +1127,8 @@ namespace MR
                 node_colour_upper_button->setMin (node_values_from_file_colour.get_min());
                 node_colour_lower_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
                 node_colour_upper_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = NODE_COLOUR_FIXED;
                 node_colour_colourmap_button->setVisible (false);
@@ -1158,8 +1171,6 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_size, "size");
-              } catch (...) { }
-              if (node_values_from_file_size.size()) {
                 node_size = NODE_SIZE_FILE;
                 if (node_size_combobox->count() == 3)
                   node_size_combobox->addItem (node_values_from_file_size.get_name());
@@ -1177,7 +1188,8 @@ namespace MR
                 node_size_lower_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
                 node_size_upper_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
                 node_size_invert_checkbox->setChecked (false);
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 node_size_combobox->setCurrentIndex (0);
                 node_size = NODE_SIZE_FIXED;
                 node_size_combobox->removeItem (3);
@@ -1216,8 +1228,6 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_visibility, "visibility");
-              } catch (...) { }
-              if (node_values_from_file_visibility.size()) {
                 node_visibility = NODE_VIS_FILE;
                 if (node_visibility_combobox->count() == 4)
                   node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
@@ -1231,7 +1241,8 @@ namespace MR
                 node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
                 node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
                 node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = NODE_VIS_ALL;
                 node_visibility_combobox->removeItem (4);
@@ -1289,8 +1300,6 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_alpha, "transparency");
-              } catch (...) { }
-              if (node_values_from_file_alpha.size()) {
                 node_alpha = NODE_ALPHA_FILE;
                 if (node_alpha_combobox->count() == 3)
                   node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
@@ -1308,7 +1317,8 @@ namespace MR
                 node_alpha_lower_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
                 node_alpha_upper_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
                 node_alpha_invert_checkbox->setChecked (false);
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = NODE_ALPHA_FIXED;
                 node_alpha_combobox->removeItem (3);
@@ -1418,34 +1428,13 @@ namespace MR
             case 2:
               try {
                 if (!have_exemplars) {
-                  // Request directory path from the user
-                  const std::string dir = GUI::Dialog::File::get_folder (this, "Select directory where command tcknodeextract has generated its output");
-                  if (!dir.size()) break;
-                  // Build a vector of track file paths, and verify their presence
-                  std::vector<std::string> paths (num_edges(), std::string());
-                  for (size_t edge_index = 0; edge_index != num_edges(); ++edge_index) {
-                    std::pair<node_t, node_t> node_indices = mat2vec (edge_index);
-                    if (node_indices.first != node_indices.second) {
-                      ++node_indices.first; ++node_indices.second; // Compensate for node 1 appearing at index 1
-                      const std::string basename = str(node_indices.first) + "-" + str(node_indices.second) + ".tck";
-                      const std::string expected = MR::Path::join (dir, basename);
-                      if (!MR::Path::exists (expected))
-                        throw Exception ("Missing track file: " + basename);
-                      paths[edge_index] = expected;
-                    }
-                  }
-                  auto source = [&] (uint32_t& out) { static uint32_t i = 0; out = i++; return (out != num_edges()); };
-                  std::mutex mutex;
-                  ProgressBar progress ("Generating connection exemplars... ", num_edges());
-                  auto sink = [&] (uint32_t& in) { edges[in].create_exemplar (paths[in]); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-                  Thread::run_queue (source, uint32_t(), Thread::multi (sink));
-                  for (auto i = edges.begin(); i != edges.end(); ++i)
-                    i->buffer_exemplar();
-                  have_exemplars = true;
-                  edge_geometry = EDGE_GEOM_EXEMPLAR;
-                  edge_geometry_cylinder_lod_label->setVisible (false);
-                  edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                  get_exemplars();
+                  if (!have_exemplars)
+                    throw Exception ("No directory path provided; cannot render streamlines");
                 }
+                edge_geometry = EDGE_GEOM_STREAMLINE;
+                edge_geometry_cylinder_lod_label->setVisible (false);
+                edge_geometry_cylinder_lod_spinbox->setVisible (false);
               } catch (Exception& e) {
                 e.display();
                 for (auto i = edges.begin(); i != edges.end(); ++i)
@@ -1456,6 +1445,28 @@ namespace MR
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
               }
+              break;
+            case 3:
+              try {
+                if (!have_streamtubes) {
+                  get_streamtubes();
+                  if (!have_exemplars)
+                    throw Exception ("No directory path provided; cannot render streamtubes");
+                }
+                edge_geometry = EDGE_GEOM_STREAMTUBE;
+                edge_geometry_cylinder_lod_label->setVisible (false);
+                edge_geometry_cylinder_lod_spinbox->setVisible (false);
+              } catch (Exception& e) {
+                e.display();
+                for (auto i = edges.begin(); i != edges.end(); ++i)
+                  i->clear_streamtube();
+                have_exemplars = false;
+                edge_geometry = EDGE_GEOM_LINE;
+                edge_geometry_combobox->setCurrentIndex (0);
+                edge_geometry_cylinder_lod_label->setVisible (false);
+                edge_geometry_cylinder_lod_spinbox->setVisible (false);
+              }
+              break;
           }
           window.updateGL();
         }
@@ -1486,8 +1497,6 @@ namespace MR
             case 2:
               try {
                 import_file_for_edge_property (edge_values_from_file_colour, "colours");
-              } catch (...) { }
-              if (edge_values_from_file_colour.size()) {
                 edge_colour = EDGE_COLOUR_FILE;
                 edge_colour_colourmap_button->setVisible (true);
                 edge_colour_fixedcolour_button->setVisible (false);
@@ -1505,7 +1514,8 @@ namespace MR
                 edge_colour_upper_button->setMin (edge_values_from_file_colour.get_min());
                 edge_colour_lower_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
                 edge_colour_upper_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 edge_colour_combobox->setCurrentIndex (0);
                 edge_colour = EDGE_COLOUR_FIXED;
                 edge_colour_colourmap_button->setVisible (false);
@@ -1538,8 +1548,6 @@ namespace MR
             case 1:
               try {
                 import_file_for_edge_property (edge_values_from_file_size, "size");
-              } catch (...) { }
-              if (edge_values_from_file_size.size()) {
                 edge_size = EDGE_SIZE_FILE;
                 if (edge_size_combobox->count() == 2)
                   edge_size_combobox->addItem (edge_values_from_file_size.get_name());
@@ -1556,7 +1564,8 @@ namespace MR
                 edge_size_upper_button->setMin (edge_values_from_file_size.get_min());
                 edge_size_lower_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
                 edge_size_upper_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 edge_size_combobox->setCurrentIndex (0);
                 edge_size = EDGE_SIZE_FIXED;
                 edge_size_combobox->removeItem (2);
@@ -1613,8 +1622,6 @@ namespace MR
             case 3:
               try {
                 import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
-              } catch (...) { }
-              if (edge_values_from_file_visibility.size()) {
                 edge_visibility = EDGE_VIS_FILE;
                 if (edge_visibility_combobox->count() == 4)
                   edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
@@ -1628,8 +1635,8 @@ namespace MR
                 edge_visibility_threshold_button->setMin (edge_values_from_file_visibility.get_min());
                 edge_visibility_threshold_button->setMax (edge_values_from_file_visibility.get_max());
                 edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
-
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 edge_visibility_combobox->setCurrentIndex (1);
                 edge_visibility = EDGE_VIS_NONE;
                 edge_visibility_combobox->removeItem (4);
@@ -1660,8 +1667,6 @@ namespace MR
             case 1:
               try {
                 import_file_for_edge_property (edge_values_from_file_alpha, "transparency");
-              } catch (...) { }
-              if (edge_values_from_file_alpha.size()) {
                 edge_alpha = EDGE_ALPHA_FILE;
                 if (edge_alpha_combobox->count() == 2)
                   edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
@@ -1679,7 +1684,8 @@ namespace MR
                 edge_alpha_lower_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
                 edge_alpha_upper_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
                 edge_alpha_invert_checkbox->setChecked (false);
-              } else {
+              } catch (Exception& e) {
+                e.display();
                 edge_alpha_combobox->setCurrentIndex (0);
                 edge_alpha = EDGE_ALPHA_FIXED;
                 edge_alpha_combobox->removeItem (2);
@@ -2302,6 +2308,51 @@ namespace MR
             }
 
           }
+        }
+
+
+
+
+        void Connectome::get_exemplars()
+        {
+          // Request directory path from the user
+          const std::string dir = GUI::Dialog::File::get_folder (this, "Select directory where command tcknodeextract has generated its output");
+          if (!dir.size()) return;
+          // Build a vector of track file paths, and verify their presence
+          std::vector<std::string> paths (num_edges(), std::string());
+          for (size_t edge_index = 0; edge_index != num_edges(); ++edge_index) {
+            std::pair<node_t, node_t> node_indices = mat2vec (edge_index);
+            if (node_indices.first != node_indices.second) {
+              ++node_indices.first; ++node_indices.second; // Compensate for node 1 appearing at index 1
+              const std::string basename = str(node_indices.first) + "-" + str(node_indices.second) + ".tck";
+              const std::string expected = MR::Path::join (dir, basename);
+              if (!MR::Path::exists (expected))
+                throw Exception ("Missing track file: " + basename);
+              paths[edge_index] = expected;
+            }
+          }
+          auto source = [&] (uint32_t& out) { static uint32_t i = 0; out = i++; return (out != num_edges()); };
+          std::mutex mutex;
+          ProgressBar progress ("Generating connection exemplars... ", num_edges());
+          auto sink = [&] (uint32_t& in) { edges[in].calculate_exemplar (paths[in]); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+          Thread::run_queue (source, uint32_t(), Thread::multi (sink));
+          for (auto i = edges.begin(); i != edges.end(); ++i)
+            i->create_streamline();
+          have_exemplars = true;
+        }
+
+
+
+        void Connectome::get_streamtubes()
+        {
+          if (!have_exemplars)
+            get_exemplars();
+          ProgressBar progress ("Generating connection streamtubes... ", num_edges());
+          for (auto i = edges.begin(); i != edges.end(); ++i) {
+            i->create_streamtube();
+            ++progress;
+          }
+          have_streamtubes = true;
         }
 
 

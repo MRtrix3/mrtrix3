@@ -286,10 +286,19 @@ namespace MR
               "out vec3 normal;\n";
           }
 
-          if (geometry == EDGE_GEOM_EXEMPLAR) {
+          if (geometry == EDGE_GEOM_STREAMLINE) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
               "out vec3 tangent;\n";
+          }
+
+          if (geometry == EDGE_GEOM_STREAMTUBE) {
+            vertex_shader_source +=
+              "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
+              "layout (location = 2) in vec3 vertexNormal_modelspace;\n"
+              "uniform float radius;\n"
+              "out vec3 tangent;\n"
+              "out vec3 normal;\n";
           }
 
           vertex_shader_source +=
@@ -311,10 +320,17 @@ namespace MR
               "  offset = offset * rot_matrix;\n"
               "  normal = vertexNormal_modelspace * rot_matrix;\n"
               "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
-            case EDGE_GEOM_EXEMPLAR:
+              break;
+            case EDGE_GEOM_STREAMLINE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n"
               "  tangent = vertexTangent_modelspace;\n";
+              break;
+            case EDGE_GEOM_STREAMTUBE:
+              vertex_shader_source +=
+              "  gl_Position = MVP * vec4 (vertexPosition_modelspace + (radius * vertexNormal_modelspace), 1);\n"
+              "  tangent = vertexTangent_modelspace;\n"
+              "  normal = vertexNormal_modelspace;\n";
               break;
           }
 
@@ -326,18 +342,22 @@ namespace MR
           geometry_shader_source = std::string("");
           if (!is_3D) {
 
+            // FIXME Have to output normal and tangent through GS
+
             switch (geometry) {
               case EDGE_GEOM_LINE:
-              case EDGE_GEOM_EXEMPLAR:
+              case EDGE_GEOM_STREAMLINE:
                 geometry_shader_source +=
                 "layout(lines) in;\n"
                 "layout(points, max_vertices=1) out;\n";
                 break;
               case EDGE_GEOM_CYLINDER:
+              case EDGE_GEOM_STREAMTUBE:
                 geometry_shader_source +=
                 "layout(triangles) in;\n"
                 "layout(line_strip, max_vertices=2) out;\n"
-                "in vec3 normal[];\n";
+                "in vec3 normal[];\n"
+                "in vec3 tangent[];\n";
                 break;
             }
 
@@ -346,7 +366,7 @@ namespace MR
 
             switch (geometry) {
               case EDGE_GEOM_LINE:
-              case EDGE_GEOM_EXEMPLAR:
+              case EDGE_GEOM_STREAMLINE:
                 geometry_shader_source +=
                 "  float mu = gl_in[0].gl_Position.z / (gl_in[0].gl_Position.z - gl_in[1].gl_Position.z);\n"
                 "  if (mu >= 0.0 && mu <= 1.0) {\n"
@@ -356,6 +376,7 @@ namespace MR
                 "  EndPrimitive();\n";
                 break;
               case EDGE_GEOM_CYLINDER:
+                case EDGE_GEOM_STREAMTUBE:
                 geometry_shader_source +=
                 "  for (int v1 = 0; v1 != 3; ++v1) {\n"
                 "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
@@ -388,13 +409,14 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (geometry == EDGE_GEOM_CYLINDER) {
+          if (geometry == EDGE_GEOM_CYLINDER || geometry == EDGE_GEOM_STREAMTUBE) {
             fragment_shader_source +=
               "in vec3 normal;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
-          } else if (geometry == EDGE_GEOM_EXEMPLAR) {
+          }
+          if (geometry == EDGE_GEOM_STREAMLINE || geometry == EDGE_GEOM_STREAMTUBE) {
             fragment_shader_source +=
               "in vec3 tangent;\n";
           }
@@ -413,7 +435,7 @@ namespace MR
               "  float amplitude = edge_colour.r;\n";
             fragment_shader_source += std::string("  ") + ColourMap::maps[colourmap_index].mapping;
 
-          } else if (colour == EDGE_COLOUR_DIR && geometry == EDGE_GEOM_EXEMPLAR) {
+          } else if (colour == EDGE_COLOUR_DIR && (geometry == EDGE_GEOM_STREAMLINE || geometry == EDGE_GEOM_STREAMTUBE)) {
 
             if (use_alpha) {
               fragment_shader_source +=
@@ -435,13 +457,13 @@ namespace MR
 
           }
 
-          if (geometry == EDGE_GEOM_CYLINDER) {
+          if (geometry == EDGE_GEOM_CYLINDER || geometry == EDGE_GEOM_STREAMTUBE) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
           }
 
-          // TODO Lighting for exemplar rendering
+          // TODO Lighting for streamline rendering
 
           if (use_alpha) {
             fragment_shader_source +=
