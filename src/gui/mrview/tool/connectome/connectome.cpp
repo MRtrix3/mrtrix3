@@ -908,7 +908,7 @@ namespace MR
               case 4: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_ITKSNAP);    break;
               default: assert (0);
             }
-          } catch (...) { return; }
+          } catch (Exception& e) { e.display(); lut_combobox->setCurrentIndex (0); return; }
 
           lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
           lut_combobox->setCurrentIndex (5);

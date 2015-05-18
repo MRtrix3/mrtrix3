@@ -119,7 +119,7 @@ void Node_map::parse_line_basic (const std::string& line)
     sscanf (line.c_str(), "%u %s", &index, name);
     if (index != std::numeric_limits<node_t>::max()) {
       if (find (index) != end())
-        throw Exception ("Lookup table contains redundant entries");
+        throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");
       const std::string strname (name);
       insert (std::make_pair (index, Node_info (strname)));
     }
@@ -136,7 +136,7 @@ void Node_map::parse_line_freesurfer (const std::string& line)
       if (maxvalue (r, g, b) > 255)
         throw Exception ("Lookup table is malformed");
       if (find (index) != end())
-        throw Exception ("Lookup table contains redundant entries");
+        throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");
       const std::string strname (name);
       insert (std::make_pair (index, Node_info (strname, r, g, b, a)));
     }
@@ -150,7 +150,7 @@ void Node_map::parse_line_aal (const std::string& line)
     sscanf (line.c_str(), "%s %s %u", short_name, name, &index);
     if (index != std::numeric_limits<node_t>::max()) {
       if (find (index) != end())
-        throw Exception ("Lookup table contains redundant entries");
+        throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");
       const std::string strname (name);
       insert (std::make_pair (index, Node_info (strname)));
     }
@@ -167,7 +167,7 @@ void Node_map::parse_line_itksnap (const std::string& line)
     sscanf (line.c_str(), "%u %u %u %u %f %u %u %s", &index, &r, &g, &b, &a, &label_vis, &mesh_vis, name);
     if (index != std::numeric_limits<node_t>::max()) {
       if (find (index) != end())
-        throw Exception ("Lookup table contains redundant entries");
+        throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");
       std::string strname (name);
       size_t first = strname.find_first_not_of ('\"');
       if (first == std::string::npos)
