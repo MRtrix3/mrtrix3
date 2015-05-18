@@ -908,7 +908,7 @@ namespace MR
               case 4: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_ITKSNAP);    break;
               default: assert (0);
             }
-          } catch (Exception& e) { e.display(); lut_combobox->setCurrentIndex (0); return; }
+          } catch (Exception& e) { e.display(); lut.clear(); lut_combobox->setCurrentIndex (0); return; }
 
           lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
           lut_combobox->setCurrentIndex (5);
@@ -925,9 +925,14 @@ namespace MR
             return;
           config.clear();
           lut_mapping.clear();
-          config_button->setText ("");
-          MR::DWI::Tractography::Connectomics::load_config (path, config);
-          config_button->setText (QString::fromStdString (Path::basename (path)));
+          config_button->setText ("(none)");
+          try {
+            MR::DWI::Tractography::Connectomics::load_config (path, config);
+            config_button->setText (QString::fromStdString (Path::basename (path)));
+          } catch (Exception& e) {
+            e.display();
+            config.clear();
+          }
           load_properties();
           window.updateGL();
         }
