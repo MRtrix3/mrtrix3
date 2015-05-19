@@ -172,6 +172,49 @@ namespace MR
 
 
 
+        void ROI_UndoEntry::draw_thick_line (ROI_Item& roi, const Point<>& prev_pos, const Point<>& pos, bool insert_mode_value, float diameter)
+        {
+          roi.brush_size = diameter;
+          const float radius = 0.5f * diameter;
+          const float radius_sq = Math::pow2 (radius);
+          const GLubyte value = insert_mode_value ? 1 : 0;
+          const Point<> start = roi.transform().scanner2voxel (prev_pos);
+          const Point<> end = roi.transform().scanner2voxel (pos);
+          const Point<> offset (end - start);
+          const float offset_norm (offset.norm());
+          const Point<> dir (Point<>(offset).normalise());
+
+          std::array<int,3> a = { { int(std::lround (std::min (start[0], end[0]))),   int(std::lround (std::min (start[1], end[1]))),   int(std::lround (std::min (start[2], end[2])))   } };
+          std::array<int,3> b = { { int(std::lround (std::max (start[0], end[0])))+1, int(std::lround (std::max (start[1], end[1])))+1, int(std::lround (std::max (start[2], end[2])))+1 } };
+
+          int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
+          a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
+          a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
+          b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad[0]);
+          b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad[1]);
+
+          for (int k = a[2]; k < b[2]; ++k) {
+            for (int j = a[1]; j < b[1]; ++j) {
+              for (int i = a[0]; i < b[0]; ++i) {
+
+                const Point<> p (i, j, k);
+                const Point<> v (p - start);
+                if ((v.dot (dir) > 0.0f) && (v.dot (dir) < offset_norm)) {
+                  Point<> d (v - (dir * v.dot (dir)));
+                  d[0] *= roi.info().vox(0); d[1] *= roi.info().vox(1); d[2] *= roi.info().vox(2);
+                  if (d.norm2() < radius_sq)
+                    after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
+                }
+
+          } } }
+
+          roi.texture().bind();
+          gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
+        }
+
+
+
+
         void ROI_UndoEntry::draw_circle (ROI_Item& roi, const Point<>& pos, bool insert_mode_value, float diameter)
         {
           Point<> vox = roi.transform().scanner2voxel (pos);

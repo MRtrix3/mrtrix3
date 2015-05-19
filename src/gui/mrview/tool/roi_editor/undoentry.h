@@ -49,6 +49,7 @@ namespace MR
 
           ROI_UndoEntry (ROI_Item&, int, int);
           void draw_line (ROI_Item&, const Point<>&, const Point<>&, bool);
+          void draw_thick_line (ROI_Item&, const Point<>&, const Point<>&, bool, float);
           void draw_circle (ROI_Item&, const Point<>&, bool, float);
           void draw_rectangle (ROI_Item&, const Point<>&, const Point<>&, bool);
           void draw_fill (ROI_Item&, const Point<>, bool);
