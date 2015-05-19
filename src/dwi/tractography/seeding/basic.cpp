@@ -72,13 +72,6 @@ namespace MR
 
 
 
-        Random_per_voxel::~Random_per_voxel()
-        {
-          delete mask;
-          mask = nullptr;
-        }
-
-
         bool Random_per_voxel::get_seed (Point<float>& p)
         {
 
@@ -89,24 +82,21 @@ namespace MR
 
           if (vox[2] < 0 || ++inc == num) {
             inc = 0;
-            auto v = mask->voxel();
-            Image::Nav::set_pos (v, vox);
 
             do {
-              if (++v[2] == v.dim(2)) {
-                v[2] = 0;
-                if (++v[1] == v.dim(1)) {
-                  v[1] = 0;
-                  ++v[0];
+              if (++vox[2] == vox.dim(2)) {
+                vox[2] = 0;
+                if (++vox[1] == vox.dim(1)) {
+                  vox[1] = 0;
+                  ++vox[0];
                 }
               }
-            } while (v[0] != v.dim(0) && !v.value());
+            } while (vox[0] != vox.dim(0) && !vox.value());
 
-            if (v[0] == v.dim(0)) {
+            if (vox[0] == vox.dim(0)) {
               expired = true;
               return false;
             }
-            vox[0] = v[0]; vox[1] = v[1], vox[2] = v[2];
           }
 
           p.set (vox[0]+rng()-0.5, vox[1]+rng()-0.5, vox[2]+rng()-0.5);
@@ -120,12 +110,6 @@ namespace MR
 
 
 
-
-        Grid_per_voxel::~Grid_per_voxel()
-        {
-          delete mask;
-          mask = nullptr;
-        }
 
         bool Grid_per_voxel::get_seed (Point<float>& p)
         {
@@ -142,23 +126,19 @@ namespace MR
               if (++pos[0] >= os) {
                 pos[0] = 0;
 
-                auto v = mask->voxel();
-                Image::Nav::set_pos (v, vox);
-
                 do {
-                  if (++v[2] == v.dim(2)) {
-                    v[2] = 0;
-                    if (++v[1] == v.dim(1)) {
-                      v[1] = 0;
-                      ++v[0];
+                  if (++vox[2] == vox.dim(2)) {
+                    vox[2] = 0;
+                    if (++vox[1] == vox.dim(1)) {
+                      vox[1] = 0;
+                      ++vox[0];
                     }
                   }
-                } while (v[0] != v.dim(0) && !v.value());
-                if (v[0] == v.dim(0)) {
+                } while (vox[0] != vox.dim(0) && !vox.value());
+                if (vox[0] == vox.dim(0)) {
                   expired = true;
                   return false;
                 }
-                vox[0] = v[0]; vox[1] = v[1]; vox[2] = v[2];
               }
             }
           }
@@ -207,16 +187,12 @@ namespace MR
           top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
           top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
 
-          Image::Info new_info (data);
-          for (size_t axis = 0; axis != 3; ++axis) {
-            new_info.dim(axis) = top[axis];
-            for (size_t i = 0; i < 3; ++i)
-              new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
-          }
-
           Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
+          Image::Info info (sub.info());
+          if (info.ndim() > 3)
+            info.set_ndim (3);
 
-          image.reset (new FloatImage (sub, new_info, in));
+          image.reset (new FloatImage (sub, info, in));
 
           volume *= image->dim(0) * image->dim(1) * image->dim(2);
 
