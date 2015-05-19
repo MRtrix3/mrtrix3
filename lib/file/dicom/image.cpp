@@ -366,7 +366,7 @@ namespace MR {
         std::vector<size_t> index (3, 1);
         const Frame* previous = frames[0];
 
-        for (std::vector<Frame*>::const_iterator frame_it = frames.begin()+1; frame_it != frames.end(); ++frame_it) {
+        for (auto frame_it = frames.cbegin()+1; frame_it != frames.cend(); ++frame_it) {
           const Frame& frame (**frame_it);
 
           if (frame.series_num != previous->series_num ||

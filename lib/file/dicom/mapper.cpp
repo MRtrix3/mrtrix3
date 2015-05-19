@@ -86,6 +86,9 @@ namespace MR {
 
         auto dim = Frame::count (frames);
 
+        if (dim[0]*dim[1]*dim[2] < frames.size())
+          throw Exception ("dimensions mismatch in DICOM series");
+
         if (dim[0]*dim[1]*dim[2] > frames.size())
           throw Exception ("missing image frames for DICOM image \"" + H.name() + "\"");
 
