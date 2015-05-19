@@ -21,7 +21,7 @@ class SceneMesh
   public:
 
     SceneMesh( SceneModeller* sceneModeller,
-               Mesh::Mesh* mesh,
+               Mesh* mesh,
                float radiusOfInfluence = 0.0 );
     virtual ~SceneMesh();
 
