@@ -35,6 +35,8 @@ namespace MR
         rate (change_rate),
         min (-std::numeric_limits<float>::max()),
         max (std::numeric_limits<float>::max()),
+        is_min (false),
+        is_max (false),
         deadzone_y (-1),
         deadzone_value (NAN)
       {
