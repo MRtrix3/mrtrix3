@@ -278,8 +278,8 @@ void run ()
     Options opt = get_options ("noreorientation");
     bool do_reorientation = false;
     Math::Matrix<value_type> directions_cartesian;
-    if (!opt.size() && input_header.ndim() == 4 && 
-        input_header.dim(3) >= 6 && 
+    if (!opt.size() && linear_transform.is_set() && input_header.ndim() == 4 &&
+        input_header.dim(3) >= 6 &&
         input_header.dim(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.dim(3)))) {
       do_reorientation = true;
       CONSOLE ("SH series detected, performing apodised PSF reorientation");
