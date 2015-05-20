@@ -57,9 +57,9 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override {
+            void request_render_colourbar(DisplayableVisitor& visitor) override {
               if (color_type == ScalarFile && show_colour_bar)
-                visitor.render_tractogram_colourbar(*this, projection);
+                visitor.render_tractogram_colourbar(*this);
             }
 
             void load_tracks();

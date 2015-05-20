@@ -223,18 +223,35 @@ namespace MR
         }
 
 
-        void Tractography::drawOverlays (const Projection& transform)
+        void Tractography::draw_colourbars ()
         {
-          if(!scalar_file_options)
+          if(!scalar_file_options || hide_all_button->isChecked())
             return;
 
           const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
 
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool, transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool);
           }
         }
+
+
+
+        size_t Tractography::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(scalar_file_options && !hide_all_button->isChecked()) {
+             for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+               Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+               if (tractogram && tractogram->show && tractogram->scalar_filename.length())
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
 
 
         void Tractography::tractogram_open_slot ()

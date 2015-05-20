@@ -58,9 +58,9 @@ namespace MR
       class DisplayableVisitor
       {
         public:
-          virtual void render_image_colourbar(const Image&, const Projection&) {}
-          virtual void render_fixel_colourbar(const Tool::AbstractFixel&, const Projection&) {}
-          virtual void render_tractogram_colourbar(const Tool::Tractogram&, const Projection&) {}
+          virtual void render_image_colourbar(const Image&) {}
+          virtual void render_fixel_colourbar(const Tool::AbstractFixel&) {}
+          virtual void render_tractogram_colourbar(const Tool::Tractogram&) {}
       };
 
       class Displayable : public QAction
@@ -73,7 +73,7 @@ namespace MR
 
           virtual ~Displayable ();
 
-          virtual void request_render_colourbar(DisplayableVisitor&, const Projection&) {}
+          virtual void request_render_colourbar(DisplayableVisitor&) {}
 
           const std::string& get_filename () const {
             return filename;

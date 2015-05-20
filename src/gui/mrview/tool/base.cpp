@@ -60,7 +60,7 @@ namespace MR
 
         void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection&) { }
+        void Base::draw_colourbars () { }
 
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }

@@ -223,7 +223,8 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Versor<float> orient;
           float field_of_view;
-          int anatomical_plane, annotations, colourbar_position_index;
+          int anatomical_plane, annotations;
+          ColourMap::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
 
           float background_colour[3];
@@ -275,6 +276,8 @@ namespace MR
                   *OpenGL_action,
                   *about_action,
                   *aboutQt_action;
+
+          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();

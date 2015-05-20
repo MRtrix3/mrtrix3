@@ -34,7 +34,11 @@ namespace MR
     {
       namespace ColourMap
       {
-
+        //CONF option: MRViewMaxNumColourmapRows
+        //CONF default: 3
+        //CONF The maximal number of rows used to layout a collection of rendered colourbars
+        //CONF Note, that all tool-specific colourbars will form a single collection.
+        size_t Renderer::max_n_rows = File::Config::get_int ("MRViewMaxNumColourBarRows", 3);
         const char* Entry::default_amplitude = "color.r";
 
 
@@ -131,7 +135,14 @@ namespace MR
           //CONF default: 10
           //CONF How far away from the colourbar to place the associated text,
           //CONF in pixels.
-          text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)) { } 
+          text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)),
+          //CONF option: MRViewColourHorizontalPadding
+          //CONF default: 100
+          //CONF The width in pixels between horizontally adjacent colour bars
+          colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
+          {
+            end_render_colourbars ();
+          }
 
 
 
@@ -189,23 +200,18 @@ namespace MR
 
 
 
-
-
-
-
-
-        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
-        {
-          render (projection, object, position, inverted,
-            object.scaling_min (), object.scaling_max (), object.scaling_min (), object.display_range);
+        void Renderer::render (const Displayable& object, bool inverted) {
+            render (object, inverted, object.scaling_min (), object.scaling_max (),
+                    object.scaling_min (), object.display_range);
         }
 
 
 
-        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted,
-                               float min_value, float max_value, float abs_min_value, float range)
+        void Renderer::render (const Displayable& object, bool inverted,
+                               float local_min_value, float local_max_value,
+                               float global_min_value, float global_range)
         {
-          if (!position) return;
+          if (!current_position) return;
           if (maps[object.colourmap].special) return;
           
           if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
@@ -227,24 +233,35 @@ namespace MR
           }
 
           // Clamp the min/max fractions
-          float max_frac = std::min(std::max(0.0f, (max_value - abs_min_value) / range), 1.0f);
-          float min_frac = std::min(std::max(0.0f, (min_value - abs_min_value) / range), max_frac);
+          float max_frac = std::min(std::max(0.0f, (local_max_value - global_min_value) / global_range), 1.0f);
+          float min_frac = std::min(std::max(0.0f, (local_min_value - global_min_value) / global_range), max_frac);
+
+          int max_bars_per_row = std::max((int)std::ceil((float)(current_ncolourbars) / max_n_rows), 1);
+          int ncols = (int)std::ceil((float)current_ncolourbars / max_bars_per_row);
+          int column_index = current_colourbar_index % max_bars_per_row;
+          int row_index = current_colourbar_index / max_bars_per_row;
+          float scaled_width = width / max_bars_per_row;
+          float scaled_height = height / ncols;
 
           GLfloat data[] = {
             0.0f,   0.0f,  min_frac,
-            0.0f,   height, max_frac,
-            width, height, max_frac,
-            width, 0.0f,  min_frac
+            0.0f,   scaled_height, max_frac,
+            scaled_width, scaled_height, max_frac,
+            scaled_width, 0.0f,  min_frac
           };
-          float x_offset = inset;
-          float y_offset = inset;
+          float x_offset, y_offset;
           int halign = -1;
-          if (position == 2 || position == 4) {
-            x_offset = projection.width() - width - inset;
+
+          if (current_position & Position::Right) {
+            x_offset = current_projection->width() - (max_bars_per_row - column_index) * (scaled_width + inset + colourbar_padding)
+                     + colourbar_padding;
             halign = 1;
-          }
-          if (position == 3 || position == 4) 
-            y_offset = projection.height() - height - inset;
+          } else if (current_position & Position::Left)
+            x_offset = column_index * (scaled_width + inset + colourbar_padding) + inset;
+          if (current_position & Position::Top)
+            y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2);
+          else
+            y_offset = inset;
 
           data[0] += x_offset; data[1] += y_offset;
           data[3] += x_offset; data[4] += y_offset;
@@ -259,8 +276,8 @@ namespace MR
           gl::Disable (gl::DEPTH_TEST);
 
           program.start();
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / current_projection->width());
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / current_projection->height());
           if (maps[object.colourmap].is_colour)
             gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
                 object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
@@ -268,19 +285,20 @@ namespace MR
           program.stop();
 
           frame_program.start();
-          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / current_projection->width());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / current_projection->height());
           gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 
-          projection.setup_render_text();
+          current_projection->setup_render_text();
           int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-          projection.render_text_align (x, data[1], str(min_value), halign, 0);
-          projection.render_text_align (x, data[4], str(max_value), halign, 0);
-          projection.done_render_text();
+          current_projection->render_text_align (x, data[1], str(local_min_value), halign, 0);
+          current_projection->render_text_align (x, data[4], str(local_max_value), halign, 0);
+          current_projection->done_render_text();
 
           gl::DepthMask (gl::TRUE_);
 
+          current_colourbar_index++;
         }
 
 

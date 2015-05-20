@@ -200,7 +200,8 @@ namespace MR
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position_index (2),
+        colourbar_position (ColourMap::Position::BottomRight),
+        tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr)
       {
@@ -622,20 +623,41 @@ namespace MR
         //CONF default: bottomright
         //CONF The position of the colourbar within the main window in MRView.
         //CONF Valid values are: bottomleft, bottomright, topleft, topright.
-        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
-        if (cbar_pos.size()) {
-          if (cbar_pos == "bottomleft") colourbar_position_index = 1;
-          else if (cbar_pos == "bottomright") colourbar_position_index = 2;
-          else if (cbar_pos == "topleft") colourbar_position_index = 3;
-          else if (cbar_pos == "topright") colourbar_position_index = 4;
-          else 
-            WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
-        }
+        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition", "bottomright"));
+        colourbar_position = parse_colourmap_position_str(cbar_pos);
+        if(!colourbar_position)
+          WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
+
+        //CONF option: MRViewToolsColourBarPosition
+        //CONF default: topright
+        //CONF The position of all visible tool colourbars within the main window in MRView.
+        //CONF Valid values are: bottomleft, bottomright, topleft, topright.
+        cbar_pos = lowercase (MR::File::Config::get ("MRViewToolsColourBarPosition", "topright"));
+        tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
+        if(!tools_colourbar_position)
+          WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
 
         glrefresh_timer->setSingleShot (true);
         connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
       }
 
+
+
+      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+
+        ColourMap::Position pos(ColourMap::Position::None);
+
+        if(position_str == "bottomleft")
+          pos = ColourMap::Position::BottomLeft;
+        else if(position_str == "bottomright")
+          pos = ColourMap::Position::BottomRight;
+        else if(position_str == "topleft")
+          pos = ColourMap::Position::TopLeft;
+        else if(position_str == "topright")
+          pos = ColourMap::Position::TopRight;
+
+        return pos;
+      }
 
 
 
