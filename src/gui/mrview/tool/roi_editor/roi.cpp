@@ -515,7 +515,7 @@ namespace MR
           for (int i = 0; i < indices.size(); ++i) {
             ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[i]));
             QColor c = colour_button->color();
-            roi->colour = { { GLubyte (c.red()/2.7213), GLubyte (c.green()/2.7213), GLubyte (c.blue()/2.7213) } };
+            roi->colour = { { GLubyte (c.red()), GLubyte (c.green()), GLubyte (c.blue()) } };
           }
           updateGL();
         }

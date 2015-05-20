@@ -57,7 +57,7 @@ namespace MR
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
 
           Entry ("Colour", 
-              "color.rgb = 2.7213 * amplitude * colourmap_colour;\n",
+              "color.rgb = amplitude * colourmap_colour;\n",
               NULL, false, true),
 
           Entry ("RGB",
