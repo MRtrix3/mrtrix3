@@ -249,7 +249,7 @@ namespace MR
             scaled_width, scaled_height, max_frac,
             scaled_width, 0.0f,  min_frac
           };
-          float x_offset, y_offset;
+          float x_offset = 0.0f, y_offset = 0.0f;
           int halign = -1;
 
           if (current_position & Position::Right) {
@@ -259,9 +259,9 @@ namespace MR
           } else if (current_position & Position::Left)
             x_offset = column_index * (scaled_width + inset + colourbar_padding) + inset;
           if (current_position & Position::Top)
-            y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2);
+            y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2) + inset;
           else
-            y_offset = inset;
+            y_offset = row_index * (scaled_height + inset * 2) + inset;
 
           data[0] += x_offset; data[1] += y_offset;
           data[3] += x_offset; data[4] += y_offset;
