@@ -66,7 +66,7 @@ namespace MR
           return true;
 
         // Detrimental to remove this in all cases tested
-        return gmwmi_finder.find_interface (p);
+        return gmwmi_finder.find_interface (p, interp);
 
       }
 
