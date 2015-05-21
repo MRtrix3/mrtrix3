@@ -267,7 +267,8 @@ namespace MR
 
            if(!hide_all_button->isChecked()) {
              for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
-               if (image_list_model->items[i]->show)
+               Image* image  = dynamic_cast<Image*>(image_list_model->items[i].get());
+               if (image && image->show && !ColourMap::maps[image->colourmap].special)
                  total_visible += 1;
              }
            }

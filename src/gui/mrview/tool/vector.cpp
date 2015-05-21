@@ -259,7 +259,8 @@ namespace MR
 
            if(!hide_all_button->isChecked()) {
              for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
-               if (fixel_list_model->items[i]->show)
+               AbstractFixel* fixel = dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get());
+               if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
                  total_visible += 1;
              }
            }
