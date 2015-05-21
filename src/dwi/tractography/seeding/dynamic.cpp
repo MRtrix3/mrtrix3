@@ -147,7 +147,7 @@ namespace MR
         H.datatype().set_byte_order_native();
         H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
         H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
-        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("seed_probs.msf", H), buffer_logprobs ("seed_logprobs.msf", H), buffer_ratios ("fixel_ratios.msf", H);
+        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("final_seed_probs.msf", H), buffer_logprobs ("final_seed_logprobs.msf", H), buffer_ratios ("final_fixel_ratios.msf", H);
         auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel();
         VoxelAccessor v (accessor);
         Image::Loop loop;
@@ -308,6 +308,46 @@ namespace MR
         tck.push_back (p);
         seed_output (tck);
       }
+
+      void Dynamic::output_fixel_images()
+      {
+
+        // Output seeding probabilites at halfway point
+        Image::Header H;
+        H.info() = info();
+        H.datatype() = DataType::UInt64;
+        H.datatype().set_byte_order_native();
+        H[Image::Sparse::name_key] = str(typeid(Image::Sparse::FixelMetric).name());
+        H[Image::Sparse::size_key] = str(sizeof(Image::Sparse::FixelMetric));
+        Image::BufferSparse<Image::Sparse::FixelMetric> buffer_probs ("mid_seed_probs.msf", H), buffer_logprobs ("mid_seed_logprobs.msf", H), buffer_ratios ("mid_fixel_ratios.msf", H), buffer_FDs ("mid_FDs.msf", H), buffer_TDs ("mid_TDs.msf", H);
+        auto out_probs = buffer_probs.voxel(), out_logprobs = buffer_logprobs.voxel(), out_ratios = buffer_ratios.voxel(), out_FDs = buffer_FDs.voxel(), out_TDs = buffer_TDs.voxel();
+        VoxelAccessor v (accessor);
+        Image::Loop loop;
+        for (auto loopiter = loop (v, out_probs, out_logprobs, out_ratios, out_FDs, out_TDs); loopiter; ++loopiter) {
+          if (v.value()) {
+            out_probs   .value().set_size ((*v.value()).num_fixels());
+            out_logprobs.value().set_size ((*v.value()).num_fixels());
+            out_ratios  .value().set_size ((*v.value()).num_fixels());
+            out_FDs     .value().set_size ((*v.value()).num_fixels());
+            out_TDs     .value().set_size ((*v.value()).num_fixels());
+            size_t index = 0;
+            for (Fixel_map<Fixel_TD_seed>::ConstIterator i = begin (v); i; ++i, ++index) {
+              Image::Sparse::FixelMetric fixel (i().get_dir(), i().get_FOD(), i().get_old_prob());
+              out_probs.value()[index] = fixel;
+              fixel.value = log10 (fixel.value);
+              out_logprobs.value()[index] = fixel;
+              fixel.value = mu() * i().get_TD() / i().get_FOD();
+              out_ratios.value()[index] = fixel;
+              fixel.value = i().get_FOD();
+              out_FDs.value()[index] = fixel;
+              fixel.value = i().get_TD();
+              out_TDs.value()[index] = fixel;
+            }
+          }
+        }
+
+      }
+
 #endif
 
 

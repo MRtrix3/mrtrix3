@@ -251,8 +251,16 @@ namespace MR
           if (!i.weight) // Flags that tracking should terminate
             return false;
           if (!i.empty()) {
+#ifdef DYNAMIC_SEEDING_DEBUG
+            const size_t updated_count = ++track_count;
+            if (updated_count == target_trackcount / 2)
+              output_fixel_images();
+            if (updated_count >= target_trackcount)
+              return false;
+#else
             if (++track_count >= target_trackcount)
               return false;
+#endif
           }
           return SIFT::ModelBase<Fixel_TD_seed>::operator() (i);
         }
@@ -277,6 +285,7 @@ namespace MR
         Tractography::Writer<float> seed_output;
         void write_seed (const Point<float>&);
         size_t test_fixel;
+        void output_fixel_images();
 #endif
 
         Image::Transform transform;
