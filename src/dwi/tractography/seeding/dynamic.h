@@ -240,18 +240,18 @@ namespace MR
         Dynamic (const Dynamic&) = delete;
         Dynamic& operator= (const Dynamic&) = delete;
 
-        bool get_seed (Point<float>&, Point<float>&);
+        bool get_seed (Point<float>&, Point<float>&) override;
 
         // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
         //   includes the voxel location for easier determination of seed location
-        bool operator() (const FMLS::FOD_lobes&);
+        bool operator() (const FMLS::FOD_lobes&) override;
 
-        bool operator() (const Mapping::SetDixel& i)
+        bool operator() (const Mapping::SetDixel& i) override
         {
           if (!i.weight) // Flags that tracking should terminate
             return false;
           if (!i.empty()) {
-#ifdef DYNAMIC_SEEDING_DEBUG
+#ifdef DYNAMIC_SEED_DEBUGGING
             const size_t updated_count = ++track_count;
             if (updated_count == target_trackcount / 2)
               output_fixel_images();

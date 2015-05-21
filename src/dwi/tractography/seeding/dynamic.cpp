@@ -213,8 +213,8 @@ namespace MR
 
 
               // Approach 2
-              const uint64_t total_seeds = seeds.load (std::memory_order_relaxed);
-              const uint64_t fixel_seeds = std::max (fixel.get_seed_count(), size_t(1));
+              //const uint64_t total_seeds = seeds.load (std::memory_order_relaxed);
+              //const uint64_t fixel_seeds = std::max (fixel.get_seed_count(), size_t(1));
               //seed_prob = cumulative_prob * (current_trackcount / float(target_trackcount - current_trackcount)) * (
               //            ((total_seeds / float(fixel_seeds)) * (target_trackcount / float(current_trackcount)) * ((1.0f / ratio) - ((total_seeds - fixel_seeds) / float(total_seeds))))
               //                - 1.0f);
@@ -223,15 +223,15 @@ namespace MR
               //const float denominator = (((total_seeds - fixel_seeds) / float(total_seeds)) * (target_trackcount / float(current_trackcount))) + ((fixel_seeds / float(total_seeds)) * ((target_trackcount - current_trackcount) / float(current_trackcount)));
               //seed_prob = cumulative_prob * numerator / denominator;
 
-              // TODO Approach 2, with correlation term
+              // Approach 2, with correlation term
               // Also: Fix expression for TD_other
               //const float numerator = (target_trackcount / (ratio * current_trackcount)) - 1;
               //const float denominator = ((target_trackcount - current_trackcount) / float(current_trackcount)) * ((fixel_seeds / float(total_seeds)) + (DYNAMIC_SEEDING_DAMPING_FACTOR * ((total_seeds - fixel_seeds) / float(total_seeds))));
               //seed_prob = cumulative_prob * numerator / denominator;
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-              if (fixel_index == test_fixel)
-                std::cerr << "Ratio " << ratio << ", tracks " << current_trackcount << "/" << target_trackcount << ", seeds " << fixel_seeds << "/" << total_seeds << ", prob " << cumulative_prob << " -> " << seed_prob << "\n";
+              //if (fixel_index == test_fixel)
+              //  std::cerr << "Ratio " << ratio << ", tracks " << current_trackcount << "/" << target_trackcount << ", seeds " << fixel_seeds << "/" << total_seeds << ", prob " << cumulative_prob << " -> " << seed_prob << "\n";
 #endif
 
               // These can occur fairly regularly, depending on the exact derivation
