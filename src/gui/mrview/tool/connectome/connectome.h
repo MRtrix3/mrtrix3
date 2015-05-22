@@ -77,6 +77,7 @@
 //       - manually providing tangents (not really required?)
 //   - Clean up behaviour with unusual sequences of inputs
 //   - Need to pass tangent and normal through geometry shader when activated
+//   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -113,6 +114,10 @@
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
+//   - Promote 'visibility' to the top of both groups
+//   - Have warning icon that pops up next to the visibility elements if some visualisation
+//     parameter is changed, but visibility is set to none
+//   - Better tooltip for main config buttons
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
