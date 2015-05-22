@@ -340,7 +340,7 @@ namespace MR
               out_ratios.value()[index] = fixel;
               fixel.value = i().get_FOD();
               out_FDs.value()[index] = fixel;
-              fixel.value = i().get_TD();
+              fixel.value = i().get_TD() * mu();
               out_TDs.value()[index] = fixel;
             }
           }
