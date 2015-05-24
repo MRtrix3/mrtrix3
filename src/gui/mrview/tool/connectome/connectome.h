@@ -118,6 +118,7 @@
 //   - Have warning icon that pops up next to the visibility elements if some visualisation
 //     parameter is changed, but visibility is set to none
 //   - Better tooltip for main config buttons
+//   - Add manual control of 2D / 3D mode
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
@@ -165,34 +166,34 @@ namespace MR
             void config_open_slot ();
             void hide_all_slot ();
 
+            void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
             void node_colour_selection_slot (int);
             void node_size_selection_slot (int);
-            void node_visibility_selection_slot (int);
             void node_alpha_selection_slot (int);
 
+            void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
             void node_colour_change_slot();
             void node_colour_parameter_slot();
             void node_size_value_slot();
             void node_size_parameter_slot();
-            void node_visibility_parameter_slot();
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
 
+            void edge_visibility_selection_slot (int);
             void edge_geometry_selection_slot (int);
             void edge_colour_selection_slot (int);
             void edge_size_selection_slot (int);
-            void edge_visibility_selection_slot (int);
             void edge_alpha_selection_slot (int);
 
+            void edge_visibility_parameter_slot();
             void cylinder_lod_slot (int);
             void edge_colour_change_slot();
             void edge_colour_parameter_slot();
             void edge_size_value_slot();
             void edge_size_parameter_slot();
-            void edge_visibility_parameter_slot();
             void edge_alpha_value_slot (int);
             void edge_alpha_parameter_slot();
 
@@ -202,50 +203,56 @@ namespace MR
             QComboBox *lut_combobox;
             QPushButton *config_button;
 
-            QComboBox *node_geometry_combobox, *node_colour_combobox, *node_size_combobox, *node_visibility_combobox, *node_alpha_combobox;
+            QComboBox *node_visibility_combobox;
+            QLabel *node_visibility_threshold_label;
+            AdjustButton *node_visibility_threshold_button;
+            QCheckBox *node_visibility_threshold_invert_checkbox;
 
+            QComboBox *node_geometry_combobox;
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
 
+            QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
+            QComboBox *node_size_combobox;
             AdjustButton *node_size_button;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
 
-            QLabel *node_visibility_threshold_label;
-            AdjustButton *node_visibility_threshold_button;
-            QCheckBox *node_visibility_threshold_invert_checkbox;
-
+            QComboBox *node_alpha_combobox;
             QSlider *node_alpha_slider;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
 
-            QComboBox *edge_geometry_combobox, *edge_colour_combobox, *edge_size_combobox, *edge_visibility_combobox, *edge_alpha_combobox;
+            QComboBox *edge_visibility_combobox;
+            QLabel *edge_visibility_threshold_label;
+            AdjustButton *edge_visibility_threshold_button;
+            QCheckBox *edge_visibility_threshold_invert_checkbox;
 
+            QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
             QSpinBox *edge_geometry_cylinder_lod_spinbox;
 
+            QComboBox *edge_colour_combobox;
             QColorButton *edge_colour_fixedcolour_button;
             ColourMapButton *edge_colour_colourmap_button;
             QLabel *edge_colour_range_label;
             AdjustButton *edge_colour_lower_button, *edge_colour_upper_button;
 
+            QComboBox *edge_size_combobox;
             AdjustButton *edge_size_button;
             QLabel *edge_size_range_label;
             AdjustButton *edge_size_lower_button, *edge_size_upper_button;
             QCheckBox *edge_size_invert_checkbox;
 
-            QLabel *edge_visibility_threshold_label;
-            AdjustButton *edge_visibility_threshold_button;
-            QCheckBox *edge_visibility_threshold_invert_checkbox;
-
+            QComboBox *edge_alpha_combobox;
             QSlider *edge_alpha_slider;
             QLabel *edge_alpha_range_label;
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
@@ -306,10 +313,10 @@ namespace MR
 
 
             // Current node visualisation settings
+            node_visibility_t node_visibility;
             node_geometry_t node_geometry;
             node_colour_t node_colour;
             node_size_t node_size;
-            node_visibility_t node_visibility;
             node_alpha_t node_alpha;
 
             // Other values that need to be stored w.r.t. node visualisation
@@ -320,17 +327,17 @@ namespace MR
             float node_fixed_alpha;
             float node_size_scale_factor;
             float voxel_volume;
+            FileDataVector node_values_from_file_visibility;
             FileDataVector node_values_from_file_colour;
             FileDataVector node_values_from_file_size;
-            FileDataVector node_values_from_file_visibility;
             FileDataVector node_values_from_file_alpha;
 
 
             // Current edge visualisation settings
+            edge_visibility_t edge_visibility;
             edge_geometry_t edge_geometry;
             edge_colour_t edge_colour;
             edge_size_t edge_size;
-            edge_visibility_t edge_visibility;
             edge_alpha_t edge_alpha;
 
             // Other values that need to be stored w.r.t. edge visualisation
@@ -340,9 +347,9 @@ namespace MR
             bool edge_colourmap_invert;
             float edge_fixed_alpha;
             float edge_size_scale_factor;
+            FileDataVector edge_values_from_file_visibility;
             FileDataVector edge_values_from_file_colour;
             FileDataVector edge_values_from_file_size;
-            FileDataVector edge_values_from_file_visibility;
             FileDataVector edge_values_from_file_alpha;
 
 
@@ -360,16 +367,16 @@ namespace MR
 
             void load_properties();
 
+            void calculate_node_visibility();
             void calculate_node_colours();
             void calculate_node_sizes();
-            void calculate_node_visibility();
             void calculate_node_alphas();
 
             void update_node_overlay();
 
+            void calculate_edge_visibility();
             void calculate_edge_colours();
             void calculate_edge_sizes();
-            void calculate_edge_visibility();
             void calculate_edge_alphas();
 
             void get_exemplars();

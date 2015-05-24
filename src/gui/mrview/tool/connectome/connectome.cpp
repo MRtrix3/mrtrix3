@@ -60,10 +60,10 @@ namespace MR
             Base (main_window, parent),
             mat2vec (0),
             lighting (window.lighting()),
+            node_visibility (NODE_VIS_ALL),
             node_geometry (NODE_GEOM_SPHERE),
             node_colour (NODE_COLOUR_FIXED),
             node_size (NODE_SIZE_FIXED),
-            node_visibility (NODE_VIS_ALL),
             node_alpha (NODE_ALPHA_FIXED),
             have_meshes (false),
             have_smooth_meshes (false),
@@ -73,10 +73,10 @@ namespace MR
             node_fixed_alpha (1.0f),
             node_size_scale_factor (1.0f),
             voxel_volume (0.0f),
+            edge_visibility (EDGE_VIS_NONE),
             edge_geometry (EDGE_GEOM_LINE),
             edge_colour (EDGE_COLOUR_FIXED),
             edge_size (EDGE_SIZE_FIXED),
-            edge_visibility (EDGE_VIS_NONE),
             edge_alpha (EDGE_ALPHA_FIXED),
             have_exemplars (false),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
@@ -139,8 +139,39 @@ namespace MR
           GridLayout* gridlayout = new GridLayout();
           group_box->setLayout (gridlayout);
 
-          QLabel* label = new QLabel ("Geometry: ");
+          QLabel* label = new QLabel ("Visibility: ");
           gridlayout->addWidget (label, 0, 0, 1, 2);
+          node_visibility_combobox = new QComboBox (this);
+          node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
+          node_visibility_combobox->addItem ("All");
+          node_visibility_combobox->addItem ("None");
+          node_visibility_combobox->addItem ("Vector file");
+          node_visibility_combobox->addItem ("Degree >= 1");
+          connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
+          gridlayout->addWidget (node_visibility_combobox, 0, 2);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          node_visibility_threshold_label = new QLabel ("Threshold: ");
+          hlayout->addWidget (node_visibility_threshold_label);
+          node_visibility_threshold_button = new AdjustButton (this);
+          node_visibility_threshold_button->setValue (0.0f);
+          node_visibility_threshold_button->setMin (0.0f);
+          node_visibility_threshold_button->setMax (0.0f);
+          connect (node_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (node_visibility_parameter_slot()));
+          hlayout->addWidget (node_visibility_threshold_button);
+          node_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
+          node_visibility_threshold_invert_checkbox->setTristate (false);
+          connect (node_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_visibility_parameter_slot()));
+          hlayout->addWidget (node_visibility_threshold_invert_checkbox);
+          node_visibility_threshold_label->setVisible (false);
+          node_visibility_threshold_button->setVisible (false);
+          node_visibility_threshold_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 1, 1, 1, 4);
+
+          label = new QLabel ("Geometry: ");
+          gridlayout->addWidget (label, 2, 0, 1, 2);
           node_geometry_combobox = new QComboBox (this);
           node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
           node_geometry_combobox->addItem ("Sphere");
@@ -149,7 +180,7 @@ namespace MR
           node_geometry_combobox->addItem ("Mesh");
           node_geometry_combobox->addItem ("Smooth mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
-          gridlayout->addWidget (node_geometry_combobox, 0, 2);
+          gridlayout->addWidget (node_geometry_combobox, 2, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -167,10 +198,10 @@ namespace MR
           node_geometry_overlay_interp_checkbox->setVisible (false);
           connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
           hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
-          gridlayout->addLayout (hlayout, 0, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
-          gridlayout->addWidget (label, 1, 0, 1, 2);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           node_colour_combobox = new QComboBox (this);
           node_colour_combobox->setToolTip (tr ("Set how the colour of each node is determined"));
           node_colour_combobox->addItem ("Fixed");
@@ -178,7 +209,7 @@ namespace MR
           node_colour_combobox->addItem ("LUT");
           node_colour_combobox->addItem ("Vector file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
-          gridlayout->addWidget (node_colour_combobox, 1, 2);
+          gridlayout->addWidget (node_colour_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -188,7 +219,7 @@ namespace MR
           node_colour_colourmap_button = new ColourMapButton (this, node_colourmap_observer, false, false, true);
           node_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (node_colour_colourmap_button, 1);
-          gridlayout->addLayout (hlayout, 1, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -210,17 +241,17 @@ namespace MR
           node_colour_range_label->setVisible (false);
           node_colour_lower_button->setVisible (false);
           node_colour_upper_button->setVisible (false);
-          gridlayout->addLayout (hlayout, 2, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 3, 0, 1, 2);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
           node_size_combobox->addItem ("Vector file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
-          gridlayout->addWidget (node_size_combobox, 3, 2);
+          gridlayout->addWidget (node_size_combobox, 5, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -229,7 +260,7 @@ namespace MR
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
           hlayout->addWidget (node_size_button, 1);
-          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -256,37 +287,6 @@ namespace MR
           node_size_lower_button->setVisible (false);
           node_size_upper_button->setVisible (false);
           node_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
-
-          label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 5, 0, 1, 2);
-          node_visibility_combobox = new QComboBox (this);
-          node_visibility_combobox->setToolTip (tr ("Set which nodes are visible"));
-          node_visibility_combobox->addItem ("All");
-          node_visibility_combobox->addItem ("None");
-          node_visibility_combobox->addItem ("Vector file");
-          node_visibility_combobox->addItem ("Degree >= 1");
-          connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
-          gridlayout->addWidget (node_visibility_combobox, 5, 2);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          node_visibility_threshold_label = new QLabel ("Threshold: ");
-          hlayout->addWidget (node_visibility_threshold_label);
-          node_visibility_threshold_button = new AdjustButton (this);
-          node_visibility_threshold_button->setValue (0.0f);
-          node_visibility_threshold_button->setMin (0.0f);
-          node_visibility_threshold_button->setMax (0.0f);
-          connect (node_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (node_visibility_parameter_slot()));
-          hlayout->addWidget (node_visibility_threshold_button);
-          node_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
-          node_visibility_threshold_invert_checkbox->setTristate (false);
-          connect (node_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_visibility_parameter_slot()));
-          hlayout->addWidget (node_visibility_threshold_invert_checkbox);
-          node_visibility_threshold_label->setVisible (false);
-          node_visibility_threshold_button->setVisible (false);
-          node_visibility_threshold_invert_checkbox->setVisible (false);
           gridlayout->addLayout (hlayout, 6, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
@@ -340,8 +340,40 @@ namespace MR
           gridlayout = new GridLayout();
           group_box->setLayout (gridlayout);
 
-          label = new QLabel ("Geometry: ");
+          label = new QLabel ("Visibility: ");
           gridlayout->addWidget (label, 0, 0, 1, 2);
+          edge_visibility_combobox = new QComboBox (this);
+          edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
+          edge_visibility_combobox->addItem ("All");
+          edge_visibility_combobox->addItem ("None");
+          edge_visibility_combobox->addItem ("By nodes");
+          edge_visibility_combobox->addItem ("Matrix file");
+          edge_visibility_combobox->setCurrentIndex (1);
+          connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
+          gridlayout->addWidget (edge_visibility_combobox, 0, 2);
+
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          edge_visibility_threshold_label = new QLabel ("Threshold: ");
+          hlayout->addWidget (edge_visibility_threshold_label);
+          edge_visibility_threshold_button = new AdjustButton (this);
+          edge_visibility_threshold_button->setValue (0.0f);
+          edge_visibility_threshold_button->setMin (0.0f);
+          edge_visibility_threshold_button->setMax (0.0f);
+          connect (edge_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (edge_visibility_parameter_slot()));
+          hlayout->addWidget (edge_visibility_threshold_button);
+          edge_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
+          edge_visibility_threshold_invert_checkbox->setTristate (false);
+          connect (edge_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
+          hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
+          edge_visibility_threshold_label->setVisible (false);
+          edge_visibility_threshold_button->setVisible (false);
+          edge_visibility_threshold_invert_checkbox->setVisible (false);
+          gridlayout->addLayout (hlayout, 1, 1, 1, 4);
+
+          label = new QLabel ("Geometry: ");
+          gridlayout->addWidget (label, 2, 0, 1, 2);
           edge_geometry_combobox = new QComboBox (this);
           edge_geometry_combobox->setToolTip (tr ("The geometry used to draw each edge"));
           edge_geometry_combobox->addItem ("Line");
@@ -349,7 +381,7 @@ namespace MR
           edge_geometry_combobox->addItem ("Streamline");
           edge_geometry_combobox->addItem ("Streamtube");
           connect (edge_geometry_combobox, SIGNAL (activated(int)), this, SLOT (edge_geometry_selection_slot (int)));
-          gridlayout->addWidget (edge_geometry_combobox, 0, 2);
+          gridlayout->addWidget (edge_geometry_combobox, 2, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -364,17 +396,17 @@ namespace MR
           edge_geometry_cylinder_lod_spinbox->setVisible (false);
           connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
           hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
-          gridlayout->addLayout (hlayout, 0, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
-          gridlayout->addWidget (label, 1, 0, 1, 2);
+          gridlayout->addWidget (label, 3, 0, 1, 2);
           edge_colour_combobox = new QComboBox (this);
           edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
           edge_colour_combobox->addItem ("Fixed");
           edge_colour_combobox->addItem ("By direction");
           edge_colour_combobox->addItem ("Matrix file");
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
-          gridlayout->addWidget (edge_colour_combobox, 1, 2);
+          gridlayout->addWidget (edge_colour_combobox, 3, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -384,7 +416,7 @@ namespace MR
           edge_colour_colourmap_button = new ColourMapButton (this, edge_colourmap_observer, false, false, true);
           edge_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (edge_colour_colourmap_button, 1);
-          gridlayout->addLayout (hlayout, 1, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -406,16 +438,16 @@ namespace MR
           edge_colour_range_label->setVisible (false);
           edge_colour_lower_button->setVisible (false);
           edge_colour_upper_button->setVisible (false);
-          gridlayout->addLayout (hlayout, 2, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 3, 0, 1, 2);
+          gridlayout->addWidget (label, 5, 0, 1, 2);
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
           edge_size_combobox->addItem ("Fixed");
           edge_size_combobox->addItem ("Matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
-          gridlayout->addWidget (edge_size_combobox, 3, 2);
+          gridlayout->addWidget (edge_size_combobox, 5, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -424,7 +456,7 @@ namespace MR
           edge_size_button->setMin (0.0f);
           connect (edge_size_button, SIGNAL (valueChanged()), this, SLOT (edge_size_value_slot()));
           hlayout->addWidget (edge_size_button, 1);
-          gridlayout->addLayout (hlayout, 3, 3, 1, 2);
+          gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -451,38 +483,6 @@ namespace MR
           edge_size_lower_button->setVisible (false);
           edge_size_upper_button->setVisible (false);
           edge_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
-
-          label = new QLabel ("Visibility: ");
-          gridlayout->addWidget (label, 5, 0, 1, 2);
-          edge_visibility_combobox = new QComboBox (this);
-          edge_visibility_combobox->setToolTip (tr ("Set which edges are visible"));
-          edge_visibility_combobox->addItem ("All");
-          edge_visibility_combobox->addItem ("None");
-          edge_visibility_combobox->addItem ("By nodes");
-          edge_visibility_combobox->addItem ("Matrix file");
-          edge_visibility_combobox->setCurrentIndex (1);
-          connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
-          gridlayout->addWidget (edge_visibility_combobox, 5, 2);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          edge_visibility_threshold_label = new QLabel ("Threshold: ");
-          hlayout->addWidget (edge_visibility_threshold_label);
-          edge_visibility_threshold_button = new AdjustButton (this);
-          edge_visibility_threshold_button->setValue (0.0f);
-          edge_visibility_threshold_button->setMin (0.0f);
-          edge_visibility_threshold_button->setMax (0.0f);
-          connect (edge_visibility_threshold_button, SIGNAL (valueChanged()), this, SLOT (edge_visibility_parameter_slot()));
-          hlayout->addWidget (edge_visibility_threshold_button);
-          edge_visibility_threshold_invert_checkbox = new QCheckBox ("Invert");
-          edge_visibility_threshold_invert_checkbox->setTristate (false);
-          connect (edge_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
-          hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
-          edge_visibility_threshold_label->setVisible (false);
-          edge_visibility_threshold_button->setVisible (false);
-          edge_visibility_threshold_invert_checkbox->setVisible (false);
           gridlayout->addLayout (hlayout, 6, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
@@ -949,6 +949,76 @@ namespace MR
 
 
 
+        void Connectome::node_visibility_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              if (node_visibility == NODE_VIS_ALL) return;
+              node_visibility = NODE_VIS_ALL;
+              node_visibility_combobox->removeItem (4);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 1:
+              if (node_visibility == NODE_VIS_NONE) return;
+              node_visibility = NODE_VIS_NONE;
+              node_visibility_combobox->removeItem (4);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 2:
+              try {
+                import_file_for_node_property (node_values_from_file_visibility, "visibility");
+                node_visibility = NODE_VIS_FILE;
+                if (node_visibility_combobox->count() == 4)
+                  node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
+                else
+                  node_visibility_combobox->setItemText (4, node_values_from_file_visibility.get_name());
+                node_visibility_combobox->setCurrentIndex (4);
+                node_visibility_threshold_label->setVisible (true);
+                node_visibility_threshold_button->setVisible (true);
+                node_visibility_threshold_invert_checkbox->setVisible (true);
+                node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
+                node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
+                node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
+                node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
+              } catch (Exception& e) {
+                e.display();
+                node_visibility_combobox->setCurrentIndex (0);
+                node_visibility = NODE_VIS_ALL;
+                node_visibility_combobox->removeItem (4);
+                node_visibility_threshold_label->setVisible (false);
+                node_visibility_threshold_button->setVisible (false);
+                node_visibility_threshold_invert_checkbox->setVisible (false);
+              }
+              break;
+            case 3:
+              if (node_visibility == NODE_VIS_DEGREE) return;
+              if (edge_visibility == EDGE_VIS_NODES) {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot have node visibility based on edges; edge visibility is based on nodes!"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                node_visibility_combobox->setCurrentIndex (0);
+                node_visibility = NODE_VIS_ALL;
+              } else {
+                node_visibility = NODE_VIS_DEGREE;
+              }
+              node_visibility_combobox->removeItem (4);
+              node_visibility_threshold_label->setVisible (false);
+              node_visibility_threshold_button->setVisible (false);
+              node_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 4:
+              return;
+          }
+          calculate_node_visibility();
+          window.updateGL();
+        }
+
         void Connectome::node_geometry_selection_slot (int index)
         {
           switch (index) {
@@ -1211,76 +1281,6 @@ namespace MR
           window.updateGL();
         }
 
-        void Connectome::node_visibility_selection_slot (int index)
-        {
-          switch (index) {
-            case 0:
-              if (node_visibility == NODE_VIS_ALL) return;
-              node_visibility = NODE_VIS_ALL;
-              node_visibility_combobox->removeItem (4);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 1:
-              if (node_visibility == NODE_VIS_NONE) return;
-              node_visibility = NODE_VIS_NONE;
-              node_visibility_combobox->removeItem (4);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 2:
-              try {
-                import_file_for_node_property (node_values_from_file_visibility, "visibility");
-                node_visibility = NODE_VIS_FILE;
-                if (node_visibility_combobox->count() == 4)
-                  node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
-                else
-                  node_visibility_combobox->setItemText (4, node_values_from_file_visibility.get_name());
-                node_visibility_combobox->setCurrentIndex (4);
-                node_visibility_threshold_label->setVisible (true);
-                node_visibility_threshold_button->setVisible (true);
-                node_visibility_threshold_invert_checkbox->setVisible (true);
-                node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
-                node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
-                node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
-                node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
-              } catch (Exception& e) {
-                e.display();
-                node_visibility_combobox->setCurrentIndex (0);
-                node_visibility = NODE_VIS_ALL;
-                node_visibility_combobox->removeItem (4);
-                node_visibility_threshold_label->setVisible (false);
-                node_visibility_threshold_button->setVisible (false);
-                node_visibility_threshold_invert_checkbox->setVisible (false);
-              }
-              break;
-            case 3:
-              if (node_visibility == NODE_VIS_DEGREE) return;
-              if (edge_visibility == EDGE_VIS_NODES) {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot have node visibility based on edges; edge visibility is based on nodes!"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                node_visibility_combobox->setCurrentIndex (0);
-                node_visibility = NODE_VIS_ALL;
-              } else {
-                node_visibility = NODE_VIS_DEGREE;
-              }
-              node_visibility_combobox->removeItem (4);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 4:
-              return;
-          }
-          calculate_node_visibility();
-          window.updateGL();
-        }
-
         void Connectome::node_alpha_selection_slot (int index)
         {
           switch (index) {
@@ -1344,19 +1344,22 @@ namespace MR
 
 
 
+        void Connectome::node_visibility_parameter_slot()
+        {
+          calculate_node_visibility();
+          window.updateGL();
+        }
         void Connectome::sphere_lod_slot (int value)
         {
           sphere.LOD (value);
           window.updateGL();
         }
-
         void Connectome::overlay_interp_slot (int)
         {
           assert (node_overlay);
           node_overlay->set_interpolate (node_geometry_overlay_interp_checkbox->isChecked());
           window.updateGL();
         }
-
         void Connectome::node_colour_change_slot()
         {
           QColor c = node_colour_fixedcolour_button->color();
@@ -1364,7 +1367,6 @@ namespace MR
           calculate_node_colours();
           window.updateGL();
         }
-
         void Connectome::node_colour_parameter_slot()
         {
           node_colour_lower_button->setMax (node_colour_upper_button->value());
@@ -1372,13 +1374,11 @@ namespace MR
           calculate_node_colours();
           window.updateGL();
         }
-
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
           window.updateGL();
         }
-
         void Connectome::node_size_parameter_slot()
         {
           node_size_lower_button->setMax (node_size_upper_button->value());
@@ -1386,13 +1386,6 @@ namespace MR
           calculate_node_sizes();
           window.updateGL();
         }
-
-        void Connectome::node_visibility_parameter_slot()
-        {
-          calculate_node_visibility();
-          window.updateGL();
-        }
-
         void Connectome::node_alpha_value_slot (int position)
         {
           node_fixed_alpha = position / 1000.0f;
@@ -1400,7 +1393,6 @@ namespace MR
             node_overlay->alpha = node_fixed_alpha;
           window.updateGL();
         }
-
         void Connectome::node_alpha_parameter_slot()
         {
           node_alpha_lower_button->setMax (node_alpha_upper_button->value());
@@ -1414,6 +1406,76 @@ namespace MR
 
 
 
+
+        void Connectome::edge_visibility_selection_slot (int index)
+        {
+          switch (index) {
+            case 0:
+              if (edge_visibility == EDGE_VIS_ALL) return;
+              edge_visibility = EDGE_VIS_ALL;
+              edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 1:
+              if (edge_visibility == EDGE_VIS_NONE) return;
+              edge_visibility = EDGE_VIS_NONE;
+              edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 2:
+              if (edge_visibility == EDGE_VIS_NODES) return;
+              if (node_visibility == NODE_VIS_DEGREE) {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot have edge visibility based on nodes; node visibility is based on edges!"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                edge_visibility_combobox->setCurrentIndex (1);
+                edge_visibility = EDGE_VIS_NONE;
+              } else {
+                edge_visibility = EDGE_VIS_NODES;
+              }
+              edge_visibility_combobox->removeItem (4);
+              edge_visibility_threshold_label->setVisible (false);
+              edge_visibility_threshold_button->setVisible (false);
+              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              break;
+            case 3:
+              try {
+                import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
+                edge_visibility = EDGE_VIS_FILE;
+                if (edge_visibility_combobox->count() == 4)
+                  edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
+                else
+                  edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
+                edge_visibility_combobox->setCurrentIndex (4);
+                edge_visibility_threshold_label->setVisible (true);
+                edge_visibility_threshold_button->setVisible (true);
+                edge_visibility_threshold_invert_checkbox->setVisible (true);
+                edge_visibility_threshold_button->setRate (0.001 * (edge_values_from_file_visibility.get_max() - edge_values_from_file_visibility.get_min()));
+                edge_visibility_threshold_button->setMin (edge_values_from_file_visibility.get_min());
+                edge_visibility_threshold_button->setMax (edge_values_from_file_visibility.get_max());
+                edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
+              } catch (Exception& e) {
+                e.display();
+                edge_visibility_combobox->setCurrentIndex (1);
+                edge_visibility = EDGE_VIS_NONE;
+                edge_visibility_combobox->removeItem (4);
+                edge_visibility_threshold_label->setVisible (false);
+                edge_visibility_threshold_button->setVisible (false);
+                edge_visibility_threshold_invert_checkbox->setVisible (false);
+              }
+              break;
+            case 4:
+              return;
+          }
+          calculate_edge_visibility();
+          window.updateGL();
+        }
 
         void Connectome::edge_geometry_selection_slot (int index)
         {
@@ -1587,76 +1649,6 @@ namespace MR
           window.updateGL();
         }
 
-        void Connectome::edge_visibility_selection_slot (int index)
-        {
-          switch (index) {
-            case 0:
-              if (edge_visibility == EDGE_VIS_ALL) return;
-              edge_visibility = EDGE_VIS_ALL;
-              edge_visibility_combobox->removeItem (4);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 1:
-              if (edge_visibility == EDGE_VIS_NONE) return;
-              edge_visibility = EDGE_VIS_NONE;
-              edge_visibility_combobox->removeItem (4);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 2:
-              if (edge_visibility == EDGE_VIS_NODES) return;
-              if (node_visibility == NODE_VIS_DEGREE) {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot have edge visibility based on nodes; node visibility is based on edges!"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                edge_visibility_combobox->setCurrentIndex (1);
-                edge_visibility = EDGE_VIS_NONE;
-              } else {
-                edge_visibility = EDGE_VIS_NODES;
-              }
-              edge_visibility_combobox->removeItem (4);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
-              break;
-            case 3:
-              try {
-                import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
-                edge_visibility = EDGE_VIS_FILE;
-                if (edge_visibility_combobox->count() == 4)
-                  edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
-                else
-                  edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
-                edge_visibility_combobox->setCurrentIndex (4);
-                edge_visibility_threshold_label->setVisible (true);
-                edge_visibility_threshold_button->setVisible (true);
-                edge_visibility_threshold_invert_checkbox->setVisible (true);
-                edge_visibility_threshold_button->setRate (0.001 * (edge_values_from_file_visibility.get_max() - edge_values_from_file_visibility.get_min()));
-                edge_visibility_threshold_button->setMin (edge_values_from_file_visibility.get_min());
-                edge_visibility_threshold_button->setMax (edge_values_from_file_visibility.get_max());
-                edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
-              } catch (Exception& e) {
-                e.display();
-                edge_visibility_combobox->setCurrentIndex (1);
-                edge_visibility = EDGE_VIS_NONE;
-                edge_visibility_combobox->removeItem (4);
-                edge_visibility_threshold_label->setVisible (false);
-                edge_visibility_threshold_button->setVisible (false);
-                edge_visibility_threshold_invert_checkbox->setVisible (false);
-              }
-              break;
-            case 4:
-              return;
-          }
-          calculate_edge_visibility();
-          window.updateGL();
-        }
-
         void Connectome::edge_alpha_selection_slot (int index)
         {
           switch (index) {
@@ -1707,6 +1699,15 @@ namespace MR
           window.updateGL();
         }
 
+
+
+
+
+        void Connectome::edge_visibility_parameter_slot()
+        {
+          calculate_edge_visibility();
+          window.updateGL();
+        }
         void Connectome::cylinder_lod_slot (int index)
         {
           cylinder.LOD (index);
@@ -1732,11 +1733,6 @@ namespace MR
         void Connectome::edge_size_parameter_slot()
         {
           calculate_edge_sizes();
-          window.updateGL();
-        }
-        void Connectome::edge_visibility_parameter_slot()
-        {
-          calculate_edge_visibility();
           window.updateGL();
         }
         void Connectome::edge_alpha_value_slot (int position)
@@ -1765,6 +1761,11 @@ namespace MR
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("");
+          if (node_visibility == NODE_VIS_FILE) {
+            node_visibility_combobox->removeItem (5);
+            node_visibility_combobox->setCurrentIndex (0);
+            node_visibility = NODE_VIS_ALL;
+          }
           if (node_colour == NODE_COLOUR_FILE) {
             node_colour_combobox->removeItem (4);
             node_colour_combobox->setCurrentIndex (0);
@@ -1775,15 +1776,15 @@ namespace MR
             node_size_combobox->setCurrentIndex (0);
             node_size = NODE_SIZE_FIXED;
           }
-          if (node_visibility == NODE_VIS_FILE) {
-            node_visibility_combobox->removeItem (5);
-            node_visibility_combobox->setCurrentIndex (0);
-            node_visibility = NODE_VIS_ALL;
-          }
           if (node_alpha == NODE_ALPHA_FILE) {
             node_alpha_combobox->removeItem (3);
             node_alpha_combobox->setCurrentIndex (0);
             node_alpha = NODE_ALPHA_FIXED;
+          }
+          if (edge_visibility == EDGE_VIS_FILE) {
+            edge_visibility_combobox->removeItem (4);
+            edge_visibility_combobox->setCurrentIndex (1);
+            edge_visibility = EDGE_VIS_NONE;
           }
           if (edge_colour == EDGE_COLOUR_FILE) {
             edge_colour_combobox->removeItem (3);
@@ -1794,11 +1795,6 @@ namespace MR
             edge_size_combobox->removeItem (2);
             edge_size_combobox->setCurrentIndex (0);
             edge_size = EDGE_SIZE_FIXED;
-          }
-          if (edge_visibility == EDGE_VIS_FILE) {
-            edge_visibility_combobox->removeItem (4);
-            edge_visibility_combobox->setCurrentIndex (1);
-            edge_visibility = EDGE_VIS_NONE;
           }
           if (edge_alpha == EDGE_ALPHA_FILE) {
             edge_alpha_combobox->removeItem (2);
@@ -1814,13 +1810,13 @@ namespace MR
           lut_mapping.clear();
           if (node_overlay)
             delete node_overlay.release();
+          node_values_from_file_visibility.clear();
           node_values_from_file_colour.clear();
           node_values_from_file_size.clear();
-          node_values_from_file_visibility.clear();
           node_values_from_file_alpha.clear();
+          edge_values_from_file_visibility.clear();
           edge_values_from_file_colour.clear();
           edge_values_from_file_size.clear();
-          edge_values_from_file_visibility.clear();
           edge_values_from_file_alpha.clear();
         }
 
@@ -1990,19 +1986,59 @@ namespace MR
 
           }
 
+          calculate_node_visibility();
           calculate_node_colours();
           calculate_node_sizes();
-          calculate_node_visibility();
           calculate_node_alphas();
 
+          calculate_edge_visibility();
           calculate_edge_colours();
           calculate_edge_sizes();
-          calculate_edge_visibility();
           calculate_edge_alphas();
 
         }
 
 
+
+
+        void Connectome::calculate_node_visibility()
+        {
+          if (node_visibility == NODE_VIS_ALL) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (true);
+
+          } else if (node_visibility == NODE_VIS_NONE) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (false);
+
+          } else if (node_visibility == NODE_VIS_FILE) {
+
+            assert (node_values_from_file_visibility.size());
+            const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
+            const float threshold = node_visibility_threshold_button->value();
+            for (size_t i = 1; i <= num_nodes(); ++i) {
+              const bool above_threshold = (node_values_from_file_visibility[i-1] >= threshold);
+              nodes[i].set_visible (above_threshold != invert);
+            }
+
+          } else if (node_visibility == NODE_VIS_DEGREE) {
+
+            for (auto i = nodes.begin(); i != nodes.end(); ++i)
+              i->set_visible (false);
+            for (auto i = edges.begin(); i != edges.end(); ++i) {
+              if (i->is_visible()) {
+                nodes[i->get_node_index(0)].set_visible (true);
+                nodes[i->get_node_index(1)].set_visible (true);
+              }
+            }
+
+          }
+          update_node_overlay();
+          if (edge_visibility == EDGE_VIS_NODES)
+            calculate_edge_visibility();
+        }
 
         void Connectome::calculate_node_colours()
         {
@@ -2047,8 +2083,6 @@ namespace MR
           update_node_overlay();
         }
 
-
-
         void Connectome::calculate_node_sizes()
         {
           if (node_size == NODE_SIZE_FIXED) {
@@ -2075,49 +2109,6 @@ namespace MR
 
           }
         }
-
-
-
-        void Connectome::calculate_node_visibility()
-        {
-          if (node_visibility == NODE_VIS_ALL) {
-
-            for (auto i = nodes.begin(); i != nodes.end(); ++i)
-              i->set_visible (true);
-
-          } else if (node_visibility == NODE_VIS_NONE) {
-
-            for (auto i = nodes.begin(); i != nodes.end(); ++i)
-              i->set_visible (false);
-
-          } else if (node_visibility == NODE_VIS_FILE) {
-
-            assert (node_values_from_file_visibility.size());
-            const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
-            const float threshold = node_visibility_threshold_button->value();
-            for (size_t i = 1; i <= num_nodes(); ++i) {
-              const bool above_threshold = (node_values_from_file_visibility[i-1] >= threshold);
-              nodes[i].set_visible (above_threshold != invert);
-            }
-
-          } else if (node_visibility == NODE_VIS_DEGREE) {
-
-            for (auto i = nodes.begin(); i != nodes.end(); ++i)
-              i->set_visible (false);
-            for (auto i = edges.begin(); i != edges.end(); ++i) {
-              if (i->is_visible()) {
-                nodes[i->get_node_index(0)].set_visible (true);
-                nodes[i->get_node_index(1)].set_visible (true);
-              }
-            }
-
-          }
-          update_node_overlay();
-          if (edge_visibility == EDGE_VIS_NODES)
-            calculate_edge_visibility();
-        }
-
-
 
         void Connectome::calculate_node_alphas()
         {
@@ -2202,59 +2193,6 @@ namespace MR
 
 
 
-
-        void Connectome::calculate_edge_colours()
-        {
-          if (edge_colour == EDGE_COLOUR_FIXED) {
-
-            for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_colour (edge_fixed_colour);
-
-          } else if (edge_colour == EDGE_COLOUR_DIR) {
-
-            for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
-
-          } else if (edge_colour == EDGE_COLOUR_FILE) {
-
-            assert (edge_values_from_file_colour.size());
-            const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
-            for (size_t i = 0; i != num_edges(); ++i) {
-              float factor = (edge_values_from_file_colour[i]-lower) / (upper - lower);
-              factor = std::min (1.0f, std::max (factor, 0.0f));
-              factor = edge_colourmap_invert ? 1.0f-factor : factor;
-              edges[i].set_colour (Point<float> (factor, 0.0f, 0.0f));
-            }
-
-          }
-        }
-
-
-
-        void Connectome::calculate_edge_sizes()
-        {
-          if (edge_size == EDGE_SIZE_FIXED) {
-
-            for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_size (1.0f);
-
-          } else if (edge_size == EDGE_SIZE_FILE) {
-
-            assert (edge_values_from_file_size.size());
-            const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
-            const bool invert = edge_size_invert_checkbox->isChecked();
-            for (size_t i = 0; i != num_edges(); ++i) {
-              float factor = (edge_values_from_file_size[i]-lower) / (upper - lower);
-              factor = std::min (1.0f, std::max (factor, 0.0f));
-              factor = invert ? 1.0f-factor : factor;
-              edges[i].set_size (factor);
-            }
-
-          }
-        }
-
-
-
         void Connectome::calculate_edge_visibility()
         {
           if (edge_visibility == EDGE_VIS_ALL) {
@@ -2291,7 +2229,53 @@ namespace MR
             calculate_node_visibility();
         }
 
+        void Connectome::calculate_edge_colours()
+        {
+          if (edge_colour == EDGE_COLOUR_FIXED) {
 
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_colour (edge_fixed_colour);
+
+          } else if (edge_colour == EDGE_COLOUR_DIR) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
+
+          } else if (edge_colour == EDGE_COLOUR_FILE) {
+
+            assert (edge_values_from_file_colour.size());
+            const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              float factor = (edge_values_from_file_colour[i]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = edge_colourmap_invert ? 1.0f-factor : factor;
+              edges[i].set_colour (Point<float> (factor, 0.0f, 0.0f));
+            }
+
+          }
+        }
+
+        void Connectome::calculate_edge_sizes()
+        {
+          if (edge_size == EDGE_SIZE_FIXED) {
+
+            for (auto i = edges.begin(); i != edges.end(); ++i)
+              i->set_size (1.0f);
+
+          } else if (edge_size == EDGE_SIZE_FILE) {
+
+            assert (edge_values_from_file_size.size());
+            const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
+            const bool invert = edge_size_invert_checkbox->isChecked();
+            for (size_t i = 0; i != num_edges(); ++i) {
+              float factor = (edge_values_from_file_size[i]-lower) / (upper - lower);
+              factor = std::min (1.0f, std::max (factor, 0.0f));
+              factor = invert ? 1.0f-factor : factor;
+              edges[i].set_size (factor);
+            }
+
+          }
+        }
 
         void Connectome::calculate_edge_alphas()
         {
@@ -2314,6 +2298,8 @@ namespace MR
 
           }
         }
+
+
 
 
 
@@ -2345,8 +2331,6 @@ namespace MR
             i->create_streamline();
           have_exemplars = true;
         }
-
-
 
         void Connectome::get_streamtubes()
         {

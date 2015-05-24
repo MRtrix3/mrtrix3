@@ -39,16 +39,16 @@ namespace MR
       typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
       typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
+      enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE };
       enum node_geometry_t   { NODE_GEOM_SPHERE, NODE_GEOM_CUBE, NODE_GEOM_OVERLAY, NODE_GEOM_MESH, NODE_GEOM_SMOOTH_MESH };
       enum node_colour_t     { NODE_COLOUR_FIXED, NODE_COLOUR_RANDOM, NODE_COLOUR_LUT, NODE_COLOUR_FILE };
       enum node_size_t       { NODE_SIZE_FIXED, NODE_SIZE_VOLUME, NODE_SIZE_FILE };
-      enum node_visibility_t { NODE_VIS_ALL, NODE_VIS_NONE, NODE_VIS_FILE, NODE_VIS_DEGREE };
       enum node_alpha_t      { NODE_ALPHA_FIXED, NODE_ALPHA_LUT, NODE_ALPHA_FILE };
 
+      enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_NODES, EDGE_VIS_FILE };
       enum edge_geometry_t   { EDGE_GEOM_LINE, EDGE_GEOM_CYLINDER, EDGE_GEOM_STREAMLINE, EDGE_GEOM_STREAMTUBE };
       enum edge_colour_t     { EDGE_COLOUR_FIXED, EDGE_COLOUR_DIR, EDGE_COLOUR_FILE };
       enum edge_size_t       { EDGE_SIZE_FIXED, EDGE_SIZE_FILE };
-      enum edge_visibility_t { EDGE_VIS_ALL, EDGE_VIS_NONE, EDGE_VIS_NODES, EDGE_VIS_FILE };
       enum edge_alpha_t      { EDGE_ALPHA_FIXED, EDGE_ALPHA_FILE };
 
       }
