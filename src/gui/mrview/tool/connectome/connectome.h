@@ -359,6 +359,7 @@ namespace MR
 
             // Helper functions
             void clear_all();
+            void enable_all (const bool);
             void initialise (const std::string&);
 
             void import_file_for_node_property (FileDataVector&, const std::string&);

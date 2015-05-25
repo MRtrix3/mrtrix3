@@ -128,8 +128,7 @@ namespace MR
           hlayout->addWidget (new QLabel ("Config: "));
           config_button = new QPushButton (this);
           config_button->setToolTip (tr ("Open connectome config file"));
-          //config_button->setIcon (QIcon (":/close.svg"));
-          config_button->setText (tr ("(none)"));
+          config_button->setText ("(none)");
           connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
           hlayout->addWidget (config_button, 1);
           vlayout->addLayout (hlayout);
@@ -572,6 +571,8 @@ namespace MR
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
           Edge::set_streamtube_LOD (3);
+
+          enable_all (false);
         }
 
 
@@ -887,6 +888,7 @@ namespace MR
 
           image_button->setText (QString::fromStdString (Path::basename (path)));
           load_properties();
+          enable_all (true);
           window.updateGL();
         }
 
@@ -1862,6 +1864,64 @@ namespace MR
           edge_values_from_file_alpha.clear();
           node_visibility_warning_icon->setVisible (false);
           edge_visibility_warning_icon->setVisible (false);
+        }
+
+        void Connectome::enable_all (const bool value)
+        {
+          lut_combobox->setEnabled (value);
+          config_button->setEnabled (value);
+
+          node_visibility_combobox->setEnabled (value);
+          node_visibility_threshold_button->setEnabled (value);
+          node_visibility_threshold_invert_checkbox->setEnabled (value);
+
+          node_geometry_combobox->setEnabled (value);
+          node_geometry_sphere_lod_spinbox->setEnabled (value);
+          node_geometry_overlay_interp_checkbox->setEnabled (value);
+
+          node_colour_combobox->setEnabled (value);
+          node_colour_fixedcolour_button->setEnabled (value);
+          node_colour_colourmap_button->setEnabled (value);
+          node_colour_lower_button->setEnabled (value);
+          node_colour_upper_button->setEnabled (value);
+
+          node_size_combobox->setEnabled (value);
+          node_size_button->setEnabled (value);
+          node_size_lower_button->setEnabled (value);
+          node_size_upper_button->setEnabled (value);
+          node_size_invert_checkbox->setEnabled (value);
+
+          node_alpha_combobox->setEnabled (value);
+          node_alpha_slider->setEnabled (value);
+          node_alpha_lower_button->setEnabled (value);
+          node_alpha_upper_button->setEnabled (value);
+          node_alpha_invert_checkbox->setEnabled (value);
+
+          edge_visibility_combobox->setEnabled (value);
+          edge_visibility_warning_icon->setEnabled (value);
+          edge_visibility_threshold_button->setEnabled (value);
+          edge_visibility_threshold_invert_checkbox->setEnabled (value);
+
+          edge_geometry_combobox->setEnabled (value);
+          edge_geometry_cylinder_lod_spinbox->setEnabled (value);
+
+          edge_colour_combobox->setEnabled (value);
+          edge_colour_fixedcolour_button->setEnabled (value);
+          edge_colour_colourmap_button->setEnabled (value);
+          edge_colour_lower_button->setEnabled (value);
+          edge_colour_upper_button->setEnabled (value);
+
+          edge_size_combobox->setEnabled (value);
+          edge_size_button->setEnabled (value);
+          edge_size_lower_button->setEnabled (value);
+          edge_size_upper_button->setEnabled (value);
+          edge_size_invert_checkbox->setEnabled (value);
+
+          edge_alpha_combobox->setEnabled (value);
+          edge_alpha_slider->setEnabled (value);
+          edge_alpha_lower_button->setEnabled (value);
+          edge_alpha_upper_button->setEnabled (value);
+          edge_alpha_invert_checkbox->setEnabled (value);
         }
 
         void Connectome::initialise (const std::string& path)
