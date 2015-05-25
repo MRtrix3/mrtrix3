@@ -78,6 +78,9 @@ namespace MR
           colourmap_index = parent.node_colourmap_index;
           use_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
 
+          const std::string GS_in  = is_3D ? "" : "_GSin";
+          const std::string GS_out = is_3D ? "" : "_GSout";
+
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
@@ -102,10 +105,10 @@ namespace MR
 
           if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
             vertex_shader_source +=
-              "out vec3 normal;\n";
+              "out vec3 normal" + GS_in + ";\n";
           } else if (geometry == node_geometry_t::CUBE) {
             vertex_shader_source +=
-              "flat out vec3 normal;\n";
+              "flat out vec3 normal" + GS_in + ";\n";
           }
 
           vertex_shader_source +=
@@ -115,27 +118,25 @@ namespace MR
             case node_geometry_t::SPHERE:
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace * node_size;\n"
-              "  normal = vertexPosition_modelspace;\n"
+              "  normal" + GS_in + " = vertexPosition_modelspace;\n"
               "  if (reverse != 0) {\n"
               "    pos = -pos;\n"
-              "    normal = -normal;\n"
+              "    normal" + GS_in + " = -normal" + GS_in + ";\n"
               "  }\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
               break;
             case node_geometry_t::CUBE:
               vertex_shader_source +=
-              "  vec3 pos = vertexPosition_modelspace * node_size;\n"
-              "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n"
-              "  normal = vertexNormal_modelspace;\n";
+              "  gl_Position = (MVP * vec4 (node_centre + (vertexPosition_modelspace * node_size), 1));\n"
+              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
             case node_geometry_t::OVERLAY:
               break;
             case node_geometry_t::MESH:
             case node_geometry_t::SMOOTH_MESH:
               vertex_shader_source +=
-              "  normal = vertexNormal_modelspace;\n"
-              "  vec3 pos = (node_size * (vertexPosition_modelspace - node_centre));\n"
-              "  gl_Position = MVP * vec4 (node_centre + pos, 1);\n";
+              "  normal" + GS_in + " = vertexNormal_modelspace;\n"
+              "  gl_Position = MVP * vec4 (node_centre + (node_size * (vertexPosition_modelspace - node_centre)), 1);\n";
               break;
           }
 
@@ -145,7 +146,7 @@ namespace MR
           // =================================================================
 
           geometry_shader_source = std::string("");
-          if (!is_3D) {
+          if (!is_3D && geometry != node_geometry_t::OVERLAY) {
 
             geometry_shader_source +=
                 "layout(triangles) in;\n"
@@ -153,10 +154,12 @@ namespace MR
 
             if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
               geometry_shader_source +=
-                "in vec3 normal[];\n";
+                "in vec3 normal" + GS_in + "[3];\n"
+                "out vec3 normal" + GS_out + ";\n";
             } else if (geometry == node_geometry_t::CUBE) {
               geometry_shader_source +=
-                "flat in vec3 normal[];\n";
+                "flat in vec3 normal" + GS_in + "[3];\n"
+                "flat out vec3 normal" + GS_out + ";\n";
             }
 
             // Need to detect whether or not this triangle intersects the viewing plane
@@ -171,6 +174,7 @@ namespace MR
                 "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
                 "    if (mu >= 0.0 && mu <= 1.0) {\n"
                 "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
+                "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
                 "      EmitVertex();\n"
                 "    }\n"
                 "  }\n"
@@ -194,22 +198,19 @@ namespace MR
           }
 
           if (use_lighting && geometry != node_geometry_t::OVERLAY) {
+
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
-          }
-          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
-            fragment_shader_source +=
-              "in vec3 normal;\n";
-          } else if (geometry == node_geometry_t::CUBE) {
-            fragment_shader_source +=
-              "flat in vec3 normal;\n";
-          }
 
-          if (geometry != node_geometry_t::OVERLAY) {
-            fragment_shader_source +=
-              "in vec3 position;\n";
+            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+              fragment_shader_source +=
+                "in vec3 normal" + GS_out + ";\n";
+            } else if (geometry == node_geometry_t::CUBE) {
+              fragment_shader_source +=
+                "flat in vec3 normal" + GS_out + ";\n";
+            }
           }
 
           if (colour == node_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
@@ -242,8 +243,8 @@ namespace MR
 
           if (use_lighting && geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
-              "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
-              "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
+              "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
+              "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";
           }
 
           if (use_alpha) {
@@ -281,6 +282,9 @@ namespace MR
           colourmap_index = parent.edge_colourmap_index;
           use_alpha = !(parent.edge_alpha == edge_alpha_t::FIXED && parent.edge_fixed_alpha == 1.0f);
 
+          const std::string GS_in  = is_3D ? "" : "_GSin";
+          const std::string GS_out = is_3D ? "" : "_GSout";
+
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "uniform mat4 MVP;\n";
@@ -291,13 +295,13 @@ namespace MR
               "uniform vec3 centre_one, centre_two;\n"
               "uniform mat3 rot_matrix;\n"
               "uniform float radius;\n"
-              "out vec3 normal;\n";
+              "out vec3 normal" + GS_in + ";\n";
           }
 
           if (geometry == edge_geometry_t::STREAMLINE) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
-              "out vec3 tangent;\n";
+              "out vec3 tangent" + GS_in + ";\n";
           }
 
           if (geometry == edge_geometry_t::STREAMTUBE) {
@@ -305,8 +309,8 @@ namespace MR
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
               "layout (location = 2) in vec3 vertexNormal_modelspace;\n"
               "uniform float radius;\n"
-              "out vec3 tangent;\n"
-              "out vec3 normal;\n";
+              "out vec3 tangent" + GS_in + ";\n"
+              "out vec3 normal" + GS_in + ";\n";
           }
 
           vertex_shader_source +=
@@ -326,19 +330,19 @@ namespace MR
               "    offset[2] = 0.0;\n"
               "  }\n"
               "  offset = offset * rot_matrix;\n"
-              "  normal = vertexNormal_modelspace * rot_matrix;\n"
+              "  normal" + GS_in + " = vertexNormal_modelspace * rot_matrix;\n"
               "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
               break;
             case edge_geometry_t::STREAMLINE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n"
-              "  tangent = vertexTangent_modelspace;\n";
+              "  tangent" + GS_in + " = vertexTangent_modelspace;\n";
               break;
             case edge_geometry_t::STREAMTUBE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace + (radius * vertexNormal_modelspace), 1);\n"
-              "  tangent = vertexTangent_modelspace;\n"
-              "  normal = vertexNormal_modelspace;\n";
+              "  tangent" + GS_in + " = vertexTangent_modelspace;\n"
+              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
           }
 
@@ -349,8 +353,6 @@ namespace MR
 
           geometry_shader_source = std::string("");
           if (!is_3D) {
-
-            // FIXME Have to output normal and tangent through GS
 
             switch (geometry) {
               case edge_geometry_t::LINE:
@@ -364,8 +366,10 @@ namespace MR
                 geometry_shader_source +=
                 "layout(triangles) in;\n"
                 "layout(line_strip, max_vertices=2) out;\n"
-                "in vec3 normal[];\n"
-                "in vec3 tangent[];\n";
+                "in vec3 normal" + GS_in + "[3];\n"
+                "in vec3 tangent" + GS_in + "[3];\n"
+                "out vec3 normal" + GS_out + ";\n"
+                "out vec3 tangent" + GS_out + ";\n";
                 break;
             }
 
@@ -391,6 +395,8 @@ namespace MR
                 "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
                 "    if (mu >= 0.0 && mu <= 1.0) {\n"
                 "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
+                "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
+                "      tangent" + GS_out + " = normalize(((1.0 - mu) * tangent" + GS_in + "[v1]) + (mu * tangent" + GS_in + "[v2]));\n"
                 "      EmitVertex();\n"
                 "    }\n"
                 "  }\n"
@@ -419,14 +425,14 @@ namespace MR
 
           if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
             fragment_shader_source +=
-              "in vec3 normal;\n"
+              "in vec3 normal" + GS_out + ";\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
           }
           if (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE) {
             fragment_shader_source +=
-              "in vec3 tangent;\n";
+              "in vec3 tangent" + GS_out + ";\n";
           }
 
           if (colour == edge_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
@@ -447,10 +453,10 @@ namespace MR
 
             if (use_alpha) {
               fragment_shader_source +=
-              "  color.rgb = vec3 (abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));\n";
+              "  color.rgb = vec3 (abs(tangent" + GS_out + "[0]), abs(tangent" + GS_out + "[1]), abs(tangent" + GS_out + "[2]));\n";
             } else {
               fragment_shader_source +=
-              "  color = vec3 (abs(tangent[0]), abs(tangent[1]), abs(tangent[2]));\n";
+              "  color = vec3 (abs(tangent" + GS_out + "[0]), abs(tangent" + GS_out + "[1]), abs(tangent" + GS_out + "[2]));\n";
             }
 
           } else {
@@ -467,8 +473,8 @@ namespace MR
 
           if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
             fragment_shader_source +=
-              "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
-              "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
+              "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
+              "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";
           }
 
           // TODO Lighting for streamline rendering

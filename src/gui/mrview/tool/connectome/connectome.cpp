@@ -615,7 +615,6 @@ namespace MR
 
           Edge::set_streamtube_LOD (3);
 
-          GL_CHECK_ERROR;
           glGetIntegerv (GL_ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
           glGetIntegerv (GL_SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
           GL_CHECK_ERROR;
@@ -1016,7 +1015,7 @@ namespace MR
         void Connectome::lighting_settings_slot()
         {
           if (!lighting_dialog)
-            lighting_dialog.reset (new Dialog::Lighting (&window, "Connectome lighting", lighting));
+            lighting_dialog.reset (new Dialog::Lighting (&window, "Connectome lighting", lighting, false));
           lighting_dialog->show();
         }
         void Connectome::lighting_parameter_slot()

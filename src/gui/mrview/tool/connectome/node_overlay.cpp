@@ -45,7 +45,7 @@ namespace MR
           position.assign (3, -1);
           set_interpolate (false);
           set_colourmap (5);
-          set_min_max (0.0f, 1.0f);
+          set_min_max (std::numeric_limits<float>::min(), 1.0f);
           set_allowed_features  (true, true, true);
           set_use_discard_lower (true);
           set_use_discard_upper (false);

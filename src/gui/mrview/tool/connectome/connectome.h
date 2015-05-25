@@ -79,7 +79,6 @@
 //   - Clean up behaviour with unusual sequences of inputs
 //   - Need to pass tangent and normal through geometry shader when activated
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
-//   - Fix drawing of lines; appears to not be working in 3D either...
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -107,6 +106,7 @@
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
+//   - Add compatibility with volume render clip planes
 //
 // * Nodes GUI section
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
