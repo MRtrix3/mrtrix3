@@ -52,7 +52,7 @@ namespace MR
           Edge ();
           ~Edge();
 
-          void render_line() const;
+          void render_line() const { line.render(); }
 
           void calculate_exemplar (const std::string& path) { assert (!exemplar); exemplar.reset (new Exemplar (*this, path)); }
           void clear_exemplar() { if (streamtube) delete streamtube.release(); if (streamline) delete streamline.release(); if (exemplar) delete exemplar.release(); }
@@ -99,6 +99,20 @@ namespace MR
           class Exemplar;
           class Streamline;
           class Streamtube;
+
+          class Line
+          {
+            public:
+              Line (const Edge& parent),
+              Line (Line&& that) :
+                  vertex_buffer (std::move (that.vertex_buffer)),
+                  vertex_array_object (std::move (that.vertex_array_object)) { }
+              Line () = delete;
+              void render() const;
+            private:
+              GL::VertexBuffer vertex_buffer;
+              GL::VertexArrayObject vertex_array_object;
+          } line;
 
           // Raw data for exemplar; need to hold on to this
           class Exemplar

@@ -242,6 +242,7 @@ namespace MR
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
             QSpinBox *edge_geometry_cylinder_lod_spinbox;
+            QCheckBox *edge_geometry_line_smooth_checkbox;
 
             QComboBox *edge_colour_combobox;
             QColorButton *edge_colour_fixedcolour_button;
@@ -359,6 +360,10 @@ namespace MR
             FileDataVector edge_values_from_file_colour;
             FileDataVector edge_values_from_file_size;
             FileDataVector edge_values_from_file_alpha;
+
+            // Limits on drawing line thicknesses from OpenGL
+            GLint line_thickness_range_aliased[2];
+            GLint line_thickness_range_smooth[2];
 
 
             // Classes to receive inputs from the colourmap buttons and act accordingly

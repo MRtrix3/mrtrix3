@@ -52,7 +52,8 @@ namespace MR
             size (1.0f),
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
-            visible (one != two)
+            visible (one != two),
+            line (*this)
         {
           static const Point<float> z_axis (0.0f, 0.0f, 1.0f);
           if (is_diagonal()) {
@@ -89,6 +90,7 @@ namespace MR
             colour (that.colour),
             alpha (that.alpha),
             visible (that.visible),
+            line (std::move (that.line)),
             exemplar (std::move (that.exemplar)),
             streamline (std::move (that.streamline)),
             streamtube (std::move (that.streamtube))
@@ -104,7 +106,8 @@ namespace MR
             size (0.0f),
             colour (0.0f, 0.0f, 0.0f),
             alpha (0.0f),
-            visible (false) { }
+            visible (false),
+            line (*this) { }
 
         Edge::~Edge()
         {
@@ -118,12 +121,31 @@ namespace MR
 
 
 
-        void Edge::render_line() const
+
+        Edge::Line::Line (const Edge& parent)
         {
-          glBegin (GL_LINES);
-          glVertex3f (node_centres[0][0], node_centres[0][1], node_centres[0][2]);
-          glVertex3f (node_centres[1][0], node_centres[1][1], node_centres[1][2]);
-          glEnd();
+          std::vector< Point<float> > data;
+          data.push_back (parent.get_node_centre (0));
+          data.push_back (parent.get_node_centre (1));
+
+          vertex_buffer.gen();
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, 2 * sizeof (Point<float>), &data[0][0], gl::STATIC_DRAW);
+
+          vertex_array_object.gen();
+          vertex_array_object.bind();
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+        }
+
+        void Edge::Line::render() const
+        {
+          if (!vertex_buffer || !vertex_array_object)
+            return;
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
+          vertex_array_object.bind();
+          gl::DrawArrays (gl::LINES, 0, 2);
         }
 
 

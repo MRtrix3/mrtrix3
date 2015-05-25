@@ -86,6 +86,8 @@ namespace MR
             edge_colourmap_invert (false),
             edge_fixed_alpha (1.0f),
             edge_size_scale_factor (1.0f),
+            line_thickness_range_aliased {0, 0},
+            line_thickness_range_smooth {0, 0},
             node_colourmap_observer (*this),
             edge_colourmap_observer (*this)
         {
@@ -443,6 +445,10 @@ namespace MR
           edge_geometry_cylinder_lod_spinbox->setVisible (false);
           connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
           hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
+          edge_geometry_line_smooth_checkbox = new QCheckBox ("Smooth");
+          edge_geometry_line_smooth_checkbox->setTristate (false);
+          connect (edge_geometry_line_smooth_checkbox, SIGNAL (stateChanged(int)), this, SLOT(edge_size_value_slot()));
+          hlayout->addWidget (edge_geometry_line_smooth_checkbox, 1);
           gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
@@ -608,6 +614,11 @@ namespace MR
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
 
           Edge::set_streamtube_LOD (3);
+
+          GL_CHECK_ERROR;
+          glGetIntegerv (GL_ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
+          glGetIntegerv (GL_SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
+          GL_CHECK_ERROR;
 
           enable_all (false);
         }
@@ -784,6 +795,9 @@ namespace MR
                 gl::DepthMask (gl::FALSE_);
             }
 
+            if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
+              gl::Enable (GL_LINE_SMOOTH);
+
             GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0, radius_ID = 0;
             if (edge_geometry == edge_geometry_t::CYLINDER) {
               cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -825,8 +839,7 @@ namespace MR
                   gl::Uniform1f (edge_alpha_ID, edge.get_alpha() * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
-                    glLineWidth (edge.get_size() * edge_size_scale_factor);
-                    glColor3f (edge.get_colour()[0], edge.get_colour()[1], edge.get_colour()[2]);
+                    gl::LineWidth (edge.get_size() * edge_size_scale_factor);
                     edge.render_line();
                     break;
                   case edge_geometry_t::CYLINDER:
@@ -837,11 +850,11 @@ namespace MR
                     gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                   case edge_geometry_t::STREAMLINE:
-                    glLineWidth (edge.get_size() * edge_size_scale_factor);
+                    gl::LineWidth (edge.get_size() * edge_size_scale_factor);
                     edge.render_streamline();
                     break;
                   case edge_geometry_t::STREAMTUBE:
-                    gl::Uniform1f        (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
+                    gl::Uniform1f (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     edge.render_streamtube();
                 }
               }
@@ -853,12 +866,11 @@ namespace MR
               gl::DepthMask (gl::TRUE_);
             }
 
-            if (edge_geometry == edge_geometry_t::STREAMTUBE) {
-              gl::Disable (gl::PRIMITIVE_RESTART);
+            if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) {
+              gl::LineWidth (1.0f);
+              if (edge_geometry_line_smooth_checkbox->isChecked())
+                gl::Disable (GL_LINE_SMOOTH);
             }
-
-            if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE)
-              glLineWidth (1.0f);
 
             edge_shader.stop();
           }
@@ -1629,12 +1641,14 @@ namespace MR
               edge_geometry = edge_geometry_t::LINE;
               edge_geometry_cylinder_lod_label->setVisible (false);
               edge_geometry_cylinder_lod_spinbox->setVisible (false);
+              edge_geometry_line_smooth_checkbox->setVisible (true);
               break;
             case 1:
               if (edge_geometry == edge_geometry_t::CYLINDER) return;
               edge_geometry = edge_geometry_t::CYLINDER;
               edge_geometry_cylinder_lod_label->setVisible (true);
               edge_geometry_cylinder_lod_spinbox->setVisible (true);
+              edge_geometry_line_smooth_checkbox->setVisible (false);
               break;
             case 2:
               try {
@@ -1646,6 +1660,7 @@ namespace MR
                 edge_geometry = edge_geometry_t::STREAMLINE;
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                edge_geometry_line_smooth_checkbox->setVisible (true);
               } catch (Exception& e) {
                 e.display();
                 for (auto i = edges.begin(); i != edges.end(); ++i)
@@ -1655,6 +1670,7 @@ namespace MR
                 edge_geometry_combobox->setCurrentIndex (0);
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                edge_geometry_line_smooth_checkbox->setVisible (true);
               }
               break;
             case 3:
@@ -1667,6 +1683,7 @@ namespace MR
                 edge_geometry = edge_geometry_t::STREAMTUBE;
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                edge_geometry_line_smooth_checkbox->setVisible (false);
               } catch (Exception& e) {
                 e.display();
                 for (auto i = edges.begin(); i != edges.end(); ++i)
@@ -1676,6 +1693,7 @@ namespace MR
                 edge_geometry_combobox->setCurrentIndex (0);
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
+                edge_geometry_line_smooth_checkbox->setVisible (true);
               }
               break;
           }
@@ -2040,6 +2058,7 @@ namespace MR
 
           edge_geometry_combobox->setEnabled (value);
           edge_geometry_cylinder_lod_spinbox->setEnabled (value);
+          edge_geometry_line_smooth_checkbox->setEnabled (value);
 
           edge_colour_combobox->setEnabled (value);
           edge_colour_fixedcolour_button->setEnabled (value);
