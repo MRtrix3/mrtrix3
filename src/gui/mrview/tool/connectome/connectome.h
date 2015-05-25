@@ -79,6 +79,7 @@
 //   - Clean up behaviour with unusual sequences of inputs
 //   - Need to pass tangent and normal through geometry shader when activated
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
+//   - Fix drawing of lines; appears to not be working in 3D either...
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -89,6 +90,7 @@
 //     * Rename current Shapes::Sphere class to Halfsphere, use in the DWI renderer,
 //       but derive a full-sphere for use here
 //       (no point using a full-sphere in the DWI renderer as you'd still have the issue of negative lobes)
+//     * Get face culling working
 //   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling
@@ -107,12 +109,10 @@
 //     (this is the only way transparency of both nodes and edges can work)
 //
 // * Nodes GUI section
-//   - Prevent other non-sensible behaviour, e.g.:
-//     * Trying to colour by LUT when no LUT is provided
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
 //
 // * Toolbar
-//   - Enable collapsing of node / edge visualisation groups; will make room for future additions
+//   - Enable collapsing of group boxes; will make room for future additions
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
@@ -371,8 +371,8 @@ namespace MR
             void enable_all (const bool);
             void initialise (const std::string&);
 
-            void import_file_for_node_property (FileDataVector&, const std::string&);
-            void import_file_for_edge_property (FileDataVector&, const std::string&);
+            bool import_file_for_node_property (FileDataVector&, const std::string&);
+            bool import_file_for_edge_property (FileDataVector&, const std::string&);
 
             void load_properties();
 

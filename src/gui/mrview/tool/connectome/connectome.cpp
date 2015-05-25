@@ -1047,7 +1047,14 @@ namespace MR
               break;
             case 2:
               try {
-                import_file_for_node_property (node_values_from_file_visibility, "visibility");
+                if (!import_file_for_node_property (node_values_from_file_visibility, "visibility")) {
+                  switch (node_visibility) {
+                    case node_visibility_t::ALL:    node_visibility_combobox->setCurrentIndex (0); return;
+                    case node_visibility_t::NONE:   node_visibility_combobox->setCurrentIndex (1); return;
+                    case node_visibility_t::FILE:   node_visibility_combobox->setCurrentIndex (4); return;
+                    case node_visibility_t::DEGREE: node_visibility_combobox->setCurrentIndex (3); return;
+                  }
+                }
                 node_visibility = node_visibility_t::FILE;
                 if (node_visibility_combobox->count() == 4)
                   node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
@@ -1063,6 +1070,7 @@ namespace MR
                 node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
               } catch (Exception& e) {
                 e.display();
+                node_values_from_file_visibility.clear();
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = node_visibility_t::ALL;
                 node_visibility_combobox->removeItem (4);
@@ -1265,7 +1273,14 @@ namespace MR
               break;
             case 3:
               try {
-                import_file_for_node_property (node_values_from_file_colour, "colours");
+                if (!import_file_for_node_property (node_values_from_file_colour, "colours")) {
+                  switch (node_colour) {
+                    case node_colour_t::FIXED:    node_colour_combobox->setCurrentIndex (0); return;
+                    case node_colour_t::RANDOM:   node_colour_combobox->setCurrentIndex (1); return;
+                    case node_colour_t::FROM_LUT: node_colour_combobox->setCurrentIndex (2); return;
+                    case node_colour_t::FILE:     node_colour_combobox->setCurrentIndex (4); return;
+                  }
+                }
                 node_colour = node_colour_t::FILE;
                 node_colour_colourmap_button->setVisible (true);
                 node_colour_fixedcolour_button->setVisible (false);
@@ -1285,6 +1300,7 @@ namespace MR
                 node_colour_upper_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
               } catch (Exception& e) {
                 e.display();
+                node_values_from_file_colour.clear();
                 node_colour_combobox->setCurrentIndex (0);
                 node_colour = node_colour_t::FIXED;
                 node_colour_colourmap_button->setVisible (false);
@@ -1329,7 +1345,13 @@ namespace MR
               break;
             case 2:
               try {
-                import_file_for_node_property (node_values_from_file_size, "size");
+                if (!import_file_for_node_property (node_values_from_file_size, "size")) {
+                  switch (node_size) {
+                    case node_size_t::FIXED:       node_size_combobox->setCurrentIndex (0); return;
+                    case node_size_t::NODE_VOLUME: node_size_combobox->setCurrentIndex (1); return;
+                    case node_size_t::FILE:        node_size_combobox->setCurrentIndex (3); return;
+                  }
+                }
                 node_size = node_size_t::FILE;
                 if (node_size_combobox->count() == 3)
                   node_size_combobox->addItem (node_values_from_file_size.get_name());
@@ -1349,6 +1371,7 @@ namespace MR
                 node_size_invert_checkbox->setChecked (false);
               } catch (Exception& e) {
                 e.display();
+                node_values_from_file_size.clear();
                 node_size_combobox->setCurrentIndex (0);
                 node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (3);
@@ -1382,7 +1405,19 @@ namespace MR
               break;
             case 1:
               if (node_alpha == node_alpha_t::FROM_LUT) return;
-              node_alpha = node_alpha_t::FROM_LUT;
+              if (lut.size()) {
+                node_alpha = node_alpha_t::FROM_LUT;
+              } else {
+                QMessageBox::warning (QApplication::activeWindow(),
+                                      tr ("Visualisation error"),
+                                      tr ("Cannot set node transparency based on a lookup table; \n"
+                                          "none has been provided (use the 'LUT' combo box at the "
+                                          "top of the toolbar)"),
+                                      QMessageBox::Ok,
+                                      QMessageBox::Ok);
+                node_alpha_combobox->setCurrentIndex (0);
+                node_alpha = node_alpha_t::FIXED;
+              }
               node_alpha_combobox->removeItem (3);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1391,7 +1426,13 @@ namespace MR
               break;
             case 2:
               try {
-                import_file_for_node_property (node_values_from_file_alpha, "transparency");
+                if (!import_file_for_node_property (node_values_from_file_alpha, "transparency")) {
+                  switch (node_alpha) {
+                    case node_alpha_t::FIXED:    node_alpha_combobox->setCurrentIndex (0); return;
+                    case node_alpha_t::FROM_LUT: node_alpha_combobox->setCurrentIndex (1); return;
+                    case node_alpha_t::FILE:     node_alpha_combobox->setCurrentIndex (3); return;
+                  }
+                }
                 node_alpha = node_alpha_t::FILE;
                 if (node_alpha_combobox->count() == 3)
                   node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
@@ -1411,6 +1452,7 @@ namespace MR
                 node_alpha_invert_checkbox->setChecked (false);
               } catch (Exception& e) {
                 e.display();
+                node_values_from_file_alpha.clear();
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (3);
@@ -1539,7 +1581,14 @@ namespace MR
               break;
             case 3:
               try {
-                import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
+                if (!import_file_for_edge_property (edge_values_from_file_visibility, "visibility")) {
+                  switch (edge_visibility) {
+                    case edge_visibility_t::ALL:           edge_visibility_combobox->setCurrentIndex (0); return;
+                    case edge_visibility_t::NONE:          edge_visibility_combobox->setCurrentIndex (1); return;
+                    case edge_visibility_t::VISIBLE_NODES: edge_visibility_combobox->setCurrentIndex (2); return;
+                    case edge_visibility_t::FILE:          edge_visibility_combobox->setCurrentIndex (4); return;
+                  }
+                }
                 edge_visibility = edge_visibility_t::FILE;
                 if (edge_visibility_combobox->count() == 4)
                   edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
@@ -1555,6 +1604,7 @@ namespace MR
                 edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
               } catch (Exception& e) {
                 e.display();
+                edge_values_from_file_visibility.clear();
                 edge_visibility_combobox->setCurrentIndex (1);
                 edge_visibility = edge_visibility_t::NONE;
                 edge_visibility_combobox->removeItem (4);
@@ -1660,7 +1710,13 @@ namespace MR
               break;
             case 2:
               try {
-                import_file_for_edge_property (edge_values_from_file_colour, "colours");
+                if (!import_file_for_edge_property (edge_values_from_file_colour, "colours")) {
+                  switch (edge_colour) {
+                    case edge_colour_t::FIXED:     edge_colour_combobox->setCurrentIndex (0); return;
+                    case edge_colour_t::DIRECTION: edge_colour_combobox->setCurrentIndex (1); return;
+                    case edge_colour_t::FILE:      edge_colour_combobox->setCurrentIndex (3); return;
+                  }
+                }
                 edge_colour = edge_colour_t::FILE;
                 edge_colour_colourmap_button->setVisible (true);
                 edge_colour_fixedcolour_button->setVisible (false);
@@ -1680,6 +1736,7 @@ namespace MR
                 edge_colour_upper_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
               } catch (Exception& e) {
                 e.display();
+                edge_values_from_file_colour.clear();
                 edge_colour_combobox->setCurrentIndex (0);
                 edge_colour = edge_colour_t::FIXED;
                 edge_colour_colourmap_button->setVisible (false);
@@ -1714,7 +1771,12 @@ namespace MR
               break;
             case 1:
               try {
-                import_file_for_edge_property (edge_values_from_file_size, "size");
+                if (!import_file_for_edge_property (edge_values_from_file_size, "size")) {
+                  switch (edge_size) {
+                    case edge_size_t::FIXED: edge_size_combobox->setCurrentIndex (0); return;
+                    case edge_size_t::FILE:  edge_size_combobox->setCurrentIndex (2); return;
+                  }
+                }
                 edge_size = edge_size_t::FILE;
                 if (edge_size_combobox->count() == 2)
                   edge_size_combobox->addItem (edge_values_from_file_size.get_name());
@@ -1733,6 +1795,7 @@ namespace MR
                 edge_size_upper_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
               } catch (Exception& e) {
                 e.display();
+                edge_values_from_file_size.clear();
                 edge_size_combobox->setCurrentIndex (0);
                 edge_size = edge_size_t::FIXED;
                 edge_size_combobox->removeItem (2);
@@ -1766,7 +1829,12 @@ namespace MR
               break;
             case 1:
               try {
-                import_file_for_edge_property (edge_values_from_file_alpha, "transparency");
+                if (!import_file_for_edge_property (edge_values_from_file_alpha, "transparency")) {
+                  switch (edge_alpha) {
+                    case edge_alpha_t::FIXED: edge_alpha_combobox->setCurrentIndex (0); return;
+                    case edge_alpha_t::FILE:  edge_alpha_combobox->setCurrentIndex (2); return;
+                  }
+                }
                 edge_alpha = edge_alpha_t::FILE;
                 if (edge_alpha_combobox->count() == 2)
                   edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
@@ -1786,6 +1854,7 @@ namespace MR
                 edge_alpha_invert_checkbox->setChecked (false);
               } catch (Exception& e) {
                 e.display();
+                edge_values_from_file_alpha.clear();
                 edge_alpha_combobox->setCurrentIndex (0);
                 edge_alpha = edge_alpha_t::FIXED;
                 edge_alpha_combobox->removeItem (2);
@@ -2088,12 +2157,12 @@ namespace MR
 
 
 
-        void Connectome::import_file_for_node_property (FileDataVector& data, const std::string& attribute)
+        bool Connectome::import_file_for_node_property (FileDataVector& data, const std::string& attribute)
         {
-          data.clear();
           const std::string path = Dialog::File::get_file (this, "Select vector file to determine node " + attribute);
           if (path.empty())
-            return;
+            return false;
+          data.clear();
           data.load (path);
           const size_t numel = data.size();
           if (data.size() != num_nodes()) {
@@ -2101,19 +2170,21 @@ namespace MR
             throw Exception ("File " + Path::basename (path) + " contains " + str (numel) + " elements, but connectome has " + str(num_nodes()) + " nodes");
           }
           data.set_name (Path::basename (path));
+          return true;
         }
 
-        void Connectome::import_file_for_edge_property (FileDataVector& data, const std::string& attribute)
+        bool Connectome::import_file_for_edge_property (FileDataVector& data, const std::string& attribute)
         {
-          data.clear();
           const std::string path = Dialog::File::get_file (this, "Select matrix file to determine edge " + attribute);
           if (path.empty())
-            return;
+            return false;
           Math::Matrix<float> temp (path);
           MR::Connectome::verify_matrix (temp, num_nodes());
+          data.clear();
           mat2vec (temp, data);
           data.calc_minmax();
           data.set_name (Path::basename (path));
+          return true;
         }
 
 
