@@ -149,6 +149,12 @@ namespace MR
           node_visibility_combobox->addItem ("Degree >= 1");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
           gridlayout->addWidget (node_visibility_combobox, 0, 2);
+          QIcon warning_icon (":/warn.svg");
+          node_visibility_warning_icon = new QLabel();
+          node_visibility_warning_icon->setPixmap (warning_icon.pixmap (node_visibility_combobox->height()));
+          node_visibility_warning_icon->setToolTip ("Changes to node visualisation will have no apparent effect if node visibility is set to \'none\'");
+          node_visibility_warning_icon->setVisible (false);
+          gridlayout->addWidget (node_visibility_warning_icon, 0, 3);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -351,6 +357,11 @@ namespace MR
           edge_visibility_combobox->setCurrentIndex (1);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 0, 2);
+          edge_visibility_warning_icon = new QLabel();
+          edge_visibility_warning_icon->setPixmap (warning_icon.pixmap (edge_visibility_combobox->height()));
+          edge_visibility_warning_icon->setToolTip ("Changes to edge visualisation will have no apparent effect if edge visibility is set to \'none\'");
+          edge_visibility_warning_icon->setVisible (false);
+          gridlayout->addWidget (edge_visibility_warning_icon, 0, 3);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -951,6 +962,7 @@ namespace MR
 
         void Connectome::node_visibility_selection_slot (int index)
         {
+          node_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_visibility == node_visibility_t::ALL) return;
@@ -1021,6 +1033,7 @@ namespace MR
 
         void Connectome::node_geometry_selection_slot (int index)
         {
+          node_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_geometry == node_geometry_t::SPHERE) return;
@@ -1132,11 +1145,14 @@ namespace MR
               node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
           }
+          if (node_visibility == node_visibility_t::NONE)
+            node_visibility_warning_icon->setVisible (true);
           window.updateGL();
         }
 
         void Connectome::node_colour_selection_slot (int index)
         {
+          node_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_colour == node_colour_t::FIXED) return;
@@ -1217,6 +1233,8 @@ namespace MR
             case 4:
               return;
           }
+          if (node_visibility == node_visibility_t::NONE)
+            node_visibility_warning_icon->setVisible (true);
           calculate_node_colours();
           window.updateGL();
         }
@@ -1224,6 +1242,7 @@ namespace MR
         void Connectome::node_size_selection_slot (int index)
         {
           assert (node_geometry != node_geometry_t::OVERLAY);
+          node_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_size == node_size_t::FIXED) return;
@@ -1277,12 +1296,15 @@ namespace MR
             case 3:
               return;
           }
+          if (node_visibility == node_visibility_t::NONE)
+            node_visibility_warning_icon->setVisible (true);
           calculate_node_sizes();
           window.updateGL();
         }
 
         void Connectome::node_alpha_selection_slot (int index)
         {
+          node_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_alpha == node_alpha_t::FIXED) return;
@@ -1336,6 +1358,8 @@ namespace MR
             case 3:
               return;
           }
+          if (node_visibility == node_visibility_t::NONE)
+            node_visibility_warning_icon->setVisible (true);
           calculate_node_alphas();
           window.updateGL();
         }
@@ -1352,11 +1376,13 @@ namespace MR
         void Connectome::sphere_lod_slot (int value)
         {
           sphere.LOD (value);
+          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           window.updateGL();
         }
         void Connectome::overlay_interp_slot (int)
         {
           assert (node_overlay);
+          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           node_overlay->set_interpolate (node_geometry_overlay_interp_checkbox->isChecked());
           window.updateGL();
         }
@@ -1364,6 +1390,7 @@ namespace MR
         {
           QColor c = node_colour_fixedcolour_button->color();
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           calculate_node_colours();
           window.updateGL();
         }
@@ -1409,6 +1436,7 @@ namespace MR
 
         void Connectome::edge_visibility_selection_slot (int index)
         {
+          edge_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (edge_visibility == edge_visibility_t::ALL) return;
@@ -1479,6 +1507,7 @@ namespace MR
 
         void Connectome::edge_geometry_selection_slot (int index)
         {
+          edge_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (edge_geometry == edge_geometry_t::LINE) return;
@@ -1535,11 +1564,14 @@ namespace MR
               }
               break;
           }
+          if (edge_visibility == edge_visibility_t::NONE)
+            edge_visibility_warning_icon->setVisible (true);
           window.updateGL();
         }
 
         void Connectome::edge_colour_selection_slot (int index)
         {
+          edge_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (edge_colour == edge_colour_t::FIXED) return;
@@ -1596,12 +1628,15 @@ namespace MR
             case 3:
               return;
           }
+          if (edge_visibility == edge_visibility_t::NONE)
+            edge_visibility_warning_icon->setVisible (true);
           calculate_edge_colours();
           window.updateGL();
         }
 
         void Connectome::edge_size_selection_slot (int index)
         {
+          edge_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (edge_size == edge_size_t::FIXED) return;
@@ -1645,12 +1680,15 @@ namespace MR
             case 2:
               return;
           }
+          if (edge_visibility == edge_visibility_t::NONE)
+            edge_visibility_warning_icon->setVisible (true);
           calculate_edge_sizes();
           window.updateGL();
         }
 
         void Connectome::edge_alpha_selection_slot (int index)
         {
+          edge_visibility_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (edge_alpha == edge_alpha_t::FIXED) return;
@@ -1695,6 +1733,8 @@ namespace MR
             case 2:
               return;
           }
+          if (edge_visibility == edge_visibility_t::NONE)
+            edge_visibility_warning_icon->setVisible (true);
           calculate_edge_alphas();
           window.updateGL();
         }
@@ -1711,12 +1751,14 @@ namespace MR
         void Connectome::cylinder_lod_slot (int index)
         {
           cylinder.LOD (index);
+          edge_visibility_warning_icon->setVisible (edge_visibility == edge_visibility_t::NONE);
           window.updateGL();
         }
         void Connectome::edge_colour_change_slot()
         {
           QColor c = edge_colour_fixedcolour_button->color();
           edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          edge_visibility_warning_icon->setVisible (edge_visibility == edge_visibility_t::NONE);
           calculate_edge_colours();
           window.updateGL();
         }
@@ -1818,6 +1860,8 @@ namespace MR
           edge_values_from_file_colour.clear();
           edge_values_from_file_size.clear();
           edge_values_from_file_alpha.clear();
+          node_visibility_warning_icon->setVisible (false);
+          edge_visibility_warning_icon->setVisible (false);
         }
 
         void Connectome::initialise (const std::string& path)

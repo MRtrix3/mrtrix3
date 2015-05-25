@@ -114,9 +114,6 @@
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
-//   - Promote 'visibility' to the top of both groups
-//   - Have warning icon that pops up next to the visibility elements if some visualisation
-//     parameter is changed, but visibility is set to none
 //   - Better tooltip for main config buttons
 //   - Add manual control of 2D / 3D mode
 //
@@ -204,6 +201,7 @@ namespace MR
             QPushButton *config_button;
 
             QComboBox *node_visibility_combobox;
+            QLabel *node_visibility_warning_icon;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
             QCheckBox *node_visibility_threshold_invert_checkbox;
@@ -232,6 +230,7 @@ namespace MR
             QCheckBox *node_alpha_invert_checkbox;
 
             QComboBox *edge_visibility_combobox;
+            QLabel *edge_visibility_warning_icon;
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
