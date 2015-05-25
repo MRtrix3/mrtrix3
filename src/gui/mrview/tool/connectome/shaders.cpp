@@ -61,8 +61,8 @@ namespace MR
         {
           if (geometry != parent.node_geometry) return true;
           if (colour != parent.node_colour) return true;
-          if (colour == NODE_COLOUR_FILE && colourmap_index != parent.node_colourmap_index) return true;
-          const bool need_alpha = !(parent.node_alpha == NODE_ALPHA_FIXED && parent.node_fixed_alpha == 1.0f);
+          if (colour == node_colour_t::FILE && colourmap_index != parent.node_colourmap_index) return true;
+          const bool need_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
           if (use_alpha != need_alpha) return true;
           return false;
         }
@@ -72,12 +72,12 @@ namespace MR
           geometry = parent.node_geometry;
           colour = parent.node_colour;
           colourmap_index = parent.node_colourmap_index;
-          use_alpha = !(parent.node_alpha == NODE_ALPHA_FIXED && parent.node_fixed_alpha == 1.0f);
+          use_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
 
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
-          if (geometry == NODE_GEOM_CUBE || geometry == NODE_GEOM_MESH || geometry == NODE_GEOM_SMOOTH_MESH) {
+          if (geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
           }
@@ -85,21 +85,21 @@ namespace MR
           vertex_shader_source +=
               "uniform mat4 MVP;\n";
 
-          if (geometry != NODE_GEOM_OVERLAY) {
+          if (geometry != node_geometry_t::OVERLAY) {
             vertex_shader_source +=
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
           }
 
-          if (geometry == NODE_GEOM_SPHERE) {
+          if (geometry == node_geometry_t::SPHERE) {
             vertex_shader_source +=
               "uniform int reverse;\n";
           }
 
-          if (geometry == NODE_GEOM_SPHERE || geometry == NODE_GEOM_MESH || geometry == NODE_GEOM_SMOOTH_MESH) {
+          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
             vertex_shader_source +=
               "out vec3 normal;\n";
-          } else if (geometry == NODE_GEOM_CUBE) {
+          } else if (geometry == node_geometry_t::CUBE) {
             vertex_shader_source +=
               "flat out vec3 normal;\n";
           }
@@ -108,7 +108,7 @@ namespace MR
               "void main() {\n";
 
           switch (geometry) {
-            case NODE_GEOM_SPHERE:
+            case node_geometry_t::SPHERE:
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace * node_size;\n"
               "  normal = vertexPosition_modelspace;\n"
@@ -118,16 +118,16 @@ namespace MR
               "  }\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
               break;
-            case NODE_GEOM_CUBE:
+            case node_geometry_t::CUBE:
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace * node_size;\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n"
               "  normal = vertexNormal_modelspace;\n";
               break;
-            case NODE_GEOM_OVERLAY:
+            case node_geometry_t::OVERLAY:
               break;
-            case NODE_GEOM_MESH:
-            case NODE_GEOM_SMOOTH_MESH:
+            case node_geometry_t::MESH:
+            case node_geometry_t::SMOOTH_MESH:
               vertex_shader_source +=
               "  normal = vertexNormal_modelspace;\n"
               "  vec3 pos = (node_size * (vertexPosition_modelspace - node_centre));\n"
@@ -147,10 +147,10 @@ namespace MR
                 "layout(triangles) in;\n"
                 "layout(line_strip, max_vertices=2) out;\n";
 
-            if (geometry == NODE_GEOM_SPHERE || geometry == NODE_GEOM_MESH || geometry == NODE_GEOM_SMOOTH_MESH) {
+            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
               geometry_shader_source +=
                 "in vec3 normal[];\n";
-            } else if (geometry == NODE_GEOM_CUBE) {
+            } else if (geometry == node_geometry_t::CUBE) {
               geometry_shader_source +=
                 "flat in vec3 normal[];\n";
             }
@@ -189,26 +189,26 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (geometry != NODE_GEOM_OVERLAY) {
+          if (geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
           }
-          if (geometry == NODE_GEOM_SPHERE || geometry == NODE_GEOM_MESH || geometry == NODE_GEOM_SMOOTH_MESH) {
+          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
             fragment_shader_source +=
               "in vec3 normal;\n";
-          } else if (geometry == NODE_GEOM_CUBE) {
+          } else if (geometry == node_geometry_t::CUBE) {
             fragment_shader_source +=
               "flat in vec3 normal;\n";
           }
 
-          if (geometry != NODE_GEOM_OVERLAY) {
+          if (geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
               "in vec3 position;\n";
           }
 
-          if (colour == NODE_COLOUR_FILE && ColourMap::maps[colourmap_index].is_colour) {
+          if (colour == node_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
             fragment_shader_source +=
               "in vec3 colourmap_colour;\n";
           }
@@ -216,7 +216,7 @@ namespace MR
           fragment_shader_source +=
               "void main() {\n";
 
-          if (colour == NODE_COLOUR_FILE) {
+          if (colour == node_colour_t::FILE) {
 
             // Red component of node_colour is the position within the range [0, 1] based on the current settings;
             //   use this to derive the actual colour based on the selected mapping
@@ -236,7 +236,7 @@ namespace MR
 
           }
 
-          if (geometry != NODE_GEOM_OVERLAY) {
+          if (geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
@@ -260,8 +260,8 @@ namespace MR
         {
           if (geometry != parent.edge_geometry) return true;
           if (colour != parent.edge_colour) return true;
-          if (colour == EDGE_COLOUR_FILE && colourmap_index != parent.edge_colourmap_index) return true;
-          const bool need_alpha = !(parent.edge_alpha == EDGE_ALPHA_FIXED && parent.edge_fixed_alpha == 1.0f);
+          if (colour == edge_colour_t::FILE && colourmap_index != parent.edge_colourmap_index) return true;
+          const bool need_alpha = !(parent.edge_alpha == edge_alpha_t::FIXED && parent.edge_fixed_alpha == 1.0f);
           if (use_alpha != need_alpha) return true;
           return false;
         }
@@ -271,13 +271,13 @@ namespace MR
           geometry = parent.edge_geometry;
           colour = parent.edge_colour;
           colourmap_index = parent.edge_colourmap_index;
-          use_alpha = !(parent.edge_alpha == EDGE_ALPHA_FIXED && parent.edge_fixed_alpha == 1.0f);
+          use_alpha = !(parent.edge_alpha == edge_alpha_t::FIXED && parent.edge_fixed_alpha == 1.0f);
 
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
               "uniform mat4 MVP;\n";
 
-          if (geometry == EDGE_GEOM_CYLINDER) {
+          if (geometry == edge_geometry_t::CYLINDER) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n"
               "uniform vec3 centre_one, centre_two;\n"
@@ -286,13 +286,13 @@ namespace MR
               "out vec3 normal;\n";
           }
 
-          if (geometry == EDGE_GEOM_STREAMLINE) {
+          if (geometry == edge_geometry_t::STREAMLINE) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
               "out vec3 tangent;\n";
           }
 
-          if (geometry == EDGE_GEOM_STREAMTUBE) {
+          if (geometry == edge_geometry_t::STREAMTUBE) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
               "layout (location = 2) in vec3 vertexNormal_modelspace;\n"
@@ -305,11 +305,11 @@ namespace MR
               "void main() {\n";
 
           switch (geometry) {
-            case EDGE_GEOM_LINE:
+            case edge_geometry_t::LINE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
               break;
-            case EDGE_GEOM_CYLINDER:
+            case edge_geometry_t::CYLINDER:
               vertex_shader_source +=
               "  vec3 centre = centre_one;\n"
               "  vec3 offset = vertexPosition_modelspace;\n"
@@ -321,12 +321,12 @@ namespace MR
               "  normal = vertexNormal_modelspace * rot_matrix;\n"
               "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
               break;
-            case EDGE_GEOM_STREAMLINE:
+            case edge_geometry_t::STREAMLINE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n"
               "  tangent = vertexTangent_modelspace;\n";
               break;
-            case EDGE_GEOM_STREAMTUBE:
+            case edge_geometry_t::STREAMTUBE:
               vertex_shader_source +=
               "  gl_Position = MVP * vec4 (vertexPosition_modelspace + (radius * vertexNormal_modelspace), 1);\n"
               "  tangent = vertexTangent_modelspace;\n"
@@ -345,14 +345,14 @@ namespace MR
             // FIXME Have to output normal and tangent through GS
 
             switch (geometry) {
-              case EDGE_GEOM_LINE:
-              case EDGE_GEOM_STREAMLINE:
+              case edge_geometry_t::LINE:
+              case edge_geometry_t::STREAMLINE:
                 geometry_shader_source +=
                 "layout(lines) in;\n"
                 "layout(points, max_vertices=1) out;\n";
                 break;
-              case EDGE_GEOM_CYLINDER:
-              case EDGE_GEOM_STREAMTUBE:
+              case edge_geometry_t::CYLINDER:
+              case edge_geometry_t::STREAMTUBE:
                 geometry_shader_source +=
                 "layout(triangles) in;\n"
                 "layout(line_strip, max_vertices=2) out;\n"
@@ -365,8 +365,8 @@ namespace MR
                 "void main() {\n";
 
             switch (geometry) {
-              case EDGE_GEOM_LINE:
-              case EDGE_GEOM_STREAMLINE:
+              case edge_geometry_t::LINE:
+              case edge_geometry_t::STREAMLINE:
                 geometry_shader_source +=
                 "  float mu = gl_in[0].gl_Position.z / (gl_in[0].gl_Position.z - gl_in[1].gl_Position.z);\n"
                 "  if (mu >= 0.0 && mu <= 1.0) {\n"
@@ -375,8 +375,8 @@ namespace MR
                 "  }\n"
                 "  EndPrimitive();\n";
                 break;
-              case EDGE_GEOM_CYLINDER:
-                case EDGE_GEOM_STREAMTUBE:
+              case edge_geometry_t::CYLINDER:
+              case edge_geometry_t::STREAMTUBE:
                 geometry_shader_source +=
                 "  for (int v1 = 0; v1 != 3; ++v1) {\n"
                 "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
@@ -409,19 +409,19 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (geometry == EDGE_GEOM_CYLINDER || geometry == EDGE_GEOM_STREAMTUBE) {
+          if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
             fragment_shader_source +=
               "in vec3 normal;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
           }
-          if (geometry == EDGE_GEOM_STREAMLINE || geometry == EDGE_GEOM_STREAMTUBE) {
+          if (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE) {
             fragment_shader_source +=
               "in vec3 tangent;\n";
           }
 
-          if (colour == EDGE_COLOUR_FILE && ColourMap::maps[colourmap_index].is_colour) {
+          if (colour == edge_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
             fragment_shader_source +=
               "in vec3 colourmap_colour;\n";
           }
@@ -429,13 +429,13 @@ namespace MR
           fragment_shader_source +=
               "void main() {\n";
 
-          if (colour == EDGE_COLOUR_FILE) {
+          if (colour == edge_colour_t::FILE) {
 
             fragment_shader_source +=
               "  float amplitude = edge_colour.r;\n";
             fragment_shader_source += std::string("  ") + ColourMap::maps[colourmap_index].mapping;
 
-          } else if (colour == EDGE_COLOUR_DIR && (geometry == EDGE_GEOM_STREAMLINE || geometry == EDGE_GEOM_STREAMTUBE)) {
+          } else if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
 
             if (use_alpha) {
               fragment_shader_source +=
@@ -457,7 +457,7 @@ namespace MR
 
           }
 
-          if (geometry == EDGE_GEOM_CYLINDER || geometry == EDGE_GEOM_STREAMTUBE) {
+          if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";

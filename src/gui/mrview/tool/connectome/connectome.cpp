@@ -60,11 +60,11 @@ namespace MR
             Base (main_window, parent),
             mat2vec (0),
             lighting (window.lighting()),
-            node_visibility (NODE_VIS_ALL),
-            node_geometry (NODE_GEOM_SPHERE),
-            node_colour (NODE_COLOUR_FIXED),
-            node_size (NODE_SIZE_FIXED),
-            node_alpha (NODE_ALPHA_FIXED),
+            node_visibility (node_visibility_t::ALL),
+            node_geometry (node_geometry_t::SPHERE),
+            node_colour (node_colour_t::FIXED),
+            node_size (node_size_t::FIXED),
+            node_alpha (node_alpha_t::FIXED),
             have_meshes (false),
             have_smooth_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
@@ -73,11 +73,11 @@ namespace MR
             node_fixed_alpha (1.0f),
             node_size_scale_factor (1.0f),
             voxel_volume (0.0f),
-            edge_visibility (EDGE_VIS_NONE),
-            edge_geometry (EDGE_GEOM_LINE),
-            edge_colour (EDGE_COLOUR_FIXED),
-            edge_size (EDGE_SIZE_FIXED),
-            edge_alpha (EDGE_ALPHA_FIXED),
+            edge_visibility (edge_visibility_t::NONE),
+            edge_geometry (edge_geometry_t::LINE),
+            edge_colour (edge_colour_t::FIXED),
+            edge_size (edge_size_t::FIXED),
+            edge_alpha (edge_alpha_t::FIXED),
             have_exemplars (false),
             edge_fixed_colour (0.5f, 0.5f, 0.5f),
             edge_colourmap_index (1),
@@ -571,9 +571,9 @@ namespace MR
         {
           if (hide_all_button->isChecked()) return;
 
-          if (node_visibility != NODE_VIS_NONE) {
+          if (node_visibility != node_visibility_t::NONE) {
 
-            if (node_geometry == NODE_GEOM_OVERLAY) {
+            if (node_geometry == node_geometry_t::OVERLAY) {
 
               if (is_3D) {
                 window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
@@ -599,7 +599,7 @@ namespace MR
               node_shader.start (*this, is_3D);
               projection.set (node_shader);
 
-              const bool use_alpha = !(node_alpha == NODE_ALPHA_FIXED && node_fixed_alpha == 1.0f);
+              const bool use_alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
 
               gl::Enable (gl::DEPTH_TEST);
               if (use_alpha) {
@@ -627,20 +627,20 @@ namespace MR
                 node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
               GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-              if (node_geometry != NODE_GEOM_OVERLAY) {
+              if (node_geometry != node_geometry_t::OVERLAY) {
                 node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
                 node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
               }
 
-              if (node_colour == NODE_COLOUR_FILE && ColourMap::maps[node_colourmap_index].is_colour)
+              if (node_colour == node_colour_t::FILE && ColourMap::maps[node_colourmap_index].is_colour)
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
 
-              if (node_geometry == NODE_GEOM_SPHERE) {
+              if (node_geometry == node_geometry_t::SPHERE) {
                 sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
                 sphere_VAO.bind();
                 sphere.index_buffer.bind();
                 reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
-              } else if (node_geometry == NODE_GEOM_CUBE) {
+              } else if (node_geometry == node_geometry_t::CUBE) {
                 cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
                 cube.normals_buffer.bind (gl::ARRAY_BUFFER);
                 cube_VAO.bind();
@@ -649,7 +649,7 @@ namespace MR
                 gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
               }
 
-              if (node_geometry != NODE_GEOM_OVERLAY) {
+              if (node_geometry != node_geometry_t::OVERLAY) {
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
@@ -668,26 +668,26 @@ namespace MR
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                   if (use_alpha)
                     gl::Uniform1f (node_alpha_ID, node.get_alpha() * node_fixed_alpha);
-                  if (node_geometry != NODE_GEOM_OVERLAY) {
+                  if (node_geometry != node_geometry_t::OVERLAY) {
                     gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
                     gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   }
                   switch (node_geometry) {
-                    case NODE_GEOM_SPHERE:
+                    case node_geometry_t::SPHERE:
                       gl::Uniform1i (reverse_ID, 0);
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       gl::Uniform1i (reverse_ID, 1);
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
-                    case NODE_GEOM_CUBE:
+                    case node_geometry_t::CUBE:
                       gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
-                    case NODE_GEOM_OVERLAY:
+                    case node_geometry_t::OVERLAY:
                       break;
-                    case NODE_GEOM_MESH:
+                    case node_geometry_t::MESH:
                       node.render_mesh();
                       break;
-                    case NODE_GEOM_SMOOTH_MESH:
+                    case node_geometry_t::SMOOTH_MESH:
                       node.render_smooth_mesh();
                       break;
                   }
@@ -700,7 +700,7 @@ namespace MR
                 gl::DepthMask (gl::TRUE_);
               }
 
-              if (node_geometry == NODE_GEOM_CUBE)
+              if (node_geometry == node_geometry_t::CUBE)
                 glShadeModel (GL_SMOOTH);
 
               node_shader.stop();
@@ -711,12 +711,12 @@ namespace MR
 
           // =================================================================
 
-          if (edge_visibility != EDGE_VIS_NONE) {
+          if (edge_visibility != edge_visibility_t::NONE) {
 
             edge_shader.start (*this, is_3D);
             projection.set (edge_shader);
 
-            const bool use_alpha = !(edge_alpha == EDGE_ALPHA_FIXED && edge_fixed_alpha == 1.0f);
+            const bool use_alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
 
             gl::Enable (gl::DEPTH_TEST);
             if (use_alpha) {
@@ -729,14 +729,14 @@ namespace MR
               gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
             } else {
               gl::Disable (gl::BLEND);
-               if (is_3D)
-                  gl::DepthMask (gl::TRUE_);
-                else
-                  gl::DepthMask (gl::FALSE_);
+              if (is_3D)
+                gl::DepthMask (gl::TRUE_);
+              else
+                gl::DepthMask (gl::FALSE_);
             }
 
             GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0, radius_ID = 0;
-            if (edge_geometry == EDGE_GEOM_CYLINDER) {
+            if (edge_geometry == edge_geometry_t::CYLINDER) {
               cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
               cylinder_VAO.bind();
               cylinder.index_buffer.bind();
@@ -745,7 +745,7 @@ namespace MR
               rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
             }
 
-            if (edge_geometry == EDGE_GEOM_CYLINDER || edge_geometry == EDGE_GEOM_STREAMTUBE) {
+            if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE) {
               radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
@@ -761,7 +761,7 @@ namespace MR
             if (use_alpha)
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
-            if (edge_colour == EDGE_COLOUR_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
+            if (edge_colour == edge_colour_t::FILE && ColourMap::maps[edge_colourmap_index].is_colour)
                 gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
 
             std::map<float, size_t> edge_ordering;
@@ -775,23 +775,23 @@ namespace MR
                 if (use_alpha)
                   gl::Uniform1f (edge_alpha_ID, edge.get_alpha() * edge_fixed_alpha);
                 switch (edge_geometry) {
-                  case EDGE_GEOM_LINE:
+                  case edge_geometry_t::LINE:
                     glLineWidth (edge.get_size() * edge_size_scale_factor);
                     glColor3f (edge.get_colour()[0], edge.get_colour()[1], edge.get_colour()[2]);
                     edge.render_line();
                     break;
-                  case EDGE_GEOM_CYLINDER:
+                  case edge_geometry_t::CYLINDER:
                     gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
                     gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
-                  case EDGE_GEOM_STREAMLINE:
+                  case edge_geometry_t::STREAMLINE:
                     glLineWidth (edge.get_size() * edge_size_scale_factor);
                     edge.render_streamline();
                     break;
-                  case EDGE_GEOM_STREAMTUBE:
+                  case edge_geometry_t::STREAMTUBE:
                     gl::Uniform1f        (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     edge.render_streamtube();
                 }
@@ -804,11 +804,11 @@ namespace MR
               gl::DepthMask (gl::TRUE_);
             }
 
-            if (edge_geometry == EDGE_GEOM_STREAMTUBE) {
+            if (edge_geometry == edge_geometry_t::STREAMTUBE) {
               gl::Disable (gl::PRIMITIVE_RESTART);
             }
 
-            if (edge_geometry == EDGE_GEOM_LINE || edge_geometry == EDGE_GEOM_STREAMLINE)
+            if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE)
               glLineWidth (1.0f);
 
             edge_shader.stop();
@@ -953,16 +953,16 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (node_visibility == NODE_VIS_ALL) return;
-              node_visibility = NODE_VIS_ALL;
+              if (node_visibility == node_visibility_t::ALL) return;
+              node_visibility = node_visibility_t::ALL;
               node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (node_visibility == NODE_VIS_NONE) return;
-              node_visibility = NODE_VIS_NONE;
+              if (node_visibility == node_visibility_t::NONE) return;
+              node_visibility = node_visibility_t::NONE;
               node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
@@ -971,7 +971,7 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_visibility, "visibility");
-                node_visibility = NODE_VIS_FILE;
+                node_visibility = node_visibility_t::FILE;
                 if (node_visibility_combobox->count() == 4)
                   node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
                 else
@@ -987,7 +987,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 node_visibility_combobox->setCurrentIndex (0);
-                node_visibility = NODE_VIS_ALL;
+                node_visibility = node_visibility_t::ALL;
                 node_visibility_combobox->removeItem (4);
                 node_visibility_threshold_label->setVisible (false);
                 node_visibility_threshold_button->setVisible (false);
@@ -995,17 +995,17 @@ namespace MR
               }
               break;
             case 3:
-              if (node_visibility == NODE_VIS_DEGREE) return;
-              if (edge_visibility == EDGE_VIS_NODES) {
+              if (node_visibility == node_visibility_t::DEGREE) return;
+              if (edge_visibility == edge_visibility_t::VISIBLE_NODES) {
                 QMessageBox::warning (QApplication::activeWindow(),
                                       tr ("Visualisation error"),
                                       tr ("Cannot have node visibility based on edges; edge visibility is based on nodes!"),
                                       QMessageBox::Ok,
                                       QMessageBox::Ok);
                 node_visibility_combobox->setCurrentIndex (0);
-                node_visibility = NODE_VIS_ALL;
+                node_visibility = node_visibility_t::ALL;
               } else {
-                node_visibility = NODE_VIS_DEGREE;
+                node_visibility = node_visibility_t::DEGREE;
               }
               node_visibility_combobox->removeItem (4);
               node_visibility_threshold_label->setVisible (false);
@@ -1023,8 +1023,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (node_geometry == NODE_GEOM_SPHERE) return;
-              node_geometry = NODE_GEOM_SPHERE;
+              if (node_geometry == node_geometry_t::SPHERE) return;
+              node_geometry = node_geometry_t::SPHERE;
               node_size_combobox->setEnabled (true);
               node_size_button->setVisible (true);
               node_size_button->setMax (std::numeric_limits<float>::max());
@@ -1033,8 +1033,8 @@ namespace MR
               node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
             case 1:
-              if (node_geometry == NODE_GEOM_CUBE) return;
-              node_geometry = NODE_GEOM_CUBE;
+              if (node_geometry == node_geometry_t::CUBE) return;
+              node_geometry = node_geometry_t::CUBE;
               node_size_combobox->setEnabled (true);
               node_size_button->setVisible (true);
               node_size_button->setMax (std::numeric_limits<float>::max());
@@ -1043,9 +1043,9 @@ namespace MR
               node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
             case 2:
-              if (node_geometry == NODE_GEOM_OVERLAY) return;
-              node_geometry = NODE_GEOM_OVERLAY;
-              node_size = NODE_SIZE_FIXED;
+              if (node_geometry == node_geometry_t::OVERLAY) return;
+              node_geometry = node_geometry_t::OVERLAY;
+              node_size = node_size_t::FIXED;
               calculate_node_sizes();
               node_size_combobox->setCurrentIndex (0);
               node_size_combobox->setEnabled (false);
@@ -1060,8 +1060,8 @@ namespace MR
               update_node_overlay();
               break;
             case 3:
-              if (node_geometry == NODE_GEOM_MESH) return;
-              node_geometry = NODE_GEOM_MESH;
+              if (node_geometry == node_geometry_t::MESH) return;
+              node_geometry = node_geometry_t::MESH;
               if (!have_meshes) {
                 // Can't generate GL buffer objects in a separate thread: OpenGL context is
                 //   specific to one thread only. Therefore, do the heavy work in a
@@ -1077,8 +1077,8 @@ namespace MR
                   nodes[i].assign_mesh (meshes[i]);
                 have_meshes = true;
               }
-              if (node_size == NODE_SIZE_VOLUME) {
-                node_size = NODE_SIZE_FIXED;
+              if (node_size == node_size_t::NODE_VOLUME) {
+                node_size = node_size_t::FIXED;
                 node_size_combobox->setCurrentIndex (0);
                 calculate_node_sizes();
                 node_size_range_label->setVisible (false);
@@ -1098,8 +1098,8 @@ namespace MR
               node_geometry_overlay_interp_checkbox->setVisible (false);
               break;
             case 4:
-              if (node_geometry == NODE_GEOM_SMOOTH_MESH) return;
-              node_geometry = NODE_GEOM_SMOOTH_MESH;
+              if (node_geometry == node_geometry_t::SMOOTH_MESH) return;
+              node_geometry = node_geometry_t::SMOOTH_MESH;
               if (!have_smooth_meshes) {
                 std::vector<MR::Mesh::Mesh> smooth_meshes (num_nodes()+1, MR::Mesh::Mesh());
                 auto source = [&] (uint32_t& out) { static uint32_t i = 1; out = i++; return (out <= num_nodes()); };
@@ -1111,8 +1111,8 @@ namespace MR
                   nodes[i].assign_smooth_mesh (smooth_meshes[i]);
                 have_smooth_meshes = true;
               }
-              if (node_size == NODE_SIZE_VOLUME) {
-                node_size = NODE_SIZE_FIXED;
+              if (node_size == node_size_t::NODE_VOLUME) {
+                node_size = node_size_t::FIXED;
                 node_size_combobox->setCurrentIndex (0);
                 calculate_node_sizes();
                 node_size_range_label->setVisible (false);
@@ -1139,8 +1139,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (node_colour == NODE_COLOUR_FIXED) return;
-              node_colour = NODE_COLOUR_FIXED;
+              if (node_colour == node_colour_t::FIXED) return;
+              node_colour = node_colour_t::FIXED;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (4);
@@ -1150,7 +1150,7 @@ namespace MR
               break;
             case 1:
               // Regenerate random colours on repeat selection
-              node_colour = NODE_COLOUR_RANDOM;
+              node_colour = node_colour_t::RANDOM;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (4);
@@ -1159,10 +1159,10 @@ namespace MR
               node_colour_upper_button->setVisible (false);
               break;
             case 2:
-              if (node_colour == NODE_COLOUR_LUT) return;
+              if (node_colour == node_colour_t::FROM_LUT) return;
               // TODO Pointless selection if no LUT is loaded... need to detect; or better, disable
               if (lut.size()) {
-                node_colour = NODE_COLOUR_LUT;
+                node_colour = node_colour_t::FROM_LUT;
                 node_colour_fixedcolour_button->setVisible (false);
               } else {
                 QMessageBox::warning (QApplication::activeWindow(),
@@ -1173,7 +1173,7 @@ namespace MR
                                       QMessageBox::Ok,
                                       QMessageBox::Ok);
                 node_colour_combobox->setCurrentIndex (0);
-                node_colour = NODE_COLOUR_FIXED;
+                node_colour = node_colour_t::FIXED;
                 node_colour_fixedcolour_button->setVisible (true);
               }
               node_colour_colourmap_button->setVisible (false);
@@ -1185,7 +1185,7 @@ namespace MR
             case 3:
               try {
                 import_file_for_node_property (node_values_from_file_colour, "colours");
-                node_colour = NODE_COLOUR_FILE;
+                node_colour = node_colour_t::FILE;
                 node_colour_colourmap_button->setVisible (true);
                 node_colour_fixedcolour_button->setVisible (false);
                 if (node_colour_combobox->count() == 4)
@@ -1205,7 +1205,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 node_colour_combobox->setCurrentIndex (0);
-                node_colour = NODE_COLOUR_FIXED;
+                node_colour = node_colour_t::FIXED;
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (4);
@@ -1223,11 +1223,11 @@ namespace MR
 
         void Connectome::node_size_selection_slot (int index)
         {
-          assert (node_geometry != NODE_GEOM_OVERLAY);
+          assert (node_geometry != node_geometry_t::OVERLAY);
           switch (index) {
             case 0:
-              if (node_size == NODE_SIZE_FIXED) return;
-              node_size = NODE_SIZE_FIXED;
+              if (node_size == node_size_t::FIXED) return;
+              node_size = node_size_t::FIXED;
               node_size_combobox->removeItem (3);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
@@ -1235,8 +1235,8 @@ namespace MR
               node_size_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (node_size == NODE_SIZE_VOLUME) return;
-              node_size = NODE_SIZE_VOLUME;
+              if (node_size == node_size_t::NODE_VOLUME) return;
+              node_size = node_size_t::NODE_VOLUME;
               node_size_combobox->removeItem (3);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
@@ -1246,7 +1246,7 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_size, "size");
-                node_size = NODE_SIZE_FILE;
+                node_size = node_size_t::FILE;
                 if (node_size_combobox->count() == 3)
                   node_size_combobox->addItem (node_values_from_file_size.get_name());
                 else
@@ -1266,7 +1266,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 node_size_combobox->setCurrentIndex (0);
-                node_size = NODE_SIZE_FIXED;
+                node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (3);
                 node_size_range_label->setVisible (false);
                 node_size_lower_button->setVisible (false);
@@ -1285,8 +1285,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (node_alpha == NODE_ALPHA_FIXED) return;
-              node_alpha = NODE_ALPHA_FIXED;
+              if (node_alpha == node_alpha_t::FIXED) return;
+              node_alpha = node_alpha_t::FIXED;
               node_alpha_combobox->removeItem (3);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1294,8 +1294,8 @@ namespace MR
               node_alpha_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (node_alpha == NODE_ALPHA_LUT) return;
-              node_alpha = NODE_ALPHA_LUT;
+              if (node_alpha == node_alpha_t::FROM_LUT) return;
+              node_alpha = node_alpha_t::FROM_LUT;
               node_alpha_combobox->removeItem (3);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1305,7 +1305,7 @@ namespace MR
             case 2:
               try {
                 import_file_for_node_property (node_values_from_file_alpha, "transparency");
-                node_alpha = NODE_ALPHA_FILE;
+                node_alpha = node_alpha_t::FILE;
                 if (node_alpha_combobox->count() == 3)
                   node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
                 else
@@ -1325,7 +1325,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 node_alpha_combobox->setCurrentIndex (0);
-                node_alpha = NODE_ALPHA_FIXED;
+                node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (3);
                 node_alpha_range_label->setVisible (false);
                 node_alpha_lower_button->setVisible (false);
@@ -1411,33 +1411,33 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (edge_visibility == EDGE_VIS_ALL) return;
-              edge_visibility = EDGE_VIS_ALL;
+              if (edge_visibility == edge_visibility_t::ALL) return;
+              edge_visibility = edge_visibility_t::ALL;
               edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_label->setVisible (false);
               edge_visibility_threshold_button->setVisible (false);
               edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (edge_visibility == EDGE_VIS_NONE) return;
-              edge_visibility = EDGE_VIS_NONE;
+              if (edge_visibility == edge_visibility_t::NONE) return;
+              edge_visibility = edge_visibility_t::NONE;
               edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_label->setVisible (false);
               edge_visibility_threshold_button->setVisible (false);
               edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 2:
-              if (edge_visibility == EDGE_VIS_NODES) return;
-              if (node_visibility == NODE_VIS_DEGREE) {
+              if (edge_visibility == edge_visibility_t::VISIBLE_NODES) return;
+              if (node_visibility == node_visibility_t::DEGREE) {
                 QMessageBox::warning (QApplication::activeWindow(),
                                       tr ("Visualisation error"),
                                       tr ("Cannot have edge visibility based on nodes; node visibility is based on edges!"),
                                       QMessageBox::Ok,
                                       QMessageBox::Ok);
                 edge_visibility_combobox->setCurrentIndex (1);
-                edge_visibility = EDGE_VIS_NONE;
+                edge_visibility = edge_visibility_t::NONE;
               } else {
-                edge_visibility = EDGE_VIS_NODES;
+                edge_visibility = edge_visibility_t::VISIBLE_NODES;
               }
               edge_visibility_combobox->removeItem (4);
               edge_visibility_threshold_label->setVisible (false);
@@ -1447,7 +1447,7 @@ namespace MR
             case 3:
               try {
                 import_file_for_edge_property (edge_values_from_file_visibility, "visibility");
-                edge_visibility = EDGE_VIS_FILE;
+                edge_visibility = edge_visibility_t::FILE;
                 if (edge_visibility_combobox->count() == 4)
                   edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
                 else
@@ -1463,7 +1463,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 edge_visibility_combobox->setCurrentIndex (1);
-                edge_visibility = EDGE_VIS_NONE;
+                edge_visibility = edge_visibility_t::NONE;
                 edge_visibility_combobox->removeItem (4);
                 edge_visibility_threshold_label->setVisible (false);
                 edge_visibility_threshold_button->setVisible (false);
@@ -1481,14 +1481,14 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (edge_geometry == EDGE_GEOM_LINE) return;
-              edge_geometry = EDGE_GEOM_LINE;
+              if (edge_geometry == edge_geometry_t::LINE) return;
+              edge_geometry = edge_geometry_t::LINE;
               edge_geometry_cylinder_lod_label->setVisible (false);
               edge_geometry_cylinder_lod_spinbox->setVisible (false);
               break;
             case 1:
-              if (edge_geometry == EDGE_GEOM_CYLINDER) return;
-              edge_geometry = EDGE_GEOM_CYLINDER;
+              if (edge_geometry == edge_geometry_t::CYLINDER) return;
+              edge_geometry = edge_geometry_t::CYLINDER;
               edge_geometry_cylinder_lod_label->setVisible (true);
               edge_geometry_cylinder_lod_spinbox->setVisible (true);
               break;
@@ -1499,7 +1499,7 @@ namespace MR
                   if (!have_exemplars)
                     throw Exception ("No directory path provided; cannot render streamlines");
                 }
-                edge_geometry = EDGE_GEOM_STREAMLINE;
+                edge_geometry = edge_geometry_t::STREAMLINE;
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
               } catch (Exception& e) {
@@ -1507,7 +1507,7 @@ namespace MR
                 for (auto i = edges.begin(); i != edges.end(); ++i)
                   i->clear_exemplar();
                 have_exemplars = false;
-                edge_geometry = EDGE_GEOM_LINE;
+                edge_geometry = edge_geometry_t::LINE;
                 edge_geometry_combobox->setCurrentIndex (0);
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
@@ -1520,7 +1520,7 @@ namespace MR
                   if (!have_exemplars)
                     throw Exception ("No directory path provided; cannot render streamtubes");
                 }
-                edge_geometry = EDGE_GEOM_STREAMTUBE;
+                edge_geometry = edge_geometry_t::STREAMTUBE;
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
               } catch (Exception& e) {
@@ -1528,7 +1528,7 @@ namespace MR
                 for (auto i = edges.begin(); i != edges.end(); ++i)
                   i->clear_streamtube();
                 have_exemplars = false;
-                edge_geometry = EDGE_GEOM_LINE;
+                edge_geometry = edge_geometry_t::LINE;
                 edge_geometry_combobox->setCurrentIndex (0);
                 edge_geometry_cylinder_lod_label->setVisible (false);
                 edge_geometry_cylinder_lod_spinbox->setVisible (false);
@@ -1542,8 +1542,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (edge_colour == EDGE_COLOUR_FIXED) return;
-              edge_colour = EDGE_COLOUR_FIXED;
+              if (edge_colour == edge_colour_t::FIXED) return;
+              edge_colour = edge_colour_t::FIXED;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (true);
               edge_colour_combobox->removeItem (3);
@@ -1552,8 +1552,8 @@ namespace MR
               edge_colour_upper_button->setVisible (false);
               break;
             case 1:
-              if (edge_colour == EDGE_COLOUR_DIR) return;
-              edge_colour = EDGE_COLOUR_DIR;
+              if (edge_colour == edge_colour_t::DIRECTION) return;
+              edge_colour = edge_colour_t::DIRECTION;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (false);
               edge_colour_combobox->removeItem (3);
@@ -1564,7 +1564,7 @@ namespace MR
             case 2:
               try {
                 import_file_for_edge_property (edge_values_from_file_colour, "colours");
-                edge_colour = EDGE_COLOUR_FILE;
+                edge_colour = edge_colour_t::FILE;
                 edge_colour_colourmap_button->setVisible (true);
                 edge_colour_fixedcolour_button->setVisible (false);
                 if (edge_colour_combobox->count() == 3)
@@ -1584,7 +1584,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 edge_colour_combobox->setCurrentIndex (0);
-                edge_colour = EDGE_COLOUR_FIXED;
+                edge_colour = edge_colour_t::FIXED;
                 edge_colour_colourmap_button->setVisible (false);
                 edge_colour_fixedcolour_button->setVisible (true);
                 edge_colour_combobox->removeItem (3);
@@ -1604,8 +1604,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (edge_size == EDGE_SIZE_FIXED) return;
-              edge_size = EDGE_SIZE_FIXED;
+              if (edge_size == edge_size_t::FIXED) return;
+              edge_size = edge_size_t::FIXED;
               edge_size_combobox->removeItem (2);
               edge_size_range_label->setVisible (false);
               edge_size_lower_button->setVisible (false);
@@ -1615,7 +1615,7 @@ namespace MR
             case 1:
               try {
                 import_file_for_edge_property (edge_values_from_file_size, "size");
-                edge_size = EDGE_SIZE_FILE;
+                edge_size = edge_size_t::FILE;
                 if (edge_size_combobox->count() == 2)
                   edge_size_combobox->addItem (edge_values_from_file_size.get_name());
                 else
@@ -1634,7 +1634,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 edge_size_combobox->setCurrentIndex (0);
-                edge_size = EDGE_SIZE_FIXED;
+                edge_size = edge_size_t::FIXED;
                 edge_size_combobox->removeItem (2);
                 edge_size_range_label->setVisible (false);
                 edge_size_lower_button->setVisible (false);
@@ -1653,8 +1653,8 @@ namespace MR
         {
           switch (index) {
             case 0:
-              if (edge_alpha == EDGE_ALPHA_FIXED) return;
-              edge_alpha = EDGE_ALPHA_FIXED;
+              if (edge_alpha == edge_alpha_t::FIXED) return;
+              edge_alpha = edge_alpha_t::FIXED;
               edge_alpha_combobox->removeItem (2);
               edge_alpha_range_label->setVisible (false);
               edge_alpha_lower_button->setVisible (false);
@@ -1664,7 +1664,7 @@ namespace MR
             case 1:
               try {
                 import_file_for_edge_property (edge_values_from_file_alpha, "transparency");
-                edge_alpha = EDGE_ALPHA_FILE;
+                edge_alpha = edge_alpha_t::FILE;
                 if (edge_alpha_combobox->count() == 2)
                   edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
                 else
@@ -1684,7 +1684,7 @@ namespace MR
               } catch (Exception& e) {
                 e.display();
                 edge_alpha_combobox->setCurrentIndex (0);
-                edge_alpha = EDGE_ALPHA_FIXED;
+                edge_alpha = edge_alpha_t::FIXED;
                 edge_alpha_combobox->removeItem (2);
                 edge_alpha_range_label->setVisible (false);
                 edge_alpha_lower_button->setVisible (false);
@@ -1761,45 +1761,45 @@ namespace MR
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("");
-          if (node_visibility == NODE_VIS_FILE) {
+          if (node_visibility == node_visibility_t::FILE) {
             node_visibility_combobox->removeItem (5);
             node_visibility_combobox->setCurrentIndex (0);
-            node_visibility = NODE_VIS_ALL;
+            node_visibility = node_visibility_t::ALL;
           }
-          if (node_colour == NODE_COLOUR_FILE) {
+          if (node_colour == node_colour_t::FILE) {
             node_colour_combobox->removeItem (4);
             node_colour_combobox->setCurrentIndex (0);
-            node_colour = NODE_COLOUR_FIXED;
+            node_colour = node_colour_t::FIXED;
           }
-          if (node_size == NODE_SIZE_FILE) {
+          if (node_size == node_size_t::FILE) {
             node_size_combobox->removeItem (3);
             node_size_combobox->setCurrentIndex (0);
-            node_size = NODE_SIZE_FIXED;
+            node_size = node_size_t::FIXED;
           }
-          if (node_alpha == NODE_ALPHA_FILE) {
+          if (node_alpha == node_alpha_t::FILE) {
             node_alpha_combobox->removeItem (3);
             node_alpha_combobox->setCurrentIndex (0);
-            node_alpha = NODE_ALPHA_FIXED;
+            node_alpha = node_alpha_t::FIXED;
           }
-          if (edge_visibility == EDGE_VIS_FILE) {
+          if (edge_visibility == edge_visibility_t::FILE) {
             edge_visibility_combobox->removeItem (4);
             edge_visibility_combobox->setCurrentIndex (1);
-            edge_visibility = EDGE_VIS_NONE;
+            edge_visibility = edge_visibility_t::NONE;
           }
-          if (edge_colour == EDGE_COLOUR_FILE) {
+          if (edge_colour == edge_colour_t::FILE) {
             edge_colour_combobox->removeItem (3);
             edge_colour_combobox->setCurrentIndex (0);
-            edge_colour = EDGE_COLOUR_FIXED;
+            edge_colour = edge_colour_t::FIXED;
           }
-          if (edge_size == EDGE_SIZE_FILE) {
+          if (edge_size == edge_size_t::FILE) {
             edge_size_combobox->removeItem (2);
             edge_size_combobox->setCurrentIndex (0);
-            edge_size = EDGE_SIZE_FIXED;
+            edge_size = edge_size_t::FIXED;
           }
-          if (edge_alpha == EDGE_ALPHA_FILE) {
+          if (edge_alpha == edge_alpha_t::FILE) {
             edge_alpha_combobox->removeItem (2);
             edge_alpha_combobox->setCurrentIndex (0);
-            edge_alpha = EDGE_ALPHA_FIXED;
+            edge_alpha = edge_alpha_t::FIXED;
           }
           if (buffer)
             delete buffer.release();
@@ -2003,17 +2003,17 @@ namespace MR
 
         void Connectome::calculate_node_visibility()
         {
-          if (node_visibility == NODE_VIS_ALL) {
+          if (node_visibility == node_visibility_t::ALL) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (true);
 
-          } else if (node_visibility == NODE_VIS_NONE) {
+          } else if (node_visibility == node_visibility_t::NONE) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (false);
 
-          } else if (node_visibility == NODE_VIS_FILE) {
+          } else if (node_visibility == node_visibility_t::FILE) {
 
             assert (node_values_from_file_visibility.size());
             const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
@@ -2023,7 +2023,7 @@ namespace MR
               nodes[i].set_visible (above_threshold != invert);
             }
 
-          } else if (node_visibility == NODE_VIS_DEGREE) {
+          } else if (node_visibility == node_visibility_t::DEGREE) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (false);
@@ -2036,18 +2036,18 @@ namespace MR
 
           }
           update_node_overlay();
-          if (edge_visibility == EDGE_VIS_NODES)
+          if (edge_visibility == edge_visibility_t::VISIBLE_NODES)
             calculate_edge_visibility();
         }
 
         void Connectome::calculate_node_colours()
         {
-          if (node_colour == NODE_COLOUR_FIXED) {
+          if (node_colour == node_colour_t::FIXED) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_colour (node_fixed_colour);
 
-          } else if (node_colour == NODE_COLOUR_RANDOM) {
+          } else if (node_colour == node_colour_t::RANDOM) {
 
             Point<float> rgb;
             Math::RNG::Uniform<float> rng;
@@ -2058,7 +2058,7 @@ namespace MR
               i->set_colour (rgb);
             }
 
-          } else if (node_colour == NODE_COLOUR_LUT) {
+          } else if (node_colour == node_colour_t::FROM_LUT) {
 
             assert (lut.size());
             for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
@@ -2068,7 +2068,7 @@ namespace MR
                 nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
             }
 
-          } else if (node_colour == NODE_COLOUR_FILE) {
+          } else if (node_colour == node_colour_t::FILE) {
 
             assert (node_values_from_file_colour.size());
             const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
@@ -2085,17 +2085,17 @@ namespace MR
 
         void Connectome::calculate_node_sizes()
         {
-          if (node_size == NODE_SIZE_FIXED) {
+          if (node_size == node_size_t::FIXED) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_size (1.0f);
 
-          } else if (node_size == NODE_SIZE_VOLUME) {
+          } else if (node_size == node_size_t::NODE_VOLUME) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_size (voxel_volume * std::cbrt (i->get_volume() / (4.0 * Math::pi)));
 
-          } else if (node_size == NODE_SIZE_FILE) {
+          } else if (node_size == node_size_t::FILE) {
 
             assert (node_values_from_file_size.size());
             const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
@@ -2112,12 +2112,12 @@ namespace MR
 
         void Connectome::calculate_node_alphas()
         {
-          if (node_alpha == NODE_ALPHA_FIXED) {
+          if (node_alpha == node_alpha_t::FIXED) {
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_alpha (1.0f);
 
-          } else if (node_alpha == NODE_ALPHA_LUT) {
+          } else if (node_alpha == node_alpha_t::FROM_LUT) {
 
             assert (lut.size());
             for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
@@ -2127,7 +2127,7 @@ namespace MR
                 nodes[node_index].set_alpha (lut_mapping[node_index]->second.get_alpha() / 255.0f);
             }
 
-          } else if (node_alpha == NODE_ALPHA_FILE) {
+          } else if (node_alpha == node_alpha_t::FILE) {
 
             assert (node_values_from_file_alpha.size());
             const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
@@ -2158,7 +2158,7 @@ namespace MR
           assert (node_overlay);
           auto in = buffer->voxel();
           auto out = node_overlay->voxel();
-          if (node_geometry == NODE_GEOM_OVERLAY) {
+          if (node_geometry == node_geometry_t::OVERLAY) {
             // TODO Multi-thread this
             // Do NOT put a progress message here; causes an updateGL() call, which
             //   loads the texture even though the scratch buffer hasn't been filled yet...
@@ -2195,22 +2195,22 @@ namespace MR
 
         void Connectome::calculate_edge_visibility()
         {
-          if (edge_visibility == EDGE_VIS_ALL) {
+          if (edge_visibility == edge_visibility_t::ALL) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_visible (!i->is_diagonal());
 
-          } else if (edge_visibility == EDGE_VIS_NONE) {
+          } else if (edge_visibility == edge_visibility_t::NONE) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_visible (false);
 
-          } else if (edge_visibility == EDGE_VIS_NODES) {
+          } else if (edge_visibility == edge_visibility_t::VISIBLE_NODES) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_visible (nodes[i->get_node_index(0)].is_visible() && nodes[i->get_node_index(1)].is_visible());
+              i->set_visible (!i->is_diagonal() && nodes[i->get_node_index(0)].is_visible() && nodes[i->get_node_index(1)].is_visible());
 
-          } else if (edge_visibility == EDGE_VIS_FILE) {
+          } else if (edge_visibility == edge_visibility_t::FILE) {
 
             assert (edge_values_from_file_visibility.size());
             const bool invert = edge_visibility_threshold_invert_checkbox->isChecked();
@@ -2225,23 +2225,23 @@ namespace MR
             }
 
           }
-          if (node_visibility == NODE_VIS_DEGREE)
+          if (node_visibility == node_visibility_t::DEGREE)
             calculate_node_visibility();
         }
 
         void Connectome::calculate_edge_colours()
         {
-          if (edge_colour == EDGE_COLOUR_FIXED) {
+          if (edge_colour == edge_colour_t::FIXED) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_colour (edge_fixed_colour);
 
-          } else if (edge_colour == EDGE_COLOUR_DIR) {
+          } else if (edge_colour == edge_colour_t::DIRECTION) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
 
-          } else if (edge_colour == EDGE_COLOUR_FILE) {
+          } else if (edge_colour == edge_colour_t::FILE) {
 
             assert (edge_values_from_file_colour.size());
             const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
@@ -2257,12 +2257,12 @@ namespace MR
 
         void Connectome::calculate_edge_sizes()
         {
-          if (edge_size == EDGE_SIZE_FIXED) {
+          if (edge_size == edge_size_t::FIXED) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_size (1.0f);
 
-          } else if (edge_size == EDGE_SIZE_FILE) {
+          } else if (edge_size == edge_size_t::FILE) {
 
             assert (edge_values_from_file_size.size());
             const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
@@ -2279,12 +2279,12 @@ namespace MR
 
         void Connectome::calculate_edge_alphas()
         {
-          if (edge_alpha == EDGE_ALPHA_FIXED) {
+          if (edge_alpha == edge_alpha_t::FIXED) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_alpha (1.0f);
 
-          } else if (edge_alpha == EDGE_ALPHA_FILE) {
+          } else if (edge_alpha == edge_alpha_t::FILE) {
 
             assert (edge_values_from_file_alpha.size());
             const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
