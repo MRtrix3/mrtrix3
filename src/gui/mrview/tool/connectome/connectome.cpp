@@ -99,7 +99,9 @@ namespace MR
           hlayout->setSpacing (0);
           hlayout->addWidget (new QLabel ("Node image: "));
           image_button = new QPushButton (this);
-          image_button->setToolTip (tr ("Change primary parcellation image"));
+          image_button->setToolTip (tr ("Open primary parcellation image\n"
+                                        "This should be a 3D image containing an integer value for each\n"
+                                        "voxel, indicating the node to which that voxel is assigned."));
           connect (image_button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
           hlayout->addWidget (image_button, 1);
           hide_all_button = new QPushButton (this);
@@ -115,7 +117,10 @@ namespace MR
           hlayout->setSpacing (0);
           hlayout->addWidget (new QLabel ("LUT: "));
           lut_combobox = new QComboBox (this);
-          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)"));
+          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
+                                        "If the primary parcellation image has come from an atlas that\n"
+                                        "provides a look-up table, select that file here so that MRview \n"
+                                        "can access the node names and colours."));
           for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
             lut_combobox->insertItem (index, MR::DWI::Tractography::Connectomics::lut_format_strings[index]);
           connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
@@ -127,7 +132,12 @@ namespace MR
           hlayout->setSpacing (0);
           hlayout->addWidget (new QLabel ("Config: "));
           config_button = new QPushButton (this);
-          config_button->setToolTip (tr ("Open connectome config file"));
+          config_button->setToolTip (tr ("Open connectome config file\n"
+                                         "If the primary parcellation image has been modified using the\n"
+                                         "labelconfig command, the node indices in the image will no longer\n"
+                                         "correspond with the indices in the lookup table provided with the\n"
+                                         "atlas. Therefore, use this button to provide the config file that\n"
+                                         "was utilised by labelconfig so that MRview can cross-reference. "));
           config_button->setText ("(none)");
           connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
           hlayout->addWidget (config_button, 1);
@@ -1804,7 +1814,7 @@ namespace MR
           image_button ->setText ("");
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
-          config_button->setText ("");
+          config_button->setText ("(none)");
           if (node_visibility == node_visibility_t::FILE) {
             node_visibility_combobox->removeItem (5);
             node_visibility_combobox->setCurrentIndex (0);

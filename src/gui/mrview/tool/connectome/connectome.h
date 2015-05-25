@@ -112,7 +112,6 @@
 //
 // * Toolbar
 //   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
-//   - Disable LUT, config file options and all visualisation options if no image is loaded
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
 //   - Better tooltip for main config buttons
 //   - Add manual control of 2D / 3D mode
