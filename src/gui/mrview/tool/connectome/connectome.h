@@ -31,6 +31,7 @@
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
 #include "gui/opengl/shader.h"
+#include "gui/dialog/lighting.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/image.h"
@@ -111,17 +112,12 @@
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
 //
 // * Toolbar
-//   - Add lighting checkbox; need to be able to take screenshots with quantitative colour mapping
 //   - Enable collapsing of node / edge visualisation groups; will make room for future additions
-//   - Better tooltip for main config buttons
-//   - Add manual control of 2D / 3D mode
 //
 // * Additional functionalities:
 //   - Print node name in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?
 //
-// * Miscellaneous
-//   - Change primary enums in types.h to strongly-typed enums, shorten variable names
 
 
 
@@ -157,10 +153,15 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
 
           private slots:
-            void image_open_slot ();
+            void image_open_slot();
             void lut_open_slot (int);
-            void config_open_slot ();
-            void hide_all_slot ();
+            void config_open_slot();
+            void hide_all_slot();
+
+            void lighting_change_slot (int);
+            void lighting_settings_slot();
+            void lighting_parameter_slot();
+            void dimensionality_slot (int);
 
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
@@ -198,6 +199,10 @@ namespace MR
             QPushButton *image_button, *hide_all_button;
             QComboBox *lut_combobox;
             QPushButton *config_button;
+
+            QCheckBox *lighting_checkbox;
+            QPushButton *lighting_settings_button;
+            QComboBox *dimensionality_combobox;
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
@@ -290,6 +295,15 @@ namespace MR
             std::vector<Node_map::const_iterator> lut_mapping;
 
 
+            // Are the connectome elements currently being displayed in 2D or 3D?
+            bool is_3D;
+
+
+            // Fixed lighting settings from the main window, and popup dialog
+            GL::Lighting lighting;
+            std::unique_ptr<Dialog::Lighting> lighting_dialog;
+
+
             // Used when the geometry of node visualisation is a sphere
             Shapes::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
@@ -304,10 +318,6 @@ namespace MR
             // Used when the geometry of edge visualisation is a cylinder
             Shapes::Cylinder cylinder;
             GL::VertexArrayObject cylinder_VAO;
-
-
-            // Fixed lighting settings from the main window
-            const GL::Lighting& lighting;
 
 
             // Current node visualisation settings
@@ -380,6 +390,8 @@ namespace MR
 
             void get_exemplars();
             void get_streamtubes();
+
+            bool use_lighting() const;
 
             friend class NodeColourObserver;
             friend class EdgeColourObserver;

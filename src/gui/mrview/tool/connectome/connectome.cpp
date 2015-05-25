@@ -59,7 +59,9 @@ namespace MR
         Connectome::Connectome (Window& main_window, Dock* parent) :
             Base (main_window, parent),
             mat2vec (0),
-            lighting (window.lighting()),
+            is_3D (true),
+            lighting (this),
+            lighting_dialog (nullptr),
             node_visibility (node_visibility_t::ALL),
             node_geometry (node_geometry_t::SPHERE),
             node_colour (node_colour_t::FIXED),
@@ -143,9 +145,34 @@ namespace MR
           hlayout->addWidget (config_button, 1);
           vlayout->addLayout (hlayout);
 
-          group_box = new QGroupBox ("Node visualisation");
+          group_box = new QGroupBox ("General display options");
           main_box->addWidget (group_box);
           GridLayout* gridlayout = new GridLayout();
+          group_box->setLayout (gridlayout);
+
+          lighting_checkbox = new QCheckBox ("Lighting");
+          lighting_checkbox->setTristate (false);
+          lighting_checkbox->setChecked (true);
+          lighting_checkbox->setToolTip (tr ("Toggle whether lighting should be applied to compatible elements"));
+          connect (lighting_checkbox, SIGNAL (stateChanged (int)), this, SLOT (lighting_change_slot (int)));
+          gridlayout->addWidget (lighting_checkbox, 0, 0);
+          lighting_settings_button = new QPushButton ("Settings...");
+          lighting_settings_button->setToolTip (tr ("Advanced lighting configuration"));
+          connect (lighting_settings_button, SIGNAL (clicked()), this, SLOT (lighting_settings_slot()));
+          gridlayout->addWidget (lighting_settings_button, 0, 1);
+          connect (&lighting, SIGNAL (changed()), SLOT (lighting_parameter_slot()));
+
+          dimensionality_combobox = new QComboBox (this);
+          dimensionality_combobox->addItem ("2D");
+          dimensionality_combobox->addItem ("3D");
+          dimensionality_combobox->setCurrentIndex (1);
+          connect (dimensionality_combobox, SIGNAL (activated(int)), this, SLOT (dimensionality_slot (int)));
+          gridlayout->addWidget (new QLabel ("Dimensionality: "), 1, 0);
+          gridlayout->addWidget (dimensionality_combobox, 1, 1);
+
+          group_box = new QGroupBox ("Node visualisation");
+          main_box->addWidget (group_box);
+          gridlayout = new GridLayout();
           group_box->setLayout (gridlayout);
 
           QLabel* label = new QLabel ("Visibility: ");
@@ -589,7 +616,7 @@ namespace MR
         Connectome::~Connectome () {}
 
 
-        void Connectome::draw (const Projection& projection, bool is_3D, int /*axis*/, int /*slice*/)
+        void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
           if (hide_all_button->isChecked()) return;
 
@@ -618,7 +645,7 @@ namespace MR
 
             } else {
 
-              node_shader.start (*this, is_3D);
+              node_shader.start (*this);
               projection.set (node_shader);
 
               const bool use_alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
@@ -735,7 +762,7 @@ namespace MR
 
           if (edge_visibility != edge_visibility_t::NONE) {
 
-            edge_shader.start (*this, is_3D);
+            edge_shader.start (*this);
             projection.set (edge_shader);
 
             const bool use_alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
@@ -962,6 +989,32 @@ namespace MR
 
         void Connectome::hide_all_slot()
         {
+          window.updateGL();
+        }
+
+
+
+
+
+
+        void Connectome::lighting_change_slot (int /*value*/)
+        {
+          window.updateGL();
+        }
+        void Connectome::lighting_settings_slot()
+        {
+          if (!lighting_dialog)
+            lighting_dialog.reset (new Dialog::Lighting (&window, "Connectome lighting", lighting));
+          lighting_dialog->show();
+        }
+        void Connectome::lighting_parameter_slot()
+        {
+          if (use_lighting())
+            window.updateGL();
+        }
+        void Connectome::dimensionality_slot (int index)
+        {
+          is_3D = index;
           window.updateGL();
         }
 
@@ -1881,6 +1934,10 @@ namespace MR
           lut_combobox->setEnabled (value);
           config_button->setEnabled (value);
 
+          lighting_checkbox->setEnabled (value);
+          lighting_settings_button->setEnabled (value);
+          dimensionality_combobox->setEnabled (value);
+
           node_visibility_combobox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
           node_visibility_threshold_invert_checkbox->setEnabled (value);
@@ -2456,6 +2513,15 @@ namespace MR
             ++progress;
           }
           have_streamtubes = true;
+        }
+
+
+
+
+
+        bool Connectome::use_lighting() const
+        {
+          return lighting_checkbox->isChecked();
         }
 
 

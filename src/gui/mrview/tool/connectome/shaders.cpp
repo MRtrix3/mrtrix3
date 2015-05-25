@@ -59,6 +59,8 @@ namespace MR
 
         bool NodeShader::need_update (const Connectome& parent) const
         {
+          if (is_3D != parent.is_3D) return true;
+          if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.node_geometry) return true;
           if (colour != parent.node_colour) return true;
           if (colour == node_colour_t::FILE && colourmap_index != parent.node_colourmap_index) return true;
@@ -69,6 +71,8 @@ namespace MR
 
         void NodeShader::update (const Connectome& parent)
         {
+          is_3D = parent.is_3D;
+          use_lighting = parent.use_lighting();
           geometry = parent.node_geometry;
           colour = parent.node_colour;
           colourmap_index = parent.node_colourmap_index;
@@ -189,7 +193,7 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (geometry != node_geometry_t::OVERLAY) {
+          if (use_lighting && geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n"
@@ -236,7 +240,7 @@ namespace MR
 
           }
 
-          if (geometry != node_geometry_t::OVERLAY) {
+          if (use_lighting && geometry != node_geometry_t::OVERLAY) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
@@ -258,6 +262,8 @@ namespace MR
 
         bool EdgeShader::need_update (const Connectome& parent) const
         {
+          if (is_3D != parent.is_3D) return true;
+          if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.edge_geometry) return true;
           if (colour != parent.edge_colour) return true;
           if (colour == edge_colour_t::FILE && colourmap_index != parent.edge_colourmap_index) return true;
@@ -268,6 +274,8 @@ namespace MR
 
         void EdgeShader::update (const Connectome& parent)
         {
+          is_3D = parent.is_3D;
+          use_lighting = parent.use_lighting();
           geometry = parent.edge_geometry;
           colour = parent.edge_colour;
           colourmap_index = parent.edge_colourmap_index;
@@ -409,7 +417,7 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
+          if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
             fragment_shader_source +=
               "in vec3 normal;\n"
               "uniform float ambient, diffuse, specular, shine;\n"
@@ -457,7 +465,7 @@ namespace MR
 
           }
 
-          if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
+          if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal, light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal), screen_normal), 0, 1), shine);\n";
