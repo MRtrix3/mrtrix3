@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/shapes/sphere.h"
+#include "gui/shapes/halfsphere.h"
 
 #include <map>
 
@@ -119,7 +119,7 @@ namespace MR
 
 
 
-    void Sphere::LOD (const size_t level_of_detail)
+    void HalfSphere::LOD (const size_t level_of_detail)
     {
       //std::vector<Vertex> vertices;
       vertices.clear();

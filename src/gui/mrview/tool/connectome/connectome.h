@@ -39,7 +39,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/shapes/cube.h"
 #include "gui/shapes/cylinder.h"
-#include "gui/shapes/sphere.h"
+#include "gui/shapes/halfsphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
 
@@ -307,7 +307,7 @@ namespace MR
 
 
             // Used when the geometry of node visualisation is a sphere
-            Shapes::Sphere sphere;
+            Shapes::HalfSphere sphere;
             GL::VertexArrayObject sphere_VAO;
 
             // Used when the geometry of node visualisation is a cube

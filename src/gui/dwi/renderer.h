@@ -27,7 +27,7 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
-#include "gui/shapes/sphere.h"
+#include "gui/shapes/halfsphere.h"
 #include "gui/opengl/shader.h"
 #include "math/matrix.h"
 #include "math/SH.h"
@@ -82,9 +82,9 @@ namespace MR
             (void) buffer_ID; // to silence unused-parameter warnings
             gl::Uniform3fv (origin_ID, 1, origin);
             gl::Uniform1i (reverse_ID, 0);
-            gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+            gl::DrawElements (gl::TRIANGLES, half_sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
             gl::Uniform1i (reverse_ID, 1);
-            gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+            gl::DrawElements (gl::TRIANGLES, half_sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
           }
           void stop () const {
             shader_program.stop();
@@ -92,12 +92,12 @@ namespace MR
 
         protected:
 
-          void update_transform (const std::vector<Shapes::Sphere::Vertex>& vertices, int lmax);
+          void update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax);
 
           Math::Matrix<float> transform;
 
           GL::Shader::Program shader_program;
-          Shapes::Sphere sphere;
+          Shapes::HalfSphere half_sphere;
           GL::VertexBuffer surface_buffer;
           GL::VertexArrayObject vertex_array_object;
           mutable GLuint reverse_ID, origin_ID;

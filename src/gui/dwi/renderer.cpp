@@ -116,21 +116,21 @@ namespace MR
         shader_program.attach (fragment_shader);
         shader_program.link();
 
-        sphere.vertex_buffer.gen();
+        half_sphere.vertex_buffer.gen();
         surface_buffer.gen();
-        sphere.index_buffer.gen();
+        half_sphere.index_buffer.gen();
         vertex_array_object.gen();
         vertex_array_object.bind();
 
-        sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+        half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (0);
-        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::Sphere::Vertex), (void*)0);
+        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), (void*)0);
 
         surface_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (1);
         gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
 
-        sphere.index_buffer.bind();
+        half_sphere.index_buffer.bind();
       }
 
 
@@ -170,8 +170,8 @@ namespace MR
       {
         INFO ("updating SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
-        sphere.LOD (LOD);
-        update_transform (sphere.vertices, lmax);
+        half_sphere.LOD (LOD);
+        update_transform (half_sphere.vertices, lmax);
         QApplication::restoreOverrideCursor();
       }
 
@@ -181,7 +181,7 @@ namespace MR
 
 
 
-      void Renderer::update_transform (const std::vector<Shapes::Sphere::Vertex>& vertices, int lmax)
+      void Renderer::update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
       {
         // order is r, del, daz
 

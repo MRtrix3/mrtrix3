@@ -24,8 +24,8 @@
 
 */
 
-#ifndef __gui_shapes_sphere_h__
-#define __gui_shapes_sphere_h__
+#ifndef __gui_shapes_halfsphere_h__
+#define __gui_shapes_halfsphere_h__
 
 #include <vector>
 
@@ -42,13 +42,13 @@ namespace MR
     {
 
 
-    class Sphere
+    class HalfSphere
     {
       public:
         // TODO Initialise sphere & buffers at construction;
         //   currently it doesn't seem to work as a GL context has not yet been
         //   created, so gl::GenBuffers() returns zero
-        Sphere () : num_indices (0) { }
+        HalfSphere () : num_indices (0) { }
 
         void LOD (const size_t);
 
