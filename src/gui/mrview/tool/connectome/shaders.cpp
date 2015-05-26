@@ -74,6 +74,7 @@ namespace MR
           is_3D = parent.is_3D;
           use_lighting = parent.use_lighting();
           geometry = parent.node_geometry;
+          assert (geometry != node_geometry_t::OVERLAY);
           colour = parent.node_colour;
           colourmap_index = parent.node_colourmap_index;
           use_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
@@ -90,13 +91,9 @@ namespace MR
           }
 
           vertex_shader_source +=
-              "uniform mat4 MVP;\n";
-
-          if (geometry != node_geometry_t::OVERLAY) {
-            vertex_shader_source +=
+              "uniform mat4 MVP;\n"
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
-          }
 
           if (geometry == node_geometry_t::SPHERE) {
             vertex_shader_source +=
@@ -151,40 +148,62 @@ namespace MR
           // =================================================================
 
           geometry_shader_source = std::string("");
-          if (!is_3D && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
+          if (!is_3D) {
 
-            geometry_shader_source +=
-                "layout(triangles) in;\n"
-                "layout(line_strip, max_vertices=2) out;\n";
+            if (geometry == node_geometry_t::POINT) {
 
-            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
               geometry_shader_source +=
-                "in vec3 normal" + GS_in + "[3];\n"
-                "out vec3 normal" + GS_out + ";\n";
-            } else if (geometry == node_geometry_t::CUBE) {
+                  "layout(points) in;\n"
+                  "layout(points, max_vertices=1) out;\n"
+                  "void main() {\n"
+                  "  float depth = abs(gl_in[0].gl_Position.z);\n"
+                  "  float radius = gl_in[0].gl_PointSize;\n"
+                  "  if (depth < radius) {\n"
+                  // Calculate the radius of the sphere subtended by the plane
+                  "    gl_PointSize = sqrt(radius*radius - depth*depth);\n"
+                  "    gl_Position = gl_in[0].gl_Position;\n"
+                  "    gl_Position.z = 0.0;\n"
+                  "    EmitVertex();\n"
+                  "    EndPrimitive();\n"
+                  "  }\n"
+                  "}\n";
+
+            } else {
+
               geometry_shader_source +=
-                "flat in vec3 normal" + GS_in + "[3];\n"
-                "flat out vec3 normal" + GS_out + ";\n";
+                  "layout(triangles) in;\n"
+                  "layout(line_strip, max_vertices=2) out;\n";
+
+              if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+                geometry_shader_source +=
+                  "in vec3 normal" + GS_in + "[3];\n"
+                  "out vec3 normal" + GS_out + ";\n";
+              } else if (geometry == node_geometry_t::CUBE) {
+                geometry_shader_source +=
+                  "flat in vec3 normal" + GS_in + "[3];\n"
+                  "flat out vec3 normal" + GS_out + ";\n";
+              }
+
+              // Need to detect whether or not this triangle intersects the viewing plane
+              // If it does, need to emit two vertices; one for each of the two interpolated
+              //   points that intersect the viewing plane
+              // Following MVP multiplication, the viewing plane should be at a Z-coordinate of zero...
+              // If one edge intersects the viewing plane, it is guaranteed that a second does also
+              geometry_shader_source +=
+                  "void main() {\n"
+                  "  for (int v1 = 0; v1 != 3; ++v1) {\n"
+                  "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
+                  "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
+                  "    if (mu >= 0.0 && mu <= 1.0) {\n"
+                  "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
+                  "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
+                  "      EmitVertex();\n"
+                  "    }\n"
+                  "  }\n"
+                  "  EndPrimitive();\n"
+                  "}\n";
+
             }
-
-            // Need to detect whether or not this triangle intersects the viewing plane
-            // If it does, need to emit two vertices; one for each of the two interpolated
-            //   points that intersect the viewing plane
-            // Following MVP multiplication, the viewing plane should be at a Z-coordinate of zero...
-            // If one edge intersects the viewing plane, it is guaranteed that a second does also
-            geometry_shader_source +=
-                "void main() {\n"
-                "  for (int v1 = 0; v1 != 3; ++v1) {\n"
-                "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
-                "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
-                "    if (mu >= 0.0 && mu <= 1.0) {\n"
-                "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
-                "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
-                "      EmitVertex();\n"
-                "    }\n"
-                "  }\n"
-                "  EndPrimitive();\n"
-                "}\n";
 
           }
 
@@ -202,7 +221,7 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (use_lighting && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
+          if (use_lighting && geometry != node_geometry_t::POINT) {
 
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
@@ -246,7 +265,7 @@ namespace MR
 
           }
 
-          if (use_lighting && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
+          if (use_lighting && geometry != node_geometry_t::POINT) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";

@@ -698,15 +698,13 @@ namespace MR
               if (use_alpha)
                 node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
-              GLuint node_centre_ID = 0, node_size_ID = 0, reverse_ID = 0;
-              if (node_geometry != node_geometry_t::OVERLAY) {
-                node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
-                node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
-              }
+              const GLuint node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+              const GLuint node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
 
               if (node_colour == node_colour_t::FILE && ColourMap::maps[node_colourmap_index].is_colour)
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
 
+              GLuint reverse_ID = 0;
               if (node_geometry == node_geometry_t::SPHERE) {
                 sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
                 sphere_VAO.bind();
@@ -721,7 +719,7 @@ namespace MR
                 gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
               }
 
-              if (node_geometry != node_geometry_t::OVERLAY) {
+              if (use_lighting() && node_geometry != node_geometry_t::POINT) {
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
@@ -740,10 +738,8 @@ namespace MR
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                   if (use_alpha)
                     gl::Uniform1f (node_alpha_ID, node.get_alpha() * node_fixed_alpha);
-                  if (node_geometry != node_geometry_t::OVERLAY) {
-                    gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-                    gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
-                  }
+                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                  gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
                       gl::Uniform1i (reverse_ID, 0);
@@ -760,6 +756,7 @@ namespace MR
                       glEnd();
                       break;
                     case node_geometry_t::OVERLAY:
+                      assert (0);
                       break;
                     case node_geometry_t::MESH:
                       node.render_mesh();
