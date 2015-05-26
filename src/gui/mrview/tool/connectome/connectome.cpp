@@ -220,6 +220,7 @@ namespace MR
           node_geometry_combobox->setToolTip (tr ("The 3D geometrical shape used to draw each node"));
           node_geometry_combobox->addItem ("Sphere");
           node_geometry_combobox->addItem ("Cube");
+          node_geometry_combobox->addItem ("Point");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
           node_geometry_combobox->addItem ("Smooth mesh");
@@ -242,6 +243,12 @@ namespace MR
           node_geometry_overlay_interp_checkbox->setVisible (false);
           connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
           hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
+          node_geometry_point_round_checkbox = new QCheckBox ("Round");
+          node_geometry_point_round_checkbox->setTristate (false);
+          node_geometry_point_round_checkbox->setChecked (true);
+          node_geometry_point_round_checkbox->setVisible (false);
+          connect (node_geometry_point_round_checkbox, SIGNAL (stateChanged(int)), this, SLOT(point_smooth_slot(int)));
+          hlayout->addWidget (node_geometry_point_round_checkbox, 1);
           gridlayout->addLayout (hlayout, 2, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
@@ -679,6 +686,12 @@ namespace MR
                 //gl::Enable (gl::CULL_FACE);
               }
 
+              if (node_geometry == node_geometry_t::POINT) {
+                if (node_geometry_point_round_checkbox->isChecked())
+                  gl::Enable (GL_POINT_SMOOTH);
+                gl::Enable (GL_PROGRAM_POINT_SIZE);
+              }
+
               const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
 
               GLuint node_alpha_ID = 0;
@@ -741,6 +754,11 @@ namespace MR
                     case node_geometry_t::CUBE:
                       gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
+                    case node_geometry_t::POINT:
+                      glBegin (GL_POINTS);
+                      glVertex3fv (node.get_com());
+                      glEnd();
+                      break;
                     case node_geometry_t::OVERLAY:
                       break;
                     case node_geometry_t::MESH:
@@ -759,8 +777,13 @@ namespace MR
                 gl::DepthMask (gl::TRUE_);
               }
 
-              if (node_geometry == node_geometry_t::CUBE)
+              if (node_geometry == node_geometry_t::CUBE) {
                 glShadeModel (GL_SMOOTH);
+              } else if (node_geometry == node_geometry_t::POINT) {
+                gl::Disable (GL_PROGRAM_POINT_SIZE);
+                if (node_geometry_point_round_checkbox->isChecked())
+                  gl::Disable (GL_POINT_SMOOTH);
+              }
 
               node_shader.stop();
 
@@ -1128,6 +1151,7 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (true);
               node_geometry_sphere_lod_spinbox->setVisible (true);
               node_geometry_overlay_interp_checkbox->setVisible (false);
+              node_geometry_point_round_checkbox->setVisible (false);
               break;
             case 1:
               if (node_geometry == node_geometry_t::CUBE) return;
@@ -1138,8 +1162,20 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (false);
+              node_geometry_point_round_checkbox->setVisible (false);
               break;
             case 2:
+              if (node_geometry == node_geometry_t::POINT) return;
+              node_geometry = node_geometry_t::POINT;
+              node_size_combobox->setEnabled (true);
+              node_size_button->setVisible (true);
+              node_size_button->setMax (std::numeric_limits<float>::max());
+              node_geometry_sphere_lod_label->setVisible (false);
+              node_geometry_sphere_lod_spinbox->setVisible (false);
+              node_geometry_overlay_interp_checkbox->setVisible (false);
+              node_geometry_point_round_checkbox->setVisible (true);
+              break;
+            case 3:
               if (node_geometry == node_geometry_t::OVERLAY) return;
               node_geometry = node_geometry_t::OVERLAY;
               node_size = node_size_t::FIXED;
@@ -1154,9 +1190,10 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (true);
+              node_geometry_point_round_checkbox->setVisible (false);
               update_node_overlay();
               break;
-            case 3:
+            case 4:
               if (node_geometry == node_geometry_t::MESH) return;
               node_geometry = node_geometry_t::MESH;
               if (!have_meshes) {
@@ -1193,8 +1230,9 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (false);
+              node_geometry_point_round_checkbox->setVisible (false);
               break;
-            case 4:
+            case 5:
               if (node_geometry == node_geometry_t::SMOOTH_MESH) return;
               node_geometry = node_geometry_t::SMOOTH_MESH;
               if (!have_smooth_meshes) {
@@ -1227,6 +1265,7 @@ namespace MR
               node_geometry_sphere_lod_label->setVisible (false);
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (false);
+              node_geometry_point_round_checkbox->setVisible (false);
               break;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -1502,6 +1541,10 @@ namespace MR
           assert (node_overlay);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           node_overlay->set_interpolate (node_geometry_overlay_interp_checkbox->isChecked());
+          window.updateGL();
+        }
+        void Connectome::point_smooth_slot (int)
+        {
           window.updateGL();
         }
         void Connectome::node_colour_change_slot()

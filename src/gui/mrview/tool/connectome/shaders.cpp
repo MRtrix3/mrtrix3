@@ -130,6 +130,11 @@ namespace MR
               "  gl_Position = (MVP * vec4 (node_centre + (vertexPosition_modelspace * node_size), 1));\n"
               "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
+            case node_geometry_t::POINT:
+              vertex_shader_source +=
+              "  gl_Position = (MVP * vec4 (node_centre, 1));\n"
+              "  gl_PointSize = node_size;\n";
+              break;
             case node_geometry_t::OVERLAY:
               break;
             case node_geometry_t::MESH:
@@ -146,7 +151,7 @@ namespace MR
           // =================================================================
 
           geometry_shader_source = std::string("");
-          if (!is_3D && geometry != node_geometry_t::OVERLAY) {
+          if (!is_3D && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
 
             geometry_shader_source +=
                 "layout(triangles) in;\n"
@@ -197,7 +202,7 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (use_lighting && geometry != node_geometry_t::OVERLAY) {
+          if (use_lighting && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
 
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
@@ -241,7 +246,7 @@ namespace MR
 
           }
 
-          if (use_lighting && geometry != node_geometry_t::OVERLAY) {
+          if (use_lighting && geometry != node_geometry_t::OVERLAY && geometry != node_geometry_t::POINT) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";

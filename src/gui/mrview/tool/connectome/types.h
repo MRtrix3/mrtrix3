@@ -40,7 +40,7 @@ namespace MR
       typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
 
       enum class node_visibility_t { ALL, NONE, FILE, DEGREE };
-      enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH, SMOOTH_MESH };
+      enum class node_geometry_t   { SPHERE, CUBE, POINT, OVERLAY, MESH, SMOOTH_MESH };
       enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, FILE };
       enum class node_size_t       { FIXED, NODE_VOLUME, FILE };
       enum class node_alpha_t      { FIXED, FROM_LUT, FILE };

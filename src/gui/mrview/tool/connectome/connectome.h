@@ -77,20 +77,19 @@
 //       - variable radius between exemplars
 //       - manually providing tangents (not really required?)
 //   - Clean up behaviour with unusual sequences of inputs
-//   - Need to pass tangent and normal through geometry shader when activated
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
-//   - In 2D mode, use mask image extent / node location & size to detect when there is no
-//     need to process a particular node (need to save the image extent from construction)
+//     This is going to be made more difficult by the fact that the connectome tool now has
+//     independent control of 2D / 3D rendering... i.e. user may select 3D in the connectome
+//     tool, but the volume render mode isn't active...
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //     * Rename current Shapes::Sphere class to Halfsphere, use in the DWI renderer,
 //       but derive a full-sphere for use here
 //       (no point using a full-sphere in the DWI renderer as you'd still have the issue of negative lobes)
 //     * Get face culling working
-//   - Draw as points
 //   - Meshes
 //     * Get right hand rule working, use face culling
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
@@ -172,6 +171,7 @@ namespace MR
             void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
+            void point_smooth_slot (int);
             void node_colour_change_slot();
             void node_colour_parameter_slot();
             void node_size_value_slot();
@@ -214,6 +214,7 @@ namespace MR
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
+            QCheckBox *node_geometry_point_round_checkbox;
 
             QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
