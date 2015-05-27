@@ -241,13 +241,10 @@ void run ()
 
     std::string name = opt[0][0];
     Image::ConstHeader template_header (name);
-    std::vector<ssize_t> strides (Image::Stride::get (input_header));
-    for (size_t i = 0; i < std::min(input_header.ndim(), template_header.ndim()); ++i) {
+    for (size_t i = 0; i < 3; ++i) {
        output_header.dim(i) = template_header.dim(i);
        output_header.vox(i) = template_header.vox(i);
-       strides[i] = template_header.stride(i);
     }
-    Image::Stride::set (output_header, strides);
     output_header.transform() = template_header.transform();
     output_header.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
 
