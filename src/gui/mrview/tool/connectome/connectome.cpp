@@ -125,8 +125,8 @@ namespace MR
                                         "If the primary parcellation image has come from an atlas that\n"
                                         "provides a look-up table, select that file here so that MRview \n"
                                         "can access the node names and colours."));
-          for (size_t index = 0; MR::DWI::Tractography::Connectomics::lut_format_strings[index]; ++index)
-            lut_combobox->insertItem (index, MR::DWI::Tractography::Connectomics::lut_format_strings[index]);
+          for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
+            lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
           connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
           hlayout->addWidget (lut_combobox, 1);
           vlayout->addLayout (hlayout);
@@ -973,7 +973,7 @@ namespace MR
           if (index == 5)
             return; // Selected currently-open LUT; nothing to do
 
-          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::DWI::Tractography::Connectomics::lut_format_strings[index] + " format)");
+          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)");
           if (path.empty())
             return;
 
@@ -983,10 +983,10 @@ namespace MR
 
           try {
             switch (index) {
-              case 1: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_BASIC);      break;
-              case 2: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_FREESURFER); break;
-              case 3: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_AAL);        break;
-              case 4: lut.load (path, MR::DWI::Tractography::Connectomics::LUT_ITKSNAP);    break;
+              case 1: lut.load (path, MR::Connectome::LUT_BASIC);      break;
+              case 2: lut.load (path, MR::Connectome::LUT_FREESURFER); break;
+              case 3: lut.load (path, MR::Connectome::LUT_AAL);        break;
+              case 4: lut.load (path, MR::Connectome::LUT_ITKSNAP);    break;
               default: assert (0);
             }
           } catch (Exception& e) { e.display(); lut.clear(); lut_combobox->setCurrentIndex (0); return; }
@@ -1008,7 +1008,7 @@ namespace MR
           lut_mapping.clear();
           config_button->setText ("(none)");
           try {
-            MR::DWI::Tractography::Connectomics::load_config (path, config);
+            MR::Connectome::load_config (path, config);
             config_button->setText (QString::fromStdString (Path::basename (path)));
           } catch (Exception& e) {
             e.display();
@@ -1199,12 +1199,12 @@ namespace MR
                 //   multi-threaded fashion (calculate_mesh()), then create the buffers themselves
                 //   in the master thread (assign_mesh())
                 std::vector<MR::Mesh::Mesh> meshes (num_nodes()+1, MR::Mesh::Mesh());
-                auto source = [&] (uint32_t& out) { static uint32_t i = 1; out = i++; return (out <= num_nodes()); };
+                auto source = [&] (node_t& out) { static node_t i = 1; out = i++; return (out <= num_nodes()); };
                 std::mutex mutex;
                 ProgressBar progress ("Generating node meshes... ", num_nodes());
-                auto sink = [&] (uint32_t& in) { meshes[in] = nodes[in].calculate_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-                Thread::run_queue (source, uint32_t(), Thread::multi (sink));
-                for (uint32_t i = 1; i <= num_nodes(); ++i)
+                auto sink = [&] (node_t& in) { meshes[in] = nodes[in].calculate_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+                Thread::run_queue (source, node_t(), Thread::multi (sink));
+                for (node_t i = 1; i <= num_nodes(); ++i)
                   nodes[i].assign_mesh (meshes[i]);
                 have_meshes = true;
               }
@@ -1234,12 +1234,12 @@ namespace MR
               node_geometry = node_geometry_t::SMOOTH_MESH;
               if (!have_smooth_meshes) {
                 std::vector<MR::Mesh::Mesh> smooth_meshes (num_nodes()+1, MR::Mesh::Mesh());
-                auto source = [&] (uint32_t& out) { static uint32_t i = 1; out = i++; return (out <= num_nodes()); };
+                auto source = [&] (node_t& out) { static node_t i = 1; out = i++; return (out <= num_nodes()); };
                 std::mutex mutex;
                 ProgressBar progress ("Generating smooth node meshes... ", num_nodes());
-                auto sink = [&] (uint32_t& in) { smooth_meshes[in] = nodes[in].calculate_smooth_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-                Thread::run_queue (source, uint32_t(), Thread::multi (sink));
-                for (uint32_t i = 1; i <= num_nodes(); ++i)
+                auto sink = [&] (node_t& in) { smooth_meshes[in] = nodes[in].calculate_smooth_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+                Thread::run_queue (source, node_t(), Thread::multi (sink));
+                for (node_t i = 1; i <= num_nodes(); ++i)
                   nodes[i].assign_smooth_mesh (smooth_meshes[i]);
                 have_smooth_meshes = true;
               }
@@ -2256,7 +2256,7 @@ namespace MR
           if (lut.size()) {
 
             lut_mapping.push_back (lut.end());
-            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
 
               if (config.size()) {
                 const std::string name = config[node_index];
@@ -2281,7 +2281,7 @@ namespace MR
           } else { // No LUT; just name nodes according to their indices
 
             lut_mapping.assign (num_nodes()+1, lut.end());
-            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index)
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index)
               nodes[node_index].set_name ("Node " + str(node_index));
 
           }
@@ -2318,7 +2318,7 @@ namespace MR
             assert (node_values_from_file_visibility.size());
             const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
             const float threshold = node_visibility_threshold_button->value();
-            for (size_t i = 1; i <= num_nodes(); ++i) {
+            for (node_t i = 1; i <= num_nodes(); ++i) {
               const bool above_threshold = (node_values_from_file_visibility[i-1] >= threshold);
               nodes[i].set_visible (above_threshold != invert);
             }
@@ -2361,7 +2361,7 @@ namespace MR
           } else if (node_colour == node_colour_t::FROM_LUT) {
 
             assert (lut.size());
-            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
               if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_colour (node_fixed_colour);
               else
@@ -2372,7 +2372,7 @@ namespace MR
 
             assert (node_values_from_file_colour.size());
             const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
-            for (size_t i = 1; i <= num_nodes(); ++i) {
+            for (node_t i = 1; i <= num_nodes(); ++i) {
               float factor = (node_values_from_file_colour[i-1]-lower) / (upper - lower);
               factor = std::min (1.0f, std::max (factor, 0.0f));
               factor = node_colourmap_invert ? 1.0f-factor : factor;
@@ -2400,7 +2400,7 @@ namespace MR
             assert (node_values_from_file_size.size());
             const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
             const bool invert = node_size_invert_checkbox->isChecked();
-            for (size_t i = 1; i <= num_nodes(); ++i) {
+            for (node_t i = 1; i <= num_nodes(); ++i) {
               float factor = (node_values_from_file_size[i-1]-lower) / (upper - lower);
               factor = std::min (1.0f, std::max (factor, 0.0f));
               factor = invert ? 1.0f-factor : factor;
@@ -2420,7 +2420,7 @@ namespace MR
           } else if (node_alpha == node_alpha_t::FROM_LUT) {
 
             assert (lut.size());
-            for (size_t node_index = 1; node_index <= num_nodes(); ++node_index) {
+            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
               if (lut_mapping[node_index] == lut.end())
                 nodes[node_index].set_alpha (node_fixed_alpha);
               else
@@ -2432,7 +2432,7 @@ namespace MR
             assert (node_values_from_file_alpha.size());
             const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
             const bool invert = node_alpha_invert_checkbox->isChecked();
-            for (size_t i = 1; i <= num_nodes(); ++i) {
+            for (node_t i = 1; i <= num_nodes(); ++i) {
               float factor = (node_values_from_file_alpha[i-1]-lower) / (upper - lower);
               factor = std::min (1.0f, std::max (factor, 0.0f));
               factor = invert ? 1.0f-factor : factor;

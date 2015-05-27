@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_multithread_h__
-#define __dwi_tractography_connectomics_multithread_h__
+#ifndef __dwi_tractography_connectome_multithread_h__
+#define __dwi_tractography_connectome_multithread_h__
 
 
 
@@ -34,9 +34,9 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/streamline.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/edge_metrics.h"
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/connectome.h"
+#include "dwi/tractography/connectome/edge_metrics.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 
 #include <set>
 
@@ -45,7 +45,7 @@
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 

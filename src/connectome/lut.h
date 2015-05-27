@@ -22,24 +22,22 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_lut_h__
-#define __dwi_tractography_connectomics_lut_h__
+#ifndef __connectome_lut_h__
+#define __connectome_lut_h__
 
 
 #include "app.h"
 #include "args.h"
 #include "point.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+#include "connectome/connectome.h"
 
 #include <map>
 #include <string>
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -110,8 +108,6 @@ class Node_map : public std::map<node_t, Node_info>
 
 
 
-}
-}
 }
 }
 

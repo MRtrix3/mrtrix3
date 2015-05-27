@@ -22,21 +22,19 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_config_h__
-#define __dwi_tractography_connectomics_config_h__
+#ifndef __connectome_config_h__
+#define __connectome_config_h__
 
 #include "file/path.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+#include "connectome/connectome.h"
 
 #include <map>
 #include <string>
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -51,8 +49,6 @@ void load_config (const std::string&, std::vector<std::string>&);
 
 
 
-}
-}
 }
 }
 

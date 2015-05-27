@@ -49,9 +49,8 @@
 #include "mesh/mesh.h"
 
 #include "connectome/mat2vec.h"
-
-#include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/config/config.h"
+#include "connectome/lut.h"
 
 #include "gui/mrview/tool/connectome/colourmap_observers.h"
 #include "gui/mrview/tool/connectome/edge.h"
@@ -145,7 +144,7 @@ namespace MR
             void drawOverlays (const Projection& transform) override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
-            size_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
+            node_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
             size_t num_edges() const { return edges.size(); }
 
             static void add_commandline_options (MR::App::OptionList& options);

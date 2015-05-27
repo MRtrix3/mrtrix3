@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_edge_metrics_h__
-#define __dwi_tractography_connectomics_edge_metrics_h__
+#ifndef __dwi_tractography_connectome_edge_metrics_h__
+#define __dwi_tractography_connectome_edge_metrics_h__
 
 
 #include <vector>
@@ -35,15 +35,17 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
+#include "connectome/connectome.h"
+
 #include "dwi/tractography/streamline.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 

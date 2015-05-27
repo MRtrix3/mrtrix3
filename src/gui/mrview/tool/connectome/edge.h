@@ -25,7 +25,7 @@
 
 #include "point.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+#include "connectome/connectome.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -44,7 +44,7 @@ namespace MR
       class Edge
       {
 
-          typedef MR::DWI::Tractography::Connectomics::node_t node_t;
+          typedef MR::Connectome::node_t node_t;
 
         public:
           Edge (const node_t, const node_t, const Point<float>&, const Point<float>&);

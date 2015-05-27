@@ -29,14 +29,14 @@ namespace Connectome {
 
 
 
-Mat2Vec::Mat2Vec (const index_t i) :
+Mat2Vec::Mat2Vec (const node_t i) :
     dim (i)
 {
-  lookup.assign (dim, std::vector<index_t> (dim, 0));
+  lookup.assign (dim, std::vector<node_t> (dim, 0));
   inv_lookup.reserve (dim * (dim+1) / 2);
-  index_t index = 0;
-  for (index_t row = 0; row != dim; ++row) {
-    for (index_t column = row; column != dim; ++column) {
+  node_t index = 0;
+  for (node_t row = 0; row != dim; ++row) {
+    for (node_t column = row; column != dim; ++column) {
       lookup[row][column] = lookup[column][row] = index++;
       inv_lookup.push_back (std::make_pair (row, column));
     }

@@ -22,9 +22,9 @@
 
 
 
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/edge_metrics.h"
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/connectome.h"
+#include "dwi/tractography/connectome/edge_metrics.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 
 
 
@@ -33,7 +33,7 @@
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -80,10 +80,10 @@ Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>& nodes_data)
       }
 
       switch (index) {
-        case 0: tck2nodes = new Connectomics::Tck2nodes_voxel (nodes_data); break;
-        case 1: tck2nodes = new Connectomics::Tck2nodes_radial (nodes_data, float(opt[0][0])); break;
-        case 2: tck2nodes = new Connectomics::Tck2nodes_revsearch (nodes_data, float(opt[0][0])); break;
-        case 3: tck2nodes = new Connectomics::Tck2nodes_forwardsearch (nodes_data, float(opt[0][0])); break;
+        case 0: tck2nodes = new Tck2nodes_voxel         (nodes_data); break;
+        case 1: tck2nodes = new Tck2nodes_radial        (nodes_data, float(opt[0][0])); break;
+        case 2: tck2nodes = new Tck2nodes_revsearch     (nodes_data, float(opt[0][0])); break;
+        case 3: tck2nodes = new Tck2nodes_forwardsearch (nodes_data, float(opt[0][0])); break;
       }
 
     }
@@ -91,7 +91,7 @@ Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>& nodes_data)
 
   // default
   if (!tck2nodes)
-    tck2nodes = new Connectomics::Tck2nodes_radial (nodes_data, TCK2NODES_RADIAL_DEFAULT_DIST);
+    tck2nodes = new Tck2nodes_radial (nodes_data, TCK2NODES_RADIAL_DEFAULT_DIST);
 
   return tck2nodes;
 
@@ -119,17 +119,17 @@ Metric_base* load_metric (Image::Buffer<node_t>& nodes_data)
     edge_metric = opt[0][0];
   switch (edge_metric) {
 
-    case 0: return new Connectomics::Metric_count (); break;
-    case 1: return new Connectomics::Metric_meanlength (); break;
-    case 2: return new Connectomics::Metric_invlength (); break;
-    case 3: return new Connectomics::Metric_invnodevolume (nodes_data); break;
-    case 4: return new Connectomics::Metric_invlength_invnodevolume (nodes_data); break;
+    case 0: return new Metric_count (); break;
+    case 1: return new Metric_meanlength (); break;
+    case 2: return new Metric_invlength (); break;
+    case 3: return new Metric_invnodevolume (nodes_data); break;
+    case 4: return new Metric_invlength_invnodevolume (nodes_data); break;
 
     case 5:
       opt = get_options ("image");
       if (!opt.size())
         throw Exception ("To use the \"mean_scalar\" metric, you must provide the associated scalar image using the -image option");
-      return new Connectomics::Metric_meanscalar (opt[0][0]);
+      return new Metric_meanscalar (opt[0][0]);
       break;
 
     default: throw Exception ("Undefined edge weight metric");

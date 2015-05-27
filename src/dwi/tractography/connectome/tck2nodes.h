@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_tck2nodes_h__
-#define __dwi_tractography_connectomics_tck2nodes_h__
+#ifndef __dwi_tractography_connectome_tck2nodes_h__
+#define __dwi_tractography_connectome_tck2nodes_h__
 
 
 #include <stdint.h>
@@ -41,15 +41,15 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
-#include "dwi/tractography/streamline.h"
+#include "dwi/tractography/connectome/connectome.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 

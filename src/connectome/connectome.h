@@ -34,10 +34,10 @@ namespace MR {
 namespace Connectome {
 
 
-typedef uint32_t index_t;
+typedef uint32_t node_t;
 
 
-void verify_matrix (Math::Matrix<float>& in, const index_t num_nodes);
+void verify_matrix (Math::Matrix<float>& in, const node_t num_nodes);
 
 
 }

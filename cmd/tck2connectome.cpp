@@ -31,10 +31,10 @@
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
 #include "dwi/tractography/mapping/loader.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/edge_metrics.h"
-#include "dwi/tractography/connectomics/multithread.h"
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/connectome.h"
+#include "dwi/tractography/connectome/edge_metrics.h"
+#include "dwi/tractography/connectome/multithread.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 
 
 #include "image/buffer.h"
@@ -51,7 +51,7 @@ using namespace MR;
 using namespace App;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
-using namespace MR::DWI::Tractography::Connectomics;
+using namespace MR::DWI::Tractography::Connectome;
 
 
 
@@ -70,8 +70,8 @@ void usage ()
 
 
   OPTIONS
-  + Connectomics::AssignmentOption
-  + Connectomics::MetricOption
+  + MR::DWI::Tractography::Connectome::AssignmentOption
+  + MR::DWI::Tractography::Connectome::MetricOption
 
   + Tractography::TrackWeightsInOption
 
@@ -120,8 +120,8 @@ void run ()
   }
 
   // Get the metric & assignment mechanism for connectome construction
-  std::unique_ptr<Connectomics::Metric_base>    metric    (Connectomics::load_metric (nodes_data));
-  std::unique_ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
+  std::unique_ptr<Metric_base>    metric    (load_metric (nodes_data));
+  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
 
   // Prepare for reading the track data
   Tractography::Properties properties;
@@ -130,7 +130,7 @@ void run ()
   // Multi-threaded connectome construction
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
   Mapper mapper (*tck2nodes, *metric);
-  Connectome connectome (max_node_index);
+  Tractography::Connectome::Connectome connectome (max_node_index);
   Thread::run_queue (
       loader, 
       Thread::batch (Tractography::Streamline<float>()), 

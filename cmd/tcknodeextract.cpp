@@ -28,12 +28,13 @@
 #include "progressbar.h"
 #include "memory.h"
 
+#include "connectome/connectome.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/multithread.h"
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/multithread.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 #include "dwi/tractography/mapping/loader.h"
 
 #include "math/matrix.h"
@@ -53,9 +54,10 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Connectome;
 using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
-using namespace MR::DWI::Tractography::Connectomics;
+using namespace MR::DWI::Tractography::Connectome;
 
 
 
@@ -91,7 +93,7 @@ void usage ()
   + Option ("keep_unassigned", "by default, the program discards those streamlines that are not successfully assigned to a node pair. "
                                "Set this option to generate output files containing these streamlines (labelled as node index 0)")
 
-  + Connectomics::AssignmentOption
+  + MR::DWI::Tractography::Connectome::AssignmentOption
 
   + Tractography::TrackWeightsInOption
 
@@ -117,7 +119,7 @@ void run ()
 
   const std::string prefix (argument[2]);
 
-  std::unique_ptr<Connectomics::Tck2nodes_base> tck2nodes (Connectomics::load_assignment_mode (nodes_data));
+  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
 
   node_t max_node_index = 0;
   Image::LoopInOrder loop (nodes);
@@ -172,7 +174,7 @@ void run ()
     if (opt_to_any.size()) {
       std::vector<int> node_list = opt_to_any[0][0];
       for (std::vector<int>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
-        for (size_t j = 0; j <= max_node_index; ++j)
+        for (node_t j = 0; j <= max_node_index; ++j)
           outputs (*i, j) = outputs (j, *i) = 1.0;
       }
     }
@@ -184,8 +186,8 @@ void run ()
       }
     }
 
-    for (size_t i = 0; i <= max_node_index; ++i) {
-      for (size_t j = i; j <= max_node_index; ++j) {
+    for (node_t i = 0; i <= max_node_index; ++i) {
+      for (node_t j = i; j <= max_node_index; ++j) {
         if (outputs (i, j))
           writer.add (i, j, prefix + str(i) + "-" + str(j) + ".tck", weights_prefix.size() ? (weights_prefix + "_" + str(i) + "_" + str(j) + ".csv") : "");
       }

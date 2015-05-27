@@ -21,13 +21,13 @@
  */
 
 
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 

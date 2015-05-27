@@ -44,22 +44,22 @@ class Mat2Vec
 {
 
   public:
-    Mat2Vec (const index_t);
+    Mat2Vec (const node_t);
     Mat2Vec& operator= (Mat2Vec&&);
 
-    index_t operator() (const index_t i, const index_t j) const
+    node_t operator() (const node_t i, const node_t j) const
     {
       assert (i < dim);
       assert (j < dim);
       return lookup[i][j];
     }
-    std::pair<index_t, index_t> operator() (const index_t i) const
+    std::pair<node_t, node_t> operator() (const node_t i) const
     {
       assert (i < inv_lookup.size());
       return inv_lookup[i];
     }
-    index_t size() const { return dim; }
-    index_t vec_size() const { return inv_lookup.size(); }
+    node_t size() const { return dim; }
+    node_t vec_size() const { return inv_lookup.size(); }
 
     // Complete Matrix->Vector and Vector->Matrix conversion
     template <typename T> Math::Vector<T>& operator() (const Math::Matrix<T>&, Math::Vector<T>&) const;
@@ -67,12 +67,12 @@ class Mat2Vec
     template <class Cont, typename T> Math::Matrix<T>& operator() (const Cont&, Math::Matrix<T>&) const;
 
   protected:
-    index_t dim;
+    node_t dim;
 
   private:
     // Lookup tables
-    std::vector< std::vector<index_t> > lookup;
-    std::vector< std::pair<index_t, index_t> > inv_lookup;
+    std::vector< std::vector<node_t> > lookup;
+    std::vector< std::pair<node_t, node_t> > inv_lookup;
 
 };
 
@@ -85,8 +85,8 @@ Math::Vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, Math::Vector<T>
   assert (in.rows() == in.columns());
   assert (in.rows() == dim);
   out.resize (vec_size());
-  for (index_t index = 0; index != out.size(); ++index) {
-    const std::pair<index_t, index_t> row_column = (*this) (index);
+  for (node_t index = 0; index != out.size(); ++index) {
+    const std::pair<node_t, node_t> row_column = (*this) (index);
     out[index] = in (row_column.first, row_column.second);
   }
   return out;
@@ -99,8 +99,8 @@ std::vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, std::vector<T>& 
   assert (in.rows() == in.columns());
   assert (in.rows() == dim);
   out.resize (vec_size());
-  for (index_t index = 0; index != out.size(); ++index) {
-    const std::pair<index_t, index_t> row_column = (*this) (index);
+  for (node_t index = 0; index != out.size(); ++index) {
+    const std::pair<node_t, node_t> row_column = (*this) (index);
     out[index] = in (row_column.first, row_column.second);
   }
   return out;
@@ -112,8 +112,8 @@ Math::Matrix<T>& Mat2Vec::operator() (const Cont& in, Math::Matrix<T>& out) cons
 {
   assert (in.size() == vec_size());
   out.resize (dim, dim);
-  for (index_t row = 0; row != dim; ++row) {
-    for (index_t column = 0; column != dim; ++column)
+  for (node_t row = 0; row != dim; ++row) {
+    for (node_t column = 0; column != dim; ++column)
       out (row, column) = in[(*this) (row, column)];
   }
   return out;

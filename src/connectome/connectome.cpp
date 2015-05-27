@@ -29,15 +29,15 @@ namespace MR {
 namespace Connectome {
 
 
-void verify_matrix (Math::Matrix<float>& in, const index_t num_nodes)
+void verify_matrix (Math::Matrix<float>& in, const node_t num_nodes)
 {
   if (in.rows() != in.columns())
     throw Exception ("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.columns()) + ")");
   if (in.rows() != num_nodes)
     throw Exception ("Connectome matrix contains " + str(in.rows()) + " nodes; expected " + str(num_nodes));
 
-  for (size_t row = 0; row != num_nodes; ++row) {
-    for (size_t column = row+1; column != num_nodes; ++column) {
+  for (node_t row = 0; row != num_nodes; ++row) {
+    for (node_t column = row+1; column != num_nodes; ++column) {
 
       const float lower_value = in (column, row);
       const float upper_value = in (row, column);

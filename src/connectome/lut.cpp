@@ -22,16 +22,14 @@
 
 
 
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/lut.h"
 
 
 
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -185,8 +183,6 @@ void Node_map::parse_line_itksnap (const std::string& line)
 
 
 
-}
-}
 }
 }
 

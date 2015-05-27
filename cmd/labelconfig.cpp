@@ -32,9 +32,9 @@
 #include "image/voxel.h"
 #include "image/interp/nearest.h"
 
-#include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/config/config.h"
+#include "connectome/connectome.h"
+#include "connectome/lut.h"
 
 
 #include <fstream>
@@ -50,8 +50,8 @@
 
 using namespace MR;
 using namespace App;
-using namespace MR::DWI::Tractography::Connectomics;
-using MR::DWI::Tractography::Connectomics::node_t;
+using namespace MR::Connectome;
+using MR::Connectome::node_t;
 
 
 
@@ -64,7 +64,7 @@ void usage ()
 	+ "prepare a parcellated image for connectome construction by modifying the image values; "
 	  "typically this involves making the parcellation intensities increment from 1 to coincide with rows and columns of a matrix. "
 	  "The configuration file passed as the second argument specifies the indices that should be assigned to different structures; "
-	  "examples of such configuration files are provided in src//dwi//tractography//connectomics//example_configs//";
+	  "examples of such configuration files are provided in src//connectome//config//";
 
 
 	ARGUMENTS

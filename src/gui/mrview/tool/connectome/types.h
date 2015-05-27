@@ -23,8 +23,8 @@
 #ifndef __gui_mrview_tool_connectome_types_h__
 #define __gui_mrview_tool_connectome_types_h__
 
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/connectome.h"
+#include "connectome/lut.h"
 
 namespace MR
 {
@@ -35,9 +35,9 @@ namespace MR
       namespace Tool
       {
 
-      typedef MR::DWI::Tractography::Connectomics::node_t    node_t;
-      typedef MR::DWI::Tractography::Connectomics::Node_info Node_info;
-      typedef MR::DWI::Tractography::Connectomics::Node_map  Node_map;
+      typedef MR::Connectome::node_t    node_t;
+      typedef MR::Connectome::Node_info Node_info;
+      typedef MR::Connectome::Node_map  Node_map;
 
       enum class node_visibility_t { ALL, NONE, FILE, DEGREE };
       enum class node_geometry_t   { SPHERE, CUBE, POINT, OVERLAY, MESH, SMOOTH_MESH };
