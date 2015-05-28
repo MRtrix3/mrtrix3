@@ -168,10 +168,24 @@ namespace MR
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
+          HBoxLayout* hlayout  = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          
+          hide_button = new QPushButton ("Hide main image",this);
+          hide_button->setToolTip (tr ("Hide all main images"));
+          hide_button->setIcon (QIcon (":/hide.svg"));
+          hide_button->setCheckable (true);
+          hide_button->setChecked (!window.get_image_visibility());
+          connect (hide_button, SIGNAL (clicked(bool)), this, SLOT (hide_image_slot (bool)));
+          hlayout->addWidget (hide_button, 1);
+          
+          main_box->addLayout (hlayout, 0);
+          
           // FoV
           QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
-          HBoxLayout* hlayout = new HBoxLayout;
+          hlayout = new HBoxLayout;
           group_box->setLayout (hlayout);
 
           fov = new AdjustButton (this);
@@ -352,7 +366,7 @@ namespace MR
           QToolButton* button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("add new clip planes");
+          button->setToolTip ("Add new clip planes");
           button->setIcon (QIcon (":/new.svg"));
           toolbar->addWidget (button);
 
@@ -375,7 +389,7 @@ namespace MR
           button = new QToolButton (this);
           button->setMenu (submenu);
           button->setPopupMode (QToolButton::InstantPopup);
-          button->setToolTip ("reset selected clip planes");
+          button->setToolTip ("Reset selected clip planes");
           button->setIcon (QIcon (":/reset.svg"));
           toolbar->addWidget (button);
 
@@ -393,7 +407,7 @@ namespace MR
 
 
           clip_planes_invert_action = new QAction("&Invert", this);
-          clip_planes_invert_action->setToolTip ("invert selected clip planes");
+          clip_planes_invert_action->setToolTip ("Invert selected clip planes");
           clip_planes_invert_action->setIcon (QIcon (":/invert.svg"));
           connect (clip_planes_invert_action, SIGNAL (triggered()), this, SLOT (clip_planes_invert_slot()));
           clip_planes_option_menu->addAction (clip_planes_invert_action);
@@ -403,7 +417,7 @@ namespace MR
           toolbar->addWidget (button);
 
           clip_planes_remove_action = new QAction("R&emove", this);
-          clip_planes_remove_action->setToolTip ("remove selected clip planes");
+          clip_planes_remove_action->setToolTip ("Remove selected clip planes");
           clip_planes_remove_action->setIcon (QIcon (":/close.svg"));
           connect (clip_planes_remove_action, SIGNAL (triggered()), this, SLOT (clip_planes_remove_slot()));
           clip_planes_option_menu->addAction (clip_planes_remove_action);
@@ -415,7 +429,7 @@ namespace MR
           clip_planes_option_menu->addSeparator();
 
           clip_planes_clear_action = new QAction("&Clear", this);
-          clip_planes_clear_action->setToolTip ("clear all clip planes");
+          clip_planes_clear_action->setToolTip ("Clear all clip planes");
           clip_planes_clear_action->setIcon (QIcon (":/clear.svg"));
           connect (clip_planes_clear_action, SIGNAL (triggered()), this, SLOT (clip_planes_clear_slot()));
           clip_planes_option_menu->addAction (clip_planes_clear_action);
@@ -437,6 +451,7 @@ namespace MR
         void View::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
+          connect (&window, SIGNAL (imageVisibilityChanged(bool)), this, SLOT (onImageVisibilityChanged(bool)));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
@@ -475,6 +490,8 @@ namespace MR
 
           onScalingChanged();
 
+          onImageVisibilityChanged(window.get_image_visibility());
+
           float rate = image->focus_rate();
           focus_x->setRate (rate);
           focus_y->setRate (rate);
@@ -504,6 +521,21 @@ namespace MR
         }
 
 
+
+        void View::onImageVisibilityChanged (bool visible)
+        {
+          hide_button->setChecked (!visible);
+        }
+
+
+
+        void View::hide_image_slot (bool flag)
+        {
+          if(!window.image())
+            return;
+
+          window.set_image_visibility(!flag);
+        }
 
 
 

@@ -66,6 +66,7 @@ namespace MR
 
           private slots:
             void onImageChanged ();
+            void onImageVisibilityChanged (bool);
             void onFocusChanged ();
             void onVolumeIndexChanged(size_t value) { vol_index->setValue(value); }
             void onVolumeGroupChanged(size_t value) { vol_group->setValue(value); }
@@ -82,6 +83,7 @@ namespace MR
             void onSetFOV ();
             void onCheckThreshold (bool);
             void onModeChanged ();
+            void hide_image_slot (bool flag);
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
@@ -101,6 +103,7 @@ namespace MR
             void light_box_slice_inc_reset_slot ();
 
           private:
+            QPushButton *hide_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
             QSpinBox *vol_index, *vol_group;

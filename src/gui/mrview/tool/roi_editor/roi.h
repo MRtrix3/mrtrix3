@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_analysis_roi_h__
-#define __gui_mrview_tool_roi_analysis_roi_h__
+#ifndef __gui_mrview_tool_roi_editor_roi_h__
+#define __gui_mrview_tool_roi_editor_roi_h__
 
 #include <vector>
 
@@ -35,9 +35,9 @@
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
 
-#include "gui/mrview/tool/roi_analysis/item.h"
-#include "gui/mrview/tool/roi_analysis/model.h"
-#include "gui/mrview/tool/roi_analysis/undoentry.h"
+#include "gui/mrview/tool/roi_editor/item.h"
+#include "gui/mrview/tool/roi_editor/model.h"
+#include "gui/mrview/tool/roi_editor/undoentry.h"
 
 
 namespace MR

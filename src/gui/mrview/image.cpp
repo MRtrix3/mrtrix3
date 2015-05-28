@@ -40,7 +40,6 @@ namespace MR
       Image::Image (const MR::Image::Header& image_header) :
         Volume (image_header),
         buffer (image_header),
-        nearest_interp (buffer),
         interp (buffer),        
         position (image_header.ndim())
       {
@@ -53,7 +52,6 @@ namespace MR
       Image::Image (Window& window, const MR::Image::Header& image_header) :
         Volume (window, image_header),
         buffer (image_header),
-        nearest_interp (buffer),
         interp (buffer),        
         position (image_header.ndim())
       {
@@ -298,13 +296,13 @@ namespace MR
 
           switch (header().datatype() ()) {
             case DataType::Bit:
-            case DataType::Int8:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::BYTE;
-              break;
             case DataType::UInt8:
               internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
               type = gl::UNSIGNED_BYTE;
+              break;
+            case DataType::Int8:
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::BYTE;
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:

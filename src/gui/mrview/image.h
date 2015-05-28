@@ -60,8 +60,8 @@ namespace MR
           void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
 
-          void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
-          { if(show_colour_bar) visitor.render_image_colourbar(*this, projection); }
+          void request_render_colourbar(DisplayableVisitor& visitor) override
+          { if(show_colour_bar) visitor.render_image_colourbar(*this); }
 
           void get_axes (int plane, int& x, int& y) {
             if (plane) {
@@ -86,18 +86,26 @@ namespace MR
 
         private:
           BufferType buffer;
-          MR::Image::Interp::Nearest<VoxelType> nearest_interp;
 
         public:
           InterpVoxelType interp;
           VoxelType& voxel () { return interp; }
-          cfloat trilinear_value(const Point<float> &scanner_point) {
-            if(interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
+          cfloat trilinear_value (const Point<float> &scanner_point) {
+            if (interp.scanner (scanner_point)) 
+              return cfloat(NAN, NAN); 
             return interp.value();
           }
-          cfloat nearest_neighbour_value(const Point<float> &scanner_point) {
-            if(nearest_interp.scanner(scanner_point)) { return cfloat(NAN, NAN); }
-            return nearest_interp.value();
+          cfloat nearest_neighbour_value (const Point<float> &scanner_point) {
+            auto p = interp.scanner2voxel (scanner_point);
+            ssize_t v[3] = { ssize_t (std::round (p[0])), ssize_t (std::round (p[1])), ssize_t (std::round (p[2])) };
+            if (v[0] < 0 || v[0] >= voxel().dim(0) ||
+                v[1] < 0 || v[1] >= voxel().dim(1) ||
+                v[2] < 0 || v[2] >= voxel().dim(2)) 
+              return cfloat(NAN, NAN); 
+            voxel()[0] = v[0];
+            voxel()[1] = v[1];
+            voxel()[2] = v[2];
+            return voxel().value();
           }
 
         private:

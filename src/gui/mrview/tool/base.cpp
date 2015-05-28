@@ -32,6 +32,8 @@ namespace MR
       namespace Tool
       {
 
+        void Dock::hideEvent (QHideEvent*) { assert (tool); tool->hide_event(); }
+
         Base::Base (Window& main_window, Dock* parent) : 
           QFrame (parent),
           window (main_window) { 
@@ -58,7 +60,7 @@ namespace MR
 
         void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection&) { }
+        void Base::draw_colourbars () { }
 
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }

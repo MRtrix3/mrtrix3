@@ -90,19 +90,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Fixel Image"));
+            button->setToolTip (tr ("Open fixel image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Fixel Image"));
+            button->setToolTip (tr ("Close fixel image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (fixel_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Fixel Images"));
+            hide_all_button->setToolTip (tr ("Hide all fixel images"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -242,14 +242,47 @@ namespace MR
         }
 
 
-        void Vector::drawOverlays (const Projection& transform)
+        void Vector::draw_colourbars ()
         {
           if(hide_all_button->isChecked()) return;
 
-          for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
+          for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this);
           }
+        }
+
+
+
+        size_t Vector::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(!hide_all_button->isChecked()) {
+             for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
+               AbstractFixel* fixel = dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get());
+               if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
+
+
+        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel)
+        {
+          float min_value = fixel.use_discard_lower() ?
+                      fixel.scaling_min_thresholded() :
+                      fixel.scaling_min();
+
+          float max_value = fixel.use_discard_upper() ?
+                      fixel.scaling_max_thresholded() :
+                      fixel.scaling_max();
+
+          window.colourbar_renderer.render (fixel, fixel.scale_inverted(),
+                                     min_value, max_value,
+                                     fixel.scaling_min(), fixel.display_range);
         }
 
 
@@ -659,7 +692,7 @@ namespace MR
         { 
           using namespace MR::App;
           options
-            + OptionGroup ("Vector Plot tool options")
+            + OptionGroup ("Vector plot tool options")
 
             + Option ("vector.load", "Load the specified MRtrix sparse image file (.msf) into the fixel tool.")
             +   Argument ("image").type_image_in();

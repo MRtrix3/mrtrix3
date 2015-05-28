@@ -22,7 +22,6 @@
 
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "math/vector.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -129,6 +128,23 @@ namespace MR
           tractogram = selected_tractogram;
           update_tool_display();
         }
+
+
+
+        void TrackScalarFile::render_tractogram_colourbar(const Tractogram &tractogram) {
+          float min_value = tractogram.use_discard_lower() ?
+            tractogram.scaling_min_thresholded() :
+            tractogram.scaling_min();
+
+          float max_value = tractogram.use_discard_upper() ?
+            tractogram.scaling_max_thresholded() :
+            tractogram.scaling_max();
+
+          window.colourbar_renderer.render (tractogram, tractogram.scale_inverted(),
+                                            min_value, max_value,
+                                            tractogram.scaling_min(), tractogram.display_range);
+        }
+
 
 
         void TrackScalarFile::clear_tool_display () {

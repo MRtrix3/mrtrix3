@@ -25,7 +25,6 @@
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/tool/view.h"
 
 namespace MR
@@ -210,10 +209,11 @@ namespace MR
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
-            if(!ColourMap::maps[image->colourmap].is_colour)
-              source += std::string ("        ") + ColourMap::maps[image->colourmap].mapping;
-            else
-              source += std::string ("         color.rgb = 2.7213 * amplitude * overlay"+str(n)+"_colourmap_colour;\n");
+            std::string mapping (ColourMap::maps[image->colourmap].mapping);
+            replace (mapping, "scale", "overlay"+str(n)+"_scale");
+            replace (mapping, "offset", "overlay"+str(n)+"_offset");
+            replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");
+            source += std::string ("        ") + mapping;
 
             source += 
               "        color.a = amplitude * overlay"+str(n) + "_alpha;\n"
@@ -339,7 +339,11 @@ namespace MR
 
           draw_crosshairs (projection);
 
-
+          if(!visible) {
+            gl::Disable (gl::BLEND);
+            draw_orientation_labels (projection);
+            return;
+          }
 
 
           GL::mat4 T2S = get_tex_to_scanner_matrix (*image());
@@ -503,7 +507,6 @@ namespace MR
 
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
           image()->stop (volume_shader);
-
           gl::Disable (gl::BLEND);
 
           draw_orientation_labels (projection);

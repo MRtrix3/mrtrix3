@@ -31,17 +31,26 @@ namespace MR
             }
           }
 
+          bool isMin() const { return is_min; }
+          bool isMax() const { return is_max; }
+
           void setValue (float val) {
             if (std::isfinite (val)) {
-              if (val > max)
+              if (val >= max) {
                 setText (str(max).c_str());
-              else if (val < min)
+                is_min = false; is_max = true;
+              } else if (val <= min) {
                 setText (str(min).c_str());
-              else
+                is_min = true; is_max = false;
+              } else {
                 setText (str(val).c_str());
+                is_min = is_max = false;
+              }
             }
-            else 
+            else  {
               clear();
+              is_min = is_max = false;
+            }
           }
 
 
@@ -51,10 +60,22 @@ namespace MR
 
           void setMin (float val) {
             min = val;
+            if (value() <= val) {
+              setValue (val);
+              is_min = true;
+              emit valueChanged();
+              emit valueChanged (val);
+            }
           }
 
           void setMax (float val) {
             max = val;
+            if (value() >= val) {
+              setValue (val);
+              is_max = true;
+              emit valueChanged();
+              emit valueChanged (val);
+            }
           }
 
           float getMin() const { return min; }
@@ -69,6 +90,7 @@ namespace MR
 
         protected:
           float rate, min, max;
+          bool is_min, is_max;
           int previous_y;
 
           int deadzone_y;

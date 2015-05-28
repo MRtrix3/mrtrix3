@@ -52,7 +52,6 @@ namespace MR
 
           private slots:
             void on_image_changed ();
-            void on_num_frames_changed (int);
             void on_rotation_type (int);
             void on_translation_type (int);
             void on_screen_capture ();
@@ -104,7 +103,7 @@ namespace MR
                     volume(volume), volume_axis(volume_axis),
                     frame_index(frame_index), plane(plane) {}
             };
-            constexpr static size_t max_cache_size = 10;
+            constexpr static size_t max_cache_size = 1;
             std::deque<CaptureState> cached_state;
 
             void run (bool with_capture);

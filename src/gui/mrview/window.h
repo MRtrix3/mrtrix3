@@ -94,6 +94,9 @@ namespace MR
             updateGL();
           }
 
+          bool get_image_visibility () const { return image_visible_action->isChecked(); }
+          void set_image_visibility (bool flag);
+
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
           bool show_comments () const { return show_comments_action->isChecked(); }
           bool show_voxel_info () const { return show_voxel_info_action->isChecked(); }
@@ -121,6 +124,7 @@ namespace MR
           void fieldOfViewChanged ();
           void modeChanged ();
           void imageChanged ();
+          void imageVisibilityChanged (bool);
           void scalingChanged ();
           void volumeChanged (size_t);
           void volumeGroupChanged (size_t);
@@ -145,6 +149,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
+          void show_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -158,6 +163,7 @@ namespace MR
           void image_select_slot (QAction* action);
 
           void reset_view_slot ();
+          void background_colour_slot ();
 
           void OpenGL_slot ();
           void about_slot ();
@@ -217,8 +223,11 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Versor<float> orient;
           float field_of_view;
-          int anatomical_plane, annotations, colourbar_position_index;
+          int anatomical_plane, annotations;
+          ColourMap::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
+
+          float background_colour[3];
 
           QMenu *image_menu;
 
@@ -238,7 +247,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-
+                  *image_visible_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,
@@ -267,6 +276,8 @@ namespace MR
                   *OpenGL_action,
                   *about_action,
                   *aboutQt_action;
+
+          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
 
           void paintGL ();
           void initGL ();

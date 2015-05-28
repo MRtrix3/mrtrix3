@@ -28,7 +28,7 @@
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/opengl/lighting.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
 
 namespace MR
 {
@@ -77,8 +77,8 @@ namespace MR
           use_lighting (false),
           not_3D (true),
           line_opacity (1.0),
-          scalar_file_options (NULL),
-          lighting_dialog (NULL) {
+          scalar_file_options (nullptr),
+          lighting_dock (nullptr) {
 
             float voxel_size;
             if (main_window.image()) {
@@ -97,19 +97,19 @@ namespace MR
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Tracks"));
+            button->setToolTip (tr ("Open tractogram"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Tracks"));
+            button->setToolTip (tr ("Close tractogram"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (tractogram_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide Tracks"));
+            hide_all_button->setToolTip (tr ("Hide all tractograms"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -223,13 +223,35 @@ namespace MR
         }
 
 
-        void Tractography::drawOverlays (const Projection& transform)
+        void Tractography::draw_colourbars ()
         {
+          if(!scalar_file_options || hide_all_button->isChecked())
+            return;
+
+          const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
+
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool);
           }
         }
+
+
+
+        size_t Tractography::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(scalar_file_options && !hide_all_button->isChecked()) {
+             for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+               Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+               if (tractogram && tractogram->show && tractogram->scalar_filename.length())
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
 
 
         void Tractography::tractogram_open_slot ()
@@ -295,9 +317,11 @@ namespace MR
 
         void Tractography::on_lighting_settings ()
         {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Tractogram lighting", *lighting);
-          lighting_dialog->show();
+          if (!lighting_dock) {
+            lighting_dock = new LightingDock("Tractogram lighting", *lighting);
+            window.addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+          }
+          lighting_dock->show();
         }
 
 
@@ -400,7 +424,9 @@ namespace MR
             msgBox.exec();
           } else {
             if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar File Options", window);
+              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options", window);
+              scalar_file_options->setFloating (false);
+              scalar_file_options->raise();
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {

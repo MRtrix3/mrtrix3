@@ -342,7 +342,7 @@ void run ()
 
   }
 
-  INFO ("final response function: [" + str(response, 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
+  CONSOLE ("final response function: [" + str(response, 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
   response.save (argument[1]);
 
   opt = get_options ("sf");

@@ -51,8 +51,8 @@ namespace MR
 
           std::string source =
           "layout (location = 0) in vec3 this_vertex;\n"
-          "layout (location = 1) in vec3 prev_vertex;\n"
-          "layout (location = 2) in vec3 next_vertex;\n";
+          "layout (location = 1) in vec3 next_vertex;\n"
+          "layout (location = 2) in vec3 next_next_vertex;\n";
 
           switch(color_type) {
             case Direction: break;
@@ -69,6 +69,7 @@ namespace MR
           source +=
           "uniform mat4 MVP;\n"
           "uniform float line_thickness;\n"
+          "uniform float downscale_factor;\n"
 
           // Uniforms won't be included in compiled shader if not referenced
           // so we can unconditionally list all of them
@@ -84,7 +85,9 @@ namespace MR
 
           "out vec4 v_dir;\n"
           "out vec4 v_normal;\n"
-          "out vec3 v_colour;\n";
+          "out vec3 v_colour;\n"
+          "out int v_vertex_id;\n"
+          "out int v_visible;\n";
 
 
           if(do_crop_to_slab)
@@ -98,11 +101,11 @@ namespace MR
 
           // Colour and lighting function
           source +=
-          "void set_colour_and_lighting() {\n";
+          "void set_colour_and_lighting(vec3 start_vec, vec3 end_vec) {\n";
 
           if(use_lighting || colour_by_direction)
             source +=
-            "  vec3 dir = next_vertex - this_vertex;\n";
+            "  vec3 dir = end_vec - start_vec;\n";
           if(colour_by_direction)
             source += "  v_colour = normalize (abs(dir));\n";
           if(use_lighting)
@@ -137,16 +140,23 @@ namespace MR
           // Main function
           source +=
           "void main() {\n"
+          "  v_vertex_id = gl_VertexID;\n"
+          "  bool skip_vertex = v_vertex_id % 2 == 1 && downscale_factor == 1.0;\n"
+          "  vec3 start_vec = skip_vertex ? next_vertex : this_vertex;\n"
+          "  vec3 end_vec = skip_vertex ? next_next_vertex : next_vertex;\n"
+          "  vec4 p1 = MVP * vec4(start_vec, 1);\n"
+          "  vec4 p2 = MVP * vec4(end_vec, 1);\n"
+          "  gl_Position = p1;\n"
 
-          "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
-          "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
-          "  gl_Position = p1;\n";
+          "  v_visible = (gl_Position.x > -1 && gl_Position.x < 1)\n"
+          "   && (gl_Position.y > -1 && gl_Position.y < 1)\n"
+          "   && (gl_Position.z > -1 && gl_Position.z < 1) ? 1 : 0 ;\n";
 
           if(do_crop_to_slab)
-            source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
+            source += "  v_include = (dot(start_vec, screen_normal) - crop_var) / slab_width;\n";
 
           if(color_type == ScalarFile)
-            source += "  v_amp = amp";
+            source += "  v_amp = amp;\n";
 
           source +=
           "  v_dir = normalize(p2-p1);\n"
@@ -154,7 +164,7 @@ namespace MR
 
           "  v_normal *=  1.0 + (aspect_ratio - 1.0) * abs(v_normal.y);\n"
 
-          "  set_colour_and_lighting();\n"
+          "  set_colour_and_lighting(start_vec, end_vec);\n"
           "}\n";
 
           return source;
@@ -167,10 +177,13 @@ namespace MR
           "layout(lines) in;\n"
           "layout(triangle_strip, max_vertices = 6) out;\n"
           "uniform float line_thickness;\n"
+          "uniform float downscale_factor;\n"
 
           "in vec4 v_dir[];\n"
           "in vec4 v_normal[];\n"
-          "in vec3 v_colour[];\n";
+          "in vec3 v_colour[];\n"
+          "in int v_vertex_id[];\n"
+          "in int v_visible[];\n";
 
           if(do_crop_to_slab)
             source +=
@@ -193,7 +206,25 @@ namespace MR
           "out vec3 g_tangent;\n"
 
           "void main() {\n"
+
+          // If both end-points are outside the viewport then we can safely discard
+          "  if(v_visible[0] < 1.0 && v_visible[1] < 1.0)\n"
+          "    return;\n"
+
+
+          // If we're downscaling skip every primitive with a starting odd vertex id
+          "  if(v_vertex_id[0] % 2 == 1 && downscale_factor == 1.0)\n"
+          "    return;\n"
+
+
           "  fColour = v_colour[0];\n";
+
+          // If both end-points of primitive aren't in the slab then we can safely discard
+          // Otherwise let the fragment shader smoothly crop
+          if(do_crop_to_slab)
+            source +=
+            "  if((v_include[0] < 0.0 || v_include[0] > 1.0) && (v_include[1] < 0.0 || v_include[1] > 1.0))\n"
+            "    return;\n";
 
           if(use_lighting)
             source +=
@@ -378,10 +409,13 @@ namespace MR
             window (window),
             tractography_tool (tool),
             filename (filename),
-            colourbar_position_index (4)
+            downscale_factor (1.0f),
+            should_downscale_tracks (true)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
+          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (on_FOV_changed()));
+          on_FOV_changed ();
         }
 
 
@@ -399,7 +433,6 @@ namespace MR
           if (scalar_buffers.size())
             gl::DeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
         }
-
 
 
 
@@ -441,6 +474,8 @@ namespace MR
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), tractography_tool.line_thickness);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "downscale_factor"), downscale_factor);
+
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -478,7 +513,7 @@ namespace MR
         inline void Tractogram::render_streamlines () {
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
-            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf] - 1);
+            gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
         }
 
@@ -496,6 +531,9 @@ namespace MR
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           size_t tck_count = 0;
+
+          should_downscale_tracks = to<size_t>(properties["count"]) > max_num_tracks_no_downscaling;
+          on_FOV_changed();
 
           while (file (tck)) {
 
@@ -639,9 +677,9 @@ namespace MR
           gl::GenVertexArrays (1, &vertex_array_object);
           gl::BindVertexArray (vertex_array_object);
           gl::EnableVertexAttribArray (0);
-          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
           gl::EnableVertexAttribArray (1);
-          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 

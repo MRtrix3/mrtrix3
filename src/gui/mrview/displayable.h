@@ -54,11 +54,13 @@ namespace MR
 
       class Image;
       namespace Tool { class AbstractFixel; }
+      namespace Tool { class Tractogram; }
       class DisplayableVisitor
       {
         public:
-          virtual void render_image_colourbar(const Image&, const Projection&) {}
-          virtual void render_fixel_colourbar(const Tool::AbstractFixel&, const Projection&) {}
+          virtual void render_image_colourbar(const Image&) {}
+          virtual void render_fixel_colourbar(const Tool::AbstractFixel&) {}
+          virtual void render_tractogram_colourbar(const Tool::Tractogram&) {}
       };
 
       class Displayable : public QAction
@@ -71,7 +73,7 @@ namespace MR
 
           virtual ~Displayable ();
 
-          virtual void request_render_colourbar(DisplayableVisitor&, const Projection&) {}
+          virtual void request_render_colourbar(DisplayableVisitor&) {}
 
           const std::string& get_filename () const {
             return filename;
@@ -83,6 +85,14 @@ namespace MR
 
           float scaling_max () const {
             return display_midpoint + 0.5f * display_range;
+          }
+
+          float scaling_min_thresholded () const {
+            return std::max(scaling_min(), lessthan);
+          }
+
+          float scaling_max_thresholded () const {
+            return std::min(scaling_max(), greaterthan);
           }
 
           float scaling_rate () const {

@@ -38,7 +38,8 @@ namespace MR
           projection (window.glarea, window.font),
           features (flags),
           update_overlays (false),
-          painting (false) { } 
+          painting (false),
+          visible (true) { }
 
 
         Base::~Base ()
@@ -86,8 +87,8 @@ namespace MR
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
               std::string value_str = "value: ";
               cfloat value = image()->interpolate() ?
-                image()->nearest_neighbour_value(window.focus()) :
-                image()->trilinear_value(window.focus());
+                image()->trilinear_value(window.focus()) :
+                image()->nearest_neighbour_value(window.focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
@@ -110,14 +111,32 @@ namespace MR
             projection.done_render_text();
 
             if (window.show_colourbar()) {
-              window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index, image()->scale_inverted());
+
+              auto &colourbar_renderer = window.colourbar_renderer;
+
+              colourbar_renderer.begin_render_colourbars (&projection, window.colourbar_position, 1);
+              colourbar_renderer.render (*image(), image()->scale_inverted());
+              colourbar_renderer.end_render_colourbars ();
 
               QList<QAction*> tools = window.tools()->actions();
-              for (int i = 0; i < tools.size(); ++i) {
+              size_t num_tool_colourbars = 0;
+              for (size_t i = 0, N = tools.size(); i < N; ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock)
-                  dock->tool->drawOverlays (projection);
+                  num_tool_colourbars += dock->tool->visible_number_colourbars ();
               }
+
+
+              colourbar_renderer.begin_render_colourbars (&projection, window.tools_colourbar_position, num_tool_colourbars);
+
+              for (size_t i = 0, N = tools.size(); i < N; ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  dock->tool->draw_colourbars ();
+              }
+
+              colourbar_renderer.end_render_colourbars ();
+
             }
 
           }

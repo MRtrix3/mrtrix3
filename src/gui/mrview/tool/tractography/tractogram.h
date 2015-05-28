@@ -57,9 +57,9 @@ namespace MR
 
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
+            void request_render_colourbar(DisplayableVisitor& visitor) override {
               if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+                visitor.render_tractogram_colourbar(*this);
             }
 
             void load_tracks();
@@ -99,6 +99,7 @@ namespace MR
             void scalingChanged ();
 
           private:
+            static constexpr size_t max_num_tracks_no_downscaling = 5000;
             Window& window;
             Tractography& tractography_tool;
             std::string filename;
@@ -110,8 +111,8 @@ namespace MR
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
             std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
+            float downscale_factor;
+            bool should_downscale_tracks;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
@@ -125,6 +126,10 @@ namespace MR
 
             void render_streamlines ();
 
+          private slots:
+            void on_FOV_changed() {
+              downscale_factor = should_downscale_tracks && window.FOV() > 50 ? 1 : 0;
+            }
         };
       }
     }

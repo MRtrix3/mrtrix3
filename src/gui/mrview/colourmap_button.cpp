@@ -86,7 +86,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
 
 void ColourMapButton::init_custom_colour_menu_items()
 {
-    custom_colour_action = new QAction(tr("Custom colour..."), nullptr);
+    custom_colour_action = new QAction(tr("Custom colour..."), this);
     custom_colour_action->setCheckable(true);
     connect(custom_colour_action, SIGNAL(triggered ()), this, SLOT(select_colour_slot()));
 
@@ -95,7 +95,7 @@ void ColourMapButton::init_custom_colour_menu_items()
     addAction(custom_colour_action);
     colourmap_actions.push_back(custom_colour_action);
 
-    auto choose_random_colour = new QAction(tr("Random colour"), nullptr);
+    auto choose_random_colour = new QAction(tr("Random colour"), this);
     connect(choose_random_colour, SIGNAL(triggered ()), this, SLOT(select_random_colour_slot()));
 
     colourmap_menu->addAction(choose_random_colour);

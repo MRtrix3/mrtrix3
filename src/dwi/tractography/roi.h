@@ -59,7 +59,7 @@ namespace MR
               transform (this->info())
           {
             auto this_vox = voxel();
-            Image::copy (D, this_vox);
+            Image::copy (D, this_vox, 0, 3);
           }
           Image::Transform transform;
       };

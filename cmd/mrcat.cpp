@@ -154,15 +154,14 @@ void run () {
   for (int i = 0; i < num_images; i++) {
     auto in_vox = in[i]->voxel();
 
-    auto copy_func = [&axis, &axis_offset](decltype(out_vox)& out, decltype(in_vox)& in) 
+    auto copy_func = [&axis, &axis_offset](decltype(in_vox)& in, decltype(out_vox)& out)
     {
-      if (axis < int(in.ndim())) 
-        out[axis] = in[axis] + axis_offset;
+      out[axis] = axis < int(in.ndim()) ? in[axis] + axis_offset : axis_offset;
       out.value() = in.value();
     };
 
     Image::ThreadedLoop ("concatenating \"" + in_vox.name() + "\"...", in_vox, 0, std::min (in_vox.ndim(), out_vox.ndim()))
-      .run (copy_func, out_vox, in_vox);
+      .run (copy_func, in_vox, out_vox);
     if (axis < int(in_vox.ndim()))
       axis_offset += in_vox.dim (axis);
     else {

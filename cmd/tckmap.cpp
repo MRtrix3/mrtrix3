@@ -229,70 +229,25 @@ OPTIONS
 
 
 
-MapWriterBase* make_greyscale_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
+MapWriterBase* make_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox, const writer_dim dim)
 {
   MapWriterBase* writer = NULL;
-  const uint8_t dt = H.datatype() ();
-  if (dt & DataType::Signed) {
-    if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriter<int8_t>   (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriter<int16_t>  (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriter<int32_t>  (H, name, stat_vox, GREYSCALE);
-    else
-      throw Exception ("Unsupported data type in image header");
-  } else {
-    if ((dt & DataType::Type) == DataType::Bit)
-      writer = new MapWriter<bool>     (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriter<uint8_t>  (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriter<uint16_t> (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriter<uint32_t> (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::Float32)
-      writer = new MapWriter<float>    (H, name, stat_vox, GREYSCALE);
-    else if ((dt & DataType::Type) == DataType::Float64)
-      writer = new MapWriter<double>   (H, name, stat_vox, GREYSCALE);
-    else
-      throw Exception ("Unsupported data type in image header");
-  }
+  const uint8_t dt = uint8_t(H.datatype()()) & DataType::Type;
+  if (dt == DataType::Bit)
+    writer = new MapWriter<bool>     (H, name, stat_vox, dim);
+  else if (dt == DataType::UInt8)
+    writer = new MapWriter<uint8_t>  (H, name, stat_vox, dim);
+  else if (dt == DataType::UInt16)
+    writer = new MapWriter<uint16_t> (H, name, stat_vox, dim);
+  else if (dt == DataType::UInt32 || dt == DataType::UInt64)
+    writer = new MapWriter<uint32_t> (H, name, stat_vox, dim);
+  else if (dt == DataType::Float32 || dt == DataType::Float64)
+    writer = new MapWriter<float>    (H, name, stat_vox, dim);
+  else
+    throw Exception ("Unsupported data type in image header");
   return writer;
 }
 
-
-MapWriterBase* make_dixel_writer (Image::Header& H, const std::string& name, const vox_stat_t stat_vox)
-{
-  MapWriterBase* writer = NULL;
-  const uint8_t dt = H.datatype() ();
-  if (dt & DataType::Signed) {
-    if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriter<int8_t>   (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriter<int16_t>  (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriter<int32_t>  (H, name, stat_vox);
-    else
-      throw Exception ("Unsupported data type in image header");
-  } else {
-    if ((dt & DataType::Type) == DataType::Bit)
-      writer = new MapWriter<bool>     (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::UInt8)
-      writer = new MapWriter<uint8_t>  (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::UInt16)
-      writer = new MapWriter<uint16_t> (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::UInt32)
-      writer = new MapWriter<uint32_t> (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::Float32)
-      writer = new MapWriter<float>    (H, name, stat_vox);
-    else if ((dt & DataType::Type) == DataType::Float64)
-      writer = new MapWriter<double>   (H, name, stat_vox);
-    else
-      throw Exception ("Unsupported data type in image header");
-  }
-  return writer;
-}
 
 
 
@@ -629,10 +584,10 @@ void run () {
   std::unique_ptr<MapWriterBase> writer;
   switch (writer_type) {
     case UNDEFINED: throw Exception ("Invalid TWI writer image dimensionality");
-    case GREYSCALE: writer.reset (make_greyscale_writer (header, argument[1], stat_vox));      break;
-    case DEC:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, DEC)); break;
-    case DIXEL:     writer.reset (make_dixel_writer     (header, argument[1], stat_vox));      break;
-    case TOD:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, TOD)); break;
+    case GREYSCALE: writer.reset (make_writer           (header, argument[1], stat_vox, GREYSCALE)); break;
+    case DEC:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, DEC));       break;
+    case DIXEL:     writer.reset (make_writer           (header, argument[1], stat_vox, DIXEL));     break;
+    case TOD:       writer.reset (new MapWriter<float>  (header, argument[1], stat_vox, TOD));       break;
   }
 
   writer->set_direct_dump (dump);
