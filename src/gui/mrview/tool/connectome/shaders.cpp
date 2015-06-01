@@ -95,11 +95,6 @@ namespace MR
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
 
-          if (geometry == node_geometry_t::SPHERE) {
-            vertex_shader_source +=
-              "uniform int reverse;\n";
-          }
-
           if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
             vertex_shader_source +=
               "out vec3 normal" + GS_in + ";\n";
@@ -116,10 +111,6 @@ namespace MR
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace * node_size;\n"
               "  normal" + GS_in + " = vertexPosition_modelspace;\n"
-              "  if (reverse != 0) {\n"
-              "    pos = -pos;\n"
-              "    normal" + GS_in + " = -normal" + GS_in + ";\n"
-              "  }\n"
               "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
               break;
             case node_geometry_t::CUBE:

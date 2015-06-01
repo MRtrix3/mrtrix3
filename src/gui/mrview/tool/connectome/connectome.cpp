@@ -637,6 +637,15 @@ namespace MR
         {
           if (hide_all_button->isChecked()) return;
 
+          // If using transparency, only want to draw the close surface;
+          //   trying to draw both surfaces results in problems because the
+          //   triangle render order is not correctly set
+          // If not using transparency, might as well enable it; potential performance gain
+          //   since we guarantee correct surface normals
+          GLboolean current_cull_face = false;
+          gl::GetBooleanv (gl::CULL_FACE, &current_cull_face);
+          gl::Enable (gl::CULL_FACE);
+
           if (node_visibility != node_visibility_t::NONE) {
 
             if (node_geometry == node_geometry_t::OVERLAY) {
@@ -676,14 +685,12 @@ namespace MR
                 //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
                 gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
                 gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
-                //gl::Disable (gl::CULL_FACE);
               } else {
                 gl::Disable (gl::BLEND);
                  if (is_3D)
                   gl::DepthMask (gl::TRUE_);
                 else
                   gl::DepthMask (gl::FALSE_);
-                //gl::Enable (gl::CULL_FACE);
               }
 
               if (node_geometry == node_geometry_t::POINT) {
@@ -704,12 +711,10 @@ namespace MR
               if (node_colour == node_colour_t::FILE && ColourMap::maps[node_colourmap_index].is_colour)
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
 
-              GLuint reverse_ID = 0;
               if (node_geometry == node_geometry_t::SPHERE) {
                 sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
                 sphere_VAO.bind();
                 sphere.index_buffer.bind();
-                reverse_ID = gl::GetUniformLocation (node_shader, "reverse");
               } else if (node_geometry == node_geometry_t::CUBE) {
                 cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
                 cube.normals_buffer.bind (gl::ARRAY_BUFFER);
@@ -742,9 +747,6 @@ namespace MR
                   gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
-                      gl::Uniform1i (reverse_ID, 0);
-                      gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                      gl::Uniform1i (reverse_ID, 1);
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case node_geometry_t::CUBE:
@@ -893,6 +895,9 @@ namespace MR
 
             edge_shader.stop();
           }
+
+          if (!current_cull_face)
+            gl::Disable (gl::CULL_FACE);
         }
 
 
@@ -935,6 +940,7 @@ namespace MR
               initialise (opt[0]);
               image_button->setText (QString::fromStdString (Path::basename (opt[0])));
               load_properties();
+              enable_all (true);
             } catch (Exception& e) { e.display(); clear_all(); }
             return true;
           }
