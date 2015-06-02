@@ -724,11 +724,13 @@ namespace MR
                 gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
               }
 
+              GLuint specular_ID = 0;
               if (use_lighting() && node_geometry != node_geometry_t::POINT) {
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
-                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "specular"), lighting.specular);
+                specular_ID = gl::GetUniformLocation (node_shader, "specular");
+                gl::Uniform1f  (specular_ID, lighting.specular);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
               }
@@ -747,9 +749,23 @@ namespace MR
                   gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
+                      if (use_alpha) {
+                        gl::FrontFace (gl::CW);
+                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                        gl::FrontFace (gl::CCW);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case node_geometry_t::CUBE:
+                      if (use_alpha) {
+                        gl::FrontFace (gl::CW);
+                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
+                        gl::FrontFace (gl::CCW);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
                       gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case node_geometry_t::POINT:
@@ -761,9 +777,23 @@ namespace MR
                       assert (0);
                       break;
                     case node_geometry_t::MESH:
+                      if (use_alpha) {
+                        gl::FrontFace (gl::CW);
+                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        node.render_mesh();
+                        gl::FrontFace (gl::CCW);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
                       node.render_mesh();
                       break;
                     case node_geometry_t::SMOOTH_MESH:
+                      if (use_alpha) {
+                        gl::FrontFace (gl::CW);
+                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        node.render_smooth_mesh();
+                        gl::FrontFace (gl::CCW);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
                       node.render_smooth_mesh();
                       break;
                   }
@@ -829,12 +859,14 @@ namespace MR
               rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
             }
 
+            GLuint specular_ID = 0;
             if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE) {
               radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
-              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "specular"), lighting.specular);
+              specular_ID = gl::GetUniformLocation (edge_shader, "specular");
+              gl::Uniform1f  (specular_ID, lighting.specular);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
             }
@@ -868,7 +900,14 @@ namespace MR
                     gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
-                    gl::DrawElements     (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
+                    if (use_alpha) {
+                      gl::FrontFace (gl::CW);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
+                      gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      gl::FrontFace (gl::CCW);
+                      gl::Uniform1f  (specular_ID, lighting.specular);
+                    }
+                    gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                   case edge_geometry_t::STREAMLINE:
                     gl::LineWidth (edge.get_size() * edge_size_scale_factor);
@@ -876,6 +915,13 @@ namespace MR
                     break;
                   case edge_geometry_t::STREAMTUBE:
                     gl::Uniform1f (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
+                    if (use_alpha) {
+                      gl::FrontFace (gl::CW);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
+                      edge.render_streamtube();
+                      gl::FrontFace (gl::CCW);
+                      gl::Uniform1f  (specular_ID, lighting.specular);
+                    }
                     edge.render_streamtube();
                 }
               }

@@ -76,6 +76,7 @@
 //       - variable radius between exemplars
 //       - manually providing tangents (not really required?)
 //   - Clean up behaviour with unusual sequences of inputs
+//     Hopefully this should be good now, but needs testing
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
 //
 // * Drawing nodes
@@ -85,12 +86,6 @@
 //     tool, but the volume render mode isn't active...
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//     * Rename current Shapes::Sphere class to Halfsphere, use in the DWI renderer,
-//       but derive a full-sphere for use here
-//       (no point using a full-sphere in the DWI renderer as you'd still have the issue of negative lobes)
-//     * Get face culling working
-//   - Meshes
-//     * Get right hand rule working, use face culling
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
@@ -105,6 +100,9 @@
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with volume render clip planes
+//   - Have second function separately to isVisible(), that also tests size / alpha to
+//     see if anything will actually be drawn; this may be used to e.g. toggle draw call,
+//     overlay text, drawing edges based on visible nodes & vice-versa, ...
 //
 // * Nodes GUI section
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
@@ -115,6 +113,12 @@
 // * Additional functionalities:
 //   - Print node name in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?
+//     - Maybe allow editing of short name in the list view
+//     How to determine where to draw the names? Not sure if the width of the text box will be known
+//     - Use focus plane, offset away from the origin, disable depth testing; or:
+//     - Determine point in 3D, offset away from origin, enable depth testing,
+//       possibly also angle labels slightly from projection plane
+//     May be better to use COM of all nodes, rather than scanner space origin, to offset node labels
 //
 
 
