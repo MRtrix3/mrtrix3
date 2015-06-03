@@ -78,6 +78,11 @@
 //   - Clean up behaviour with unusual sequences of inputs
 //     Hopefully this should be good now, but needs testing
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
+//   - Instead of reading the current tcknodeextract output and producing exemplars, generate the
+//     exemplars in a separate command and read from a single .tck file
+//     * As part of this, re-think tcknodeextract command: Rather than re-assigning streamlines
+//       to nodes, have tck2connectome generate an Nx2 matrix file output specifying the node
+//       indices to which each streamline is assigned. Maybe also rename to connectome2tck?
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -89,6 +94,11 @@
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
+//   - Meshes: Look into a mesh file format that allows for the storage of multiple meshes per file
+//     Then, rather than running a script to loop over nodes, create a label2mesh command
+//     - .obj should do it: 'o' object name flag... unfortunately ASCII format only
+//   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file,
+//     present user with control for which row/column to read from
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue

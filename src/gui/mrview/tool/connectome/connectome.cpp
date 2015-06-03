@@ -750,20 +750,20 @@ namespace MR
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
                       if (use_alpha) {
-                        gl::FrontFace (gl::CW);
+                        gl::CullFace (gl::FRONT);
                         gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
                         gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                        gl::FrontFace (gl::CCW);
+                        gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
                       }
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case node_geometry_t::CUBE:
                       if (use_alpha) {
-                        gl::FrontFace (gl::CW);
+                        gl::CullFace (gl::FRONT);
                         gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
                         gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
-                        gl::FrontFace (gl::CCW);
+                        gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
                       }
                       gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
@@ -778,20 +778,20 @@ namespace MR
                       break;
                     case node_geometry_t::MESH:
                       if (use_alpha) {
-                        gl::FrontFace (gl::CW);
+                        gl::CullFace (gl::FRONT);
                         gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
                         node.render_mesh();
-                        gl::FrontFace (gl::CCW);
+                        gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
                       }
                       node.render_mesh();
                       break;
                     case node_geometry_t::SMOOTH_MESH:
                       if (use_alpha) {
-                        gl::FrontFace (gl::CW);
+                        gl::CullFace (gl::FRONT);
                         gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
                         node.render_smooth_mesh();
-                        gl::FrontFace (gl::CCW);
+                        gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
                       }
                       node.render_smooth_mesh();
@@ -901,10 +901,10 @@ namespace MR
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
                     gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     if (use_alpha) {
-                      gl::FrontFace (gl::CW);
+                      gl::CullFace (gl::FRONT);
                       gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
                       gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
-                      gl::FrontFace (gl::CCW);
+                      gl::CullFace (gl::BACK);
                       gl::Uniform1f  (specular_ID, lighting.specular);
                     }
                     gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
@@ -916,10 +916,10 @@ namespace MR
                   case edge_geometry_t::STREAMTUBE:
                     gl::Uniform1f (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
                     if (use_alpha) {
-                      gl::FrontFace (gl::CW);
+                      gl::CullFace (gl::FRONT);
                       gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
                       edge.render_streamtube();
-                      gl::FrontFace (gl::CCW);
+                      gl::CullFace (gl::BACK);
                       gl::Uniform1f  (specular_ID, lighting.specular);
                     }
                     edge.render_streamtube();
