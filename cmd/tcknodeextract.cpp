@@ -50,8 +50,6 @@
 
 
 
-
-
 using namespace MR;
 using namespace App;
 using namespace MR::Connectome;
@@ -59,6 +57,27 @@ using namespace MR::DWI;
 using namespace MR::DWI::Tractography;
 using namespace MR::DWI::Tractography::Connectome;
 
+
+const char* formats[] = { "per_edge", "per_node", "single_file", NULL };
+
+
+const OptionGroup OutputOptions = OptionGroup ("Options for determining the content / format of output files")
+
+    + Option ("nodes", "only select tracks that involve a set of nodes of interest")
+      + Argument ("list").type_sequence_int()
+
+    + Option ("exclusive", "only select tracks that exclusively connect nodes of interest at both ends")
+
+    + Option ("format", "select how the resulting streamlines will be grouped in the output files. "
+                        "Options are: per_edge, per_node, single_file")
+      + Argument ("option").type_choice (formats)
+
+    + Option ("exemplars", "generate a mean connection exemplar per edge, rather than keeping all streamlines "
+                           "(the parcellation node image must be provided to constrain the exemplar endpoints)")
+      + Argument ("image").type_image_in()
+
+    + Option ("keep_unassigned", "by default, the program discards those streamlines that are not successfully assigned to a node. "
+                                 "Set this option to generate corresponding outputs containing these streamlines (labelled as node index 0)");
 
 
 
@@ -68,18 +87,16 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "extract streamlines from a tractogram based on their connectivity to parcellated nodes.\n "
-  + "By default, this command will create one track file for every edge in the connectome; "
-  + "see available command-line options for altering this behaviour.";
+  + "extract streamlines from a tractogram based on their assignment to parcellated nodes";
 
   ARGUMENTS
   + Argument ("tracks_in",      "the input track file").type_file_in()
-  + Argument ("nodes_image_in", "the input parcellated anatomical image").type_image_in()
-  + Argument ("prefix_out",     "the output track file prefix").type_text();
+  + Argument ("assignments_in", "text file containing the node assignments for each streamline").type_file_in()
+  + Argument ("prefix_out",     "the output file / prefix").type_text();
 
 
   OPTIONS
-
+/*
   + Option ("nodes_between", "output track files only for connections between a particular set of nodes of interest; "
                              "only connections where both nodes appear in this list will be output to file")
     + Argument ("list").type_sequence_int()
@@ -88,12 +105,14 @@ void usage ()
                             "any connections where one of the nodes appears on this list will be output to file")
     + Argument ("list").type_sequence_int()
 
-  + Option ("per_node", "output one track file containing the streamlines connecting each node, rather than one for each edge")
+  + Option ("per_node",    "output one track file containing the streamlines connecting each node, rather than one for each edge")
+  + Option ("single_file", "output all tracks to a single file")
 
   + Option ("keep_unassigned", "by default, the program discards those streamlines that are not successfully assigned to a node pair. "
                                "Set this option to generate output files containing these streamlines (labelled as node index 0)")
+*/
 
-  + MR::DWI::Tractography::Connectome::AssignmentOption
+  + OutputOptions
 
   + Tractography::TrackWeightsInOption
 
@@ -101,10 +120,19 @@ void usage ()
                                       "each containing only the streamline weights relevant for that track file")
     + Argument ("prefix").type_text();
 
-
-
-
 };
+
+
+// TODO
+// Okay, need to draw out the best way to do this
+// Think it's going to be best to branch if exemplars are requested; probably toggles multi-threading as well
+// Have a more generic 'selector' class that toggles which output indices need to be written to;
+//   whether exemplar generators or writing to track files
+// Extraction writer needs to only construct a single writer if necessary, and write to it
+//   as long as one output is triggered
+// Likewise, exemplar generators should only create track file(s) once the exemplars are generated
+// Note that exemplars don't make sense connecting to all nodes, only between pairs
+
 
 
 
@@ -114,23 +142,72 @@ void run ()
   Tractography::Properties properties;
   Tractography::Reader<float> reader (argument[0], properties);
 
-  Image::Buffer<node_t> nodes_data (argument[1]);
-  auto nodes = nodes_data.voxel();
+  std::vector<NodePair> assignments;
+  node_t max_node_index = 0;
+  {
+    File::OFStream stream (argument[1]);
+    std::string line;
+    NodePair temp;
+    while (std::getline (stream, line)) {
+      sscanf ("%u %u", line, temp.first, temp.second);
+      assignments.push_back (temp);
+      max_node_index = maxvalue (max_node_index, temp.first, temp.second);
+    }
+  }
+  const size_t count = properties["count"];
+  if (assignments.size() != count)
+    throw Exception ("Assignments file contains " + str(assignments.size()) + " entries; track file contains " + count + " tracks");
+
+  //Image::Buffer<node_t> nodes_data (argument[1]);
+  //auto nodes = nodes_data.voxel();
 
   const std::string prefix (argument[2]);
 
-  std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
+  //std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
 
-  node_t max_node_index = 0;
-  Image::LoopInOrder loop (nodes);
-  for (auto l = loop (nodes); l; ++l)
-    max_node_index = MAX (max_node_index, nodes.value());
+  //node_t max_node_index = 0;
+  //Image::LoopInOrder loop (nodes);
+  //for (auto l = loop (nodes); l; ++l)
+  //  max_node_index = MAX (max_node_index, nodes.value());
 
   INFO ("Maximum node index is " + str(max_node_index));
 
   const node_t first_node = get_options ("keep_unassigned").size() ? 0 : 1;
 
-  NodeExtractMapper mapper (*tck2nodes);
+  // TODO New implementation
+
+  // Get the list of nodes of interest
+  std::vector<node_t> nodes;
+  Options opt = get_options ("nodes");
+  if (opt.size()) {
+    std::vector<int> data = parse_ints (opt[0][0]);
+    bool zero_in_list = false;
+    for (std::vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
+      nodes.push_back (node_t (*i));
+      if (!*i)
+        zero_in_list = true;
+    }
+    if (!zero_in_list && !first_node)
+      nodes.push_back (0);
+    std::sort (nodes.begin(), nodes.end());
+  } else {
+    for (node_t i = first_node; i <= max_node_index; ++i)
+      nodes.push_back (i);
+  }
+
+  //
+  const bool exclusive = get_options ("exclusive").size();
+
+  // OK, going to need a class that flags whether or not it is going to process a track given its node pair
+  //   (whether piping straight to file, or exemplar generation)
+  // Outputting to single file / one file per node works slightly differently when exemplar generation is selected
+
+
+
+
+
+
+  //NodeExtractMapper mapper (*tck2nodes);
   NodeExtractWriter writer (properties);
 
   Options opt = get_options ("prefix_tck_weights_out");
