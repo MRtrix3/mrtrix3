@@ -82,7 +82,7 @@ namespace MR
         INFO ("GL version:   " + std::string ( (const char*) gl::GetString (gl::VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) gl::GetString (gl::VENDOR)));
         GL_CHECK_ERROR;
-        GLint gl_version, gl_version_major;
+        GLint gl_version (0), gl_version_major (0);
         gl::GetIntegerv (gl::MAJOR_VERSION, &gl_version_major);
         GL_CHECK_ERROR;
         gl::GetIntegerv (gl::MINOR_VERSION, &gl_version);
