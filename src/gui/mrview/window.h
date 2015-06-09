@@ -212,7 +212,6 @@ namespace MR
           };
 
           GLArea* glarea;
-          QTimer* glrefresh_timer;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;

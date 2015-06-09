@@ -186,7 +186,6 @@ namespace MR
 
       Window::Window() :
         glarea (new GLArea (*this)),
-        glrefresh_timer (new QTimer (this)),
         mode (nullptr),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
@@ -436,32 +435,32 @@ namespace MR
         action->setShortcut (tr("Space"));
         addAction (action);
 
-        show_crosshairs_action = menu->addAction (tr ("Show focus"), this, SLOT (updateGL()));
+        show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
         show_crosshairs_action->setShortcut (tr("F"));
         show_crosshairs_action->setCheckable (true);
         show_crosshairs_action->setChecked (true);
         addAction (show_crosshairs_action);
 
-        show_comments_action = menu->addAction (tr ("Show comments"), this, SLOT (updateGL()));
+        show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
         show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
         show_comments_action->setShortcut (tr("H"));
         show_comments_action->setCheckable (true);
         show_comments_action->setChecked (true);
         addAction (show_comments_action);
 
-        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), this, SLOT (updateGL()));
+        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
         show_voxel_info_action->setShortcut (tr("V"));
         show_voxel_info_action->setCheckable (true);
         show_voxel_info_action->setChecked (true);
         addAction (show_voxel_info_action);
 
-        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), this, SLOT (updateGL()));
+        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
         show_orientation_labels_action->setShortcut (tr("O"));
         show_orientation_labels_action->setCheckable (true);
         show_orientation_labels_action->setChecked (true);
         addAction (show_orientation_labels_action);
 
-        show_colourbar_action = menu->addAction (tr ("Show colour bar"), this, SLOT (updateGL()));
+        show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
         show_colourbar_action->setShortcut (tr("B"));
         show_colourbar_action->setCheckable (true);
         show_colourbar_action->setChecked (true);
@@ -615,7 +614,7 @@ namespace MR
 
 
         lighting_ = new GL::Lighting (this);
-        connect (lighting_, SIGNAL (changed()), this, SLOT (updateGL()));
+        connect (lighting_, SIGNAL (changed()), glarea, SLOT (update()));
 
         set_image_menu ();
 
@@ -636,9 +635,6 @@ namespace MR
         tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
         if(!tools_colourbar_position)
           WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
-
-        glrefresh_timer->setSingleShot (true);
-        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (update()));
       }
 
 
@@ -665,7 +661,6 @@ namespace MR
       {
         mode = nullptr;
         delete glarea;
-        delete glrefresh_timer;
       }
 
 
@@ -781,7 +776,7 @@ namespace MR
         mode->set_visible(image_visible_action->isChecked());
         set_mode_features();
         emit modeChanged();
-        updateGL();
+        glarea->update();
       }
 
 
@@ -831,7 +826,7 @@ namespace MR
         } else {
           tool->close();
         }
-        updateGL();
+        glarea->update();
       }
 
 
@@ -840,7 +835,7 @@ namespace MR
           Image* imagep = image();
           if (imagep) {
             imagep->set_colourmap (colourmap);
-            updateGL();
+            glarea->update();
           }
       }
 
@@ -852,7 +847,7 @@ namespace MR
           if (imagep) {
             std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
             imagep->set_colour(c_colour);
-            updateGL();
+            glarea->update();
           }
       }
 
@@ -862,7 +857,7 @@ namespace MR
       {
         if (image()) {
           image()->set_invert_scale (invert_scale_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -874,7 +869,7 @@ namespace MR
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
           if (snap_to_image_axes_and_voxel) 
             mode->reset_orientation();
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -891,10 +886,7 @@ namespace MR
 
       void Window::updateGL () 
       { 
-        if (glrefresh_timer->isActive())
-          return;
-
-        glrefresh_timer->start();
+        glarea->update();
       }
 
 
@@ -905,7 +897,7 @@ namespace MR
         if (imagep) {
           imagep->reset_windowing();
           on_scaling_changed();
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -916,7 +908,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->set_interpolate (image_interpolate_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -935,7 +927,7 @@ namespace MR
         else if (action == sagittal_action) set_plane (0);
         else if (action == coronal_action) set_plane (1);
         else assert (0);
-        updateGL();
+        glarea->update();
       }
 
 
@@ -962,7 +954,7 @@ namespace MR
           background_colour[0] = GLubyte(colour.red()) / 255.0f;
           background_colour[1] = GLubyte(colour.green()) / 255.0f;
           background_colour[2] = GLubyte(colour.blue()) / 255.0f;
-          updateGL();
+          glarea->update();
         }
 
       }
@@ -1072,7 +1064,7 @@ namespace MR
             mode->features & Mode::ShaderTransparency,
             mode->features & Mode::ShaderLighting);
         emit imageChanged();
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1102,7 +1094,7 @@ namespace MR
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
           show_colourbar_action->setChecked (annotations & 0x00000010);
         }
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1117,7 +1109,7 @@ namespace MR
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
         set_image_navigation_menu();
-        updateGL();
+        glarea->update();
       }
 
       int Window::get_mouse_mode ()
@@ -1253,7 +1245,7 @@ namespace MR
 
 
       void Window::paintGL ()
-      {  
+      {
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
@@ -1420,7 +1412,7 @@ namespace MR
 
               if (modifiers_ == Qt::ControlModifier) {
                 set_FOV (FOV() * std::exp (-event->delta()/1200.0));
-                updateGL();
+                glarea->update();
                 event->accept();
                 return;
               }
@@ -1495,7 +1487,7 @@ namespace MR
           } \
           ++tool_id;
             
-        updateGL();
+        glarea->update();
         qApp->processEvents();
 
         try {
@@ -1538,7 +1530,7 @@ namespace MR
             else if (opt.opt->is ("fov")) { 
               float fov = opt[0];
               set_FOV (fov);
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1547,7 +1539,7 @@ namespace MR
               if (pos.size() != 3) 
                 throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
               set_focus (Point<> (pos[0], pos[1], pos[2]));
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1557,7 +1549,7 @@ namespace MR
                 if (pos.size() != 3) 
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
                 set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
-                updateGL();
+                glarea->update();
               }
               continue;
             }
@@ -1565,14 +1557,14 @@ namespace MR
             if (opt.opt->is ("fov")) { 
               float fov = opt[0];
               set_FOV (fov);
-              updateGL();
+              glarea->update();
               continue;
             }
 
             if (opt.opt->is ("plane")) { 
               int n = opt[0];
               set_plane (n);
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1618,7 +1610,7 @@ namespace MR
                 if (param.size() != 2) 
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);
-                updateGL();
+                glarea->update();
               }
               continue;
             }
