@@ -638,7 +638,7 @@ namespace MR
           WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
 
         glrefresh_timer->setSingleShot (true);
-        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
+        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (update()));
       }
 
 

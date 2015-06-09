@@ -106,7 +106,7 @@ namespace MR
           void makeGLcurrent () { glarea->makeCurrent(); }
 
           void captureGL (std::string filename) {
-            QImage image (glarea->grabFrameBuffer());
+            QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
           }
 

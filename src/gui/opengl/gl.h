@@ -63,7 +63,17 @@ namespace MR
     namespace GL
     {
 
-      typedef QGLWidget Area;
+#if QT_VERSION >= 0x050400
+      typedef QOpenGLWidget Area;
+      typedef QSurfaceFormat Format;
+#else
+      class Area : public QGLWidget {
+        public:
+          using QGLWidget::QGLWidget;
+          QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
+      };
+      typedef QGLFormat Format;
+#endif
  
       void init ();
       void set_default_context ();

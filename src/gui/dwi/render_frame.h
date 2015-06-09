@@ -51,49 +51,48 @@ namespace MR
 
         public:
           RenderFrame (QWidget* parent);
-          ~RenderFrame();
 
           GL::Lighting* lighting;
 
           void set (const Math::Vector<float>& new_values) {
             values = new_values;
             recompute_amplitudes = true;
-            updateGL();
+            update();
           }
 
           void set_rotation (const GL::mat4& rotation);
 
           void set_show_axes (bool yesno = true) {
             show_axes = yesno;
-            updateGL();
+            update();
           }
           void set_hide_neg_lobes (bool yesno = true) {
             hide_neg_lobes = yesno;
-            updateGL();
+            update();
           }
           void set_color_by_dir (bool yesno = true) {
             color_by_dir = yesno;
-            updateGL();
+            update();
           }
           void set_use_lighting (bool yesno = true) {
             use_lighting = yesno;
-            updateGL();
+            update();
           }
           void set_normalise (bool yesno = true) {
             normalise = yesno;
-            updateGL();
+            update();
           }
           void set_lmax (int lmax) {
             if (lmax != lmax_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lmax_computed = lmax;
-            updateGL();
+            update();
           }
           void set_LOD (int lod) {
             if (lod != lod_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lod_computed = lod;
-            updateGL();
+            update();
           }
 
           int  get_LOD () const { return lod_computed; }
@@ -129,11 +128,6 @@ namespace MR
 
           Renderer renderer;
           Math::Vector<float> values;
-
-          QTimer* glrefresh_timer;
-        protected slots:
-          void base_updateGL() { QGLWidget::updateGL(); }
-          void updateGL();
 
         protected:
           virtual void initializeGL () override;

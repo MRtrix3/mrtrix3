@@ -50,7 +50,7 @@ namespace MR
                 
                 void set_scale (float sc) {
                   scale = sc;
-                  updateGL();
+                  update();
                 }
                 
               protected:

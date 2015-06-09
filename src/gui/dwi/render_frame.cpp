@@ -57,23 +57,15 @@ namespace MR
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
         normalise (false), font (parent->font()), projection (this, font),
-        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
-        glrefresh_timer (new QTimer (this))
+        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);
         lighting->set_background = true;
-        connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
-        glrefresh_timer->setSingleShot (true);
-        connect (glrefresh_timer, SIGNAL (timeout()), this, SLOT (base_updateGL()));
+        connect (lighting, SIGNAL (changed()), this, SLOT (update()));
       }
 
 
-
-      RenderFrame::~RenderFrame()
-      {
-        delete glrefresh_timer;
-      }
 
 
 
@@ -85,17 +77,10 @@ namespace MR
         p[6] = rotation(0,2); p[7] = rotation(1,2); p[8] = rotation(2,2);
         Math::Matrix<float> M (p, 3, 3);
         orientation.from_matrix (M);
-        updateGL();
+        update();
       }
 
 
-
-      void RenderFrame::updateGL ()
-      {
-        if (glrefresh_timer->isActive())
-          return;
-        glrefresh_timer->start();
-      }
 
 
 
@@ -255,11 +240,11 @@ namespace MR
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
             orientation = Math::Versor<float>();
-            updateGL();
+            update();
           }
           else if (event->buttons() == Qt::MidButton) {
             focus.set (0.0, 0.0, 0.0);
-            updateGL();
+            update();
           }
         }
       }
@@ -288,17 +273,17 @@ namespace MR
 
             Math::Versor<float> rot (angle, v);
             orientation = rot * orientation;
-            updateGL();
+            update();
           }
           else if (event->buttons() == Qt::MidButton) {
             focus += projection.screen_to_model_direction (QPoint (dx, -dy), focus);
-            updateGL();
+            update();
           }
           else if (event->buttons() == Qt::RightButton) {
             distance *= 1.0 - DIST_INC*dy;
             if (distance < DIST_MIN) distance = DIST_MIN;
             if (distance > DIST_MAX) distance = DIST_MAX;
-            updateGL();
+            update();
           }
         }
         else if (event->modifiers() == Qt::ControlModifier) {
@@ -306,7 +291,7 @@ namespace MR
             view_angle -= ANGLE_INC*dy;
             if (view_angle < ANGLE_MIN) view_angle = ANGLE_MIN;
             if (view_angle > ANGLE_MAX) view_angle = ANGLE_MAX;
-            updateGL();
+            update();
           }
         }
       }
@@ -318,7 +303,7 @@ namespace MR
         for (int n = 0; n > scroll; n--) scale /= SCALE_INC;
         if (scale > SCALE_MAX) scale = SCALE_MAX;
         if (scale < SCALE_MIN) scale = SCALE_MIN;
-        updateGL();
+        update();
       }
 
 
@@ -330,7 +315,7 @@ namespace MR
         OS_x = OS_y = 0;
         framebuffer.reset (new GLubyte [3*projection.width()*projection.height()]);
         pix.reset (new QImage (OS*projection.width(), OS*projection.height(), QImage::Format_RGB32));
-        updateGL();
+        update();
       }
 
 
@@ -366,7 +351,7 @@ namespace MR
           }
         }
 
-        updateGL();
+        update();
       }
 
 
