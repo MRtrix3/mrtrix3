@@ -64,6 +64,7 @@ namespace MR
     {
 
       void init ();
+      void set_default_context ();
 
       const char* ErrorString (GLenum errorcode);
 
@@ -244,7 +245,6 @@ namespace MR
       };
 
 
-      QGLFormat core_format ();
 
     }
   }

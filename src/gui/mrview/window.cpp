@@ -82,7 +82,7 @@ namespace MR
       // GLArea definitions:
       
       Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (GL::core_format(), &parent),
+        QGLWidget (&parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
