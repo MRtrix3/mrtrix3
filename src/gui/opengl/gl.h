@@ -63,6 +63,8 @@ namespace MR
     namespace GL
     {
 
+      typedef QGLWidget Area;
+ 
       void init ();
       void set_default_context ();
 

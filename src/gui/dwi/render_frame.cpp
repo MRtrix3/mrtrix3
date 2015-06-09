@@ -52,7 +52,7 @@ namespace MR
     {
 
       RenderFrame::RenderFrame (QWidget* parent) :
-        QGLWidget (parent),
+        GL::Area (parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 

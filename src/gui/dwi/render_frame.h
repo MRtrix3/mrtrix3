@@ -45,7 +45,7 @@ namespace MR
     namespace DWI
     {
 
-      class RenderFrame : public QGLWidget
+      class RenderFrame : public GL::Area
       {
           Q_OBJECT
 
@@ -136,13 +136,13 @@ namespace MR
           void updateGL();
 
         protected:
-          virtual void initializeGL ();
-          virtual void resizeGL (int w, int h);
-          virtual void paintGL ();
-          void mouseDoubleClickEvent (QMouseEvent* event);
-          void mousePressEvent (QMouseEvent* event);
-          void mouseMoveEvent (QMouseEvent* event);
-          void wheelEvent (QWheelEvent* event);
+          virtual void initializeGL () override;
+          virtual void resizeGL (int w, int h) override;
+          virtual void paintGL () override;
+          void mouseDoubleClickEvent (QMouseEvent* event) override;
+          void mousePressEvent (QMouseEvent* event) override;
+          void mouseMoveEvent (QMouseEvent* event) override;
+          void wheelEvent (QWheelEvent* event) override;
 
           void snapshot ();
       };
