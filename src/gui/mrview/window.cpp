@@ -1246,6 +1246,7 @@ namespace MR
 
       void Window::paintGL ()
       {
+        glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
@@ -1253,6 +1254,13 @@ namespace MR
 
         gl::DrawBuffer (gl::BACK);
         mode->paintGL();
+        
+        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
+        // otherwise we get transparent windows...
+#if QT_VERSION >= 0x050400
+        gl::ColorMask (false, false, false, true); 
+        gl::Clear (GL_COLOR_BUFFER_BIT);
+#endif
       }
 
 
