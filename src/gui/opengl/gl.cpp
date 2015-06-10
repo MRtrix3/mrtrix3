@@ -48,27 +48,32 @@ namespace MR
         //CONF How many samples to use for multi-sample anti-aliasing (to
         //CONF improve display quality). 
 
-        int nsamples = File::Config::get_int ("MSAA", 0);
-        int swap_interval = MR::File::Config::get_int ("VSync", 0);
+        GL::Format f;
+#if QT_VERSION >= 0x050400
+        f.setSwapBehavior (GL::Format::DoubleBuffer);
+        f.setRenderableType (GL::Format::OpenGL);
+#else
+        f.setDoubleBuffer (true);
+#endif
 
-        QGLFormat f (QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba);
-        f.setSwapInterval (swap_interval);
-        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true)) {
-          f.setVersion (3,3);
-          f.setProfile (QGLFormat::CoreProfile);
-        }
-        if (nsamples > 1) {
-          f.setSampleBuffers (true);
-          f.setSamples (nsamples);
-        }
-
+        f.setVersion (3,3);
+        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true))
+          f.setProfile (GL::Format::CoreProfile);
+        
         f.setDepthBufferSize (24);
         f.setRedBufferSize (8);
         f.setGreenBufferSize (8);
         f.setBlueBufferSize (8);
         f.setAlphaBufferSize (8);
 
-        QGLFormat::setDefaultFormat (f);
+        int swap_interval = MR::File::Config::get_int ("VSync", 0);
+        f.setSwapInterval (swap_interval);
+
+        int nsamples = File::Config::get_int ("MSAA", 0);
+        if (nsamples > 1) 
+          f.setSamples (nsamples);
+
+        GL::Format::setDefaultFormat (f);
       }
 
 
