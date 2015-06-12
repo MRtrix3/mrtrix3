@@ -32,9 +32,9 @@ namespace Connectome {
 Mat2Vec::Mat2Vec (const node_t i) :
     dim (i)
 {
-  lookup.assign (dim, std::vector<node_t> (dim, 0));
+  lookup.assign (dim, std::vector<size_t> (dim, 0));
   inv_lookup.reserve (dim * (dim+1) / 2);
-  node_t index = 0;
+  size_t index = 0;
   for (node_t row = 0; row != dim; ++row) {
     for (node_t column = row; column != dim; ++column) {
       lookup[row][column] = lookup[column][row] = index++;

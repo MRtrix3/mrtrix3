@@ -89,6 +89,7 @@ void Exemplar::finalize (const float step_size)
     clear();
     push_back (node_COMs.first);
     push_back (node_COMs.second);
+    is_finalized = true;
     return;
   }
 

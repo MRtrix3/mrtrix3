@@ -26,6 +26,7 @@
 #include "point.h"
 
 #include "connectome/connectome.h"
+#include "dwi/tractography/streamline.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -54,7 +55,7 @@ namespace MR
 
           void render_line() const { line.render(); }
 
-          void calculate_exemplar (const std::string& path) { assert (!exemplar); exemplar.reset (new Exemplar (*this, path)); }
+          void load_exemplar (const MR::DWI::Tractography::Streamline<float>& data) { assert (!exemplar); exemplar.reset (new Exemplar (*this, data)); }
           void clear_exemplar() { if (streamtube) delete streamtube.release(); if (streamline) delete streamline.release(); if (exemplar) delete exemplar.release(); }
 
           void create_streamline() { assert (!streamline); assert (exemplar); streamline.reset (new Streamline (*exemplar)); }
@@ -103,7 +104,7 @@ namespace MR
           class Line
           {
             public:
-              Line (const Edge& parent),
+              Line (const Edge& parent);
               Line (Line&& that) :
                   vertex_buffer (std::move (that.vertex_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { }
@@ -118,7 +119,7 @@ namespace MR
           class Exemplar
           {
             public:
-              Exemplar (const Edge& parent, const std::string& path);
+              Exemplar (const Edge&, const MR::DWI::Tractography::Streamline<float>&);
               Exemplar (Exemplar&& that) :
                   endpoints { that.endpoints[0], that.endpoints[1] },
                   vertices (std::move (that.vertices)),

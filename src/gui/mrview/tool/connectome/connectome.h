@@ -97,6 +97,8 @@
 //   - Meshes: Look into a mesh file format that allows for the storage of multiple meshes per file
 //     Then, rather than running a script to loop over nodes, create a label2mesh command
 //     - .obj should do it: 'o' object name flag... unfortunately ASCII format only
+//     Allow display of meshes as wireframes:
+//       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 //   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file,
 //     present user with control for which row/column to read from
 //
@@ -113,6 +115,8 @@
 //   - Have second function separately to isVisible(), that also tests size / alpha to
 //     see if anything will actually be drawn; this may be used to e.g. toggle draw call,
 //     overlay text, drawing edges based on visible nodes & vice-versa, ...
+//   - Remove 2D / 3D toggle; instead, have a 'crop to slab' option akin to the
+//     tractography tool, and use the current 2D configuration when the thickness is set to zero
 //
 // * Nodes GUI section
 //   - Implement list view with list of nodes, enable manual manupulation of nodes

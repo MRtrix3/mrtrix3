@@ -39,6 +39,9 @@
 #include "math/rng.h"
 #include "math/versor.h"
 
+#include "dwi/tractography/file.h"
+#include "dwi/tractography/properties.h"
+
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
 
@@ -2656,38 +2659,37 @@ namespace MR
 
 
 
+
+
+
         void Connectome::get_exemplars()
         {
-          // Request directory path from the user
-          const std::string dir = GUI::Dialog::File::get_folder (this, "Select directory where command tcknodeextract has generated its output");
-          if (!dir.size()) return;
-          // Build a vector of track file paths, and verify their presence
-          std::vector<std::string> paths (num_edges(), std::string());
-          for (size_t edge_index = 0; edge_index != num_edges(); ++edge_index) {
-            std::pair<node_t, node_t> node_indices = mat2vec (edge_index);
-            if (node_indices.first != node_indices.second) {
-              ++node_indices.first; ++node_indices.second; // Compensate for node 1 appearing at index 1
-              const std::string basename = str(node_indices.first) + "-" + str(node_indices.second) + ".tck";
-              const std::string expected = MR::Path::join (dir, basename);
-              if (!MR::Path::exists (expected))
-                throw Exception ("Missing track file: " + basename);
-              paths[edge_index] = expected;
-            }
-          }
-          auto source = [&] (uint32_t& out) { static uint32_t i = 0; out = i++; return (out != num_edges()); };
+          // Request exemplar track file path from user
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars");
+          if (!path.size()) return;
+          MR::DWI::Tractography::Properties properties;
+          MR::DWI::Tractography::Reader<float> reader (path, properties);
+          const size_t num_tracks = to<size_t>(properties["count"]);
+          if (num_tracks != num_edges())
+            throw Exception ("Track file " + Path::basename (path) + " contains " + str(num_tracks) + " streamlines; connectome expects " + str(num_edges()) + " exemplars");
+          auto source = [&] (MR::DWI::Tractography::Streamline<float>& out) { return reader (out); };
           std::mutex mutex;
           ProgressBar progress ("Generating connection exemplars... ", num_edges());
-          auto sink = [&] (uint32_t& in) { edges[in].calculate_exemplar (paths[in]); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-          Thread::run_queue (source, uint32_t(), Thread::multi (sink));
+          auto sink = [&] (const MR::DWI::Tractography::Streamline<float>& in) { edges[in.index].load_exemplar (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+          Thread::run_queue (source, MR::DWI::Tractography::Streamline<float>(), Thread::multi (sink));
           for (auto i = edges.begin(); i != edges.end(); ++i)
             i->create_streamline();
           have_exemplars = true;
         }
 
+
+
         void Connectome::get_streamtubes()
         {
-          if (!have_exemplars)
+          if (!have_exemplars) {
             get_exemplars();
+            if (!have_exemplars) return;
+          }
           ProgressBar progress ("Generating connection streamtubes... ", num_edges());
           for (auto i = edges.begin(); i != edges.end(); ++i) {
             i->create_streamtube();

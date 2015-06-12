@@ -153,143 +153,20 @@ namespace MR
 
 
 
-        Edge::Exemplar::Exemplar (const Edge& parent, const std::string& path) :
+
+
+        Edge::Exemplar::Exemplar (const Edge& parent, const MR::DWI::Tractography::Streamline<float>& data) :
             endpoints { parent.get_node_centre(0), parent.get_node_centre(1) }
         {
-          if (!path.size())
-            return;
-
-          MR::DWI::Tractography::Properties properties;
-          MR::DWI::Tractography::Reader<float> reader (path, properties);
-
-          if (properties["count"] == "0")
-            return;
-
-          // Eventually, the exemplars will be re-sampled to match the step size
-          //   of the input file
-          // However this information will also come in handy in determining an appropriate
-          //   number of points to use in generating the exemplar
-          float step_size = NAN;
-          auto output_step_size_it = properties.find ("output_step_size");
-          if (output_step_size_it == properties.end()) {
-            auto step_size_it = properties.find ("step_size");
-            if (step_size_it == properties.end())
-              step_size = 1.0f;
-            else
-              step_size = to<float>(step_size_it->second);
-          } else {
-            step_size = to<float>(output_step_size_it->second);
-          }
-
-          // The number of points to initially use in representing the exemplar streamline
-          // Make sure that if the pathway is of the maximum possible length, we generate
-          //   enough points to adequately represent it; for anything shorter, we're
-          //   just over-sampling a bit
-          float max_dist = 0.0f;
-          auto max_dist_it = properties.find ("max_dist");
-          if (max_dist_it == properties.end())
-            max_dist = 4.0 * dist (endpoints[0], endpoints[1]);
-          else
-            max_dist = to<float>(max_dist_it->second);
-          const uint32_t num_points = std::round (max_dist / step_size) + 1;
-
-          // Not too concerned about using Hermite interpolation here;
-          //   differences between that and linear are likely to average out over many streamlines,
-          //   and curvature undershoot doesn't matter too much in this context
-          MR::DWI::Tractography::Streamline<float> streamline;
-          std::vector< Point<float> > mean (num_points, Point<float> (0.0f, 0.0f, 0.0f));
-          uint32_t count = 0;
-          while (reader (streamline)) {
-            ++count;
-
-            // Determine whether or not this streamline is reversed w.r.t. the exemplar
-            // The exemplar will be generated running from node [0] to node [1]
-            bool is_reversed = false;
-            float end_distances = dist2 (streamline.front(), endpoints[0]) + dist2 (streamline.back(), endpoints[1]);
-            if (dist2 (streamline.front(), endpoints[1]) + dist2 (streamline.back(), endpoints[0]) < end_distances)
-              is_reversed = true;
-
-            // Contribute this streamline toward the mean exemplar streamline
-            for (uint32_t i = 0; i != num_points; ++i) {
-              float interp_pos = (streamline.size() - 1) * i / float(num_points);
-              if (is_reversed)
-                interp_pos = streamline.size() - 1 - interp_pos;
-              const uint32_t lower = std::floor (interp_pos), upper (lower + 1);
-              const float mu = interp_pos - lower;
-              Point<float> pos;
-              if (lower == streamline.size() - 1)
-                pos = streamline.back();
-              else
-                pos = ((1.0f-mu) * streamline[lower]) + (mu * streamline[upper]);
-              mean[i] += pos;
-            }
-          }
-
-          const float scaling_factor = 1.0f / float(count);
-          for (auto p = mean.begin(); p != mean.end(); ++p)
-            *p *= scaling_factor;
-
-          // Want to guarantee that the exemplar streamlines pass through the centre of mass
-          //   of each of the connected nodes
-          // Therefore, for the first and last e.g. 25% of the streamline, gradually add a
-          //   weighted fraction of the node centre-of-mass to the exemplar position
-
-#define EXEMPLAR_ENDPOINT_CONVERGE_FRACTION 0.25
-
-          uint32_t num_converging_points = EXEMPLAR_ENDPOINT_CONVERGE_FRACTION * num_points;
-          for (uint32_t i = 0; i != num_converging_points; ++i) {
-            const float mu = i / float(num_converging_points);
-            mean[i] = (mu * mean[i]) + ((1.0f-mu) * endpoints[0]);
-          }
-          for (uint32_t i = num_points - 1; i != num_points - 1 - num_converging_points; --i) {
-            const float mu = (num_points - 1 - i) / float(num_converging_points);
-            mean[i] = (mu * mean[i]) + ((1.0f-mu) * endpoints[1]);
-          }
-
-          // Resample the mean streamline to a constant step size
-          // Ideally, start from the midpoint, resample backwards to the start of the exemplar,
-          //   reverse the data, then do the second half of the exemplar
-          int32_t index = (num_points + 1) / 2;
-          vertices.assign (1, mean[index]);
-          tangents.assign (1, (mean[index-1] - mean[index+1]).normalise());
-          const float step_sq = Math::pow2 (step_size);
-          for (int32_t step = -1; step <= 1; step += 2) {
-            if (step == 1) {
-              std::reverse (vertices.begin(), vertices.end());
-              std::reverse (tangents.begin(), tangents.end());
-              for (auto t = tangents.begin(); t != tangents.end(); ++t)
-                *t = -*t;
-              index = (num_points + 1) / 2;
-            }
-            do {
-              while ((index+step) >= 0 && (index+step) < int32_t(num_points) && dist2 (mean[index+step], vertices.back()) < step_sq)
-                index += step;
-              // Ideal point for fixed step size lies somewhere between mean[index] and mean[index+step]
-              // Do a binary search to find this point
-              // Unless we're at an endpoint...
-              if (index == 0 || index == int32_t(num_points)-1) {
-                vertices.push_back (mean[index]);
-                tangents.push_back ((mean[index] - mean[index-step]).normalise());
-              } else {
-                float lower = 0.0f, mu = 0.5f, upper = 1.0f;
-                Point<float> p ((mean[index] + mean[index+step]) * 0.5f);
-                for (uint32_t iter = 0; iter != 6; ++iter) {
-                  if (dist2 (p, vertices.back()) > step_sq)
-                    upper = mu;
-                  else
-                    lower = mu;
-                  mu = 0.5 * (lower + upper);
-                  p = (mean[index] * (1.0-mu)) + (mean[index+step] * mu);
-                }
-                vertices.push_back (p);
-                tangents.push_back ((mean[index+step] - mean[index]).normalise());
-              }
-            } while (index != 0 && index != int32_t(num_points)-1);
-          }
-
-          // Generate normals and binormals in preparation for streamtube drawing
           Math::RNG::Normal<float> rng;
-          for (size_t i = 0; i != vertices.size(); ++i) {
+          for (size_t i = 0; i != data.size(); ++i) {
+            vertices.push_back (data[i]);
+            if (!i)
+              tangents.push_back ((data[i+1] - data[i]).normalise());
+            else if (i == data.size() - 1)
+              tangents.push_back ((data[i] - data[i-1]).normalise());
+            else
+              tangents.push_back ((data[i+1] - data[i-1]).normalise());
             Point<float> n;
             if (i)
               n = binormals.back().cross (tangents[i]).normalise();
@@ -299,6 +176,7 @@ namespace MR
             binormals.push_back (tangents[i].cross (n).normalise());
           }
         }
+
 
 
 
