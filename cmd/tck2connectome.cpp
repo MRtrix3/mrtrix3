@@ -33,7 +33,8 @@
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/edge_metrics.h"
-#include "dwi/tractography/connectome/multithread.h"
+#include "dwi/tractography/connectome/mapper.h"
+#include "dwi/tractography/connectome/matrix.h"
 #include "dwi/tractography/connectome/tck2nodes.h"
 
 
@@ -77,6 +78,9 @@ void usage ()
 
   + Option ("keep_unassigned", "By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. "
                                "Set this option to keep these values (will be the first row/column in the output matrix)")
+
+  + Option ("assignments", "write the node assignments of each streamline to a file")
+    + Argument ("path").type_file_out()
 
   + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
                              "(these represent streamlines that connect to the same node at both ends)");
@@ -129,8 +133,8 @@ void run ()
 
   // Multi-threaded connectome construction
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
-  Mapper mapper (*tck2nodes, *metric);
-  Tractography::Connectome::Connectome connectome (max_node_index);
+  Tractography::Connectome::Mapper mapper (*tck2nodes, *metric);
+  Tractography::Connectome::Matrix connectome (max_node_index);
   Thread::run_queue (
       loader, 
       Thread::batch (Tractography::Streamline<float>()), 
@@ -152,5 +156,8 @@ void run ()
     connectome.zero_diagonal();
 
   connectome.write (argument[2]);
+  opt = get_options ("assignments");
+  if (opt.size())
+    connectome.write_assignments (opt[0][0]);
 
 }
