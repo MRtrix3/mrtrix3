@@ -15,13 +15,17 @@ namespace Connectomics
 
 
 Point2MeshMapper::Point2MeshMapper( Mesh::SceneModeller* sceneModeller,
-                              float distanceLimit )
+                                    float distanceLimit )
                  : _sceneModeller( sceneModeller ),
                    _distanceLimit( distanceLimit )
 {
 
+  // preparing index = 0 for failing to find an associated polygon
+  uint32_t polygonIndex = 0;
+  _polygonLut[ Point< int32_t >( 0, 0, 0 ) ] = polygonIndex;
+  ++ polygonIndex;
+
   // preparing a polygon lut
-  int32_t polygonIndex = 0;
   int32_t polygonCount = 0;
   int32_t sceneMeshCount = _sceneModeller->getSceneMeshCount();
   for ( int32_t m = 0; m < sceneMeshCount; m++ )
@@ -55,49 +59,25 @@ void Point2MeshMapper::findNodePair( const Streamline< float >& tck,
                                      NodePair& nodePair )
 {
 
-  int32_t node1 = getNodeIndex( tck.front() );
-  if ( node1 >= 0 )
+  uint32_t node1 = getNodeIndex( tck.front() );
+  uint32_t node2 = getNodeIndex( tck.back() );
+  if ( node1 <= node2 )
   {
 
-    int32_t node2 = getNodeIndex( tck.back() );
-    if ( node2 >= 0 )
-    {
-
-      if ( node1 <= node2 )
-      {
-
-        nodePair.setNodePair( node1, node2 );
-
-      }
-      else
-      {
-
-        nodePair.setNodePair( node2, node1 );
-
-      }
-
-    }
-    else
-    {
-
-      // node not found
-      nodePair.setNodePair( -1, -1 );
-
-    }
+    nodePair.setNodePair( node1, node2 );
 
   }
   else
   {
 
-    // node not found
-    nodePair.setNodePair( -1, -1 );
+    nodePair.setNodePair( node2, node1 );
 
   }
 
 }
 
 
-int32_t Point2MeshMapper::getNodeCount() const
+uint32_t Point2MeshMapper::getNodeCount() const
 {
 
   return _polygonLut.size();
@@ -105,18 +85,7 @@ int32_t Point2MeshMapper::getNodeCount() const
 }
 
 
-Point< int32_t > Point2MeshMapper::getPolygonIndices(
-                                       const Mesh::Polygon< 3 >& polygon ) const
-{
-
-  return Point< int32_t >( polygon.indices[ 0 ],
-                           polygon.indices[ 1 ],
-                           polygon.indices[ 2 ] );
-
-}
-
-
-int32_t Point2MeshMapper::getNodeIndex( const Point< float >& point ) const
+uint32_t Point2MeshMapper::getNodeIndex( const Point< float >& point ) const
 {
 
   float distance = std::numeric_limits< float >::infinity();
@@ -125,13 +94,15 @@ int32_t Point2MeshMapper::getNodeIndex( const Point< float >& point ) const
   if ( findNode( point, distance, sceneMesh, polygon ) )
   {
 
-    return _polygonLut.find( getPolygonIndices( polygon ) )->second;
+    return _polygonLut.find( Point< int32_t >( polygon.indices[ 0 ],
+                                               polygon.indices[ 1 ],
+                                               polygon.indices[ 2 ] ) )->second;
 
   }
   else
   {
 
-    return -1;
+    return 0;
 
   }
 
@@ -251,8 +222,7 @@ bool Point2MeshMapper::findNode( const Point< float >& point,
 
     distance = std::numeric_limits< float >::infinity(); 
     sceneMesh = closestMesh;
-    polygon[ 0 ] = polygon[ 1 ] = polygon[ 2 ] =
-                                     std::numeric_limits< int32_t >::infinity();
+    polygon[ 0 ] = polygon[ 1 ] = polygon[ 2 ] = 0;
     return false;
 
   }

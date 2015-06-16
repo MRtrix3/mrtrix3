@@ -21,8 +21,12 @@ Ray2MeshMapper::Ray2MeshMapper( Mesh::SceneModeller* sceneModeller,
                  _distanceLimit( distanceLimit )
 {
 
+  // preparing index = 0 for failing to find an associated polygon
+  uint32_t polygonIndex = 0;
+  _polygonLut[ Point< int32_t >( 0, 0, 0 ) ] = polygonIndex;
+  ++ polygonIndex;
+
   // preparing a polygon lut
-  int32_t polygonIndex = 0;
   int32_t polygonCount = 0;
   int32_t sceneMeshCount = _sceneModeller->getSceneMeshCount();
   for ( int32_t m = 0; m < sceneMeshCount; m++ )
@@ -63,56 +67,35 @@ void Ray2MeshMapper::findNodePair( const Streamline< float >& tck,
   // two) points of the streamline.
   //
 
-  // casting a ray from one endpoint
+  // casting a ray from one endpoint ( tck[ 0 ] )
   Point< float > rayDirection = ( tck[ 0 ] - tck[ 1 ] ).normalise();
   Point< float > to = tck[ 0 ] + rayDirection * _distanceLimit;
-  int32_t node1 = getNodeIndex( tck[ 0 ], to );
-  if ( node1 >= 0 )
+  uint32_t node1 = getNodeIndex( tck[ 0 ], to );
+
+  // casting a ray from the other endpoint ( tck[ tck.size() ] )
+  int32_t pointCount = tck.size();
+  rayDirection = ( tck[ pointCount ] - tck[ pointCount - 1 ] ).normalise();
+  to = tck[ pointCount ] + rayDirection * _distanceLimit;
+  uint32_t node2 = getNodeIndex( tck[ pointCount ], to );
+
+  // setting the node pair
+  if ( node1 <= node2 )
   {
 
-    // casting a ray from the other endpoint
-    int32_t pointCount = tck.size();
-    rayDirection = ( tck[ pointCount ] - tck[ pointCount - 1 ] ).normalise();
-    to = tck[ pointCount ] + rayDirection * _distanceLimit;
-    int32_t node2 = getNodeIndex( tck[ pointCount ], to );
-    if ( node2 >= 0 )
-    {
-
-      if ( node1 <= node2 )
-      {
-
-        nodePair.setNodePair( node1, node2 );
-
-      }
-      else
-      {
-
-        nodePair.setNodePair( node2, node1 );
-
-      }
-
-    }
-    else
-    {
-
-      // node not found
-      nodePair.setNodePair( -1, -1 );
-
-    }
+    nodePair.setNodePair( node1, node2 );
 
   }
   else
   {
 
-    // node not found
-    nodePair.setNodePair( -1, -1 );
+    nodePair.setNodePair( node2, node1 );
 
   }
 
 }
 
 
-int32_t Ray2MeshMapper::getNodeCount() const
+uint32_t Ray2MeshMapper::getNodeCount() const
 {
 
   return _polygonLut.size();
@@ -120,33 +103,24 @@ int32_t Ray2MeshMapper::getNodeCount() const
 }
 
 
-Point< int32_t > Ray2MeshMapper::getPolygonIndices(
-                                       const Mesh::Polygon< 3 >& polygon ) const
-{
-
-  return Point< int32_t >( polygon.indices[ 0 ],
-                           polygon.indices[ 1 ],
-                           polygon.indices[ 2 ] );
-
-}
-
-
-int32_t Ray2MeshMapper::getNodeIndex( const Point< float >& from,
-                                      const Point< float >& to ) const
+uint32_t Ray2MeshMapper::getNodeIndex( const Point< float >& from,
+                                       const Point< float >& to ) const
 {
 
   Mesh::IntersectionSet intersectionSet( *_sceneModeller, from, to );
   if ( intersectionSet.getCount() )
   {
 
-    return _polygonLut.find( getPolygonIndices(
-                      intersectionSet.getIntersection( 0 )._polygon ) )->second;
+    Mesh::Polygon< 3 > polygon = intersectionSet.getIntersection( 0 )._polygon;
+    return _polygonLut.find( Point< int32_t >( polygon.indices[ 0 ],
+                                               polygon.indices[ 1 ],
+                                               polygon.indices[ 2 ] ) )->second;
 
   }
   else
   {
 
-    return -1;
+    return 0;
 
   }
 

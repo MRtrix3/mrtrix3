@@ -77,7 +77,7 @@ void usage ()
               "the input track file (.tck)").type_file_in()
 
   + Argument( "mesh_in",
-              "the input mesh file (must be vtk format)").type_image_in()
+              "the input mesh file (must be vtk format)").type_file_in()
 
   + Argument( "connectome_out",
               "the output .csv file").type_file_out();
@@ -212,6 +212,7 @@ void run ()
                   Connectomics::ConnectomeMapperFactory::getInstance().
                      getRay2MeshMapper( sceneModeller, float( opt[ 0 ][ 0 ] ) );
         break;
+
       }
 
     }
@@ -261,10 +262,9 @@ void run ()
 
   }*/
 
-
   // Saving the output connectome
-  /*std::cout << "starting writing the output file" << std::endl;
-  connectome.write( argument[ 2 ] );*/
+  std::cout << "starting writing the output file" << std::endl;
+  connectome.write( argument[ 2 ] );
 
 }
 

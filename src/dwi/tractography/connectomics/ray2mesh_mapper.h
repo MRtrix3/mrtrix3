@@ -29,7 +29,7 @@ class Ray2MeshMapper : public ConnectomeMapper
 
     void findNodePair( const Streamline< float >& tck,
                        NodePair& nodePair );
-    int32_t getNodeCount() const;
+    uint32_t getNodeCount() const;
 
   protected:
 
@@ -37,11 +37,8 @@ class Ray2MeshMapper : public ConnectomeMapper
     float _distanceLimit;
     std::map< Point< int32_t >, int32_t > _polygonLut;
 
-    Point< int32_t > getPolygonIndices(
-                                      const Mesh::Polygon< 3 >& polygon ) const;
-
-    int32_t getNodeIndex( const Point< float >& from,
-                          const Point< float >& to ) const;
+    uint32_t getNodeIndex( const Point< float >& from,
+                           const Point< float >& to ) const;
 
 };
 

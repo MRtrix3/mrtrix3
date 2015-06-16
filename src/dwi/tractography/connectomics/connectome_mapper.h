@@ -28,7 +28,7 @@ class ConnectomeMapper /* common interface */
 
     virtual void findNodePair( const Streamline< float >& tck,
                                NodePair& nodePair ) = 0;
-    virtual int32_t getNodeCount() const = 0;
+    virtual uint32_t getNodeCount() const = 0;
 
 };
 

@@ -25,14 +25,14 @@ class NodePair
     NodePair();
     virtual ~NodePair();
 
-    void setNodePair( const int32_t firstNode,
-                      const int32_t secondNode );
-    const int32_t& getFirstNode() const;    
-    const int32_t& getSecondNode() const;
+    void setNodePair( const uint32_t firstNode,
+                      const uint32_t secondNode );
+    const uint32_t& getFirstNode() const;    
+    const uint32_t& getSecondNode() const;
 
   protected:
 
-    std::pair< int32_t, int32_t > _nodePair;
+    std::pair< uint32_t, uint32_t > _nodePair;
 
 };
 
@@ -42,7 +42,7 @@ class Connectome
 
   public:
 
-    Connectome( const int32_t nodeCount );
+    Connectome( const uint32_t nodeCount );
     virtual ~Connectome();
 
     void update( const NodePair& nodePair );
@@ -53,6 +53,7 @@ class Connectome
 
   protected:
 
+    uint32_t _nodeCount;
     Math::Matrix< float > _matrix;
 
 };

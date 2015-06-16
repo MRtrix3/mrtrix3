@@ -1,4 +1,6 @@
 #include "dwi/tractography/connectomics/connectome.h"
+#include "file/ofstream.h"
+#include <map>
 
 
 namespace MR
@@ -28,8 +30,8 @@ NodePair::~NodePair()
 }
 
 
-void NodePair::setNodePair( const int32_t firstNode,
-                            const int32_t secondNode )
+void NodePair::setNodePair( const uint32_t firstNode,
+                            const uint32_t secondNode )
 {
 
   _nodePair.first = firstNode;
@@ -38,7 +40,7 @@ void NodePair::setNodePair( const int32_t firstNode,
 }
 
 
-const int32_t& NodePair::getFirstNode() const
+const uint32_t& NodePair::getFirstNode() const
 {
 
   return _nodePair.first;
@@ -46,7 +48,7 @@ const int32_t& NodePair::getFirstNode() const
 }
 
 
-const int32_t& NodePair::getSecondNode() const
+const uint32_t& NodePair::getSecondNode() const
 {
 
   return _nodePair.second;
@@ -58,7 +60,8 @@ const int32_t& NodePair::getSecondNode() const
 // class Connectome
 //
 
-Connectome::Connectome( const int32_t nodeCount )
+Connectome::Connectome( const uint32_t nodeCount )
+           : _nodeCount( nodeCount )
 {
 
   _matrix.allocate( nodeCount, nodeCount );
@@ -74,17 +77,7 @@ Connectome::~Connectome()
 void Connectome::update( const NodePair& nodePair )
 {
 
-  int32_t firstNode = nodePair.getFirstNode();
-  int32_t secondNode = nodePair.getSecondNode();
-  assert( firstNode < data.rows() );
-  assert( secondNode < data.rows() );
-  assert( firstNode <= secondNode );
-  if ( firstNode >= 0 && secondNode >= 0 )
-  {
-
-    ++ _matrix( firstNode, secondNode );
-
-  }
+  ++ _matrix( nodePair.getFirstNode(), nodePair.getSecondNode() );
 
 }
 
@@ -93,17 +86,7 @@ void Connectome::update( const NodePair& nodePair )
 bool Connectome::operator() ( const NodePair& nodePair )
 {
 
-  int32_t firstNode = nodePair.getFirstNode();
-  int32_t secondNode = nodePair.getSecondNode();
-  assert( firstNode < data.rows() );
-  assert( secondNode < data.rows() );
-  assert( firstNode <= secondNode );
-  if ( firstNode >= 0 && secondNode >= 0 )
-  {
-
-    ++ _matrix( firstNode, secondNode );
-
-  }
+  ++ _matrix( nodePair.getFirstNode(), nodePair.getSecondNode() );
   return true;
 
 }
@@ -112,7 +95,30 @@ bool Connectome::operator() ( const NodePair& nodePair )
 void Connectome::write( const std::string& path )
 {
 
-  _matrix.save( path );
+  File::OFStream out( path );
+
+  std::vector< std::map< uint32_t, uint32_t > > sparseMatrix( _nodeCount );
+  std::map< uint32_t, uint32_t > rowMap;
+  for ( uint32_t row = 0; row < _nodeCount; row++ )
+  {
+
+    Math::Matrix< float >::VectorView rowVector = _matrix.row( row );
+    for ( uint32_t column = row; column < _nodeCount; column++ )
+    {
+
+      if ( rowVector[ column ] )
+      {
+
+        rowMap[ column ] = rowVector[ column ];
+        //out << row << " " << column << " " << rowVector[ column ] << "\n";
+
+      }
+
+    }
+    sparseMatrix[ row ] = rowMap;
+    rowMap.clear();
+
+  }
 
 }
 
