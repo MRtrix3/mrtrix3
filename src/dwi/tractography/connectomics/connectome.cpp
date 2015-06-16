@@ -1,6 +1,5 @@
 #include "dwi/tractography/connectomics/connectome.h"
 #include "file/ofstream.h"
-#include <map>
 
 
 namespace MR
@@ -64,7 +63,14 @@ Connectome::Connectome( const uint32_t nodeCount )
            : _nodeCount( nodeCount )
 {
 
-  _matrix.allocate( nodeCount, nodeCount );
+  // allocating connectivity matrix
+  _sparseMatrix.resize( nodeCount );
+  for ( uint32_t n = 0; n < nodeCount; n++ )
+  {
+
+    _sparseMatrix[ n ] = new std::map< uint32_t, uint32_t >();
+
+  }
 
 }
 
@@ -77,7 +83,9 @@ Connectome::~Connectome()
 void Connectome::update( const NodePair& nodePair )
 {
 
-  ++ _matrix( nodePair.getFirstNode(), nodePair.getSecondNode() );
+  uint32_t row = nodePair.getFirstNode();
+  uint32_t column = nodePair.getSecondNode();
+  ++ ( *_sparseMatrix[ row ] )[ column ];
 
 }
 
@@ -86,7 +94,9 @@ void Connectome::update( const NodePair& nodePair )
 bool Connectome::operator() ( const NodePair& nodePair )
 {
 
-  ++ _matrix( nodePair.getFirstNode(), nodePair.getSecondNode() );
+  uint32_t row = nodePair.getFirstNode();
+  uint32_t column = nodePair.getSecondNode();
+  ++ ( *_sparseMatrix[ row ] )[ column ];
   return true;
 
 }
@@ -96,27 +106,19 @@ void Connectome::write( const std::string& path )
 {
 
   File::OFStream out( path );
-
-  std::vector< std::map< uint32_t, uint32_t > > sparseMatrix( _nodeCount );
-  std::map< uint32_t, uint32_t > rowMap;
-  for ( uint32_t row = 0; row < _nodeCount; row++ )
+  std::map< uint32_t, uint32_t >::const_iterator c, ce;
+  for ( uint32_t r = 0; r < _nodeCount; r++ )
   {
 
-    Math::Matrix< float >::VectorView rowVector = _matrix.row( row );
-    for ( uint32_t column = row; column < _nodeCount; column++ )
+    c = _sparseMatrix[ r ]->begin(),
+    ce = _sparseMatrix[ r ]->end();
+    while ( c != ce )
     {
 
-      if ( rowVector[ column ] )
-      {
-
-        rowMap[ column ] = rowVector[ column ];
-        //out << row << " " << column << " " << rowVector[ column ] << "\n";
-
-      }
+      out << r << " " << c->first << " " << c->second << "\n";
+      ++ c;
 
     }
-    sparseMatrix[ row ] = rowMap;
-    rowMap.clear();
 
   }
 

@@ -45,20 +45,21 @@ const char* modes[] = { "search_by_endpoint",
 
 const OptionGroup AssignmentOption =
   OptionGroup( "Structural connectome streamline assignment option" )
+
   + Option( "search_by_endpoint",
             "find the closest polygon/node from streamline endpoint.\n"
-            "When the point-to-polygon (triangle) distance is greater the "
-            "threshold, the streamline will not contribute to the connectome "
-            "edge. (default threshold = 2mm)" )
-    + Argument( "threshold" ).type_float(
+            "Argument is the maximum distance in mm; if no polygon is found "
+            "within this value, the streamline endpoint is not assigned to any "
+            "node (default = 2mm)." )
+    + Argument( "max_dist" ).type_float(
                                   1e-9, 0.0, std::numeric_limits< int >::max() )
 
   + Option( "search_by_tangent",
             "find intersecting polygons/nodes from a tangent line.\n"
-            "When the distance to the first intersecting polygon/triangle is "
-            "greater the threshold, the streamline will not contribute to the "
-            "connectome edge. (default threshold = 2mm)" )
-    + Argument( "threshold" ).type_float(
+            "Argument is the maximum distance in mm; if not any intersecting "
+            "polygon exists within this value, the streamline endpoint is not "
+            "assigned to any node (default = 2mm)." )
+    + Argument( "max_dist" ).type_float(
                                  1e-9, 0.0, std::numeric_limits< int >::max() );
 
 void usage ()
@@ -67,10 +68,8 @@ void usage ()
   AUTHOR = "C.-H. Jimmy Yeh (j.yeh@brain.org.au)";
 
   DESCRIPTION
-  + "construct a connectivity matrix from a tractography file and a brain mesh."
-
-  + "note: this is a test command which is NOT ready for use. It still needs "
-    "improvement.";
+  + "construct a connectivity matrix from a streamline tractography file and a "
+    "brain surface/mesh file";
 
   ARGUMENTS
   + Argument( "tracks_in",
@@ -85,10 +84,9 @@ void usage ()
   OPTIONS
   + Option( "cache_size",
             "the cache size for dividing the global space into several small "
-            "partitions. Each cube would therefore contain a subset of mesh "
-            "polygons and vertices. This can help speed up process for finding "
-            "the closest polygon from a streamline endpoint. "
-            "(default = 100,100,100)")
+            "partitions. Each subvolume store a subset of mesh polygons and "
+            "vertices. This can help speed up process for finding the relevant "
+            "polygon from a streamline endpoint (default = 100,100,100)." )
     + Argument( "x,y,z" ).type_sequence_int()
 
   + AssignmentOption;
@@ -113,14 +111,10 @@ void run ()
   }
 
   // Reading the mesh data
-  std::cout << "Reading input vtk mesh: " << std::flush;
   Mesh::Mesh* mesh = new Mesh::Mesh( argument[ 1 ] );
-  std::cout << "[ Done ]" << std::endl;
 
   // Collecting the vertices
   Mesh::VertexList vertices = mesh->vertices;
-  Mesh::PolygonList polygons = mesh->polygons;
-
   Point< float > lower_point = vertices[ 0 ];
   Point< float > upper_point = vertices[ 0 ];
   int32_t vertexCount = vertices.size();
@@ -160,29 +154,24 @@ void run ()
 
   }
 
+  std::cout << "Preparing connectome mapper: " << std::flush;
+
   // Building the bounding box
   Mesh::BoundingBox< float > boundingBox( lower_point[ 0 ], upper_point[ 0 ],
                                           lower_point[ 1 ], upper_point[ 1 ],
                                           lower_point[ 2 ], upper_point[ 2 ] );
 
   // Building the scene modeller
-  std::cout << "Building scene modeller: " << std::flush;
   Mesh::SceneModeller* sceneModeller = new Mesh::SceneModeller( boundingBox,
                                                                 cacheSize );
-  std::cout << "[ Done ]" << std::endl;
 
   // Building the scene mesh
-  std::cout << "Building scene mesh: " << std::flush;
   Mesh::SceneMesh* sceneMesh = new Mesh::SceneMesh( sceneModeller, mesh, 0.0 );
-  std::cout << "[ Done ]" << std::endl;
 
   // Adding the scene mesh to the scene modeller
-  std::cout << "Building " << "polygon cache: " << std::flush;
   sceneModeller->addSceneMesh( sceneMesh );
-  std::cout << "[ Done ]" << std::endl;
 
   // Building a connectome mapper
-  std::cout << "Building connectome mapper" << std::flush;
   Connectomics::ConnectomeMapper* connectomeMapper = NULL;
   for ( size_t index = 0; modes[ index ]; index++ )
   {
@@ -227,10 +216,11 @@ void run ()
 
   }
   Connectomics::MultiThreadMapper multiThreadMapper( connectomeMapper );
-  std::cout << "[ Done ]" << std::endl;
 
   // Preparing output connectome
   Connectomics::Connectome connectome( connectomeMapper->getNodeCount() );
+
+  std::cout << "[Done]" << std::endl;
 
   // Reading track data
   Tractography::Properties properties;
@@ -246,21 +236,6 @@ void run ()
                      Thread::multi( multiThreadMapper ),
                      Thread::batch( Connectomics::NodePair() ),
                      connectome );
-
-  /*// Building connectome without multithreading (for debugging)
-  ProgressBar progress( "Extracting track endpoints...",
-                        properties[ "count" ].empty() ?
-                        0 : to< unsigned int >( properties[ "count" ] ) );
-  Tractography::Streamline< float > tck;
-  while ( reader( tck ) )
-  {
-
-    Connectomics::NodePair nodePair;
-    connectomeMapper->findNodePair( tck, nodePair );
-    connectome.update( nodePair );
-    ++ progress;
-
-  }*/
 
   // Saving the output connectome
   std::cout << "starting writing the output file" << std::endl;

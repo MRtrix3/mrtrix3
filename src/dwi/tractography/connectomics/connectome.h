@@ -1,7 +1,8 @@
 #ifndef __dwi_tractography_connectomics_connectome_h__
 #define __dwi_tractography_connectomics_connectome_h__
 
-#include "math/matrix.h"
+#include <map>
+#include <vector>
 
 
 namespace MR
@@ -54,7 +55,7 @@ class Connectome
   protected:
 
     uint32_t _nodeCount;
-    Math::Matrix< float > _matrix;
+    std::vector< std::map< uint32_t, uint32_t >* > _sparseMatrix;
 
 };
 
