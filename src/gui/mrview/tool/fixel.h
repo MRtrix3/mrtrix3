@@ -30,6 +30,7 @@
 #include "image/transform.h"
 #include "gui/mrview/tool/vector.h"
 #include "image/loop.h"
+#include <unordered_map>
 
 namespace MR
 {
@@ -62,7 +63,7 @@ namespace MR
               } fixel_shader;
 
 
-              void render (const Projection& projection, int axis, int slice);
+              void render (const Projection& projection);
 
               void request_render_colourbar(DisplayableVisitor& visitor) override {
                 if(colour_type == CValue && show_colour_bar)
@@ -103,8 +104,25 @@ namespace MR
                 return colour_type;
               }
 
+              void mark_interp_buffer_dirty () {
+                interp_buffer_dirty = true;
+              }
+
             protected:
+              struct IntPointHasher {
+                size_t operator () (const Point<int>& p) const {
+                  // This hashing function works best if the fixel image dimensions
+                  // are bounded above by 2^10 x 2^10 x 2^10 = 1024 x 1024 x 1024
+                  return (p[0] + (p[1] << 10) + (p[2] << 20));
+                }
+              };
+
               virtual void load_image_buffer() = 0;
+              virtual void request_update_interp_image_buffer (const Projection&) {}
+              void update_interp_image_buffer(const Projection& projection,
+                                              const MR::Image::ConstHeader& fixel_header,
+                                              const MR::Image::Transform& header_transform);
+
               std::string filename;
               MR::Image::Header header;
               std::vector<Point<float>> buffer_pos;
@@ -113,6 +131,11 @@ namespace MR
               std::vector<std::vector<std::vector<GLint> > > slice_fixel_indices;
               std::vector<std::vector<std::vector<GLsizei> > > slice_fixel_sizes;
               std::vector<std::vector<GLsizei> > slice_fixel_counts;
+
+              // Flattened buffer used when cropping to slice
+              // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
+              std::unordered_map <Point<int>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
+              std::vector<GLint> interp_slice_fixel_indices;
 
             private:
               Vector& fixel_tool;
@@ -125,6 +148,7 @@ namespace MR
               float line_thickness;
               FixelLengthType length_type;
               FixelColourType colour_type;
+              bool interp_buffer_dirty;
         };
 
         class Fixel : public AbstractFixel
@@ -132,6 +156,10 @@ namespace MR
             public:
               Fixel (const std::string& filename, Vector& fixel_tool);
               void load_image_buffer () override;
+            protected:
+              void request_update_interp_image_buffer (const Projection& projection) override {
+                update_interp_image_buffer(projection, fixel_data, header_transform);
+              }
             private:
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric> fixel_data;
               MR::Image::BufferSparse<MR::Image::Sparse::FixelMetric>::voxel_type fixel_vox;
@@ -143,6 +171,10 @@ namespace MR
             public:
               PackedFixel (const std::string& filename, Vector& fixel_tool);
               void load_image_buffer () override;
+            protected:
+              void request_update_interp_image_buffer (const Projection& projection) override {
+                update_interp_image_buffer(projection, packed_fixel_data, header_transform);
+              }
             private:
               MR::Image::Buffer<float> packed_fixel_data;
               MR::Image::Buffer<float>::voxel_type packed_fixel_vox;

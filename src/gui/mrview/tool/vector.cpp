@@ -230,14 +230,30 @@ namespace MR
         Vector::~Vector () {}
 
 
-        void Vector::draw (const Projection& transform, bool is_3D, int axis, int slice)
+        void Vector::showEvent (QShowEvent*)
         {
-          not_3D = !is_3D;
-          if (!window.snap_to_image() && do_crop_to_slice)
-            return;
+          connect (&window, SIGNAL (orientationChanged()), this, SLOT (on_projection_changed ()));
+          connect (&window, SIGNAL (planeChanged()), this, SLOT (on_projection_changed ()));
+          connect (&window, SIGNAL (targetChanged()), this, SLOT (on_projection_changed ()));
+          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (on_projection_changed ()));
+        }
+
+
+        void Vector::on_projection_changed ()
+        {
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform, axis, slice);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->mark_interp_buffer_dirty ();
+          }
+        }
+
+
+        void Vector::draw (const Projection& transform, bool is_3D, int, int)
+        {
+          not_3D = !is_3D;
+          for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
+            if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
         }
 

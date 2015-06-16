@@ -48,7 +48,7 @@ namespace MR
 
             virtual ~Vector ();
 
-            void draw (const Projection& transform, bool is_3D, int axis, int slice);
+            void draw (const Projection& transform, bool is_3D, int axis, int slice) override;
             void draw_colourbars () override;
             size_t visible_number_colourbars () override;
             void render_fixel_colourbar(const Tool::AbstractFixel& fixel) override;
@@ -71,6 +71,7 @@ namespace MR
 
 
           private slots:
+            void on_projection_changed ();
             void fixel_open_slot ();
             void fixel_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
@@ -90,6 +91,8 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
+            void showEvent (QShowEvent* event) override;
+
             ComboBoxWithErrorMsg *colour_combobox;
 
             QGroupBox *colourmap_option_group;
