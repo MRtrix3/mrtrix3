@@ -127,7 +127,8 @@ namespace MR
 
             void adjustSize();
             virtual void draw (const Projection& transform, bool is_3D, int axis, int slice);
-            virtual void drawOverlays (const Projection& transform);
+            virtual void draw_colourbars ();
+            virtual size_t visible_number_colourbars () { return 0; }
             virtual int draw_tool_labels (int, int, const Projection&) const { return 0; }
             virtual bool mouse_press_event ();
             virtual bool mouse_move_event ();

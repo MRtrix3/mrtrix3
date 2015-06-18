@@ -644,7 +644,7 @@ namespace MR
          
 
           if (brush_button->isChecked()) {
-            if (brush_size_button->value() == brush_size_button->getMin())
+            if (brush_size_button->isMin())
               roi->current().draw_line (*roi, prev_pos, current_origin, insert_mode_value);
             else
               roi->current().draw_circle (*roi, current_origin, insert_mode_value, brush_size_button->value());
@@ -685,15 +685,12 @@ namespace MR
           const Point<> pos_adj = pos + l * proj->screen_normal();
 
           if (brush_button->isChecked()) {
-            if (brush_size_button->value() == brush_size_button->getMin())
+            if (brush_size_button->isMin())
               roi->current().draw_line (*roi, prev_pos, pos_adj, insert_mode_value);
             else {
-              const auto diameter = brush_size_button->value();
-              Point<> current_pos = prev_pos;
-              for(float i = 0; i <= 1.f; i+= 0.1f) {
-                current_pos = prev_pos * (1.0 - i) + pos_adj * i;
-                roi->current().draw_circle (*roi, current_pos, insert_mode_value, diameter);
-              }
+              const float diameter = brush_size_button->value();
+              roi->current().draw_thick_line (*roi, prev_pos, pos_adj, insert_mode_value, diameter);
+              roi->current().draw_circle (*roi, pos_adj, insert_mode_value, diameter);
             }
           } else if (rectangle_button->isChecked()) {
             roi->current().draw_rectangle (*roi, current_origin, pos_adj, insert_mode_value);

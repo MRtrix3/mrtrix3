@@ -64,9 +64,9 @@ namespace MR
 
               void render (const Projection& projection, int axis, int slice);
 
-              void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override {
+              void request_render_colourbar(DisplayableVisitor& visitor) override {
                 if(colour_type == CValue && show_colour_bar)
-                  visitor.render_fixel_colourbar(*this, projection);
+                  visitor.render_fixel_colourbar(*this);
               }
 
               void load_image ();

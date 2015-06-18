@@ -43,7 +43,7 @@ namespace MR
               (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
             writer (tck);
-            progress.update ([&](){ return printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count); }, tck.size());
+            progress.update ([&](){ return printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count); }, finite_seeds ? true : tck.size());
             return true;
           }
 

@@ -200,7 +200,8 @@ namespace MR
         orient (NAN, NAN, NAN, NAN),
         field_of_view (100.0),
         anatomical_plane (2),
-        colourbar_position_index (2),
+        colourbar_position (ColourMap::Position::BottomRight),
+        tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr)
       {
@@ -307,12 +308,6 @@ namespace MR
         addAction (properties_action);
 
         image_menu->addSeparator();
-
-        image_visible_action = image_menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
-        image_visible_action->setShortcut (tr ("M"));
-        image_visible_action->setCheckable (true);
-        image_visible_action->setChecked (true);
-        addAction (image_visible_action);
 
         next_slice_action = image_menu->addAction (tr ("Next slice"), this, SLOT (slice_next_slot()));
         next_slice_action->setShortcut (tr ("Up"));
@@ -474,6 +469,12 @@ namespace MR
 
         menu->addSeparator();
 
+        image_visible_action = menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
+        image_visible_action->setShortcut (tr ("M"));
+        image_visible_action->setCheckable (true);
+        image_visible_action->setChecked (true);
+        addAction (image_visible_action);
+
         action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
         action->setShortcut (tr ("G"));
         action->setCheckable (false);
@@ -598,9 +599,9 @@ namespace MR
 
         menu = new QMenu (tr ("Help"), this);
 
-        menu->addAction (tr("OpenGL"), this, SLOT (OpenGL_slot()));
-        menu->addAction (tr ("About"), this, SLOT (about_slot()));
-        menu->addAction (tr ("about Qt"), this, SLOT (aboutQt_slot()));
+        menu->addAction (tr ("About MRView"), this, SLOT (about_slot()));
+        menu->addAction (tr ("OpenGL"), this, SLOT (OpenGL_slot()));
+        menu->addAction (tr ("About Qt"), this, SLOT (aboutQt_slot()));
 
         button = new QToolButton (this);
         button->setText ("Help");
@@ -622,20 +623,41 @@ namespace MR
         //CONF default: bottomright
         //CONF The position of the colourbar within the main window in MRView.
         //CONF Valid values are: bottomleft, bottomright, topleft, topright.
-        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition"));
-        if (cbar_pos.size()) {
-          if (cbar_pos == "bottomleft") colourbar_position_index = 1;
-          else if (cbar_pos == "bottomright") colourbar_position_index = 2;
-          else if (cbar_pos == "topleft") colourbar_position_index = 3;
-          else if (cbar_pos == "topright") colourbar_position_index = 4;
-          else 
-            WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
-        }
+        std::string cbar_pos = lowercase (MR::File::Config::get ("MRViewColourBarPosition", "bottomright"));
+        colourbar_position = parse_colourmap_position_str(cbar_pos);
+        if(!colourbar_position)
+          WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewColourBarPosition\"");
+
+        //CONF option: MRViewToolsColourBarPosition
+        //CONF default: topright
+        //CONF The position of all visible tool colourbars within the main window in MRView.
+        //CONF Valid values are: bottomleft, bottomright, topleft, topright.
+        cbar_pos = lowercase (MR::File::Config::get ("MRViewToolsColourBarPosition", "topright"));
+        tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
+        if(!tools_colourbar_position)
+          WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
 
         glrefresh_timer->setSingleShot (true);
         connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
       }
 
+
+
+      ColourMap::Position Window::parse_colourmap_position_str (const std::string& position_str) {
+
+        ColourMap::Position pos(ColourMap::Position::None);
+
+        if(position_str == "bottomleft")
+          pos = ColourMap::Position::BottomLeft;
+        else if(position_str == "bottomright")
+          pos = ColourMap::Position::BottomRight;
+        else if(position_str == "topleft")
+          pos = ColourMap::Position::TopLeft;
+        else if(position_str == "topright")
+          pos = ColourMap::Position::TopRight;
+
+        return pos;
+      }
 
 
 
@@ -946,10 +968,18 @@ namespace MR
       }
 
 
+      void Window::set_image_visibility (bool flag) {
+        image_visible_action->setChecked(flag);
+        mode->set_visible(flag);
+      }
+
+
 
       void Window::show_image_slot ()
       {
-        mode->set_visible(image_visible_action->isChecked());
+        bool visible = image_visible_action->isChecked();
+        mode->set_visible(visible);
+        emit imageVisibilityChanged(visible);
       }
 
 

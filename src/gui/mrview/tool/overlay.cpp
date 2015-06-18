@@ -262,16 +262,29 @@ namespace MR
         }
 
 
-        void Overlay::drawOverlays (const Projection& transform)
+        size_t Overlay::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(!hide_all_button->isChecked()) {
+             for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
+               Image* image  = dynamic_cast<Image*>(image_list_model->items[i].get());
+               if (image && image->show && !ColourMap::maps[image->colourmap].special)
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
+
+        void Overlay::draw_colourbars ()
         {
-          if(hide_all_button->isChecked()) return;
+          if(hide_all_button->isChecked())
+            return;
 
           for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
-            // Only render the first visible colourbar
-            if (image_list_model->items[i]->show) {
-              image_list_model->items[i]->request_render_colourbar(*this, transform);
-              break;
-            }
+            if (image_list_model->items[i]->show)
+              image_list_model->items[i]->request_render_colourbar(*this);
           }
         }
 
@@ -364,18 +377,19 @@ namespace MR
         }
 
 
-        void Overlay::render_image_colourbar (const Image& image, const Projection& transform)
+        void Overlay::render_image_colourbar (const Image& image)
         {
-            float min_value = lower_threshold_check_box->isChecked() ?
+            float min_value = image.use_discard_lower() ?
                         image.scaling_min_thresholded() :
                         image.scaling_min();
 
-            float max_value = upper_threshold_check_box->isChecked() ?
+            float max_value = image.use_discard_upper() ?
                         image.scaling_max_thresholded() :
                         image.scaling_max();
 
-            colourbar_renderer.render (transform, image, 4, image.scale_inverted(),
-                                       min_value, max_value, image.scaling_min(), image.display_range);
+            window.colourbar_renderer.render (image,image.scale_inverted(),
+                                       min_value, max_value,
+                                       image.scaling_min(), image.display_range);
         }
 
 

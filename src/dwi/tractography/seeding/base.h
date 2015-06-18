@@ -69,8 +69,8 @@ namespace MR
       template <class ImageType>
       uint32_t get_count (ImageType& data)
       {
-        uint32_t count = 0;
-        ThreadedLoop (data).run ([&] (decltype(data)& v) { if (v.value()) ++count; }, data);
+        std::atomic<uint32_t> count (0);
+        ThreadedLoop (data).run ([&] (decltype(data)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, data);
         return count;
       }
 
@@ -78,8 +78,18 @@ namespace MR
       template <class ImageType>
       float get_volume (ImageType& data)
       {
-        default_type volume = 0.0;
-        ThreadedLoop (data).run ([&] (decltype(data)& v) { volume += v.value(); }, data);
+        std::atomic<default_type> volume (0.0);
+        ThreadedLoop (data).run (
+            [&] (decltype(data)& v) {
+              const typename ImageType::value_type value = v.value();
+              if (value) {
+                default_type current = volume.load (std::memory_order_relaxed);
+                default_type target;
+                do {
+                  target = current + value;
+                } while (!volume.compare_exchange_weak (current, target, std::memory_order_relaxed));
+              }
+            }, data);
         return volume;
       }
 
@@ -106,8 +116,8 @@ namespace MR
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&) = 0;
-          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (rng, p); }
+          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&) const = 0;
+          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f&) const { return get_seed (rng, p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;

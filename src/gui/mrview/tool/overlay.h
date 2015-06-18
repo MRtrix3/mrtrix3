@@ -46,7 +46,7 @@ namespace MR
             Overlay (Window& main_window, Dock* parent);
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
-            void drawOverlays (const Projection& transform) override;
+            void draw_colourbars () override;
             int draw_tool_labels (int position, int start_line_num, const Projection&transform) const override;
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;
@@ -55,7 +55,8 @@ namespace MR
             void toggle_invert_colourmap(bool, const ColourMapButton&) override;
             void reset_colourmap(const ColourMapButton&) override;
 
-            void render_image_colourbar(const Image& image, const Projection& transform) override;
+            size_t visible_number_colourbars () override;
+            void render_image_colourbar(const Image& image) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
@@ -107,9 +108,6 @@ namespace MR
              }
              
              void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
-
-          private:
-             ColourMap::Renderer colourbar_renderer;
         };
 
       }

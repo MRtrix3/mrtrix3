@@ -59,7 +59,7 @@ namespace MR
                 volume = 4.0*Math::pi*Math::pow3(rad)/3.0;
               }
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) override;
+            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
             Eigen::Vector3f pos;
@@ -74,14 +74,14 @@ namespace MR
           public:
             SeedMask (const std::string& in) :
               Base (in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
-              mask (new Mask (in)) {
-                volume = get_count (*mask) * mask->voxsize(0) * mask->voxsize(1) * mask->voxsize(2);
+              mask (in) {
+                volume = get_count (mask) * mask.voxsize(0) * mask.voxsize(1) * mask.voxsize(2);
               }
 
             virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
-            std::unique_ptr<Mask> mask;
+            Mask mask;
 
         };
 
@@ -93,23 +93,22 @@ namespace MR
           public:
             Random_per_voxel (const std::string& in, const size_t num_per_voxel) :
               Base (in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
-              mask (new Mask (in)),
+              mask (in),
               num (num_per_voxel),
-              vox (0, 0, -1),
               inc (0),
               expired (false) {
-                count = get_count (*mask) * num_per_voxel;
+                count = get_count (mask) * num_per_voxel;
               }
 
             virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
+            virtual ~Random_per_voxel() { }
 
           private:
-            std::unique_ptr<Mask> mask;
+            mutable Mask mask;
             const size_t num;
-            mutable Eigen::Vector3i vox;
+
             mutable uint32_t inc;
             mutable bool expired;
-
         };
 
 
@@ -120,22 +119,23 @@ namespace MR
           public:
             Grid_per_voxel (const std::string& in, const size_t os_factor) :
               Base (in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
-              mask (new Mask (in)),
+              mask (in),
               os (os_factor),
-              vox (0, 0, -1),
               pos (os, os, os),
               offset (-0.5 + (1.0 / (2*os))),
               step (1.0 / os),
               expired (false) {
-                count = get_count (*mask) * Math::pow3 (os_factor);
+                count = get_count (mask) * Math::pow3 (os_factor);
               }
 
+            virtual ~Grid_per_voxel() { }
             virtual bool get_seed (Math::RNG::Uniform<float>&, Eigen::Vector3f& p) const override;
 
+
           private:
-            std::unique_ptr<Mask> mask;
+            mutable Mask mask;
             const int os;
-            mutable Eigen::Vector3i vox, pos;
+            mutable Eigen::Vector3i pos;
             const float offset, step;
             mutable bool expired;
 
@@ -151,10 +151,10 @@ namespace MR
             virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
 
           private:
-            Image<float> image;
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
             Interp::Linear<Image<float>> interp;
 #else
+            Image<float> image;
             transform_type voxel2scanner;
 #endif
             float max;

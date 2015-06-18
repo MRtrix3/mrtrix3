@@ -23,7 +23,7 @@
 #include "app.h"
 #include "gui/shview/render_window.h"
 #include "gui/dwi/render_frame.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
 #include "gui/dialog/file.h"
 
 namespace MR
@@ -34,7 +34,7 @@ namespace MR
     {
 
       Window::Window (bool is_response_coefs) :
-        lighting_dialog (NULL),
+        lighting_dialog (nullptr),
         current (0),
         is_response (is_response_coefs)
       {
@@ -376,8 +376,20 @@ namespace MR
 
       void Window::advanced_lighting_slot ()
       {
-        if (!lighting_dialog)
-          lighting_dialog = new Dialog::Lighting (this, "Advanced Lighting", *render_frame->lighting);
+        if (!lighting_dialog) {
+          auto settings = new LightingSettings (this, *render_frame->lighting, true);
+          QVBoxLayout* main_layout = new QVBoxLayout;
+          main_layout->addWidget (settings);
+
+          lighting_dialog = new QDialog();
+          lighting_dialog->setWindowTitle (tr("Advanced Lighting"));
+          lighting_dialog->setModal (false);
+          lighting_dialog->setLayout (main_layout);
+
+          QPushButton* close_button = new QPushButton (style()->standardIcon (QStyle::SP_DialogCloseButton), tr ("&Close"));
+          connect (close_button, SIGNAL (clicked()), lighting_dialog, SLOT (close()));
+          main_layout->addWidget (close_button);
+        }
         lighting_dialog->show();
       }
 

@@ -168,10 +168,24 @@ namespace MR
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
+          HBoxLayout* hlayout  = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          
+          hide_button = new QPushButton ("Hide main image",this);
+          hide_button->setToolTip (tr ("Hide all main images"));
+          hide_button->setIcon (QIcon (":/hide.svg"));
+          hide_button->setCheckable (true);
+          hide_button->setChecked (!window.get_image_visibility());
+          connect (hide_button, SIGNAL (clicked(bool)), this, SLOT (hide_image_slot (bool)));
+          hlayout->addWidget (hide_button, 1);
+          
+          main_box->addLayout (hlayout, 0);
+          
           // FoV
           QGroupBox* group_box = new QGroupBox ("FOV");
           main_box->addWidget (group_box);
-          HBoxLayout* hlayout = new HBoxLayout;
+          hlayout = new HBoxLayout;
           group_box->setLayout (hlayout);
 
           fov = new AdjustButton (this);
@@ -437,6 +451,7 @@ namespace MR
         void View::showEvent (QShowEvent*) 
         {
           connect (&window, SIGNAL (imageChanged()), this, SLOT (onImageChanged()));
+          connect (&window, SIGNAL (imageVisibilityChanged(bool)), this, SLOT (onImageVisibilityChanged(bool)));
           connect (&window, SIGNAL (focusChanged()), this, SLOT (onFocusChanged()));
           connect (&window, SIGNAL (planeChanged()), this, SLOT (onPlaneChanged()));
           connect (&window, SIGNAL (scalingChanged()), this, SLOT (onScalingChanged()));
@@ -475,6 +490,8 @@ namespace MR
 
           onScalingChanged();
 
+          onImageVisibilityChanged(window.get_image_visibility());
+
           float rate = image->focus_rate();
           focus_x->setRate (rate);
           focus_y->setRate (rate);
@@ -504,6 +521,21 @@ namespace MR
         }
 
 
+
+        void View::onImageVisibilityChanged (bool visible)
+        {
+          hide_button->setChecked (!visible);
+        }
+
+
+
+        void View::hide_image_slot (bool flag)
+        {
+          if(!window.image())
+            return;
+
+          window.set_image_visibility(!flag);
+        }
 
 
 

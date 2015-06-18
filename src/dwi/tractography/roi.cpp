@@ -84,6 +84,7 @@ namespace MR {
         auto data = Image<bool>::open (name);
         std::vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
+
         size_t sum = 0;
 
         for (auto l = Loop (0,3) (data); l; ++l) {
@@ -110,8 +111,10 @@ namespace MR {
         top[2] = std::min (size_t (data.size(2)-bottom[2]), top[2]+2-bottom[2]);
 
         auto sub = Adapter::make<Adapter::Subset> (data, bottom, top);
-        auto mask = Image<bool>::scratch (sub, data.name());
-        threaded_copy (sub, mask);
+        Header mask_header (sub);
+        mask_header.set_ndim (3);
+        auto mask = Image<bool>::scratch (mask_header, data.name());
+        threaded_copy (sub, mask, 0, 3);
         return mask;
       }
 

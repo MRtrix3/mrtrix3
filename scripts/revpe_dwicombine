@@ -99,20 +99,29 @@ if DWI1_dim != DWI1_dim:
 axis_permute_option = ''
 vox_permute_option = ''
 orig_vox = getHeaderInfo ('dwi1.mif', 'vox').split()
+DWI1_permaxes = 'dwi1.mif'
+DWI2_permaxes = 'dwi2.mif'
 if PEAxis == 0:
   axis_permute_option = ' -axes 1,0,2,3'
   new_vox = [ orig_vox[1], orig_vox[0], orig_vox[2], orig_vox[3] ]
   vox_permute_option = ' -vox ' + ','.join(new_vox)
   DWI1_dim = [ DWI1_dim[1], DWI1_dim[0], DWI1_dim[2], DWI1_dim[3] ]
+  DWI1_permaxes = 'dwi1p.mif'
+  DWI2_permaxes = 'dwi2p.mif'
 elif PEAxis == 2:
   axis_permute_option = ' -axes 0,2,1,3'
   new_vox = [ orig_vox[0], orig_vox[2], orig_vox[1], orig_vox[3] ]
   vox_permute_option = ' -vox ' + ','.join(new_vox)
   DWI1_dim = [ DWI1_dim[0], DWI1_dim[2], DWI1_dim[1], DWI1_dim[3] ]
+  DWI1_permaxes = 'dwi1p.mif'
+  DWI2_permaxes = 'dwi2p.mif'
 
-
-runCommand('mrconvert dwi1.mif dwi1p.mif' + axis_permute_option + vox_permute_option)
-runCommand('mrconvert dwi2.mif dwi2p.mif' + axis_permute_option + vox_permute_option)
+if axis_permute_option:
+  printMessage ('Permuting axes so PE is axis 1')
+  runCommand('mrconvert dwi1.mif dwi1p.mif' + axis_permute_option + vox_permute_option)
+  runCommand('mrconvert dwi2.mif dwi2p.mif' + axis_permute_option + vox_permute_option)
+else:
+  printMessage ('No axis permutation required; skipping step')
 
 spatial_dims = DWI1_dim[:3]
 num_volumes = DWI1_dim[3]
@@ -122,13 +131,13 @@ stride = getHeaderInfo ('dwi1.mif', 'stride')
 stride_option = ' -stride ' + stride.replace(' ', ',')
 
 # Convert the input files as necessary for FSL tools & later commands
-runCommand('mrconvert dwi1p.mif dwi1.nii -stride +1,+2,+3,+4')
-runCommand('mrconvert dwi2p.mif dwi2.nii -stride +1,+2,+3,+4')
-runCommand('mrinfo dwi1p.mif -export_grad_mrtrix grad1.b')
-runCommand('mrinfo dwi2p.mif -export_grad_mrtrix grad2.b')
+runCommand('mrconvert ' + DWI1_permaxes + ' dwi1.nii -stride +1,+2,+3,+4')
+runCommand('mrconvert ' + DWI2_permaxes + ' dwi2.nii -stride +1,+2,+3,+4')
+runCommand('mrinfo ' + DWI1_permaxes + ' -export_grad_mrtrix grad1.b')
+runCommand('mrinfo ' + DWI2_permaxes + ' -export_grad_mrtrix grad2.b')
 runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3')
-runCommand('dwiextract dwi1p.mif -bzero dwi1b0.mif')
-runCommand('dwiextract dwi2p.mif -bzero dwi2b0.mif')
+runCommand('dwiextract ' + DWI1_permaxes + ' -bzero dwi1b0.mif')
+runCommand('dwiextract ' + DWI2_permaxes + ' -bzero dwi2b0.mif')
 runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4')
 
 # Find out how many b=0 volumes there are
@@ -140,11 +149,14 @@ if len(DWI1_b0_dims) == 4:
 DWI2_b0_count = int(1)
 if len(DWI2_b0_dims) == 4:
   DWI2_b0_count = int(DWI2_b0_dims[3])
+DWI2_config_index = str(DWI1_b0_count + 1)
 
 # If no axes need to be cropped, use the original 4D volume with the image pair
 # Otherwise, need to call mrcrop with the appropriate options, and pass the modified images to topup
 topup_imain = 'b0all.nii'
 series_imain = 'dwiall.nii'
+applytopup_imain_one = 'dwi1.nii'
+applytopup_imain_two = 'dwi2.nii'
 
 # For any non-even dimensions, crop the first voxel along that dimension
 crop_option = ''
@@ -156,29 +168,26 @@ if crop_option:
   warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
   runCommand('mrcrop b0all.nii b0all_crop.nii' + crop_option)
   runCommand('mrcrop dwiall.nii dwiall_crop.nii' + crop_option)
+  runCommand('mrcrop dwi1.nii dwi1_crop.nii' + crop_option)
+  runCommand('mrcrop dwi2.nii dwi2_crop.nii' + crop_option)
   topup_imain = 'b0all_crop.nii'
   series_imain = 'dwiall_crop.nii'
+  applytopup_imain_one = 'dwi1_crop.nii'
+  applytopup_imain_two = 'dwi2_crop.nii'
 
 # Construct a configuration file
 printMessage('Creating phase-encoding configuration file')
 config_file = open('config.txt', 'w')
-#config_line = [ 0, 0, 0, 0.1 ]
-#config_line[PEAxis] = 1
-config_line = [ 0, 1, 0, 0.1 ]
+config_line = '0 1 0 0.1\n'
 for line_count in range(0,DWI1_b0_count):
-  for column_value in config_line:
-    config_file.write(str(column_value) + ' ')
-  config_file.write('\n')
-#config_line[PEAxis] = -1
-config_line = [ 0, -1, 0, 0.1 ]
+  config_file.write(config_line)
+config_line = '0 -1 0 0.1\n'
 for line_count in range(0,DWI2_b0_count):
-  for column_value in config_line:
-    config_file.write(str(column_value) + ' ')
-  config_file.write('\n')
+  config_file.write(config_line)
 config_file.close()
 
 # Perform the field estimation
-runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map.nii --iout=b0_topup.nii --config=' + topup_config_path)
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map' + fsl_suffix + ' --iout=b0_topup.nii --config=' + topup_config_path)
 
 # Concatenate the diffusion gradient tables
 filenames = [ 'grad1.b', 'grad2.b' ]
@@ -189,8 +198,8 @@ with open('grad_combined.b', 'w') as outfile:
 
 # Generate an initial distortion-corrected volume
 # TODO The string '[ 0 0 0 1 ]' is being written to stdout somewhere here...
-runCommand(applytopup_cmd + ' --imain=dwi1.nii --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup' + fsl_suffix + ' --method=jac')
-runCommand(applytopup_cmd + ' --imain=dwi2.nii --datain=config.txt --inindex=2 --topup=field --out=dwi2_topup' + fsl_suffix + ' --method=jac')
+runCommand(applytopup_cmd + ' --imain=' + applytopup_imain_one + ' --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup' + fsl_suffix + ' --method=jac --interp=trilinear')
+runCommand(applytopup_cmd + ' --imain=' + applytopup_imain_two + ' --datain=config.txt --inindex=' + DWI2_config_index + ' --topup=field --out=dwi2_topup' + fsl_suffix + ' --method=jac --interp=trilinear')
 runCommand('mrcat dwi1_topup' + fsl_suffix + ' dwi2_topup' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
 
 # Produce a brain mask based on this initial correction
@@ -205,7 +214,6 @@ runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals')
 #   that was set based on the b=0's in the second input
 # TODO A better setup here would be: for each volume, give the index of the b=0 image in the config file
 #   that is closest in time (this is because eddy uses the motion parameters from topup as an initial estimate)
-DWI2_config_index = str(DWI1_b0_count + 1)
 indices = ''
 for volume in range(0,int(num_volumes)):
   indices = indices + '1 '
@@ -231,7 +239,7 @@ transform = getHeaderInfo('dwi1.mif', 'transform')
 with open( 'dwi1_transform.txt', 'w' ) as f:
   for line in transform:
     f.write (line)
-runCommand('mrtransform field_map.nii - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
+runCommand('mrtransform field_map' + fsl_suffix + ' - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
 #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)

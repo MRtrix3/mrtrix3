@@ -38,7 +38,8 @@ namespace MR
         Capture::Capture (Window& main_window, Dock* parent) :
           Base (main_window, parent),
           rotation_type(RotationType::World),
-          translation_type(TranslationType::Voxel)
+          translation_type(TranslationType::Voxel),
+          is_playing (false)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
@@ -235,9 +236,9 @@ namespace MR
 
 
 
-        void Capture::on_screen_preview () { if(!is_playing) run (false); }
+        void Capture::on_screen_preview () { if (!is_playing) run (false); }
 
-        void Capture::on_screen_capture () { if(!is_playing) run (true); }
+        void Capture::on_screen_capture () { if (!is_playing) run (true); }
 
         void Capture::on_screen_stop () { is_playing = false; }
 
@@ -334,8 +335,7 @@ namespace MR
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
-          size_t i = first_index;
-          do {
+          for (size_t i = first_index; i < first_index + frames_value; ++i) {
             if (!is_playing)
               break;
 
@@ -388,9 +388,7 @@ namespace MR
             start_index->setValue (i + 1);
             this->window.updateGL();
             qApp->processEvents();
-
-            i+=1;
-          } while((i % frames_value));
+          } 
 
           is_playing = false;
         }

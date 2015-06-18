@@ -46,7 +46,7 @@ namespace MR
 
               void set_tractogram (Tractogram* selected_tractogram);
 
-              void render_tractogram_colourbar(const Tool::Tractogram&, const Projection&) override;
+              void render_tractogram_colourbar(const Tool::Tractogram&) override;
 
             public slots:
               bool open_track_scalar_file_slot ();
@@ -80,9 +80,6 @@ namespace MR
               AdjustButton *max_entry, *min_entry;
               AdjustButton *threshold_lower, *threshold_upper;
               QCheckBox *threshold_upper_box, *threshold_lower_box;
-
-            private:
-              ColourMap::Renderer colourbar_renderer;
 
           };
 

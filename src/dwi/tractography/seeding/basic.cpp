@@ -35,7 +35,7 @@ namespace MR
       {
 
 
-        bool Sphere::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) 
+        bool Sphere::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const
         {
           do {
             p = { 2.0f*rng()-1.0f, 2.0f*rng()-1.0f, 2.0f*rng()-1.0f };
@@ -48,16 +48,16 @@ namespace MR
 
 
 
-        bool SeedMask::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) 
+        bool SeedMask::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const
         {
-          auto seed = *mask;
+          auto seed = mask;
           do {
-            seed.index(0) = std::uniform_int_distribution<int>(0, mask->size(0)-1)(rng.rng);
-            seed.index(1) = std::uniform_int_distribution<int>(0, mask->size(1)-1)(rng.rng);
-            seed.index(2) = std::uniform_int_distribution<int>(0, mask->size(2)-1)(rng.rng);
+            seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0)-1)(rng.rng);
+            seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1)-1)(rng.rng);
+            seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2)-1)(rng.rng);
           } while (!seed.value());
           p = { seed.index(0)+rng()-0.5f, seed.index(1)+rng()-0.5f, seed.index(2)+rng()-0.5f };
-          p = mask->voxel2scanner.cast<float>() * p;
+          p = mask.voxel2scanner.cast<float>() * p;
           return true;
         }
 
@@ -66,7 +66,7 @@ namespace MR
 
 
 
-        bool Random_per_voxel::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) 
+        bool Random_per_voxel::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const
         {
 
           if (expired)
@@ -74,33 +74,28 @@ namespace MR
 
           std::lock_guard<std::mutex> lock (mutex);
 
-          if (vox[2] < 0 || ++inc == num) {
+          if (mask.index(2) < 0 || ++inc == num) {
             inc = 0;
-            auto v = *mask;
-            assign_pos_of (vox).to (v);
 
             do {
-              if (++v.index(2) == v.size(2)) {
-                v.index(2) = 0;
-                if (++v.index(1) == v.size(1)) {
-                  v.index(1) = 0;
-                  ++v.index(0);
+              if (++mask.index(2) == mask.size(2)) {
+                mask.index(2) = 0;
+                if (++mask.index(1) == mask.size(1)) {
+                  mask.index(1) = 0;
+                  ++mask.index(0);
                 }
               }
-            } while (v.index(0) != v.size(0) && !v.value());
+            } while (mask.index(0) != mask.size(0) && !mask.value());
 
-            if (v.index(0) == v.size(0)) {
+            if (mask.index(0) == mask.size(0)) {
               expired = true;
               return false;
             }
-            vox[0] = v.index(0); vox[1] = v.index(1), vox[2] = v.index(2);
-            assign_pos_of (v).to (vox);
           }
 
-          p = { vox[0]+rng()-0.5f, vox[1]+rng()-0.5f, vox[2]+rng()-0.5f };
-          p = mask->voxel2scanner.cast<float>() * p;
+          p = { mask.index(0)+rng()-0.5f, mask.index(1)+rng()-0.5f, mask.index(2)+rng()-0.5f };
+          p = mask.voxel2scanner.cast<float>() * p;
           return true;
-
         }
 
 
@@ -109,7 +104,8 @@ namespace MR
 
 
 
-        bool Grid_per_voxel::get_seed (Math::RNG::Uniform<float>&, Eigen::Vector3f& p) 
+
+        bool Grid_per_voxel::get_seed (Math::RNG::Uniform<float>&, Eigen::Vector3f& p) const
         {
 
           if (expired)
@@ -124,29 +120,25 @@ namespace MR
               if (++pos[0] >= os) {
                 pos[0] = 0;
 
-                auto v = *mask;
-                assign_pos_of (vox).to (v);
-
                 do {
-                  if (++v.index(2) == v.size(2)) {
-                    v.index(2) = 0;
-                    if (++v.index(1) == v.size(1)) {
-                      v.index(1) = 0;
-                      ++v.index(0);
+                  if (++mask.index(2) == mask.size(2)) {
+                    mask.index(2) = 0;
+                    if (++mask.index(1) == mask.size(1)) {
+                      mask.index(1) = 0;
+                      ++mask.index(0);
                     }
                   }
-                } while (v.index(0) != v.size(0) && !v.value());
-                if (v.index(0) == v.size(0)) {
+                } while (mask.index(0) != mask.size(0) && !mask.value());
+                if (mask.index(0) == mask.size(0)) {
                   expired = true;
                   return false;
                 }
-                assign_pos_of (v).to (vox);
               }
             }
           }
 
-          p = { vox[0]+offset+(pos[0]*step), vox[1]+offset+(pos[1]*step), vox[2]+offset+(pos[2]*step) };
-          p = mask->voxel2scanner.cast<float>() * p;
+          p = { mask.index(0)+offset+(pos[0]*step), mask.index(1)+offset+(pos[1]*step), mask.index(2)+offset+(pos[2]*step) };
+          p = mask.voxel2scanner.cast<float>() * p;
           return true;
 
         }
@@ -186,40 +178,39 @@ namespace MR
           if (bottom[1]) --bottom[1];
           if (bottom[2]) --bottom[2];
 
-          top[0] = std::min (size_t (vox.size(0)-bottom[0]), top[0]+2-bottom[0]);
-          top[1] = std::min (size_t (vox.size(1)-bottom[1]), top[1]+2-bottom[1]);
-          top[2] = std::min (size_t (vox.size(2)-bottom[2]), top[2]+2-bottom[2]);
-
           auto sub = Adapter::make<Adapter::Subset> (vox, bottom, top);
+          Header header = sub;
+          header.set_ndim (3);
 
-          image = Image<float>::scratch (sub);
-          copy (sub, image);
+          auto buf = Image<float>::scratch (header);
+          volume *= buf.size(0) * buf.size(1) * buf.size(2);
+
+          copy (sub, buf);
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-          interp = Interp::Linear<Image<float>> (image);
+          interp = Interp::Linear<Image<float>> (buf);
 #else
+          image = buf;
           voxel2scanner = Transform (image).voxel2scanner;
 #endif
-
-          volume *= image.size(0) * image.size(1) * image.size(2);
-
         }
 
 
 
-        bool Rejection::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) 
+        bool Rejection::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const
         {
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION
-          Eigen::Vector3f pos;
+          auto seed = interp;
           float selector;
+          Eigen::Vector3f pos;
           do {
             pos = {
-              rng() * (image.size(0)-1), 
-              rng() * (image.size(1)-1), 
-              rng() * (image.size(2)-1) 
+              rng() * (interp.size(0)-1), 
+              rng() * (interp.size(1)-1), 
+              rng() * (interp.size(2)-1) 
             };
-            interp.voxel (pos);
+            seed.voxel (pos);
             selector = rng.Uniform() * max;
-          } while (interp.value() < selector);
+          } while (seed.value() < selector);
           p = interp.voxel2scanner * pos;
 #else
           auto seed = image;

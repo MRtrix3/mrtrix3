@@ -242,29 +242,47 @@ namespace MR
         }
 
 
-        void Vector::drawOverlays (const Projection& transform)
+        void Vector::draw_colourbars ()
         {
           if(hide_all_button->isChecked()) return;
 
-          for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
+          for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
             if (fixel_list_model->items[i]->show)
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this, transform);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->request_render_colourbar(*this);
           }
         }
 
 
-        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel, const Projection& transform)
+
+        size_t Vector::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(!hide_all_button->isChecked()) {
+             for (size_t i = 0, N = fixel_list_model->rowCount(); i < N; ++i) {
+               AbstractFixel* fixel = dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get());
+               if (fixel && fixel->show && !ColourMap::maps[fixel->colourmap].special)
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
+
+
+        void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel)
         {
-            float min_value = threshold_lower_box->isChecked() ?
-                        fixel.scaling_min_thresholded() :
-                        fixel.scaling_min();
+          float min_value = fixel.use_discard_lower() ?
+                      fixel.scaling_min_thresholded() :
+                      fixel.scaling_min();
 
-            float max_value = threshold_upper_box->isChecked() ?
-                          fixel.scaling_max_thresholded() :
-                          fixel.scaling_max();
+          float max_value = fixel.use_discard_upper() ?
+                      fixel.scaling_max_thresholded() :
+                      fixel.scaling_max();
 
-            colourbar_renderer.render (transform, fixel, 4, fixel.scale_inverted(),
-                                       min_value, max_value, fixel.scaling_min(), fixel.display_range);
+          window.colourbar_renderer.render (fixel, fixel.scale_inverted(),
+                                     min_value, max_value,
+                                     fixel.scaling_min(), fixel.display_range);
         }
 
 

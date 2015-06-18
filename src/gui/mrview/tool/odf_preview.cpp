@@ -21,7 +21,6 @@
 */
 
 #include "gui/mrview/tool/odf_preview.h"
-#include "gui/dialog/lighting.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
