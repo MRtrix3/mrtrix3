@@ -36,7 +36,7 @@ namespace MR
 
 #if QT_VERSION >= 0x050100
         void set_viewport (const QWidget& frame) const {
-          int m = frame.windowHandle()->devicePixelRatio();
+          int m = frame.window()->devicePixelRatio();
           gl::Viewport (m*viewport[0], m*viewport[1], m*viewport[2], m*viewport[3]);
         }
 #else

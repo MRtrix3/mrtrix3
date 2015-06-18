@@ -88,7 +88,6 @@ namespace MR
       {
         GL::init();
         renderer.initGL();
-        gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Enable (gl::DEPTH_TEST);
 
         axes_VB.gen();
@@ -147,6 +146,8 @@ namespace MR
 
       void RenderFrame::paintGL ()
       {
+        gl::ColorMask (true, true, true, true); 
+        gl::ClearColor (lighting->background_color[0], lighting->background_color[1], lighting->background_color[2], 0.0);
         gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
 
         float dist (1.0f / (distance * view_angle * D2R));
@@ -223,6 +224,14 @@ namespace MR
           gl::Disable (gl::BLEND);
           gl::Disable (gl::LINE_SMOOTH);
         }
+
+        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
+        // otherwise we get transparent windows...
+#if QT_VERSION >= 0x050400
+        gl::ClearColor (0.0, 0.0, 0.0, 1.0);
+        gl::ColorMask (false, false, false, true); 
+        gl::Clear (GL_COLOR_BUFFER_BIT);
+#endif
 
         if (OS > 0) snapshot();
 
