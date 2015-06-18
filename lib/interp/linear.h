@@ -44,8 +44,10 @@ namespace MR
      * \code
      * auto voxel = image_buffer.voxel();
      *
-     * // create an Interp::Linear object using voxel as the parent data set:
-     * DataSet::Interp::Linear<decltype(voxel) > interp (voxel);
+     * auto input = Image<float>::create (Argument[0]);
+     *
+     * // create an Interp::Linear object using input as the parent data set:
+     * Interp::Linear<decltype(input) > interp (input);
      *
      * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
      * interp.scanner (10.2, 3.59, 54.1);
@@ -54,17 +56,17 @@ namespace MR
      * float value = interp.value();
      * \endcode
      *
-     * The template \a voxel class must be usable with this type of syntax:
+     * The template \a input class must be usable with this type of syntax:
      * \code
-     * int xdim = voxel.dim(0);    // return the dimension
-     * int ydim = voxel.dim(1);    // along the x, y & z dimensions
-     * int zdim = voxel.dim(2);
-     * float v[] = { voxel.vox(0), voxel.vox(1), voxel.vox(2) };  // return voxel dimensions
-     * voxel[0] = 0;               // these lines are used to
-     * voxel[1]--;                 // set the current position
-     * voxel[2]++;                 // within the data set
-     * float f = voxel.value();
-     * Math::Transform<float> M = voxel.transform(); // a valid 4x4 transformation matrix
+     * int xsize = input.size(0);    // return the dimension
+     * int ysize = input.size(1);    // along the x, y & z dimensions
+     * int zsize = input.size(2);
+     * float v[] = { input.voxsize(0), input.voxsize(1), input.voxsize(2) };  // return voxel dimensions
+     * input.index(0) = 0;               // these lines are used to
+     * input.index(1)--;                 // set the current position
+     * input.index(2)++;                 // within the data set
+     * float f = input.value();
+     * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
      */
 
@@ -82,6 +84,7 @@ namespace MR
         using Transform::operator!;
         using Transform::out_of_bounds;
         using Transform::bounds;
+
         //! construct an Linear object to obtain interpolated values using the
         // parent DataSet class
         Linear (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
@@ -95,7 +98,7 @@ namespace MR
          * (floating-point) voxel coordinate within the dataset. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = set_to_nearest (pos.template cast<double>());
+          Eigen::Vector3d f = set_to_nearest (pos.template cast<default_type>());
           if (out_of_bounds)
             return true;
 
@@ -153,7 +156,8 @@ namespace MR
          * 0 0 0 ]. */
         template <class VectorType>
           bool image (const VectorType& pos) {
-            return voxel (voxelsize.inverse() * pos.template cast<double>());
+//            return voxel (voxelsize.inverse() * pos.template cast<default_type>());
+            return false;
           }
         //! Set the current position to the <b>scanner space</b> position \a pos
         /*! This will set the position from which the image intensity values will
@@ -161,7 +165,7 @@ namespace MR
          * scanner space coordinate, in units of millimeters. */
         template <class VectorType>
         bool scanner (const VectorType& pos) {
-          return voxel (scanner2voxel * pos.template cast<double>());
+          return voxel (scanner2voxel * pos.template cast<default_type>());
         }
 
         value_type value () {

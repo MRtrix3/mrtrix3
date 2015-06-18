@@ -33,13 +33,13 @@ namespace MR
 
       //! An object for transforming between voxel, scanner and image coordinate spaces
       template <class HeaderType>
-        Transform (const HeaderType& info) :
-          voxelsize (info.voxsize(0), info.voxsize(1), info.voxsize(2)),
-          voxel2scanner (info.transform() * voxelsize),
+        Transform (const HeaderType& header) :
+          voxelsize (header.voxsize(0), header.voxsize(1), header.voxsize(2)),
+          voxel2scanner (header.transform() * voxelsize),
           scanner2voxel (voxel2scanner.inverse()),
-          image2scanner (info.transform()),
+          image2scanner (header.transform()),
           scanner2image (image2scanner.inverse()),
-          bounds { info.size(0) - 0.5, info.size(1) - 0.5, info.size(2) - 0.5 },
+          bounds { header.size(0) - 0.5, header.size(1) - 0.5, header.size(2) - 0.5 },
           out_of_bounds (true) { }
 
       Transform (const Transform&) = default;

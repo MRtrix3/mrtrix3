@@ -90,8 +90,8 @@ namespace MR
               const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
-            dim ({ reference.size(0), reference.size(1), reference.size(2) }),
-            vox ({ reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) }),
+            dim { reference.size(0), reference.size(1), reference.size(2) },
+            vox { reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) },
             transform_ (reference.transform()),
             direct_transform (Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
               using namespace Eigen;
@@ -136,13 +136,17 @@ namespace MR
         const transform_type& transform () const { return transform_; }
         const std::string& name () const { return interp.name(); }
 
+        const ssize_t& stride (size_t axis) const {
+          return interp.stride (axis);
+        }
+
         void reset () {
           x[0] = x[1] = x[2] = 0;
           for (size_t n = 3; n < interp.ndim(); ++n)
             interp.index(n) = 0;
         }
 
-        value_type value () const {
+        value_type value () {
           using namespace Eigen;
           if (oversampling) {
             Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
@@ -163,11 +167,10 @@ namespace MR
             result *= norm;
             return result;
           }
-
           interp.voxel (direct_transform * Vector3d (x[0], x[1], x[2]));
           return interp.value();
         }
-        value_type value () { const auto* _this = this; _this->value(); }
+//        value_type value () const { const auto* _this = this; _this->value(); }
 
         ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }

@@ -24,62 +24,60 @@
 #define __image_filter_base_h__
 
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
-#include "image/info.h"
+#include "header.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Filter
   {
-    namespace Filter
+    /** \addtogroup Filters
+    @{ */
+
+    /*! A base class for defining image filters.
+     *
+     * The Filter::Base class defines the basic interface for
+     * defining image filters. Since these filters can vary
+     * substantially in their design and implementation, the
+     * actual functionality of the Base class is almost zero
+     * (above and beyond that of the Header class).
+     *
+     * It does however allow these filters to be initialised,
+     * set up and run using base class pointers, and defines a
+     * standardised functor interface that image filter classes
+     * should ideally conform to.
+     *
+     */
+    class Base : public Header
     {
-      /** \addtogroup Filters
-      @{ */
+      public:
+        template <class HeaderType>
+        Base (const HeaderType& in) :
+            Header (in) { }
 
-      /*! A base class for defining image filters.
-       *
-       * The Filter::Base class defines the basic interface for
-       * defining image filters. Since these filters can vary
-       * substantially in their design and implementation, the
-       * actual functionality of the Base class is almost zero
-       * (above and beyond that of the ConstInfo class).
-       *
-       * It does however allow these filters to be initialised,
-       * set up and run using base class pointers, and defines a
-       * standardised functor interface that image filter classes
-       * should ideally conform to.
-       *
-       */
-      class Base : public ConstInfo
-      {
-        public:
-          template <class InfoType>
-          Base (const InfoType& in) :
-              ConstInfo (in) { }
+        template <class HeaderType>
+        Base (const HeaderType& in, const std::string& message) :
+            Header (in),
+            message (message) { }
 
-          template <class InfoType>
-          Base (const InfoType& in, const std::string& message) :
-              ConstInfo (in),
-              message (message) { }
+        virtual ~Base() { }
 
-          virtual ~Base() { }
+        const Header& header () const {
+          return *this;
+        }
 
+        void set_message (const std::string& s) { message = s; }
 
-          void set_message (const std::string& s) { message = s; }
+        template <class InputImageType, class OutputImageType>
+        void operator() (InputImageType& in, OutputImageType& out)
+        {
+            throw Exception ("Running empty function Image::Filter::Base::operator()");
+        }
 
+      protected:
+        std::string message;
 
-          template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& in, OutputVoxelType& out)
-          {
-              throw Exception ("Running empty function Image::Filter::Base::operator()");
-          }
-
-
-        protected:
-          std::string message;
-
-      };
-      //! @}
-    }
+    };
+    //! @}
   }
 }
 

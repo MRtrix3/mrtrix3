@@ -23,52 +23,47 @@
 #ifndef __image_interp_reslice_h__
 #define __image_interp_reslice_h__
 
-#include "image/adapter/reslice.h"
-#include "image/threaded_copy.h"
+#include "adapter/reslice.h"
+#include "algo/threaded_copy.h"
 #include "datatype.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Filter
   {
-    namespace Filter
-    {
 
-      //! convenience function to regrid one DataSet onto another
-      /*! This function resamples (regrids) the Image \a source onto the
-       * Image& \a destination, using the templated interpolator class.
-       *
-       * A linear transformation can be optionally applied (that maps from the destination to the source)
-       *
-       * For example:
-       * \code
-       * // source and destination data:
-       * Image::Buffer<float> source_buffer (...);
-       * auto source = source_buffer.voxel();
-       *
-       * Image::Buffer<float> destination_buffer (...);
-       * auto destination = destination_buffer.voxel();
-       *
-       * // regrid source onto destination using linear interpolation:
-       * Image::Filter::reslice<Image::Interp::Linear> (source, destination, operation);
-       * DataSet::Interp::reslice<DataSet::Interp::Linear> (destination, source);
-       * \endcode
-       */
-      template <template <class VoxelType> class Interpolator, class VoxelTypeDestination, class VoxelTypeSource>
-        void reslice (
-            VoxelTypeSource& source,
-            VoxelTypeDestination& destination,
-            const Math::Matrix<float>& transform = Adapter::NoTransform,
-            const std::vector<int>& oversampling = Adapter::AutoOverSample,
-            const typename VoxelTypeDestination::value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<typename VoxelTypeDestination::value_type>())
-        {
-          Adapter::Reslice<Interpolator,VoxelTypeSource> interp (source, destination, transform, oversampling, value_when_out_of_bounds);
-          Image::threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"...", interp, destination, 2);
-        }
+    //! convenience function to regrid one Image onto another
+    /*! This function resamples (regrids) the Image \a source onto the
+     * Image& \a destination, using the templated interpolator class.
+     *
+     * A linear transformation can be optionally applied (that maps from the destination to the source)
+     *
+     * For example:
+     * \code
+     * // source and destination data:
+     * auto source = Image<float>::create (argument[0]);
+     *
+     * auto template_header = Image::header (argument[1]);
+     * auto destination = Image<float>::create (argument[2], template_header);
+     *
+     * // regrid source onto destination using linear interpolation:
+     * Image::Filter::reslice<Interp::Linear> (source, destination);
+     * \endcode
+     */
+    template <template <class ImageType> class Interpolator, class ImageTypeDestination, class ImageTypeSource>
+      void reslice (
+          ImageTypeSource& source,
+          ImageTypeDestination& destination,
+          const transform_type& transform = Adapter::NoTransform,
+          const std::vector<int>& oversampling = Adapter::AutoOverSample,
+          const typename ImageTypeDestination::value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<typename ImageTypeDestination::value_type>())
+      {
+        Adapter::Reslice<Interpolator, ImageTypeSource> interp (source, destination, transform, oversampling, value_when_out_of_bounds);
+        threaded_copy_with_progress_message ("reslicing \"" + source.name() + "\"...", interp, destination, 2);
+      }
 
 
-      //! @}
-    }
+    //! @}
   }
 }
 

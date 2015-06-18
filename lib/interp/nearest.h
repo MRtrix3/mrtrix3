@@ -28,124 +28,123 @@
 
 namespace MR
 {
-  namespace Image
+  namespace Interp
   {
-    namespace Interp
+
+    //! \addtogroup interp
+    // @{
+
+    //! This class provides access to the voxel intensities of an Image, using nearest-neighbour interpolation.
+    /*! Interpolation is only performed along the first 3 (spatial) axes.
+     * The (integer) position along the remaining axes should be set using the
+     * template Image class.
+     * The spatial coordinates can be set using the functions voxel(), image(),
+     * and scanner().
+     * For example:
+     * \code
+   * auto input = Image<float>::create (Argument[0]);
+   *
+   * // create an Interp::Nearest object using input as the parent data set:
+   * Interp::Nearest<decltype(input) > interp (input);
+   *
+   * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
+   * interp.scanner (10.2, 3.59, 54.1);
+   *
+   * // get the value at this position:
+   * float value = interp.value();
+   * \endcode
+   *
+   * The template \a input class must be usable with this type of syntax:
+   * int xsize = input.size(0);    // return the dimension
+   * int ysize = input.size(1);    // along the x, y & z dimensions
+   * int zsize = input.size(2);
+   * float v[] = { input.voxsize(0), input.voxsize(1), input.voxsize(2) };  // return voxel dimensions
+   * input.index(0) = 0;               // these lines are used to
+   * input.index(1)--;                 // set the current position
+   * input.index(2)++;                 // within the data set
+   * float f = input.value();
+   * transform_type M = input.transform(); // a valid 4x4 transformation matrix
+     * \endcode
+     */
+
+    template <class ImageType>
+      class Nearest : public ImageType, public Transform
     {
+      public:
+        typedef typename ImageType::value_type value_type;
 
-      //! \addtogroup interp
-      // @{
+        using Transform::set_to_nearest;
+        using ImageType::index;
+        using Transform::scanner2voxel;
+        using Transform::operator!;
+        using Transform::out_of_bounds;
+        using Transform::bounds;
 
-      //! This class provides access to the voxel intensities of a data set, using nearest-neighbour interpolation.
-      /*! Interpolation is only performed along the first 3 (spatial) axes.
-       * The (integer) position along the remaining axes should be set using the
-       * template DataSet class.
-       * The spatial coordinates can be set using the functions voxel(), image(),
-       * and scanner().
-       * For example:
-       * \code
-       * auto voxel = image_buffer.voxel();
-       *
-       * // create an Interp::Nearest object using voxel as the parent data set:
-       * DataSet::Interp::Nearest<decltype(voxel) > interp (voxel);
-       *
-       * // set the scanner-space position to [ 10.2 3.59 54.1 ]:
-       * interp.scanner (10.2, 3.59, 54.1);
-       *
-       * // get the value at this position:
-       * float value = interp.value();
-       * \endcode
-       *
-       * The template \a voxel class must be usable with this type of syntax:
-       * \code
-       * int xdim = voxel.dim(0);    // return the dimension
-       * int ydim = voxel.dim(1);    // along the x, y & z dimensions
-       * int zdim = voxel.dim(2);
-       * float v[] = { voxel.vox(0), voxel.vox(1), voxel.vox(2) };  // return voxel dimensions
-       * voxel[0] = 0;               // these lines are used to
-       * voxel[1]--;                 // set the current position
-       * voxel[2]++;                 // within the data set
-       * float f = voxel.value();
-       * Math::Transform<float> M = voxel.transform(); // a valid 4x4 transformation matrix
-       * \endcode
-       */
+        //! construct an Nearest object to obtain interpolated values using the
+        // parent DataSet class
+        Nearest (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+          ImageType (parent),
+          Transform (parent),
+          out_of_bounds_value (value_when_out_of_bounds) { }
 
-      template <class VoxelType>
-        class Nearest : public VoxelType, public Transform
-      {
-        public:
-          typedef typename VoxelType::value_type value_type;
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * (floating-point) voxel coordinate within the dataset. */
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          set_to_nearest (pos);
+          if (out_of_bounds)
+            return true;
 
-          using Transform::set_to_nearest;
-          using Transform::image2voxel;
-          using Transform::scanner2voxel;
-          using Transform::operator!;
-          using Transform::out_of_bounds;
-          using Transform::bounds;
+          index(0) = std::round (pos[0]);
+          index(1) = std::round (pos[1]);
+          index(2) = std::round (pos[2]);
+          return false;
+        }
 
-          //! construct an Nearest object to obtain interpolated values using the
-          // parent DataSet class
-          Nearest (const VoxelType& parent, value_type value_when_out_of_bounds = DataType::default_out_of_bounds_value<value_type>()) :
-            VoxelType (parent),
-            Transform (parent),
-            out_of_bounds_value (value_when_out_of_bounds) { }
 
-          //! Set the current position to <b>voxel space</b> position \a pos
-          /*! This will set the position from which the image intensity values will
-           * be interpolated, assuming that \a pos provides the position as a
-           * (floating-point) voxel coordinate within the dataset. */
-          bool voxel (const Point<float>& pos) {
-            set_to_nearest (pos);
-            if (out_of_bounds)
-              return true;
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * coordinate relative to the axes of the dataset, in units of
+         * millimeters. The origin is taken to be the centre of the voxel at [
+         * 0 0 0 ]. */
+        template <class VectorType>
+        bool image (const VectorType& pos) {
+          return voxel (voxelsize.inverse() * pos.template cast<double>());
+        }
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * scanner space coordinate, in units of millimeters. */
+        template <class VectorType>
+        bool scanner (const VectorType& pos) {
+          return voxel (Transform::scanner2voxel * pos.template cast<double>());
+        }
 
-            (*this)[0] = std::round (pos[0]);
-            (*this)[1] = std::round (pos[1]);
-            (*this)[2] = std::round (pos[2]);
-            return false;
+        value_type value () const {
+          if (out_of_bounds) {
+            return out_of_bounds_value;
           }
 
+          return ImageType::value();
+        }
 
-          //! Set the current position to <b>image space</b> position \a pos
-          /*! This will set the position from which the image intensity values will
-           * be interpolated, assuming that \a pos provides the position as a
-           * coordinate relative to the axes of the dataset, in units of
-           * millimeters. The origin is taken to be the centre of the voxel at [
-           * 0 0 0 ]. */
-          bool image (const Point<float>& pos) {
-            return voxel (image2voxel (pos));
-          }
-          //! Set the current position to the <b>scanner space</b> position \a pos
-          /*! This will set the position from which the image intensity values will
-           * be interpolated, assuming that \a pos provides the position as a
-           * scanner space coordinate, in units of millimeters. */
-          bool scanner (const Point<float>& pos) {
-            return voxel (scanner2voxel (pos));
-          }
-
-          value_type value () const {
-            if (out_of_bounds) {
-              return out_of_bounds_value;
-            }
-
-            return VoxelType::value();
-          }
-
-          const value_type out_of_bounds_value;
-      };
+        const value_type out_of_bounds_value;
+    };
 
 
 
-    template <class ImageType, typename... Args>
-      inline Nearest<ImageType> make_nearest (const ImageType& parent, Args&&... args) {
-        return Nearest<ImageType> (parent, std::forward<Args> (args)...);
-      }
-
-
-
-      //! @}
-
+  template <class ImageType, typename... Args>
+    inline Nearest<ImageType> make_nearest (const ImageType& parent, Args&&... args) {
+      return Nearest<ImageType> (parent, std::forward<Args> (args)...);
     }
+
+
+
+    //! @}
+
   }
 }
 
