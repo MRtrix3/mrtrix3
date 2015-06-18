@@ -131,6 +131,7 @@ namespace MR
   //! the type for the affine transform of an image:
   typedef Eigen::Transform<default_type, 3, Eigen::AffineCompact> transform_type;
 
+
   //! check whether type is complex:
   template <class ValueType> struct is_complex : std::false_type { };
   template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { };
@@ -151,6 +152,11 @@ namespace std
   inline uint8_t abs (uint8_t x) { return x; }
   inline uint16_t abs (uint16_t x) { return x; }
   inline uint32_t abs (uint32_t x) { return x; }
+}
+
+namespace Eigen {
+  typedef Matrix<MR::default_type,3,1> Vector3;
+  typedef Matrix<MR::default_type,4,1> Vector4;
 }
 
 #endif

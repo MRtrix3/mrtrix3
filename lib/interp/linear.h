@@ -98,7 +98,7 @@ namespace MR
          * (floating-point) voxel coordinate within the dataset. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = set_to_nearest (pos.template cast<default_type>());
+          Eigen::Vector3 f = set_to_nearest (pos.template cast<default_type>());
           if (out_of_bounds)
             return true;
 
@@ -156,8 +156,7 @@ namespace MR
          * 0 0 0 ]. */
         template <class VectorType>
           bool image (const VectorType& pos) {
-//            return voxel (voxelsize.inverse() * pos.template cast<default_type>());
-            return false;
+            return voxel (voxelsize.inverse() * pos.template cast<default_type>());
           }
         //! Set the current position to the <b>scanner space</b> position \a pos
         /*! This will set the position from which the image intensity values will

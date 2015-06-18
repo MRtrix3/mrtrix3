@@ -106,12 +106,12 @@ namespace MR
                 OS[2] = oversample[2];
               }
               else {
-                Vector3d y = direct_transform * Vector3d (0.0, 0.0, 0.0);
-                Vector3d x0 = direct_transform * Vector3d (1.0, 0.0, 0.0);
+                Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
+                Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
                 OS[0] = std::ceil (0.999 * (y-x0).norm());
-                x0 = direct_transform * Vector3d (0.0, 1.0, 0.0);
+                x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
                 OS[1] = std::ceil (0.999 * (y-x0).norm());
-                x0 = direct_transform * Vector3d (0.0, 0.0, 1.0);
+                x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
                 OS[2] = std::ceil (0.999 * (y-x0).norm());
               }
 
@@ -136,7 +136,7 @@ namespace MR
         const transform_type& transform () const { return transform_; }
         const std::string& name () const { return interp.name(); }
 
-        const ssize_t& stride (size_t axis) const {
+        ssize_t stride (size_t axis) const {
           return interp.stride (axis);
         }
 
@@ -149,9 +149,9 @@ namespace MR
         value_type value () {
           using namespace Eigen;
           if (oversampling) {
-            Vector3d d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+            Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
             value_type result = 0.0;
-            Vector3d s;
+            Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
               s[2] = d[2] + z*inc[2];
               for (int y = 0; y < OS[1]; ++y) {
@@ -167,7 +167,7 @@ namespace MR
             result *= norm;
             return result;
           }
-          interp.voxel (direct_transform * Vector3d (x[0], x[1], x[2]));
+          interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
         }
 //        value_type value () const { const auto* _this = this; _this->value(); }
