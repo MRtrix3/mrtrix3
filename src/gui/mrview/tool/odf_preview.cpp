@@ -44,24 +44,6 @@ namespace MR
           setMinimumSize (300, 300);    
         }
 
-        void ODF_Preview::RenderFrame::resizeGL (const int w, const int h) {
-          makeCurrent();
-            DWI::RenderFrame::resizeGL (w,h);
-          window.makeGLcurrent();
-        }
-
-        void ODF_Preview::RenderFrame::initializeGL () {
-          makeCurrent();
-          DWI::RenderFrame::initializeGL();
-          window.makeGLcurrent();
-        }
-
-        void ODF_Preview::RenderFrame::paintGL () {
-          makeCurrent();
-          DWI::RenderFrame::paintGL();
-          window.makeGLcurrent();
-        }
-
         void ODF_Preview::RenderFrame::wheelEvent (QWheelEvent*) {
           //Talk to the hand, 'cause the scroll wheel ain't listening.      
         }
