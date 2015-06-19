@@ -63,7 +63,7 @@ namespace MR
             void reset_colourmap(const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
-            bool do_crop_to_slice;
+            bool do_lock_to_grid, do_crop_to_slice;
             bool not_3D;
             float line_opacity;
             Model* fixel_list_model;
@@ -71,12 +71,12 @@ namespace MR
 
 
           private slots:
-            void on_projection_changed ();
             void fixel_open_slot ();
             void fixel_close_slot ();
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
             void update_selection();
+            void on_lock_to_grid_slot (bool is_checked);
             void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
@@ -91,8 +91,6 @@ namespace MR
             void threshold_upper_value_changed ();
 
           protected:
-            void showEvent (QShowEvent* event) override;
-
             ComboBoxWithErrorMsg *colour_combobox;
 
             QGroupBox *colourmap_option_group;
@@ -109,7 +107,7 @@ namespace MR
             QSlider *line_thickness_slider;
             QSlider *opacity_slider;
 
-            QGroupBox *crop_to_slice;
+            QGroupBox *lock_to_grid, *crop_to_slice;
         };
       }
     }
