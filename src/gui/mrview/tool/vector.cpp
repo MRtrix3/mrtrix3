@@ -80,6 +80,7 @@ namespace MR
 
         Vector::Vector (Window& main_window, Dock* parent) :
           Base (main_window, parent),
+          do_lock_to_grid (true),
           do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
