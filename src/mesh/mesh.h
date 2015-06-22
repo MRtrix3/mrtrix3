@@ -153,6 +153,19 @@ namespace MR
           quads = p;
         }
 
+        void load (VertexList&& v, TriangleList&& p, QuadList&& q) {
+          vertices = std::move (v);
+          normals.clear();
+          triangles = std::move (p);
+          quads = std::move (q);
+        }
+        void load (const VertexList& v, const TriangleList& p, const QuadList& q) {
+          vertices = v;
+          normals.clear();
+          triangles = p;
+          quads = q;
+        }
+
 
         void transform_first_to_realspace (const Image::Info&);
         void transform_voxel_to_realspace (const Image::Info&);
@@ -172,6 +185,9 @@ namespace MR
         bool have_normals() const { return normals.size(); }
         void calculate_normals();
 
+        const std::string& get_name() const { return name; }
+        void set_name (const std::string& s) { name = s; }
+
         const Vertex&   vert (const size_t i) const { assert (i < vertices .size()); return vertices[i]; }
         const Vertex&   norm (const size_t i) const { assert (i < normals  .size()); return normals[i]; }
         const Triangle& tri  (const size_t i) const { assert (i < triangles.size()); return triangles[i]; }
@@ -186,6 +202,8 @@ namespace MR
 
 
       private:
+        std::string name;
+
         void load_vtk (const std::string&);
         void load_stl (const std::string&);
         void load_obj (const std::string&);
@@ -204,6 +222,21 @@ namespace MR
         float calc_area (const Triangle&) const;
         float calc_area (const Quad&) const;
 
+        friend class MeshMulti;
+
+    };
+
+
+
+
+    // TODO Class to handle multiple meshes per file
+    // For now, this will only be supported using the .obj file type
+
+    class MeshMulti : public std::vector<Mesh>
+    {
+      public:
+        void load (const std::string&);
+        void save (const std::string&) const;
     };
 
 
