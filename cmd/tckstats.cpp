@@ -74,13 +74,26 @@ class LW
 {
   public:
     LW (const float l, const float w) : length (l), weight (w) { }
-    LW () : l (NAN), w (NAN) { }
+    LW () : length (NAN), weight (NAN) { }
     bool operator< (const LW& that) const { return length < that.length; }
     float get_length() const { return length; }
     float get_weight() const { return weight; }
   private:
     float length, weight;
+    friend LW operator+ (const LW&, const LW&);
+    friend LW operator/ (const LW&, const double);
 };
+
+// Necessary for median template function
+LW operator+ (const LW& one, const LW& two)
+{
+  return LW (one.get_length() + two.get_length(), one.get_weight() + two.get_weight());
+}
+
+LW operator/ (const LW& lw, const double div)
+{
+  return LW (lw.get_length() / div, lw.get_weight() / div);
+}
 
 
 void run ()
@@ -90,7 +103,6 @@ void run ()
 
   float step_size = NAN;
   size_t count = 0, header_count = 0;
-  header_count = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
   float min_length = std::numeric_limits<float>::infinity();
   float max_length = 0.0f;
   double sum_lengths = 0.0, sum_weights = 0.0;
@@ -101,6 +113,9 @@ void run ()
   {
     Tractography::Properties properties;
     Tractography::Reader<float> reader (argument[0], properties);
+
+    if (properties.find ("count") != properties.end())
+      header_count = to<size_t> (properties["count"]);
 
     if (properties.find ("output_step_size") != properties.end())
       step_size = to<float> (properties["output_step_size"]);
@@ -149,11 +164,11 @@ void run ()
     // Perform a weighted median calculation
     std::sort (all_lengths.begin(), all_lengths.end());
     size_t median_index = 0;
-    double sum = sum_weights - all_lengths[0];
-    while (sum_> 0.5 * sum_weights) sum -= all_lengths[++median_index].get_weight();
+    double sum = sum_weights - all_lengths[0].get_weight();
+    while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
     median_length = all_lengths[median_index].get_length();
   } else {
-    median_length = Math::median (all_lengths);
+    median_length = Math::median (all_lengths).get_length();
   }
 
   double stdev = 0.0;

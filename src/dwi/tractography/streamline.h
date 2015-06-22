@@ -79,14 +79,14 @@ namespace MR
       template <typename T>
       float Streamline<T>::calc_length() const
       {
-        switch (size()) {
+        switch (Streamline<T>::size()) {
           case 0: return NAN;
           case 1: return 0.0;
-          case 2: return dist (front(), back());
+          case 2: return dist ((*this)[0], (*this)[1]);
           case 3: return (dist ((*this)[1], (*this)[0]) + dist ((*this)[2], (*this)[1]));
           default: break;
         }
-        const size_t midpoint = size() / 2;
+        const size_t midpoint = Streamline<T>::size() / 2;
         const float step_size = dist ((*this)[midpoint-1], (*this)[midpoint]);
         return calc_length (step_size);
       }
@@ -94,14 +94,15 @@ namespace MR
       template <typename T>
       float Streamline<T>::calc_length (const float step_size) const
       {
-        switch (size()) {
+        switch (Streamline<T>::size()) {
           case 0: return NAN;
           case 1: return 0.0;
-          case 2: return dist (front(), back());
+          case 2: return dist ((*this)[0], (*this)[1]);
           case 3: return (dist ((*this)[1], (*this)[0]) + dist ((*this)[2], (*this)[1]));
           default: break;
         }
-        return (((size()-3) * step_size) + dist ((*this)[1], (*this)[0]) + dist ((*this)[size()-1], (*this)[size()-2]));
+        const size_t size = Streamline<T>::size();
+        return (((size-3) * step_size) + dist ((*this)[1], (*this)[0]) + dist ((*this)[size-1], (*this)[size-2]));
       }
 
 
