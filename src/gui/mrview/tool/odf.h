@@ -74,7 +74,7 @@ namespace MR
             void updateGL ();
             void update_preview();
 
-            void hide_event() override;
+            void close_event() override;
 
           protected:
              class Model;

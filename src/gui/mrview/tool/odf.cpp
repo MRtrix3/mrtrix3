@@ -596,7 +596,7 @@ namespace MR
           updateGL();
         }
 
-        void ODF::hide_event ()
+        void ODF::close_event ()
         {
           if (preview) 
             preview->hide();
