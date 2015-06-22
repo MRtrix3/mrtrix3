@@ -25,7 +25,7 @@
 
 #include "gui/dwi/render_frame.h"
 
-#include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/odf.h"
 #include "gui/mrview/window.h"
 
 namespace MR
@@ -37,9 +37,7 @@ namespace MR
       namespace Tool
       {
 
-        class ODF;
-
-        class ODF_Preview : public Base
+        class ODF::Preview : public QWidget
         {
             Q_OBJECT
 
@@ -59,7 +57,7 @@ namespace MR
             };
 
           public:
-            ODF_Preview (Window&, Dock*, ODF*);
+            Preview (Window&, ODF*);
             void set (const Math::Vector<float>&);
             bool interpolate() const { return interpolation_box->isChecked(); }
           private slots:

@@ -499,17 +499,11 @@ namespace MR
         void ODF::show_preview_slot ()
         {
           if (!preview) {
-            preview = new Dock (&window, nullptr);
-            window.addDockWidget (Qt::RightDockWidgetArea, preview);
-            preview->tool = new ODF_Preview (window, preview, this);
-            preview->tool->adjustSize();
-            preview->setWidget (preview->tool);
-            preview->setFloating (true);
-            connect (lighting, SIGNAL (changed()), preview->tool, SLOT (lighting_update_slot()));
+            preview = new Preview (window, this);
+            connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
           }
 
           preview->show();
-          preview->raise();
           update_preview();
         }
 
@@ -528,8 +522,7 @@ namespace MR
             return;
           settings->color_by_direction = colour_by_direction_box->isChecked();
           if (preview) {
-            assert (preview->tool);
-            dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
+            preview->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
           }
           updateGL();
         }
@@ -544,10 +537,8 @@ namespace MR
           if (!settings)
             return;
           settings->hide_negative_lobes = hide_negative_lobes_box->isChecked();
-          if (preview) {
-            assert (preview->tool);
-            dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
-          }
+          if (preview) 
+            preview->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
           updateGL();
         }
 
@@ -563,10 +554,8 @@ namespace MR
           if (!settings)
             return;
           settings->lmax = lmax_selector->value();
-          if (preview) {
-            assert (preview->tool);
-            dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_lmax (lmax_selector->value());
-          }
+          if (preview) 
+            preview->render_frame->set_lmax (lmax_selector->value());
           updateGL();
         }
 
@@ -574,10 +563,8 @@ namespace MR
 
         void ODF::use_lighting_slot (int)
         {
-          if (preview) {
-            assert (preview->tool);
-            dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_use_lighting (use_lighting_box->isChecked());
-          }
+          if (preview) 
+            preview->render_frame->set_use_lighting (use_lighting_box->isChecked());
           updateGL();
         }
 
@@ -604,10 +591,8 @@ namespace MR
           if (!settings)
             return;
           settings->scale = scale->value();
-          if (preview) {
-            assert (preview->tool);
-            dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_scale (scale->value());
-          }
+          if (preview) 
+            preview->render_frame->set_scale (scale->value());
           updateGL();
         }
 
@@ -637,10 +622,9 @@ namespace MR
           if (!settings)
             return;
           MRView::Image& image (settings->image);
-          ODF_Preview* preview_tool = dynamic_cast<ODF_Preview*>(preview->tool);
           Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
-          get_values (values, image, window.focus(), preview_tool->interpolate());
-          preview_tool->set (values);
+          get_values (values, image, window.focus(), preview->interpolate());
+          preview->set (values);
         }
 
 

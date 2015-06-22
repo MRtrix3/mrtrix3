@@ -38,13 +38,13 @@ namespace MR
 
 
 
-        ODF_Preview::RenderFrame::RenderFrame (QWidget* parent, Window& window) :
+        ODF::Preview::RenderFrame::RenderFrame (QWidget* parent, Window& window) :
             DWI::RenderFrame (parent),
             window (window) {
           setMinimumSize (300, 300);    
         }
 
-        void ODF_Preview::RenderFrame::wheelEvent (QWheelEvent*) {
+        void ODF::Preview::RenderFrame::wheelEvent (QWheelEvent*) {
           //Talk to the hand, 'cause the scroll wheel ain't listening.      
         }
 
@@ -52,8 +52,8 @@ namespace MR
 
 
 
-        ODF_Preview::ODF_Preview (Window& main_window, Dock* dock, ODF* parent) :
-            Base (main_window, dock),
+        ODF::Preview::Preview (Window& main_window, ODF* parent) :
+            QWidget (&main_window, Qt::Tool),
             parent (parent),
             render_frame (new RenderFrame (this, main_window))
         {
@@ -113,37 +113,37 @@ namespace MR
 
 
 
-        void ODF_Preview::set (const Math::Vector<float>& data)
+        void ODF::Preview::set (const Math::Vector<float>& data)
         {
           render_frame->set (data);
           lock_orientation_to_image_slot (0);
         }
 
-        void ODF_Preview::lock_orientation_to_image_slot (int)
+        void ODF::Preview::lock_orientation_to_image_slot (int)
         {
           if (lock_orientation_to_image_box->isChecked()) {
-            const Projection* proj = window.get_current_mode()->get_current_projection();
+            const Projection* proj = parent->window.get_current_mode()->get_current_projection();
             if (!proj) return;
             render_frame->set_rotation (proj->modelview());
           }
         }
 
-        void ODF_Preview::interpolation_slot (int)
+        void ODF::Preview::interpolation_slot (int)
         {
           parent->update_preview();
         }
 
-        void ODF_Preview::show_axes_slot (int)
+        void ODF::Preview::show_axes_slot (int)
         {
           render_frame->set_show_axes (show_axes_box->isChecked());
         }
 
-        void ODF_Preview::level_of_detail_slot (int)
+        void ODF::Preview::level_of_detail_slot (int)
         {
           render_frame->set_LOD (level_of_detail_selector->value());
         }
 
-        void ODF_Preview::lighting_update_slot()
+        void ODF::Preview::lighting_update_slot()
         {
           // Use a dummy call that won't actually change anything, but will call updateGL() (which is protected)
           render_frame->set_LOD (level_of_detail_selector->value());

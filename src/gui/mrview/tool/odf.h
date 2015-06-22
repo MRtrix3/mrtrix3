@@ -79,8 +79,9 @@ namespace MR
           protected:
              class Model;
              class Image;
+             class Preview;
 
-             Dock *preview;
+             Preview *preview;
 
              DWI::Renderer *renderer;
 
