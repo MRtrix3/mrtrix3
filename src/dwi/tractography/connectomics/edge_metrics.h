@@ -88,7 +88,7 @@ class Metric_meanlength : public Metric_base {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
-      return (tck.size() - 1);
+      return tck.calc_length();
     }
 
 };
@@ -101,7 +101,7 @@ class Metric_invlength : public Metric_base {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
-      return (tck.size() > 1 ? (1.0 / (tck.size() - 1)) : 0);
+      return (tck.size() > 1 ? (1.0 / tck.calc_length()) : 0);
     }
 
 };
@@ -144,7 +144,7 @@ class Metric_invlength_invnodevolume : public Metric_invnodevolume {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const
     {
-      return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
+      return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / tck.calc_length()) : 0);
     }
 
 };
