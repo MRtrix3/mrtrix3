@@ -57,6 +57,8 @@ namespace MR
         load_vtk (path);
       else if (path.substr (path.size() - 4) == ".stl" || path.substr (path.size() - 4) == ".STL")
         load_stl (path);
+      else if (path.substr (path.size() - 4) == ".obj" || path.substr (path.size() - 4) == ".OBJ")
+        load_obj (path);
       else
         throw Exception ("Input mesh file not in supported format");
     }
@@ -108,6 +110,8 @@ namespace MR
         save_vtk (path, binary);
       else if (path.substr (path.size() - 4) == ".stl")
         save_stl (path, binary);
+      else if (path.substr (path.size() - 4) == ".obj")
+        save_obj (path);
       else
         throw Exception ("Output mesh file format not supported");
     }
@@ -818,6 +822,114 @@ namespace MR
       verify_data();
     }
 
+    void Mesh::load_obj (const std::string& path)
+    {
+      // Little class needed for face data reading
+      struct FaceData {
+          uint32_t vertex, texture, normal;
+      };
+      std::ifstream in (path.c_str(), std::ios_base::in);
+      if (!in)
+        throw Exception ("Error opening input file!");
+      std::string line;
+      std::string group, object;
+      int counter = -1;
+      while (std::getline (in, line)) {
+        ++counter;
+        if (!line.size()) continue;
+        if (line[0] == '#') continue;
+        const size_t divider = line.find_first_of (' ');
+        const std::string prefix (line.substr (0, divider));
+        std::string data (line.substr (divider+1, line.npos));
+        if (prefix == "v") {
+          float values[4];
+          sscanf (data.c_str(), "%f %f %f %f", &values[0], &values[1], &values[2], &values[3]);
+          vertices.push_back (Vertex (values[0], values[1], values[2]));
+        } else if (prefix == "vt") {
+          // Texture data; do nothing
+        } else if (prefix == "vn") {
+          float values[3];
+          sscanf (data.c_str(), "%f %f %f", &values[0], &values[1], &values[2]);
+          normals.push_back (Vertex (values[0], values[1], values[2]));
+        } else if (prefix == "vp") {
+          // Parameter space vertices; do nothing
+        } else if (prefix == "f") {
+          // Parse face information
+          // Need to handle:
+          // * Either 3 or 4 vertices - write to either triangles or quads
+          // * Vertices only, vertices & texture coordinates, vertices & normals, all 3
+          std::vector<std::string> elements;
+          do {
+            const size_t first_space = data.find_first_of (' ');
+            if (first_space == data.npos) {
+              if (std::isalnum (data[0]))
+                elements.push_back (data);
+              data.clear();
+            } else {
+              elements.push_back (data.substr (0, first_space));
+              data = data.substr (first_space+1);
+            }
+          } while (data.size());
+          if (elements.size() != 3 && elements.size() != 4)
+            throw Exception ("Malformed face information in input OBJ file (face with neither 3 nor 4 vertices; line " + str(counter) + ")");
+          std::vector<FaceData> face_data;
+          size_t values_per_element = 0;
+          for (std::vector<std::string>::iterator i = elements.begin(); i != elements.end(); ++i) {
+            FaceData temp;
+            temp.vertex = 0; temp.texture = 0; temp.normal = 0;
+            const size_t first_slash = i->find_first_of ('/');
+            // OBJ format counts from 1 - therefore need to decrement
+            temp.vertex = to<uint32_t> (i->substr (0, first_slash)) - 1;
+            size_t this_values_count = 0;
+            if (first_slash == i->npos) {
+              this_values_count = 1;
+            } else {
+              const size_t last_slash = i->find_last_of ('/');
+              if (last_slash == first_slash) {
+                temp.texture = to<uint32_t> (i->substr (last_slash+1)) - 1;
+                this_values_count = 2;
+              } else {
+                temp.texture = to<uint32_t> (i->substr (first_slash, last_slash)) - 1;
+                temp.normal = to<uint32_t> (i->substr (last_slash+1)) - 1;
+                this_values_count = 3;
+              }
+            }
+            if (!values_per_element)
+              values_per_element = this_values_count;
+            else if (values_per_element != this_values_count)
+              throw Exception ("Malformed face information in input OBJ file (inconsistent vertex / texture / normal detail); line " + str(counter));
+            face_data.push_back (temp);
+          }
+          if (face_data.size() == 3) {
+            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex };
+            triangles.push_back (Triangle (temp));
+          } else {
+            std::vector<uint32_t> temp { face_data[0].vertex, face_data[1].vertex, face_data[2].vertex, face_data[3].vertex };
+            quads.push_back (Quad (temp));
+          }
+          // The OBJ format allows defining different vertex-based normals for different faces that reference the same vertex
+          // This isn't consistent with the internal storage mechanism used in the Mesh class, and isn't really a feature
+          //   worth providing support for in this context.
+          // Therefore, just ignore this data
+        } else if (prefix == "g") {
+          //if (!group.size())
+          //  group = data;
+          //else
+          //  throw Exception ("Multiple groups in input OBJ file");
+          group = data;
+        } else if (prefix == "o") {
+          if (!object.size())
+            object = data;
+          else
+            throw Exception ("Multiple objects in input OBJ file");
+        } // Do nothing for all other prefixes
+      }
+
+      verify_data();
+    }
+
+
+
 
 
     void Mesh::save_vtk (const std::string& path, const bool binary) const
@@ -943,6 +1055,21 @@ namespace MR
 
       }
     }
+
+
+
+    void Mesh::save_obj (const std::string& path) const
+    {
+      File::OFStream out (path);
+      out << "# mrtrix_version: " << App::mrtrix_version << "\n";
+      for (VertexList::const_iterator v = vertices.begin(); v != vertices.end(); ++v)
+        out << "v " << str((*v)[0]) << " " << str((*v)[1]) << " " << str((*v)[2]) << " 1.0\n";
+      for (TriangleList::const_iterator t = triangles.begin(); t != triangles.end(); ++t)
+        out << "f " << str((*t)[0]+1) << " " << str((*t)[1]+1) << " " << str((*t)[2]+1) << "\n";
+      for (QuadList::const_iterator q = quads.begin(); q != quads.end(); ++q)
+        out << "f " << str((*q)[0]+1) << " " << str((*q)[1]+1) << " " << str((*q)[2]+1) << " " << str((*q)[3]+1) << "\n";
+    }
+
 
 
 

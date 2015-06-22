@@ -188,8 +188,10 @@ namespace MR
       private:
         void load_vtk (const std::string&);
         void load_stl (const std::string&);
+        void load_obj (const std::string&);
         void save_vtk (const std::string&, const bool) const;
         void save_stl (const std::string&, const bool) const;
+        void save_obj (const std::string&) const;
 
         void verify_data() const;
 
