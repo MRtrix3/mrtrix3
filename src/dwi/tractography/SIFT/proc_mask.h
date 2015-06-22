@@ -59,10 +59,8 @@ namespace MR
 
 
       template <class DWIType, class MaskType, class ACTType>
-        void initialise_processing_mask (DWIType& in_dwi, MaskType& proc_mask, std::unique_ptr<ACTType>& act_5tt)
+        void initialise_processing_mask (DWIType& in_dwi, MaskType& mask, std::unique_ptr<ACTType>& act_5tt)
         {
-          auto mask = proc_mask;
-
           // User-specified processing mask
           auto opt = App::get_options ("proc_mask");
           if (opt.size()) {
@@ -79,7 +77,7 @@ namespace MR
               auto in_anat = Header::open (opt[0][0]);
               ACT::verify_5TT_image (in_anat);
 
-              auto info_5tt = in_dwi;
+              Header info_5tt = in_dwi;
               info_5tt.set_ndim (4);
               info_5tt.size(3) = 5;
               act_5tt.reset (new Image<float> (Image<float>::scratch (info_5tt, "5TT BufferScratch")));
@@ -88,11 +86,11 @@ namespace MR
               // If it has, can do a direct import
               if (dimensions_match (*act_5tt, in_anat, 0, 3)) {
                 INFO ("5TT image dimensions match fixel image - importing directly");
-                copy (in_anat, *act_5tt);
+                copy (in_anat.get_image<float>(), *act_5tt);
               } else {
                 ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
                 auto v_anat = in_anat.get_image<float>();
-                ResampleFunctor<DWIType, decltype(v_anat), ACTType> functor (in_dwi, in_anat, *act_5tt);
+                ResampleFunctor<DWIType, decltype(v_anat), ACTType> functor (in_dwi, v_anat, *act_5tt);
                 threaded_loop.run (functor);
               }
 
@@ -104,12 +102,11 @@ namespace MR
 
             } else {
 
-              auto dwi = in_dwi.voxel();
-              auto f = [] (decltype(dwi)& dwi, decltype(mask)& mask) {
+              auto f = [] (decltype(in_dwi)& dwi, decltype(mask)& mask) {
                 typedef typename std::remove_reference<decltype(in_dwi)>::type::value_type value_type;
                 mask.value() = (dwi.value() && std::isfinite (static_cast<value_type> (dwi.value()))) ? 1.0 : 0.0;
               };
-              ThreadedLoop ("Creating homogeneous processing mask...", dwi, 0, 3).run (f, dwi, mask);
+              ThreadedLoop ("Creating homogeneous processing mask...", in_dwi, 0, 3).run (f, in_dwi, mask);
             }
 
           }
@@ -125,7 +122,7 @@ namespace MR
 
             ResampleFunctor (InputType& dwi, AnatType& anat, OutputType& out) :
               dwi (dwi),
-              voxel2scanner (Transform(dwi).voxel2scanner),
+              voxel2scanner (Transform(dwi).voxel2scanner.cast<float>()),
               interp_anat (anat),
               out (out) { dwi.index(3) = 0; }
 
@@ -139,7 +136,7 @@ namespace MR
 
           private:
             InputType dwi;
-            transform_type voxel2scanner;
+            Eigen::Transform<float,3,Eigen::AffineCompact> voxel2scanner;
             Interp::Linear<AnatType> interp_anat;
             OutputType out;
 

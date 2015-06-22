@@ -23,6 +23,12 @@
 #ifndef __dwi_tractography_algorithms_tensor_det_h__
 #define __dwi_tractography_algorithms_tensor_det_h__
 
+// These lines are to silence deprecation warnings with Eigen & GCC v5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <Eigen/Eigenvalues> 
+#pragma GCC diagnostic pop
+
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
@@ -64,13 +70,14 @@ namespace MR
 
           properties["method"] = "TensorDet";
 
-          Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (source_buffer);
+          auto grad = DWI::get_valid_DW_scheme (source);
 
-          grad2bmatrix (bmat, grad);
-          Math::pinv (binv, bmat);
+          auto bmat_double = grad2bmatrix<double> (grad);
+          binv = Math::pinv (bmat_double).cast<float>();
+          bmat = bmat_double.cast<float>();
         }
 
-        Math::Matrix<float> bmat, binv;
+        Eigen::MatrixXf bmat, binv;
       };
 
 
@@ -81,11 +88,11 @@ namespace MR
       Tensor_Det (const Shared& shared) :
         MethodBase (shared),
         S (shared),
-        source (S.source_voxel),
+        source (S.source),
         eig (3),
         M (3,3),
-        V (3,3),
-        ev (3) { }
+        dt (6) { }
+        
 
 
 
@@ -109,41 +116,37 @@ namespace MR
 
       float get_metric()
       {
-        dwi2tensor (S.binv, &values[0]);
-        return tensor2FA (&values[0]);
+        dwi2tensor (dt, S.binv, values);
+        return tensor2FA (dt);
       }
 
 
       protected:
       const Shared& S;
-      Tracking::Interpolator<SourceBufferType::voxel_type>::type source;
-      Math::Eigen::SymmV<double> eig;
-      Math::Matrix<double> M, V;
-      Math::Vector<double> ev;
+      Tracking::Interpolator<Image<float>>::type source;
+      Eigen::SelfAdjointEigenSolver<Matrix3f> eig;
+      Eigen::Matrix3f M;
+      Eigen::VectorXf dt;
 
       void get_EV ()
       {
         M(0,0) = values[0];
         M(1,1) = values[1];
         M(2,2) = values[2];
-        M(0,1) = M(1,0) = values[3];
-        M(0,2) = M(2,0) = values[4];
-        M(1,2) = M(2,1) = values[5];
+        M(1,0) = values[3];
+        M(2,0) = values[4];
+        M(2,1) = values[5];
 
-        eig (ev, M, V);
-        Math::Eigen::sort (ev, V);
-
-        dir[0] = V(0,2);
-        dir[1] = V(1,2);
-        dir[2] = V(2,2);
+        eig.computeDirect (M);
+        dir = eig.eigenvectors().col(2);
       }
 
 
       bool do_init()
       {
-        dwi2tensor (S.binv, &values[0]);
+        dwi2tensor (dt, S.binv, values);
 
-        if (tensor2FA (&values[0]) < S.init_threshold)
+        if (tensor2FA (values) < S.init_threshold)
           return false;
 
         get_EV();
@@ -155,16 +158,16 @@ namespace MR
       term_t do_next()
       {
 
-        dwi2tensor (S.binv, &values[0]);
+        dwi2tensor (dt, S.binv, values);
 
-        if (tensor2FA (&values[0]) < S.threshold)
+        if (tensor2FA (values) < S.threshold)
           return BAD_SIGNAL;
 
-        Point<value_type> prev_dir = dir;
+        Eigen::Vector3f prev_dir = dir;
 
         get_EV();
 
-        value_type dot = prev_dir.dot (dir);
+        float dot = prev_dir.dot (dir);
         if (std::abs (dot) < S.cos_max_angle)
           return HIGH_CURVATURE;
 

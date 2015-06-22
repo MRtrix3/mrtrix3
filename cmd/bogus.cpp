@@ -1,14 +1,13 @@
 #include "command.h"
 #include "debug.h"
-#include "image.h"
-#include "timer.h"
-#include "math/rng.h"
-#include "algo/loop.h"
-#include "algo/threaded_loop.h"
+#include "thread.h"
+#include "dwi/tractography/rng.h"
 
 using namespace MR;
 using namespace App;
 
+
+std::mutex mutex;
 
 void usage ()
 {
@@ -31,40 +30,18 @@ void usage ()
 
 typedef float value_type;
 
+using namespace DWI::Tractography;
+
+struct thread_func {
+  void execute () {
+    std::lock_guard<std::mutex> lock (mutex);
+    std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
+  }
+};
 
 void run ()
 {
-  value_type power = 1.0;
-  auto opt = get_options ("power");
-  if (opt.size())
-    power = opt[0][0];
-
-  value_type noise = 1.0;
-  opt = get_options ("noise");
-  if (opt.size())
-    noise = opt[0][0];
-
-  auto in = Image<value_type>::open (argument[0]).with_direct_io ();
-  auto header = in.header();
-
-  auto scratch = Image<value_type>::scratch (header);
-  struct noisify {
-    const value_type noise;
-    Math::RNG::Normal<value_type> rng;
-    void operator() (decltype(in)& in, decltype(scratch)& out) { out.value() = in.value() + noise*rng(); }
-  };
-  Timer timer;
-  ThreadedLoop ("adding noise...", in).run (noisify({noise}), in, scratch);
-  CONSOLE ("time taken: " + str(timer.elapsed(), 6) + "s");
-
-
-  header.datatype() = DataType::Float32;
-  auto out = Image<value_type>::create (argument[1], header).with_direct_io(); 
-
-  timer.start();
-  ThreadedLoop ("raising to power " + str(power) + "...", scratch).run ([&](decltype(in)& in, decltype(out)& out) {
-      out.value() = std::pow (in.value(), power);
-      }, scratch, out);
-  CONSOLE ("time taken: " + str(timer.elapsed(), 6) + "s");
+  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
+  Thread::run (Thread::multi (thread_func()));
 }
 

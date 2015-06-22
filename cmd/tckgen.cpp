@@ -158,7 +158,7 @@ void run ()
   Properties properties;
 
   int algorithm = 2; // default = ifod2
-  Options opt = get_options ("algorithm");
+  auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
   load_rois (properties);

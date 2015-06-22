@@ -22,8 +22,7 @@
 
 
 #include "dwi/tractography/seeding/list.h"
-
-
+#include "dwi/tractography/rng.h"
 
 
 namespace MR
@@ -67,11 +66,12 @@ namespace MR
 
         bool List::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d)
         {
+          std::uniform_real_distribution<float> uniform;
 
           if (is_finite()) {
 
             for (auto& i : seeders)
-              if (i->get_seed (rng, p, d))
+              if (i->get_seed (p, d))
                 return true;
 
             p = { NaN, NaN, NaN };
@@ -80,14 +80,14 @@ namespace MR
           } else {
 
             if (seeders.size() == 1)
-              return seeders.front()->get_seed (rng, p, d);
+              return seeders.front()->get_seed (p, d);
 
             do {
               float incrementer = 0.0;
-              const float sample = rng() * total_volume;
+              const float sample = uniform (rng) * total_volume;
               for (auto& i : seeders)
                 if ((incrementer += i->vol()) > sample)
-                  return i->get_seed (rng, p, d);
+                  return i->get_seed (p, d);
 
             } while (1);
             return false;

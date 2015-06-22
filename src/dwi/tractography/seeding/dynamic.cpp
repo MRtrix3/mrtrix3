@@ -24,6 +24,7 @@
 #include "app.h"
 #include "dwi/fmls.h"
 #include "math/SH.h"
+#include "dwi/tractography/rng.h"
 #include "dwi/tractography/seeding/dynamic.h"
 
 
@@ -45,8 +46,7 @@ namespace MR
         // Needs to be thread-safe
         auto interp = interp_template;
 
-        Eigen::Vector3d pd = p.cast<double>();
-        interp.scanner (pd);
+        interp.scanner (p.cast<double>());
         const ACT::Tissues tissues (interp);
 
         if (tissues.get_csf() > tissues.get_wm() + tissues.get_gm())
@@ -55,8 +55,7 @@ namespace MR
         if (tissues.get_wm() > tissues.get_gm())
           return true;
 
-        auto retval = gmwmi_finder.find_interface (pd);
-        p = pd.cast<float>();
+        auto retval = gmwmi_finder.find_interface (p);
         return retval;
       }
 
@@ -127,30 +126,33 @@ namespace MR
 
 
 
-      bool Dynamic::get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f& d)
+      bool Dynamic::get_seed (Eigen::Vector3f&) const { return false; }
+
+      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d) const 
       {
 
         uint64_t samples = 0;
         std::uniform_int_distribution<size_t> uniform_int (0, fixels.size()-2);
+        std::uniform_real_distribution<float> uniform;
 
         while (1) {
 
           ++samples;
-          const size_t fixel_index = 1 + uniform_int (rng.rng);
+          const size_t fixel_index = 1 + uniform_int (rng);
           const Fixel& fixel = fixels[fixel_index];
 
-          if (fixel.get_seed_prob (mu()) > rng()) {
+          if (fixel.get_seed_prob (mu()) > uniform (rng)) {
 
             const Eigen::Vector3i& v (fixel.get_voxel());
-            const Eigen::Vector3f vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
-            p = transform.voxel2scanner * vp;
+            const Eigen::Vector3f vp (v[0]+uniform(rng)-0.5, v[1]+uniform(rng)-0.5, v[2]+uniform(rng)-0.5);
+            p = transform.voxel2scanner.cast<float>() * vp;
 
             bool good_seed = !act;
             if (!good_seed) {
 
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
-                const Eigen::Vector3f new_v_float (transform.scanner2voxel * p);
+                const Eigen::Vector3f new_v_float (transform.scanner2voxel.cast<float>() * p);
                 const Eigen::Vector3i new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
@@ -180,7 +182,7 @@ namespace MR
       {
         if (!SIFT::ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
-        VoxelAccessor v (accessor);
+        VoxelAccessor v (accessor());
         assign_pos_of (in.vox).to (v);
         if (v.value()) {
           for (DWI::Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)

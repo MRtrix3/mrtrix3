@@ -48,7 +48,7 @@ namespace MR {
             return true;
           }
 
-          if (std::isfinite (in[0][0])) {
+          if (in[0].allFinite()) {
 
             if (skip) {
               --skip;
@@ -65,7 +65,7 @@ namespace MR {
             temp.index = in.index;
             temp.weight = in.weight;
             for (const auto& p : in) {
-              if (std::isfinite (p[0])) {
+              if (p.allFinite()) {
                 temp.push_back (p);
               } else if (temp.size()) {
                 output (temp);

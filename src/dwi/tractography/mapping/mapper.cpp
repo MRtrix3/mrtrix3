@@ -77,25 +77,24 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_SUM:
           out.factor = 0.0;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (std::isfinite (*i))
-              out.factor += *i;
-          }
+          for (const auto& i : factors) 
+            if (std::isfinite (i))
+              out.factor += i;
           break;
 
         case T_MIN:
           out.factor = INFINITY;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (std::isfinite (*i))
-              out.factor = MIN (out.factor, *i);
+          for (const auto& i : factors) {
+            if (std::isfinite (i))
+              out.factor = MIN (out.factor, i);
           }
           break;
 
         case T_MEAN:
           out.factor = 0.0;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (std::isfinite (*i)) {
-              out.factor += *i;
+          for (const auto& i : factors) {
+            if (std::isfinite (i)) {
+              out.factor += i;
               ++count;
             }
           }
@@ -104,9 +103,9 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_MAX:
           out.factor = -INFINITY;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (std::isfinite (*i))
-              out.factor = MAX (out.factor, *i);
+          for (const auto& i : factors) {
+            if (std::isfinite (i))
+              out.factor = MAX (out.factor, i);
           }
           break;
 
@@ -121,9 +120,9 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
 
         case T_MEAN_NONZERO:
           out.factor = 0.0;
-          for (std::vector<float>::const_iterator i = factors.begin(); i != factors.end(); ++i) {
-            if (std::isfinite (*i) && *i) {
-              out.factor += *i;
+          for (const auto& i : factors) {
+            if (std::isfinite (i) && i) {
+              out.factor += i;
               ++count;
             }
           }
@@ -240,7 +239,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
       this_tangent = ((tck[i]   - tck[i-1]).normalized());
     else
       this_tangent = ((tck[i+1] - tck[i-1]).normalized());
-    if (std::isfinite (this_tangent[0]))
+    if (this_tangent.allFinite())
       tangents.push_back (this_tangent);
     else
       tangents.push_back ({ 0.0, 0.0, 0.0 });
@@ -272,7 +271,7 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
 
   // Produce a matrix of spline distances between points
   Eigen::MatrixXf spline_distances (tck.size(), tck.size());
-  spline_distances = 0.0f;
+  spline_distances.setZero();
   for (size_t i = 0; i != tck.size(); ++i) {
     for (size_t j = 0; j <= i; ++j) {
       for (size_t k = i+1; k != tck.size(); ++k) {
@@ -294,7 +293,6 @@ void TrackMapperTWI::load_factors (const Streamline<>& tck) const
   for (size_t i = 0; i != tck.size(); ++i) {
 
     Eigen::Vector3f this_tangent (0.0, 0.0, 0.0);
-    std::pair<float, Eigen::Vector3f> this_normal (std::make_pair (0.0, { 0.0, 0.0, 0.0 }));
 
     for (size_t j = 0; j != tck.size(); ++j) {
       const float distance = spline_distances (i, j);

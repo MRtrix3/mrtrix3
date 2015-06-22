@@ -172,7 +172,7 @@ namespace MR {
 
       class FOD_lobes : public std::vector<FOD_lobe> {
         public:
-          Eigen::Vector3f vox;
+          Eigen::Vector3i vox;
           std::vector<uint8_t> lut;
       };
 
@@ -184,7 +184,7 @@ namespace MR {
           SH_coefs (const Eigen::VectorXf& that) :
             Eigen::VectorXf (that),
             vox (-1, -1, -1) { }
-          Eigen::Vector3f vox;
+          Eigen::Vector3i vox;
       };
 
       template <class FODImageType, class MaskImageType = Image<bool>>

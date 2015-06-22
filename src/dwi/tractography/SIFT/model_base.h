@@ -139,7 +139,7 @@ namespace MR
             template <class ImageType>
               ModelBase (ImageType& dwi, const DWI::Directions::FastLookupSet& dirs) :
                 Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
-                proc_mask (Fixel_map<Fixel>::info(), "SIFT model processing mask"), // TODO don't get this...
+                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
                 H (dwi),
                 FOD_sum (0.0),
                 TD_sum (0.0),
@@ -207,9 +207,8 @@ namespace MR
           template <class ImageType>
           void ModelBase<Fixel>::perform_FOD_segmentation (ImageType& data)
           {
-            auto data_vox = data.voxel();
-            DWI::FMLS::FODQueueWriter<decltype(data_vox), decltype(proc_mask)> writer (data_vox, proc_mask);
-            DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.dim(3)));
+            DWI::FMLS::FODQueueWriter<decltype(data), decltype(proc_mask)> writer (data, proc_mask);
+            DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.size(3)));
             fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
             fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
             Thread::run_queue (writer, FMLS::SH_coefs(), Thread::multi (fmls), FMLS::FOD_lobes(), *this);
@@ -229,7 +228,7 @@ namespace MR
               return;
             }
             // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
-            VoxelAccessor v (accessor);
+            VoxelAccessor v (accessor());
             FOD_sum = 0.0;
             for (auto l = LoopInOrder(v) (v, *act_5tt); l; ++l) {
               Tractography::ACT::Tissues tissues (*act_5tt);
@@ -275,7 +274,7 @@ namespace MR
             if (!Fixel_map<Fixel>::operator() (in))
               return false;
 
-            VoxelAccessor v (accessor);
+            VoxelAccessor v (accessor());
             assign_pos_of (in.vox).to (v);
 
             if (v.value()) {

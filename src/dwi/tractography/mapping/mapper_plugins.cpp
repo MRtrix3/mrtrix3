@@ -59,7 +59,7 @@ namespace MR {
             // Only the track endpoints contribute
             for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
               const auto endpoint = get_last_point_in_fov (tck, tck_end_index);
-              if (std::isfinite (endpoint[0]))
+              if (endpoint.allFinite())
                 factors.push_back (interp.value());
               else
                 factors.push_back (NaN);

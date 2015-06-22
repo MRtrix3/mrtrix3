@@ -138,7 +138,7 @@ namespace MR {
 
           protected:
             const Header info;
-            const transform_type scanner2voxel;
+            const Eigen::Transform<float,3,Eigen::AffineCompact> scanner2voxel;
             bool map_zero;
             bool precise;
             bool ends_only;
@@ -213,7 +213,7 @@ namespace MR {
           {
             typedef Eigen::Vector3f PointF;
 
-            constexpr float accuracy = Math::pow2 (0.005 * minvalue (info.voxsize (0), info.voxsize (1), info.voxsize (2)));
+            const float accuracy = Math::pow2 (0.005 * minvalue (info.voxsize (0), info.voxsize (1), info.voxsize (2)));
 
             if (tck.size() < 2)
               return;
@@ -350,7 +350,7 @@ namespace MR {
                 track_statistic       (s) { }
 
             TrackMapperTWI (const TrackMapperTWI& that) :
-              TrackMapperBase       (that),
+              TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
               contrast              (that.contrast),
               track_statistic       (that.track_statistic) {
                 if (that.image_plugin) {

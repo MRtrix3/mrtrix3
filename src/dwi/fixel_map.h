@@ -46,9 +46,9 @@ namespace MR
         public:
           template <typename HeaderType>
             Fixel_map (const HeaderType& i) :
-              accessor (Image<MapVoxel*>::scratch (i, "fixel map voxels")) {
-                for (auto l = Loop() (accessor); l; ++l) 
-                  accessor.value() = nullptr;
+              _accessor (Image<MapVoxel*>::scratch (i, "fixel map voxels")) {
+                for (auto l = Loop() (_accessor); l; ++l) 
+                  _accessor.value() = nullptr;
                 // fixels[0] is an invalid fixel, as provided by the relevant empty constructor
                 // This allows index 0 to be used as an error code, simplifying the implementation of MapVoxel and Iterator
                 fixels.push_back (Fixel());
@@ -58,14 +58,14 @@ namespace MR
           class MapVoxel;
           typedef Image<MapVoxel*> VoxelAccessor;
 
-          Header header() const { return { accessor }; }
+          Header header() const { return { _accessor }; }
 
           virtual ~Fixel_map()
           {
-            for (auto l = Loop() (accessor); l; ++l) {
-              if (accessor.value()) {
-                delete accessor.value();
-                accessor.value() = nullptr;
+            for (auto l = Loop() (_accessor); l; ++l) {
+              if (_accessor.value()) {
+                delete _accessor.value();
+                _accessor.value() = nullptr;
               }
             }
           }
@@ -82,13 +82,14 @@ namespace MR
 
           virtual bool operator() (const FMLS::FOD_lobes& in);
 
+          // Functions can copy-construct their own voxel accessor from this and retain const-ness:
+          const VoxelAccessor& accessor() const { return _accessor; } 
 
         protected:
-
-          const VoxelAccessor accessor; // Functions can copy-construct their own voxel accessor from this and retain const-ness
           std::vector<Fixel> fixels;
 
-
+        private:
+          VoxelAccessor _accessor; 
 
 
       };
@@ -189,7 +190,7 @@ namespace MR
       {
         if (in.empty())
           return true;
-        auto v = accessor;
+        auto v = accessor();
         v.index(0) = in.vox[0];
         v.index(1) = in.vox[1];
         v.index(2) = in.vox[2];

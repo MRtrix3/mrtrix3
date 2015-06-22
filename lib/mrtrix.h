@@ -296,21 +296,21 @@ namespace MR
 
 
 
-  template <class T> inline T minvalue (const T& v0, const T& v1, const T& v2)
+  template <class T> inline constexpr T minvalue (const T& v0, const T& v1, const T& v2)
   {
     return v0 < v1 ? (v0 < v2 ? v0 : (v1 < v2 ? v1 : v2)) : (v1 < v2 ? v1 : (v0 < v2 ? v0 : v2));
   }
 
-  template <class T> inline int minindex (const T& v0, const T& v1, const T& v2)
+  template <class T> inline constexpr int minindex (const T& v0, const T& v1, const T& v2)
   {
     return v0 < v1 ? (v0 < v2 ? 0 : (v1 < v2 ? 1 : 2)) : (v1 < v2 ? 1 : (v0 < v2 ? 0 : 2));
   }
 
-  template <class T> inline T minvalue (const T v[3])
+  template <class T> inline constexpr T minvalue (const T v[3])
   {
     return minvalue (v[0], v[1], v[2]);
   }
-  template <class T> inline int minindex (const T v[3])
+  template <class T> inline constexpr int minindex (const T v[3])
   {
     return minindex (v[0], v[1], v[2]);
   }

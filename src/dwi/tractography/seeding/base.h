@@ -27,7 +27,6 @@
 #include "image.h"
 #include "file/path.h"
 #include "algo/threaded_loop.h"
-#include "math/rng.h"
 
 
 
@@ -116,8 +115,8 @@ namespace MR
           const std::string& get_name() const { return name; }
           size_t get_max_attempts() const { return max_attempts; }
 
-          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&) const = 0;
-          virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p, Eigen::Vector3f&) const { return get_seed (rng, p); }
+          virtual bool get_seed (Eigen::Vector3f&) const = 0;
+          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) const { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;

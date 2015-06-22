@@ -94,7 +94,7 @@ namespace MR
       template <class Fixel>
         size_t Fixel_TD_map<Fixel>::dixel2fixel (const Dixel& in) const
         {
-          auto v = accessor;
+          auto v = accessor();
           v.index(0) = in[0];
           v.index(1) = in[1];
           v.index(2) = in[2];

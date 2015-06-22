@@ -30,10 +30,11 @@ namespace MR
   namespace DWI
   {
 
-    template <typename T> inline Math::Matrix<T> grad2bmatrix (Math::Matrix<T> &bmat, const Math::Matrix<T> &grad)
+    template <typename T, class MatrixType> 
+      inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad)
     {
-      bmat.allocate (grad.rows(),7);
-      for (size_t i = 0; i < grad.rows(); ++i) {
+      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(),7);
+      for (ssize_t i = 0; i < grad.rows(); ++i) {
         bmat (i,0) = grad (i,3) * grad (i,0) *grad (i,0);
         bmat (i,1) = grad (i,3) * grad (i,1) *grad (i,1);
         bmat (i,2) = grad (i,3) * grad (i,2) *grad (i,2);
@@ -48,40 +49,42 @@ namespace MR
 
 
 
-    template <typename T> inline void dwi2tensor (const Math::Matrix<T>& binv, T* d)
+    template <class MatrixType, class VectorTypeOut, class VectorTypeIn>
+      inline void dwi2tensor (VectorTypeOut& dt, const MatrixType& binv, VectorTypeIn& dwi)
     {
-      VLA (logs, T, binv.columns());
-      for (size_t i = 0; i < binv.columns(); ++i)
-        logs[i] = d[i] > T (0.0) ? -std::log (d[i]) : T (0.0);
-      Math::Vector<T> logS (logs, binv.columns());
-      Math::Vector<T> DT (d, 7);
-      Math::mult (DT, binv, logS);
+      typedef typename VectorTypeIn::Scalar T;
+      for (ssize_t i = 0; i < dwi.size(); ++i)
+        dwi[i] = dwi[i] > T(0.0) ? -std::log (dwi[i]) : T(0.0);
+      dt = binv * dwi;
     }
 
 
-    template <typename T> inline T tensor2ADC (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2ADC (const VectorType& dt)
     {
-      return (t[0]+t[1]+t[2]) /T (3.0);
+      typedef typename VectorType::Scalar T;
+      return (dt[0]+dt[1]+dt[2]) / T (3.0);
     }
 
 
-    template <typename T> inline T tensor2FA (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2FA (const VectorType& dt)
     {
-      T trace = tensor2ADC (t);
-      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
-      trace = t[0]*t[0] + t[1]*t[1] + t[2]*t[2] + T (2.0) * (t[3]*t[3] + t[4]*t[4] + t[5]*t[5]);
+      typedef typename VectorType::Scalar T;
+      T trace = tensor2ADC (dt);
+      T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
+      trace = dt[0]*dt[0] + dt[1]*dt[1] + dt[2]*dt[2] + T (2.0) * (dt[3]*dt[3] + dt[4]*dt[4] + dt[5]*dt[5]);
       return trace ?
-             std::sqrt (T (1.5) * (a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) / trace) :
+             std::sqrt (T (1.5) * (a[0]*a[0]+a[1]*a[1]+a[2]*a[2] + T (2.0) * (dt[3]*dt[3]+dt[4]*dt[4]+dt[5]*dt[5])) / trace) :
              T (0.0);
     }
 
 
-    template <typename T> inline T tensor2RA (T* t)
+    template <class VectorType> inline typename VectorType::Scalar tensor2RA (const VectorType& dt)
     {
-      T trace = tensor2ADC (t);
-      T a[] = { t[0]-trace, t[1]-trace, t[2]-trace };
+      typedef typename VectorType::Scalar T;
+      T trace = tensor2ADC (dt);
+      T a[] = { dt[0]-trace, dt[1]-trace, dt[2]-trace };
       return trace ?
-             sqrt ( (a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ T (2.0) * (t[3]*t[3]+t[4]*t[4]+t[5]*t[5])) /T (3.0)) / trace :
+             sqrt ( (a[0]*a[0]+a[1]*a[1]+a[2]*a[2]+ T (2.0) * (dt[3]*dt[3]+dt[4]*dt[4]+dt[5]*dt[5])) /T (3.0)) / trace :
              T (0.0);
     }
 

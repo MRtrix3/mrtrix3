@@ -787,12 +787,8 @@ namespace MR
 
 
       //! convenience function to check if an input image can contain SH coefficients
-      template <class HeaderType>
-        void check (const HeaderType& H) {
-          if (H.datatype().is_complex()) 
-            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - contains complex data");
-          if (!H.datatype().is_floating_point()) 
-            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - data type is not floating-point");
+      template <class ImageType>
+        void check (const ImageType& H) {
           if (H.ndim() < 4)
             throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
           size_t l = LforN (H.size(3));

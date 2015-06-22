@@ -40,7 +40,7 @@ namespace MR {
         // Helper functions; note that int[3] rather than Voxel is always used during the mapping itself
         inline Eigen::Vector3i round (const Eigen::Vector3f& p)
         { 
-          assert (std::isfinite (p[0]) && std::isfinite (p[1]) && std::isfinite (p[2]));
+          assert (p.allFinite());
           return { int(std::lround (p[0])), int(std::lround (p[1])), int(std::lround (p[2])) };
         }
 

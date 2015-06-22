@@ -63,13 +63,13 @@ namespace MR
               min_vox (that.min_vox) { }
 
 
-            bool find_interface (Eigen::Vector3d&) const;
-            Eigen::Vector3d normal (const Eigen::Vector3d&) const;
-            bool is_cgm (const Eigen::Vector3d&) const;
+            bool find_interface (Eigen::Vector3f&) const;
+            Eigen::Vector3f normal (const Eigen::Vector3f&) const;
+            bool is_cgm (const Eigen::Vector3f&) const;
 
 
-            Eigen::Vector3d find_interface (const std::vector<Eigen::Vector3d>&, const bool) const;
-            void crop_track (std::vector<Eigen::Vector3d>&) const;
+            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool) const;
+            void crop_track (std::vector<Eigen::Vector3f>&) const;
 
 
           protected:
@@ -77,17 +77,17 @@ namespace MR
             const float min_vox;
 
 
-            Tissues get_tissues (const Eigen::Vector3d& p, Interp& interp) const {
+            Tissues get_tissues (const Eigen::Vector3f& p, Interp& interp) const {
               if (interp.scanner (p))
                 return Tissues ();
               return Tissues (interp);
             }
 
-            bool find_interface (Eigen::Vector3d&, Interp&) const;
-            Eigen::Vector3d get_normal (const Eigen::Vector3d&, Interp&) const;
-            Eigen::Vector3d get_cf_min_step (const Eigen::Vector3d&, Interp&) const;
+            bool find_interface (Eigen::Vector3f&, Interp&) const;
+            Eigen::Vector3f get_normal (const Eigen::Vector3f&, Interp&) const;
+            Eigen::Vector3f get_cf_min_step (const Eigen::Vector3f&, Interp&) const;
 
-            Eigen::Vector3d find_interface (const std::vector<Eigen::Vector3d>&, const bool, Interp&) const;
+            Eigen::Vector3f find_interface (const std::vector<Eigen::Vector3f>&, const bool, Interp&) const;
 
 
             friend class Track_extender;

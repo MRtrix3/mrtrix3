@@ -137,7 +137,8 @@ namespace MR
 
             ~Dynamic();
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f&, Eigen::Vector3f&) override;
+            bool get_seed (Eigen::Vector3f&) const override;
+            virtual bool get_seed (Eigen::Vector3f&, Eigen::Vector3f&) const override;
 
             // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
             //   includes the voxel location for easier determination of seed location
@@ -160,12 +161,12 @@ namespace MR
 
 
             // Want to know statistics on dynamic seeding sampling
-            uint64_t total_samples, total_seeds;
-            std::mutex mutex;
+            mutable uint64_t total_samples, total_seeds;
+            mutable std::mutex mutex;
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-            Writer<> seed_output;
+            mutable Writer<> seed_output;
             void write_seed (const Eigen::Vector3f&);
 #endif
 

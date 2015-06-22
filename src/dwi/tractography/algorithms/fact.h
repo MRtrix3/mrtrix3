@@ -50,12 +50,9 @@ namespace MR
         public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
           SharedBase (diff_path, property_set),
-          num_vec (source_buffer.dim(3)/3) {
+          num_vec (source.size(3)/3) {
 
-          if (source_buffer.datatype().is_complex() || source_buffer.datatype().is_integer())
-            throw Exception ("Input direction image for FACT algorithm should be floating-point");
-
-          if (source_buffer.dim(3) % 3)
+          if (source.size(3) % 3)
             throw Exception ("Number of volumes in FACT algorithm input image should be a multiple of 3");
 
           if (is_act() && act().backtrack())
@@ -74,7 +71,7 @@ namespace MR
         ~Shared () { }
 
         size_t num_vec;
-        value_type dot_threshold;
+        float dot_threshold;
       };
 
 
@@ -85,12 +82,12 @@ namespace MR
       FACT (const Shared& shared) :
         MethodBase (shared),
         S (shared),
-        source (S.source_voxel) { }
+        source (S.source) { }
 
       FACT (const FACT& that) :
         MethodBase (that.S),
         S (that.S),
-        source (S.source_voxel) { }
+        source (S.source) { }
 
       ~FACT () { }
 
@@ -99,8 +96,8 @@ namespace MR
       bool init()
       {
         if (!get_data (source)) return false;
-        if (!S.init_dir) {
-          if (!dir.valid())
+        if (!S.init_dir.allFinite()) {
+          if (!dir.allFinite())
             dir = random_direction();
         } 
         else 
@@ -114,7 +111,7 @@ namespace MR
         if (!get_data (source))
           return EXIT_IMAGE;
 
-        const value_type max_norm = do_next (dir);
+        const float max_norm = do_next (dir);
 
         if (max_norm < S.threshold)
           return BAD_SIGNAL;
@@ -126,26 +123,26 @@ namespace MR
 
       float get_metric()
       {
-        Point<value_type> d (dir);
+        Eigen::Vector3f d (dir);
         return do_next (d);
       }
 
 
       protected:
       const Shared& S;
-      Image::Interp::Nearest<SourceBufferType::voxel_type> source;
+      Interp::Nearest<Image<float>> source;
 
-      value_type do_next (Point<value_type>& d) const
+      float do_next (Eigen::Vector3f& d) const
       {
 
         int idx = -1;
-        value_type max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
+        float max_abs_dot = 0.0, max_dot = 0.0, max_norm = 0.0;
 
         for (size_t n = 0; n < S.num_vec; ++n) {
-          const value_type* const m = &values[3*n];
-          value_type norm = Math::norm(m,3);
-          value_type dot = Math::dot (m, (value_type*) d, 3) / norm;
-          value_type abs_dot = std::abs (dot);
+          Eigen::Vector3f v (values[3*n], values[3*n+1], values[3*n+2]);
+          float norm = v.norm();
+          float dot = v.dot(d) / norm; 
+          float abs_dot = std::abs (dot);
           if (abs_dot < S.dot_threshold) continue;
           if (max_abs_dot < abs_dot) {
             max_abs_dot = abs_dot;
@@ -157,11 +154,12 @@ namespace MR
 
         if (idx < 0) return (0.0);
 
-        d.set (values[3*idx], values[3*idx+1], values[3*idx+2]);
-        d.normalise();
-        if (max_dot < 0.0) d = -d;
+        d = { values[3*idx], values[3*idx+1], values[3*idx+2] };
+        d.normalize();
+        if (max_dot < 0.0) 
+          d = -d;
 
-        return (max_norm);
+        return max_norm;
       }
 
     };

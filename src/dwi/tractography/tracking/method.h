@@ -24,6 +24,7 @@
 #define __dwi_tractography_tracking_method_h__
 
 #include "memory.h"
+#include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/ACT/method.h"
 
@@ -56,14 +57,14 @@ namespace MR
           dir (0.0, 0.0, 1.0),
           S (that.S),
           act_method_additions (S.is_act() ? new ACT::ACT_Method_additions (S) : nullptr),
-          uniform_rng (that.uniform_rng),
+          uniform (that.uniform),
           values (that.values.size()) { }
 
 
 
         bool check_seed()
         {
-          if (!std::isfinite (pos[0]))
+          if (!pos.allFinite())
             return false;
 
           if ((S.properties.mask.size() && !S.properties.mask.contains (pos))
@@ -83,7 +84,7 @@ namespace MR
             source.scanner (position);
             if (!source) return false;
             for (auto l = Loop (3) (source); l; ++l)
-              values[source[3]] = source.value();
+              values[source.index(3)] = source.value();
             return !std::isnan (values[0]);
           }
 
@@ -119,8 +120,8 @@ namespace MR
 
 
       protected:
-        Math::RNG::Uniform<float> uniform_rng;
-        std::vector<float> values;
+        std::uniform_real_distribution<float> uniform;
+        Eigen::VectorXf values;
 
         Eigen::Vector3f random_direction ();
         Eigen::Vector3f random_direction (float max_angle, float sin_max_angle);
@@ -138,9 +139,9 @@ namespace MR
     {
       Eigen::Vector3f d;
       do {
-        d[0] = 2.0 * uniform_rng() - 1.0;
-        d[1] = 2.0 * uniform_rng() - 1.0;
-        d[2] = 2.0 * uniform_rng() - 1.0;
+        d[0] = 2.0 * uniform(rng) - 1.0;
+        d[1] = 2.0 * uniform(rng) - 1.0;
+        d[2] = 2.0 * uniform(rng) - 1.0;
       } while (d.squaredNorm() > 1.0);
       d.normalize();
       return d;
@@ -149,11 +150,11 @@ namespace MR
 
     Eigen::Vector3f MethodBase::random_direction (float max_angle, float sin_max_angle)
     {
-      float phi = 2.0 * Math::pi * uniform_rng();
+      float phi = 2.0 * Math::pi * uniform(rng);
       float theta;
       do {
-        theta = max_angle * uniform_rng();
-      } while (sin_max_angle * uniform_rng() > sin (theta));
+        theta = max_angle * uniform(rng);
+      } while (sin_max_angle * uniform(rng) > sin (theta));
       return Eigen::Vector3f (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
     }
 

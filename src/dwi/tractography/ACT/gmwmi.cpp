@@ -34,7 +34,7 @@ namespace MR
       {
 
 
-        bool GMWMI_finder::find_interface (Eigen::Vector3d& p) const
+        bool GMWMI_finder::find_interface (Eigen::Vector3f& p) const
         {
           Interp interp (interp_template);
           return find_interface (p, interp);
@@ -42,14 +42,14 @@ namespace MR
 
 
 
-        Eigen::Vector3d GMWMI_finder::normal (const Eigen::Vector3d& p) const
+        Eigen::Vector3f GMWMI_finder::normal (const Eigen::Vector3f& p) const
         {
           Interp interp (interp_template);
           return get_normal (p, interp);
         }
 
 
-        bool GMWMI_finder::is_cgm (const Eigen::Vector3d& p) const
+        bool GMWMI_finder::is_cgm (const Eigen::Vector3f& p) const
         {
           Interp interp (interp_template);
           // TODO: this is no-op, what was it doing here?!?
@@ -62,7 +62,7 @@ namespace MR
 
 
 
-        Eigen::Vector3d GMWMI_finder::find_interface (const std::vector< Eigen::Vector3d >& tck, const bool end) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector< Eigen::Vector3f >& tck, const bool end) const
         {
           Interp interp (interp_template);
           return find_interface (tck, end, interp);
@@ -71,14 +71,14 @@ namespace MR
 
 
 
-        void GMWMI_finder::crop_track (std::vector< Eigen::Vector3d >& tck) const
+        void GMWMI_finder::crop_track (std::vector< Eigen::Vector3f >& tck) const
         {
           if (tck.size() < 3)
             return;
           Interp interp (interp_template);
-          const Eigen::Vector3d new_first_point = find_interface (tck, false, interp);
+          const Eigen::Vector3f new_first_point = find_interface (tck, false, interp);
           tck[0] = new_first_point;
-          const Eigen::Vector3d new_last_point = find_interface (tck, true, interp);
+          const Eigen::Vector3f new_last_point = find_interface (tck, true, interp);
           tck[tck.size() - 1] = new_last_point;
         }
 
@@ -86,11 +86,11 @@ namespace MR
 
 
 
-        bool GMWMI_finder::find_interface (Eigen::Vector3d& p, Interp& interp) const {
+        bool GMWMI_finder::find_interface (Eigen::Vector3f& p, Interp& interp) const {
 
           Tissues tissues;
 
-          Eigen::Vector3d step (0.0, 0.0, 0.0);
+          Eigen::Vector3f step (0.0, 0.0, 0.0);
           size_t gradient_iters = 0;
 
           tissues = get_tissues (p, interp);
@@ -117,7 +117,7 @@ namespace MR
             return true;
 
           step = get_cf_min_step (p, interp);
-          if (!std::isfinite (step[0]))
+          if (!step.allFinite())
             return true;
           if (!step.squaredNorm()) {
             p = { NaN, NaN, NaN };
@@ -141,18 +141,18 @@ namespace MR
 
 
 
-        Eigen::Vector3d GMWMI_finder::get_normal (const Eigen::Vector3d& p, Interp& interp) const
+        Eigen::Vector3f GMWMI_finder::get_normal (const Eigen::Vector3f& p, Interp& interp) const
         {
 
-          Eigen::Vector3d normal (0.0, 0.0, 0.0);
+          Eigen::Vector3f normal (0.0, 0.0, 0.0);
 
           for (size_t axis = 0; axis != 3; ++axis) {
 
-            Eigen::Vector3d p_minus (p);
+            Eigen::Vector3f p_minus (p);
             p_minus[axis] -= 0.5 * GMWMI_PERTURBATION;
             const Tissues v_minus = get_tissues (p_minus, interp);
 
-            Eigen::Vector3d p_plus (p);
+            Eigen::Vector3f p_plus (p);
             p_plus[axis] += 0.5 * GMWMI_PERTURBATION;
             const Tissues v_plus  = get_tissues (p_plus,  interp);
 
@@ -168,18 +168,18 @@ namespace MR
 
 
 
-        Eigen::Vector3d GMWMI_finder::get_cf_min_step (const Eigen::Vector3d& p, Interp& interp) const
+        Eigen::Vector3f GMWMI_finder::get_cf_min_step (const Eigen::Vector3f& p, Interp& interp) const
         {
 
-          Eigen::Vector3d grad (0.0, 0.0, 0.0);
+          Eigen::Vector3f grad (0.0, 0.0, 0.0);
 
           for (size_t axis = 0; axis != 3; ++axis) {
 
-            Eigen::Vector3d p_minus (p);
+            Eigen::Vector3f p_minus (p);
             p_minus[axis] -= 0.5 * GMWMI_PERTURBATION;
             const Tissues v_minus = get_tissues (p_minus, interp);
 
-            Eigen::Vector3d p_plus (p);
+            Eigen::Vector3f p_plus (p);
             p_plus[axis] += 0.5 * GMWMI_PERTURBATION;
             const Tissues v_plus  = get_tissues (p_plus,  interp);
 
@@ -198,7 +198,7 @@ namespace MR
           const Tissues local_tissue = get_tissues (p, interp);
           const float diff = local_tissue.get_gm() - local_tissue.get_wm();
 
-          Eigen::Vector3d step = -grad * (diff / grad.squaredNorm());
+          Eigen::Vector3f step = -grad * (diff / grad.squaredNorm());
 
           const float norm = step.norm();
           if (norm > 0.5 * min_vox)
@@ -211,7 +211,7 @@ namespace MR
 
 
 
-        Eigen::Vector3d GMWMI_finder::find_interface (const std::vector<Eigen::Vector3d>& tck, const bool end, Interp& interp) const
+        Eigen::Vector3f GMWMI_finder::find_interface (const std::vector<Eigen::Vector3f>& tck, const bool end, Interp& interp) const
         {
 
           if (tck.size() == 0)
@@ -227,8 +227,8 @@ namespace MR
           // Need to generate an additional point beyond the end point
           size_t last = tck.size() - 1;
 
-          const Eigen::Vector3d p_end  (end ? tck.back()  : tck.front());
-          const Eigen::Vector3d p_prev (end ? tck[last-1] : tck[1]);
+          const Eigen::Vector3f p_end  (end ? tck.back()  : tck.front());
+          const Eigen::Vector3f p_prev (end ? tck[last-1] : tck[1]);
 
           // Before proceeding, make sure that the interface lies somewhere in between these two points
           if (interp.scanner (p_end))
@@ -246,11 +246,11 @@ namespace MR
           if (t_end.get_gm() - t_end.get_wm() < GMWMI_ACCURACY)
             return p_end;
 
-          const Eigen::Vector3d curvature (end ? ((tck[last]-tck[last-1]) - (tck[last-1]-tck[last-2])) : ((tck[0]-tck[1]) - (tck[1]-tck[2])));
-          const Eigen::Vector3d extrap ((end ? (tck[last]-tck[last-1]) : (tck[0]-tck[1])) + curvature);
-          const Eigen::Vector3d p_extrap (p_end + extrap);
+          const Eigen::Vector3f curvature (end ? ((tck[last]-tck[last-1]) - (tck[last-1]-tck[last-2])) : ((tck[0]-tck[1]) - (tck[1]-tck[2])));
+          const Eigen::Vector3f extrap ((end ? (tck[last]-tck[last-1]) : (tck[0]-tck[1])) + curvature);
+          const Eigen::Vector3f p_extrap (p_end + extrap);
 
-          Eigen::Vector3d domain [4];
+          Eigen::Vector3f domain [4];
           domain[0] = (end ? tck[last-2] : tck[2]);
           domain[1] = p_prev;
           domain[2] = p_end;
@@ -259,12 +259,12 @@ namespace MR
           Math::Hermite<float> hermite (GMWMI_HERMITE_TENSION);
 
           float min_mu = 0.0, max_mu = 1.0;
-          Eigen::Vector3d p_best = p_end;
+          Eigen::Vector3f p_best = p_end;
           size_t iters = 0;
           do {
             const float mu =  0.5 * (min_mu + max_mu);
             hermite.set (mu);
-            const Eigen::Vector3d p (hermite.value (domain));
+            const Eigen::Vector3f p (hermite.value (domain));
             interp.scanner (p);
             const Tissues t (interp);
             if (t.get_wm() > t.get_gm()) {

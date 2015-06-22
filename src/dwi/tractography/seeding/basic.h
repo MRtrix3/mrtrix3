@@ -59,7 +59,7 @@ namespace MR
                 volume = 4.0*Math::pi*Math::pow3(rad)/3.0;
               }
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
             Eigen::Vector3f pos;
@@ -78,7 +78,7 @@ namespace MR
                 volume = get_count (mask) * mask.voxsize(0) * mask.voxsize(1) * mask.voxsize(2);
               }
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
             Mask mask;
@@ -100,7 +100,7 @@ namespace MR
                 count = get_count (mask) * num_per_voxel;
               }
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
             virtual ~Random_per_voxel() { }
 
           private:
@@ -129,7 +129,7 @@ namespace MR
               }
 
             virtual ~Grid_per_voxel() { }
-            virtual bool get_seed (Math::RNG::Uniform<float>&, Eigen::Vector3f& p) const override;
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
 
           private:
@@ -148,7 +148,7 @@ namespace MR
           public:
             Rejection (const std::string&);
 
-            virtual bool get_seed (Math::RNG::Uniform<float>& rng, Eigen::Vector3f& p) const override;
+            virtual bool get_seed (Eigen::Vector3f& p) const override;
 
           private:
 #ifdef REJECTION_SAMPLING_USE_INTERPOLATION

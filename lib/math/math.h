@@ -52,15 +52,15 @@ namespace MR
     /** @defgroup elfun Elementary Functions
       @{ */
 
-    template <typename T> inline T pow2 (const T& v) { return v*v; }
-    template <typename T> inline T pow3 (const T& v) { return pow2 (v) *v; }
-    template <typename T> inline T pow4 (const T& v) { return pow2 (pow2 (v)); }
-    template <typename T> inline T pow5 (const T& v) { return pow4 (v) *v; }
-    template <typename T> inline T pow6 (const T& v) { return pow2 (pow3 (v)); }
-    template <typename T> inline T pow7 (const T& v) { return pow6 (v) *v; }
-    template <typename T> inline T pow8 (const T& v) { return pow2 (pow4 (v)); }
-    template <typename T> inline T pow9 (const T& v) { return pow8 (v) *v; }
-    template <typename T> inline T pow10 (const T& v) { return pow8 (v) *pow2 (v); }
+    template <typename T> inline constexpr T pow2 (const T& v) { return v*v; }
+    template <typename T> inline constexpr T pow3 (const T& v) { return pow2 (v) *v; }
+    template <typename T> inline constexpr T pow4 (const T& v) { return pow2 (pow2 (v)); }
+    template <typename T> inline constexpr T pow5 (const T& v) { return pow4 (v) *v; }
+    template <typename T> inline constexpr T pow6 (const T& v) { return pow2 (pow3 (v)); }
+    template <typename T> inline constexpr T pow7 (const T& v) { return pow6 (v) *v; }
+    template <typename T> inline constexpr T pow8 (const T& v) { return pow2 (pow4 (v)); }
+    template <typename T> inline constexpr T pow9 (const T& v) { return pow8 (v) *v; }
+    template <typename T> inline constexpr T pow10 (const T& v) { return pow8 (v) *pow2 (v); }
 
 
     //! template function with cast to different type
@@ -70,7 +70,7 @@ namespace MR
      * int x = round<int> (f);
      * \endcode
      */
-    template <typename I, typename T> inline I round (const T x) throw ()
+    template <typename I, typename T> inline constexpr I round (const T x) throw ()
     {
       return static_cast<I> (std::round (x));
     }
@@ -81,7 +81,7 @@ namespace MR
      * int x = floor<int> (f);
      * \endcode
      */
-    template <typename I, typename T> inline I floor (const T x) throw ()
+    template <typename I, typename T> inline constexpr I floor (const T x) throw ()
     {
       return static_cast<I> (std::floor (x));
     }
@@ -92,7 +92,7 @@ namespace MR
      * int x = ceil<int> (f);
      * \endcode
      */
-    template <typename I, typename T> inline I ceil (const T x) throw ()
+    template <typename I, typename T> inline constexpr I ceil (const T x) throw ()
     {
       return static_cast<I> (std::ceil (x));
     }
