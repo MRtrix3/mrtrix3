@@ -150,7 +150,7 @@ namespace MR {
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
-        assert (in.size() == Math::SH::NforL (lmax));
+        assert (in.size() == ssize_t (Math::SH::NforL (lmax)));
 
         out.clear();
         out.vox = in.vox;

@@ -47,7 +47,7 @@ namespace MR
       ProgressInfo (ProgressInfo&& p) = delete; 
 
       ProgressInfo (const std::string& text, size_t target) :
-        value (0), text (text), current_val (0), multiplier (0.0), data (nullptr) { 
+        value (0), text (text), current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), data (nullptr) { 
           set_max (target);
         }
 

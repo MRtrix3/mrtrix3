@@ -72,6 +72,7 @@ namespace MR
 
               source (Image<float>::open (diff_path).with_direct_io (strides_by_volume())),
               properties (property_set),
+              init_dir ({ NaN, NaN, NaN }),
               max_num_tracks (1000),
               min_num_points (0),
               max_num_points (0),

@@ -322,7 +322,7 @@ namespace MR
       template <class VectorType1, class VectorType2>
         inline VectorType1& sconv (VectorType1& sh, const VectorType2& RH)
         {
-          assert (sh.size() >= NforL (2* (RH.size()-1)));
+          assert (sh.size() >= ssize_t (NforL (2* (RH.size()-1))));
           for (ssize_t i = 0; i < RH.size(); ++i) {
             int l = 2*i;
             for (int m = -l; m <= l; ++m)
@@ -338,7 +338,7 @@ namespace MR
       template <class VectorType1, class VectorType2, class VectorType3>
         inline VectorType1& sconv (VectorType1& C, const VectorType2& RH, const VectorType3& sh)
         {
-          assert (sh.size() >= NforL (2* (RH.size()-1)));
+          assert (sh.size() >= ssize_t (NforL (2* (RH.size()-1))));
           C.resize (NforL (2* (RH.size()-1)));
           for (ssize_t i = 0; i < RH.size(); ++i) {
             int l = 2*i;
