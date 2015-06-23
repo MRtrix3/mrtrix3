@@ -73,14 +73,21 @@ void run ()
 {
 
   // Read in the mesh data
-  Mesh::Mesh mesh (argument[0]);
+  Mesh::MeshMulti meshes;
+  try {
+    Mesh::Mesh mesh (argument[0]);
+    meshes.push_back (mesh);
+  } catch (...) {
+    meshes.load (argument[0]);
+  }
 
   bool have_transformed = false;
 
   Options opt = get_options ("transform_first2real");
   if (opt.size()) {
     Image::Header H (opt[0][0]);
-    mesh.transform_first_to_realspace (H);
+    for (auto i = meshes.begin(); i != meshes.end(); ++i)
+      i->transform_first_to_realspace (H);
     have_transformed = true;
   }
 
@@ -89,7 +96,8 @@ void run ()
     if (have_transformed)
       throw Exception ("meshconvert can only perform one spatial transformation per call");
     Image::Header H (opt[0][0]);
-    mesh.transform_voxel_to_realspace (H);
+    for (auto i = meshes.begin(); i != meshes.end(); ++i)
+      i->transform_voxel_to_realspace (H);
     have_transformed = true;
   }
 
@@ -98,11 +106,15 @@ void run ()
     if (have_transformed)
       throw Exception ("meshconvert can only perform one spatial transformation per call");
     Image::Header H (opt[0][0]);
-    mesh.transform_realspace_to_voxel (H);
+    for (auto i = meshes.begin(); i != meshes.end(); ++i)
+      i->transform_realspace_to_voxel (H);
     have_transformed = true;
   }
 
   // Create the output file
-  mesh.save (argument[1], get_options ("binary").size());
+  if (meshes.size() == 1)
+    meshes[0].save (argument[1], get_options ("binary").size());
+  else
+    meshes.save (argument[1]);
 
 }
