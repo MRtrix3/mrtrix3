@@ -595,18 +595,19 @@ namespace MR
 
         toolbar->addSeparator();
 
-        // Help menu:
+        // Information menu:
 
-        menu = new QMenu (tr ("Help"), this);
+        menu = new QMenu (tr ("Info"), this);
 
         menu->addAction (tr ("About MRView"), this, SLOT (about_slot()));
-        menu->addAction (tr ("OpenGL"), this, SLOT (OpenGL_slot()));
         menu->addAction (tr ("About Qt"), this, SLOT (aboutQt_slot()));
+        menu->addAction (tr ("OpenGL information"), this, SLOT (OpenGL_slot()));
+        
 
         button = new QToolButton (this);
-        button->setText ("Help");
+        button->setText ("Info");
         button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Help"));
+        button->setToolTip (tr ("Information"));
         button->setIcon (QIcon (":/help.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
         button->setMenu (menu);
