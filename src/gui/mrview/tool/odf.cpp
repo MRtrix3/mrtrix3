@@ -256,7 +256,7 @@ namespace MR
             box_layout->addWidget (colour_by_direction_box, 3, 2, 1, 2);
 
             main_grid_box = new QCheckBox ("use main grid");
-            main_grid_box->setToolTip (tr ("Show individual ODFs using the grid of the main image instead of the ODF image's own grid"));
+            main_grid_box->setToolTip (tr ("Show individual ODFs at the spatial resolution of the main image instead of the ODF image's own spatial resolution"));
             main_grid_box->setChecked (false);
             connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (main_grid_box, 4, 0, 1, 2);
