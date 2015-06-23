@@ -505,10 +505,18 @@ def execute (message, cmd):
         disp ('ERROR: ' + message + os.linesep)
       error ('\nERROR: ' + message + '\n\n' + ' '.join(cmd) + '\n\nfailed with output\n\n' + stderr.decode (errors='ignore'))
       return 1
+
+    errstr = None
+    if len(stdout) or len(stderr):
+      errstr = '\n' + ' '.join(cmd) + ':\n\n'
+
     if len(stdout):
-      error ('STDOUT: ' + message + '\n' + stdout.decode (errors='ignore'))
+      errstr += stdout.decode (errors='ignore') + '\n\n'
     if len(stderr):
-      error ('STDERR: ' + message + '\n' + stderr.decode (errors='ignore'))
+      errstr += stderr.decode (errors='ignore') + '\n\n'
+
+    if errstr:
+      disp (errstr);
 
   except OSError:
     error (cmd[0] + ': command not found')
