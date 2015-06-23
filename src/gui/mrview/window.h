@@ -94,7 +94,7 @@ namespace MR
             updateGL();
           }
 
-          bool get_image_visibility () const { return image_visible_action->isChecked(); }
+          bool get_image_visibility () const { return ! image_hide_action->isChecked(); }
           void set_image_visibility (bool flag);
 
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
@@ -149,7 +149,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
-          void show_image_slot ();
+          void hide_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -247,7 +247,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-                  *image_visible_action,
+                  *image_hide_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,

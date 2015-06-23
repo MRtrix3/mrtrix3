@@ -469,16 +469,18 @@ namespace MR
 
         menu->addSeparator();
 
-        image_visible_action = menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
-        image_visible_action->setShortcut (tr ("M"));
-        image_visible_action->setCheckable (true);
-        image_visible_action->setChecked (true);
-        addAction (image_visible_action);
-
         action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
         action->setShortcut (tr ("G"));
         action->setCheckable (false);
         addAction (action);
+        
+        image_hide_action = menu->addAction (tr ("Hide main image"), this, SLOT (hide_image_slot()));
+        image_hide_action->setShortcut (tr ("M"));
+        image_hide_action->setCheckable (true);
+        image_hide_action->setChecked (false);
+        addAction (image_hide_action);
+        
+        menu->addSeparator();
 
         full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
         full_screen_action->setShortcut (tr ("F11"));
@@ -779,7 +781,7 @@ namespace MR
       void Window::select_mode_slot (QAction* action)
       {
         mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
-        mode->set_visible(image_visible_action->isChecked());
+        mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
         emit modeChanged();
         updateGL();
@@ -970,15 +972,15 @@ namespace MR
 
 
       void Window::set_image_visibility (bool flag) {
-        image_visible_action->setChecked(flag);
+        image_hide_action->setChecked(! flag);
         mode->set_visible(flag);
       }
 
 
 
-      void Window::show_image_slot ()
+      void Window::hide_image_slot ()
       {
-        bool visible = image_visible_action->isChecked();
+        bool visible = ! image_hide_action->isChecked();
         mode->set_visible(visible);
         emit imageVisibilityChanged(visible);
       }
