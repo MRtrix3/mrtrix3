@@ -62,16 +62,17 @@ namespace MR
         Connectome::Connectome (Window& main_window, Dock* parent) :
             Base (main_window, parent),
             mat2vec (0),
-            is_3D (true),
             lighting (this),
             lighting_dialog (nullptr),
+            is_3D (true),
+            crop_to_slab (false),
+            slab_thickness (0.0f),
             node_visibility (node_visibility_t::ALL),
             node_geometry (node_geometry_t::SPHERE),
             node_colour (node_colour_t::FIXED),
             node_size (node_size_t::FIXED),
             node_alpha (node_alpha_t::FIXED),
             have_meshes (false),
-            have_smooth_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
             node_colourmap_invert (false),
@@ -167,13 +168,24 @@ namespace MR
           gridlayout->addWidget (lighting_settings_button, 0, 1);
           connect (&lighting, SIGNAL (changed()), SLOT (lighting_parameter_slot()));
 
-          dimensionality_combobox = new QComboBox (this);
-          dimensionality_combobox->addItem ("2D");
-          dimensionality_combobox->addItem ("3D");
-          dimensionality_combobox->setCurrentIndex (1);
-          connect (dimensionality_combobox, SIGNAL (activated(int)), this, SLOT (dimensionality_slot (int)));
-          gridlayout->addWidget (new QLabel ("Dimensionality: "), 1, 0);
-          gridlayout->addWidget (dimensionality_combobox, 1, 1);
+          crop_to_slab_checkbox = new QCheckBox ("Crop to slab");
+          crop_to_slab_checkbox->setTristate (false);
+          connect (crop_to_slab_checkbox, SIGNAL (stateChanged(int)), this, SLOT (crop_to_slab_toggle_slot (int)));
+          gridlayout->addWidget (crop_to_slab_checkbox, 1, 0);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          crop_to_slab_label = new QLabel ("Thickness: ");
+          crop_to_slab_label->setEnabled (false);
+          hlayout->addWidget (crop_to_slab_label);
+          crop_to_slab_button = new AdjustButton (this);
+          crop_to_slab_button->setValue (0.0f);
+          crop_to_slab_button->setMin (0.0f);
+          crop_to_slab_button->setRate (0.1f);
+          crop_to_slab_button->setEnabled (false);
+          connect (crop_to_slab_button, SIGNAL (valueChanged()), this, SLOT (crop_to_slab_parameter_slot()));
+          hlayout->addWidget (crop_to_slab_button);
+          gridlayout->addLayout (hlayout, 1, 1);
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
@@ -226,7 +238,6 @@ namespace MR
           node_geometry_combobox->addItem ("Point");
           node_geometry_combobox->addItem ("Overlay");
           node_geometry_combobox->addItem ("Mesh");
-          node_geometry_combobox->addItem ("Smooth mesh");
           connect (node_geometry_combobox, SIGNAL (activated(int)), this, SLOT (node_geometry_selection_slot (int)));
           gridlayout->addWidget (node_geometry_combobox, 2, 2);
           hlayout = new HBoxLayout;
@@ -647,7 +658,10 @@ namespace MR
           //   since we guarantee correct surface normals
           GLboolean current_cull_face = false;
           gl::GetBooleanv (gl::CULL_FACE, &current_cull_face);
-          gl::Enable (gl::CULL_FACE);
+          if (crop_to_slab)
+            gl::Disable (gl::CULL_FACE);
+          else
+            gl::Enable (gl::CULL_FACE);
 
           if (node_visibility != node_visibility_t::NONE) {
 
@@ -735,7 +749,14 @@ namespace MR
                 specular_ID = gl::GetUniformLocation (node_shader, "specular");
                 gl::Uniform1f  (specular_ID, lighting.specular);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
+              }
+
+              if ((use_lighting() && node_geometry != node_geometry_t::POINT) || (crop_to_slab && is_3D))
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
+
+              if (crop_to_slab && is_3D) {
+                gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
+                gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
               }
 
               std::map<float, size_t> node_ordering;
@@ -788,16 +809,6 @@ namespace MR
                         gl::Uniform1f  (specular_ID, lighting.specular);
                       }
                       node.render_mesh();
-                      break;
-                    case node_geometry_t::SMOOTH_MESH:
-                      if (use_alpha) {
-                        gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
-                        node.render_smooth_mesh();
-                        gl::CullFace (gl::BACK);
-                        gl::Uniform1f  (specular_ID, lighting.specular);
-                      }
-                      node.render_smooth_mesh();
                       break;
                   }
                 }
@@ -863,7 +874,7 @@ namespace MR
             }
 
             GLuint specular_ID = 0;
-            if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE) {
+            if (use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) {
               radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
@@ -871,7 +882,14 @@ namespace MR
               specular_ID = gl::GetUniformLocation (edge_shader, "specular");
               gl::Uniform1f  (specular_ID, lighting.specular);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
+            }
+
+            if ((use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) || (crop_to_slab && is_3D))
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
+
+            if (crop_to_slab && is_3D) {
+              gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
+              gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
             }
 
             const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
@@ -881,7 +899,7 @@ namespace MR
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
             if (edge_colour == edge_colour_t::FILE && ColourMap::maps[edge_colourmap_index].is_colour)
-                gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
 
             std::map<float, size_t> edge_ordering;
             for (size_t i = 0; i != num_edges(); ++i)
@@ -947,6 +965,8 @@ namespace MR
 
           if (!current_cull_face)
             gl::Disable (gl::CULL_FACE);
+          else
+            gl::Enable (gl::CULL_FACE);
         }
 
 
@@ -1098,9 +1118,18 @@ namespace MR
           if (use_lighting())
             window.updateGL();
         }
-        void Connectome::dimensionality_slot (int index)
+        void Connectome::crop_to_slab_toggle_slot (int /*value*/)
         {
-          is_3D = index;
+          crop_to_slab = crop_to_slab_checkbox->isChecked();
+          is_3D = !(crop_to_slab && !slab_thickness);
+          crop_to_slab_label->setEnabled (crop_to_slab);
+          crop_to_slab_button->setEnabled (crop_to_slab);
+          window.updateGL();
+        }
+        void Connectome::crop_to_slab_parameter_slot()
+        {
+          slab_thickness = crop_to_slab_button->value();
+          is_3D = !(crop_to_slab && !slab_thickness);
           window.updateGL();
         }
 
@@ -1246,78 +1275,49 @@ namespace MR
               update_node_overlay();
               break;
             case 4:
-              if (node_geometry == node_geometry_t::MESH) return;
-              node_geometry = node_geometry_t::MESH;
-              if (!have_meshes) {
-                // Can't generate GL buffer objects in a separate thread: OpenGL context is
-                //   specific to one thread only. Therefore, do the heavy work in a
-                //   multi-threaded fashion (calculate_mesh()), then create the buffers themselves
-                //   in the master thread (assign_mesh())
-                std::vector<MR::Mesh::Mesh> meshes (num_nodes()+1, MR::Mesh::Mesh());
-                auto source = [&] (node_t& out) { static node_t i = 1; out = i++; return (out <= num_nodes()); };
-                std::mutex mutex;
-                ProgressBar progress ("Generating node meshes... ", num_nodes());
-                auto sink = [&] (node_t& in) { meshes[in] = nodes[in].calculate_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-                Thread::run_queue (source, node_t(), Thread::multi (sink));
-                for (node_t i = 1; i <= num_nodes(); ++i)
-                  nodes[i].assign_mesh (meshes[i]);
-                have_meshes = true;
+              try {
+                // Re-prompt user if they are already displaying meshes and they re-select the mesh option
+                if (!have_meshes || node_geometry == node_geometry_t::MESH) {
+                  get_meshes();
+                  if (!have_meshes)
+                    throw Exception ("No file path provided; cannot render meshes");
+                }
+                node_geometry = node_geometry_t::MESH;
+                if (node_size == node_size_t::NODE_VOLUME) {
+                  node_size = node_size_t::FIXED;
+                  node_size_combobox->setCurrentIndex (0);
+                  calculate_node_sizes();
+                  node_size_range_label->setVisible (false);
+                  node_size_lower_button->setVisible (false);
+                  node_size_upper_button->setVisible (false);
+                  node_size_invert_checkbox->setVisible (false);
+                }
+                node_size_combobox->setEnabled (true);
+                node_size_button->setVisible (true);
+                if (node_size_scale_factor > 1.0f) {
+                  node_size_scale_factor = 1.0f;
+                  node_size_button->setValue (node_size_scale_factor);
+                }
+                node_size_button->setMax (1.0f);
+                node_geometry_sphere_lod_label->setVisible (false);
+                node_geometry_sphere_lod_spinbox->setVisible (false);
+                node_geometry_overlay_interp_checkbox->setVisible (false);
+                node_geometry_point_round_checkbox->setVisible (false);
+              } catch (Exception& e) {
+                e.display();
+                for (auto i = nodes.begin(); i != nodes.end(); ++i)
+                  i->clear_mesh();
+                have_meshes = false;
+                node_geometry = node_geometry_t::SPHERE;
+                node_geometry_combobox->setCurrentIndex (0);
+                node_size_combobox->setEnabled (true);
+                node_size_button->setVisible (true);
+                node_size_button->setMax (std::numeric_limits<float>::max());
+                node_geometry_sphere_lod_label->setVisible (true);
+                node_geometry_sphere_lod_spinbox->setVisible (true);
+                node_geometry_overlay_interp_checkbox->setVisible (false);
+                node_geometry_point_round_checkbox->setVisible (false);
               }
-              if (node_size == node_size_t::NODE_VOLUME) {
-                node_size = node_size_t::FIXED;
-                node_size_combobox->setCurrentIndex (0);
-                calculate_node_sizes();
-                node_size_range_label->setVisible (false);
-                node_size_lower_button->setVisible (false);
-                node_size_upper_button->setVisible (false);
-                node_size_invert_checkbox->setVisible (false);
-              }
-              node_size_combobox->setEnabled (true);
-              node_size_button->setVisible (true);
-              if (node_size_scale_factor > 1.0f) {
-                node_size_scale_factor = 1.0f;
-                node_size_button->setValue (node_size_scale_factor);
-              }
-              node_size_button->setMax (1.0f);
-              node_geometry_sphere_lod_label->setVisible (false);
-              node_geometry_sphere_lod_spinbox->setVisible (false);
-              node_geometry_overlay_interp_checkbox->setVisible (false);
-              node_geometry_point_round_checkbox->setVisible (false);
-              break;
-            case 5:
-              if (node_geometry == node_geometry_t::SMOOTH_MESH) return;
-              node_geometry = node_geometry_t::SMOOTH_MESH;
-              if (!have_smooth_meshes) {
-                std::vector<MR::Mesh::Mesh> smooth_meshes (num_nodes()+1, MR::Mesh::Mesh());
-                auto source = [&] (node_t& out) { static node_t i = 1; out = i++; return (out <= num_nodes()); };
-                std::mutex mutex;
-                ProgressBar progress ("Generating smooth node meshes... ", num_nodes());
-                auto sink = [&] (node_t& in) { smooth_meshes[in] = nodes[in].calculate_smooth_mesh(); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-                Thread::run_queue (source, node_t(), Thread::multi (sink));
-                for (node_t i = 1; i <= num_nodes(); ++i)
-                  nodes[i].assign_smooth_mesh (smooth_meshes[i]);
-                have_smooth_meshes = true;
-              }
-              if (node_size == node_size_t::NODE_VOLUME) {
-                node_size = node_size_t::FIXED;
-                node_size_combobox->setCurrentIndex (0);
-                calculate_node_sizes();
-                node_size_range_label->setVisible (false);
-                node_size_lower_button->setVisible (false);
-                node_size_upper_button->setVisible (false);
-                node_size_invert_checkbox->setVisible (false);
-              }
-              node_size_combobox->setEnabled (true);
-              node_size_button->setVisible (true);
-              if (node_size_scale_factor > 1.0f) {
-                node_size_scale_factor = 1.0f;
-                node_size_button->setValue (node_size_scale_factor);
-              }
-              node_size_button->setMax (1.0f);
-              node_geometry_sphere_lod_label->setVisible (false);
-              node_geometry_sphere_lod_spinbox->setVisible (false);
-              node_geometry_overlay_interp_checkbox->setVisible (false);
-              node_geometry_point_round_checkbox->setVisible (false);
               break;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -2117,7 +2117,9 @@ namespace MR
 
           lighting_checkbox->setEnabled (value);
           lighting_settings_button->setEnabled (value);
-          dimensionality_combobox->setEnabled (value);
+          crop_to_slab_checkbox->setEnabled (value);
+          crop_to_slab_label->setEnabled (value && crop_to_slab);
+          crop_to_slab_button->setEnabled (value && crop_to_slab);
 
           node_visibility_combobox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
@@ -2191,7 +2193,7 @@ namespace MR
           size_t max_index = 0;
 
           {
-            MR::Image::LoopInOrder loop (voxel, "Importing parcellation image... ");
+            MR::Image::LoopInOrder loop (voxel/*, "Importing parcellation image... "*/);
             for (loop.start (voxel); loop.ok(); loop.next (voxel)) {
               const node_t node_index = voxel.value();
               if (node_index) {
@@ -2222,7 +2224,7 @@ namespace MR
 
           // TODO Multi-thread this
           {
-            MR::ProgressBar progress ("Constructing nodes...", max_index);
+            //MR::ProgressBar progress ("Constructing nodes...", max_index);
             nodes.push_back (Node());
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
@@ -2240,7 +2242,7 @@ namespace MR
               } else {
                 nodes.push_back (Node());
               }
-              ++progress;
+              //++progress;
             }
           }
 
@@ -2659,6 +2661,21 @@ namespace MR
 
 
 
+
+        void Connectome::get_meshes()
+        {
+          // Request exemplar track file path from user
+          const std::string path = GUI::Dialog::File::get_file (this, "Select OBJ file containing mesh for each node");
+          if (!path.size()) return;
+          Mesh::MeshMulti meshes;
+          meshes.load (path);
+          if (meshes.size() != nodes.size())
+            throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
+          have_meshes = false;
+          for (node_t i = 1; i <= num_nodes(); ++i)
+            nodes[i].assign_mesh (meshes[i]);
+          have_meshes = true;
+        }
 
 
 

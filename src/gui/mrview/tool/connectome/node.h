@@ -46,13 +46,9 @@ namespace MR
           Node (const Point<float>&, const size_t, std::shared_ptr< MR::Image::BufferScratch<bool> >&);
           Node ();
 
-          MR::Mesh::Mesh calculate_mesh();
-          void assign_mesh (const MR::Mesh::Mesh&);
+          void assign_mesh (MR::Mesh::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
           void render_mesh() const { if (!mesh) return; mesh->render(); }
-
-          MR::Mesh::Mesh calculate_smooth_mesh();
-          void assign_smooth_mesh (const MR::Mesh::Mesh&);
-          void render_smooth_mesh() const { if (!smooth_mesh) return; smooth_mesh->render(); }
+          void clear_mesh() { if (mesh) delete mesh.release(); }
 
           const Point<float>& get_com() const { return centre_of_mass; }
           size_t get_volume() const { return volume; }
@@ -83,7 +79,7 @@ namespace MR
           // Helper class to manage the storage and display of the mesh for each node
           class Mesh {
             public:
-              Mesh (const MR::Mesh::Mesh&);
+              Mesh (MR::Mesh::Mesh&);
               Mesh (const Mesh&) = delete;
               Mesh (Mesh&&);
               Mesh ();
@@ -96,7 +92,7 @@ namespace MR
               GL::VertexArrayObject vertex_array_object;
               GL::IndexBuffer index_buffer;
           };
-          std::unique_ptr<Mesh> mesh, smooth_mesh;
+          std::unique_ptr<Mesh> mesh;
 
       };
 

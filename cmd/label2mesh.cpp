@@ -119,7 +119,7 @@ void run ()
         MR::Mesh::vox2mesh (voxel, meshes[in]);
       else
         MR::Mesh::vox2mesh_mc (voxel, 0.5, meshes[in]);
-      meshes[in].transform_voxel_to_realspace (H);
+      meshes[in].transform_voxel_to_realspace (subset.info());
       meshes[in].set_name (str(in));
       std::lock_guard<std::mutex> lock (mutex);
       ++progress;

@@ -75,14 +75,7 @@
 //       Would however require additions to tractography shaders, e.g.
 //       - variable radius between exemplars
 //       - manually providing tangents (not really required?)
-//   - Clean up behaviour with unusual sequences of inputs
-//     Hopefully this should be good now, but needs testing
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
-//   - Instead of reading the current tcknodeextract output and producing exemplars, generate the
-//     exemplars in a separate command and read from a single .tck file
-//     * As part of this, re-think tcknodeextract command: Rather than re-assigning streamlines
-//       to nodes, have tck2connectome generate an Nx2 matrix file output specifying the node
-//       indices to which each streamline is assigned. Maybe also rename to connectome2tck?
 //
 // * Drawing nodes
 //   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
@@ -94,11 +87,6 @@
 //   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
 //     and store normals for each; keep things simple
 //     (leave this until necessary, i.e. trying to do a full polygon depth search)
-//   - Meshes: Look into a mesh file format that allows for the storage of multiple meshes per file
-//     Then, rather than running a script to loop over nodes, create a label2mesh command
-//     - .obj should do it: 'o' object name flag... unfortunately ASCII format only
-//     Allow display of meshes as wireframes:
-//       glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
 //   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file,
 //     present user with control for which row/column to read from
 //
@@ -115,8 +103,6 @@
 //   - Have second function separately to isVisible(), that also tests size / alpha to
 //     see if anything will actually be drawn; this may be used to e.g. toggle draw call,
 //     overlay text, drawing edges based on visible nodes & vice-versa, ...
-//   - Remove 2D / 3D toggle; instead, have a 'crop to slab' option akin to the
-//     tractography tool, and use the current 2D configuration when the thickness is set to zero
 //
 // * Nodes GUI section
 //   - Implement list view with list of nodes, enable manual manupulation of nodes
@@ -177,7 +163,8 @@ namespace MR
             void lighting_change_slot (int);
             void lighting_settings_slot();
             void lighting_parameter_slot();
-            void dimensionality_slot (int);
+            void crop_to_slab_toggle_slot (int);
+            void crop_to_slab_parameter_slot();
 
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
@@ -219,7 +206,9 @@ namespace MR
 
             QCheckBox *lighting_checkbox;
             QPushButton *lighting_settings_button;
-            QComboBox *dimensionality_combobox;
+            QCheckBox *crop_to_slab_checkbox;
+            QLabel *crop_to_slab_label;
+            AdjustButton *crop_to_slab_button;
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
@@ -314,10 +303,6 @@ namespace MR
             std::vector<Node_map::const_iterator> lut_mapping;
 
 
-            // Are the connectome elements currently being displayed in 2D or 3D?
-            bool is_3D;
-
-
             // Fixed lighting settings from the main window, and popup dialog
             GL::Lighting lighting;
             std::unique_ptr<Dialog::Lighting> lighting_dialog;
@@ -339,6 +324,11 @@ namespace MR
             GL::VertexArrayObject cylinder_VAO;
 
 
+            // Settings related to slab cropping
+            bool is_3D, crop_to_slab;
+            float slab_thickness;
+
+
             // Current node visualisation settings
             node_visibility_t node_visibility;
             node_geometry_t node_geometry;
@@ -347,7 +337,7 @@ namespace MR
             node_alpha_t node_alpha;
 
             // Other values that need to be stored w.r.t. node visualisation
-            bool have_meshes, have_smooth_meshes;
+            bool have_meshes;
             Point<float> node_fixed_colour;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
@@ -411,6 +401,7 @@ namespace MR
             void calculate_edge_sizes();
             void calculate_edge_alphas();
 
+            void get_meshes();
             void get_exemplars();
             void get_streamtubes();
 

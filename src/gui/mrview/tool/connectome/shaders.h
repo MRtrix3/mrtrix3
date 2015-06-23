@@ -57,7 +57,8 @@ namespace MR
 
         protected:
           std::string vertex_shader_source, geometry_shader_source, fragment_shader_source;
-          bool is_3D, use_lighting;
+          bool crop_to_slab, is_3D, use_lighting;
+          float slab_thickness;
 
         private:
           void recompile (const Connectome& parent);

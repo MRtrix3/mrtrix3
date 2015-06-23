@@ -62,55 +62,13 @@ namespace MR
 
 
 
-        MR::Mesh::Mesh Node::calculate_mesh()
-        {
-          if (!mask) return MR::Mesh::Mesh();
-          if (mesh)
-            throw Exception ("Repeated calculation of node mesh");
-          auto voxel = mask->voxel();
-          MR::Mesh::Mesh temp;
-          {
-            MR::LogLevelLatch latch (0);
-            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
-            temp.transform_voxel_to_realspace (voxel);
-            temp.calculate_normals();
-          }
-          return temp;
-        }
-
-        void Node::assign_mesh (const MR::Mesh::Mesh& in)
-        {
-          mesh.reset (new Node::Mesh (in));
-        }
-
-        MR::Mesh::Mesh Node::calculate_smooth_mesh()
-        {
-          if (!mask) return MR::Mesh::Mesh();
-          if (smooth_mesh)
-            throw Exception ("Repeated calculation of node smooth mesh");
-          auto voxel = mask->voxel();
-          MR::Mesh::Mesh temp;
-          {
-            MR::LogLevelLatch latch (0);
-            MR::Mesh::vox2mesh_mc (voxel, 0.5, temp);
-            temp.transform_voxel_to_realspace (voxel);
-            temp.smooth (10.0, 10.0);
-            temp.calculate_normals();
-          }
-          return temp;
-        }
-
-        void Node::assign_smooth_mesh (const MR::Mesh::Mesh& in)
-        {
-          smooth_mesh.reset (new Node::Mesh (in));
-        }
 
 
 
 
 
 
-        Node::Mesh::Mesh (const MR::Mesh::Mesh& in) :
+        Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
             count (3 * in.num_triangles())
         {
           std::vector<float> vertices;
@@ -124,7 +82,8 @@ namespace MR
           if (vertices.size())
             gl::BufferData (gl::ARRAY_BUFFER, vertices.size() * sizeof (float), &vertices[0], gl::STATIC_DRAW);
 
-          assert (in.have_normals());
+          if (!in.have_normals())
+            in.calculate_normals();
           std::vector<float> normals;
           normals.reserve (3 * in.num_vertices());
           for (size_t n = 0; n != in.num_vertices(); ++n) {

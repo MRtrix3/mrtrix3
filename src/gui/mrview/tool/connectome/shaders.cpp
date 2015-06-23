@@ -59,6 +59,7 @@ namespace MR
 
         bool NodeShader::need_update (const Connectome& parent) const
         {
+          if (crop_to_slab != parent.crop_to_slab) return true;
           if (is_3D != parent.is_3D) return true;
           if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.node_geometry) return true;
@@ -71,6 +72,7 @@ namespace MR
 
         void NodeShader::update (const Connectome& parent)
         {
+          crop_to_slab = parent.crop_to_slab;
           is_3D = parent.is_3D;
           use_lighting = parent.use_lighting();
           geometry = parent.node_geometry;
@@ -85,7 +87,7 @@ namespace MR
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n";
 
-          if (geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+          if (geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n";
           }
@@ -95,12 +97,20 @@ namespace MR
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
 
-          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
             vertex_shader_source +=
               "out vec3 normal" + GS_in + ";\n";
           } else if (geometry == node_geometry_t::CUBE) {
             vertex_shader_source +=
               "flat out vec3 normal" + GS_in + ";\n";
+          }
+
+          if (crop_to_slab && is_3D) {
+            vertex_shader_source +=
+              "out float include;\n"
+              "uniform vec3 screen_normal;\n"
+              "uniform float crop_var;\n"
+              "uniform float slab_thickness;\n";
           }
 
           vertex_shader_source +=
@@ -109,28 +119,34 @@ namespace MR
           switch (geometry) {
             case node_geometry_t::SPHERE:
               vertex_shader_source +=
-              "  vec3 pos = vertexPosition_modelspace * node_size;\n"
-              "  normal" + GS_in + " = vertexPosition_modelspace;\n"
-              "  gl_Position = (MVP * vec4 (node_centre + pos, 1));\n";
+              "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
+              "  normal" + GS_in + " = vertexPosition_modelspace;\n";
               break;
             case node_geometry_t::CUBE:
               vertex_shader_source +=
-              "  gl_Position = (MVP * vec4 (node_centre + (vertexPosition_modelspace * node_size), 1));\n"
+              "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
               "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
             case node_geometry_t::POINT:
               vertex_shader_source +=
-              "  gl_Position = (MVP * vec4 (node_centre, 1));\n"
+              "  vec3 pos = node_centre;\n"
               "  gl_PointSize = node_size;\n";
               break;
             case node_geometry_t::OVERLAY:
               break;
             case node_geometry_t::MESH:
-            case node_geometry_t::SMOOTH_MESH:
               vertex_shader_source +=
-              "  normal" + GS_in + " = vertexNormal_modelspace;\n"
-              "  gl_Position = MVP * vec4 (node_centre + (node_size * (vertexPosition_modelspace - node_centre)), 1);\n";
+              "  vec3 pos = node_centre + (node_size * (vertexPosition_modelspace - node_centre));"
+              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
+          }
+
+          vertex_shader_source +=
+              "  gl_Position = MVP * vec4 (pos, 1);\n";
+
+          if (crop_to_slab && is_3D) {
+            vertex_shader_source +=
+              "  include = (dot (pos, screen_normal) - crop_var) / slab_thickness;\n";
           }
 
           vertex_shader_source +=
@@ -165,7 +181,7 @@ namespace MR
                   "layout(triangles) in;\n"
                   "layout(line_strip, max_vertices=2) out;\n";
 
-              if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+              if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
                 geometry_shader_source +=
                   "in vec3 normal" + GS_in + "[3];\n"
                   "out vec3 normal" + GS_out + ";\n";
@@ -219,7 +235,7 @@ namespace MR
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
 
-            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH || geometry == node_geometry_t::SMOOTH_MESH) {
+            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
               fragment_shader_source +=
                 "in vec3 normal" + GS_out + ";\n";
             } else if (geometry == node_geometry_t::CUBE) {
@@ -233,8 +249,18 @@ namespace MR
               "in vec3 colourmap_colour;\n";
           }
 
+          if (crop_to_slab && is_3D) {
+            fragment_shader_source +=
+              "in float include;\n";
+          }
+
           fragment_shader_source +=
               "void main() {\n";
+
+          if (crop_to_slab && is_3D) {
+            fragment_shader_source +=
+              "  if (include < 0 || include > 1) discard;\n";
+          }
 
           if (colour == node_colour_t::FILE) {
 
@@ -278,6 +304,7 @@ namespace MR
 
         bool EdgeShader::need_update (const Connectome& parent) const
         {
+          if (crop_to_slab != parent.crop_to_slab) return true;
           if (is_3D != parent.is_3D) return true;
           if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.edge_geometry) return true;
@@ -290,6 +317,7 @@ namespace MR
 
         void EdgeShader::update (const Connectome& parent)
         {
+          crop_to_slab = parent.crop_to_slab;
           is_3D = parent.is_3D;
           use_lighting = parent.use_lighting();
           geometry = parent.edge_geometry;
@@ -328,13 +356,21 @@ namespace MR
               "out vec3 normal" + GS_in + ";\n";
           }
 
+          if (crop_to_slab && is_3D) {
+            vertex_shader_source +=
+              "out float include;\n"
+              "uniform vec3 screen_normal;\n"
+              "uniform float crop_var;\n"
+              "uniform float slab_thickness;\n";
+          }
+
           vertex_shader_source +=
               "void main() {\n";
 
           switch (geometry) {
             case edge_geometry_t::LINE:
               vertex_shader_source +=
-              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n";
+              "  vec3 pos = vertexPosition_modelspace;\n";
               break;
             case edge_geometry_t::CYLINDER:
               vertex_shader_source +=
@@ -346,19 +382,27 @@ namespace MR
               "  }\n"
               "  offset = offset * rot_matrix;\n"
               "  normal" + GS_in + " = vertexNormal_modelspace * rot_matrix;\n"
-              "  gl_Position = MVP * vec4 (centre + (radius * offset), 1);\n";
+              "  vec3 pos = centre + (radius * offset);\n";
               break;
             case edge_geometry_t::STREAMLINE:
               vertex_shader_source +=
-              "  gl_Position = MVP * vec4 (vertexPosition_modelspace, 1);\n"
+              "  vec3 pos = vertexPosition_modelspace;\n"
               "  tangent" + GS_in + " = vertexTangent_modelspace;\n";
               break;
             case edge_geometry_t::STREAMTUBE:
               vertex_shader_source +=
-              "  gl_Position = MVP * vec4 (vertexPosition_modelspace + (radius * vertexNormal_modelspace), 1);\n"
+              "  vec3 pos = vertexPosition_modelspace + (radius * vertexNormal_modelspace);\n"
               "  tangent" + GS_in + " = vertexTangent_modelspace;\n"
               "  normal" + GS_in + " = vertexNormal_modelspace;\n";
               break;
+          }
+
+          vertex_shader_source +=
+              "  gl_Position = MVP * vec4 (pos, 1);\n";
+
+          if (crop_to_slab && is_3D) {
+            vertex_shader_source +=
+              "  include = (dot (pos, screen_normal) - crop_var) / slab_thickness;\n";
           }
 
           vertex_shader_source +=
@@ -455,8 +499,18 @@ namespace MR
               "in vec3 colourmap_colour;\n";
           }
 
+          if (crop_to_slab && is_3D) {
+            fragment_shader_source +=
+              "in float include;\n";
+          }
+
           fragment_shader_source +=
               "void main() {\n";
+
+          if (crop_to_slab && is_3D) {
+            fragment_shader_source +=
+              "  if (include < 0 || include > 1) discard;\n";
+          }
 
           if (colour == edge_colour_t::FILE) {
 
