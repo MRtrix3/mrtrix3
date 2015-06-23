@@ -23,63 +23,61 @@
 #ifndef __image_adapter_gradient1D_h__
 #define __image_adapter_gradient1D_h__
 
-#include "image/adapter/voxel.h"
+#include "adapter/base.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Adapter
   {
-    namespace Adapter
-    {
 
-      template <class VoxelType>
-        class Gradient1D : public Voxel<VoxelType> {
-        public:
-          Gradient1D (const VoxelType& parent,
-                      size_t axis = 0) :
-            Voxel<VoxelType> (parent),
-            axis_(axis) { }
+    template <class ImageType>
+      class Gradient1D : public Base<ImageType> {
+      public:
+        Gradient1D (const ImageType& parent,
+                    size_t axis = 0) :
+          Base<ImageType> (parent),
+          axis (axis) { }
 
-          typedef typename VoxelType::value_type value_type;
+        typedef typename ImageType::value_type value_type;
 
-          void set_axis(size_t axis) {
-            axis_ = axis;
+        void set_axis (size_t val)
+        {
+          axis = val;
+        }
+
+        float& value ()
+        {
+          const ssize_t pos = index (axis);
+          result = 0.0;
+
+          if (pos == 0) {
+            result = Base<ImageType>::value();
+            index (axis) = pos + 1;
+            result = Base<ImageType>::value() - result;
+          } else if (pos == size(axis) - 1) {
+            result = Base<ImageType>::value();
+            index (axis) = pos - 1;
+            result -= Base<ImageType>::value();
+          } else {
+            index (axis) = pos + 1;
+            result = Base<ImageType>::value();
+            index (axis) = pos - 1;
+            result = 0.5 * (result - Base<ImageType>::value());
           }
+          index (axis) = pos;
 
-          float& value () {
-            const ssize_t pos = (*this)[axis_];
-            result = 0.0;
+          return result;
+        }
 
-            if (pos == 0) {
-              result = parent_vox.value();
-              (*this)[axis_] = pos + 1;
-              result = parent_vox.value() - result;
-            } else if (pos == dim(axis_) - 1) {
-              result = parent_vox.value();
-              (*this)[axis_] = pos - 1;
-              result -= parent_vox.value();
-            } else {
-              (*this)[axis_] = pos + 1;
-              result = parent_vox.value();
-              (*this)[axis_] = pos - 1;
-              result = 0.5 * (result - parent_vox.value());
-            }
-            (*this)[axis_] = pos;
+        using Base<ImageType>::name;
+        using Base<ImageType>::size;
+        using Base<ImageType>::voxsize;
+        using Base<ImageType>::index;
 
-            return result;
-          }
-
-          using Voxel<VoxelType>::name;
-          using Voxel<VoxelType>::dim;
-          using Voxel<VoxelType>::vox;
-          using Voxel<VoxelType>::operator[];
-
-        protected:
-          using Voxel<VoxelType>::parent_vox;
-          size_t axis_;
-          value_type result;
-        };
-    }
+      protected:
+        size_t axis;
+        value_type result;
+      };
   }
 }
 

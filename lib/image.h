@@ -77,6 +77,8 @@ namespace MR
 
         //! get position of current voxel location along \a axis
         ssize_t index (size_t axis) const { return x[axis]; }
+//        ssize_t& index (size_t axis) { return x[axis]; }
+
         //! get/set position of current voxel location along \a axis
         auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
         void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
@@ -106,18 +108,12 @@ namespace MR
         //! write out the contents of the image to file
         std::string save (const std::string& filename, bool use_multi_threading = true) const 
         {
-          /*
-             Image in (*this);
-             Image::Header header;
-             header.info() = info();
-             Image::Buffer<value_type> buffer_out (filename, header);
-             auto out = buffer_out.voxel();
-             if (use_multi_threading) 
-             Image::threaded_copy (in, out);
-             else 
-             Image::copy (in, out);
-             return buffer_out.__get_handler()->files[0].name;
-             */
+           auto out = Image<value_type>::create (filename, *this);
+//           if (use_multi_threading)
+//             threaded_copy (*this, out);
+//           else
+             copy (*this, out);
+//           return buffer_out.__get_handler()->files[0].name;
           return std::string();
         }
 

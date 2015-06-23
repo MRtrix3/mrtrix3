@@ -41,11 +41,11 @@ namespace MR
           stdev (stdev_in),
           axis (axis_in) {
           if (!extent)
-            radius_ = ceil(2.5 * stdev / voxsize(axis));
+            radius = ceil(2.5 * stdev / voxsize(axis));
           else if (extent == 1)
-            radius_ = 0;
+            radius = 0;
           else
-            radius_ = (extent - 1) / 2;
+            radius = (extent - 1) / 2;
           compute_kernel();
         }
 
@@ -59,13 +59,13 @@ namespace MR
           }
 
           const ssize_t pos = index (axis);
-          const int from = pos < radius_ ? 0 : pos - radius_;
-          const int to = pos >= (size(axis) - radius_) ? size(axis) - 1 : pos + radius_;
+          const int from = pos < radius ? 0 : pos - radius;
+          const int to = pos >= (size(axis) - radius) ? size(axis) - 1 : pos + radius;
 
           result = 0.0;
 
-          if (pos < radius_) {
-            size_t c = radius_ - pos;
+          if (pos < radius) {
+            size_t c = radius - pos;
             value_type av_weights = 0.0;
             for (ssize_t k = from; k <= to; ++k) {
               av_weights += kernel[c];
@@ -73,7 +73,7 @@ namespace MR
               result += value_type (Base<ImageType>::value()) * kernel[c++];
             }
             result /= av_weights;
-          } else if ((to - pos) < radius_){
+          } else if ((to - pos) < radius){
             size_t c = 0;
             value_type av_weights = 0.0;
             for (ssize_t k = from; k <= to; ++k) {
@@ -103,12 +103,12 @@ namespace MR
 
         void compute_kernel()
         {
-          if ((radius_ < 1) || stdev <= 0.0)
+          if ((radius < 1) || stdev <= 0.0)
             return;
-          kernel.resize(2 * radius_ + 1);
+          kernel.resize(2 * radius + 1);
           default_type norm_factor = 0.0;
           for (size_t c = 0; c < kernel.size(); ++c) {
-            kernel[c] = exp(-((c-radius_) * (c-radius_) * voxsize(axis) * voxsize(axis))  / (2 * stdev * stdev));
+            kernel[c] = exp(-((c-radius) * (c-radius) * voxsize(axis) * voxsize(axis))  / (2 * stdev * stdev));
             norm_factor += kernel[c];
           }
           for (size_t c = 0; c < kernel.size(); c++) {
@@ -117,7 +117,7 @@ namespace MR
         }
 
         default_type stdev;
-        ssize_t radius_;
+        ssize_t radius;
         size_t axis;
         std::vector<default_type> kernel;
         value_type result;

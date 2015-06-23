@@ -24,92 +24,89 @@
 #define __image_adapter_median3D_h__
 
 #include "math/median.h"
-#include "image/adapter/voxel.h"
+#include "adapter/base.h"
 
 namespace MR
 {
-  namespace Image
-  {
     namespace Adapter 
     {
 
 
-      template <class VoxelType> 
-        class Median3D : public Voxel<VoxelType> {
-        public:
-          Median3D (const VoxelType& parent) : 
-            Voxel<VoxelType> (parent) {
-              set_extent (std::vector<int>(1,3));
-            }
-
-          Median3D (const VoxelType& parent, const std::vector<int>& extent) : 
-            Voxel<VoxelType> (parent) {
-              set_extent (extent);
-            }
-
-          typedef typename VoxelType::value_type value_type;
-          typedef Median3D voxel_type;
-
-          void set_extent (const std::vector<int>& extent) {
-            for (size_t i = 0; i < extent.size(); ++i)
-              if (! (extent[i] & int(1)))
-                throw Exception ("expected odd number for extent");
-            if (extent.size() != 1 && extent.size() != 3)
-              throw Exception ("unexpected number of elements specified in extent");
-            if (extent.size() == 1)
-              extent_ = std::vector<int> (3, extent[0]);
-            else 
-              extent_ = extent;
-
-            DEBUG ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent_));
-
-            for (size_t i = 0; i < 3; ++i)
-              extent_[i] = (extent_[i]-1)/2;
+    template <class ImageType>
+      class Median3D : public Base<ImageType> {
+      public:
+        Median3D (const ImageType& parent) :
+          Base<ImageType> (parent) {
+            set_extent (std::vector<int>(1,3));
           }
 
-
-
-          value_type& value () {
-
-            const ssize_t old_pos [3] = { (*this)[0], (*this)[1], (*this)[2] };
-            const ssize_t from[3] = {
-              (*this)[0] < extent_[0] ? 0 : (*this)[0] - extent_[0], 
-              (*this)[1] < extent_[1] ? 0 : (*this)[1] - extent_[1], 
-              (*this)[2] < extent_[2] ? 0 : (*this)[2] - extent_[2]
-            };
-            const ssize_t to[3] = {
-              (*this)[0] >= dim(0)-extent_[0] ? dim(0) : (*this)[0]+extent_[0]+1, 
-              (*this)[1] >= dim(1)-extent_[1] ? dim(1) : (*this)[1]+extent_[1]+1, 
-              (*this)[2] >= dim(2)-extent_[2] ? dim(2) : (*this)[2]+extent_[2]+1
-            };
-
-            values.clear();
-
-            for ((*this)[2] = from[2]; (*this)[2] < to[2]; ++(*this)[2]) 
-              for ((*this)[1] = from[1]; (*this)[1] < to[1]; ++(*this)[1]) 
-                for ((*this)[0] = from[0]; (*this)[0] < to[0]; ++(*this)[0]) 
-                  values.push_back (parent_vox.value());
-
-            (*this)[0] = old_pos[0];
-            (*this)[1] = old_pos[1];
-            (*this)[2] = old_pos[2];
-
-            retval = Math::median (values);
-            return retval;
+        Median3D (const ImageType& parent, const std::vector<int>& extent) :
+          Base<ImageType> (parent) {
+            set_extent (extent);
           }
 
-          using Voxel<VoxelType>::name;
-          using Voxel<VoxelType>::dim;
-          using Voxel<VoxelType>::operator[];
+        typedef typename ImageType::value_type value_type;
+        typedef Median3D voxel_type;
 
-        protected:
-          using Voxel<VoxelType>::parent_vox;
-          std::vector<int> extent_;
-          std::vector<value_type> values;
-          value_type retval;
-        };
+        void set_extent (const std::vector<int>& ext)
+        {
+          for (size_t i = 0; i < ext.size(); ++i)
+            if (! (ext[i] & int(1)))
+              throw Exception ("expected odd number for extent");
+          if (ext.size() != 1 && ext.size() != 3)
+            throw Exception ("unexpected number of elements specified in extent");
+          if (ext.size() == 1)
+            extent = std::vector<int> (3, ext[0]);
+          else
+            extent = ext;
 
-    }
+          DEBUG ("median3D adapter for image \"" + name() + "\" initialised with extent " + str(extent));
+
+          for (size_t i = 0; i < 3; ++i)
+            extent[i] = (extent[i]-1)/2;
+        }
+
+
+
+        value_type& value ()
+        {
+          const ssize_t old_pos [3] = { index(0), index(1), index(2) };
+          const ssize_t from[3] = {
+            index(0) < extent[0] ? 0 : index(0) - extent[0],
+            index(1) < extent[1] ? 0 : index(1) - extent[1],
+            index(2) < extent[2] ? 0 : index(2) - extent[2]
+          };
+          const ssize_t to[3] = {
+            index(0) >= size(0)-extent[0] ? size(0) : index(0)+extent[0]+1,
+            index(1) >= size(1)-extent[1] ? size(1) : index(1)+extent[1]+1,
+            index(2) >= size(2)-extent[2] ? size(2) : index(2)+extent[2]+1
+          };
+
+          values.clear();
+
+          for (index(2) = from[2]; index(2) < to[2]; ++index(2))
+            for (index(1) = from[1]; index(1) < to[1]; ++index(1))
+              for (index(0) = from[0]; index(0) < to[0]; ++index(0))
+                values.push_back (Base<ImageType>::value());
+
+          index(0) = old_pos[0];
+          index(1) = old_pos[1];
+          index(2) = old_pos[2];
+
+          retval = Math::median (values);
+          return retval;
+        }
+
+        using Base<ImageType>::name;
+        using Base<ImageType>::size;
+        using Base<ImageType>::index;
+
+      protected:
+        std::vector<int> extent;
+        std::vector<value_type> values;
+        value_type retval;
+      };
+
   }
 }
 

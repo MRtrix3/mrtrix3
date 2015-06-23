@@ -23,12 +23,9 @@
 #ifndef __image_nav_h__
 #define __image_nav_h__
 
-#include "point.h"
-
+#include "types.h"
 
 namespace MR
-{
-namespace Image
 {
 namespace Nav
 {
@@ -37,53 +34,53 @@ namespace Nav
 // Functions for easy navigation of image data
 
 
-template <class Set, class Nav>
-inline void set_pos (Set& data, const Nav& pos)
+template <class ImageType, class Nav>
+inline void set_pos (ImageType& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
 }
 
-template <class Set, class Nav>
-inline void set_pos (Set& data, const Nav& pos, const size_t from_axis, const size_t to_axis)
+template <class ImageType, class Nav>
+inline void set_pos (ImageType& data, const Nav& pos, const size_t from_axis, const size_t to_axis)
 {
     for (size_t axis = from_axis; axis != to_axis; ++axis)
       data[axis] = pos[axis];
 }
 
-template <class Set, class Point_type>
-inline void set_pos (Set& data, const Point<Point_type>& pos)
+template <class ImageType>
+inline void set_pos (ImageType& data, const Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       data[axis] = pos[axis];
 }
 
 
-template <class Set, class Nav>
-inline void get_pos (const Set& data, Nav& pos)
+template <class ImageType, class Nav>
+inline void get_pos (const ImageType& data, Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       pos[axis] = data[axis];
 }
 
-template <class Set, class Point_type>
-inline void get_pos (Set& data, Point<Point_type>& pos)
+template <class ImageType>
+inline void get_pos (ImageType& data, Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       pos[axis] = data[axis];
 }
 
 
-template <class Set, class Nav>
-inline void step_pos (Set& data, const Nav& step)
+template <class ImageType, class Nav>
+inline void step_pos (ImageType& data, const Nav& step)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] += step[axis];
 }
 
 
-template <class Set, class Point_type>
-inline void step_pos (Set& data, const Point<Point_type>& step)
+template <class ImageType>
+inline void step_pos (ImageType& data, const Eigen::Vector3& step)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       data[axis] += step[axis];
@@ -91,16 +88,16 @@ inline void step_pos (Set& data, const Point<Point_type>& step)
 
 
 
-template <class Set, class Nav>
-inline typename Set::value_type get_value_at_pos (Set& data, const Nav& pos)
+template <class ImageType, class Nav>
+inline typename ImageType::value_type get_value_at_pos (ImageType& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
     return data.value();
 }
 
-template <class Set, class Point_type>
-inline typename Set::value_type get_value_at_pos (Set& data, const Point<Point_type>& pos)
+template <class ImageType>
+inline typename ImageType::value_type get_value_at_pos (ImageType& data, const Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       data[axis] = pos[axis];
@@ -108,16 +105,16 @@ inline typename Set::value_type get_value_at_pos (Set& data, const Point<Point_t
 }
 
 
-template <class Set, class Nav>
-inline void set_value_at_pos (Set& data, const Nav& pos, const typename Set::value_type value)
+template <class ImageType, class Nav>
+inline void set_value_at_pos (ImageType& data, const Nav& pos, const typename ImageType::value_type value)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       data[axis] = pos[axis];
     data.value() = value;
 }
 
-template <class Set, class Point_type>
-inline void set_value_at_pos (Set& data, const Point<Point_type>& pos, const typename Set::value_type value)
+template <class ImageType>
+inline void set_value_at_pos (ImageType& data, const Eigen::Vector3& pos, const typename ImageType::value_type value)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       data[axis] = pos[axis];
@@ -126,8 +123,8 @@ inline void set_value_at_pos (Set& data, const Point<Point_type>& pos, const typ
 
 
 
-template <class Set, class Nav>
-inline bool within_bounds (const Set& data, const Nav& pos)
+template <class ImageType, class Nav>
+inline bool within_bounds (const ImageType& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
       if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
@@ -136,8 +133,8 @@ inline bool within_bounds (const Set& data, const Nav& pos)
 }
 
 
-template <class Set, class Point_type>
-inline bool within_bounds (const Set& data, const Point<Point_type>& pos)
+template <class ImageType>
+inline bool within_bounds (const ImageType& data, const Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
       if (pos[axis] < 0 || pos[axis] >= data.dim (axis))
@@ -157,7 +154,6 @@ inline bool within_bounds (const Nav& pos)
 
 
 
-}
 }
 }
 

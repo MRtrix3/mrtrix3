@@ -22,21 +22,18 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/voxel.h"
-#include "image/interp/nearest.h"
-#include "image/interp/linear.h"
-#include "image/interp/cubic.h"
-#include "image/interp/sinc.h"
-#include "image/filter/reslice.h"
-#include "image/utils.h"
-#include "image/loop.h"
-#include "image/copy.h"
+#include "image.h"
+#include "interp/nearest.h"
+#include "interp/linear.h"
+#include "interp/cubic.h"
+#include "interp/sinc.h"
+#include "filter/reslice.h"
+#include "utils.h"
+#include "algo/loop.h"
+#include "algo/copy.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
-#include "image/registration/transform/reorient.h"
+#include "registration/transform/reorient.h"
 
 
 using namespace MR;
@@ -148,7 +145,7 @@ typedef Image::Buffer<value_type> OutputBufferType;
 
 void run ()
 {
-  Math::Matrix<float> linear_transform;
+  transform_type linear_transform;
 
   Options opt = get_options ("linear");
   if (opt.size()) {
