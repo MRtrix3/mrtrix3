@@ -77,7 +77,6 @@ namespace MR
 
         //! get position of current voxel location along \a axis
         ssize_t index (size_t axis) const { return x[axis]; }
-//        ssize_t& index (size_t axis) { return x[axis]; }
 
         //! get/set position of current voxel location along \a axis
         auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }

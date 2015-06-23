@@ -2,6 +2,7 @@
 #include "debug.h"
 #include "thread.h"
 #include "dwi/tractography/rng.h"
+#include "image.h"
 
 using namespace MR;
 using namespace App;
@@ -32,16 +33,24 @@ typedef float value_type;
 
 using namespace DWI::Tractography;
 
-struct thread_func {
-  void execute () {
-    std::lock_guard<std::mutex> lock (mutex);
-    std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
-  }
-};
+//struct thread_func {
+//  void execute () {
+//    std::lock_guard<std::mutex> lock (mutex);
+//    std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
+//  }
+//};
 
 void run ()
 {
-  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
-  Thread::run (Thread::multi (thread_func()));
+
+  auto input = Image<float>::open (argument[0]);
+  auto output = Image<float>::create (argument[1], input);
+
+  output.index(0) = input.index(0);
+  output.valid() = input.value();
+
+
+//  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
+//  Thread::run (Thread::multi (thread_func()));
 }
 
