@@ -48,6 +48,8 @@ namespace MR
           ::MR::Exception::display_func = Dialog::display_exception;
 
           ::MR::App::check_overwrite_files_func = Dialog::File::check_overwrite_files_func;
+
+          ::MR::GUI::GL::set_default_context ();
         }
 
         ~App () {

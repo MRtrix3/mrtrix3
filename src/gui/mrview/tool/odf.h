@@ -74,13 +74,14 @@ namespace MR
             void updateGL ();
             void update_preview();
 
-            void hide_event() override;
+            void close_event() override;
 
           protected:
              class Model;
              class Image;
+             class Preview;
 
-             Dock *preview;
+             Preview *preview;
 
              DWI::Renderer *renderer;
 

@@ -106,7 +106,7 @@ namespace MR
           void makeGLcurrent () { glarea->makeCurrent(); }
 
           void captureGL (std::string filename) {
-            QImage image (glarea->grabFrameBuffer());
+            QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
           }
 
@@ -180,25 +180,25 @@ namespace MR
           Qt::KeyboardModifiers modifiers_;
 
 
-          class GLArea : public QGLWidget {
+          class GLArea : public GL::Area {
             public:
               GLArea (Window& parent);
-              QSize sizeHint () const;
+              QSize sizeHint () const override;
 
             protected:
-              void dragEnterEvent (QDragEnterEvent* event);
-              void dragMoveEvent (QDragMoveEvent* event);
-              void dragLeaveEvent (QDragLeaveEvent* event);
-              void dropEvent (QDropEvent* event);
+              void dragEnterEvent (QDragEnterEvent* event) override;
+              void dragMoveEvent (QDragMoveEvent* event) override;
+              void dragLeaveEvent (QDragLeaveEvent* event) override;
+              void dropEvent (QDropEvent* event) override;
             private:
               Window& main;
 
-              void initializeGL ();
-              void paintGL ();
-              void mousePressEvent (QMouseEvent* event);
-              void mouseMoveEvent (QMouseEvent* event);
-              void mouseReleaseEvent (QMouseEvent* event);
-              void wheelEvent (QWheelEvent* event);
+              void initializeGL () override;
+              void paintGL () override;
+              void mousePressEvent (QMouseEvent* event) override;
+              void mouseMoveEvent (QMouseEvent* event) override;
+              void mouseReleaseEvent (QMouseEvent* event) override;
+              void wheelEvent (QWheelEvent* event) override;
           };
 
           enum MouseAction {
@@ -212,7 +212,6 @@ namespace MR
           };
 
           GLArea* glarea;
-          QTimer* glrefresh_timer;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;

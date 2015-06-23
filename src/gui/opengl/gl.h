@@ -63,7 +63,20 @@ namespace MR
     namespace GL
     {
 
+#if QT_VERSION >= 0x050400
+      typedef QOpenGLWidget Area;
+      typedef QSurfaceFormat Format;
+#else
+      class Area : public QGLWidget {
+        public:
+          using QGLWidget::QGLWidget;
+          QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
+      };
+      typedef QGLFormat Format;
+#endif
+ 
       void init ();
+      void set_default_context ();
 
       const char* ErrorString (GLenum errorcode);
 
@@ -244,7 +257,6 @@ namespace MR
       };
 
 
-      QGLFormat core_format ();
 
     }
   }
