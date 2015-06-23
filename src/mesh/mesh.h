@@ -229,12 +229,17 @@ namespace MR
 
 
 
-    // TODO Class to handle multiple meshes per file
+    // Class to handle multiple meshes per file
     // For now, this will only be supported using the .obj file type
+    // TODO Another alternative may be .vtp: XML-based polydata by VTK
+    //   (would allow embedding binary data within the file, rather than
+    //   everything being ASCII as in .obj)
 
     class MeshMulti : public std::vector<Mesh>
     {
       public:
+        using std::vector<Mesh>::vector;
+
         void load (const std::string&);
         void save (const std::string&) const;
     };

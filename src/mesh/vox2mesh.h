@@ -78,7 +78,7 @@ namespace MR
         //   refers to the lower corner of the voxel; that way searches for existing
         //   vertices can be done using a simple map
 
-        Image::LoopInOrder loop (vox, "converting mask image to mesh representation... ");
+        Image::LoopInOrder loop (vox);
         for (loop.start (vox); loop.ok(); loop.next (vox)) {
           if (vox.value()) {
 
@@ -444,7 +444,6 @@ namespace MR
       float in_vertex_values[8];
       std::map< Point<int>, std::map<Point<int>, size_t> > input_vertex_pair_to_output_vertex_index_map;
       Point<int> lower_corner;
-      ProgressBar progress ("Converting image to mesh representation... ", (voxel.dim(0)+1) * (voxel.dim(1)+1) * (voxel.dim(2)+1));
       for (lower_corner[2] = -1; lower_corner[2] != voxel.dim(2); ++lower_corner[2]) {
         for (lower_corner[1] = -1; lower_corner[1] != voxel.dim(1); ++lower_corner[1]) {
           for (lower_corner[0] = -1; lower_corner[0] != voxel.dim(0); ++lower_corner[0]) {
@@ -518,8 +517,6 @@ namespace MR
               const uint32_t indices[3] { edge_to_output_vertex[*first_edge], edge_to_output_vertex[*(first_edge+2)], edge_to_output_vertex[*(first_edge+1)] };
               polygons.push_back (Triangle (indices));
             }
-
-            ++progress;
 
       } } } // Finished looping over all voxels in the input image
 

@@ -405,12 +405,11 @@ namespace MR
 
     void Mesh::smooth (const float spatial_factor, const float influence_factor)
     {
+      if (!vertices.size()) return;
       if (quads.size())
         throw Exception ("For now, mesh smoothing is only supported for triangular meshes");
       if (vertices.size() == 3 * vertices.size())
         throw Exception ("Cannot perform smoothing on this mesh: no triangulation information");
-
-      ProgressBar progress ("Performing mesh smoothing... ", 2 * vertices.size() + 1);
 
       // Pre-compute polygon centroids and areas
       VertexList centroids;
@@ -460,7 +459,7 @@ namespace MR
       }
 
       // TODO Will want to develop a better heuristic for this
-      for (size_t iter = 0; iter != 5; ++iter) {
+      for (size_t iter = 0; iter != 8; ++iter) {
         for (uint32_t v = 0; v != vertices.size(); ++v) {
 
           // Find polygons at the outer edge of this expanding front, and add them to the neighbourhood for this vertex
@@ -510,7 +509,6 @@ namespace MR
 
         new_pos *= (1.0f / sum_weights);
         vertices[v] = new_pos;
-        ++progress;
 
       }
 
@@ -547,7 +545,6 @@ namespace MR
 
         new_pos *= (1.0f / sum_weights);
         vertices[v] = new_pos;
-        ++progress;
 
       }
 
@@ -1245,17 +1242,14 @@ namespace MR
         } else if (prefix == "o") {
           // This is where this function differs from the standard OBJ load
           // Allow multiple objects; in fact explicitly expect them
-          object = data;
-          if (++index >= 0) {
+          if (index++ >= 0) {
             vertex_index_offset += vertices.size();
-            // This should invoke a move, so no need to explicitly clear the local data
             Mesh temp;
-            temp.load (vertices, triangles, quads);
-            assert (vertices.empty());
-            temp.set_name (object.size() ? object : str(index));
+            temp.load (std::move (vertices), std::move (triangles), std::move (quads));
+            temp.set_name (object.size() ? object : str(index-1));
             push_back (temp);
-
           }
+          object = data;
         }
       }
 
