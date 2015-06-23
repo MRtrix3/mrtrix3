@@ -46,8 +46,24 @@ void run ()
   auto input = Image<float>::open (argument[0]);
   auto output = Image<float>::create (argument[1], input);
 
+  input.index(0) = 10;
+  input.index(1) = 13;
+  input.index(2) = 10;
+
   output.index(0) = input.index(0);
+  output.index(1) = input.index(1);
+  output.index(2) = input.index(2);
+
+
+  VAR (input.value());
+  VAR (output.value());
+
   output.value() = input.value();
+
+  VAR (input);
+  VAR (output);
+  VAR (input.value());
+  VAR (output.value());
 
 
 //  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";

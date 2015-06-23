@@ -34,8 +34,7 @@ namespace MR
     struct __copy_func {
       template <class InputImageType, class OutputImageType>
         inline void operator() (InputImageType& in, OutputImageType& out) const {
-          const typename InputImageType::value_type tmp = in.value();
-          out.value() = tmp;
+          out.value() = in.value();
         }
     };
 

@@ -320,7 +320,6 @@ namespace MR
           Index () = delete;
           Index (const Index&) = delete;
           Index (Index&&) = default;
-          Index& operator= (Index&&) = delete;
 
           ssize_t get () const { const ImageType& _i (image); return _i.index (axis); }
           operator ssize_t () const { return get (); }
@@ -331,7 +330,7 @@ namespace MR
           ssize_t operator+= (ssize_t increment) { move( increment); return get(); }
           ssize_t operator-= (ssize_t increment) { move(-increment); return get(); }
           ssize_t operator= (ssize_t position) { return ( *this += position - get() ); }
-          ssize_t operator= (const Index& position) { return ( *this = position.get() ); }
+          ssize_t operator= (Index&& position) { return ( *this = position.get() ); }
           friend std::ostream& operator<< (std::ostream& stream, const Index& p) { stream << p.get(); return stream; }
         protected:
           ImageType& image;
@@ -347,13 +346,13 @@ namespace MR
           Value () = delete;
           Value (const Value&) = delete;
           Value (Value&&) = default;
-          Value& operator= (Value&&) = delete;
 
           Value (ImageType& parent) : image (parent) { }
           value_type get () const { const ImageType& _i (image); return _i.value(); }
           operator value_type () const { return get(); }
           value_type operator= (value_type value) { return set (value); }
-          value_type operator= (const Value& V) { return set (V.get()); }
+          template <typename OtherType>
+            inline value_type operator= (Value<OtherType>&& V) { return set (V.get()); }
           value_type operator+= (value_type value) { return set (get() + value); }
           value_type operator-= (value_type value) { return set (get() - value); }
           value_type operator*= (value_type value) { return set (get() * value); }
