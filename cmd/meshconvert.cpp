@@ -30,6 +30,7 @@
 
 using namespace MR;
 using namespace App;
+using namespace MR::Mesh;
 
 
 
@@ -62,10 +63,6 @@ void usage ()
   OPTIONS
   + Option ("binary", "write the output file in binary format")
 
-  + Option ("smooth", "apply a feature-preserving mesh smoothing algorithm")
-    + Argument ("spatial_factor").type_float (0.0f, 10.0f, 1e6)
-    + Argument ("influence_factor").type_float (0.0f, 10.0f, 1e6)
-
   + transform_options;
 
 };
@@ -95,11 +92,6 @@ void run ()
     mesh.transform_voxel_to_realspace (H);
     have_transformed = true;
   }
-
-  // Apply smoothing if requested - always done in real space
-  opt = get_options ("smooth");
-  if (opt.size())
-    mesh.smooth (opt[0][0], opt[0][1]);
 
   opt = get_options ("transform_real2voxel");
   if (opt.size()) {
