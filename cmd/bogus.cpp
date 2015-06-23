@@ -47,7 +47,7 @@ void run ()
   auto output = Image<float>::create (argument[1], input);
 
   output.index(0) = input.index(0);
-  output.valid() = input.value();
+  output.value() = input.value();
 
 
 //  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
