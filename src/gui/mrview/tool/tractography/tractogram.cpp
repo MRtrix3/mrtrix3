@@ -28,6 +28,7 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
 #include "gui/opengl/lighting.h"
+#include "gui/mrview/mode/base.h"
 
 
 
@@ -41,6 +42,7 @@ namespace MR
     {
       namespace Tool
       {
+        const int Tractogram::max_sample_stride;
 
         std::string Tractogram::Shader::vertex_shader_source (const Displayable& displayable)
         {
@@ -51,18 +53,17 @@ namespace MR
 
           std::string source =
           "layout (location = 0) in vec3 this_vertex;\n"
-          "layout (location = 1) in vec3 next_vertex;\n"
-          "layout (location = 2) in vec3 next_next_vertex;\n";
+          "layout (location = 1) in vec3 next_vertex;\n";
 
           switch(color_type) {
             case Direction: break;
             case Ends:
-              source += "layout (location = 3) in vec3 colour;\n";
+              source += "layout (location = 2) in vec3 colour;\n";
               break;
             case Manual:
               break;
             case ScalarFile:
-              source += "layout (location = 3) in float amp;\n";
+              source += "layout (location = 2) in float amp;\n";
               break;
           }
 
@@ -86,7 +87,6 @@ namespace MR
           "out vec4 v_dir;\n"
           "out vec4 v_normal;\n"
           "out vec3 v_colour;\n"
-          "out int v_vertex_id;\n"
           "out int v_visible;\n";
 
 
@@ -101,11 +101,11 @@ namespace MR
 
           // Colour and lighting function
           source +=
-          "void set_colour_and_lighting(vec3 start_vec, vec3 end_vec) {\n";
+          "void set_colour_and_lighting() {\n";
 
           if(use_lighting || colour_by_direction)
             source +=
-            "  vec3 dir = end_vec - start_vec;\n";
+            "  vec3 dir = next_vertex - this_vertex;\n";
           if(colour_by_direction)
             source += "  v_colour = normalize (abs(dir));\n";
           if(use_lighting)
@@ -140,20 +140,16 @@ namespace MR
           // Main function
           source +=
           "void main() {\n"
-          "  v_vertex_id = gl_VertexID;\n"
-          "  bool skip_vertex = v_vertex_id % 2 == 1 && downscale_factor == 1.0;\n"
-          "  vec3 start_vec = skip_vertex ? next_vertex : this_vertex;\n"
-          "  vec3 end_vec = skip_vertex ? next_next_vertex : next_vertex;\n"
-          "  vec4 p1 = MVP * vec4(start_vec, 1);\n"
-          "  vec4 p2 = MVP * vec4(end_vec, 1);\n"
+          "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
+          "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
           "  gl_Position = p1;\n"
 
-          "  v_visible = (gl_Position.x > -1 && gl_Position.x < 1)\n"
-          "   && (gl_Position.y > -1 && gl_Position.y < 1)\n"
-          "   && (gl_Position.z > -1 && gl_Position.z < 1) ? 1 : 0 ;\n";
+          "  v_visible = (gl_Position.x > -1-line_thickness && gl_Position.x < 1+line_thickness)\n"
+          "   && (gl_Position.y > -1-line_thickness && gl_Position.y < 1+line_thickness)\n"
+          "   && (gl_Position.z > -1-line_thickness && gl_Position.z < 1+line_thickness) ? 1 : 0 ;\n";
 
           if(do_crop_to_slab)
-            source += "  v_include = (dot(start_vec, screen_normal) - crop_var) / slab_width;\n";
+            source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
 
           if(color_type == ScalarFile)
             source += "  v_amp = amp;\n";
@@ -164,7 +160,7 @@ namespace MR
 
           "  v_normal *=  1.0 + (aspect_ratio - 1.0) * abs(v_normal.y);\n"
 
-          "  set_colour_and_lighting(start_vec, end_vec);\n"
+          "  set_colour_and_lighting();\n"
           "}\n";
 
           return source;
@@ -182,7 +178,6 @@ namespace MR
           "in vec4 v_dir[];\n"
           "in vec4 v_normal[];\n"
           "in vec3 v_colour[];\n"
-          "in int v_vertex_id[];\n"
           "in int v_visible[];\n";
 
           if(do_crop_to_slab)
@@ -209,11 +204,6 @@ namespace MR
 
           // If both end-points are outside the viewport then we can safely discard
           "  if(v_visible[0] < 1.0 && v_visible[1] < 1.0)\n"
-          "    return;\n"
-
-
-          // If we're downscaling skip every primitive with a starting odd vertex id
-          "  if(v_vertex_id[0] % 2 == 1 && downscale_factor == 1.0)\n"
           "    return;\n"
 
 
@@ -409,8 +399,7 @@ namespace MR
             window (window),
             tractography_tool (tool),
             filename (filename),
-            downscale_factor (1.0f),
-            should_downscale_tracks (true)
+            sample_stride (0)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
@@ -472,9 +461,20 @@ namespace MR
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
           }
 
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), tractography_tool.line_thickness);
+          float dim[] = {
+            window.image()->header().dim (0) * window.image()->header().vox (0),
+            window.image()->header().dim (1) * window.image()->header().vox (1),
+            window.image()->header().dim (2) * window.image()->header().vox (2)
+          };
+
+          int x, y;
+          window.image()->get_axes (window.plane(), x, y);
+
+          float original_fov = std::max (dim[x], dim[y]);
+          line_thickness_screenspace = tractography_tool.line_thickness * original_fov / window.FOV();
+
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "downscale_factor"), downscale_factor);
 
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -484,18 +484,18 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
-            render_streamlines();
+            render_streamlines(transform);
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
-            render_streamlines();
+            render_streamlines(transform);
 
           } else {
             gl::Disable (gl::BLEND);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-            render_streamlines();
+            render_streamlines(transform);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -510,16 +510,67 @@ namespace MR
 
 
 
-        inline void Tractogram::render_streamlines () {
+        inline void Tractogram::render_streamlines (const Projection& transform) {
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
+
+            if (should_update_stride)
+              update_stride (transform);
+
+            if (vao_dirty) {
+
+              switch (color_type) {
+                case TrackColourType::Ends:
+                  gl::BindBuffer (gl::ARRAY_BUFFER, colour_buffers[buf]);
+                  gl::EnableVertexAttribArray (2);
+                  gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
+                  break;
+                case TrackColourType::ScalarFile:
+                  gl::BindBuffer (gl::ARRAY_BUFFER, scalar_buffers[buf]);
+                  gl::EnableVertexAttribArray (2);
+                  gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  break;
+                default:
+                  break;
+              }
+
+              gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
+              gl::EnableVertexAttribArray (0);
+              gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_,  3 * sample_stride * sizeof(float), (void*)0);
+              gl::EnableVertexAttribArray (1);
+              gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3* sample_stride * sizeof(float)));
+
+              for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
+                track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
+                track_starts[buf][j] = (GLint)std::floor(original_track_starts[buf][j] / (float)sample_stride);
+              }
+            }
             gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
           }
+
+          vao_dirty = false;
         }
 
 
 
 
+        inline void Tractogram::update_stride (const Projection& transform) {
+
+          float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
+          float step_size_pixels = transform.model_to_screen_direction(Point<float>(step_size, step_size, 0.f)).norm();
+
+          GLint thickness_pixels = (GLint)(line_thickness_screenspace * (transform.width () + transform.height ()));
+          GLint thickness_factor = std::max((GLint)((4 * thickness_pixels) / step_size_pixels), 1);
+
+          GLint new_stride = std::min(thickness_factor, max_sample_stride);
+
+          if(new_stride != sample_stride) {
+            sample_stride = new_stride;
+            vao_dirty = true;
+          }
+
+          should_update_stride = false;
+        }
 
 
 
@@ -532,32 +583,37 @@ namespace MR
           std::vector<GLint> sizes;
           size_t tck_count = 0;
 
-          should_downscale_tracks = to<size_t>(properties["count"]) > max_num_tracks_no_downscaling;
           on_FOV_changed();
 
           while (file (tck)) {
 
             size_t N = tck.size();
-            if(N < 1) continue;
+            if(!N) continue;
+
+            // Pre padding
+            // To support downsampling, we want to ensure that the starting track vertex
+            // is used even when we're using a stride > 1
+            for (size_t i = 1; i < max_sample_stride; ++i)
+              buffer.push_back(tck.front());
 
             starts.push_back (buffer.size());
-            buffer.push_back (Point<float>());
 
-            // First element in track is nan point so skip it
-            buffer.insert (buffer.end(), ++tck.begin(), tck.end());
+            buffer.insert (buffer.end(), tck.begin(), tck.end());
 
-            // Shader uses forward looking to determine track direction
-            // Therefore append a final point onto buffer end so that t_n-1, t_n and t_n+1 are collinear
-            Point<float> new_end = 2.f * tck[N-1] - tck[N-2];
-            buffer.push_back(new_end);
+            // Post padding
+            // Similarly, to support downsampling, we also want to ensure the final track vertex
+            // will be used even we're using a stride > 1
+            for (size_t i = 1; i < max_sample_stride; ++i)
+              buffer.push_back(tck.back());
 
-            sizes.push_back (N-1);
+            sizes.push_back (N - 1);
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
           }
-          if (buffer.size())
+          if (buffer.size()) {
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
+          }
           file.close();
         }
         
@@ -569,7 +625,7 @@ namespace MR
           erase_nontrack_data();
           // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
           DWI::Tractography::Reader<float> file (filename, properties);
-          for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
+          for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
             std::vector< Point<float> > buffer;
             DWI::Tractography::Streamline<float> tck;
@@ -577,10 +633,19 @@ namespace MR
               file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
               const Point<float> colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
-              buffer.push_back (Point<float>());
               for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
                 *i = colour;
+
+              // Pre padding to coincide with tracks buffer
+              for (size_t i = 1; i < max_sample_stride; ++i)
+                buffer.push_back(tck.front());
+
               buffer.insert (buffer.end(), tck.begin(), tck.end());
+
+              // Post padding to coincide with tracks buffer
+              for (size_t i = 1; i < max_sample_stride; ++i)
+                buffer.push_back(tck.back());
+
             }
             load_end_colours_onto_GPU (buffer);
           }
@@ -605,12 +670,26 @@ namespace MR
             DWI::Tractography::ScalarReader<float> file (filename, scalar_properties);
             DWI::Tractography::check_properties_match (properties, scalar_properties, ".tck / .tsf");
             while (file (tck_scalar)) {
-              buffer.push_back (NAN);
-              for (size_t i = 0; i < tck_scalar.size(); ++i) {
+
+              size_t tck_size = tck_scalar.size();
+
+              if(!tck_size)
+                continue;
+
+              // Pre padding to coincide with tracks buffer
+              for (size_t i = 1; i < max_sample_stride; ++i)
+                buffer.push_back(tck_scalar.front());
+
+              for (size_t i = 0; i < tck_size; ++i) {
                 buffer.push_back (tck_scalar[i]);
-                if (tck_scalar[i] > value_max) value_max = tck_scalar[i];
-                if (tck_scalar[i] < value_min) value_min = tck_scalar[i];
+                value_max = std::max(value_max, tck_scalar[i]);
+                value_min = std::min(value_min, tck_scalar[i]);
               }
+
+              // Post padding to coincide with tracks buffer
+              for (size_t i = 1; i < max_sample_stride; ++i)
+                buffer.push_back(tck_scalar.back());
+
               if (buffer.size() >= MAX_BUFFER_SIZE)
                 load_scalars_onto_GPU (buffer);
             }
@@ -625,17 +704,29 @@ namespace MR
             if (scalars.size() != total_num_tracks)
               throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
             size_t running_index = 0;
+
             for (size_t buffer_index = 0; buffer_index != vertex_buffers.size(); ++buffer_index) {
               const size_t num_tracks = num_tracks_per_buffer[buffer_index];
-              std::vector<GLint>& track_lengths (track_sizes[buffer_index]);
+              std::vector<GLint>& track_lengths (original_track_sizes[buffer_index]);
+
               for (size_t index = 0; index != num_tracks; ++index, ++running_index) {
                 const float value = scalars[running_index];
-                buffer.push_back (NAN);
                 tck_scalar.assign (track_lengths[index], value);
+
+                // Pre padding to coincide with tracks buffer
+                for (size_t i = 1; i < max_sample_stride; ++i)
+                  buffer.push_back(tck_scalar.front());
+
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
-                if (value > value_max) value_max = value;
-                if (value < value_min) value_min = value;
+
+                // Post padding to coincide with tracks buffer
+                for (size_t i = 1; i < max_sample_stride; ++i)
+                  buffer.push_back(tck_scalar.back());
+
+                value_max = std::max(value_max, value);
+                value_min = std::min(value_min, value);
               }
+
               load_scalars_onto_GPU (buffer);
             }
           }
@@ -667,7 +758,6 @@ namespace MR
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
             size_t& tck_count) {
-          buffer.push_back (Point<float>());
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
@@ -675,19 +765,15 @@ namespace MR
 
           GLuint vertex_array_object;
           gl::GenVertexArrays (1, &vertex_array_object);
-          gl::BindVertexArray (vertex_array_object);
-          gl::EnableVertexAttribArray (0);
-          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
-          gl::EnableVertexAttribArray (1);
-          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
-          gl::EnableVertexAttribArray (2);
-          gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(6*sizeof(float)));
 
           vertex_array_objects.push_back (vertex_array_object);
           vertex_buffers.push_back (vertexbuffer);
           track_starts.push_back (starts);
           track_sizes.push_back (sizes);
+          original_track_starts.push_back (starts);
+          original_track_sizes.push_back (sizes);
           num_tracks_per_buffer.push_back (tck_count);
+
           buffer.clear();
           starts.clear();
           sizes.clear();
@@ -705,9 +791,7 @@ namespace MR
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
 
-          gl::BindVertexArray (vertex_array_objects[colour_buffers.size()]);
-          gl::EnableVertexAttribArray (3);
-          gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(3*sizeof(float)));
+          vao_dirty = true;
 
           colour_buffers.push_back (vertexbuffer);
           buffer.clear();
@@ -718,19 +802,16 @@ namespace MR
 
 
         void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) {
-          buffer.push_back (NAN);
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(float), &buffer[0], gl::STATIC_DRAW);
 
-          gl::BindVertexArray (vertex_array_objects[scalar_buffers.size()]);
-          gl::EnableVertexAttribArray (3);
-          gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, 0, (void*)(sizeof(float)));
+          vao_dirty = true;
+
           scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
         }
-
 
 
       }
