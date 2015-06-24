@@ -218,7 +218,8 @@ void run ()
   Connectomics::MultiThreadMapper multiThreadMapper( connectomeMapper );
 
   // Preparing output connectome
-  Connectomics::Connectome connectome( connectomeMapper->getNodeCount() );
+  Connectomics::Connectome connectome;
+  connectome.allocate( connectomeMapper->getNodeCount() );
 
   std::cout << "[Done]" << std::endl;
 

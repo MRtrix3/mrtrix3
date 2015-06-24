@@ -1,5 +1,6 @@
 #include "dwi/tractography/connectomics/connectome.h"
 #include "file/ofstream.h"
+#include "exception.h"
 
 
 namespace MR
@@ -59,24 +60,30 @@ const uint32_t& NodePair::getSecondNode() const
 // class Connectome
 //
 
-Connectome::Connectome( const uint32_t nodeCount )
-           : _nodeCount( nodeCount )
+Connectome::Connectome()
 {
-
-  // allocating connectivity matrix
-  _sparseMatrix.resize( nodeCount );
-  for ( uint32_t n = 0; n < nodeCount; n++ )
-  {
-
-    _sparseMatrix[ n ] = new std::map< uint32_t, uint32_t >();
-
-  }
-
 }
 
 
 Connectome::~Connectome()
 {
+}
+
+
+void Connectome::allocate( const uint32_t nodeCount )
+{
+
+  // allocating connectivity matrix
+  _sparseMatrix.clear();
+  _sparseMatrix.resize( nodeCount );
+  for ( uint32_t n = 0; n < nodeCount; n++ )
+  {
+
+    _sparseMatrix[ n ] = new std::map< uint32_t, float >();
+
+  }
+  _nodeCount = nodeCount;
+
 }
 
 
@@ -102,11 +109,60 @@ bool Connectome::operator() ( const NodePair& nodePair )
 }
 
 
+void Connectome::read( const std::string& path )
+{
+
+  std::ifstream in( path.c_str(), std::ios_base::in );
+  if ( !in )
+  {
+
+    throw Exception( "Error opening input file!" );
+
+  }
+
+  std::string line;
+  // reading global node count
+  std::getline( in, line );
+  if ( line.substr( 0, 5 ) == "NODES" )
+  {
+
+    line = line.substr( 6 );
+    const size_t whiteSpace = line.find( ' ' );
+    _nodeCount = std::stoi( line.substr( 0, whiteSpace ) );
+
+  }
+  else
+  {
+
+    throw Exception( "Unable to find node count in input file!" );
+
+  }
+  allocate( _nodeCount );
+
+  // reading node data
+  uint32_t row, column;
+  float value;
+  while ( std::getline( in, line ) && !line.empty() )
+  {
+
+    sscanf( line.c_str(), "%u %u %f", &row, &column, &value );
+    ( *_sparseMatrix[ row ] )[ column ] = value;
+
+  }
+
+}
+
+
 void Connectome::write( const std::string& path )
 {
 
-  File::OFStream out( path );
-  std::map< uint32_t, uint32_t >::const_iterator c, ce;
+  File::OFStream out( path, std::ios_base::out | std::ios_base::trunc );
+
+  // writing global node count
+  out << "NODES " << _nodeCount << "\n";
+
+  // writing sparse connectome data
+  std::map< uint32_t, float >::const_iterator c, ce;
   for ( uint32_t r = 0; r < _nodeCount; r++ )
   {
 

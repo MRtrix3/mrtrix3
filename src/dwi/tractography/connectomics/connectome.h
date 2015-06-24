@@ -43,19 +43,23 @@ class Connectome
 
   public:
 
-    Connectome( const uint32_t nodeCount );
+    Connectome();
     virtual ~Connectome();
 
+    void allocate( const uint32_t nodeCount );
     void update( const NodePair& nodePair );
     // functor for multi-thread
     bool operator() ( const NodePair& nodePair );
 
+    void read( const std::string& path );
     void write( const std::string& path );
 
   protected:
 
+    friend class GraphMetrics;
+
     uint32_t _nodeCount;
-    std::vector< std::map< uint32_t, uint32_t >* > _sparseMatrix;
+    std::vector< std::map< uint32_t, float >* > _sparseMatrix;
 
 };
 
