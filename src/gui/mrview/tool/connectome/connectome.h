@@ -86,8 +86,9 @@
 //     tool, but the volume render mode isn't active...
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file,
-//     present user with control for which row/column to read from
+//   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file
+//     -> Should use a single control to select the node of interest, rather than one for each visual property
+//        Eventually, this should probably be the node list view
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
@@ -168,14 +169,22 @@ namespace MR
             void node_size_selection_slot (int);
             void node_alpha_selection_slot (int);
 
+            void node_visibility_row_change_slot();
+            void node_visibility_row_parameter_slot();
             void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
             void point_smooth_slot (int);
-            void node_colour_change_slot();
+            void node_fixed_colour_change_slot();
+            void node_colour_row_change_slot();
+            void node_colour_row_parameter_slot();
             void node_colour_parameter_slot();
+            void node_size_row_change_slot();
+            void node_size_row_parameter_slot();
             void node_size_value_slot();
             void node_size_parameter_slot();
+            void node_alpha_row_change_slot();
+            void node_alpha_row_parameter_slot();
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
 
@@ -208,6 +217,10 @@ namespace MR
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
+            QLabel *node_visibility_matrix_row_index_label;
+            QSpinBox *node_visibility_matrix_row_index_spinbox;
+            QLabel *node_visibility_matrix_row_value_label;
+            QCheckBox *node_visibility_matrix_row_value_checkbox;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
             QCheckBox *node_visibility_threshold_invert_checkbox;
@@ -221,17 +234,29 @@ namespace MR
             QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
+            QLabel *node_colour_matrix_row_index_label;
+            QSpinBox *node_colour_matrix_row_index_spinbox;
+            QLabel *node_colour_matrix_row_value_label;
+            QColorButton *node_colour_matrix_row_value_button;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
             AdjustButton *node_size_button;
+            QLabel *node_size_matrix_row_index_label;
+            QSpinBox *node_size_matrix_row_index_spinbox;
+            QLabel *node_size_matrix_row_value_label;
+            AdjustButton *node_size_matrix_row_value_button;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
 
             QComboBox *node_alpha_combobox;
             QSlider *node_alpha_slider;
+            QLabel *node_alpha_matrix_row_index_label;
+            QSpinBox *node_alpha_matrix_row_index_spinbox;
+            QLabel *node_alpha_matrix_row_value_label;
+            AdjustButton *node_alpha_matrix_row_value_button;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
@@ -334,7 +359,11 @@ namespace MR
 
             // Other values that need to be stored w.r.t. node visualisation
             bool have_meshes;
+            std::pair<node_t, bool> node_index_visibility;
             Point<float> node_fixed_colour;
+            std::pair<node_t, Point<float> > node_index_colour;
+            std::pair<node_t, float> node_index_size;
+            std::pair<node_t, float> node_index_alpha;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
             float node_fixed_alpha;
@@ -380,8 +409,8 @@ namespace MR
             void enable_all (const bool);
             void initialise (const std::string&);
 
-            bool import_file_for_node_property (FileDataVector&, const std::string&);
-            bool import_file_for_edge_property (FileDataVector&, const std::string&);
+            bool import_vector_file (FileDataVector&, const std::string&);
+            bool import_matrix_file (FileDataVector&, const std::string&);
 
             void load_properties();
 

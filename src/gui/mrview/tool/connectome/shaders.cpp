@@ -64,7 +64,7 @@ namespace MR
           if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.node_geometry) return true;
           if (colour != parent.node_colour) return true;
-          if (colour == node_colour_t::FILE && colourmap_index != parent.node_colourmap_index) return true;
+          if (colour == node_colour_t::VECTOR_FILE && colourmap_index != parent.node_colourmap_index) return true;
           const bool need_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
           if (use_alpha != need_alpha) return true;
           return false;
@@ -248,7 +248,7 @@ namespace MR
             }
           }
 
-          if (colour == node_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
+          if (colour == node_colour_t::VECTOR_FILE && ColourMap::maps[colourmap_index].is_colour) {
             fragment_shader_source +=
               "in vec3 colourmap_colour;\n";
           }
@@ -266,13 +266,19 @@ namespace MR
               "  if (include < 0 || include > 1) discard;\n";
           }
 
-          if (colour == node_colour_t::FILE) {
+          if (colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) {
 
             // Red component of node_colour is the position within the range [0, 1] based on the current settings;
             //   use this to derive the actual colour based on the selected mapping
+            // Only send to the colourmap mapping if appropriate
             fragment_shader_source +=
-              "  float amplitude = node_colour.r;\n";
-            fragment_shader_source += std::string("  ") + ColourMap::maps[colourmap_index].mapping;
+              "  if (isnan (node_colour.g) || isnan (node_colour.b)) {\n"
+              "    float amplitude = node_colour.r;\n";
+            fragment_shader_source += std::string("    ") + ColourMap::maps[colourmap_index].mapping;
+            fragment_shader_source +=
+              "  } else {\n"
+              "    color.rgb = node_colour;\n"
+              "  }\n";
 
           } else {
 
@@ -313,7 +319,7 @@ namespace MR
           if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.edge_geometry) return true;
           if (colour != parent.edge_colour) return true;
-          if (colour == edge_colour_t::FILE && colourmap_index != parent.edge_colourmap_index) return true;
+          if (colour == edge_colour_t::MATRIX_FILE && colourmap_index != parent.edge_colourmap_index) return true;
           const bool need_alpha = !(parent.edge_alpha == edge_alpha_t::FIXED && parent.edge_fixed_alpha == 1.0f);
           if (use_alpha != need_alpha) return true;
           return false;
@@ -512,7 +518,7 @@ namespace MR
               "in vec3 tangent" + GS_out + ";\n";
           }
 
-          if (colour == edge_colour_t::FILE && ColourMap::maps[colourmap_index].is_colour) {
+          if (colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[colourmap_index].is_colour) {
             fragment_shader_source +=
               "in vec3 colourmap_colour;\n";
           }
@@ -530,7 +536,7 @@ namespace MR
               "  if (include < 0 || include > 1) discard;\n";
           }
 
-          if (colour == edge_colour_t::FILE) {
+          if (colour == edge_colour_t::MATRIX_FILE) {
 
             fragment_shader_source +=
               "  float amplitude = edge_colour.r;\n";
