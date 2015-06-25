@@ -64,6 +64,8 @@ namespace MR
           void set_visible (const bool i) { visible = i; }
           bool is_visible() const { return visible; }
 
+          bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
+
 
         private:
           const Point<float> centre_of_mass;

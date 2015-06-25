@@ -100,9 +100,6 @@
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with volume render clip planes
-//   - Have second function separately to isVisible(), that also tests size / alpha to
-//     see if anything will actually be drawn; this may be used to e.g. toggle draw call,
-//     overlay text, drawing edges based on visible nodes & vice-versa, ...
 //
 // * Nodes GUI section
 //   - Implement list view with list of nodes, enable manual manupulation of nodes

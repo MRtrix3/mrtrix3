@@ -769,7 +769,7 @@ namespace MR
 
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
-                if (node.is_visible()) {
+                if (node.to_draw()) {
                   gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
                   if (use_alpha)
                     gl::Uniform1f (node_alpha_ID, node.get_alpha() * node_fixed_alpha);
@@ -915,7 +915,7 @@ namespace MR
 
             for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
               const Edge& edge (edges[it->second]);
-              if (edge.is_visible()) {
+              if (edge.to_draw()) {
                 gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
                 if (use_alpha)
                   gl::Uniform1f (edge_alpha_ID, edge.get_alpha() * edge_fixed_alpha);
@@ -2393,7 +2393,7 @@ namespace MR
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_visible (false);
             for (auto i = edges.begin(); i != edges.end(); ++i) {
-              if (i->is_visible()) {
+              if (i->to_draw()) {
                 nodes[i->get_node_index(0)].set_visible (true);
                 nodes[i->get_node_index(1)].set_visible (true);
               }
@@ -2532,15 +2532,13 @@ namespace MR
               const node_t node_index = in.value();
               if (node_index) {
                 assert (node_index <= num_nodes());
-                if (nodes[node_index].is_visible()) {
-                  const Point<float>& colour (nodes[node_index].get_colour());
-                  for (out[3] = 0; out[3] != 3; ++out[3])
-                    out.value() = colour[int(out[3])];
-                  out.value() = nodes[node_index].get_alpha();
-                } else {
-                  for (out[3] = 0; out[3] != 4; ++out[3])
-                    out.value() = 0.0f;
-                }
+                const Point<float>& colour (nodes[node_index].get_colour());
+                for (out[3] = 0; out[3] != 3; ++out[3])
+                  out.value() = colour[int(out[3])];
+                out.value() = nodes[node_index].get_alpha();
+              } else {
+                for (out[3] = 0; out[3] != 4; ++out[3])
+                  out.value() = 0.0f;
               }
             }
           }
@@ -2573,7 +2571,7 @@ namespace MR
           } else if (edge_visibility == edge_visibility_t::VISIBLE_NODES) {
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
-              i->set_visible (!i->is_diagonal() && nodes[i->get_node_index(0)].is_visible() && nodes[i->get_node_index(1)].is_visible());
+              i->set_visible (!i->is_diagonal() && nodes[i->get_node_index(0)].to_draw() && nodes[i->get_node_index(1)].to_draw());
 
           } else if (edge_visibility == edge_visibility_t::FILE) {
 
@@ -2731,6 +2729,7 @@ namespace MR
         {
           return lighting_checkbox->isChecked();
         }
+
 
 
 

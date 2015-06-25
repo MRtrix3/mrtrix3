@@ -85,6 +85,8 @@ namespace MR
           bool is_visible() const { return visible; }
           bool is_diagonal() const { return (node_indices[0] == node_indices[1]); }
 
+          bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
+
         private:
           const node_t node_indices[2];
           const Point<float> node_centres[2];
