@@ -105,12 +105,19 @@ namespace MR
               "flat out vec3 normal" + GS_in + ";\n";
           }
 
-          if (crop_to_slab && is_3D) {
+          if (crop_to_slab) {
             vertex_shader_source +=
+              "uniform vec3 screen_normal;\n";
+            if (is_3D) {
+              vertex_shader_source +=
               "out float include;\n"
-              "uniform vec3 screen_normal;\n"
               "uniform float crop_var;\n"
               "uniform float slab_thickness;\n";
+            } else {
+              vertex_shader_source +=
+              "out float depth;\n"
+              "uniform float depth_offset;\n";
+            }
           }
 
           vertex_shader_source +=
@@ -144,9 +151,14 @@ namespace MR
           vertex_shader_source +=
               "  gl_Position = MVP * vec4 (pos, 1);\n";
 
-          if (crop_to_slab && is_3D) {
-            vertex_shader_source +=
+          if (crop_to_slab) {
+            if (is_3D) {
+              vertex_shader_source +=
               "  include = (dot (pos, screen_normal) - crop_var) / slab_thickness;\n";
+            } else {
+              vertex_shader_source +=
+              "  depth = dot (pos, screen_normal) - depth_offset;\n";
+            }
           }
 
           vertex_shader_source +=
@@ -162,12 +174,13 @@ namespace MR
               geometry_shader_source +=
                   "layout(points) in;\n"
                   "layout(points, max_vertices=1) out;\n"
+                  "in float depth[1];\n"
                   "void main() {\n"
-                  "  float depth = abs(gl_in[0].gl_Position.z);\n"
+                  "  float  = abs(depth[0]);\n"
                   "  float radius = gl_in[0].gl_PointSize;\n"
-                  "  if (depth < radius) {\n"
+                  "  if ( < radius) {\n"
                   // Calculate the radius of the sphere subtended by the plane
-                  "    gl_PointSize = sqrt(radius*radius - depth*depth);\n"
+                  "    gl_PointSize = sqrt(radius*radius - *);\n"
                   "    gl_Position = gl_in[0].gl_Position;\n"
                   "    gl_Position.z = 0.0;\n"
                   "    EmitVertex();\n"
@@ -179,7 +192,8 @@ namespace MR
 
               geometry_shader_source +=
                   "layout(triangles) in;\n"
-                  "layout(line_strip, max_vertices=2) out;\n";
+                  "layout(line_strip, max_vertices=2) out;\n"
+                  "in float depth[3];\n";
 
               if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
                 geometry_shader_source +=
@@ -200,7 +214,7 @@ namespace MR
                   "void main() {\n"
                   "  for (int v1 = 0; v1 != 3; ++v1) {\n"
                   "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
-                  "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
+                  "    float mu = depth[v1] / (depth[v1] - depth[v2]);\n"
                   "    if (mu >= 0.0 && mu <= 1.0) {\n"
                   "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
                   "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
@@ -356,12 +370,19 @@ namespace MR
               "out vec3 normal" + GS_in + ";\n";
           }
 
-          if (crop_to_slab && is_3D) {
+          if (crop_to_slab) {
             vertex_shader_source +=
+              "uniform vec3 screen_normal;\n";
+            if (is_3D) {
+              vertex_shader_source +=
               "out float include;\n"
-              "uniform vec3 screen_normal;\n"
               "uniform float crop_var;\n"
               "uniform float slab_thickness;\n";
+            } else {
+              vertex_shader_source +=
+              "out float depth;\n"
+              "uniform float depth_offset;\n";
+            }
           }
 
           vertex_shader_source +=
@@ -400,9 +421,14 @@ namespace MR
           vertex_shader_source +=
               "  gl_Position = MVP * vec4 (pos, 1);\n";
 
-          if (crop_to_slab && is_3D) {
-            vertex_shader_source +=
+          if (crop_to_slab) {
+            if (is_3D) {
+              vertex_shader_source +=
               "  include = (dot (pos, screen_normal) - crop_var) / slab_thickness;\n";
+            } else {
+              vertex_shader_source +=
+              "  depth = dot (pos, screen_normal) - depth_offset;\n";
+            }
           }
 
           vertex_shader_source +=
@@ -418,7 +444,8 @@ namespace MR
               case edge_geometry_t::STREAMLINE:
                 geometry_shader_source +=
                 "layout(lines) in;\n"
-                "layout(points, max_vertices=1) out;\n";
+                "layout(points, max_vertices=1) out;\n"
+                "in float depth[2];\n";
                 break;
               case edge_geometry_t::CYLINDER:
               case edge_geometry_t::STREAMTUBE:
@@ -428,7 +455,8 @@ namespace MR
                 "in vec3 normal" + GS_in + "[3];\n"
                 "in vec3 tangent" + GS_in + "[3];\n"
                 "out vec3 normal" + GS_out + ";\n"
-                "out vec3 tangent" + GS_out + ";\n";
+                "out vec3 tangent" + GS_out + ";\n"
+                "in float depth[3];\n";
                 break;
             }
 
@@ -439,7 +467,7 @@ namespace MR
               case edge_geometry_t::LINE:
               case edge_geometry_t::STREAMLINE:
                 geometry_shader_source +=
-                "  float mu = gl_in[0].gl_Position.z / (gl_in[0].gl_Position.z - gl_in[1].gl_Position.z);\n"
+                "  float mu = depth[0] / (depth[0] - depth[1]);\n"
                 "  if (mu >= 0.0 && mu <= 1.0) {\n"
                 "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n"
                 "    EmitVertex();\n"
@@ -451,7 +479,7 @@ namespace MR
                 geometry_shader_source +=
                 "  for (int v1 = 0; v1 != 3; ++v1) {\n"
                 "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
-                "    float mu = gl_in[v1].gl_Position.z / (gl_in[v1].gl_Position.z - gl_in[v2].gl_Position.z);\n"
+                "    float mu = depth[v1] / (depth[v1] - depth[v2]);\n"
                 "    if (mu >= 0.0 && mu <= 1.0) {\n"
                 "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
                 "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"

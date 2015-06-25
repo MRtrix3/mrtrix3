@@ -751,12 +751,16 @@ namespace MR
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
               }
 
-              if ((use_lighting() && node_geometry != node_geometry_t::POINT) || (crop_to_slab && is_3D))
+              if ((use_lighting() && node_geometry != node_geometry_t::POINT) || crop_to_slab)
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
 
-              if (crop_to_slab && is_3D) {
-                gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
-                gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+              if (crop_to_slab) {
+                if (is_3D) {
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+                } else {
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+                }
               }
 
               std::map<float, size_t> node_ordering;
@@ -884,12 +888,16 @@ namespace MR
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
             }
 
-            if ((use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) || (crop_to_slab && is_3D))
+            if ((use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) || crop_to_slab)
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
 
-            if (crop_to_slab && is_3D) {
-              gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
-              gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+            if (crop_to_slab) {
+              if (is_3D) {
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+              } else {
+                gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+              }
             }
 
             const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
