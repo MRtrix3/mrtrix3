@@ -170,7 +170,6 @@ namespace MR
           interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
           return interp.value();
         }
-//        value_type value () const { const auto* _this = this; _this->value(); }
 
         ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }

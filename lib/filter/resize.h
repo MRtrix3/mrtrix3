@@ -157,18 +157,20 @@ namespace MR
                 LogLevelLatch log_level (0);
                 smooth_filter (input, smoothed);
               }
+              // No oversampling is required since the input image is pre-smoothed
+              std::vector<int> oversample (3, 1.0);
               switch (interp_type) {
                 case 0:
-                  reslice <Interp::Nearest> (smoothed, output);
+                  reslice <Interp::Nearest> (smoothed, output, Adapter::NoTransform, oversample);
                   break;
                 case 1:
-                  reslice <Interp::Linear> (smoothed, output);
+                  reslice <Interp::Linear> (smoothed, output, Adapter::NoTransform, oversample);
                   break;
                 case 2:
-                  reslice <Interp::Cubic> (smoothed, output);
+                  reslice <Interp::Cubic> (smoothed, output, Adapter::NoTransform, oversample);
                   break;
                 case 3:
-                  reslice <Interp::Sinc> (smoothed, output);
+                  reslice <Interp::Sinc> (smoothed, output, Adapter::NoTransform, oversample);
                   break;
                 default:
                   assert (0);
