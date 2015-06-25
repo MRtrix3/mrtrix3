@@ -75,6 +75,8 @@
 //       Would however require additions to tractography shaders, e.g.
 //       - variable radius between exemplars
 //       - manually providing tangents (not really required?)
+//       If attempting this, make use of the assignments matrix now provided by tck2connectome, loading
+//       it and the tractogram file as input
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
 //
 // * Drawing nodes
@@ -84,9 +86,6 @@
 //     tool, but the volume render mode isn't active...
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//   - Drawing as cubes: Instead of relying on flat normals, just duplicate the vertices
-//     and store normals for each; keep things simple
-//     (leave this until necessary, i.e. trying to do a full polygon depth search)
 //   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file,
 //     present user with control for which row/column to read from
 //

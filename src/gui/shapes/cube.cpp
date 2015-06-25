@@ -22,13 +22,22 @@
 
 #include "gui/shapes/cube.h"
 
-#define NUM_VERTICES 8
-#define NUM_POLYGONS 12
-
 namespace
 {
 
+/*
 
+  // This set of cube data relies on using flat shading with a first vertex
+  //   provoking convention to provide flat rendered faces
+  // This may be more efficient in cases where many cubes are being drawn, but
+  //   requires a lot of unnecessary code branching in cases where the geometry
+  //   to be drawn can vary.
+  // It has therefore been removed in favour of a larger scheme where vertices
+  //   are simply duplicated with different normals in order to achieve the
+  //   necessary flat shading.
+
+#define NUM_VERTICES 8
+#define NUM_POLYGONS 12
 
   static const GLfloat vertices[NUM_VERTICES][3] = {
       {-0.5, -0.5, +0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, +0.5}, {-0.5, +0.5, +0.5},
@@ -47,6 +56,38 @@ namespace
       {3,4,0}, {3,7,4},
       {4,5,1}, {4,1,0},
       {5,7,6}, {5,4,7}
+  };
+
+*/
+
+#define NUM_VERTICES 24
+#define NUM_POLYGONS 12
+
+  static const GLfloat vertices[NUM_VERTICES][3] = {
+      {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, // -X face
+      {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +X face
+      {-0.5, -0.5, -0.5}, {-0.5, -0.5, +0.5}, {+0.5, -0.5, -0.5}, {+0.5, -0.5, +0.5}, // -Y face
+      {-0.5, +0.5, -0.5}, {-0.5, +0.5, +0.5}, {+0.5, +0.5, -0.5}, {+0.5, +0.5, +0.5}, // +Y face
+      {-0.5, -0.5, -0.5}, {-0.5, +0.5, -0.5}, {+0.5, -0.5, -0.5}, {+0.5, +0.5, -0.5}, // -Z face
+      {-0.5, -0.5, +0.5}, {-0.5, +0.5, +0.5}, {+0.5, -0.5, +0.5}, {+0.5, +0.5, +0.5}  // +Z face
+  };
+
+  static const GLfloat normals[NUM_VERTICES][3] = {
+      {-1,  0,  0}, {-1,  0,  0}, {-1,  0,  0}, {-1,  0,  0}, // -X face
+      {+1,  0,  0}, {+1,  0,  0}, {+1,  0,  0}, {+1,  0,  0}, // +X face
+      { 0, -1,  0}, { 0, -1,  0}, { 0, -1,  0}, { 0, -1,  0}, // -Y face
+      { 0, +1,  0}, { 0, +1,  0}, { 0, +1,  0}, { 0, +1,  0}, // +Y face
+      { 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1}, { 0,  0, -1}, // -Z face
+      { 0,  0, +1}, { 0,  0, +1}, { 0,  0, +1}, { 0,  0, +1}, // +Z face
+  };
+
+  static const GLuint polygons[NUM_POLYGONS][3] = {
+      { 0 , 1,  2}, { 2,  1,  3}, // -X face
+      { 4,  6,  5}, { 5,  6,  7}, // +X face
+      { 8, 10,  9}, { 9, 10, 11}, // -Y face
+      {12, 13, 14}, {14, 13, 15}, // +Y face
+      {16, 17, 18}, {18, 17, 19}, // -Z face
+      {20, 22, 21}, {21, 22, 23}  // +Z face
   };
 
 }

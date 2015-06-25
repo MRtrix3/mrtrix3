@@ -737,8 +737,6 @@ namespace MR
                 cube.normals_buffer.bind (gl::ARRAY_BUFFER);
                 cube_VAO.bind();
                 cube.index_buffer.bind();
-                glShadeModel (GL_FLAT);
-                gl::ProvokingVertex (gl::FIRST_VERTEX_CONVENTION);
               }
 
               GLuint specular_ID = 0;
@@ -824,9 +822,7 @@ namespace MR
                 gl::DepthMask (gl::TRUE_);
               }
 
-              if (node_geometry == node_geometry_t::CUBE) {
-                glShadeModel (GL_SMOOTH);
-              } else if (node_geometry == node_geometry_t::POINT) {
+              if (node_geometry == node_geometry_t::POINT) {
                 gl::Disable (GL_PROGRAM_POINT_SIZE);
                 if (node_geometry_point_round_checkbox->isChecked())
                   gl::Disable (GL_POINT_SMOOTH);

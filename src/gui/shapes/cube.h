@@ -36,9 +36,6 @@ namespace MR
     class Cube
     {
       public:
-        // TODO Initialise sphere & buffers at construction;
-        //   currently it doesn't seem to work as a GL context has not yet been
-        //   created, so gl::GenBuffers() returns zero
         Cube () : num_indices (0) { }
 
         void generate();

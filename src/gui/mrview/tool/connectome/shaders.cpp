@@ -97,12 +97,9 @@ namespace MR
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
 
-          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
+          if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
             vertex_shader_source +=
               "out vec3 normal" + GS_in + ";\n";
-          } else if (geometry == node_geometry_t::CUBE) {
-            vertex_shader_source +=
-              "flat out vec3 normal" + GS_in + ";\n";
           }
 
           if (crop_to_slab) {
@@ -195,14 +192,10 @@ namespace MR
                   "layout(line_strip, max_vertices=2) out;\n"
                   "in float depth[3];\n";
 
-              if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
+              if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
                 geometry_shader_source +=
                   "in vec3 normal" + GS_in + "[3];\n"
                   "out vec3 normal" + GS_out + ";\n";
-              } else if (geometry == node_geometry_t::CUBE) {
-                geometry_shader_source +=
-                  "flat in vec3 normal" + GS_in + "[3];\n"
-                  "flat out vec3 normal" + GS_out + ";\n";
               }
 
               // Need to detect whether or not this triangle intersects the viewing plane
@@ -249,12 +242,9 @@ namespace MR
               "uniform vec3 light_pos;\n"
               "uniform vec3 screen_normal;\n";
 
-            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::MESH) {
+            if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
               fragment_shader_source +=
                 "in vec3 normal" + GS_out + ";\n";
-            } else if (geometry == node_geometry_t::CUBE) {
-              fragment_shader_source +=
-                "flat in vec3 normal" + GS_out + ";\n";
             }
           }
 
