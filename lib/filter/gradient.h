@@ -85,10 +85,10 @@ namespace MR
           datatype() = DataType::Float32;
         }
 
-        void compute_wrt_scanner (bool wrt_scanner) {
+        void compute_wrt_scanner (bool do_wrt_scanner) {
           if (wrt_scanner && magnitude)
             WARN ("For a gradient magnitude image, setting gradient to scanner axes has no effect");
-          wrt_scanner = wrt_scanner;
+          wrt_scanner = do_wrt_scanner;
         }
 
         void set_stdev (const std::vector<default_type>& stdevs)
@@ -150,7 +150,6 @@ namespace MR
 
             if (wrt_scanner) {
               Transform transform (in);
-
               Eigen::Vector3 gradient (3);
               Eigen::Vector3 gradient_wrt_scanner (3);
 

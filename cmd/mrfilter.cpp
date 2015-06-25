@@ -199,6 +199,8 @@ void run () {
       auto opt = get_options ("extent");
       if (opt.size())
         filter.set_extent (parse_ints (opt[0][0]));
+      filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+
       auto output = Image<float>::create (argument[2], filter);
       filter (input, output);
       break;

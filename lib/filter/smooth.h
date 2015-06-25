@@ -61,6 +61,7 @@ namespace MR
         {
           for (int i = 0; i < std::min (int(in.ndim()), 3); i++)
             stdev[i] = in.voxsize(i);
+          datatype() = DataType::Float32;
         }
 
         template <class HeaderType>
@@ -70,6 +71,7 @@ namespace MR
             stdev (in.ndim())
         {
           set_stdev (stdev);
+          datatype() = DataType::Float32;
         }
 
         //! Set the extent of smoothing kernel in voxels.
