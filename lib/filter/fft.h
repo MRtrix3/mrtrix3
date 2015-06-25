@@ -120,8 +120,7 @@ namespace MR
                   temp.index(*flip_axis) = (temp.index(*flip_axis) >= (temp.size (*flip_axis) / 2)) ?
                                            (temp.index(*flip_axis) - (temp.size (*flip_axis) / 2)) :
                                            (temp.index(*flip_axis) + (temp.size (*flip_axis) / 2));
-                auto val = temp.value();
-                output.value() = val;
+                output.value() = temp.value();
               }
             } else {
               copy (temp, output);
