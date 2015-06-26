@@ -67,7 +67,7 @@ const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
   + Option ("magnitude", "output the gradient magnitude, rather "
             "than the default x,y,z components")
 
-  + Option ("scanner", "compute the gradient with respect to the scanner coordinate "
+  + Option ("scanner", "define the gradient with respect to the scanner coordinate "
             "frame of reference.");
 
 
@@ -182,8 +182,9 @@ void run () {
           stdev[dim] = filter.voxsize (dim);
       }
       filter.set_stdev (stdev);
-      filter.compute_wrt_scanner (get_options ("scanner").size());
+      filter.compute_wrt_scanner (get_options ("scanner").size() ? true : false);
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
       filter (input, output);
@@ -200,6 +201,7 @@ void run () {
       if (opt.size())
         filter.set_extent (parse_ints (opt[0][0]));
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
       filter (input, output);
@@ -229,6 +231,7 @@ void run () {
       if (opt.size())
         filter.set_extent (parse_ints (opt[0][0]));
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
+      Stride::set_from_command_line (filter);
 
       auto output = Image<float>::create (argument[2], filter);
       filter (input, output);

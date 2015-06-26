@@ -86,7 +86,7 @@ namespace MR
         }
 
         void compute_wrt_scanner (bool do_wrt_scanner) {
-          if (wrt_scanner && magnitude)
+          if (do_wrt_scanner && magnitude)
             WARN ("For a gradient magnitude image, setting gradient to scanner axes has no effect");
           wrt_scanner = do_wrt_scanner;
         }
