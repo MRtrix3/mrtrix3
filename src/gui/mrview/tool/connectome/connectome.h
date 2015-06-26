@@ -56,6 +56,7 @@
 #include "gui/mrview/tool/connectome/edge.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 #include "gui/mrview/tool/connectome/node.h"
+#include "gui/mrview/tool/connectome/node_list_model.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
 #include "gui/mrview/tool/connectome/shaders.h"
 #include "gui/mrview/tool/connectome/types.h"
@@ -116,6 +117,7 @@
 //     - Determine point in 3D, offset away from origin, enable depth testing,
 //       possibly also angle labels slightly from projection plane
 //     May be better to use COM of all nodes, rather than scanner space origin, to offset node labels
+//   - Enhance compatibility with parcellation images that do not have sequential indices
 //
 
 
@@ -162,6 +164,8 @@ namespace MR
             void lighting_parameter_slot();
             void crop_to_slab_toggle_slot (int);
             void crop_to_slab_parameter_slot();
+
+            void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);
 
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
@@ -214,6 +218,9 @@ namespace MR
             QCheckBox *crop_to_slab_checkbox;
             QLabel *crop_to_slab_label;
             AdjustButton *crop_to_slab_button;
+
+            Node_list_model *node_list_model;
+            QTableView* node_list_view;
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
@@ -358,12 +365,14 @@ namespace MR
             node_alpha_t node_alpha;
 
             // Other values that need to be stored w.r.t. node visualisation
-            bool have_meshes;
+            node_t node_selected_index;
             std::pair<node_t, bool> node_index_visibility;
-            Point<float> node_fixed_colour;
             std::pair<node_t, Point<float> > node_index_colour;
             std::pair<node_t, float> node_index_size;
             std::pair<node_t, float> node_index_alpha;
+
+            bool have_meshes;
+            Point<float> node_fixed_colour;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
             float node_fixed_alpha;
@@ -437,6 +446,8 @@ namespace MR
 
             friend class NodeShader;
             friend class EdgeShader;
+
+            friend class Node_list_model;
 
         };
 

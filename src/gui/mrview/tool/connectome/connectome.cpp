@@ -72,12 +72,12 @@ namespace MR
             node_colour (node_colour_t::FIXED),
             node_size (node_size_t::FIXED),
             node_alpha (node_alpha_t::FIXED),
-            have_meshes (false),
             node_index_visibility (std::make_pair (0, true)),
-            node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_index_colour (std::make_pair (0, Point<float> (1.0f, 0.0f, 0.0f))),
             node_index_size (std::make_pair (0, 1.0f)),
             node_index_alpha (std::make_pair (0, 1.0f)),
+            have_meshes (false),
+            node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
             node_colourmap_invert (false),
             node_fixed_alpha (1.0f),
@@ -190,6 +190,32 @@ namespace MR
           connect (crop_to_slab_button, SIGNAL (valueChanged()), this, SLOT (crop_to_slab_parameter_slot()));
           hlayout->addWidget (crop_to_slab_button);
           gridlayout->addLayout (hlayout, 1, 1);
+
+          group_box = new QGroupBox ("Node list");
+          main_box->addWidget (group_box);
+          vlayout = new VBoxLayout();
+          group_box->setLayout (vlayout);
+
+          node_list_model = new Node_list_model (this);
+          node_list_view = new QTableView (this);
+          node_list_view->setModel (node_list_model);
+          node_list_view->setAcceptDrops (false);
+          node_list_view->setAlternatingRowColors (true);
+          node_list_view->setCornerButtonEnabled (false);
+          node_list_view->setDragEnabled (false);
+          node_list_view->setDropIndicatorShown (false);
+          node_list_view->setEditTriggers (QAbstractItemView::NoEditTriggers);
+          node_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+          node_list_view->setObjectName ("Node list view");
+          node_list_view->setSelectionBehavior (QAbstractItemView::SelectRows);
+          node_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          node_list_view->horizontalHeader()->setStretchLastSection (true);
+          node_list_view->verticalHeader()->hide();
+          //node_list_view->setUniformItemSizes (true);
+          connect (node_list_view->selectionModel(),
+                   SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+                   SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
+          vlayout->addWidget (node_list_view);
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
@@ -1239,6 +1265,26 @@ namespace MR
         {
           slab_thickness = crop_to_slab_button->value();
           is_3D = !(crop_to_slab && !slab_thickness);
+          window.updateGL();
+        }
+
+
+
+
+
+
+
+        void Connectome::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
+        {
+          QModelIndexList list = node_list_view->selectionModel()->selectedRows();
+          if (!list.size())
+            node_selected_index = 0;
+          else
+            node_selected_index = list[0].row()+1;
+          calculate_node_visibility();
+          calculate_node_colours();
+          calculate_node_sizes();
+          calculate_node_alphas();
           window.updateGL();
         }
 
@@ -2468,6 +2514,7 @@ namespace MR
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("(none)");
+          node_list_model->clear();
           if (node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
             node_visibility_combobox->removeItem (5);
             node_visibility_combobox->setCurrentIndex (0);
@@ -2543,6 +2590,8 @@ namespace MR
           crop_to_slab_checkbox->setEnabled (value);
           crop_to_slab_label->setEnabled (value && crop_to_slab);
           crop_to_slab_button->setEnabled (value && crop_to_slab);
+
+          node_list_view->setEnabled (value);
 
           node_visibility_combobox->setEnabled (value);
           node_visibility_matrix_row_index_label->setEnabled (value);
@@ -2710,6 +2759,8 @@ namespace MR
           node_size_matrix_row_index_spinbox->setMaximum (num_nodes());
           node_alpha_matrix_row_index_spinbox->setMaximum (num_nodes());
 
+          node_list_model->initialize();
+
         }
 
 
@@ -2780,11 +2831,21 @@ namespace MR
 
             } // End looping over all nodes when LUT is present
 
-          } else { // No LUT; just name nodes according to their indices
+          } else { // No LUT
 
-            lut_mapping.assign (num_nodes()+1, lut.end());
-            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index)
-              nodes[node_index].set_name ("Node " + str(node_index));
+            if (config.size()) {
+
+              for (node_t node_index = 1; node_index <= num_nodes(); ++node_index)
+                nodes[node_index].set_name (config[node_index]);
+
+            } else {
+
+              // Just name nodes according to their indices
+              lut_mapping.assign (num_nodes()+1, lut.end());
+              for (node_t node_index = 1; node_index <= num_nodes(); ++node_index)
+                nodes[node_index].set_name ("Node " + str(node_index));
+
+            }
 
           }
 
