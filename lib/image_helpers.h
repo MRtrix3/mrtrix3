@@ -118,7 +118,75 @@ namespace MR
       };
   }
 
+  template <typename ValueType> class Image;
   //! \endcond
+
+
+  //! convenience function for SFINAE on header types
+  template <class HeaderType, typename ReturnType>
+    struct enable_if_header_type
+    {
+      typedef decltype ((void) (
+            std::declval<HeaderType>().ndim() + 
+            std::declval<HeaderType>().size(0) + 
+            std::declval<HeaderType>().name().size() 
+        ), ReturnType()) type;
+    };
+
+  //! convenience function for SFINAE on header types
+  template<typename HeaderType>
+    class is_header_type {
+      typedef char yes[1], no[2];
+      template<typename C> static yes& test(typename enable_if_header_type<HeaderType,int>::type); 
+      template<typename C> static no&  test(...); 
+      public:
+      static bool const value = sizeof(test<HeaderType>(0)) == sizeof(yes);
+    };
+
+
+
+
+  //! convenience function for SFINAE on image types
+  template <class ImageType, typename ReturnType>
+    struct enable_if_image_type
+    {
+      typedef decltype ((void) (
+            std::declval<ImageType>().ndim() + 
+            std::declval<ImageType>().size(0) + 
+            std::declval<ImageType>().name().size() +
+            std::declval<ImageType>().value() +
+            std::declval<ImageType>().index(0)
+        ), ReturnType()) type;
+    };
+
+
+  //! convenience function for SFINAE on image types
+  template<typename ImageType>
+    class is_image_type {
+      typedef char yes[1], no[2];
+      template<typename C> static yes& test(typename enable_if_image_type<ImageType,int>::type); 
+      template<typename C> static no&  test(...); 
+      public:
+      static bool const value = sizeof(test<ImageType>(0)) == sizeof(yes);
+    };
+
+
+
+
+
+
+  //! convenience function for SFINAE on images of type Image<ValueType>
+  template<class ImageType>
+    struct is_pure_image {
+      static bool const value = std::is_same<ImageType, ::MR::Image<typename ImageType::value_type>>::value;
+    };
+
+  //! convenience function for SFINAE on images NOT of type Image<ValueType>
+  template<class ImageType>
+    struct is_adapter_type {
+      static bool const value = is_image_type<ImageType>::value && !is_pure_image<ImageType>::value;
+    };
+
 
 
 

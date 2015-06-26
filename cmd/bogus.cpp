@@ -4,6 +4,22 @@
 #include "dwi/tractography/rng.h"
 #include "image.h"
 
+#include "adapter/median3D.h"
+
+namespace MR {
+}
+
+
+
+
+
+
+
+
+
+
+
+
 using namespace MR;
 using namespace App;
 
@@ -40,11 +56,29 @@ using namespace DWI::Tractography;
 //  }
 //};
 
+
 void run ()
 {
 
-  auto input = Image<float>::open (argument[0]);
+  auto input = Image<float>::open (argument[0]).with_direct_io();
   auto output = Image<float>::create (argument[1], input);
+
+  VAR (is_header_type<decltype(input)>::value);
+  VAR (is_image_type<decltype(input)>::value);
+  VAR (is_pure_image<decltype(input)>::value);
+  VAR (is_adapter_type<decltype(input)>::value);
+
+  auto adapter = Adapter::make <Adapter::Median3D> (input);
+
+  VAR (is_header_type<decltype(adapter)>::value);
+  VAR (is_image_type<decltype(adapter)>::value);
+  VAR (is_pure_image<decltype(adapter)>::value);
+  VAR (is_adapter_type<decltype(adapter)>::value);
+
+  save (input, "out.mih");
+  save (adapter, "out2.mif");
+
+  display (adapter);
 
   input.index(0) = 10;
   input.index(1) = 13;

@@ -31,11 +31,13 @@
 #include "header.h"
 #include "raw.h"
 #include "image_helpers.h"
+#include "formats/mrtrix_utils.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 
 namespace MR
 {
+
 
   template <typename ValueType>
     class Image {
@@ -82,6 +84,8 @@ namespace MR
         auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
         void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
+        bool is_direct_io () const { return data_pointer; }
+
         //! get voxel value at current location
         ValueType value () const {
           if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
@@ -104,20 +108,29 @@ namespace MR
           return stream;
         }
 
-        //! write out the contents of the image to file
-        std::string save (const std::string& filename, bool use_multi_threading = true) const 
-        {
-           auto out = Image<value_type>::create (filename, *this);
-//           if (use_multi_threading)
-//             threaded_copy (*this, out);
-//           else
-             copy (*this, out);
-//           return buffer_out.__get_handler()->files[0].name;
-          return std::string();
-        }
+        //! write out the contents of a direct IO image to file 
+        /*! 
+         * returns the name of the image - needed by display() to get the
+         * name of the temporary file to supply to MRView. 
+         *
+         * \note this is \e not the recommended way to save an image - only use
+         * this function when you absolutely need to minimise RAM usage on
+         * write-out (this avoids any further buffering before write-out).
+         *
+         * \note this will only work for images accessed using direct IO (i.e.
+         * opened as a scratch image, or using with_direct_io(), and only
+         * supports output to MRtrix format images (*.mif / *.mih). There is a
+         * chance that images opened in other ways may also use direct IO (e.g.
+         * if the datatype & strides match, and the image is single-file), you
+         * can check using the is_direct_io() method. If there is any
+         * possibility that this image might use indirect IO, you should use
+         * the save() function instead (and even then, it should only be used
+         * for debugging purposes). */
+        std::string dump_to_mrtrix_file (std::string filename, bool use_multi_threading = true) const;
 
         //! return a new Image using direct IO
-        /*! this will preload the data into RAM if the datatype on file doesn't
+        /*! 
+         * this will preload the data into RAM if the datatype on file doesn't
          * match that on file (or if any scaling is applied to the data). The
          * optional \a with_strides argument is used to additionally enforce
          * preloading if the strides aren't compatible with those specified. 
@@ -130,14 +143,6 @@ namespace MR
          * image in subsequent code.*/
         Image with_direct_io (Stride::List with_strides = Stride::List());
 
-
-        //! display the contents of the image in MRView
-        void display () const {
-          std::string filename = save ("-");
-          CONSOLE ("displaying image " + filename);
-          if (system (("bash -c \"mrview " + filename + "\"").c_str()))
-            WARN (std::string("error invoking viewer: ") + strerror(errno));
-        }
 
         //! return RAM address of current voxel
         /*! \note this will only work if image access is direct (i.e. for a
@@ -257,7 +262,6 @@ namespace MR
   }
 
 
-
   template <typename ValueType>
     typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
         std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
@@ -271,6 +275,8 @@ namespace MR
         std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
         std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
         DataType datatype);
+
+
 
   template <typename ValueType> 
     inline void Image<ValueType>::Buffer::set_fetch_store_functions () {
@@ -383,11 +389,11 @@ namespace MR
       if (buffer->data_buffer)
         throw Exception ("FIXME: don't invoke 'with_direct_io()' on images already using direct IO!");
       if (!buffer->get_io())
-        throw Exception ("FIXME: don't invoke 'with_direct_io()' on invalid images!");
+        throw Exception ("FIXME: don't invoke 'with_direct_io()' on non-validated images!");
       if (!buffer.unique())
         throw Exception ("FIXME: don't invoke 'with_direct_io()' on images if other copies exist!");
 
-      bool preload = ( buffer->datatype() != DataType::from<ValueType>() );
+      bool preload = ( buffer->datatype() != DataType::from<ValueType>() ) || ( buffer->get_io()->files.size() > 1 );
       if (with_strides.size()) {
         auto new_strides = Stride::get_actual (Stride::get_nearest_match (*this, with_strides), *this);
         preload |= ( new_strides != Stride::get (*this) );
@@ -415,8 +421,65 @@ namespace MR
         threaded_copy_with_progress_message ("preloading data for \"" + name() + "\"", src, dest); 
       }
 
+      buffer->datatype() = DataType::from<ValueType>();
+
       return Image (buffer, with_strides);
     }
+
+
+
+
+
+  template <typename ValueType>
+    std::string Image<ValueType>::dump_to_mrtrix_file (std::string filename, bool use_multi_threading) const 
+    {
+      if (!data_pointer || ( !Path::has_suffix (filename, ".mih") && !Path::has_suffix (filename, ".mif") ))
+        throw Exception ("FIXME: image not suitable for use with 'Image::dump_to_mrtrix_file()'");
+
+      // try to dump file to mrtrix format if possible (direct IO)
+      if (filename == "-")
+        filename = File::create_tempfile (0, "mif");
+
+      DEBUG ("dumping image \"" + name() + "\" to file \"" + filename + "\"...");
+
+      File::OFStream out (filename, std::ios::out | std::ios::binary);
+      out << "mrtrix image\n";
+      Formats::write_mrtrix_header (header(), out);
+
+      const bool single_file = Path::has_suffix (filename, ".mif");
+      std::string data_filename = filename;
+
+      int64_t offset = 0;
+      out << "file: ";
+      if (single_file) {
+        offset = out.tellp() + int64_t(18);
+        offset += ((4 - (offset % 4)) % 4);
+        out << ". " << offset << "\nEND\n";
+      }
+      else {
+        data_filename = filename.substr (0, filename.size()-4) + ".dat";
+        out << Path::basename (data_filename) << "\n";
+        out.close();
+        out.open (data_filename, std::ios::out | std::ios::binary); 
+      }
+
+      const int64_t data_size = footprint (header());
+      out.seekp (offset, out.beg);
+      out.write ((const char*) data_pointer, data_size);
+      if (!out.good())
+        throw Exception ("error writing back contents of file \"" + data_filename + "\": " + strerror(errno));
+      out.close();
+     
+      // If data_size exceeds some threshold, ostream artificially increases the file size beyond that required at close()
+      // TODO check whether this is still needed...?
+      File::resize (data_filename, offset + data_size);
+
+      return filename;
+    }
+
+
+
+
 
 
 
@@ -449,12 +512,54 @@ namespace MR
   __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cfloat); \
   __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cdouble); \
 
+
 #define MRTRIX_EXTERN extern
   __DEFINE_FETCH_STORE_FUNCTIONS;
 
 
 
+
+
+  template <class ImageType>
+    std::string __save_generic (ImageType& x, const std::string& filename, bool use_multi_threading) {
+      auto out = Image<typename ImageType::value_type>::create (filename, x);
+      if (use_multi_threading)
+        threaded_copy (x, out);
+      else
+        copy (x, out);
+      return out.name();
+    }
+
   //! \endcond
+
+  //! save contents of an existing image to file (for debugging only)
+  template <class ImageType>
+    typename std::enable_if<is_adapter_type<typename std::remove_reference<ImageType>::type>::value, std::string>::type
+    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true) 
+    {
+      return __save_generic (x, filename, use_multi_threading);
+    }
+
+  //! save contents of an existing image to file (for debugging only)
+  template <class ImageType>
+    typename std::enable_if<is_pure_image<typename std::remove_reference<ImageType>::type>::value, std::string>::type
+    save (ImageType&& x, const std::string& filename, bool use_multi_threading = true) 
+    {
+      try { return x.dump_to_mrtrix_file (filename, use_multi_threading); }
+      catch (...) { }
+      return __save_generic (x, filename, use_multi_threading);
+    }
+
+
+  //! display the contents of an image in MRView (for debugging only)
+  template <class ImageType>
+    typename enable_if_image_type<ImageType,void>::type display (ImageType& x) {
+      std::string filename = save (x, "-");
+      CONSOLE ("displaying image \"" + filename + "\"");
+      if (system (("bash -c \"mrview " + filename + "\"").c_str()))
+        WARN (std::string("error invoking viewer: ") + strerror(errno));
+    }
+
 
 }
 
