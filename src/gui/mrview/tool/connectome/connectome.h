@@ -178,22 +178,17 @@ namespace MR
             void node_size_selection_slot (int);
             void node_alpha_selection_slot (int);
 
-            void node_visibility_row_change_slot();
-            void node_visibility_row_parameter_slot();
             void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
             void point_smooth_slot (int);
             void node_fixed_colour_change_slot();
-            void node_colour_row_change_slot();
-            void node_colour_row_parameter_slot();
+            void node_colour_selected_value_slot();
             void node_colour_parameter_slot();
-            void node_size_row_change_slot();
-            void node_size_row_parameter_slot();
+            void node_size_selected_value_slot();
             void node_size_value_slot();
             void node_size_parameter_slot();
-            void node_alpha_row_change_slot();
-            void node_alpha_row_parameter_slot();
+            void node_alpha_selected_value_slot();
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
 
@@ -229,10 +224,6 @@ namespace MR
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
-            QLabel *node_visibility_matrix_row_index_label;
-            QSpinBox *node_visibility_matrix_row_index_spinbox;
-            QLabel *node_visibility_matrix_row_value_label;
-            QCheckBox *node_visibility_matrix_row_value_checkbox;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
             QCheckBox *node_visibility_threshold_invert_checkbox;
@@ -246,29 +237,23 @@ namespace MR
             QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
-            QLabel *node_colour_matrix_row_index_label;
-            QSpinBox *node_colour_matrix_row_index_spinbox;
-            QLabel *node_colour_matrix_row_value_label;
-            QColorButton *node_colour_matrix_row_value_button;
+            QLabel *node_colour_selected_label;
+            QColorButton *node_colour_selected_button;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
             AdjustButton *node_size_button;
-            QLabel *node_size_matrix_row_index_label;
-            QSpinBox *node_size_matrix_row_index_spinbox;
-            QLabel *node_size_matrix_row_value_label;
-            AdjustButton *node_size_matrix_row_value_button;
+            QLabel *node_size_selected_label;
+            AdjustButton *node_size_selected_button;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
 
             QComboBox *node_alpha_combobox;
             QSlider *node_alpha_slider;
-            QLabel *node_alpha_matrix_row_index_label;
-            QSpinBox *node_alpha_matrix_row_index_spinbox;
-            QLabel *node_alpha_matrix_row_value_label;
-            AdjustButton *node_alpha_matrix_row_value_button;
+            QLabel *node_alpha_selected_label;
+            QSlider *node_alpha_selected_slider;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
@@ -371,10 +356,9 @@ namespace MR
 
             // Other values that need to be stored w.r.t. node visualisation
             node_t node_selected_index;
-            std::pair<node_t, bool> node_selected_visibility;
-            std::pair<node_t, Point<float> > node_selected_colour;
-            std::pair<node_t, float> node_selected_size;
-            std::pair<node_t, float> node_selected_alpha;
+            Point<float> node_selected_colour;
+            float node_selected_size;
+            float node_selected_alpha;
 
             bool have_meshes;
             Point<float> node_fixed_colour;

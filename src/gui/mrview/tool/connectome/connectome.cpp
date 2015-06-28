@@ -72,10 +72,10 @@ namespace MR
             node_colour (node_colour_t::FIXED),
             node_size (node_size_t::FIXED),
             node_alpha (node_alpha_t::FIXED),
-            node_selected_visibility (std::make_pair (0, true)),
-            node_selected_colour (std::make_pair (0, Point<float> (1.0f, 0.0f, 0.0f))),
-            node_selected_size (std::make_pair (0, 1.0f)),
-            node_selected_alpha (std::make_pair (0, 1.0f)),
+            node_selected_index (0),
+            node_selected_colour (1.0f, 0.5f, 0.5f),
+            node_selected_size (1.0f),
+            node_selected_alpha (1.0f),
             have_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
@@ -191,7 +191,7 @@ namespace MR
           hlayout->addWidget (crop_to_slab_button);
           gridlayout->addLayout (hlayout, 1, 1);
 
-          group_box = new QGroupBox ("Node list");
+          group_box = new QGroupBox ("Node list & selection");
           main_box->addWidget (group_box);
           vlayout = new VBoxLayout();
           group_box->setLayout (vlayout);
@@ -242,30 +242,6 @@ namespace MR
           node_visibility_warning_icon->setToolTip ("Changes to node visualisation will have no apparent effect if node visibility is set to \'none\'");
           node_visibility_warning_icon->setVisible (false);
           gridlayout->addWidget (node_visibility_warning_icon, 0, 3);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          node_visibility_matrix_row_index_label = new QLabel ("Node index: ");
-          node_visibility_matrix_row_index_label->setVisible (false);
-          hlayout->addWidget (node_visibility_matrix_row_index_label);
-          node_visibility_matrix_row_index_spinbox = new QSpinBox (this);
-          node_visibility_matrix_row_index_spinbox->setMinimum (0);
-          node_visibility_matrix_row_index_spinbox->setMaximum (0);
-          node_visibility_matrix_row_index_spinbox->setValue (0);
-          node_visibility_matrix_row_index_spinbox->setVisible (false);
-          connect (node_visibility_matrix_row_index_spinbox, SIGNAL (valueChanged (int)), this, SLOT (node_visibility_row_change_slot()));
-          hlayout->addWidget (node_visibility_matrix_row_index_spinbox);
-          node_visibility_matrix_row_value_label = new QLabel ("Visible: ");
-          node_visibility_matrix_row_value_label->setVisible (false);
-          hlayout->addWidget (node_visibility_matrix_row_value_label);
-          node_visibility_matrix_row_value_checkbox = new QCheckBox;
-          node_visibility_matrix_row_value_checkbox->setTristate (false);
-          node_visibility_matrix_row_value_checkbox->setChecked (true);
-          node_visibility_matrix_row_value_checkbox->setVisible (false);
-          connect (node_visibility_matrix_row_value_checkbox, SIGNAL (stateChanged (int)), this, SLOT (node_visibility_row_parameter_slot()));
-          hlayout->addWidget (node_visibility_matrix_row_value_checkbox);
-          gridlayout->addLayout (hlayout, 1, 1, 1, 4);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -348,24 +324,14 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          node_colour_matrix_row_index_label = new QLabel ("Node index: ");
-          node_colour_matrix_row_index_label->setVisible (false);
-          hlayout->addWidget (node_colour_matrix_row_index_label);
-          node_colour_matrix_row_index_spinbox = new QSpinBox (this);
-          node_colour_matrix_row_index_spinbox->setMinimum (0);
-          node_colour_matrix_row_index_spinbox->setMaximum (0);
-          node_colour_matrix_row_index_spinbox->setValue (0);
-          node_colour_matrix_row_index_spinbox->setVisible (false);
-          connect (node_colour_matrix_row_index_spinbox, SIGNAL (valueChanged (int)), this, SLOT (node_colour_row_change_slot()));
-          hlayout->addWidget (node_colour_matrix_row_index_spinbox);
-          node_colour_matrix_row_value_label = new QLabel ("Colour: ");
-          node_colour_matrix_row_value_label->setVisible (false);
-          hlayout->addWidget (node_colour_matrix_row_value_label);
-          node_colour_matrix_row_value_button = new QColorButton;
-          node_colour_matrix_row_value_button->setColor (QColor (255, 0, 0));
-          node_colour_matrix_row_value_button->setVisible (false);
-          connect (node_colour_matrix_row_value_button, SIGNAL (clicked()), this, SLOT (node_colour_row_parameter_slot()));
-          hlayout->addWidget (node_colour_matrix_row_value_button);
+          node_colour_selected_label = new QLabel ("Selected node: ");
+          node_colour_selected_label->setVisible (false);
+          hlayout->addWidget (node_colour_selected_label);
+          node_colour_selected_button = new QColorButton;
+          node_colour_selected_button->setColor (QColor (node_selected_colour[0]*255.0f, node_selected_colour[1]*255.0f, node_selected_colour[2]*255.0f));
+          node_colour_selected_button->setVisible (false);
+          connect (node_colour_selected_button, SIGNAL (clicked()), this, SLOT (node_colour_selected_value_slot()));
+          hlayout->addWidget (node_colour_selected_button);
           gridlayout->addLayout (hlayout, 5, 1, 1, 4);
 
           hlayout = new HBoxLayout;
@@ -413,26 +379,15 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          node_size_matrix_row_index_label = new QLabel ("Node index: ");
-          node_size_matrix_row_index_label->setVisible (false);
-          hlayout->addWidget (node_size_matrix_row_index_label);
-          node_size_matrix_row_index_spinbox = new QSpinBox (this);
-          node_size_matrix_row_index_spinbox->setMinimum (0);
-          node_size_matrix_row_index_spinbox->setMaximum (0);
-          node_size_matrix_row_index_spinbox->setValue (0);
-          node_size_matrix_row_index_spinbox->setVisible (false);
-          connect (node_size_matrix_row_index_spinbox, SIGNAL (valueChanged (int)), this, SLOT (node_size_row_change_slot()));
-          hlayout->addWidget (node_size_matrix_row_index_spinbox);
-          node_size_matrix_row_value_label = new QLabel ("Size: ");
-          node_size_matrix_row_value_label->setVisible (false);
-          hlayout->addWidget (node_size_matrix_row_value_label);
-          node_size_matrix_row_value_button = new AdjustButton (this);
-          node_size_matrix_row_value_button->setMin (0.0f);
-          node_size_matrix_row_value_button->setValue (1.0f);
-          node_size_matrix_row_value_button->setRate (0.1f);
-          node_size_matrix_row_value_button->setVisible (false);
-          connect (node_size_matrix_row_value_button, SIGNAL (valueChanged()), this, SLOT (node_size_row_parameter_slot()));
-          hlayout->addWidget (node_size_matrix_row_value_button);
+          node_size_selected_label = new QLabel ("Selected node: ");
+          node_size_selected_label->setVisible (false);
+          hlayout->addWidget (node_size_selected_label);
+          node_size_selected_button = new AdjustButton (this, 0.01);
+          node_size_selected_button->setMin (0.0f);
+          node_size_selected_button->setValue (1.0f);
+          node_size_selected_button->setVisible (false);
+          connect (node_size_selected_button, SIGNAL (valueChanged()), this, SLOT (node_size_selected_value_slot()));
+          hlayout->addWidget (node_size_selected_button);
           gridlayout->addLayout (hlayout, 8, 1, 1, 4);
 
           hlayout = new HBoxLayout;
@@ -485,26 +440,15 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          node_alpha_matrix_row_index_label = new QLabel ("Node index: ");
-          node_alpha_matrix_row_index_label->setVisible (false);
-          hlayout->addWidget (node_alpha_matrix_row_index_label);
-          node_alpha_matrix_row_index_spinbox = new QSpinBox (this);
-          node_alpha_matrix_row_index_spinbox->setMinimum (0);
-          node_alpha_matrix_row_index_spinbox->setMaximum (0);
-          node_alpha_matrix_row_index_spinbox->setValue (0);
-          node_alpha_matrix_row_index_spinbox->setVisible (false);
-          connect (node_alpha_matrix_row_index_spinbox, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_row_change_slot()));
-          hlayout->addWidget (node_alpha_matrix_row_index_spinbox);
-          node_alpha_matrix_row_value_label = new QLabel ("Alpha: ");
-          node_alpha_matrix_row_value_label->setVisible (false);
-          hlayout->addWidget (node_alpha_matrix_row_value_label);
-          node_alpha_matrix_row_value_button = new AdjustButton (this);
-          node_alpha_matrix_row_value_button->setMin (0.0f);
-          node_alpha_matrix_row_value_button->setValue (1.0f);
-          node_alpha_matrix_row_value_button->setRate (0.01f);
-          node_alpha_matrix_row_value_button->setVisible (false);
-          connect (node_alpha_matrix_row_value_button, SIGNAL (valueChanged()), this, SLOT (node_alpha_row_parameter_slot()));
-          hlayout->addWidget (node_alpha_matrix_row_value_button);
+          node_alpha_selected_label = new QLabel ("Selected node: ");
+          node_alpha_selected_label->setVisible (false);
+          hlayout->addWidget (node_alpha_selected_label);
+          node_alpha_selected_slider = new QSlider (Qt::Horizontal);
+          node_alpha_selected_slider->setRange (0,1000);
+          node_alpha_selected_slider->setSliderPosition (1000);
+          node_alpha_selected_slider->setVisible (false);
+          connect (node_alpha_selected_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_selected_value_slot()));
+          hlayout->addWidget (node_alpha_selected_slider);
           gridlayout->addLayout (hlayout, 11, 1, 1, 4);
 
           hlayout = new HBoxLayout;
@@ -901,12 +845,13 @@ namespace MR
 
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
-                if (node.to_draw()) {
-                  gl::Uniform3fv (node_colour_ID, 1, node.get_colour());
+                const bool is_selected = (node_selected_index == it->second);
+                if (node.to_draw() || (node_visibility == node_visibility_t::MATRIX_FILE && is_selected)) {
+                  gl::Uniform3fv (node_colour_ID, 1, (node_colour == node_colour_t::MATRIX_FILE && is_selected) ? node_selected_colour : node.get_colour());
                   if (use_alpha)
-                    gl::Uniform1f (node_alpha_ID, node.get_alpha() * node_fixed_alpha);
+                    gl::Uniform1f (node_alpha_ID, (node_alpha == node_alpha_t::MATRIX_FILE && is_selected) ? node_selected_alpha : (node.get_alpha() * node_fixed_alpha));
                   gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-                  gl::Uniform1f (node_size_ID, node.get_size() * node_size_scale_factor);
+                  gl::Uniform1f (node_size_ID, (node_size == node_size_t::MATRIX_FILE && is_selected) ? node_selected_size : (node.get_size() * node_size_scale_factor));
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
                       if (use_alpha) {
@@ -1284,13 +1229,12 @@ namespace MR
             node_selected_index = 0;
           else
             node_selected_index = list[0].row()+1;
-          // TODO This results in re-randomizing node colours if colour is set to random
-          //   and the selection is changed
-          // It may be preferable to instead handle this modification of properties during draw()
-          calculate_node_visibility();
-          calculate_node_colours();
-          calculate_node_sizes();
-          calculate_node_alphas();
+          if (node_colour == node_colour_t::MATRIX_FILE)
+            calculate_node_colours();
+          if (node_size == node_size_t::MATRIX_FILE)
+            calculate_node_sizes();
+          if (node_alpha == node_alpha_t::MATRIX_FILE)
+            calculate_node_alphas();
           window.updateGL();
         }
 
@@ -1309,10 +1253,6 @@ namespace MR
               if (node_visibility == node_visibility_t::ALL) return;
               node_visibility = node_visibility_t::ALL;
               node_visibility_combobox->removeItem (5);
-              node_visibility_matrix_row_index_label->setVisible (false);
-              node_visibility_matrix_row_index_spinbox->setVisible (false);
-              node_visibility_matrix_row_value_label->setVisible (false);
-              node_visibility_matrix_row_value_checkbox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1321,10 +1261,6 @@ namespace MR
               if (node_visibility == node_visibility_t::NONE) return;
               node_visibility = node_visibility_t::NONE;
               node_visibility_combobox->removeItem (5);
-              node_visibility_matrix_row_index_label->setVisible (false);
-              node_visibility_matrix_row_index_spinbox->setVisible (false);
-              node_visibility_matrix_row_value_label->setVisible (false);
-              node_visibility_matrix_row_value_checkbox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1343,10 +1279,6 @@ namespace MR
                 node_visibility = node_visibility_t::DEGREE;
               }
               node_visibility_combobox->removeItem (5);
-              node_visibility_matrix_row_index_label->setVisible (false);
-              node_visibility_matrix_row_index_spinbox->setVisible (false);
-              node_visibility_matrix_row_value_label->setVisible (false);
-              node_visibility_matrix_row_value_checkbox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1368,10 +1300,6 @@ namespace MR
                 else
                   node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
                 node_visibility_combobox->setCurrentIndex (5);
-                node_visibility_matrix_row_index_label->setVisible (false);
-                node_visibility_matrix_row_index_spinbox->setVisible (false);
-                node_visibility_matrix_row_value_label->setVisible (false);
-                node_visibility_matrix_row_value_checkbox->setVisible (false);
                 node_visibility_threshold_label->setVisible (true);
                 node_visibility_threshold_button->setVisible (true);
                 node_visibility_threshold_invert_checkbox->setVisible (true);
@@ -1385,10 +1313,6 @@ namespace MR
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = node_visibility_t::ALL;
                 node_visibility_combobox->removeItem (5);
-                node_visibility_matrix_row_index_label->setVisible (false);
-                node_visibility_matrix_row_index_spinbox->setVisible (false);
-                node_visibility_matrix_row_value_label->setVisible (false);
-                node_visibility_matrix_row_value_checkbox->setVisible (false);
                 node_visibility_threshold_label->setVisible (false);
                 node_visibility_threshold_button->setVisible (false);
                 node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1411,10 +1335,6 @@ namespace MR
                 else
                   node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
                 node_visibility_combobox->setCurrentIndex (5);
-                node_visibility_matrix_row_index_label->setVisible (true);
-                node_visibility_matrix_row_index_spinbox->setVisible (true);
-                node_visibility_matrix_row_value_label->setVisible (true);
-                node_visibility_matrix_row_value_checkbox->setVisible (true);
                 node_visibility_threshold_label->setVisible (true);
                 node_visibility_threshold_button->setVisible (true);
                 node_visibility_threshold_invert_checkbox->setVisible (true);
@@ -1428,10 +1348,6 @@ namespace MR
                 node_visibility_combobox->setCurrentIndex (0);
                 node_visibility = node_visibility_t::ALL;
                 node_visibility_combobox->removeItem (5);
-                node_visibility_matrix_row_index_label->setVisible (false);
-                node_visibility_matrix_row_index_spinbox->setVisible (false);
-                node_visibility_matrix_row_value_label->setVisible (false);
-                node_visibility_matrix_row_value_checkbox->setVisible (false);
                 node_visibility_threshold_label->setVisible (false);
                 node_visibility_threshold_button->setVisible (false);
                 node_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1560,10 +1476,8 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (5);
-              node_colour_matrix_row_index_label->setVisible (false);
-              node_colour_matrix_row_index_spinbox->setVisible (false);
-              node_colour_matrix_row_value_label->setVisible (false);
-              node_colour_matrix_row_value_button->setVisible (false);
+              node_colour_selected_label->setVisible (false);
+              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1574,10 +1488,8 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (5);
-              node_colour_matrix_row_index_label->setVisible (false);
-              node_colour_matrix_row_index_spinbox->setVisible (false);
-              node_colour_matrix_row_value_label->setVisible (false);
-              node_colour_matrix_row_value_button->setVisible (false);
+              node_colour_selected_label->setVisible (false);
+              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1602,10 +1514,8 @@ namespace MR
               }
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (5);
-              node_colour_matrix_row_index_label->setVisible (false);
-              node_colour_matrix_row_index_spinbox->setVisible (false);
-              node_colour_matrix_row_value_label->setVisible (false);
-              node_colour_matrix_row_value_button->setVisible (false);
+              node_colour_selected_label->setVisible (false);
+              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1629,10 +1539,8 @@ namespace MR
                 else
                   node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
                 node_colour_combobox->setCurrentIndex (5);
-                node_colour_matrix_row_index_label->setVisible (false);
-                node_colour_matrix_row_index_spinbox->setVisible (false);
-                node_colour_matrix_row_value_label->setVisible (false);
-                node_colour_matrix_row_value_button->setVisible (false);
+                node_colour_selected_label->setVisible (false);
+                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (true);
                 node_colour_lower_button->setVisible (true);
                 node_colour_upper_button->setVisible (true);
@@ -1650,6 +1558,8 @@ namespace MR
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (5);
+                node_colour_selected_label->setVisible (false);
+                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (false);
                 node_colour_lower_button->setVisible (false);
                 node_colour_upper_button->setVisible (false);
@@ -1674,10 +1584,8 @@ namespace MR
                 else
                   node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
                 node_colour_combobox->setCurrentIndex (5);
-                node_colour_matrix_row_index_label->setVisible (true);
-                node_colour_matrix_row_index_spinbox->setVisible (true);
-                node_colour_matrix_row_value_label->setVisible (true);
-                node_colour_matrix_row_value_button->setVisible (true);
+                node_colour_selected_label->setVisible (true);
+                node_colour_selected_button->setVisible (true);
                 node_colour_range_label->setVisible (true);
                 node_colour_lower_button->setVisible (true);
                 node_colour_upper_button->setVisible (true);
@@ -1695,10 +1603,8 @@ namespace MR
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (5);
-                node_colour_matrix_row_index_label->setVisible (false);
-                node_colour_matrix_row_index_spinbox->setVisible (false);
-                node_colour_matrix_row_value_label->setVisible (false);
-                node_colour_matrix_row_value_button->setVisible (false);
+                node_colour_selected_label->setVisible (false);
+                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (false);
                 node_colour_lower_button->setVisible (false);
                 node_colour_upper_button->setVisible (false);
@@ -1722,10 +1628,8 @@ namespace MR
               if (node_size == node_size_t::FIXED) return;
               node_size = node_size_t::FIXED;
               node_size_combobox->removeItem (4);
-              node_size_matrix_row_index_label->setVisible (false);
-              node_size_matrix_row_index_spinbox->setVisible (false);
-              node_size_matrix_row_value_label->setVisible (false);
-              node_size_matrix_row_value_button->setVisible (false);
+              node_size_selected_label->setVisible (false);
+              node_size_selected_button->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
               node_size_upper_button->setVisible (false);
@@ -1735,10 +1639,8 @@ namespace MR
               if (node_size == node_size_t::NODE_VOLUME) return;
               node_size = node_size_t::NODE_VOLUME;
               node_size_combobox->removeItem (4);
-              node_size_matrix_row_index_label->setVisible (false);
-              node_size_matrix_row_index_spinbox->setVisible (false);
-              node_size_matrix_row_value_label->setVisible (false);
-              node_size_matrix_row_value_button->setVisible (false);
+              node_size_selected_label->setVisible (false);
+              node_size_selected_button->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
               node_size_upper_button->setVisible (false);
@@ -1760,10 +1662,8 @@ namespace MR
                 else
                   node_size_combobox->setItemText (4, node_values_from_file_size.get_name());
                 node_size_combobox->setCurrentIndex (4);
-                node_size_matrix_row_index_label->setVisible (false);
-                node_size_matrix_row_index_spinbox->setVisible (false);
-                node_size_matrix_row_value_label->setVisible (false);
-                node_size_matrix_row_value_button->setVisible (false);
+                node_size_selected_label->setVisible (false);
+                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (true);
                 node_size_lower_button->setVisible (true);
                 node_size_upper_button->setVisible (true);
@@ -1781,10 +1681,8 @@ namespace MR
                 node_size_combobox->setCurrentIndex (0);
                 node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (4);
-                node_size_matrix_row_index_label->setVisible (false);
-                node_size_matrix_row_index_spinbox->setVisible (false);
-                node_size_matrix_row_value_label->setVisible (false);
-                node_size_matrix_row_value_button->setVisible (false);
+                node_size_selected_label->setVisible (false);
+                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (false);
                 node_size_lower_button->setVisible (false);
                 node_size_upper_button->setVisible (false);
@@ -1807,10 +1705,8 @@ namespace MR
                 else
                   node_size_combobox->setItemText (4, node_values_from_file_size.get_name());
                 node_size_combobox->setCurrentIndex (4);
-                node_size_matrix_row_index_label->setVisible (true);
-                node_size_matrix_row_index_spinbox->setVisible (true);
-                node_size_matrix_row_value_label->setVisible (true);
-                node_size_matrix_row_value_button->setVisible (true);
+                node_size_selected_label->setVisible (true);
+                node_size_selected_button->setVisible (true);
                 node_size_range_label->setVisible (true);
                 node_size_lower_button->setVisible (true);
                 node_size_upper_button->setVisible (true);
@@ -1828,10 +1724,8 @@ namespace MR
                 node_size_combobox->setCurrentIndex (0);
                 node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (4);
-                node_size_matrix_row_index_label->setVisible (false);
-                node_size_matrix_row_index_spinbox->setVisible (false);
-                node_size_matrix_row_value_label->setVisible (false);
-                node_size_matrix_row_value_button->setVisible (false);
+                node_size_selected_label->setVisible (false);
+                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (false);
                 node_size_lower_button->setVisible (false);
                 node_size_upper_button->setVisible (false);
@@ -1855,10 +1749,8 @@ namespace MR
               if (node_alpha == node_alpha_t::FIXED) return;
               node_alpha = node_alpha_t::FIXED;
               node_alpha_combobox->removeItem (4);
-              node_alpha_matrix_row_index_label->setVisible (false);
-              node_alpha_matrix_row_index_spinbox->setVisible (false);
-              node_alpha_matrix_row_value_label->setVisible (false);
-              node_alpha_matrix_row_value_button->setVisible (false);
+              node_alpha_selected_label->setVisible (false);
+              node_alpha_selected_slider->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
               node_alpha_upper_button->setVisible (false);
@@ -1880,10 +1772,8 @@ namespace MR
                 node_alpha = node_alpha_t::FIXED;
               }
               node_alpha_combobox->removeItem (4);
-              node_alpha_matrix_row_index_label->setVisible (false);
-              node_alpha_matrix_row_index_spinbox->setVisible (false);
-              node_alpha_matrix_row_value_label->setVisible (false);
-              node_alpha_matrix_row_value_button->setVisible (false);
+              node_alpha_selected_label->setVisible (false);
+              node_alpha_selected_slider->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
               node_alpha_upper_button->setVisible (false);
@@ -1905,10 +1795,8 @@ namespace MR
                 else
                   node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
                 node_alpha_combobox->setCurrentIndex (4);
-                node_alpha_matrix_row_index_label->setVisible (false);
-                node_alpha_matrix_row_index_spinbox->setVisible (false);
-                node_alpha_matrix_row_value_label->setVisible (false);
-                node_alpha_matrix_row_value_button->setVisible (false);
+                node_alpha_selected_label->setVisible (false);
+                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (true);
                 node_alpha_lower_button->setVisible (true);
                 node_alpha_upper_button->setVisible (true);
@@ -1926,10 +1814,8 @@ namespace MR
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (4);
-                node_alpha_matrix_row_index_label->setVisible (false);
-                node_alpha_matrix_row_index_spinbox->setVisible (false);
-                node_alpha_matrix_row_value_label->setVisible (false);
-                node_alpha_matrix_row_value_button->setVisible (false);
+                node_alpha_selected_label->setVisible (false);
+                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (false);
                 node_alpha_lower_button->setVisible (false);
                 node_alpha_upper_button->setVisible (false);
@@ -1952,10 +1838,8 @@ namespace MR
                 else
                   node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
                 node_alpha_combobox->setCurrentIndex (4);
-                node_alpha_matrix_row_index_label->setVisible (true);
-                node_alpha_matrix_row_index_spinbox->setVisible (true);
-                node_alpha_matrix_row_value_label->setVisible (true);
-                node_alpha_matrix_row_value_button->setVisible (true);
+                node_alpha_selected_label->setVisible (true);
+                node_alpha_selected_slider->setVisible (true);
                 node_alpha_range_label->setVisible (true);
                 node_alpha_lower_button->setVisible (true);
                 node_alpha_upper_button->setVisible (true);
@@ -1973,10 +1857,8 @@ namespace MR
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (4);
-                node_alpha_matrix_row_index_label->setVisible (false);
-                node_alpha_matrix_row_index_spinbox->setVisible (false);
-                node_alpha_matrix_row_value_label->setVisible (false);
-                node_alpha_matrix_row_value_button->setVisible (false);
+                node_alpha_selected_label->setVisible (false);
+                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (false);
                 node_alpha_lower_button->setVisible (false);
                 node_alpha_upper_button->setVisible (false);
@@ -1994,20 +1876,7 @@ namespace MR
 
 
 
-        void Connectome::node_visibility_row_change_slot()
-        {
-          node_visibility_warning_icon->setVisible (false);
-          node_selected_visibility.first = node_visibility_matrix_row_index_spinbox->value();
-          calculate_node_visibility();
-          window.updateGL();
-        }
-        void Connectome::node_visibility_row_parameter_slot()
-        {
-          node_visibility_warning_icon->setVisible (false);
-          node_selected_visibility.second = node_visibility_matrix_row_value_checkbox->isChecked();
-          nodes[node_selected_visibility.first].set_visible (node_selected_visibility.second);
-          window.updateGL();
-        }
+
         void Connectome::node_visibility_parameter_slot()
         {
           calculate_node_visibility();
@@ -2038,18 +1907,10 @@ namespace MR
           calculate_node_colours();
           window.updateGL();
         }
-        void Connectome::node_colour_row_change_slot()
+        void Connectome::node_colour_selected_value_slot()
         {
-          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_selected_colour.first = node_colour_matrix_row_index_spinbox->value();
-          calculate_node_colours();
-          window.updateGL();
-        }
-        void Connectome::node_colour_row_parameter_slot()
-        {
-          QColor c = node_colour_matrix_row_value_button->color();
-          node_selected_colour.second.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
-          nodes[node_selected_colour.first].set_colour (node_selected_colour.second);
+          const QColor c = node_colour_selected_button->color();
+          node_selected_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           window.updateGL();
         }
         void Connectome::node_colour_parameter_slot()
@@ -2059,17 +1920,9 @@ namespace MR
           calculate_node_colours();
           window.updateGL();
         }
-        void Connectome::node_size_row_change_slot()
+        void Connectome::node_size_selected_value_slot()
         {
-          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_selected_size.first = node_size_matrix_row_index_spinbox->value();
-          calculate_node_sizes();
-          window.updateGL();
-        }
-        void Connectome::node_size_row_parameter_slot()
-        {
-          node_selected_size.second = node_size_matrix_row_value_button->value();
-          nodes[node_selected_size.first].set_size (node_selected_size.second);
+          node_selected_size = node_size_selected_button->value();
           window.updateGL();
         }
         void Connectome::node_size_value_slot()
@@ -2084,17 +1937,9 @@ namespace MR
           calculate_node_sizes();
           window.updateGL();
         }
-        void Connectome::node_alpha_row_change_slot()
+        void Connectome::node_alpha_selected_value_slot()
         {
-          node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_selected_alpha.first = node_alpha_matrix_row_index_spinbox->value();
-          calculate_node_alphas();
-          window.updateGL();
-        }
-        void Connectome::node_alpha_row_parameter_slot()
-        {
-          node_selected_alpha.second = node_alpha_matrix_row_value_button->value();
-          nodes[node_selected_alpha.first].set_alpha (node_selected_alpha.second);
+          node_selected_alpha = node_alpha_selected_slider->value() / 1000.0f;
           window.updateGL();
         }
         void Connectome::node_alpha_value_slot (int position)
@@ -2570,10 +2415,6 @@ namespace MR
           lut_mapping.clear();
           if (node_overlay)
             delete node_overlay.release();
-          node_visibility_matrix_row_index_spinbox->setMaximum (0);
-          node_colour_matrix_row_index_spinbox->setMaximum (0);
-          node_size_matrix_row_index_spinbox->setMaximum (0);
-          node_alpha_matrix_row_index_spinbox->setMaximum (0);
           node_values_from_file_visibility.clear();
           node_values_from_file_colour.clear();
           node_values_from_file_size.clear();
@@ -2600,10 +2441,6 @@ namespace MR
           node_list_view->setEnabled (value);
 
           node_visibility_combobox->setEnabled (value);
-          node_visibility_matrix_row_index_label->setEnabled (value);
-          node_visibility_matrix_row_index_spinbox->setEnabled (value);
-          node_visibility_matrix_row_value_label->setEnabled (value);
-          node_visibility_matrix_row_value_checkbox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
           node_visibility_threshold_invert_checkbox->setEnabled (value);
 
@@ -2614,29 +2451,23 @@ namespace MR
           node_colour_combobox->setEnabled (value);
           node_colour_fixedcolour_button->setEnabled (value);
           node_colour_colourmap_button->setEnabled (value);
-          node_colour_matrix_row_index_label->setEnabled (value);
-          node_colour_matrix_row_index_spinbox->setEnabled (value);
-          node_colour_matrix_row_value_label->setEnabled (value);
-          node_colour_matrix_row_value_button->setEnabled (value);
+          node_colour_selected_label->setEnabled (value);
+          node_colour_selected_button->setEnabled (value);
           node_colour_lower_button->setEnabled (value);
           node_colour_upper_button->setEnabled (value);
 
           node_size_combobox->setEnabled (value);
           node_size_button->setEnabled (value);
-          node_size_matrix_row_index_label->setEnabled (value);
-          node_size_matrix_row_index_spinbox->setEnabled (value);
-          node_size_matrix_row_value_label->setEnabled (value);
-          node_size_matrix_row_value_button->setEnabled (value);
+          node_size_selected_label->setEnabled (value);
+          node_size_selected_button->setEnabled (value);
           node_size_lower_button->setEnabled (value);
           node_size_upper_button->setEnabled (value);
           node_size_invert_checkbox->setEnabled (value);
 
           node_alpha_combobox->setEnabled (value);
           node_alpha_slider->setEnabled (value);
-          node_alpha_matrix_row_index_label->setEnabled (value);
-          node_alpha_matrix_row_index_spinbox->setEnabled (value);
-          node_alpha_matrix_row_value_label->setEnabled (value);
-          node_alpha_matrix_row_value_button->setEnabled (value);
+          node_alpha_selected_label->setEnabled (value);
+          node_alpha_selected_slider->setEnabled (value);
           node_alpha_lower_button->setEnabled (value);
           node_alpha_upper_button->setEnabled (value);
           node_alpha_invert_checkbox->setEnabled (value);
@@ -2758,12 +2589,6 @@ namespace MR
           overlay_info.sanitise();
           node_overlay.reset (new NodeOverlay (overlay_info));
           update_node_overlay();
-
-          // Prepare some GUI elements that need to know the node count
-          node_visibility_matrix_row_index_spinbox->setMaximum (num_nodes());
-          node_colour_matrix_row_index_spinbox->setMaximum (num_nodes());
-          node_size_matrix_row_index_spinbox->setMaximum (num_nodes());
-          node_alpha_matrix_row_index_spinbox->setMaximum (num_nodes());
 
           node_list_model->initialize();
 
@@ -2906,14 +2731,14 @@ namespace MR
           } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
             assert (node_values_from_file_visibility.size() == num_edges());
-            if (node_selected_visibility.first) {
+            if (node_selected_index) {
               const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
               const float threshold = node_visibility_threshold_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_selected_visibility.first) {
-                  nodes[i].set_visible (node_selected_visibility.second);
+                if (i == node_selected_index) {
+                  nodes[i].set_visible (true);
                 } else {
-                  const bool above_threshold = (node_values_from_file_visibility[mat2vec (node_selected_visibility.first-1, i-1)] >= threshold);
+                  const bool above_threshold = (node_values_from_file_visibility[mat2vec (node_selected_index-1, i-1)] >= threshold);
                   nodes[i].set_visible (above_threshold != invert);
                 }
               }
@@ -2970,17 +2795,13 @@ namespace MR
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
             assert (node_values_from_file_colour.size() == num_edges());
-            if (node_selected_colour.first) {
+            if (node_selected_index) {
               const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_selected_colour.first) {
-                  nodes[i].set_colour (node_selected_colour.second);
-                } else {
-                  float factor = (node_values_from_file_colour[mat2vec (node_selected_colour.first-1, i-1)]-lower) / (upper - lower);
-                  factor = std::min (1.0f, std::max (factor, 0.0f));
-                  factor = node_colourmap_invert ? 1.0f-factor : factor;
-                  nodes[i].set_colour (Point<float> (factor, NAN, NAN));
-                }
+                float factor = (node_values_from_file_colour[mat2vec (node_selected_index-1, i-1)]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = node_colourmap_invert ? 1.0f-factor : factor;
+                nodes[i].set_colour (Point<float> (factor, NAN, NAN));
               }
             } else {
               for (node_t i = 1; i <= num_nodes(); ++i)
@@ -3018,18 +2839,14 @@ namespace MR
           } else if (node_size == node_size_t::MATRIX_FILE) {
 
             assert (node_values_from_file_size.size() == num_edges());
-            if (node_selected_size.first) {
+            if (node_selected_index) {
               const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
               const bool invert = node_size_invert_checkbox->isChecked();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_selected_size.first) {
-                  nodes[i].set_size (node_selected_size.second);
-                } else {
-                  float factor = (node_values_from_file_size[mat2vec (node_selected_size.first-1, i-1)]-lower) / (upper - lower);
-                  factor = std::min (1.0f, std::max (factor, 0.0f));
-                  factor = invert ? 1.0f-factor : factor;
-                  nodes[i].set_size (factor);
-                }
+                float factor = (node_values_from_file_size[mat2vec (node_selected_index-1, i-1)]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = invert ? 1.0f-factor : factor;
+                nodes[i].set_size (factor);
               }
             } else {
               for (node_t i = 1; i <= num_nodes(); ++i)
@@ -3071,18 +2888,14 @@ namespace MR
           } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
             assert (node_values_from_file_alpha.size() == num_edges());
-            if (node_selected_alpha.first) {
+            if (node_selected_index) {
               const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
               const bool invert = node_alpha_invert_checkbox->isChecked();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_selected_alpha.first) {
-                  nodes[i].set_alpha (node_selected_alpha.second);
-                } else {
-                  float factor = (node_values_from_file_alpha[mat2vec (node_selected_alpha.first-1, i-1)]-lower) / (upper - lower);
-                  factor = std::min (1.0f, std::max (factor, 0.0f));
-                  factor = invert ? 1.0f-factor : factor;
-                  nodes[i].set_alpha (factor);
-                }
+                float factor = (node_values_from_file_alpha[mat2vec (node_selected_index-1, i-1)]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = invert ? 1.0f-factor : factor;
+                nodes[i].set_alpha (factor);
               }
             } else {
               for (node_t i = 1; i <= num_nodes(); ++i)

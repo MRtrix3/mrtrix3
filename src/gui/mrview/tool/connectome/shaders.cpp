@@ -64,7 +64,7 @@ namespace MR
           if (use_lighting != parent.use_lighting()) return true;
           if (geometry != parent.node_geometry) return true;
           if (colour != parent.node_colour) return true;
-          if (colour == node_colour_t::VECTOR_FILE && colourmap_index != parent.node_colourmap_index) return true;
+          if ((colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) && colourmap_index != parent.node_colourmap_index) return true;
           const bool need_alpha = !(parent.node_alpha == node_alpha_t::FIXED && parent.node_fixed_alpha == 1.0f);
           if (use_alpha != need_alpha) return true;
           return false;
@@ -248,7 +248,7 @@ namespace MR
             }
           }
 
-          if (colour == node_colour_t::VECTOR_FILE && ColourMap::maps[colourmap_index].is_colour) {
+          if ((colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) && ColourMap::maps[colourmap_index].is_colour) {
             fragment_shader_source +=
               "in vec3 colourmap_colour;\n";
           }
