@@ -20,10 +20,11 @@
 
 */
 
-#ifndef __gui_mrview_tool_connectome_node_list_model_h__
-#define __gui_mrview_tool_connectome_node_list_model_h__
+#ifndef __gui_mrview_tool_connectome_node_list_h__
+#define __gui_mrview_tool_connectome_node_list_h__
 
 #include <QAbstractItemModel>
+#include <QTableView>
 
 
 namespace MR
@@ -80,6 +81,21 @@ namespace MR
           private:
             Connectome& connectome;
         };
+
+
+        class Node_list_view : public QTableView
+        {
+          public:
+            Node_list_view (QWidget* parent) :
+                QTableView (parent) { }
+            void setModel (QAbstractItemModel* model)
+            {
+              QTableView::setModel (model);
+              //setColumnWidth (0, model->headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
+              //setColumnWidth (1, model->headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
+            }
+        };
+
 
 
       }

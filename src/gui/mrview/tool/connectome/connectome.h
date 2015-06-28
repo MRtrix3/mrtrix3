@@ -56,7 +56,7 @@
 #include "gui/mrview/tool/connectome/edge.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 #include "gui/mrview/tool/connectome/node.h"
-#include "gui/mrview/tool/connectome/node_list_model.h"
+#include "gui/mrview/tool/connectome/node_list.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
 #include "gui/mrview/tool/connectome/shaders.h"
 #include "gui/mrview/tool/connectome/types.h"
@@ -103,7 +103,12 @@
 //   - Add compatibility with volume render clip planes
 //
 // * Nodes GUI section
-//   - Implement list view with list of nodes, enable manual manupulation of nodes
+//   - Implement list view with list of nodes, enable manual selection of nodes
+//     Node selection from list should affect some visual property e.g. colour, alpha, in
+//       addition to row selection if any node property is based on a matrix file
+//     However: Should this setting be in the toolbar, or should it be just config settings?
+//   - Selection of multiple nodes:
+//     * Need to select operator by which multiple rows from matrix are combined
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
@@ -220,7 +225,7 @@ namespace MR
             AdjustButton *crop_to_slab_button;
 
             Node_list_model *node_list_model;
-            QTableView* node_list_view;
+            Node_list_view* node_list_view;
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
@@ -366,10 +371,10 @@ namespace MR
 
             // Other values that need to be stored w.r.t. node visualisation
             node_t node_selected_index;
-            std::pair<node_t, bool> node_index_visibility;
-            std::pair<node_t, Point<float> > node_index_colour;
-            std::pair<node_t, float> node_index_size;
-            std::pair<node_t, float> node_index_alpha;
+            std::pair<node_t, bool> node_selected_visibility;
+            std::pair<node_t, Point<float> > node_selected_colour;
+            std::pair<node_t, float> node_selected_size;
+            std::pair<node_t, float> node_selected_alpha;
 
             bool have_meshes;
             Point<float> node_fixed_colour;

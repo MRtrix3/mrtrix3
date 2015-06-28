@@ -72,10 +72,10 @@ namespace MR
             node_colour (node_colour_t::FIXED),
             node_size (node_size_t::FIXED),
             node_alpha (node_alpha_t::FIXED),
-            node_index_visibility (std::make_pair (0, true)),
-            node_index_colour (std::make_pair (0, Point<float> (1.0f, 0.0f, 0.0f))),
-            node_index_size (std::make_pair (0, 1.0f)),
-            node_index_alpha (std::make_pair (0, 1.0f)),
+            node_selected_visibility (std::make_pair (0, true)),
+            node_selected_colour (std::make_pair (0, Point<float> (1.0f, 0.0f, 0.0f))),
+            node_selected_size (std::make_pair (0, 1.0f)),
+            node_selected_alpha (std::make_pair (0, 1.0f)),
             have_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
@@ -197,7 +197,7 @@ namespace MR
           group_box->setLayout (vlayout);
 
           node_list_model = new Node_list_model (this);
-          node_list_view = new QTableView (this);
+          node_list_view = new Node_list_view (this);
           node_list_view->setModel (node_list_model);
           node_list_view->setAcceptDrops (false);
           node_list_view->setAlternatingRowColors (true);
@@ -207,8 +207,11 @@ namespace MR
           node_list_view->setEditTriggers (QAbstractItemView::NoEditTriggers);
           node_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
           node_list_view->setObjectName ("Node list view");
+          node_list_view->resizeColumnsToContents();
+          node_list_view->resizeRowsToContents();
           node_list_view->setSelectionBehavior (QAbstractItemView::SelectRows);
           node_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          //node_list_view->horizontalHeader()->setResizeMode (QHeaderView::Stretch);
           node_list_view->horizontalHeader()->setStretchLastSection (true);
           node_list_view->verticalHeader()->hide();
           //node_list_view->setUniformItemSizes (true);
@@ -1281,6 +1284,9 @@ namespace MR
             node_selected_index = 0;
           else
             node_selected_index = list[0].row()+1;
+          // TODO This results in re-randomizing node colours if colour is set to random
+          //   and the selection is changed
+          // It may be preferable to instead handle this modification of properties during draw()
           calculate_node_visibility();
           calculate_node_colours();
           calculate_node_sizes();
@@ -1991,15 +1997,15 @@ namespace MR
         void Connectome::node_visibility_row_change_slot()
         {
           node_visibility_warning_icon->setVisible (false);
-          node_index_visibility.first = node_visibility_matrix_row_index_spinbox->value();
+          node_selected_visibility.first = node_visibility_matrix_row_index_spinbox->value();
           calculate_node_visibility();
           window.updateGL();
         }
         void Connectome::node_visibility_row_parameter_slot()
         {
           node_visibility_warning_icon->setVisible (false);
-          node_index_visibility.second = node_visibility_matrix_row_value_checkbox->isChecked();
-          nodes[node_index_visibility.first].set_visible (node_index_visibility.second);
+          node_selected_visibility.second = node_visibility_matrix_row_value_checkbox->isChecked();
+          nodes[node_selected_visibility.first].set_visible (node_selected_visibility.second);
           window.updateGL();
         }
         void Connectome::node_visibility_parameter_slot()
@@ -2035,15 +2041,15 @@ namespace MR
         void Connectome::node_colour_row_change_slot()
         {
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_index_colour.first = node_colour_matrix_row_index_spinbox->value();
+          node_selected_colour.first = node_colour_matrix_row_index_spinbox->value();
           calculate_node_colours();
           window.updateGL();
         }
         void Connectome::node_colour_row_parameter_slot()
         {
           QColor c = node_colour_matrix_row_value_button->color();
-          node_index_colour.second.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
-          nodes[node_index_colour.first].set_colour (node_index_colour.second);
+          node_selected_colour.second.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          nodes[node_selected_colour.first].set_colour (node_selected_colour.second);
           window.updateGL();
         }
         void Connectome::node_colour_parameter_slot()
@@ -2056,14 +2062,14 @@ namespace MR
         void Connectome::node_size_row_change_slot()
         {
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_index_size.first = node_size_matrix_row_index_spinbox->value();
+          node_selected_size.first = node_size_matrix_row_index_spinbox->value();
           calculate_node_sizes();
           window.updateGL();
         }
         void Connectome::node_size_row_parameter_slot()
         {
-          node_index_size.second = node_size_matrix_row_value_button->value();
-          nodes[node_index_size.first].set_size (node_index_size.second);
+          node_selected_size.second = node_size_matrix_row_value_button->value();
+          nodes[node_selected_size.first].set_size (node_selected_size.second);
           window.updateGL();
         }
         void Connectome::node_size_value_slot()
@@ -2081,14 +2087,14 @@ namespace MR
         void Connectome::node_alpha_row_change_slot()
         {
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          node_index_alpha.first = node_alpha_matrix_row_index_spinbox->value();
+          node_selected_alpha.first = node_alpha_matrix_row_index_spinbox->value();
           calculate_node_alphas();
           window.updateGL();
         }
         void Connectome::node_alpha_row_parameter_slot()
         {
-          node_index_alpha.second = node_alpha_matrix_row_value_button->value();
-          nodes[node_index_alpha.first].set_alpha (node_index_alpha.second);
+          node_selected_alpha.second = node_alpha_matrix_row_value_button->value();
+          nodes[node_selected_alpha.first].set_alpha (node_selected_alpha.second);
           window.updateGL();
         }
         void Connectome::node_alpha_value_slot (int position)
@@ -2900,14 +2906,14 @@ namespace MR
           } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
             assert (node_values_from_file_visibility.size() == num_edges());
-            if (node_index_visibility.first) {
+            if (node_selected_visibility.first) {
               const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
               const float threshold = node_visibility_threshold_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_index_visibility.first) {
-                  nodes[i].set_visible (node_index_visibility.second);
+                if (i == node_selected_visibility.first) {
+                  nodes[i].set_visible (node_selected_visibility.second);
                 } else {
-                  const bool above_threshold = (node_values_from_file_visibility[mat2vec (node_index_visibility.first-1, i-1)] >= threshold);
+                  const bool above_threshold = (node_values_from_file_visibility[mat2vec (node_selected_visibility.first-1, i-1)] >= threshold);
                   nodes[i].set_visible (above_threshold != invert);
                 }
               }
@@ -2964,13 +2970,13 @@ namespace MR
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
             assert (node_values_from_file_colour.size() == num_edges());
-            if (node_index_colour.first) {
+            if (node_selected_colour.first) {
               const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_index_colour.first) {
-                  nodes[i].set_colour (node_index_colour.second);
+                if (i == node_selected_colour.first) {
+                  nodes[i].set_colour (node_selected_colour.second);
                 } else {
-                  float factor = (node_values_from_file_colour[mat2vec (node_index_colour.first-1, i-1)]-lower) / (upper - lower);
+                  float factor = (node_values_from_file_colour[mat2vec (node_selected_colour.first-1, i-1)]-lower) / (upper - lower);
                   factor = std::min (1.0f, std::max (factor, 0.0f));
                   factor = node_colourmap_invert ? 1.0f-factor : factor;
                   nodes[i].set_colour (Point<float> (factor, NAN, NAN));
@@ -3012,14 +3018,14 @@ namespace MR
           } else if (node_size == node_size_t::MATRIX_FILE) {
 
             assert (node_values_from_file_size.size() == num_edges());
-            if (node_index_size.first) {
+            if (node_selected_size.first) {
               const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
               const bool invert = node_size_invert_checkbox->isChecked();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_index_size.first) {
-                  nodes[i].set_size (node_index_size.second);
+                if (i == node_selected_size.first) {
+                  nodes[i].set_size (node_selected_size.second);
                 } else {
-                  float factor = (node_values_from_file_size[mat2vec (node_index_size.first-1, i-1)]-lower) / (upper - lower);
+                  float factor = (node_values_from_file_size[mat2vec (node_selected_size.first-1, i-1)]-lower) / (upper - lower);
                   factor = std::min (1.0f, std::max (factor, 0.0f));
                   factor = invert ? 1.0f-factor : factor;
                   nodes[i].set_size (factor);
@@ -3065,14 +3071,14 @@ namespace MR
           } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
             assert (node_values_from_file_alpha.size() == num_edges());
-            if (node_index_alpha.first) {
+            if (node_selected_alpha.first) {
               const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
               const bool invert = node_alpha_invert_checkbox->isChecked();
               for (node_t i = 1; i <= num_nodes(); ++i) {
-                if (i == node_index_alpha.first) {
-                  nodes[i].set_alpha (node_index_alpha.second);
+                if (i == node_selected_alpha.first) {
+                  nodes[i].set_alpha (node_selected_alpha.second);
                 } else {
-                  float factor = (node_values_from_file_alpha[mat2vec (node_index_alpha.first-1, i-1)]-lower) / (upper - lower);
+                  float factor = (node_values_from_file_alpha[mat2vec (node_selected_alpha.first-1, i-1)]-lower) / (upper - lower);
                   factor = std::min (1.0f, std::max (factor, 0.0f));
                   factor = invert ? 1.0f-factor : factor;
                   nodes[i].set_alpha (factor);

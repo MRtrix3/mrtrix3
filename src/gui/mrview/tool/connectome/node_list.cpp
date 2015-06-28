@@ -20,7 +20,7 @@
 
 */
 
-#include "gui/mrview/tool/connectome/node_list_model.h"
+#include "gui/mrview/tool/connectome/node_list.h"
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
@@ -44,11 +44,22 @@ namespace MR
       QVariant Node_list_model::data (const QModelIndex& index, int role) const
       {
         if (!index.isValid()) return QVariant();
-        if (role != Qt::DisplayRole) return QVariant();
-        if (index.column() == 0)
+        if (role == Qt::TextAlignmentRole) {
+          switch (index.column()) {
+            case 0: return Qt::AlignRight;
+            case 1: return Qt::AlignCenter;
+            case 2: return Qt::AlignLeft;
+            default: assert (0); return QVariant();
+          }
+        }
+        if (index.column() == 0 && role == Qt::DisplayRole)
           return str(index.row()+1).c_str();
-        else
+        else if (index.column() == 1 && role == Qt::DecorationRole)
+          return connectome.nodes[index.row()+1].get_pixmap();
+        else if (index.column() == 2 && role == Qt::DisplayRole)
           return connectome.nodes[index.row()+1].get_name().c_str();
+        else
+          return QVariant();
       }
 
       QVariant Node_list_model::headerData (int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const
@@ -57,7 +68,8 @@ namespace MR
           return QVariant();
         switch (section) {
           case 0: return "Index";
-          case 1: return "Name";
+          case 1: return "";
+          case 2: return "Name";
           default: assert (0); return "";
         }
       }
@@ -72,7 +84,7 @@ namespace MR
       int Node_list_model::columnCount (const QModelIndex& parent) const
       {
         (void) parent; // to suppress warnings about unused parameters
-        return 2;
+        return 3;
       }
 
 

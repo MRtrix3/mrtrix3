@@ -48,7 +48,11 @@ namespace MR
             size (1.0f),
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
-            visible (true) { }
+            visible (true),
+            pixmap (12, 12)
+        {
+          pixmap.fill (QColor (128, 128, 128));
+        }
 
         Node::Node () :
             centre_of_mass (),
@@ -56,7 +60,11 @@ namespace MR
             size (0.0f),
             colour (0.0f, 0.0f, 0.0f),
             alpha (0.0f),
-            visible (false) { }
+            visible (false),
+            pixmap (12, 12)
+        {
+          pixmap.fill (QColor (0, 0, 0));
+        }
 
 
 
