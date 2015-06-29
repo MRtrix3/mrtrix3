@@ -173,11 +173,14 @@ namespace MR
                   "layout(points, max_vertices=1) out;\n"
                   "in float depth[1];\n"
                   "void main() {\n"
-                  "  float  = abs(depth[0]);\n"
+                  "  float depth = abs(depth[0]);\n"
                   "  float radius = gl_in[0].gl_PointSize;\n"
-                  "  if ( < radius) {\n"
+                  "  if (depth < radius) {\n"
                   // Calculate the radius of the sphere subtended by the plane
-                  "    gl_PointSize = sqrt(radius*radius - *);\n"
+                  // FIXME This is wrong: radius is in pixels, depth is in mm
+                  //"    gl_PointSize = sqrt(radius*radius - depth*depth);\n"
+                  // Resort to not modifying radii of points
+                  "    gl_PointSize = radius;\n"
                   "    gl_Position = gl_in[0].gl_Position;\n"
                   "    gl_Position.z = 0.0;\n"
                   "    EmitVertex();\n"

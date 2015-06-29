@@ -33,6 +33,7 @@
 #include "image/info.h"
 #include "image/loop.h"
 #include "image/nav.h"
+#include "image/threaded_loop.h"
 #include "image/transform.h"
 
 #include "math/math.h"
@@ -191,7 +192,7 @@ namespace MR
           hlayout->addWidget (crop_to_slab_button);
           gridlayout->addLayout (hlayout, 1, 1);
 
-          group_box = new QGroupBox ("Node list & selection");
+          group_box = new QGroupBox ("Node list and selection");
           main_box->addWidget (group_box);
           vlayout = new VBoxLayout();
           group_box->setLayout (vlayout);
@@ -297,6 +298,11 @@ namespace MR
           node_geometry_point_round_checkbox->setVisible (false);
           connect (node_geometry_point_round_checkbox, SIGNAL (stateChanged(int)), this, SLOT(point_smooth_slot(int)));
           hlayout->addWidget (node_geometry_point_round_checkbox, 1);
+          node_geometry_overlay_3D_warning_icon = new QLabel();
+          node_geometry_overlay_3D_warning_icon->setPixmap (warning_icon.pixmap (node_geometry_combobox->height()));
+          node_geometry_overlay_3D_warning_icon->setToolTip ("The node overlay image can only be displayed in pure 2D mode (slab thickness of zero)");
+          node_geometry_overlay_3D_warning_icon->setVisible (false);
+          hlayout->addWidget (node_geometry_overlay_3D_warning_icon, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
           label = new QLabel ("Colour: ");
@@ -746,7 +752,21 @@ namespace MR
             if (node_geometry == node_geometry_t::OVERLAY) {
 
               if (is_3D) {
-                window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
+                //
+                //window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
+                // FIXME Need a better approach for displaying the node overlay image in 3D
+                // Can't rely on the volume shader; requires user to change mode, doesn't
+                //   support alpha channel, conflicts with connectome tool mannual configuration
+                //   of 2D / 3D, wouldn't support slab crop
+                //
+                // Is there anything better that can be done? Something like a volume render, but
+                //   instead of accumulating values along the ray, do a Bresenham test to find
+                //   voxels intersected by the ray. Go back to front, and render each node only
+                //   once per fragment. Can use transparency.
+                //
+                // TODO Add a warning icon that pops up if node overlay is selected and
+                //   view isn't purely 2D
+                //
               } else {
                 // set up OpenGL environment:
                 gl::Enable (gl::BLEND);
@@ -1207,12 +1227,14 @@ namespace MR
           is_3D = !(crop_to_slab && !slab_thickness);
           crop_to_slab_label->setEnabled (crop_to_slab);
           crop_to_slab_button->setEnabled (crop_to_slab);
+          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
           window.updateGL();
         }
         void Connectome::crop_to_slab_parameter_slot()
         {
           slab_thickness = crop_to_slab_button->value();
           is_3D = !(crop_to_slab && !slab_thickness);
+          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
           window.updateGL();
         }
 
@@ -1363,6 +1385,7 @@ namespace MR
         void Connectome::node_geometry_selection_slot (int index)
         {
           node_visibility_warning_icon->setVisible (false);
+          node_geometry_overlay_3D_warning_icon->setVisible (false);
           switch (index) {
             case 0:
               if (node_geometry == node_geometry_t::SPHERE) return;
@@ -1413,6 +1436,7 @@ namespace MR
               node_geometry_sphere_lod_spinbox->setVisible (false);
               node_geometry_overlay_interp_checkbox->setVisible (true);
               node_geometry_point_round_checkbox->setVisible (false);
+              node_geometry_overlay_3D_warning_icon->setVisible (is_3D);
               update_node_overlay();
               break;
             case 4:
@@ -2424,6 +2448,7 @@ namespace MR
           edge_values_from_file_size.clear();
           edge_values_from_file_alpha.clear();
           node_visibility_warning_icon->setVisible (false);
+          node_geometry_overlay_3D_warning_icon->setVisible (false);
           edge_visibility_warning_icon->setVisible (false);
         }
 
@@ -2447,6 +2472,7 @@ namespace MR
           node_geometry_combobox->setEnabled (value);
           node_geometry_sphere_lod_spinbox->setEnabled (value);
           node_geometry_overlay_interp_checkbox->setEnabled (value);
+          node_geometry_overlay_3D_warning_icon->setEnabled (value);
 
           node_colour_combobox->setEnabled (value);
           node_colour_fixedcolour_button->setEnabled (value);
@@ -2585,7 +2611,10 @@ namespace MR
           MR::Image::Info overlay_info (H.info());
           overlay_info.set_ndim (4);
           overlay_info.dim (3) = 4; // RGBA
-          overlay_info.stride (3) = 0;
+          overlay_info.stride (0) = 2;
+          overlay_info.stride (1) = 3;
+          overlay_info.stride (2) = 4;
+          overlay_info.stride (3) = 1;
           overlay_info.sanitise();
           node_overlay.reset (new NodeOverlay (overlay_info));
           update_node_overlay();
@@ -2917,16 +2946,14 @@ namespace MR
 
         void Connectome::update_node_overlay()
         {
-          assert (buffer);
-          assert (node_overlay);
-          auto in = buffer->voxel();
-          auto out = node_overlay->voxel();
           if (node_geometry == node_geometry_t::OVERLAY) {
-            // TODO Multi-thread this
-            // Do NOT put a progress message here; causes an updateGL() call, which
-            //   loads the texture even though the scratch buffer hasn't been filled yet...
-            MR::Image::LoopInOrder loop (in);
-            for (loop.start (in, out); loop.ok(); loop.next (in, out)) {
+            assert (buffer);
+            assert (node_overlay);
+            auto v_in = buffer->voxel();
+            auto v_out = node_overlay->voxel();
+
+            auto functor = [&] (decltype(v_in)& in, decltype(v_out)& out)
+            {
               const node_t node_index = in.value();
               if (node_index) {
                 assert (node_index <= num_nodes());
@@ -2938,7 +2965,9 @@ namespace MR
                 for (out[3] = 0; out[3] != 4; ++out[3])
                   out.value() = 0.0f;
               }
-            }
+            };
+
+            MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
           }
         }
 

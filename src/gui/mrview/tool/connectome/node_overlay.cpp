@@ -42,10 +42,10 @@ namespace MR
             data (info),
             need_update (true)
         {
-          position.assign (3, -1);
-          set_interpolate (false);
-          set_colourmap (5);
-          set_min_max (std::numeric_limits<float>::min(), 1.0f);
+          position.assign       (3, -1);
+          set_interpolate       (false);
+          set_colourmap         (5);
+          set_min_max           (std::numeric_limits<float>::min(), 1.0f);
           set_allowed_features  (true, true, true);
           set_use_discard_lower (true);
           set_use_discard_upper (false);
@@ -104,21 +104,7 @@ namespace MR
           bind();
           allocate();
           if (!need_update) return;
-          value_min = 0.0f; value_max = 1.0f;
-          auto V = data.voxel();
-          std::vector<float> texture_data (4 * V.dim(0) * V.dim(1));
-
-          ProgressBar progress ("loading parcellation overlay...", V.dim(2));
-
-          for (V[2] = 0; V[2] != V.dim(2); ++V[2]) {
-            for (V[1] = 0; V[1] != V.dim(1); ++V[1]) {
-              for (V[0] = 0; V[0] != V.dim(0); ++V[0]) {
-                for (V[3] = 0; V[3] != 4;        ++V[3]) {
-                  texture_data[4*(V[0]+V[1]*V.dim(0)) + V[3]] = V.value();
-            } } }
-            upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&texture_data[0]));
-            ++progress;
-          }
+          upload_data ({ { 0, 0, 0 } }, { { data.dim(0), data.dim(1), data.dim(2) } }, reinterpret_cast<void*> (data.address(0)));
           need_update = false;
         }
 

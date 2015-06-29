@@ -87,9 +87,6 @@
 //     tool, but the volume render mode isn't active...
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//   - Colour / size / visibility / alpha: Allow control by matrix file rather than vector file
-//     -> Should use a single control to select the node of interest, rather than one for each visual property
-//        Eventually, this should probably be the node list view
 //
 // * OpenGL drawing general:
 //   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
@@ -109,6 +106,13 @@
 //     However: Should this setting be in the toolbar, or should it be just config settings?
 //   - Selection of multiple nodes:
 //     * Need to select operator by which multiple rows from matrix are combined
+//       May have to rely on a good tool tip to explain how this works
+//       Only enable control if more than one node is currently selected
+//     * Edge visibility by node selection?
+//       Would require:
+//       - Exclusivity toggle; ie. show edge if one or both nodes are selected
+//       - Should other edge visualisation properties be altered by node selection?
+//     * This could all be handled using a separate window widget, rather than filling the toolbar
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
@@ -233,6 +237,7 @@ namespace MR
             QSpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
             QCheckBox *node_geometry_point_round_checkbox;
+            QLabel *node_geometry_overlay_3D_warning_icon;
 
             QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
