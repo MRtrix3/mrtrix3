@@ -130,12 +130,12 @@ namespace MR
 
       void get_EV ()
       {
-        M(0,0) = values[0];
-        M(1,1) = values[1];
-        M(2,2) = values[2];
-        M(1,0) = values[3];
-        M(2,0) = values[4];
-        M(2,1) = values[5];
+        M(0,0) = dt[0];
+        M(1,1) = dt[1];
+        M(2,2) = dt[2];
+        M(1,0) = M(0,1) = dt[3];
+        M(2,0) = M(0,2) = dt[4];
+        M(2,1) = M(1,2) = dt[5];
 
         eig.computeDirect (M);
         dir = eig.eigenvectors().col(2);
@@ -146,7 +146,7 @@ namespace MR
       {
         dwi2tensor (dt, S.binv, values);
 
-        if (tensor2FA (values) < S.init_threshold)
+        if (tensor2FA (dt) < S.init_threshold)
           return false;
 
         get_EV();
@@ -160,7 +160,7 @@ namespace MR
 
         dwi2tensor (dt, S.binv, values);
 
-        if (tensor2FA (values) < S.threshold)
+        if (tensor2FA (dt) < S.threshold)
           return BAD_SIGNAL;
 
         Eigen::Vector3f prev_dir = dir;
