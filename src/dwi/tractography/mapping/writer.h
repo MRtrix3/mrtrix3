@@ -72,7 +72,10 @@ namespace MR {
 
             MapWriterBase (const MapWriterBase&) = delete;
 
-            virtual ~MapWriterBase() { }
+            // can't do this in destructor since it could potentially throw,
+            // and throwing in destructor is most uncool (invokes
+            // std::terminate() with no further ado).
+            virtual void finalise() { }
 
 
 
@@ -165,7 +168,7 @@ namespace MR {
 
           MapWriter (const MapWriter&) = delete;
 
-          ~MapWriter () {
+          void finalise () {
 
             LoopInOrder loop (buffer, 0, 3);
             switch (voxel_statistic) {
@@ -527,7 +530,7 @@ namespace MR {
           void MapWriter<value_type>::set_tod (const Eigen::VectorXf& sh_coefs)
           {
             assert (type == TOD);
-            assert (sh_coefs.size() == buffer.dim(3));
+            assert (sh_coefs.size() == buffer.size(3));
             for (auto l = Loop (3) (buffer); l; ++l) 
               buffer.value() = sh_coefs[buffer.index(3)];
           }

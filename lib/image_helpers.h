@@ -96,7 +96,7 @@ namespace MR
         template <class... DestImageType>
           void to (DestImageType&... dest) const {
             size_t last_axis = to_axis;
-            apply (__max_axis<DestImageType...> (last_axis), std::tie (dest...));
+            apply (__max_axis<DestImageType...> (last_axis), std::tie (ref, dest...));
             for (size_t n = from_axis; n < last_axis; ++n)
               apply (__assign<DestImageType...> (n, __get_index (ref, n)), std::tie (dest...));
           }

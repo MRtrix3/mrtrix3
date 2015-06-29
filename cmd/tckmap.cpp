@@ -598,6 +598,7 @@ void run () {
     }
   }
 
+  writer->finalise();
 }
 
 
