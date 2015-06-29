@@ -60,9 +60,9 @@ namespace MR
     inline void threaded_copy (
         InputImageType& source, 
         OutputImageType& destination, 
-        size_t num_axes_in_thread = 1, 
         size_t from_axis = 0, 
-        size_t to_axis = std::numeric_limits<size_t>::max())
+        size_t to_axis = std::numeric_limits<size_t>::max(),
+        size_t num_axes_in_thread = 1)
     {
       ThreadedLoop (source, from_axis, to_axis, num_axes_in_thread)
         .run (__copy_func(), source, destination);
@@ -88,9 +88,9 @@ namespace MR
         const std::string& message, 
         InputImageType& source, 
         OutputImageType& destination, 
-        size_t num_axes_in_thread = 1, 
         size_t from_axis = 0, 
-        size_t to_axis = std::numeric_limits<size_t>::max())
+        size_t to_axis = std::numeric_limits<size_t>::max(), 
+        size_t num_axes_in_thread = 1)
     {
       ThreadedLoop loop (message, source, from_axis, to_axis, num_axes_in_thread);
       loop.run (__copy_func(), source, destination);
@@ -112,12 +112,12 @@ namespace MR
     inline void threaded_copy_with_progress (
         InputImageType& source, 
         OutputImageType& destination, 
-        size_t num_axes_in_thread = 1,
         size_t from_axis = 0,
-        size_t to_axis = std::numeric_limits<size_t>::max())
+        size_t to_axis = std::numeric_limits<size_t>::max(),
+        size_t num_axes_in_thread = 1)
     {
       threaded_copy_with_progress_message ("copying from \"" + shorten (source.name()) + "\" to \"" + shorten (destination.name()) + "\"...",
-          source, destination, num_axes_in_thread, from_axis, to_axis);
+          source, destination, from_axis, to_axis, num_axes_in_thread);
     }
 
 }

@@ -137,15 +137,15 @@ namespace MR
             Adapter::Gradient1D<decltype(smoothed)> gradient1D (smoothed);
             out.index(3) = 0;
             gradient1D.set_axis (0);
-            threaded_copy (gradient1D, out, 2, 0, 3);
+            threaded_copy (gradient1D, out, 0, 3, 2);
             if (progress) ++(*progress);
             out.index(3) = 1;
             gradient1D.set_axis (1);
-            threaded_copy (gradient1D, out, 2, 0, 3);
+            threaded_copy (gradient1D, out, 0, 3, 2);
             if (progress) ++(*progress);
             out.index(3) = 2;
             gradient1D.set_axis (2);
-            threaded_copy (gradient1D, out, 2, 0, 3);
+            threaded_copy (gradient1D, out, 0, 3, 2);
             if (progress) ++(*progress);
 
             if (wrt_scanner) {
