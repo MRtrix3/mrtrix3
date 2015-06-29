@@ -325,7 +325,7 @@ namespace MR
         template <class Fixel>
           void ModelBase<Fixel>::output_proc_mask (const std::string& path)
           {
-            proc_mask.save (path);
+            save (proc_mask, path);
           }
 
 
@@ -334,7 +334,7 @@ namespace MR
           {
             if (!have_act_data())
               throw Exception ("Cannot export 5TT image; no such data present");
-            act_5tt->save (path);
+            save (*act_5tt, path);
           }
 
 
