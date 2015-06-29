@@ -484,18 +484,18 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
-            render_streamlines(transform);
+            render_streamlines (transform);
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
-            render_streamlines(transform);
+            render_streamlines (transform);
 
           } else {
             gl::Disable (gl::BLEND);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-            render_streamlines(transform);
+            render_streamlines (transform);
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -585,6 +585,10 @@ namespace MR
 
           on_FOV_changed();
 
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          window.makeGLcurrent();
+
           while (file (tck)) {
 
             size_t N = tck.size();
@@ -622,6 +626,10 @@ namespace MR
         
         void Tractogram::load_end_colours()
         {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          window.makeGLcurrent();
+
           erase_nontrack_data();
           // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
           DWI::Tractography::Reader<float> file (filename, properties);
@@ -658,6 +666,10 @@ namespace MR
 
         void Tractogram::load_track_scalars (const std::string& filename)
         {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          window.makeGLcurrent();
+
           erase_nontrack_data();
           scalar_filename = filename;
           value_min = std::numeric_limits<float>::infinity();
@@ -758,13 +770,15 @@ namespace MR
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
             size_t& tck_count) {
+
+          GLuint vertex_array_object;
+          gl::GenVertexArrays (1, &vertex_array_object);
+          gl::BindVertexArray (vertex_array_object);
+
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
           gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
-
-          GLuint vertex_array_object;
-          gl::GenVertexArrays (1, &vertex_array_object);
 
           vertex_array_objects.push_back (vertex_array_object);
           vertex_buffers.push_back (vertexbuffer);
@@ -785,7 +799,6 @@ namespace MR
         
         
         void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
-          buffer.push_back (Point<float>());
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
@@ -802,6 +815,7 @@ namespace MR
 
 
         void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) {
+
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);

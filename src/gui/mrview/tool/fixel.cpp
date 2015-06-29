@@ -241,7 +241,7 @@ namespace MR
           if (!fixel_tool.do_crop_to_slice) {
             vertex_array_object.bind();
             for (size_t x = 0, N = slice_fixel_indices[0].size(); x < N; ++x) {
-              if(slice_fixel_counts[0][x])
+              if (slice_fixel_counts[0][x])
                 gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
             }
           } else {
@@ -359,21 +359,27 @@ namespace MR
 
         void AbstractFixel::load_image ()
         {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          fixel_tool.window.makeGLcurrent();
+
           load_image_buffer ();
 
           regular_grid_buffer_pos = std::vector<Point<float>>(buffer_pos.size());
 
           regular_grid_vao.gen();
+
           regular_grid_vertex_buffer.gen();
           regular_grid_dir_buffer.gen();
           regular_grid_val_buffer.gen();
+
+          vertex_array_object.gen();
+          vertex_array_object.bind();
 
           // voxel centres
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_pos.size() * sizeof(Point<float>), &buffer_pos[0][0], gl::STATIC_DRAW);
-          vertex_array_object.gen();
-          vertex_array_object.bind();
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
