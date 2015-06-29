@@ -166,47 +166,6 @@ namespace MR
     std::string full_usage ();
 
 
-    /*
-    class ParsedArgument;
-
-    //! object returned by App::get_options()
-    class Options
-    {
-      public:
-        class Opt
-        {
-          public:
-            const ParsedArgument operator[] (size_t num) const;
-
-          private:
-            Opt (const Option* parent, const char* const* arguments) :
-              opt (parent), args (arguments) { }
-
-            const Option* opt;
-            const char* const* args;
-            friend class ParsedArgument;
-            friend class Options;
-        };
-
-
-        size_t size () const {
-          return args.size();
-        }
-
-        const Opt operator[] (size_t num) const {
-          assert (num < args.size());
-          return Opt (opt, args[num]);
-        }
-
-
-      private:
-        Options () { }
-        const Option* opt;
-        std::vector<const char* const*> args;
-        friend const Options get_options (const std::string& name);
-    };
-    */
-
 
 
 

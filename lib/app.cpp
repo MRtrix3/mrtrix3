@@ -86,11 +86,11 @@ namespace MR
     bool stderr_to_file = false;
     bool terminal_use_colour = true;
 
-    const char* project_version = NULL;
+    const char* project_version = nullptr;
     const char* build_date = __DATE__;
 
     int argc = 0;
-    char** argv = NULL;
+    char** argv = nullptr;
 
     bool overwrite_files = false;
     void (*check_overwrite_files_func) (const std::string& name) = nullptr;
@@ -704,7 +704,7 @@ namespace MR
         throw Exception (root);
       }
 
-      return NULL;
+      return nullptr;
     }
 
 
@@ -722,7 +722,7 @@ namespace MR
           n += opt->size();
         }
         else
-          argument.push_back (ParsedArgument (NULL, NULL, argv[n]));
+          argument.push_back (ParsedArgument (nullptr, nullptr, argv[n]));
       }
     }
 
@@ -865,18 +865,18 @@ namespace MR
       // check for the existence of all specified input files (including optional ones that have been provided)
       // if necessary, also check for pre-existence of any output files with known paths
       //   (if the output is e.g. given as a prefix, the argument should be flagged as type_text())
-      for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i < argument.end(); i++) {
-        if ((i->arg->type == ArgFileIn) && !Path::exists (std::string(*i)))
-          throw Exception ("required input file \"" + str(*i) + "\" not found");
-        if (i->arg->type == ArgFileOut)
-          check_overwrite (std::string(*i));
+        for (const auto& i : argument) {
+        if ((i.arg->type == ArgFileIn) && !Path::exists (std::string(i)))
+          throw Exception ("required input file \"" + str(i) + "\" not found");
+        if (i.arg->type == ArgFileOut)
+          check_overwrite (std::string(i));
       }
-      for (std::vector<ParsedOption>::const_iterator i = option.begin(); i != option.end(); ++i) {
-        for (size_t j = 0; j != i->opt->size(); ++j) {
-          const Argument& arg = i->opt->operator [](j);
-          const char* const name = i->args[j];
+      for (const auto& i : option) {
+        for (size_t j = 0; j != i.opt->size(); ++j) {
+          const Argument& arg = i.opt->operator [](j);
+          const char* const name = i.args[j];
           if ((arg.type == ArgFileIn) && !Path::exists (name))
-            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i->opt->id) + "\")");
+            throw Exception ("input file \"" + str(name) + "\" not found (required for option \"-" + std::string(i.opt->id) + "\")");
           if (arg.type == ArgFileOut)
             check_overwrite (name);
         }
@@ -890,8 +890,8 @@ namespace MR
     {
 #ifdef MRTRIX_WINDOWS
       // force stderr to be unbuffered, and stdout to be line-buffered:
-      setvbuf (stderr, NULL, _IONBF, 0);
-      setvbuf (stdout, NULL, _IOLBF, 0);
+      setvbuf (stderr, nullptr, _IONBF, 0);
+      setvbuf (stdout, nullptr, _IOLBF, 0);
 #endif
 
       try {
@@ -910,7 +910,7 @@ namespace MR
         NAME.erase (NAME.size()-4);
 #endif
 
-      srand (time (NULL));
+      srand (time (nullptr));
 
       gsl_set_error_handler (&mrtrix_gsl_error_handler);
     }
