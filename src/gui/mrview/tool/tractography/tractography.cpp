@@ -475,7 +475,7 @@ namespace MR
           options
             + OptionGroup ("Tractography tool options")
 
-            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.")
+            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
             +   Argument ("tracks").type_file_in();
         }
 
