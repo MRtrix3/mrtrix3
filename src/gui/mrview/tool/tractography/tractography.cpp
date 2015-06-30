@@ -150,8 +150,8 @@ namespace MR
             default_opt_grid->addWidget (slider, 0, 1);
 
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (50,500);
-            slider->setSliderPosition (float (100.0));
+            slider->setRange (0,2000);
+            slider->setSliderPosition (float (1000.0));
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
@@ -347,7 +347,7 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 100000.0f;
+          line_thickness = 1.0e-3f * std::exp (2.0e-3f * (static_cast<float>(thickness) - 1000.0f));
 
           for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
             Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
