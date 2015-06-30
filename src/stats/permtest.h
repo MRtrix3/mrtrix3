@@ -130,7 +130,7 @@ namespace MR
             std::vector<size_t> enhanced_count;
             std::vector<value_type> stats;
             std::vector<value_type> enhanced_stats;
-            RefPtr<std::mutex> mutex;
+            std::shared_ptr<std::mutex> mutex;
         };
 
 
