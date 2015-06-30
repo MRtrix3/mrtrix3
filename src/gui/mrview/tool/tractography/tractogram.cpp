@@ -51,74 +51,67 @@ namespace MR
           bool colour_by_direction = (color_type == Direction ||
            (color_type == ScalarFile && scalarfile_by_direction));
 
-          std::string source =
-          "layout (location = 0) in vec3 this_vertex;\n"
-          "layout (location = 1) in vec3 next_vertex;\n";
+          std::string source = "layout (location = 0) in vec3 vertex;\n";
 
           switch(color_type) {
             case Direction: break;
             case Ends:
-              source += "layout (location = 2) in vec3 colour;\n";
+              source += "layout (location = 1) in vec3 end_colour;\n";
               break;
             case Manual:
               break;
             case ScalarFile:
-              source += "layout (location = 2) in float amp;\n";
+              source += "layout (location = 1) in float amp;\n";
               break;
           }
 
           source +=
           "uniform mat4 MVP;\n"
           "uniform float line_thickness;\n"
-          "uniform float downscale_factor;\n"
 
           // Uniforms won't be included in compiled shader if not referenced
           // so we can unconditionally list all of them
-          "uniform mat4 MV;\n"
-          "uniform vec3 const_colour;\n"
-          "uniform float offset, scale;\n"
-
           "uniform vec3 screen_normal;\n"
           "uniform float crop_var;\n"
           "uniform float slab_width;\n"
+          "uniform vec3 const_colour;\n"
+          "uniform float offset, scale;\n"
 
-          "uniform float aspect_ratio;\n"
-
-          "out vec4 v_dir;\n"
-          "out vec4 v_normal;\n"
-          "out vec3 v_colour;\n"
+          "out vec3 v_colour, v_pos;\n"
           "out int v_visible;\n";
 
 
           if(do_crop_to_slab)
-            source += "flat out float v_include;\n";
+            source += "out float v_include;\n";
 
           if(color_type == ScalarFile)
-            source += "flat out float v_amp;\n";
+            source += "out float v_amp;\n";
 
-          if(use_lighting)
-            source += "out vec3 v_tangent;\n";
-
-          // Colour and lighting function
+          // Main function
           source +=
-          "void set_colour_and_lighting() {\n";
+            "void main() {\n"
+            "  gl_Position = MVP * vec4(vertex, 1);\n";
+          if (colour_by_direction || use_lighting)
+            source += "  v_pos = vertex;\n";
+          // TODO this probably needs to take the aspect ratio into account:
+          source +=
+            "  v_visible = ( ( abs(gl_Position.x) < 1+line_thickness )\n" 
+            "             && ( abs(gl_Position.y) < 1+line_thickness )\n"
+            "             && ( abs(gl_Position.z) < 1+line_thickness ) ) ? 1 : 0 ;\n";
 
-          if(use_lighting || colour_by_direction)
-            source +=
-            "  vec3 dir = next_vertex - this_vertex;\n";
-          if(colour_by_direction)
-            source += "  v_colour = normalize (abs(dir));\n";
-          if(use_lighting)
-            source += "  v_tangent = normalize (mat3(MV) * dir);\n";
+          if(do_crop_to_slab)
+            source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n"
+              "  v_visible = ( v_visible > 0 || (v_include >= 0 && v_include < 1) ) ? 1 : 0;\n";
 
           switch (color_type) {
             case Ends:
-              source += "  v_colour = colour;\n";
+              source += "  v_colour = end_colour;\n";
               break;
             case Manual:
               source += "  v_colour = const_colour;\n";
               break;
             case ScalarFile:
+              source += "  v_amp = amp;\n";
               if(!ColourMap::maps[colourmap].special) {
                 source += "   float amplitude = clamp (";
                 if (tractogram.scale_inverted()) source += "1.0 -";
@@ -134,34 +127,7 @@ namespace MR
               break;
           }
 
-          source += "}\n\n";
-
-
-          // Main function
-          source +=
-          "void main() {\n"
-          "  vec4 p1 = MVP * vec4(this_vertex, 1);\n"
-          "  vec4 p2 = MVP * vec4(next_vertex, 1);\n"
-          "  gl_Position = p1;\n"
-
-          "  v_visible = (gl_Position.x > -1-line_thickness && gl_Position.x < 1+line_thickness)\n"
-          "   && (gl_Position.y > -1-line_thickness && gl_Position.y < 1+line_thickness)\n"
-          "   && (gl_Position.z > -1-line_thickness && gl_Position.z < 1+line_thickness) ? 1 : 0 ;\n";
-
-          if(do_crop_to_slab)
-            source += "  v_include = (dot(this_vertex, screen_normal) - crop_var) / slab_width;\n";
-
-          if(color_type == ScalarFile)
-            source += "  v_amp = amp;\n";
-
-          source +=
-          "  v_dir = normalize(p2-p1);\n"
-          "  v_normal = vec4(-v_dir.y, v_dir.x, 0, 0);\n"
-
-          "  v_normal *=  1.0 + (aspect_ratio - 1.0) * abs(v_normal.y);\n"
-
-          "  set_colour_and_lighting();\n"
-          "}\n";
+          source += "}\n";
 
           return source;
         }
@@ -169,30 +135,31 @@ namespace MR
 
         std::string Tractogram::Shader::geometry_shader_source (const Displayable&)
         {
+          bool colour_by_direction = (color_type == Direction ||
+           (color_type == ScalarFile && scalarfile_by_direction));
+
           std::string source =
           "layout(lines) in;\n"
-          "layout(triangle_strip, max_vertices = 6) out;\n"
+          "layout(triangle_strip, max_vertices = 4) out;\n"
           "uniform float line_thickness;\n"
           "uniform float downscale_factor;\n"
+          "uniform float scale_x, scale_y;\n"
+          "uniform mat4 MV;\n"
 
-          "in vec4 v_dir[];\n"
-          "in vec4 v_normal[];\n"
-          "in vec3 v_colour[];\n"
+          "in vec3 v_colour[], v_pos[];\n"
           "in int v_visible[];\n";
-
-          if(do_crop_to_slab)
-            source +=
-             "flat in float v_include[];\n"
-             "out float g_include;\n";
 
           if(color_type == ScalarFile)
            source +=
-            "flat in float v_amp[];\n"
+            "in float v_amp[];\n" // does this need to be declared flat? I don't see how this could be interpolated anyway...
             "out float g_amp;\n";
+          if (do_crop_to_slab)
+            source += "in float v_include[];\n"
+              "out float g_include;\n";
+
 
           if(use_lighting)
            source +=
-            "in vec3 v_tangent[];\n"
             "const float PI = " + str(Math::pi) + ";\n"
             "out float g_height;\n";
 
@@ -204,84 +171,55 @@ namespace MR
 
           // If both end-points are outside the viewport then we can safely discard
           "  if(v_visible[0] < 1.0 && v_visible[1] < 1.0)\n"
-          "    return;\n"
+          "    return;\n";
 
+          if (colour_by_direction || use_lighting)
+            source += "  g_tangent = normalize (v_pos[1] - v_pos[0]);\n";
 
-          "  fColour = v_colour[0];\n";
-
-          // If both end-points of primitive aren't in the slab then we can safely discard
-          // Otherwise let the fragment shader smoothly crop
-          if(do_crop_to_slab)
-            source +=
-            "  if((v_include[0] < 0.0 || v_include[0] > 1.0) && (v_include[1] < 0.0 || v_include[1] > 1.0))\n"
-            "    return;\n";
-
-          if(use_lighting)
-            source +=
-             "  g_tangent = v_tangent[0];\n"
-             "  g_height = 0.0;\n";
-
-          if(do_crop_to_slab)
+          if (colour_by_direction)
+            source += "  fColour = abs (g_tangent);\n";
+          else 
+            source += "  fColour = v_colour[0];\n";
+          if (use_lighting)
+            source += "  g_tangent = mat3(MV) * g_tangent;\n"
+              "  g_height = 0.0;\n";
+          if (do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
 
           if(color_type == ScalarFile)
             source += "  g_amp = v_amp[0];\n";
 
-          source +=
-          "  gl_Position = gl_in[0].gl_Position - line_thickness * (v_normal[0] - v_dir[0]);\n"
-          "  EmitVertex();\n"
-          "  gl_Position = gl_in[0].gl_Position + line_thickness * (v_normal[0] + v_dir[0]);\n;\n";
+          source += "  vec3 segdir = normalize ((gl_in[1].gl_Position - gl_in[0].gl_Position).xyz);\n"
+            "  vec4 normal = vec4 (line_thickness * normalize (vec2 (-scale_x * segdir.y, scale_y * segdir.x)), 0, 0);\n"
+            "  vec4 dir = vec4 (line_thickness * segdir, 0);\n"
+            "  gl_Position = gl_in[0].gl_Position - normal - dir;\n"
+            "  EmitVertex();\n";
 
-          if(use_lighting)
+          if (use_lighting)
             source += "  g_height = PI;\n";
 
           source +=
-          "  EmitVertex();\n"
+            "  gl_Position = gl_in[0].gl_Position + normal - dir;\n"
+            "  EmitVertex();\n";
 
-          "  fColour = v_colour[1];\n";
-
-          if(use_lighting)
-            source +=
-              "  g_tangent = mix(v_tangent[0], v_tangent[1], 0.5);\n"
-              "  g_height = 0.0;\n";
-
-          if(do_crop_to_slab)
+          if (!colour_by_direction)
+            source += "  fColour = v_colour[1];\n";
+          if (do_crop_to_slab)
             source += "  g_include = v_include[1];\n";
-
           if(color_type == ScalarFile)
             source += "  g_amp = v_amp[1];\n";
-
+          if(use_lighting)
+            source += "  g_height = 0.0;\n";
           source +=
-          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[0] + v_dir[0]);\n"
-          "  EmitVertex();\n"
-          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[0] - v_dir[0]);\n";
+            "  gl_Position = gl_in[1].gl_Position - normal + dir;\n"
+            "  EmitVertex();\n";
 
           if(use_lighting)
             source += "  g_height = PI;\n";
-
-          source +=
-          "  EmitVertex();\n";
-
-          if(use_lighting)
-            source +=
-             "  g_tangent = v_tangent[1];\n"
-             "  g_height = 0.0;\n";
-
-          source +=
-          "  gl_Position = gl_in[1].gl_Position - line_thickness * (v_normal[1] - v_dir[1]);\n"
-          "  EmitVertex();\n";
-
-          if(use_lighting)
-            source += "  g_height = PI;\n";
-
-
-          source +=
-          "  gl_Position = gl_in[1].gl_Position + line_thickness * (v_normal[1] + v_dir[1]);\n"
-          "  EmitVertex();\n";
-
-          source +=
-          "  EndPrimitive();\n"
-          "}\n";
+          source += 
+            "  gl_Position = gl_in[1].gl_Position + normal + dir;\n"
+            "  EmitVertex();\n"
+            "}\n";
 
           return source;
         }
@@ -302,9 +240,6 @@ namespace MR
               "in vec3 g_tangent;\n"
               "in float g_height;\n";
 
-          if (do_crop_to_slab)
-            source += "in float g_include;\n";
-
           if (color_type == ScalarFile)
             source += "in float g_amp;\n";
 
@@ -312,14 +247,14 @@ namespace MR
             source += 
               "uniform float ambient, diffuse, specular, shine;\n"
               "uniform vec3 light_pos;\n";
+          if (do_crop_to_slab)
+            source += "in float g_include;\n";
 
-          source +=
-              "void main() {\n"
-              "  colour = fColour;\n";
+          source += "void main() {\n";
 
           if (do_crop_to_slab)
             source +=
-             "  if(g_include < 0.0 || g_include > 1.0) discard;\n";
+              "  if (g_include < 0.0 || g_include > 1.0) discard;\n";
 
           if (color_type == ScalarFile) {
             if (tractogram.use_discard_lower())
@@ -328,8 +263,9 @@ namespace MR
               source += "  if (g_amp > upper) discard;\n";
           }
 
+          source += "  colour = fColour;\n";
           if (use_lighting)
-             // g_height tells us where we are across the cylinder (0 - PI)
+            // g_height tells us where we are across the cylinder (0 - PI)
             source +=
               // compute surface normal:
               "  float s = sin (g_height);\n"
@@ -475,6 +411,8 @@ namespace MR
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), 1.0);
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.width() / static_cast<float>(transform.height()));
 
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -522,13 +460,13 @@ namespace MR
               switch (color_type) {
                 case TrackColourType::Ends:
                   gl::BindBuffer (gl::ARRAY_BUFFER, colour_buffers[buf]);
-                  gl::EnableVertexAttribArray (2);
-                  gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
+                  gl::EnableVertexAttribArray (1);
+                  gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
                   break;
                 case TrackColourType::ScalarFile:
                   gl::BindBuffer (gl::ARRAY_BUFFER, scalar_buffers[buf]);
-                  gl::EnableVertexAttribArray (2);
-                  gl::VertexAttribPointer (2, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  gl::EnableVertexAttribArray (1);
+                  gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
                   break;
                 default:
                   break;
@@ -537,8 +475,8 @@ namespace MR
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
               gl::EnableVertexAttribArray (0);
               gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_,  3 * sample_stride * sizeof(float), (void*)0);
-              gl::EnableVertexAttribArray (1);
-              gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3* sample_stride * sizeof(float)));
+              //gl::EnableVertexAttribArray (1);
+              //gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3* sample_stride * sizeof(float)));
 
               for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
                 track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
@@ -557,14 +495,15 @@ namespace MR
         inline void Tractogram::update_stride (const Projection& transform) {
 
           float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-          float step_size_pixels = transform.model_to_screen_direction(Point<float>(step_size, step_size, 0.f)).norm();
+          Point<float> in_plane_direction = transform.screen_to_model_direction (1.0f, 0.0f, 0.0f).normalise();
+          float step_size_pixels = transform.model_to_screen_direction (step_size * in_plane_direction).norm();
 
           GLint thickness_pixels = (GLint)(line_thickness_screenspace * (transform.width () + transform.height ()));
-          GLint thickness_factor = std::max((GLint)((4 * thickness_pixels) / step_size_pixels), 1);
+          GLint thickness_factor = std::max ((GLint)(thickness_pixels / step_size_pixels), 1);
 
-          GLint new_stride = std::min(thickness_factor, max_sample_stride);
+          GLint new_stride = std::min (thickness_factor, max_sample_stride);
 
-          if(new_stride != sample_stride) {
+          if (new_stride != sample_stride) {
             sample_stride = new_stride;
             vao_dirty = true;
           }

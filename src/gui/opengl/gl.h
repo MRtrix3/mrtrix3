@@ -97,7 +97,7 @@ namespace MR
           Texture (Texture&& t) : id (t.id) { t.id = 0; }
           Texture& operator= (Texture&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
-          void gen (GLenum target) { 
+          void gen (GLenum target, GLint interp_type = gl::LINEAR) {
             if (!id) {
               tex_type = target;
               gl::GenTextures (1, &id);
@@ -105,8 +105,8 @@ namespace MR
               bind();
               gl::TexParameteri (tex_type, gl::TEXTURE_BASE_LEVEL, 0);
               gl::TexParameteri (tex_type, gl::TEXTURE_MAX_LEVEL, 0);
-              gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
-              gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, interp_type);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, interp_type);
               gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
               gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
               if (tex_type == gl::TEXTURE_3D)

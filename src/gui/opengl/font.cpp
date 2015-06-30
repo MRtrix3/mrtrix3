@@ -125,9 +125,7 @@ namespace MR
           }
         }
 
-        tex.gen (gl::TEXTURE_2D);
-        tex.bind();
-        tex.set_interp_on (false);
+        tex.gen (gl::TEXTURE_2D, gl::NEAREST);
         gl::TexImage2D (gl::TEXTURE_2D, 0, gl::RG, tex_width, font_height, 
             0, gl::RG, gl::FLOAT, tex_data);
 
@@ -204,7 +202,8 @@ namespace MR
           tex.bind();
           vertex_array_object.bind();
 
-          gl::MultiDrawArrays (gl::TRIANGLE_FAN, starts, counts, text.size()); //4*text.size());
+          gl::MultiDrawArrays (gl::TRIANGLE_FAN, starts, counts, text.size());
+          GL_CHECK_ERROR;
         }
 
       }

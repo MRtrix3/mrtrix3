@@ -86,12 +86,11 @@ namespace MR
         INFO ("GL renderer:  " + std::string ( (const char*) gl::GetString (gl::RENDERER)));
         INFO ("GL version:   " + std::string ( (const char*) gl::GetString (gl::VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) gl::GetString (gl::VENDOR)));
-        GL_CHECK_ERROR;
+        
         GLint gl_version (0), gl_version_major (0);
         gl::GetIntegerv (gl::MAJOR_VERSION, &gl_version_major);
-        GL_CHECK_ERROR;
         gl::GetIntegerv (gl::MINOR_VERSION, &gl_version);
-        GL_CHECK_ERROR;
+
         gl_version += 10*gl_version_major;
         if (gl_version < 33) {
           FAIL ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
