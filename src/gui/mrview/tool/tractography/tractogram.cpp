@@ -48,13 +48,14 @@ namespace MR
         {
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
 
-          bool colour_by_direction = (color_type == Direction ||
-           (color_type == ScalarFile && scalarfile_by_direction));
+          std::string source = 
+            "layout (location = 0) in vec3 vertex;\n";
 
-          std::string source = "layout (location = 0) in vec3 vertex;\n";
-
-          switch(color_type) {
-            case Direction: break;
+          switch (color_type) {
+            case Direction: 
+              source += "layout (location = 1) in vec3 prev_vertex;\n"
+                "layout (location = 2) in vec3 next_vertex;\n";
+            break;
             case Ends:
               source += "layout (location = 1) in vec3 end_colour;\n";
               break;
@@ -91,7 +92,7 @@ namespace MR
           source +=
             "void main() {\n"
             "  gl_Position = MVP * vec4(vertex, 1);\n";
-          if (colour_by_direction || use_lighting)
+          if (use_lighting)
             source += "  v_pos = vertex;\n";
           // TODO this probably needs to take the aspect ratio into account:
           source +=
@@ -104,6 +105,9 @@ namespace MR
               "  v_visible = ( v_visible > 0 || (v_include >= 0 && v_include < 1) ) ? 1 : 0;\n";
 
           switch (color_type) {
+            case Direction:
+              source += "  v_colour = abs (normalize (next_vertex - prev_vertex));\n";
+              break;
             case Ends:
               source += "  v_colour = end_colour;\n";
               break;
@@ -119,9 +123,9 @@ namespace MR
               }
               if (!scalarfile_by_direction)
                 source +=
-                std::string("  vec3 color;\n") +
-                ColourMap::maps[colourmap].mapping +
-                "  v_colour = color;\n";
+                  std::string("  vec3 color;\n") +
+                  ColourMap::maps[colourmap].mapping +
+                  "  v_colour = color;\n";
               break;
             default:
               break;
@@ -135,9 +139,6 @@ namespace MR
 
         std::string Tractogram::Shader::geometry_shader_source (const Displayable&)
         {
-          bool colour_by_direction = (color_type == Direction ||
-           (color_type == ScalarFile && scalarfile_by_direction));
-
           std::string source =
           "layout(lines) in;\n"
           "layout(triangle_strip, max_vertices = 4) out;\n"
@@ -173,15 +174,8 @@ namespace MR
           "  if(v_visible[0] < 1.0 && v_visible[1] < 1.0)\n"
           "    return;\n";
 
-          if (colour_by_direction || use_lighting)
-            source += "  g_tangent = normalize (v_pos[1] - v_pos[0]);\n";
-
-          if (colour_by_direction)
-            source += "  fColour = abs (g_tangent);\n";
-          else 
-            source += "  fColour = v_colour[0];\n";
           if (use_lighting)
-            source += "  g_tangent = mat3(MV) * g_tangent;\n"
+            source += "  g_tangent = normalize (mat3(MV) * (v_pos[1] - v_pos[0]));\n"
               "  g_height = 0.0;\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
@@ -189,9 +183,10 @@ namespace MR
           if(color_type == ScalarFile)
             source += "  g_amp = v_amp[0];\n";
 
-          source += "  vec3 segdir = normalize ((gl_in[1].gl_Position - gl_in[0].gl_Position).xyz);\n"
+          source += "  vec3 segdir = vec3 (normalize ((gl_in[1].gl_Position - gl_in[0].gl_Position).xy), 0.0);\n"
             "  vec4 normal = vec4 (line_thickness * normalize (vec2 (-scale_x * segdir.y, scale_y * segdir.x)), 0, 0);\n"
-            "  vec4 dir = vec4 (line_thickness * segdir, 0);\n"
+            "  vec4 dir = vec4 (0.5 * line_thickness * segdir, 0);\n"
+            "  fColour = v_colour[0];\n"
             "  gl_Position = gl_in[0].gl_Position - normal - dir;\n"
             "  EmitVertex();\n";
 
@@ -200,10 +195,9 @@ namespace MR
 
           source +=
             "  gl_Position = gl_in[0].gl_Position + normal - dir;\n"
-            "  EmitVertex();\n";
+            "  EmitVertex();\n" 
+            "  fColour = v_colour[1];\n";
 
-          if (!colour_by_direction)
-            source += "  fColour = v_colour[1];\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[1];\n";
           if(color_type == ScalarFile)
@@ -411,9 +405,8 @@ namespace MR
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), 1.0);
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.height() / static_cast<float>(transform.width()));
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.width() / static_cast<float>(transform.height()));
-
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -474,13 +467,17 @@ namespace MR
 
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
               gl::EnableVertexAttribArray (0);
-              gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_,  3 * sample_stride * sizeof(float), (void*)0);
-              //gl::EnableVertexAttribArray (1);
-              //gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)(3* sample_stride * sizeof(float)));
+              gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(3*sample_stride*sizeof(float)));
+              if (color_type == TrackColourType::Direction) {
+                gl::EnableVertexAttribArray (1);
+                gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_,  3*sample_stride*sizeof(float), (void*)0);
+                gl::EnableVertexAttribArray (2);
+                gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(6*sample_stride*sizeof(float)));
+              }
 
               for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
                 track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
-                track_starts[buf][j] = (GLint)std::floor(original_track_starts[buf][j] / (float)sample_stride);
+                track_starts[buf][j] = (GLint) (std::floor(original_track_starts[buf][j] / (float)sample_stride)) - 1;
               }
             }
             gl::MultiDrawArrays (gl::LINE_STRIP, &track_starts[buf][0], &track_sizes[buf][0], num_tracks_per_buffer[buf]);
@@ -536,8 +533,8 @@ namespace MR
             // Pre padding
             // To support downsampling, we want to ensure that the starting track vertex
             // is used even when we're using a stride > 1
-            for (size_t i = 1; i < max_sample_stride; ++i)
-              buffer.push_back(tck.front());
+            for (size_t i = 0; i < max_sample_stride; ++i)
+              buffer.push_back (tck.front());
 
             starts.push_back (buffer.size());
 
@@ -546,7 +543,7 @@ namespace MR
             // Post padding
             // Similarly, to support downsampling, we also want to ensure the final track vertex
             // will be used even we're using a stride > 1
-            for (size_t i = 1; i < max_sample_stride; ++i)
+            for (size_t i = 0; i < max_sample_stride; ++i)
               buffer.push_back(tck.back());
 
             sizes.push_back (N - 1);
