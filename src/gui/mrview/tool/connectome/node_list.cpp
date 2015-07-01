@@ -53,11 +53,11 @@ namespace MR
           }
         }
         if (index.column() == 0 && role == Qt::DisplayRole)
-          return str(index.row()+1).c_str();
+          return str(index.row()).c_str();
         else if (index.column() == 1 && role == Qt::DecorationRole)
-          return connectome.nodes[index.row()+1].get_pixmap();
+          return connectome.nodes[index.row()].get_pixmap();
         else if (index.column() == 2 && role == Qt::DisplayRole)
-          return connectome.nodes[index.row()+1].get_name().c_str();
+          return connectome.nodes[index.row()].get_name().c_str();
         else
           return QVariant();
       }
@@ -79,7 +79,7 @@ namespace MR
       int Node_list_model::rowCount (const QModelIndex& parent) const
       {
         (void) parent;  // to suppress warnings about unused parameters
-        return (connectome.num_nodes() ? connectome.num_nodes() : 0);
+        return (connectome.num_nodes() ? connectome.num_nodes() + 1 : 0);
       }
       int Node_list_model::columnCount (const QModelIndex& parent) const
       {

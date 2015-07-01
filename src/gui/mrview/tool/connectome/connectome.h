@@ -26,6 +26,7 @@
 #include <map>
 #include <vector>
 
+#include "bitset.h"
 #include "point.h"
 
 #include "gui/opengl/gl.h"
@@ -58,6 +59,7 @@
 #include "gui/mrview/tool/connectome/node.h"
 #include "gui/mrview/tool/connectome/node_list.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
+#include "gui/mrview/tool/connectome/selection.h"
 #include "gui/mrview/tool/connectome/shaders.h"
 #include "gui/mrview/tool/connectome/types.h"
 
@@ -81,10 +83,9 @@
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
 //
 // * Drawing nodes
-//   - Drawing as overlay: Volume render seems to work, but doesn't always update immediately
-//     This is going to be made more difficult by the fact that the connectome tool now has
-//     independent control of 2D / 3D rendering... i.e. user may select 3D in the connectome
-//     tool, but the volume render mode isn't active...
+//   - Drawing as overlay in 3D: Currently disabled, realistically needs its own shaders
+//     Would it be possible to do a ray per fragment, build a voxel list back-to-front, and
+//      only let each node contribute to each fragment once?
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //
@@ -108,11 +109,6 @@
 //     * Need to select operator by which multiple rows from matrix are combined
 //       May have to rely on a good tool tip to explain how this works
 //       Only enable control if more than one node is currently selected
-//     * Edge visibility by node selection?
-//       Would require:
-//       - Exclusivity toggle; ie. show edge if one or both nodes are selected
-//       - Should other edge visualisation properties be altered by node selection?
-//     * This could all be handled using a separate window widget, rather than filling the toolbar
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
@@ -175,6 +171,8 @@ namespace MR
             void crop_to_slab_parameter_slot();
 
             void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);
+            void node_selection_settings_dialog_slot();
+            void node_selection_settings_changed_slot();
 
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
@@ -187,12 +185,9 @@ namespace MR
             void overlay_interp_slot (int);
             void point_smooth_slot (int);
             void node_fixed_colour_change_slot();
-            void node_colour_selected_value_slot();
             void node_colour_parameter_slot();
-            void node_size_selected_value_slot();
             void node_size_value_slot();
             void node_size_parameter_slot();
-            void node_alpha_selected_value_slot();
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
 
@@ -224,7 +219,8 @@ namespace MR
             AdjustButton *crop_to_slab_button;
 
             Node_list_model *node_list_model;
-            Node_list_view* node_list_view;
+            Node_list_view *node_list_view;
+            QPushButton *node_selection_settings_button;
 
             QComboBox *node_visibility_combobox;
             QLabel *node_visibility_warning_icon;
@@ -242,23 +238,17 @@ namespace MR
             QComboBox *node_colour_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
-            QLabel *node_colour_selected_label;
-            QColorButton *node_colour_selected_button;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
             AdjustButton *node_size_button;
-            QLabel *node_size_selected_label;
-            AdjustButton *node_size_selected_button;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
 
             QComboBox *node_alpha_combobox;
             QSlider *node_alpha_slider;
-            QLabel *node_alpha_selected_label;
-            QSlider *node_alpha_selected_slider;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
@@ -352,6 +342,11 @@ namespace MR
             float slab_thickness;
 
 
+            // Settings related to how visual elements are changed on selection / non-selection
+            NodeSelectionSettings node_selection_settings;
+            std::unique_ptr<NodeSelectionSettingsDialog> node_selection_dialog;
+
+
             // Current node visualisation settings
             node_visibility_t node_visibility;
             node_geometry_t node_geometry;
@@ -360,10 +355,8 @@ namespace MR
             node_alpha_t node_alpha;
 
             // Other values that need to be stored w.r.t. node visualisation
-            node_t node_selected_index;
-            Point<float> node_selected_colour;
-            float node_selected_size;
-            float node_selected_alpha;
+            BitSet selected_nodes;
+            node_t selected_node_count;
 
             bool have_meshes;
             Point<float> node_fixed_colour;
@@ -429,11 +422,23 @@ namespace MR
             void calculate_edge_sizes();
             void calculate_edge_alphas();
 
+            // Helper functions for determining actual node / edge visual properties
+            //   given current selection status
+            bool         node_visibility_given_selection (const node_t);
+            Point<float> node_colour_given_selection     (const node_t);
+            float        node_size_given_selection       (const node_t);
+            float        node_alpha_given_selection      (const node_t);
+            bool         edge_visibility_given_selection (const Edge&);
+            Point<float> edge_colour_given_selection     (const Edge&);
+            float        edge_size_given_selection       (const Edge&);
+            float        edge_alpha_given_selection      (const Edge&);
+
             void get_meshes();
             void get_exemplars();
             void get_streamtubes();
 
             bool use_lighting() const;
+            bool use_alpha() const;
 
             friend class NodeColourObserver;
             friend class EdgeColourObserver;

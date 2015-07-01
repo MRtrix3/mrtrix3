@@ -68,15 +68,15 @@ namespace MR
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
+            node_selection_settings (),
+            node_selection_dialog (nullptr),
             node_visibility (node_visibility_t::ALL),
             node_geometry (node_geometry_t::SPHERE),
             node_colour (node_colour_t::FIXED),
             node_size (node_size_t::FIXED),
             node_alpha (node_alpha_t::FIXED),
-            node_selected_index (0),
-            node_selected_colour (1.0f, 0.5f, 0.5f),
-            node_selected_size (1.0f),
-            node_selected_alpha (1.0f),
+            selected_nodes (0),
+            selected_node_count (0),
             have_meshes (false),
             node_fixed_colour (0.5f, 0.5f, 0.5f),
             node_colourmap_index (1),
@@ -211,7 +211,7 @@ namespace MR
           node_list_view->resizeColumnsToContents();
           node_list_view->resizeRowsToContents();
           node_list_view->setSelectionBehavior (QAbstractItemView::SelectRows);
-          node_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          node_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
           //node_list_view->horizontalHeader()->setResizeMode (QHeaderView::Stretch);
           node_list_view->horizontalHeader()->setStretchLastSection (true);
           node_list_view->verticalHeader()->hide();
@@ -220,6 +220,11 @@ namespace MR
                    SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
                    SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
           vlayout->addWidget (node_list_view);
+          node_selection_settings_button = new QPushButton ("Selection visualisation settings...");
+          connect (node_selection_settings_button, SIGNAL(clicked()), this, SLOT (node_selection_settings_dialog_slot()));
+          vlayout->addWidget (node_selection_settings_button);
+
+          connect (&node_selection_settings, SIGNAL(dataChanged()), this, SLOT (node_selection_settings_changed_slot()));
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
@@ -330,19 +335,6 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          node_colour_selected_label = new QLabel ("Selected node: ");
-          node_colour_selected_label->setVisible (false);
-          hlayout->addWidget (node_colour_selected_label);
-          node_colour_selected_button = new QColorButton;
-          node_colour_selected_button->setColor (QColor (node_selected_colour[0]*255.0f, node_selected_colour[1]*255.0f, node_selected_colour[2]*255.0f));
-          node_colour_selected_button->setVisible (false);
-          connect (node_colour_selected_button, SIGNAL (clicked()), this, SLOT (node_colour_selected_value_slot()));
-          hlayout->addWidget (node_colour_selected_button);
-          gridlayout->addLayout (hlayout, 5, 1, 1, 4);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
           node_colour_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_colour_range_label);
           node_colour_lower_button = new AdjustButton (this);
@@ -360,10 +352,10 @@ namespace MR
           node_colour_range_label->setVisible (false);
           node_colour_lower_button->setVisible (false);
           node_colour_upper_button->setVisible (false);
-          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 5, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
-          gridlayout->addWidget (label, 7, 0, 1, 2);
+          gridlayout->addWidget (label, 6, 0, 1, 2);
           node_size_combobox = new QComboBox (this);
           node_size_combobox->setToolTip (tr ("Scale the size of each node"));
           node_size_combobox->addItem ("Fixed");
@@ -371,7 +363,7 @@ namespace MR
           node_size_combobox->addItem ("Vector file");
           node_size_combobox->addItem ("Matrix file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
-          gridlayout->addWidget (node_size_combobox, 7, 2);
+          gridlayout->addWidget (node_size_combobox, 6, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -380,21 +372,7 @@ namespace MR
           node_size_button->setMin (0.0f);
           connect (node_size_button, SIGNAL (valueChanged()), this, SLOT (node_size_value_slot()));
           hlayout->addWidget (node_size_button, 1);
-          gridlayout->addLayout (hlayout, 7, 3, 1, 2);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          node_size_selected_label = new QLabel ("Selected node: ");
-          node_size_selected_label->setVisible (false);
-          hlayout->addWidget (node_size_selected_label);
-          node_size_selected_button = new AdjustButton (this, 0.01);
-          node_size_selected_button->setMin (0.0f);
-          node_size_selected_button->setValue (1.0f);
-          node_size_selected_button->setVisible (false);
-          connect (node_size_selected_button, SIGNAL (valueChanged()), this, SLOT (node_size_selected_value_slot()));
-          hlayout->addWidget (node_size_selected_button);
-          gridlayout->addLayout (hlayout, 8, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 6, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -421,10 +399,10 @@ namespace MR
           node_size_lower_button->setVisible (false);
           node_size_upper_button->setVisible (false);
           node_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 9, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 7, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
-          gridlayout->addWidget (label, 10, 0, 1, 2);
+          gridlayout->addWidget (label, 8, 0, 1, 2);
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
@@ -432,7 +410,7 @@ namespace MR
           node_alpha_combobox->addItem ("Vector file");
           node_alpha_combobox->addItem ("Matrix file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
-          gridlayout->addWidget (node_alpha_combobox, 10, 2);
+          gridlayout->addWidget (node_alpha_combobox, 8, 2);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
@@ -441,21 +419,7 @@ namespace MR
           node_alpha_slider->setSliderPosition (1000);
           connect (node_alpha_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_value_slot (int)));
           hlayout->addWidget (node_alpha_slider, 1);
-          gridlayout->addLayout (hlayout, 10, 3, 1, 2);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          node_alpha_selected_label = new QLabel ("Selected node: ");
-          node_alpha_selected_label->setVisible (false);
-          hlayout->addWidget (node_alpha_selected_label);
-          node_alpha_selected_slider = new QSlider (Qt::Horizontal);
-          node_alpha_selected_slider->setRange (0,1000);
-          node_alpha_selected_slider->setSliderPosition (1000);
-          node_alpha_selected_slider->setVisible (false);
-          connect (node_alpha_selected_slider, SIGNAL (valueChanged (int)), this, SLOT (node_alpha_selected_value_slot()));
-          hlayout->addWidget (node_alpha_selected_slider);
-          gridlayout->addLayout (hlayout, 11, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 8, 3, 1, 2);
 
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
@@ -482,7 +446,7 @@ namespace MR
           node_alpha_lower_button->setVisible (false);
           node_alpha_upper_button->setVisible (false);
           node_alpha_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 12, 1, 1, 4);
+          gridlayout->addLayout (hlayout, 9, 1, 1, 4);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -789,10 +753,10 @@ namespace MR
               node_shader.start (*this);
               projection.set (node_shader);
 
-              const bool use_alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
+              const bool alpha = use_alpha();
 
               gl::Enable (gl::DEPTH_TEST);
-              if (use_alpha) {
+              if (alpha) {
                 gl::Enable (gl::BLEND);
                 gl::DepthMask (gl::FALSE_);
                 gl::BlendEquation (gl::FUNC_ADD);
@@ -817,7 +781,7 @@ namespace MR
               const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
 
               GLuint node_alpha_ID = 0;
-              if (use_alpha)
+              if (alpha)
                 node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
 
               const GLuint node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
@@ -865,18 +829,17 @@ namespace MR
 
               for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
                 const Node& node (nodes[it->second]);
-                const bool is_selected = (node_selected_index == it->second);
-                if (node.to_draw() || (node_visibility == node_visibility_t::MATRIX_FILE && is_selected)) {
-                  gl::Uniform3fv (node_colour_ID, 1, (node_colour == node_colour_t::MATRIX_FILE && is_selected) ? node_selected_colour : node.get_colour());
-                  if (use_alpha)
-                    gl::Uniform1f (node_alpha_ID, (node_alpha == node_alpha_t::MATRIX_FILE && is_selected) ? node_selected_alpha : (node.get_alpha() * node_fixed_alpha));
+                if (node_visibility_given_selection (it->second)) {
+                  gl::Uniform3fv (node_colour_ID, 1, node_colour_given_selection (it->second));
+                  if (alpha)
+                    gl::Uniform1f (node_alpha_ID, node_alpha_given_selection (it->second) * node_fixed_alpha);
                   gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-                  gl::Uniform1f (node_size_ID, (node_size == node_size_t::MATRIX_FILE && is_selected) ? node_selected_size : (node.get_size() * node_size_scale_factor));
+                  gl::Uniform1f (node_size_ID, node_size_given_selection (it->second) * node_size_scale_factor);
                   switch (node_geometry) {
                     case node_geometry_t::SPHERE:
-                      if (use_alpha) {
+                      if (alpha) {
                         gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
                         gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                         gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
@@ -884,9 +847,9 @@ namespace MR
                       gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
                       break;
                     case node_geometry_t::CUBE:
-                      if (use_alpha) {
+                      if (alpha) {
                         gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
                         gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
                         gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
@@ -902,9 +865,9 @@ namespace MR
                       assert (0);
                       break;
                     case node_geometry_t::MESH:
-                      if (use_alpha) {
+                      if (alpha) {
                         gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node.get_alpha() * node_fixed_alpha) * lighting.specular);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
                         node.render_mesh();
                         gl::CullFace (gl::BACK);
                         gl::Uniform1f  (specular_ID, lighting.specular);
@@ -916,7 +879,7 @@ namespace MR
               }
 
               // Reset to defaults if we've been doing transparency
-              if (use_alpha) {
+              if (alpha) {
                 gl::Disable (gl::BLEND);
                 gl::DepthMask (gl::TRUE_);
               }
@@ -940,10 +903,10 @@ namespace MR
             edge_shader.start (*this);
             projection.set (edge_shader);
 
-            const bool use_alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
+            bool alpha = use_alpha();
 
             gl::Enable (gl::DEPTH_TEST);
-            if (use_alpha) {
+            if (alpha) {
               gl::Enable (gl::BLEND);
               gl::DepthMask (gl::FALSE_);
               gl::BlendEquation (gl::FUNC_ADD);
@@ -998,7 +961,7 @@ namespace MR
             const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
 
             GLuint edge_alpha_ID = 0;
-            if (use_alpha)
+            if (alpha)
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
             if (edge_colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
@@ -1010,23 +973,23 @@ namespace MR
 
             for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
               const Edge& edge (edges[it->second]);
-              if (edge.to_draw()) {
-                gl::Uniform3fv (edge_colour_ID, 1, edge.get_colour());
-                if (use_alpha)
-                  gl::Uniform1f (edge_alpha_ID, edge.get_alpha() * edge_fixed_alpha);
+              if (edge_visibility_given_selection (edge)) {
+                gl::Uniform3fv (edge_colour_ID, 1, edge_colour_given_selection (edge));
+                if (alpha)
+                  gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
                 switch (edge_geometry) {
                   case edge_geometry_t::LINE:
-                    gl::LineWidth (edge.get_size() * edge_size_scale_factor);
+                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
                     edge.render_line();
                     break;
                   case edge_geometry_t::CYLINDER:
                     gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
                     gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
                     gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
-                    gl::Uniform1f        (radius_ID,                    std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
-                    if (use_alpha) {
+                    gl::Uniform1f        (radius_ID,                    std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
+                    if (alpha) {
                       gl::CullFace (gl::FRONT);
-                      gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
                       gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                       gl::CullFace (gl::BACK);
                       gl::Uniform1f  (specular_ID, lighting.specular);
@@ -1034,14 +997,14 @@ namespace MR
                     gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
                     break;
                   case edge_geometry_t::STREAMLINE:
-                    gl::LineWidth (edge.get_size() * edge_size_scale_factor);
+                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
                     edge.render_streamline();
                     break;
                   case edge_geometry_t::STREAMTUBE:
-                    gl::Uniform1f (radius_ID, std::sqrt (edge.get_size() * edge_size_scale_factor / Math::pi));
-                    if (use_alpha) {
+                    gl::Uniform1f (radius_ID, std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
+                    if (alpha) {
                       gl::CullFace (gl::FRONT);
-                      gl::Uniform1f  (specular_ID, (1.0 - edge.get_alpha() * edge_fixed_alpha) * lighting.specular);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
                       edge.render_streamtube();
                       gl::CullFace (gl::BACK);
                       gl::Uniform1f  (specular_ID, lighting.specular);
@@ -1052,7 +1015,7 @@ namespace MR
             }
 
             // Reset to defaults if we've been doing transparency
-            if (use_alpha) {
+            if (alpha) {
               gl::Disable (gl::BLEND);
               gl::DepthMask (gl::TRUE_);
             }
@@ -1247,16 +1210,28 @@ namespace MR
         void Connectome::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
         {
           QModelIndexList list = node_list_view->selectionModel()->selectedRows();
-          if (!list.size())
-            node_selected_index = 0;
-          else
-            node_selected_index = list[0].row()+1;
+          selected_nodes.clear();
+          selected_node_count = list.size();
+          for (int i = 0; i != list.size(); ++i)
+            selected_nodes[list[i].row()] = true;
           if (node_colour == node_colour_t::MATRIX_FILE)
             calculate_node_colours();
           if (node_size == node_size_t::MATRIX_FILE)
             calculate_node_sizes();
           if (node_alpha == node_alpha_t::MATRIX_FILE)
             calculate_node_alphas();
+          window.updateGL();
+        }
+
+        void Connectome::node_selection_settings_dialog_slot()
+        {
+          if (!node_selection_dialog)
+            node_selection_dialog.reset (new NodeSelectionSettingsDialog (&window, "Node selection visual settings", node_selection_settings));
+          node_selection_dialog->show();
+        }
+
+        void Connectome::node_selection_settings_changed_slot()
+        {
           window.updateGL();
         }
 
@@ -1500,8 +1475,6 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (5);
-              node_colour_selected_label->setVisible (false);
-              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1512,8 +1485,6 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (5);
-              node_colour_selected_label->setVisible (false);
-              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1538,8 +1509,6 @@ namespace MR
               }
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (5);
-              node_colour_selected_label->setVisible (false);
-              node_colour_selected_button->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1563,8 +1532,6 @@ namespace MR
                 else
                   node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
                 node_colour_combobox->setCurrentIndex (5);
-                node_colour_selected_label->setVisible (false);
-                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (true);
                 node_colour_lower_button->setVisible (true);
                 node_colour_upper_button->setVisible (true);
@@ -1582,8 +1549,6 @@ namespace MR
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (5);
-                node_colour_selected_label->setVisible (false);
-                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (false);
                 node_colour_lower_button->setVisible (false);
                 node_colour_upper_button->setVisible (false);
@@ -1608,8 +1573,6 @@ namespace MR
                 else
                   node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
                 node_colour_combobox->setCurrentIndex (5);
-                node_colour_selected_label->setVisible (true);
-                node_colour_selected_button->setVisible (true);
                 node_colour_range_label->setVisible (true);
                 node_colour_lower_button->setVisible (true);
                 node_colour_upper_button->setVisible (true);
@@ -1627,8 +1590,6 @@ namespace MR
                 node_colour_colourmap_button->setVisible (false);
                 node_colour_fixedcolour_button->setVisible (true);
                 node_colour_combobox->removeItem (5);
-                node_colour_selected_label->setVisible (false);
-                node_colour_selected_button->setVisible (false);
                 node_colour_range_label->setVisible (false);
                 node_colour_lower_button->setVisible (false);
                 node_colour_upper_button->setVisible (false);
@@ -1652,8 +1613,6 @@ namespace MR
               if (node_size == node_size_t::FIXED) return;
               node_size = node_size_t::FIXED;
               node_size_combobox->removeItem (4);
-              node_size_selected_label->setVisible (false);
-              node_size_selected_button->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
               node_size_upper_button->setVisible (false);
@@ -1663,8 +1622,6 @@ namespace MR
               if (node_size == node_size_t::NODE_VOLUME) return;
               node_size = node_size_t::NODE_VOLUME;
               node_size_combobox->removeItem (4);
-              node_size_selected_label->setVisible (false);
-              node_size_selected_button->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
               node_size_upper_button->setVisible (false);
@@ -1686,8 +1643,6 @@ namespace MR
                 else
                   node_size_combobox->setItemText (4, node_values_from_file_size.get_name());
                 node_size_combobox->setCurrentIndex (4);
-                node_size_selected_label->setVisible (false);
-                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (true);
                 node_size_lower_button->setVisible (true);
                 node_size_upper_button->setVisible (true);
@@ -1705,8 +1660,6 @@ namespace MR
                 node_size_combobox->setCurrentIndex (0);
                 node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (4);
-                node_size_selected_label->setVisible (false);
-                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (false);
                 node_size_lower_button->setVisible (false);
                 node_size_upper_button->setVisible (false);
@@ -1729,8 +1682,6 @@ namespace MR
                 else
                   node_size_combobox->setItemText (4, node_values_from_file_size.get_name());
                 node_size_combobox->setCurrentIndex (4);
-                node_size_selected_label->setVisible (true);
-                node_size_selected_button->setVisible (true);
                 node_size_range_label->setVisible (true);
                 node_size_lower_button->setVisible (true);
                 node_size_upper_button->setVisible (true);
@@ -1748,8 +1699,6 @@ namespace MR
                 node_size_combobox->setCurrentIndex (0);
                 node_size = node_size_t::FIXED;
                 node_size_combobox->removeItem (4);
-                node_size_selected_label->setVisible (false);
-                node_size_selected_button->setVisible (false);
                 node_size_range_label->setVisible (false);
                 node_size_lower_button->setVisible (false);
                 node_size_upper_button->setVisible (false);
@@ -1773,8 +1722,6 @@ namespace MR
               if (node_alpha == node_alpha_t::FIXED) return;
               node_alpha = node_alpha_t::FIXED;
               node_alpha_combobox->removeItem (4);
-              node_alpha_selected_label->setVisible (false);
-              node_alpha_selected_slider->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
               node_alpha_upper_button->setVisible (false);
@@ -1796,8 +1743,6 @@ namespace MR
                 node_alpha = node_alpha_t::FIXED;
               }
               node_alpha_combobox->removeItem (4);
-              node_alpha_selected_label->setVisible (false);
-              node_alpha_selected_slider->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
               node_alpha_upper_button->setVisible (false);
@@ -1819,8 +1764,6 @@ namespace MR
                 else
                   node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
                 node_alpha_combobox->setCurrentIndex (4);
-                node_alpha_selected_label->setVisible (false);
-                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (true);
                 node_alpha_lower_button->setVisible (true);
                 node_alpha_upper_button->setVisible (true);
@@ -1838,8 +1781,6 @@ namespace MR
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (4);
-                node_alpha_selected_label->setVisible (false);
-                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (false);
                 node_alpha_lower_button->setVisible (false);
                 node_alpha_upper_button->setVisible (false);
@@ -1862,8 +1803,6 @@ namespace MR
                 else
                   node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
                 node_alpha_combobox->setCurrentIndex (4);
-                node_alpha_selected_label->setVisible (true);
-                node_alpha_selected_slider->setVisible (true);
                 node_alpha_range_label->setVisible (true);
                 node_alpha_lower_button->setVisible (true);
                 node_alpha_upper_button->setVisible (true);
@@ -1881,8 +1820,6 @@ namespace MR
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
                 node_alpha_combobox->removeItem (4);
-                node_alpha_selected_label->setVisible (false);
-                node_alpha_selected_slider->setVisible (false);
                 node_alpha_range_label->setVisible (false);
                 node_alpha_lower_button->setVisible (false);
                 node_alpha_upper_button->setVisible (false);
@@ -1931,22 +1868,11 @@ namespace MR
           calculate_node_colours();
           window.updateGL();
         }
-        void Connectome::node_colour_selected_value_slot()
-        {
-          const QColor c = node_colour_selected_button->color();
-          node_selected_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
-          window.updateGL();
-        }
         void Connectome::node_colour_parameter_slot()
         {
           node_colour_lower_button->setMax (node_colour_upper_button->value());
           node_colour_upper_button->setMin (node_colour_lower_button->value());
           calculate_node_colours();
-          window.updateGL();
-        }
-        void Connectome::node_size_selected_value_slot()
-        {
-          node_selected_size = node_size_selected_button->value();
           window.updateGL();
         }
         void Connectome::node_size_value_slot()
@@ -1959,11 +1885,6 @@ namespace MR
           node_size_lower_button->setMax (node_size_upper_button->value());
           node_size_upper_button->setMin (node_size_lower_button->value());
           calculate_node_sizes();
-          window.updateGL();
-        }
-        void Connectome::node_alpha_selected_value_slot()
-        {
-          node_selected_alpha = node_alpha_selected_slider->value() / 1000.0f;
           window.updateGL();
         }
         void Connectome::node_alpha_value_slot (int position)
@@ -2390,6 +2311,7 @@ namespace MR
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("(none)");
           node_list_model->clear();
+          selected_nodes.resize (0);
           if (node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
             node_visibility_combobox->removeItem (5);
             node_visibility_combobox->setCurrentIndex (0);
@@ -2464,6 +2386,7 @@ namespace MR
           crop_to_slab_button->setEnabled (value && crop_to_slab);
 
           node_list_view->setEnabled (value);
+          node_selection_settings_button->setEnabled (value);
 
           node_visibility_combobox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
@@ -2477,23 +2400,17 @@ namespace MR
           node_colour_combobox->setEnabled (value);
           node_colour_fixedcolour_button->setEnabled (value);
           node_colour_colourmap_button->setEnabled (value);
-          node_colour_selected_label->setEnabled (value);
-          node_colour_selected_button->setEnabled (value);
           node_colour_lower_button->setEnabled (value);
           node_colour_upper_button->setEnabled (value);
 
           node_size_combobox->setEnabled (value);
           node_size_button->setEnabled (value);
-          node_size_selected_label->setEnabled (value);
-          node_size_selected_button->setEnabled (value);
           node_size_lower_button->setEnabled (value);
           node_size_upper_button->setEnabled (value);
           node_size_invert_checkbox->setEnabled (value);
 
           node_alpha_combobox->setEnabled (value);
           node_alpha_slider->setEnabled (value);
-          node_alpha_selected_label->setEnabled (value);
-          node_alpha_selected_slider->setEnabled (value);
           node_alpha_lower_button->setEnabled (value);
           node_alpha_upper_button->setEnabled (value);
           node_alpha_invert_checkbox->setEnabled (value);
@@ -2620,6 +2537,9 @@ namespace MR
           update_node_overlay();
 
           node_list_model->initialize();
+          node_list_view->hideRow (0);
+
+          selected_nodes.resize (num_nodes()+1);
 
         }
 
@@ -2760,6 +2680,15 @@ namespace MR
           } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
             assert (node_values_from_file_visibility.size() == num_edges());
+            node_t node_selected_index = 0;
+            if (selected_nodes.count() == 1) {
+              for (node_t i = 1; i != num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  node_selected_index = i;
+                  break;
+                }
+              }
+            }
             if (node_selected_index) {
               const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
               const float threshold = node_visibility_threshold_button->value();
@@ -2824,6 +2753,15 @@ namespace MR
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
             assert (node_values_from_file_colour.size() == num_edges());
+            node_t node_selected_index = 0;
+            if (selected_nodes.count() == 1) {
+              for (node_t i = 1; i != num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  node_selected_index = i;
+                  break;
+                }
+              }
+            }
             if (node_selected_index) {
               const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -2868,6 +2806,15 @@ namespace MR
           } else if (node_size == node_size_t::MATRIX_FILE) {
 
             assert (node_values_from_file_size.size() == num_edges());
+            node_t node_selected_index = 0;
+            if (selected_nodes.count() == 1) {
+              for (node_t i = 1; i != num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  node_selected_index = i;
+                  break;
+                }
+              }
+            }
             if (node_selected_index) {
               const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
               const bool invert = node_size_invert_checkbox->isChecked();
@@ -2917,6 +2864,15 @@ namespace MR
           } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
             assert (node_values_from_file_alpha.size() == num_edges());
+            node_t node_selected_index = 0;
+            if (selected_nodes.count() == 1) {
+              for (node_t i = 1; i != num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  node_selected_index = i;
+                  break;
+                }
+              }
+            }
             if (node_selected_index) {
               const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
               const bool invert = node_alpha_invert_checkbox->isChecked();
@@ -3095,6 +3051,155 @@ namespace MR
 
 
 
+        bool Connectome::node_visibility_given_selection (const node_t index)
+        {
+          if (selected_nodes[index]) {
+            if (node_selection_settings.get_node_selected_visibility_override())
+              return true;
+            else
+              return nodes[index].is_visible();
+          } else if (selected_node_count) {
+            if (node_selection_settings.get_node_not_selected_visibility_override())
+              return false;
+            else
+              return nodes[index].is_visible();
+          } else {
+            return nodes[index].is_visible();
+          }
+        }
+        Point<float> Connectome::node_colour_given_selection (const node_t index)
+        {
+          if (selected_nodes[index]) {
+            const float fade = node_selection_settings.get_node_selected_colour_fade();
+            return ((fade * node_selection_settings.get_node_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
+          } else if (selected_node_count) {
+            const float fade = node_selection_settings.get_node_not_selected_colour_fade();
+            return ((fade * node_selection_settings.get_node_not_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
+          } else {
+            return nodes[index].get_colour();
+          }
+        }
+        float Connectome::node_size_given_selection (const node_t index)
+        {
+          if (selected_nodes[index]) {
+            return (node_selection_settings.get_node_selected_size_multiplier() * nodes[index].get_size());
+          } else if (selected_node_count) {
+            return (node_selection_settings.get_node_not_selected_size_multiplier() * nodes[index].get_size());
+          } else {
+            return nodes[index].get_size();
+          }
+        }
+        float Connectome::node_alpha_given_selection (const node_t index)
+        {
+          if (selected_nodes[index]) {
+            return (node_selection_settings.get_node_selected_alpha_multiplier() * nodes[index].get_alpha());
+          } else if (selected_node_count) {
+            return (node_selection_settings.get_node_not_selected_alpha_multiplier() * nodes[index].get_alpha());
+          } else {
+            return nodes[index].get_alpha();
+          }
+        }
+        bool Connectome::edge_visibility_given_selection (const Edge& edge)
+        {
+          switch (selected_node_count) {
+            case 0:
+              return edge.is_visible();
+            case 1:
+              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)]) {
+                if (node_selection_settings.get_edge_selected_visibility_override())
+                  return true;
+                else
+                  return edge.is_visible();
+              } else {
+                if (node_selection_settings.get_edge_not_selected_visibility_override())
+                  return false;
+                else
+                  return edge.is_visible();
+              }
+            default:
+              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)]) {
+                if (node_selection_settings.get_edge_selected_visibility_override())
+                  return true;
+                else
+                  return edge.is_visible();
+              } else {
+                if (node_selection_settings.get_edge_not_selected_visibility_override())
+                  return false;
+                else
+                  return edge.is_visible();
+              }
+          }
+        }
+        Point<float> Connectome::edge_colour_given_selection (const Edge& edge)
+        {
+          float fade = 0.0f;
+          switch (selected_node_count) {
+            case 0:
+              return edge.get_colour();
+            case 1:
+              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
+                fade = node_selection_settings.get_edge_selected_colour_fade();
+              else
+                fade = node_selection_settings.get_edge_not_selected_colour_fade();
+              break;
+            default:
+              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
+                fade = node_selection_settings.get_edge_selected_colour_fade();
+              else
+                fade = node_selection_settings.get_edge_not_selected_colour_fade();
+              break;
+          }
+          return ((fade * node_selection_settings.get_edge_selected_colour()) + ((1.0f - fade) * edge.get_colour()));
+        }
+        float Connectome::edge_size_given_selection (const Edge& edge)
+        {
+          float multiplier = 0.0f;
+          switch (selected_node_count) {
+            case 0:
+              return edge.get_size();
+            case 1:
+              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
+                multiplier = node_selection_settings.get_edge_selected_size_multiplier();
+              else
+                multiplier = node_selection_settings.get_edge_not_selected_size_multiplier();
+              break;
+            default:
+              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
+                multiplier = node_selection_settings.get_edge_selected_size_multiplier();
+              else
+                multiplier = node_selection_settings.get_edge_not_selected_size_multiplier();
+              break;
+          }
+          return (multiplier * edge.get_size());
+        }
+        float Connectome::edge_alpha_given_selection (const Edge& edge)
+        {
+          float multiplier = 0.0f;
+          switch (selected_node_count) {
+            case 0:
+              return edge.get_alpha();
+            case 1:
+              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
+                multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
+              else
+                multiplier = node_selection_settings.get_edge_not_selected_alpha_multiplier();
+              break;
+            default:
+              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
+                multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
+              else
+                multiplier = node_selection_settings.get_edge_not_selected_alpha_multiplier();
+              break;
+          }
+          return (multiplier * edge.get_alpha());
+        }
+
+
+
+
+
+
+
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
@@ -3155,6 +3260,14 @@ namespace MR
         bool Connectome::use_lighting() const
         {
           return lighting_checkbox->isChecked();
+        }
+
+        bool Connectome::use_alpha() const
+        {
+          bool alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
+          if (selected_node_count && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_node_not_selected_alpha_multiplier() < 1.0f))
+            alpha = true;
+          return alpha;
         }
 
 
