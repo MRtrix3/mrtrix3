@@ -45,13 +45,6 @@ namespace MR
 
           Q_OBJECT
 
-          // TODO Store all of the actual settings regarding how node / edge visual properties
-          //   change upon node selection
-          // Since this will have its own frame, there can be more detailed settings
-          // e.g. dedicated fade for each visual property
-          // Edges: - whether one or both nodes must be selected in order to highlight
-          //        - Same as nodes i.e. value & fade for each visual property
-
         public:
           NodeSelectionSettings();
 
@@ -191,6 +184,7 @@ namespace MR
 
           NodeSelectionSettingsFrame* frame;
       };
+
 
 
 

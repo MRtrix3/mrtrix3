@@ -66,7 +66,7 @@
 
 
 
-// TODO Elements that still need to be added to the Connectome tool:
+// Elements that could be added to the Connectome tool:
 //
 // * Drawing edges
 //   - Display options:
@@ -75,9 +75,7 @@
 //     * Implement lighting for exemplars
 //     * Consider a cross-talk solution with the tractography tool;
 //       make use of more advanced tractography shaders
-//       Would however require additions to tractography shaders, e.g.
-//       - variable radius between exemplars
-//       - manually providing tangents (not really required?)
+//       Would however require addition to tractography shaders: variable radius between exemplars
 //       If attempting this, make use of the assignments matrix now provided by tck2connectome, loading
 //       it and the tractogram file as input
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
@@ -90,15 +88,10 @@
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
 //
 // * OpenGL drawing general:
-//   - Solve the 'QWidget::repaint: Recursive repaint detected' issue
-//     (arose with implementation of the node overlay image)
-//   - Make transparency sliders a little more sensible
-//     (may need linear scale in 2D mode, non-linear in 3D)
-//     Think this only applies to the volume render
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
-//   - Add compatibility with volume render clip planes
+//   - Add compatibility with clip planes
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
@@ -452,11 +445,6 @@ namespace MR
             friend class Node_list_model;
 
         };
-
-
-
-
-
 
 
 
