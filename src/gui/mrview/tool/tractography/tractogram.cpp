@@ -49,25 +49,25 @@ namespace MR
           const Tractogram& tractogram = dynamic_cast<const Tractogram&>(displayable);
 
           std::string source = 
-            "layout (location = 0) in vec3 vertex;\n";
+            "layout (location = 0) in vec3 vertex;\n"
+            "layout (location = 1) in vec3 prev_vertex;\n"
+            "layout (location = 2) in vec3 next_vertex;\n";
 
           switch (color_type) {
             case Direction: 
-              source += "layout (location = 1) in vec3 prev_vertex;\n"
-                "layout (location = 2) in vec3 next_vertex;\n";
             break;
             case Ends:
-              source += "layout (location = 1) in vec3 end_colour;\n";
+              source += "layout (location = 3) in vec3 end_colour;\n";
               break;
             case Manual:
               break;
             case ScalarFile:
-              source += "layout (location = 1) in float amp;\n";
+              source += "layout (location = 3) in float amp;\n";
               break;
           }
 
           source +=
-          "uniform mat4 MVP;\n"
+          "uniform mat4 MVP, MV;\n"
           "uniform float line_thickness;\n"
 
           // Uniforms won't be included in compiled shader if not referenced
@@ -77,8 +77,10 @@ namespace MR
           "uniform float slab_width;\n"
           "uniform vec3 const_colour;\n"
           "uniform float offset, scale;\n"
+          "uniform float scale_x, scale_y;\n"
 
-          "out vec3 v_colour, v_pos;\n"
+          "out vec3 v_colour, v_tangent;\n"
+          "out vec2 v_end;\n"
           "out int v_visible;\n";
 
 
@@ -91,9 +93,14 @@ namespace MR
           // Main function
           source +=
             "void main() {\n"
-            "  gl_Position = MVP * vec4(vertex, 1);\n";
+            "  gl_Position = MVP * vec4(vertex, 1);\n"
+            "  vec2 p_pos = (MVP * vec4(prev_vertex, 1)).xy;\n"
+            "  vec2 n_pos = (MVP * vec4(next_vertex, 1)).xy;\n"
+            "  v_end = line_thickness * normalize (vec2 ((n_pos.y-p_pos.y)/scale_x, (p_pos.x-n_pos.x)/scale_y));\n"
+            "  v_end.x *= scale_y; v_end.y *= scale_x;\n"
+            ;
           if (use_lighting)
-            source += "  v_pos = vertex;\n";
+            source += "  v_tangent = normalize (mat3(MV) * (next_vertex-vertex));\n";
           // TODO this probably needs to take the aspect ratio into account:
           source +=
             "  v_visible = ( ( abs(gl_Position.x) < 1+line_thickness )\n" 
@@ -144,13 +151,13 @@ namespace MR
           "layout(triangle_strip, max_vertices = 4) out;\n"
           "uniform float line_thickness;\n"
           "uniform float downscale_factor;\n"
-          "uniform float scale_x, scale_y;\n"
           "uniform mat4 MV;\n"
 
-          "in vec3 v_colour[], v_pos[];\n"
+          "in vec3 v_colour[], v_tangent[];\n"
+          "in vec2 v_end[];\n"
           "in int v_visible[];\n";
 
-          if(color_type == ScalarFile)
+          if (color_type == ScalarFile)
            source +=
             "in float v_amp[];\n" // does this need to be declared flat? I don't see how this could be interpolated anyway...
             "out float g_amp;\n";
@@ -159,14 +166,14 @@ namespace MR
               "out float g_include;\n";
 
 
-          if(use_lighting)
+          if (use_lighting)
            source +=
             "const float PI = " + str(Math::pi) + ";\n"
+            "out vec3 g_tangent;\n"
             "out float g_height;\n";
 
           source +=
           "out vec3 fColour;\n"
-          "out vec3 g_tangent;\n"
 
           "void main() {\n"
 
@@ -175,26 +182,28 @@ namespace MR
           "    return;\n";
 
           if (use_lighting)
-            source += "  g_tangent = normalize (mat3(MV) * (v_pos[1] - v_pos[0]));\n"
+            source += "  g_tangent = v_tangent[0];\n"
               "  g_height = 0.0;\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
 
-          if(color_type == ScalarFile)
+          if (color_type == ScalarFile)
             source += "  g_amp = v_amp[0];\n";
 
-          source += "  vec3 segdir = vec3 (normalize ((gl_in[1].gl_Position - gl_in[0].gl_Position).xy), 0.0);\n"
-            "  vec4 normal = vec4 (line_thickness * normalize (vec2 (-scale_x * segdir.y, scale_y * segdir.x)), 0, 0);\n"
-            "  vec4 dir = vec4 (0.5 * line_thickness * segdir, 0);\n"
+          //source += "  vec3 segdir = vec3 (normalize ((gl_in[1].gl_Position - gl_in[0].gl_Position).xy), 0.0);\n"
+            //"  vec4 normal = vec4 (line_thickness * normalize (vec2 (-scale_x * segdir.y, scale_y * segdir.x)), 0, 0);\n"
+            //"  vec4 dir = vec4 (0.5 * line_thickness * segdir, 0);\n";
+
+          source += 
             "  fColour = v_colour[0];\n"
-            "  gl_Position = gl_in[0].gl_Position - normal - dir;\n"
+            "  gl_Position = gl_in[0].gl_Position - vec4(v_end[0],0,0);\n"
             "  EmitVertex();\n";
 
           if (use_lighting)
             source += "  g_height = PI;\n";
 
           source +=
-            "  gl_Position = gl_in[0].gl_Position + normal - dir;\n"
+            "  gl_Position = gl_in[0].gl_Position + vec4(v_end[0],0,0);\n"
             "  EmitVertex();\n" 
             "  fColour = v_colour[1];\n";
 
@@ -205,13 +214,13 @@ namespace MR
           if(use_lighting)
             source += "  g_height = 0.0;\n";
           source +=
-            "  gl_Position = gl_in[1].gl_Position - normal + dir;\n"
+            "  gl_Position = gl_in[1].gl_Position - vec4 (v_end[1],0,0);\n"
             "  EmitVertex();\n";
 
           if(use_lighting)
             source += "  g_height = PI;\n";
           source += 
-            "  gl_Position = gl_in[1].gl_Position + normal + dir;\n"
+            "  gl_Position = gl_in[1].gl_Position + vec4 (v_end[1],0,0);\n"
             "  EmitVertex();\n"
             "}\n";
 
@@ -325,6 +334,7 @@ namespace MR
             scalarfile_by_direction (false),
             show_colour_bar (true),
             color_type (Direction),
+            original_fov (NAN),
             scalar_filename (""),
             window (window),
             tractography_tool (tool),
@@ -391,22 +401,22 @@ namespace MR
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "shine"), tractography_tool.lighting->shine);
           }
 
-          float dim[] = {
-            window.image()->header().dim (0) * window.image()->header().vox (0),
-            window.image()->header().dim (1) * window.image()->header().vox (1),
-            window.image()->header().dim (2) * window.image()->header().vox (2)
-          };
+          if (!std::isfinite (original_fov)) {
+            // set line thickness once upon loading, but don't touch it after that:
+            // it shouldn't change when the background image changes
+            float dim[] = {
+              window.image()->header().dim (0) * window.image()->header().vox (0),
+              window.image()->header().dim (1) * window.image()->header().vox (1),
+              window.image()->header().dim (2) * window.image()->header().vox (2)
+            };
+            original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
+          }
 
-          int x, y;
-          window.image()->get_axes (window.plane(), x, y);
-
-          float original_fov = std::max (dim[x], dim[y]);
-          line_thickness_screenspace = tractography_tool.line_thickness * original_fov / window.FOV();
+          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window.FOV()*transform.width()*transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "aspect_ratio"), transform.width() / static_cast<float>(transform.height()));
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.height() / static_cast<float>(transform.width()));
-          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.width() / static_cast<float>(transform.height()));
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
+          gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_y"), transform.height());
 
           if (tractography_tool.line_opacity < 1.0) {
             gl::Enable (gl::BLEND);
@@ -453,13 +463,13 @@ namespace MR
               switch (color_type) {
                 case TrackColourType::Ends:
                   gl::BindBuffer (gl::ARRAY_BUFFER, colour_buffers[buf]);
-                  gl::EnableVertexAttribArray (1);
-                  gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
+                  gl::EnableVertexAttribArray (3);
+                  gl::VertexAttribPointer (3, 3, gl::FLOAT, gl::FALSE_, 3 * sample_stride * sizeof(float), (void*)0);
                   break;
                 case TrackColourType::ScalarFile:
                   gl::BindBuffer (gl::ARRAY_BUFFER, scalar_buffers[buf]);
-                  gl::EnableVertexAttribArray (1);
-                  gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
+                  gl::EnableVertexAttribArray (3);
+                  gl::VertexAttribPointer (3, 1, gl::FLOAT, gl::FALSE_, sample_stride * sizeof(float), (void*)0);
                   break;
                 default:
                   break;
@@ -468,12 +478,10 @@ namespace MR
               gl::BindBuffer (gl::ARRAY_BUFFER, vertex_buffers[buf]);
               gl::EnableVertexAttribArray (0);
               gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(3*sample_stride*sizeof(float)));
-              if (color_type == TrackColourType::Direction) {
-                gl::EnableVertexAttribArray (1);
-                gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_,  3*sample_stride*sizeof(float), (void*)0);
-                gl::EnableVertexAttribArray (2);
-                gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(6*sample_stride*sizeof(float)));
-              }
+              gl::EnableVertexAttribArray (1);
+              gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_,  3*sample_stride*sizeof(float), (void*)0);
+              gl::EnableVertexAttribArray (2);
+              gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sample_stride*sizeof(float), (void*)(6*sample_stride*sizeof(float)));
 
               for(size_t j = 0, M = track_sizes[buf].size(); j < M; ++j) {
                 track_sizes[buf][j] = (GLint)std::ceil(original_track_sizes[buf][j] / (float)sample_stride);
@@ -577,8 +585,8 @@ namespace MR
               file (tck);
               const Point<float> tangent ((tck.back() - tck.front()).normalise());
               const Point<float> colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
-              for (std::vector< Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
-                *i = colour;
+              for (auto& i : tck)
+                i = colour;
 
               // Pre padding to coincide with tracks buffer
               for (size_t i = 0; i < max_sample_stride; ++i)

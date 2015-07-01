@@ -79,7 +79,7 @@ namespace MR
             bool show_colour_bar;
             bool should_update_stride;
             TrackColourType color_type;
-            float colour[3];
+            float colour[3], original_fov;
             std::string scalar_filename;
 
             class Shader : public Displayable::Shader {
