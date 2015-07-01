@@ -581,13 +581,13 @@ namespace MR
                 *i = colour;
 
               // Pre padding to coincide with tracks buffer
-              for (size_t i = 1; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < max_sample_stride; ++i)
                 buffer.push_back(tck.front());
 
               buffer.insert (buffer.end(), tck.begin(), tck.end());
 
               // Post padding to coincide with tracks buffer
-              for (size_t i = 1; i < max_sample_stride; ++i)
+              for (size_t i = 0; i < max_sample_stride; ++i)
                 buffer.push_back(tck.back());
 
             }
