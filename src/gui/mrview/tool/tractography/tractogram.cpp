@@ -109,7 +109,7 @@ namespace MR
 
           if(do_crop_to_slab)
             source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n"
-              "  v_visible = ( v_visible > 0 || (v_include >= 0 && v_include < 1) ) ? 1 : 0;\n";
+              "  v_visible = ( v_visible > 0 && (v_include >= 0 && v_include < 1) ) ? 1 : 0;\n";
 
           switch (color_type) {
             case Direction:
