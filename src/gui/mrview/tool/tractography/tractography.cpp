@@ -190,6 +190,8 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
 
             lighting = new GL::Lighting (parent); 
+            lighting->diffuse = 0.8;
+            lighting->shine = 5.0;
             connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
 
 
