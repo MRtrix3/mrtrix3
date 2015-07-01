@@ -100,16 +100,6 @@
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with volume render clip planes
 //
-// * Nodes GUI section
-//   - Implement list view with list of nodes, enable manual selection of nodes
-//     Node selection from list should affect some visual property e.g. colour, alpha, in
-//       addition to row selection if any node property is based on a matrix file
-//     However: Should this setting be in the toolbar, or should it be just config settings?
-//   - Selection of multiple nodes:
-//     * Need to select operator by which multiple rows from matrix are combined
-//       May have to rely on a good tool tip to explain how this works
-//       Only enable control if more than one node is currently selected
-//
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
 //
@@ -141,6 +131,9 @@ namespace MR
         class Connectome : public Base
         {
             Q_OBJECT
+
+            enum class node_visibility_matrix_operator_t { ANY, ALL };
+            enum class node_property_matrix_operator_t { MIN, MEAN, SUM, MAX };
 
           public:
 
@@ -180,14 +173,18 @@ namespace MR
             void node_size_selection_slot (int);
             void node_alpha_selection_slot (int);
 
+            void node_visibility_matrix_operator_slot (int);
             void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
             void point_smooth_slot (int);
+            void node_colour_matrix_operator_slot (int);
             void node_fixed_colour_change_slot();
             void node_colour_parameter_slot();
+            void node_size_matrix_operator_slot (int);
             void node_size_value_slot();
             void node_size_parameter_slot();
+            void node_alpha_matrix_operator_slot (int);
             void node_alpha_value_slot (int);
             void node_alpha_parameter_slot();
 
@@ -223,6 +220,7 @@ namespace MR
             QPushButton *node_selection_settings_button;
 
             QComboBox *node_visibility_combobox;
+            QComboBox *node_visibility_matrix_operator_combobox;
             QLabel *node_visibility_warning_icon;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
@@ -236,18 +234,21 @@ namespace MR
             QLabel *node_geometry_overlay_3D_warning_icon;
 
             QComboBox *node_colour_combobox;
+            QComboBox *node_colour_matrix_operator_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
+            QComboBox *node_size_matrix_operator_combobox;
             AdjustButton *node_size_button;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
 
             QComboBox *node_alpha_combobox;
+            QComboBox *node_alpha_matrix_operator_combobox;
             QSlider *node_alpha_slider;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
@@ -359,6 +360,8 @@ namespace MR
             node_t selected_node_count;
 
             bool have_meshes;
+            node_visibility_matrix_operator_t node_visibility_matrix_operator;
+            node_property_matrix_operator_t node_colour_matrix_operator, node_size_matrix_operator, node_alpha_matrix_operator;
             Point<float> node_fixed_colour;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
