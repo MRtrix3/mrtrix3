@@ -96,7 +96,7 @@ void run ()
     }
   }
 
-  MeshMulti meshes (lower_corners.size(), Mesh::Mesh());
+  MeshMulti meshes (lower_corners.size(), MR::Mesh::Mesh());
   meshes[0].set_name ("none");
 
   {

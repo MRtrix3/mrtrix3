@@ -80,7 +80,7 @@ void run ()
 
   // Read in the mesh data
   try {
-    Mesh::Mesh mesh (argument[0]);
+    MR::Mesh::Mesh mesh (argument[0]);
     meshes.push_back (mesh);
   } catch (...) {
     meshes.load (argument[0]);
