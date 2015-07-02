@@ -301,6 +301,7 @@ namespace MR
 
           std::vector<double> render_times;
           double best_FPS, best_FPS_time;
+          bool show_FPS;
 
           friend class Image;
           friend class Mode::Base;

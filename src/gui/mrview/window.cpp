@@ -203,7 +203,8 @@ namespace MR
         tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
         tool_has_focus (nullptr), 
-        best_FPS (NAN)
+        best_FPS (NAN),
+        show_FPS (false)
       {
 
         setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -1259,36 +1260,36 @@ namespace MR
         gl::DrawBuffer (gl::BACK);
         mode->paintGL();
 
-        // TODO add commandline option for this...
-        render_times.push_back (Timer::current_time());
-        while (render_times.size() > 10)
-          render_times.erase (render_times.begin());
-        double FPS = NAN;
-        std::string FPS_string = "-";
-        std::string FPS_best_string = "-";
+        if (show_FPS) {
+          render_times.push_back (Timer::current_time());
+          while (render_times.size() > 10)
+            render_times.erase (render_times.begin());
+          double FPS = NAN;
+          std::string FPS_string = "-";
+          std::string FPS_best_string = "-";
 
-        if (render_times.back() - best_FPS_time > 5.0)
-          best_FPS = NAN;
+          if (render_times.back() - best_FPS_time > 3.0)
+            best_FPS = NAN;
 
-        if (render_times.size() > 5) {
-          FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
-          FPS_string = str (FPS, 4);
-          if (!std::isfinite (best_FPS) || FPS > best_FPS) {
-            best_FPS = FPS;
-            best_FPS_time = render_times.back();
+          if (render_times.size() == 10) {
+            FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
+            FPS_string = str (FPS, 4);
+            if (!std::isfinite (best_FPS) || FPS > best_FPS) {
+              best_FPS = FPS;
+              best_FPS_time = render_times.back();
+            }
           }
+          else 
+            best_FPS = NAN;
 
+          if (std::isfinite (best_FPS))
+            FPS_best_string = str (best_FPS, 4);
+          mode->projection.setup_render_text (0.0, 1.0, 0.0);
+          mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
+          mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
+          mode->projection.done_render_text();
         }
-        else 
-          best_FPS = NAN;
 
-        if (std::isfinite (best_FPS))
-          FPS_best_string = str (best_FPS, 4);
-        mode->projection.setup_render_text (0.0, 1.0, 0.0);
-        mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
-        mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
-        mode->projection.done_render_text();
-        
         // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
         // otherwise we get transparent windows...
 #if QT_VERSION >= 0x050400
@@ -1520,15 +1521,15 @@ namespace MR
       {
 #undef TOOL
 #define TOOL(classname, name, description) \
-          stub = lowercase (#classname "."); \
-          if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
-            tool_group->actions()[tool_id]->setChecked (true); \
-            select_tool_slot (tool_group->actions()[tool_id]); \
-            if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
-              continue; \
-          } \
-          ++tool_id;
-            
+        stub = lowercase (#classname "."); \
+        if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
+          tool_group->actions()[tool_id]->setChecked (true); \
+          select_tool_slot (tool_group->actions()[tool_id]); \
+          if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
+          continue; \
+        } \
+        ++tool_id;
+
         glarea->update();
         qApp->processEvents();
 
@@ -1671,6 +1672,11 @@ namespace MR
               continue;
             }
 
+            if (opt.opt->is ("fps")) {
+              show_FPS = true;
+              continue;
+            }
+
             if (opt.opt->is ("exit")) {
               qApp->processEvents();
               qApp->quit();
@@ -1738,7 +1744,12 @@ namespace MR
 
           + Option ("fullscreen", "Start fullscreen.")
 
-          + Option ("exit", "quit MRView");
+          + Option ("exit", "quit MRView")
+
+          + OptionGroup ("Debugging options")
+
+          + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 
