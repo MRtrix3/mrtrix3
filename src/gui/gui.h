@@ -40,6 +40,8 @@ namespace MR
     class App {
       public:
         App (int& cmdline_argc, char** cmdline_argv) {
+          ::MR::GUI::GL::set_default_context ();
+
           new QApplication (cmdline_argc, cmdline_argv);
 
           ::MR::ProgressInfo::display_func = Dialog::ProgressBar::display;
@@ -48,8 +50,6 @@ namespace MR
           ::MR::Exception::display_func = Dialog::display_exception;
 
           ::MR::App::check_overwrite_files_func = Dialog::File::check_overwrite_files_func;
-
-          ::MR::GUI::GL::set_default_context ();
         }
 
         ~App () {
