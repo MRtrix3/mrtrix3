@@ -126,6 +126,8 @@ namespace MR
           public:
             Renderer();
             void render (const Projection& projection, const Displayable& object, int position, bool inverted);
+            void render (const Projection& projection, const size_t colourmap_index, int position, bool inverted,
+                         const float scaling_min, const float scaling_max, const Point<float> fixed_colour = Point<float> (0.0f, 0.0f, 0.0f));
 
           protected:
             GL::VertexBuffer VB;

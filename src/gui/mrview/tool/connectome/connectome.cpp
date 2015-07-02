@@ -70,6 +70,8 @@ namespace MR
             slab_thickness (0.0f),
             node_selection_settings (),
             node_selection_dialog (nullptr),
+            show_node_colour_bar (true),
+            show_edge_colour_bar (true),
             node_visibility (node_visibility_t::ALL),
             node_geometry (node_geometry_t::SPHERE),
             node_colour (node_colour_t::FIXED),
@@ -1086,10 +1088,13 @@ namespace MR
         }
 
 
-        //void Connectome::drawOverlays (const Projection& transform)
-        void Connectome::drawOverlays (const Projection&)
+        void Connectome::drawOverlays (const Projection& transform)
         {
           if (hide_all_button->isChecked()) return;
+          if ((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
+            colourbar_renderer.render (transform, node_colourmap_index, 4, node_colourmap_invert, node_colour_lower_button->value(), node_colour_upper_button->value(), node_fixed_colour);
+          if (edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar)
+            colourbar_renderer.render (transform, edge_colourmap_index, 4, edge_colourmap_invert, edge_colour_lower_button->value(), edge_colour_upper_button->value(), edge_fixed_colour);
         }
 
 
@@ -1099,6 +1104,7 @@ namespace MR
           if (cmd == "connectome.load") {
             try {
               initialise (args);
+              // TODO If this initialisation is successful, automatically hide the main image
               window.updateGL();
             }
             catch (Exception& E) { clear_all(); E.display(); }
@@ -2986,7 +2992,7 @@ namespace MR
               if (ColourMap::maps[node_colourmap_index].is_colour)
                 nodes[i].set_colour (factor * node_fixed_colour);
               else
-               nodes[i].set_colour (ColourMap::maps[node_colourmap_index].basic_mapping (factor));
+                nodes[i].set_colour (ColourMap::maps[node_colourmap_index].basic_mapping (factor));
             }
 
           } else if (node_colour == node_colour_t::MATRIX_FILE) {

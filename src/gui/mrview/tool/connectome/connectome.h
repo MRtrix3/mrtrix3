@@ -92,7 +92,6 @@
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with clip planes
-//   - Add colour bars for node & edge colouring
 //   - Standardise lighting: changed connectome tool so that lighting position is fixed, but
 //       other tools have the light source rotate with the camera
 //
@@ -342,6 +341,11 @@ namespace MR
             // Settings related to how visual elements are changed on selection / non-selection
             NodeSelectionSettings node_selection_settings;
             std::unique_ptr<NodeSelectionSettingsDialog> node_selection_dialog;
+
+
+            // Settings for colour bars
+            ColourMap::Renderer colourbar_renderer;
+            bool show_node_colour_bar, show_edge_colour_bar;
 
 
             // Current node visualisation settings

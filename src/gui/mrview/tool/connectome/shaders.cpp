@@ -251,11 +251,6 @@ namespace MR
             }
           }
 
-          if ((colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) && ColourMap::maps[colourmap_index].is_colour) {
-            fragment_shader_source +=
-              "in vec3 colourmap_colour;\n";
-          }
-
           if (crop_to_slab && is_3D) {
             fragment_shader_source +=
               "in float include;\n";
@@ -501,11 +496,6 @@ namespace MR
           if (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE) {
             fragment_shader_source +=
               "in vec3 tangent" + GS_out + ";\n";
-          }
-
-          if (colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[colourmap_index].is_colour) {
-            fragment_shader_source +=
-              "in vec3 colourmap_colour;\n";
           }
 
           if (crop_to_slab && is_3D) {

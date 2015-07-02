@@ -48,9 +48,10 @@ namespace MR
           master.calculate_node_colours();
           master.window.updateGL();
         }
-        void NodeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
+        void NodeColourObserver::toggle_show_colour_bar (bool show, const ColourMapButton&)
         {
-          // TODO
+          master.show_node_colour_bar = show;
+          master.window.updateGL();
         }
         void NodeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {
@@ -83,9 +84,10 @@ namespace MR
           master.calculate_edge_colours();
           master.window.updateGL();
         }
-        void EdgeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
+        void EdgeColourObserver::toggle_show_colour_bar (bool show, const ColourMapButton&)
         {
-          // TODO
+          master.show_edge_colour_bar = show;
+          master.window.updateGL();
         }
         void EdgeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {

@@ -209,15 +209,21 @@ namespace MR
 
 
 
-
-
         void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
         {
+          render (projection, object.colourmap, position, inverted, object.scaling_min(), object.scaling_max(),
+                  Point<float> (object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f));
+        }
+
+
+        void Renderer::render (const Projection& projection, const size_t colourmap_index, int position, bool inverted,
+                               const float scaling_min, const float scaling_max, const Point<float> fixed_colour)
+        {
           if (!position) return;
-          if (maps[object.colourmap].special) return;
+          if (maps[colourmap_index].special) return;
           
-          if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
-            setup (object.colourmap, inverted);
+          if (!program || !frame_program || colourmap_index != current_index || current_inverted != inverted)
+            setup (colourmap_index, inverted);
 
           if (!VB || !VAO) {
             VB.gen();
@@ -266,9 +272,8 @@ namespace MR
           program.start();
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
-          if (maps[object.colourmap].is_colour)
-            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
-                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
+          if (maps[colourmap_index].is_colour)
+            gl::Uniform3fv (gl::GetUniformLocation (program, "colourmap_colour"), 1, &fixed_colour[0]);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 
@@ -280,8 +285,8 @@ namespace MR
 
           projection.setup_render_text();
           int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-          projection.render_text_align (x, data[1], str(object.scaling_min()), halign, 0);
-          projection.render_text_align (x, data[4], str(object.scaling_max()), halign, 0);
+          projection.render_text_align (x, data[1], str(scaling_min), halign, 0);
+          projection.render_text_align (x, data[4], str(scaling_max), halign, 0);
           projection.done_render_text();
 
           gl::DepthMask (gl::TRUE_);
