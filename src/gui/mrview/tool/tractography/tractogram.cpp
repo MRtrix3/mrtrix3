@@ -94,14 +94,12 @@ namespace MR
           source +=
             "void main() {\n"
             "  gl_Position = MVP * vec4(vertex, 1);\n"
-            "  vec2 p_pos = (MVP * vec4(prev_vertex, 1)).xy;\n"
-            "  vec2 n_pos = (MVP * vec4(next_vertex, 1)).xy;\n"
-            "  v_end = line_thickness * normalize (vec2 ((n_pos.y-p_pos.y)/scale_x, (p_pos.x-n_pos.x)/scale_y));\n"
+            "  vec2 dir = mat3x2(MVP) * (next_vertex - prev_vertex);\n"
+            "  v_end = line_thickness * normalize (vec2 (dir.y/scale_x, -dir.x/scale_y));\n"
             "  v_end.x *= scale_y; v_end.y *= scale_x;\n"
             ;
           if (use_lighting)
             source += "  v_tangent = normalize (mat3(MV) * (next_vertex-vertex));\n";
-          // TODO this probably needs to take the aspect ratio into account:
           source +=
             "  v_visible = ( ( abs(gl_Position.x) < 1+line_thickness )\n" 
             "             && ( abs(gl_Position.y) < 1+line_thickness )\n"
@@ -425,18 +423,18 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0,  tractography_tool.line_opacity / 0.5);
-            render_streamlines (transform);
+            render_streamlines();
             gl::BlendFunc (gl::CONSTANT_ALPHA, gl::ONE_MINUS_CONSTANT_ALPHA);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
             gl::BlendColor (1.0, 1.0, 1.0, tractography_tool.line_opacity / 0.5);
-            render_streamlines (transform);
+            render_streamlines();
 
           } else {
             gl::Disable (gl::BLEND);
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
-            render_streamlines (transform);
+            render_streamlines();
           }
 
           if (tractography_tool.line_opacity < 1.0) {
@@ -451,12 +449,13 @@ namespace MR
 
 
 
-        inline void Tractogram::render_streamlines (const Projection& transform) {
+        inline void Tractogram::render_streamlines ()
+        {
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
 
             if (should_update_stride)
-              update_stride (transform);
+              update_stride();
 
             if (vao_dirty) {
 
@@ -497,16 +496,11 @@ namespace MR
 
 
 
-        inline void Tractogram::update_stride (const Projection& transform) {
-
+        inline void Tractogram::update_stride ()
+        {
           float step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
-          Point<float> in_plane_direction = transform.screen_to_model_direction (1.0f, 0.0f, 0.0f).normalise();
-          float step_size_pixels = transform.model_to_screen_direction (step_size * in_plane_direction).norm();
-
-          GLint thickness_pixels = (GLint)(line_thickness_screenspace * (transform.width () + transform.height ()));
-          GLint thickness_factor = std::max ((GLint)(thickness_pixels / step_size_pixels), 1);
-
-          GLint new_stride = std::min (thickness_factor, max_sample_stride);
+          GLint new_stride = GLint (3.0 * tractography_tool.line_thickness * original_fov / step_size);
+          new_stride = std::max (1, std::min (max_sample_stride, new_stride));
 
           if (new_stride != sample_stride) {
             sample_stride = new_stride;

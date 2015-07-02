@@ -128,9 +128,9 @@ namespace MR
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
 
-            void render_streamlines (const Projection &transform);
+            void render_streamlines ();
 
-            void update_stride (const Projection& transform);
+            void update_stride ();
 
           private slots:
             void on_FOV_changed() {
