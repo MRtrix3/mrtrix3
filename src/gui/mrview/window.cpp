@@ -1258,13 +1258,6 @@ namespace MR
 
         gl::DrawBuffer (gl::BACK);
         mode->paintGL();
-        
-        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
-        // otherwise we get transparent windows...
-#if QT_VERSION >= 0x050400
-        gl::ColorMask (false, false, false, true); 
-        gl::Clear (GL_COLOR_BUFFER_BIT);
-#endif
 
         // TODO add commandline option for this...
         render_times.push_back (Timer::current_time());
@@ -1279,7 +1272,7 @@ namespace MR
 
         if (render_times.size() > 5) {
           FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
-          FPS_string = str (FPS);
+          FPS_string = str (FPS, 4);
           if (!std::isfinite (best_FPS) || FPS > best_FPS) {
             best_FPS = FPS;
             best_FPS_time = render_times.back();
@@ -1290,11 +1283,18 @@ namespace MR
           best_FPS = NAN;
 
         if (std::isfinite (best_FPS))
-          FPS_best_string = str (best_FPS);
+          FPS_best_string = str (best_FPS, 4);
         mode->projection.setup_render_text (0.0, 1.0, 0.0);
         mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
         mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
         mode->projection.done_render_text();
+        
+        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
+        // otherwise we get transparent windows...
+#if QT_VERSION >= 0x050400
+        gl::ColorMask (false, false, false, true); 
+        gl::Clear (GL_COLOR_BUFFER_BIT);
+#endif
       }
 
 
