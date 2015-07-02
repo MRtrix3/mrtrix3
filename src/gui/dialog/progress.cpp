@@ -34,20 +34,30 @@ namespace MR
 
         void display (ProgressInfo& p)
         {
+          QOpenGLContext* context = QOpenGLContext::currentContext();
+          QSurface* surface = context->surface();
+         
           if (!p.data) {
             INFO (App::NAME + ": " + p.text);
             p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
             reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
           }
           reinterpret_cast<QProgressDialog*> (p.data)->setValue (p.value);
+
+          context->makeCurrent (surface);
         }
 
 
         void done (ProgressInfo& p)
         {
+          QOpenGLContext* context = QOpenGLContext::currentContext();
+          QSurface* surface = context->surface();
+         
           INFO (App::NAME + ": " + p.text + " [done]");
           delete reinterpret_cast<QProgressDialog*> (p.data);
-          p.data = NULL;
+          p.data = nullptr;
+
+          context->makeCurrent (surface);
         }
 
       }
