@@ -160,7 +160,7 @@ namespace MR
           }
 
           source += 
-            std::string ("        ") + ColourMap::maps[object.colourmap].mapping;
+            std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
 
           for (size_t n = 0; n < clip.size(); ++n) 
             source += 
@@ -210,7 +210,7 @@ namespace MR
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
-            std::string mapping (ColourMap::maps[image->colourmap].mapping);
+            std::string mapping (ColourMap::maps[image->colourmap].glsl_mapping);
             replace (mapping, "scale", "overlay"+str(n)+"_scale");
             replace (mapping, "offset", "overlay"+str(n)+"_offset");
             replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");

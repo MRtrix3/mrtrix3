@@ -92,6 +92,9 @@
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with clip planes
+//   - Add colour bars for node & edge colouring
+//   - Standardise lighting: changed connectome tool so that lighting position is fixed, but
+//       other tools have the light source rotate with the camera
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions

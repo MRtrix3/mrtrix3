@@ -103,7 +103,7 @@ namespace MR
         //CONF option: ConnectomeNodeNotSelectedVisibilityOverride
         //CONF default: true
         //CONF Whether or not nodes are forced to be invisible when not selected
-        node_not selected_visibility_override = File::Config::get_bool ("ConnectomeNodeNotSelectedVisibilityOverride", true);
+        node_not_selected_visibility_override = File::Config::get_bool ("ConnectomeNodeNotSelectedVisibilityOverride", false);
         //CONF option: ConnectomeNodeNotSelectedColourFade
         //CONF default: 0.75
         //CONF The fraction of the colour of an unselected node determined by the fixed not-selected highlight colour

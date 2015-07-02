@@ -39,11 +39,13 @@ namespace MR
         void NodeColourObserver::selected_colourmap (size_t index, const ColourMapButton&)
         {
           master.node_colourmap_index = index;
+          master.calculate_node_colours();
           master.window.updateGL();
         }
         void NodeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
           master.node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.calculate_node_colours();
           master.window.updateGL();
         }
         void NodeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)
@@ -72,11 +74,13 @@ namespace MR
         void EdgeColourObserver::selected_colourmap (size_t index, const ColourMapButton&)
         {
           master.edge_colourmap_index = index;
+          master.calculate_edge_colours();
           master.window.updateGL();
         }
         void EdgeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
           master.edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.calculate_edge_colours();
           master.window.updateGL();
         }
         void EdgeColourObserver::toggle_show_colour_bar (bool /*show*/, const ColourMapButton&)

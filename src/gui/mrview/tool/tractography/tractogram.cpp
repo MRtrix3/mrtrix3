@@ -124,7 +124,7 @@ namespace MR
               if (!scalarfile_by_direction)
                 source +=
                 std::string("  vec3 color;\n") +
-                ColourMap::maps[colourmap].mapping +
+                ColourMap::maps[colourmap].glsl_mapping +
                 "  v_colour = color;\n";
               break;
             default:

@@ -57,14 +57,7 @@ namespace MR
           const std::string& get_name() const { return name; }
           void set_size (const float i) { size = i; }
           float get_size() const { return size; }
-          // TODO If colour is being set using a colour map rather than a fixed colour,
-          //   need a way to convert the value to RGB here
-          // Then again, if we're going to do that, might as well pre-calculate the
-          //   colours rather than using the shader...
-          // Alternatively, could hide the colour column from the table view if we are
-          //   colouring using a colour mapping?
-          // TODO Add a functor to the colourmap Entry class that does an identical mapping to the shader code?
-          void set_colour (const Point<float>& i) { colour = i; pixmap.fill (i.valid() ? QColor (i[0] * 255.0f, i[1] * 255.0f, i[2] * 255.0f) : QColor (0, 0, 0)); }
+          void set_colour (const Point<float>& i) { colour = i; pixmap.fill (QColor (i[0] * 255.0f, i[1] * 255.0f, i[2] * 255.0f)); }
           const Point<float>& get_colour() const { return colour; }
           const QPixmap get_pixmap() const { return pixmap; }
           void set_alpha (const float i) { alpha = i; }

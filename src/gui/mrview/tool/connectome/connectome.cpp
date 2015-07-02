@@ -781,9 +781,6 @@ namespace MR
                 //   voxels intersected by the ray. Go back to front, and render each node only
                 //   once per fragment. Can use transparency.
                 //
-                // TODO Add a warning icon that pops up if node overlay is selected and
-                //   view isn't purely 2D
-                //
               } else {
                 // set up OpenGL environment:
                 gl::Enable (gl::BLEND);
@@ -1630,7 +1627,6 @@ namespace MR
               break;
             case 2:
               if (node_colour == node_colour_t::FROM_LUT) return;
-              // TODO Pointless selection if no LUT is loaded... need to detect; or better, disable
               if (lut.size()) {
                 node_colour = node_colour_t::FROM_LUT;
                 node_colour_fixedcolour_button->setVisible (false);
@@ -2733,9 +2729,7 @@ namespace MR
 
           nodes.clear();
 
-          // TODO Multi-thread this
           {
-            //MR::ProgressBar progress ("Constructing nodes...", max_index);
             nodes.push_back (Node());
             for (size_t node_index = 1; node_index <= max_index; ++node_index) {
               if (node_volumes[node_index]) {
@@ -2753,7 +2747,6 @@ namespace MR
               } else {
                 nodes.push_back (Node());
               }
-              //++progress;
             }
           }
 
@@ -2990,7 +2983,10 @@ namespace MR
               float factor = (node_values_from_file_colour[i-1]-lower) / (upper - lower);
               factor = std::min (1.0f, std::max (factor, 0.0f));
               factor = node_colourmap_invert ? 1.0f-factor : factor;
-              nodes[i].set_colour (Point<float> (factor, NAN, NAN));
+              if (ColourMap::maps[node_colourmap_index].is_colour)
+                nodes[i].set_colour (factor * node_fixed_colour);
+              else
+               nodes[i].set_colour (ColourMap::maps[node_colourmap_index].basic_mapping (factor));
             }
 
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
@@ -3003,7 +2999,7 @@ namespace MR
                   nodes[i].set_colour (node_selection_settings.get_node_selected_colour());
                 } else {
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
-                  for (node_t j = 1; j != num_nodes(); ++j) {
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
                       const float value = node_values_from_file_colour[mat2vec (i-1, j-1)];
                       min = std::min (min, value);
@@ -3022,7 +3018,10 @@ namespace MR
                   factor = (factor - lower) / (upper - lower);
                   factor = std::min (1.0f, std::max (factor, 0.0f));
                   factor = node_colourmap_invert ? 1.0f-factor : factor;
-                  nodes[i].set_colour (Point<float> (factor, NAN, NAN));
+                  if (ColourMap::maps[node_colourmap_index].is_colour)
+                    nodes[i].set_colour (factor * node_fixed_colour);
+                  else
+                    nodes[i].set_colour (ColourMap::maps[node_colourmap_index].basic_mapping (factor));
                 }
               }
             } else {
@@ -3032,6 +3031,8 @@ namespace MR
 
           }
           update_node_overlay();
+          // Need to indicate to the node list view that data have changed (specifically the node colour pixmaps)
+          node_list_model->reset_pixmaps();
         }
 
         void Connectome::calculate_node_sizes()
@@ -3072,7 +3073,7 @@ namespace MR
                   nodes[i].set_size (1.0f);
                 } else {
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
-                  for (node_t j = 1; j != num_nodes(); ++j) {
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
                       const float value = node_values_from_file_size[mat2vec (i-1, j-1)];
                       min = std::min (min, value);
@@ -3142,7 +3143,7 @@ namespace MR
                   nodes[i].set_alpha (1.0f);
                 } else {
                   float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
-                  for (node_t j = 1; j != num_nodes(); ++j) {
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
                     if (selected_nodes[j]) {
                       const float value = node_values_from_file_alpha[mat2vec (i-1, j-1)];
                       min = std::min (min, value);
@@ -3277,7 +3278,10 @@ namespace MR
               float factor = (edge_values_from_file_colour[i]-lower) / (upper - lower);
               factor = std::min (1.0f, std::max (factor, 0.0f));
               factor = edge_colourmap_invert ? 1.0f-factor : factor;
-              edges[i].set_colour (Point<float> (factor, 0.0f, 0.0f));
+              if (ColourMap::maps[edge_colourmap_index].is_colour)
+                edges[i].set_colour (factor * edge_fixed_colour);
+              else
+                edges[i].set_colour (ColourMap::maps[edge_colourmap_index].basic_mapping (factor));
             }
 
           }

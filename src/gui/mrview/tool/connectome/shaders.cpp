@@ -269,30 +269,12 @@ namespace MR
               "  if (include < 0 || include > 1) discard;\n";
           }
 
-          if (colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) {
-
-            // Red component of node_colour is the position within the range [0, 1] based on the current settings;
-            //   use this to derive the actual colour based on the selected mapping
-            // Only send to the colourmap mapping if appropriate
+          if (use_alpha) {
             fragment_shader_source +=
-              "  if (isnan (node_colour.g) || isnan (node_colour.b)) {\n"
-              "    float amplitude = node_colour.r;\n";
-            fragment_shader_source += std::string("    ") + ColourMap::maps[colourmap_index].mapping;
-            fragment_shader_source +=
-              "  } else {\n"
-              "    color.rgb = node_colour;\n"
-              "  }\n";
-
+                "  color.rgb = node_colour;\n";
           } else {
-
-            if (use_alpha) {
-              fragment_shader_source +=
-                  "  color.rgb = node_colour;\n";
-            } else {
-              fragment_shader_source +=
-                  "  color = node_colour;\n";
-            }
-
+            fragment_shader_source +=
+                "  color = node_colour;\n";
           }
 
           if (use_lighting && geometry != node_geometry_t::POINT) {
@@ -539,13 +521,7 @@ namespace MR
               "  if (include < 0 || include > 1) discard;\n";
           }
 
-          if (colour == edge_colour_t::MATRIX_FILE) {
-
-            fragment_shader_source +=
-              "  float amplitude = edge_colour.r;\n";
-            fragment_shader_source += std::string("  ") + ColourMap::maps[colourmap_index].mapping;
-
-          } else if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
+          if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
 
             if (use_alpha) {
               fragment_shader_source +=

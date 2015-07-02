@@ -64,7 +64,7 @@ namespace MR
 
         void NodeOverlay::update_texture2D (const int plane, const int slice)
         {
-          // TESTME Suspect this should never be run...
+          // Suspect this should never be run...
           // Only time this could conceptually be used is if activation of the connectome tool
           // 'overhauled' the main image, and the camera & focus plane were set based on the
           // parcellation image
@@ -138,7 +138,7 @@ namespace MR
             "      texcoord.p < 0.0 || texcoord.p > 1.0) discard;\n"
             "  color = texture (tex, texcoord.stp);\n"
             "  color.a = color.a * alpha;\n";
-          source += "  " + std::string (ColourMap::maps[object.colourmap].mapping);
+          source += "  " + std::string (ColourMap::maps[object.colourmap].glsl_mapping);
           source += "}\n";
           return source;
         }

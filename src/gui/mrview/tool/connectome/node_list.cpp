@@ -22,6 +22,8 @@
 
 #include "gui/mrview/tool/connectome/node_list.h"
 
+#include <QVector>
+
 #include "gui/mrview/tool/connectome/connectome.h"
 
 namespace MR
@@ -85,6 +87,16 @@ namespace MR
       {
         (void) parent; // to suppress warnings about unused parameters
         return 3;
+      }
+
+
+
+      void Node_list_model::reset_pixmaps()
+      {
+        QModelIndex topleft = createIndex (0, 0);
+        QModelIndex bottomright = createIndex (rowCount()-1, 0);
+        QVector<int> roles (1, Qt::DecorationRole);
+        emit dataChanged (topleft, bottomright, roles);
       }
 
 

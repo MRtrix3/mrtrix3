@@ -147,7 +147,7 @@ namespace MR
               }
               source +=
                 std::string ("    vec3 color;\n") +
-                ColourMap::maps[colourmap].mapping +
+                ColourMap::maps[colourmap].glsl_mapping +
                 "   fColour = color;\n";
               break;
             case Direction:

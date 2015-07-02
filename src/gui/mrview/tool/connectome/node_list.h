@@ -78,6 +78,8 @@ namespace MR
               endInsertRows();
             }
 
+            void reset_pixmaps();
+
           private:
             Connectome& connectome;
         };
