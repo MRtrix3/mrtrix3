@@ -108,7 +108,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
             return glarea->defaultFramebufferObject(); 
 #else
-            return gl::BACK;
+            return 0;
 #endif
           }
 

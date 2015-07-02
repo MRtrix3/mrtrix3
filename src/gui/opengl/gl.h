@@ -45,10 +45,10 @@
 
 #ifdef NDEBUG
 # define GL_CHECK_ERROR
-# define GL_DEBUG(msg) DEBUG(msg)
+# define GL_DEBUG(msg) (void)0
 #else 
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
-# define GL_DEBUG(msg) (void)0
+# define GL_DEBUG(msg) DEBUG(msg)
 #endif
 
 namespace MR
