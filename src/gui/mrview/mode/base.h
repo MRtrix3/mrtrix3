@@ -27,7 +27,6 @@
 #include "gui/opengl/transformation.h"
 #include "gui/projection.h"
 #include "gui/mrview/window.h"
-#include "gui/projection.h"
 #include "gui/mrview/tool/base.h"
 
 #define ROTATION_INC 0.002

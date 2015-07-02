@@ -179,7 +179,6 @@ namespace MR
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
 
-
           class GLArea : public GL::Area {
             public:
               GLArea (Window& parent);
@@ -299,6 +298,9 @@ namespace MR
           template <class Event> void update_mouse_state (Event* event);
 
           Tool::Base* tool_has_focus;
+
+          std::vector<double> render_times;
+          double best_FPS, best_FPS_time;
 
           friend class Image;
           friend class Mode::Base;

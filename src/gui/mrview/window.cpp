@@ -202,7 +202,8 @@ namespace MR
         colourbar_position (ColourMap::Position::BottomRight),
         tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
-        tool_has_focus (nullptr)
+        tool_has_focus (nullptr), 
+        best_FPS (NAN)
       {
 
         setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -1264,6 +1265,36 @@ namespace MR
         gl::ColorMask (false, false, false, true); 
         gl::Clear (GL_COLOR_BUFFER_BIT);
 #endif
+
+        // TODO add commandline option for this...
+        render_times.push_back (Timer::current_time());
+        while (render_times.size() > 10)
+          render_times.erase (render_times.begin());
+        double FPS = NAN;
+        std::string FPS_string = "-";
+        std::string FPS_best_string = "-";
+
+        if (render_times.back() - best_FPS_time > 5.0)
+          best_FPS = NAN;
+
+        if (render_times.size() > 5) {
+          FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
+          FPS_string = str (FPS);
+          if (!std::isfinite (best_FPS) || FPS > best_FPS) {
+            best_FPS = FPS;
+            best_FPS_time = render_times.back();
+          }
+
+        }
+        else 
+          best_FPS = NAN;
+
+        if (std::isfinite (best_FPS))
+          FPS_best_string = str (best_FPS);
+        mode->projection.setup_render_text (0.0, 1.0, 0.0);
+        mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
+        mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
+        mode->projection.done_render_text();
       }
 
 
@@ -1275,7 +1306,7 @@ namespace MR
         gl::Enable (gl::DEPTH_TEST);
         //CONF option: ImageBackgroundColour
         //CONF default: 0,0,0 (black)
-        //CONF The default image background colour
+        // CONF The default image background colour
         File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
