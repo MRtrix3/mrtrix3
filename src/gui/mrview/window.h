@@ -104,6 +104,13 @@ namespace MR
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
           void makeGLcurrent () { glarea->makeCurrent(); }
+          GLuint defaultFramebufferObject() const {
+#if QT_VERSION >= 0x050400
+            return glarea->defaultFramebufferObject(); 
+#else
+            return gl::BACK;
+#endif
+          }
 
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());

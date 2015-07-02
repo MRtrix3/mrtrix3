@@ -193,14 +193,18 @@ namespace MR
           }
 
 
+          GL_CHECK_ERROR;
           vertex_buffer[0].bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, sizeof (screen_pos), screen_pos, gl::STREAM_DRAW);
+          GL_CHECK_ERROR;
 
           vertex_buffer[1].bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, sizeof (tex_pos), tex_pos, gl::STREAM_DRAW);
+          GL_CHECK_ERROR;
 
           tex.bind();
           vertex_array_object.bind();
+          GL_CHECK_ERROR;
 
           gl::MultiDrawArrays (gl::TRIANGLE_FAN, starts, counts, text.size());
           GL_CHECK_ERROR;

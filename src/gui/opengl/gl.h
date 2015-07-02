@@ -43,17 +43,12 @@
 # undef foreach
 #endif
 
-#ifdef GL_DEBUG
-# undef GL_DEBUG
-# define GL_DEBUG(msg) DEBUG(msg)
-#else
-# define GL_DEBUG(msg) (void)0
-#endif
-
 #ifdef NDEBUG
 # define GL_CHECK_ERROR
+# define GL_DEBUG(msg) DEBUG(msg)
 #else 
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
+# define GL_DEBUG(msg) (void)0
 #endif
 
 namespace MR

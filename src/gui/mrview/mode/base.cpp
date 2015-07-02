@@ -51,10 +51,12 @@ namespace MR
 
         void Base::paintGL ()
         {
+          GL_CHECK_ERROR;
           painting = true;
 
           projection.set_viewport (window, 0, 0, width(), height());
 
+          GL_CHECK_ERROR;
           gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
           if (!image()) {
             projection.setup_render_text();
@@ -63,14 +65,17 @@ namespace MR
             goto done_painting;
           }
 
+          GL_CHECK_ERROR;
           if (!focus() || !target()) 
             reset_view();
 
           {
+            GL_CHECK_ERROR;
             // call mode's draw method:
             paint (projection);
 
             gl::Disable (gl::MULTISAMPLE);
+            GL_CHECK_ERROR;
 
             projection.setup_render_text();
             if (window.show_voxel_info()) {
@@ -102,6 +107,7 @@ namespace MR
                   line_num += dock->tool->draw_tool_labels (LeftEdge | BottomEdge, line_num, projection);
               }
             }
+            GL_CHECK_ERROR;
 
             if (window.show_comments()) {
               for (size_t i = 0; i < image()->header().comments().size(); ++i)
@@ -110,6 +116,7 @@ namespace MR
 
             projection.done_render_text();
 
+            GL_CHECK_ERROR;
             if (window.show_colourbar()) {
 
               auto &colourbar_renderer = window.colourbar_renderer;
@@ -138,6 +145,7 @@ namespace MR
               colourbar_renderer.end_render_colourbars ();
 
             }
+            GL_CHECK_ERROR;
 
           }
 

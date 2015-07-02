@@ -14,6 +14,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
 
+
 namespace MR
 {
   namespace GUI
@@ -1251,14 +1252,15 @@ namespace MR
 
       void Window::paintGL ()
       {
+        GL_CHECK_ERROR;
         glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
-        gl::Enable (gl::MULTISAMPLE);
+        GL_CHECK_ERROR;
         if (mode->in_paint())
           return;
 
-        gl::DrawBuffer (gl::BACK);
         mode->paintGL();
+        GL_CHECK_ERROR;
 
         if (show_FPS) {
           render_times.push_back (Timer::current_time());
@@ -1296,6 +1298,7 @@ namespace MR
         gl::ColorMask (false, false, false, true); 
         gl::Clear (GL_COLOR_BUFFER_BIT);
 #endif
+        GL_CHECK_ERROR;
       }
 
 
@@ -1312,6 +1315,9 @@ namespace MR
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
+
+        if (glarea->format().samples() > 1) 
+          gl::Enable (gl::MULTISAMPLE);
 
         if (MR::App::option.size()) 
           QTimer::singleShot (0, this, SLOT (process_commandline_options()));
