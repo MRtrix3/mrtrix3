@@ -1255,9 +1255,13 @@ namespace MR
         GL_CHECK_ERROR;
         glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
-        GL_CHECK_ERROR;
         if (mode->in_paint())
           return;
+
+        if (glarea->format().samples() > 1) 
+          gl::Enable (gl::MULTISAMPLE);
+
+        GL_CHECK_ERROR;
 
         mode->paintGL();
         GL_CHECK_ERROR;
@@ -1315,9 +1319,6 @@ namespace MR
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
         set_mode_features();
-
-        if (glarea->format().samples() > 1) 
-          gl::Enable (gl::MULTISAMPLE);
 
         if (MR::App::option.size()) 
           QTimer::singleShot (0, this, SLOT (process_commandline_options()));

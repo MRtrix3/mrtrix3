@@ -43,12 +43,19 @@
 # undef foreach
 #endif
 
+// uncomment to trace texture/VAO/VBO/FBO operations:
+//#define GL_SHOW_DEBUG_MESSAGE
+
+#ifdef GL_SHOW_DEBUG_MESSAGE
+# define GL_DEBUG(msg) DEBUG(msg)
+#else 
+# define GL_DEBUG(msg) (void)0
+#endif
+
 #ifdef NDEBUG
 # define GL_CHECK_ERROR
-# define GL_DEBUG(msg) (void)0
 #else 
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
-# define GL_DEBUG(msg) DEBUG(msg)
 #endif
 
 namespace MR
@@ -224,8 +231,13 @@ namespace MR
           }
           void unbind () const {
             GL_DEBUG ("binding default OpenGL framebuffer");
+#if QT_VERSION >= 0x050400
+            gl::BindFramebuffer (gl::FRAMEBUFFER, QOpenGLContext::currentContext()->defaultFramebufferObject()); 
+#else
             gl::BindFramebuffer (gl::FRAMEBUFFER, 0); 
+#endif
           }
+
 
           void attach_color (Texture& tex, size_t attachment) const {
             assert (id);
