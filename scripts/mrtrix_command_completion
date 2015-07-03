@@ -1,0 +1,930 @@
+
+# MRtrix command completion
+#
+# The easiest way to for a user without admin access to use this is to reference this file in .bashrc
+# i.e. add the following line in .bashrc
+# . /your_mrtrix_scripts_dir_path/mrtrix_command_completion
+#
+
+_shbasis()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -convert -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _shbasis shbasis
+
+_5ttgen()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _5ttgen 5ttgen
+
+_mrclusterstats()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -negative -nperms -threshold -tfce_dh -tfce_e -tfce_h -connectivity -nonstationary -nperms_nonstationary -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrclusterstats mrclusterstats
+
+_5tt2gmwmi()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mask_in -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _5tt2gmwmi 5tt2gmwmi
+
+_tsfthreshold()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -invert -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tsfthreshold tsfthreshold
+
+_dirstat()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirstat dirstat
+
+_mrresize()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -size -voxel -scale -interp -datatype -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrresize mrresize
+
+_dwi2qbi()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -grad -fslgrad -bvalue_scaling -shell -lmax -mask -filter -normalise -directions -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2qbi dwi2qbi
+
+_mrconnect()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -axes -largest -connectivity -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrconnect mrconnect
+
+_tcksift()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -nofilter -output_at_counts -output_debug -proc_mask -act -no_fd_scaling -no_dilate_lut -make_null_lobes -remove_untracked -fd_thresh -csv -output_debug -out_selection -term_number -term_ratio -term_mu -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tcksift tcksift
+
+_warpinit()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _warpinit warpinit
+
+_dirgen()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -power -niter -unipolar -cartesian -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirgen dirgen
+
+_fixel2voxel()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -weighted -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _fixel2voxel fixel2voxel
+
+_shconv()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mask -stride -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _shconv shconv
+
+_dwiextract()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -bzero -grad -fslgrad -bvalue_scaling -shell -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwiextract dwiextract
+
+_mrmath()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -axis -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrmath mrmath
+
+_labelconfig()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -lut_basic -lut_freesurfer -lut_aal -lut_itksnap -spine -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _labelconfig labelconfig
+
+_mrstats()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -output -mask -voxel -histogram -bins -dump -position -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrstats mrstats
+
+_tck2connectome()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -assignment_voxel_lookup -assignment_radial_search -assignment_reverse_search -assignment_forward_search -metric -image -tck_weights_in -keep_unassigned -zero_diagonal -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tck2connectome tck2connectome
+
+_dirsplit()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -permutations -cartesian -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirsplit dirsplit
+
+_dirflip()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -permutations -cartesian -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirflip dirflip
+
+_sh2amp()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -gradient -nonnegative -stride -datatype -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _sh2amp sh2amp
+
+_tckgen()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -algorithm -include -exclude -mask -step -angle -number -maxnum -maxlength -minlength -cutoff -initcutoff -trials -unidirectional -initdirection -noprecomputed -power -samples -rk4 -stop -downsample -act -backtrack -crop_at_gmwmi -seed_sphere -seed_image -seed_random_per_voxel -seed_grid_per_voxel -seed_rejection -seed_gmwmi -seed_dynamic -max_seed_attempts -output_seeds -grad -fslgrad -bvalue_scaling -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckgen tckgen
+
+_tsfinfo()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -count -ascii -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tsfinfo tsfinfo
+
+_mrcat()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -axis -datatype -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrcat mrcat
+
+_tckedit()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -include -exclude -mask -maxlength -minlength -upsample -downsample -out_ends_only -number -skip -maxweight -minweight -inverse -test_ends_only -tck_weights_in -tck_weights_out -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckedit tckedit
+
+_tcknodeextract()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -nodes_between -nodes_to_any -per_node -keep_unassigned -assignment_voxel_lookup -assignment_radial_search -assignment_reverse_search -assignment_forward_search -tck_weights_in -prefix_tck_weights_out -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tcknodeextract tcknodeextract
+
+_mrconvert()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -coord -vox -axes -stride -datatype -grad -fslgrad -export_grad_mrtrix -export_grad_fsl -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrconvert mrconvert
+
+_sh2peaks()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -num -direction -peaks -threshold -seeds -mask -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _sh2peaks sh2peaks
+
+_peaks2amp()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _peaks2amp peaks2amp
+
+_fod2fixel()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mask -afd -peak -disp -fmls_ratio_integral_to_neg -fmls_ratio_peak_to_mean_neg -fmls_peak_value -fmls_no_thresholds -fmls_peak_ratio_to_merge -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _fod2fixel fod2fixel
+
+_dcmedit()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -anonymise -id -tag -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dcmedit dcmedit
+
+_mrthreshold()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -abs -histogram -percentile -top -bottom -invert -toppercent -bottompercent -nan -ignorezero -mask -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrthreshold mrthreshold
+
+_gen_planar_ROI()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -vox -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _gen_planar_ROI gen_planar_ROI
+
+_dwi2fod()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -grad -fslgrad -bvalue_scaling -shell -lmax -mask -directions -filter -neg_lambda -norm_lambda -threshold -niter -stride -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2fod dwi2fod
+
+_dwi2response()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -grad -fslgrad -bvalue_scaling -shell -mask -lmax -sf -test_all -max_iters -max_change -volume_ratio -dispersion_multiplier -integral_multiplier -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2response dwi2response
+
+_mesh2pve()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -first -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mesh2pve mesh2pve
+
+_5ttedit()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -cgm -sgm -wm -csf -path -none -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _5ttedit 5ttedit
+
+_dwi2adc()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -grad -fslgrad -bvalue_scaling -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2adc dwi2adc
+
+_tensor2metric()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -adc -fa -num -vector -value -mask -modulate -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tensor2metric tensor2metric
+
+_dwi2mask()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -grad -fslgrad -bvalue_scaling -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2mask dwi2mask
+
+_fixelmult()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _fixelmult fixelmult
+
+_tckmap()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -template -vox -datatype -dec -dixel -tod -contrast -image -stat_vox -stat_tck -fwhm_tck -map_zero -upsample -precise -ends_only -dump -tck_weights_in -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckmap tckmap
+
+_dirorder()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -cartesian -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirorder dirorder
+
+_dirmerge()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dirmerge dirmerge
+
+_tsfmult()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tsfmult tsfmult
+
+_shview()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -response -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _shview shview
+
+_label2colour()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -lut_basic -lut_freesurfer -lut_aal -lut_itksnap -config -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _label2colour label2colour
+
+_sh2response()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -lmax -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _sh2response sh2response
+
+_mrtransform()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -linear -flip -inverse -replace -template -interp -oversample -warp -directions -noreorientation -grad -fslgrad -bvalue_scaling -datatype -nan -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrtransform mrtransform
+
+_mrfilter()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -axes -inverse -magnitude -centre_zero -stdev -magnitude -scanner -extent -stdev -fwhm -extent -stride -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrfilter mrfilter
+
+_tckinfo()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -count -ascii -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckinfo tckinfo
+
+_fixel2sh()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _fixel2sh fixel2sh
+
+_tckstats()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -histogram -dump -tck_weights_in -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckstats tckstats
+
+_tsfdivide()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tsfdivide tsfdivide
+
+_sh2power()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _sh2power sh2power
+
+_dwi2tensor()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mask -method -regularisation -grad -fslgrad -bvalue_scaling -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dwi2tensor dwi2tensor
+
+_mrview()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mode -load -reset -fov -focus -voxel -plane -lock -select_image -autoscale -colourmap -intensity_range -size -position -fullscreen -exit -fps -roi.load -roi.opacity -overlay.load -overlay.opacity -overlay.colourmap -tractography.load -odf.load -vector.load -capture.folder -capture.prefix -capture.grab -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrview mrview
+
+_maskfilter()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -npass -neighbour26 -extent -stride -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _maskfilter maskfilter
+
+_fixelthreshold()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -crop -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _fixelthreshold fixelthreshold
+
+_mrcrop()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -mask -axis -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrcrop mrcrop
+
+_tcknormalise()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tcknormalise tcknormalise
+
+_dcminfo()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -all -csa -tag -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _dcminfo dcminfo
+
+_5tt2vis()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -bg -cgm -sgm -wm -csf -path -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _5tt2vis 5tt2vis
+
+_amp2sh()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -lmax -normalise -directions -rician -grad -fslgrad -bvalue_scaling -shell -stride -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _amp2sh amp2sh
+
+_tckfixcount()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckfixcount tckfixcount
+
+_mrinfo()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -norealign -format -ndim -dimensions -vox -datatype_long -datatype_short -stride -offset -multiplier -comments -properties -transform -dwgrad -shells -shellcounts -grad -fslgrad -bvalue_scaling -validate -export_grad_mrtrix -export_grad_fsl -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrinfo mrinfo
+
+_mrcalc()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -abs -neg -sqrt -exp -log -log10 -cos -sin -tan -cosh -sinh -tanh -acos -asin -atan -acosh -asinh -atanh -round -ceil -floor -isnan -isinf -finite -real -imag -phase -conj -add -subtract -multiply -divide -pow -min -max -lt -gt -le -ge -eq -neq -complex -if -datatype -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _mrcalc mrcalc
+
+_tckimport()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _tckimport tckimport
+
+_afdconnectivity()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -wbft -afd_map -all_fixels -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _afdconnectivity afdconnectivity
+
+_transformcalc()
+{
+	local cur
+
+	COMPREPLY=()
+	cur=${COMP_WORDS[COMP_CWORD]}
+
+	if [[ "$cur" == -* ]]; then
+		COMPREPLY=( $( compgen -W " -flirt_import -info -quiet -debug -force -nthreads -failonwarn -help -version " -- "$cur" ) )
+	fi
+}
+complete -F _transformcalc transformcalc
