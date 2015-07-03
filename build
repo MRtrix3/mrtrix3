@@ -26,13 +26,13 @@ bcolors = {
     "note" : '\033[94m'}
 
 def colorize(s):
-  out = ''
+  out = []
   for l in s.splitlines():
     for st in bcolors.keys():
       if st in l:
         l = l.replace (st, bcolors[st] + st) + '\033[0m'
         break
-    out += l + '\n'
+    out.append(l + '\n')
   return out
 
 
@@ -61,7 +61,7 @@ def pipe_errors_to_less_handler():
       [ fid, name ] = tempfile.mkstemp()
       try:
         fid = os.fdopen (fid, 'wb')
-        fid.write (colorize(error_stream).encode (errors='ignore'))
+        [ fid.write (x.encode (errors='ignore')) for x in colorize(error_stream) ]
         fid.close()
         os.system ("less -R " + name)
       except Exception as e:
