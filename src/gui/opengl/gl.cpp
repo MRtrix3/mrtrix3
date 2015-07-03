@@ -92,8 +92,12 @@ namespace MR
         GL_CHECK_ERROR;
         gl::GetIntegerv (gl::MINOR_VERSION, &gl_version);
         GL_CHECK_ERROR;
+
         gl_version += 10*gl_version_major;
-        if (gl_version < 33) {
+        if (gl_version == 0) {
+          WARN ("unable to determine OpenGL version - operation may be unstable if actual version is less than 3.3");
+        }
+        else if (gl_version < 33) {
           FAIL ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
           FAIL ("    operation is likely to be unstable");
         }
