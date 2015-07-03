@@ -72,8 +72,7 @@ namespace MR
           "uniform float scale_x, scale_y;\n"
 
           "out vec3 v_colour, v_tangent;\n"
-          "out vec2 v_end;\n"
-          "out int v_visible;\n";
+          "out vec2 v_end;\n";
 
 
           if(do_crop_to_slab)
@@ -92,14 +91,9 @@ namespace MR
             ;
           if (use_lighting)
             source += "  v_tangent = normalize (mat3(MV) * (next_vertex-vertex));\n";
-          source +=
-            "  v_visible = ( ( abs(gl_Position.x) < 1+line_thickness )\n" 
-            "             && ( abs(gl_Position.y) < 1+line_thickness )\n"
-            "             && ( abs(gl_Position.z) < 1+line_thickness ) ) ? 1 : 0 ;\n";
 
           if(do_crop_to_slab)
-            source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n"
-              "  v_visible = ( v_visible > 0 && (v_include >= 0 && v_include < 1) ) ? 1 : 0;\n";
+            source += "  v_include = (dot(vertex, screen_normal) - crop_var) / slab_width;\n";
 
           switch (color_type) {
             case Direction: // TODO: move to frag shader:
@@ -144,8 +138,7 @@ namespace MR
           "uniform mat4 MV;\n"
 
           "in vec3 v_colour[], v_tangent[];\n"
-          "in vec2 v_end[];\n"
-          "in int v_visible[];\n";
+          "in vec2 v_end[];\n";
 
           if (color_type == ScalarFile)
            source +=
@@ -165,11 +158,12 @@ namespace MR
           source +=
           "out vec3 fColour;\n"
 
-          "void main() {\n"
+          "void main() {\n";
 
-          // If both end-points are outside the viewport then we can safely discard
-          "  if(v_visible[0] < 1.0 && v_visible[1] < 1.0)\n"
-          "    return;\n";
+          if (do_crop_to_slab) 
+            source += 
+              "  if (v_include[0] < 0.0 && v_include[1] < 0.0) return;\n"
+              "  if (v_include[0] > 1.0 && v_include[1] > 1.0) return;\n";
 
           if (use_lighting)
             source += "  g_tangent = v_tangent[0];\n"
