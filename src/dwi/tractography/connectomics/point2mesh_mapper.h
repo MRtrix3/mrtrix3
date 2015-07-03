@@ -28,7 +28,7 @@ class Point2MeshMapper : public ConnectomeMapper
     virtual ~Point2MeshMapper();
 
     void findNodePair( const Streamline< float >& tck,
-                       NodePair& nodePair );
+                       NodePair& nodePair ) const;
     uint32_t getNodeCount() const;
 
   protected:

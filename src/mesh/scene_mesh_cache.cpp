@@ -21,7 +21,7 @@ SceneMeshCache::~SceneMeshCache()
 
 
 std::vector< SceneMesh* >
-SceneMeshCache::getSceneMeshes( Point< int32_t > voxel ) const
+SceneMeshCache::getSceneMeshes( const Point< int32_t >& voxel ) const
 {
 
   if ( _lut.count( voxel ) == 0 )
@@ -41,7 +41,7 @@ SceneMeshCache::getSceneMeshes( Point< int32_t > voxel ) const
 
 
 std::vector< SceneMesh* >
-SceneMeshCache::getSceneMeshes( Point< float > point ) const
+SceneMeshCache::getSceneMeshes( const Point< float >& point ) const
 {
 
   Point< int32_t > voxel;
@@ -60,8 +60,8 @@ void SceneMeshCache::update( SceneMesh* sceneMesh )
   // consideration of the radius of influence
 
   // collecting the polygons and associated vertices of the mesh
-  VertexList vertices = sceneMesh->getMesh()->vertices;
-  PolygonList polygons = sceneMesh->getMesh()->polygons;
+  VertexList vertices = sceneMesh->getMesh()->getVertices();
+  PolygonList polygons = sceneMesh->getMesh()->getPolygons();
 
   std::set< Point< int32_t >, PointCompare< int32_t > > voxels;
   PolygonList::const_iterator p = polygons.begin(),

@@ -22,15 +22,8 @@
 
 
 #include "command.h"
-#include "mesh/scene_modeller.h"
-#include "mesh/scene_mesh.h"
-#include "dwi/tractography/file.h"
-#include "dwi/tractography/properties.h"
 #include "dwi/tractography/mapping/loader.h"
 #include "dwi/tractography/connectomics/connectome_mapper_factory.h"
-#include "dwi/tractography/connectomics/connectome.h"
-#include "progressbar.h"
-#include "thread_queue.h"
 
 
 using namespace MR;
@@ -73,13 +66,13 @@ void usage ()
 
   ARGUMENTS
   + Argument( "tracks_in",
-              "the input track file (.tck)").type_file_in()
+              "the input track file (.tck)" ).type_file_in()
 
   + Argument( "mesh_in",
-              "the input mesh file (must be vtk format)").type_file_in()
+              "the input mesh file (must be vtk format)" ).type_file_in()
 
   + Argument( "connectome_out",
-              "the output .csv file").type_file_out();
+              "the output .csv file" ).type_file_out();
 
   OPTIONS
   + Option( "cache_size",
@@ -113,50 +106,27 @@ void run ()
   // Reading the mesh data
   Mesh::Mesh* mesh = new Mesh::Mesh( argument[ 1 ] );
 
-  // Collecting the vertices
-  Mesh::VertexList vertices = mesh->vertices;
+  std::cout << "Preparing connectome mapper: " << std::flush;
+
+  // Building the bounding box from the mesh
+  Mesh::VertexList vertices = mesh->getVertices();
   Point< float > lower_point = vertices[ 0 ];
   Point< float > upper_point = vertices[ 0 ];
-  int32_t vertexCount = vertices.size();
-  Point< float > currentVertex;
-  int32_t v;
-  for ( v = 0; v < vertexCount; v++ )
+  for ( int32_t v = 0; v < vertices.size(); v++ )
   {
 
-    currentVertex = vertices[ v ];
+    Point< float > currentVertex = vertices[ v ];
+    for ( int32_t axis = 0; axis < 3; axis++ )
+    {
 
-    // finding the lower bound
-    if ( currentVertex[ 0 ] < lower_point[ 0 ] )
-    {
-      lower_point[ 0 ] = currentVertex[ 0 ];
-    }
-    if ( currentVertex[ 1 ] < lower_point[ 1 ] )
-    {
-      lower_point[ 1 ] = currentVertex[ 1 ];
-    }
-    if ( currentVertex[ 2 ] < lower_point[ 2 ] )
-    {
-      lower_point[ 2 ] = currentVertex[ 2 ];
-    }
-    // finding the upper bound
-    if ( currentVertex[ 0 ] > upper_point[ 0 ] )
-    {
-      upper_point[ 0 ] = currentVertex[ 0 ];
-    }
-    if ( currentVertex[ 1 ] > upper_point[ 1 ] )
-    {
-      upper_point[ 1 ] = currentVertex[ 1 ];
-    }
-    if ( currentVertex[ 2 ] > upper_point[ 2 ] )
-    {
-      upper_point[ 2 ] = currentVertex[ 2 ];
+      lower_point[ axis ] = std::min( lower_point[ axis ],
+                                      currentVertex[ axis ] );
+      upper_point[ axis ] = std::max( upper_point[ axis ],
+                                      currentVertex[ axis ] );
+
     }
 
   }
-
-  std::cout << "Preparing connectome mapper: " << std::flush;
-
-  // Building the bounding box
   Mesh::BoundingBox< float > boundingBox( lower_point[ 0 ], upper_point[ 0 ],
                                           lower_point[ 1 ], upper_point[ 1 ],
                                           lower_point[ 2 ], upper_point[ 2 ] );

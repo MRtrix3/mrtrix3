@@ -44,7 +44,7 @@ MultiThreadMapper::~MultiThreadMapper()
 
 
 bool MultiThreadMapper::operator() ( const Streamline< float >& tck,
-                                     NodePair& nodePair )
+                                     NodePair& nodePair ) const
 {
 
   _connectomeMapper->findNodePair( tck, nodePair );

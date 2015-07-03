@@ -28,7 +28,7 @@ class Ray2MeshMapper : public ConnectomeMapper
     virtual ~Ray2MeshMapper();
 
     void findNodePair( const Streamline< float >& tck,
-                       NodePair& nodePair );
+                       NodePair& nodePair ) const;
     uint32_t getNodeCount() const;
 
   protected:

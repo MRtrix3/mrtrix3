@@ -32,14 +32,14 @@ Point2MeshMapper::Point2MeshMapper( Mesh::SceneModeller* sceneModeller,
   {
 
     Mesh::SceneMesh* currentSceneMesh = _sceneModeller->getSceneMesh( m );
-    Mesh::PolygonList polygons = currentSceneMesh->getMesh()->polygons;
+    Mesh::PolygonList polygons = currentSceneMesh->getMesh()->getPolygons();
     polygonCount = currentSceneMesh->getPolygonCount();
     for ( int32_t p = 0; p < polygonCount; p++ )
     {
 
-      _polygonLut[ Point< int32_t >( polygons[ p ].indices[ 0 ],
-                                     polygons[ p ].indices[ 1 ],
-                                     polygons[ p ].indices[ 2 ] )
+      _polygonLut[ Point< int32_t >( polygons[ p ].index( 0 ),
+                                     polygons[ p ].index( 1 ),
+                                     polygons[ p ].index( 2 ) )
                   ] = polygonIndex;
       ++ polygonIndex;
 
@@ -56,7 +56,7 @@ Point2MeshMapper::~Point2MeshMapper()
 
 
 void Point2MeshMapper::findNodePair( const Streamline< float >& tck,
-                                     NodePair& nodePair )
+                                     NodePair& nodePair ) const
 {
 
   uint32_t node1 = getNodeIndex( tck.front() );
@@ -94,9 +94,9 @@ uint32_t Point2MeshMapper::getNodeIndex( const Point< float >& point ) const
   if ( findNode( point, distance, sceneMesh, polygon ) )
   {
 
-    return _polygonLut.find( Point< int32_t >( polygon.indices[ 0 ],
-                                               polygon.indices[ 1 ],
-                                               polygon.indices[ 2 ] ) )->second;
+    return _polygonLut.find( Point< int32_t >( polygon.index( 0 ),
+                                               polygon.index( 1 ),
+                                               polygon.index( 2 ) ) )->second;
 
   }
   else

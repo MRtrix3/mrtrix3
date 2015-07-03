@@ -24,8 +24,10 @@ class PolygonCache
     PolygonCache( SceneMesh* sceneMesh );
     virtual ~PolygonCache();
 
-    std::vector< Polygon< 3 > > getPolygons( Point< int32_t > voxel ) const;
-    std::vector< Polygon< 3 > > getPolygons( Point< float > point ) const;
+    std::vector< Polygon< 3 > > 
+      getPolygons( const Point< int32_t >& voxel ) const;
+    std::vector< Polygon< 3 > >
+      getPolygons( const Point< float >& point ) const;
 
   protected:
 

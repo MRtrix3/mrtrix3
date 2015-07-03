@@ -52,7 +52,7 @@ float SceneMesh::getRadiusOfInfluence() const
 uint32_t SceneMesh::getPolygonCount() const
 {
 
-  return ( uint32_t )_mesh->polygons.size();
+  return ( uint32_t )_mesh->getPolygons().size();
 
 }
 
@@ -90,11 +90,11 @@ float SceneMesh::getDistanceAtVoxel( const Point< float >& point,
 
       // getting point-to-triangle distance
       newDistance = getPointToTriangleDistance(
-                                         point,
-                                         _mesh->vertices[ ( *p ).indices[ 0 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 1 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 2 ] ],
-                                         projectionPoint );
+                                          point,
+                                          _mesh->getVertex( ( *p ).index( 0 ) ),
+                                          _mesh->getVertex( ( *p ).index( 1 ) ),
+                                          _mesh->getVertex( ( *p ).index( 2 ) ),
+                                          projectionPoint );
 
       if ( newDistance < distance )
       {
@@ -144,11 +144,11 @@ void SceneMesh::getClosestPolygonAtLocalVoxel(
   
       // getting the point to the triangle distance
       newDistance = getPointToTriangleDistance(
-                                         point,
-                                         _mesh->vertices[ ( *p ).indices[ 0 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 1 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 2 ] ],
-                                         newProjectionPoint );
+                                          point,
+                                          _mesh->getVertex( ( *p ).index( 0 ) ),
+                                          _mesh->getVertex( ( *p ).index( 1 ) ),
+                                          _mesh->getVertex( ( *p ).index( 2 ) ),
+                                          newProjectionPoint );
 
       if ( newDistance < distance )
       {
@@ -196,11 +196,11 @@ void SceneMesh::getClosestPolygonAtVoxel(
 
       // getting the point to the triangle distance
       newDistance = getPointToTriangleDistance(
-                                         point,
-                                         _mesh->vertices[ ( *p ).indices[ 0 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 1 ] ],
-                                         _mesh->vertices[ ( *p ).indices[ 2 ] ],
-                                         newProjectionPoint );
+                                          point,
+                                          _mesh->getVertex( ( *p ).index( 0 ) ),
+                                          _mesh->getVertex( ( *p ).index( 1 ) ),
+                                          _mesh->getVertex( ( *p ).index( 2 ) ),
+                                          newProjectionPoint );
 
       if ( newDistance < distance )
       {

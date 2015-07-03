@@ -24,10 +24,10 @@ class SceneMeshCache
     SceneMeshCache( SceneModeller* sceneModeller );
     virtual ~SceneMeshCache();
 
-    int32_t getSceneMeshCount( const Point< float >& point ) const;
-
-    std::vector< SceneMesh* > getSceneMeshes( Point< int32_t > voxel ) const;
-    std::vector< SceneMesh* > getSceneMeshes( Point< float > point ) const;
+    std::vector< SceneMesh* >
+      getSceneMeshes( const Point< int32_t >& voxel ) const;
+    std::vector< SceneMesh* >
+      getSceneMeshes( const Point< float >& point ) const;
     
     void update( SceneMesh* SceneMesh );
 

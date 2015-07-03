@@ -83,11 +83,11 @@ namespace MR
         uint32_t  operator[] (const size_t i) const { assert (i < vertices); return indices[i]; }
         uint32_t& operator[] (const size_t i)       { assert (i < vertices); return indices[i]; }
 
-        // make polygon accessible
-        uint32_t indices[ vertices ];
+        // methods to access polygon indices
+        const uint32_t& index( uint32_t axis ) const { return indices[ axis ]; }
 
       private:
-        //uint32_t indices[vertices];
+        uint32_t indices[vertices];
 
     };
 
@@ -112,13 +112,15 @@ namespace MR
 
         void output_pve_image (const Image::Header&, const std::string&);
 
-        // make vertices & polygons accessible
-        VertexList vertices;
-        PolygonList polygons;
+        // methods to access vertices & polygons
+        const Vertex& getVertex( int32_t index ) const { return vertices[ index ]; }
+        const VertexList& getVertices() const { return vertices; }
+        const Polygon< 3 >& getPolygon( int32_t index ) const { return polygons[ index ]; }
+        const PolygonList& getPolygons() const { return polygons; }
 
       private:
-        //VertexList vertices;
-        //PolygonList polygons;
+        VertexList vertices;
+        PolygonList polygons;
 
 
         void load_vtk (const std::string&);

@@ -112,7 +112,7 @@ std::vector< float > GraphMetrics::strength() const
 
 
 void GraphMetrics::write( const std::string& path,
-                          const std::vector< float >& metric )
+                          const std::vector< float >& metric ) const
 {
 
   File::OFStream out( path, std::ios_base::out | std::ios_base::trunc );

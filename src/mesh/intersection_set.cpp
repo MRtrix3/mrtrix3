@@ -104,7 +104,7 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
 
         // collecting the list of polygons corresponding to the current mesh
         // inside the current voxel
-        VertexList vertices = ( *m )->getMesh()->vertices;
+        VertexList vertices = ( *m )->getMesh()->getVertices();
         std::vector< Polygon< 3 > > 
           polygons = ( *m )->getPolygonCache().getPolygons( *v );
 
@@ -116,9 +116,9 @@ IntersectionSet::IntersectionSet( const SceneModeller& sceneModeller,
         {
 
           // obtaining the current vertex positions of the polygon
-          v1 = vertices[ ( *p ).indices[ 0 ] ];
-          v2 = vertices[ ( *p ).indices[ 1 ] ];
-          v3 = vertices[ ( *p ).indices[ 2 ] ];
+          v1 = vertices[ ( *p ).index( 0 ) ];
+          v2 = vertices[ ( *p ).index( 1 ) ];
+          v3 = vertices[ ( *p ).index( 2 ) ];
 
           // perform ray/triangle intersection to find intersecting point
           hasIntersection = getRayTriangleIntersection( from, to,

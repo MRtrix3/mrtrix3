@@ -30,8 +30,8 @@ NodePair::~NodePair()
 }
 
 
-void NodePair::setNodePair( const uint32_t firstNode,
-                            const uint32_t secondNode )
+void NodePair::setNodePair( const uint32_t& firstNode,
+                            const uint32_t& secondNode )
 {
 
   _nodePair.first = firstNode;
@@ -40,7 +40,7 @@ void NodePair::setNodePair( const uint32_t firstNode,
 }
 
 
-const uint32_t& NodePair::getFirstNode() const
+uint32_t NodePair::getFirstNode() const
 {
 
   return _nodePair.first;
@@ -48,7 +48,7 @@ const uint32_t& NodePair::getFirstNode() const
 }
 
 
-const uint32_t& NodePair::getSecondNode() const
+uint32_t NodePair::getSecondNode() const
 {
 
   return _nodePair.second;
@@ -70,7 +70,7 @@ Connectome::~Connectome()
 }
 
 
-void Connectome::allocate( const uint32_t nodeCount )
+void Connectome::allocate( const uint32_t& nodeCount )
 {
 
   // allocating connectivity matrix
@@ -153,7 +153,7 @@ void Connectome::read( const std::string& path )
 }
 
 
-void Connectome::write( const std::string& path )
+void Connectome::write( const std::string& path ) const
 {
 
   File::OFStream out( path, std::ios_base::out | std::ios_base::trunc );

@@ -15,8 +15,8 @@ PolygonCache::PolygonCache( SceneMesh* sceneMesh )
 {
 
   // collecting the polygons and associated vertices of the scene mesh
-  VertexList vertices = _sceneMesh->getMesh()->vertices;
-  PolygonList polygons = _sceneMesh->getMesh()->polygons;
+  VertexList vertices = _sceneMesh->getMesh()->getVertices();
+  PolygonList polygons = _sceneMesh->getMesh()->getPolygons();
 
   std::set< Point< int32_t >, PointCompare< int32_t > > voxels;
 
@@ -77,7 +77,7 @@ PolygonCache::~PolygonCache()
 
 
 std::vector< Polygon< 3 > >
-PolygonCache::getPolygons( Point< int32_t > voxel ) const
+PolygonCache::getPolygons( const Point< int32_t >& voxel ) const
 {
 
   if ( _lut.count( voxel ) == 0 )
@@ -97,7 +97,7 @@ PolygonCache::getPolygons( Point< int32_t > voxel ) const
 
 
 std::vector< Polygon< 3 > >
-PolygonCache::getPolygons( Point< float > point ) const
+PolygonCache::getPolygons( const Point< float >& point ) const
 {
 
   Point< int32_t > voxel;

@@ -2,7 +2,6 @@
 #define __dwi_tractography_connectomics_graph_metrics_h__
 
 #include "dwi/tractography/connectomics/connectome.h"
-#include <vector>
 
 
 namespace MR
@@ -31,7 +30,7 @@ class GraphMetrics
     std::vector< float > strength() const;
 
     void write( const std::string& path,
-                const std::vector< float >& metric );
+                const std::vector< float >& metric ) const;
 
   protected:
 

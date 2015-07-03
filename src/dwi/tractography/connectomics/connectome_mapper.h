@@ -27,7 +27,7 @@ class ConnectomeMapper /* common interface */
     virtual ~ConnectomeMapper();
 
     virtual void findNodePair( const Streamline< float >& tck,
-                               NodePair& nodePair ) = 0;
+                               NodePair& nodePair ) const = 0;
     virtual uint32_t getNodeCount() const = 0;
 
 };
@@ -42,7 +42,7 @@ class MultiThreadMapper /* providing functor for supporting multithreading */
     virtual ~MultiThreadMapper();
 
     bool operator() ( const Streamline< float >& tck,
-                      NodePair& nodePair );
+                      NodePair& nodePair ) const;
 
   protected:
 
