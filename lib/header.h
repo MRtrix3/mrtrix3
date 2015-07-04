@@ -249,8 +249,8 @@ namespace MR
           for (ssize_t row = 0; row < G.rows(); ++row) {
             std::string line;
             for (ssize_t col = 0; col < G.cols(); ++col) {
-              if (col == 0) line += ",";
-              line += str(G(row,col));
+              line += str(G(row,col), 6);
+              if (col < G.cols() - 1) line += ",";
             }
             add_line (dw_scheme, line);
           }
