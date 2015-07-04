@@ -39,6 +39,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <limits>
+#include <iomanip>
 
 
 #include "types.h"
@@ -120,6 +121,24 @@ namespace MR
       throw Exception ("error converting value to string");
     return stream.str();
   }
+
+
+  // Eigen::Transform to string since no operator<< is defined
+  inline std::string str (const transform_type& transform, int precision = 5)
+  {
+    std::ostringstream stream;
+    stream.precision (precision);
+    stream << std::fixed;
+    const ssize_t w = precision + 6;
+    for (ssize_t i = 0; i < 3; i++) {
+      for (ssize_t j = 0; j < 4; j++)
+        stream << std::setw(w) << transform(i,j);
+      stream << std::endl;
+    }
+    stream << std::setw(w) << 0 << std::setw(w) << 0 << std::setw(w) << 0 << std::setw(w) << 1;
+    return stream.str();
+  }
+
 
   inline std::string& add_line (std::string& original, const std::string& new_line)
   {

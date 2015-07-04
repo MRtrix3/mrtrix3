@@ -183,9 +183,9 @@ namespace MR
       }
     }
 
-  //! read the matrix data from \a filename
+  //! read matrix data into a 2D vector \a filename
   template <class ValueType = default_type>
-    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename) 
+    std::vector<std::vector<ValueType>> load_matrix_2D_vector (const std::string& filename)
     {
       std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
       std::vector<std::vector<ValueType>> V;
@@ -214,15 +214,50 @@ namespace MR
       if (!V.size())
         throw Exception ("no data in file");
 
+      return V;
+    }
+
+  //! read matrix data into an Eigen::Matrix \a filename
+  template <class ValueType = default_type>
+    Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
+    {
+      std::vector<std::vector<ValueType>> V = load_matrix_2D_vector (filename);
+
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
 
-      for (ssize_t i = 0; i < M.rows(); i++) 
+      for (ssize_t i = 0; i < M.rows(); i++)
         for (ssize_t j = 0; j < M.cols(); j++)
           M(i,j) = V[i][j];
 
       return M;
     }
 
+  //! read matrix data into a 4x4 Eigen::Tranform\a filename
+  template <class ValueType = default_type>
+    transform_type load_transform (const std::string& filename)
+    {
+      std::vector<std::vector<ValueType>> V = load_matrix_2D_vector (filename);
+
+      transform_type M;
+
+      for (ssize_t i = 0; i < 3; i++)
+        for (ssize_t j = 0; j < 4; j++)
+          M(i,j) = V[i][j];
+
+      return M;
+    }
+
+    //! write the transform \a M to file
+    inline void save_transform (const transform_type& M, const std::string& filename)
+      {
+        File::OFStream out (filename);
+        for (ssize_t i = 0; i < 3; i++) {
+          for (ssize_t j = 0; j < 4; j++)
+            out << str(M(i,j), 10) << " ";
+          out << "\n";
+        }
+        out << "0 0 0 1\n";
+      }
 
         //! write the vector \a V to file
   template <class VectorType>
