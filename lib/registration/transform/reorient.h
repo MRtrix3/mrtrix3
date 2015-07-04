@@ -42,16 +42,16 @@ namespace MR
 
 //        template <class FODVoxelType>
 //        class Base {
-//
+
 //          public:
 //            Base (FODVoxelType& fod_voxel,
 //                  const Math::Matrix<float>& directions_transposed,
 //                  const Math::Matrix<float>& fod_to_aPSF_weights_transform) :
 //                  fod_voxel (fod_voxel),
 //                  fod_to_aPSF_weights_transform (fod_to_aPSF_weights_transform),
-//                  aPSF_generator (Math::SH::LforN(fod_voxel.dim(3))) {
-//                    directions = Math::transpose(directions_transposed);}
-//
+//                  aPSF_generator (Math::SH::LforN (fod_voxel.dim(3))) {
+//                    directions = Math::transpose (directions_transposed);}
+
 //          protected:
 //            void reorient_FOD () {
 //              Math::Vector<float> fod (fod_voxel.address(), fod_voxel.dim(3));
@@ -67,29 +67,50 @@ namespace MR
 //                fod += aPSF;
 //              }
 //            }
-//
-////            void reorient_FOD () {
-////              Math::Vector<float> fod (fod_voxel.address(), fod_voxel.dim(3));
-////              Math::mult (weights, fod_to_aPSF_weights_transform, fod);
-////              Math::mult (transformed_directions, transform, directions);
-////              fod.zero();
-////              // for each direction, compute an apodised PSF, add it to the FOD with the weight
-////              Math::Vector<float> aPSF;
-////              for (int i = 0; i < transformed_directions.columns(); ++i) {
-////                Point<float> dir (transformed_directions (0, i), transformed_directions (1, i), transformed_directions (2, i));
-////                aPSF_generator (aPSF, dir);
-////                aPSF *= weights[i];
-////                fod += aPSF;
-////              }
-////            }
-//
+
 //            FODVoxelType fod_voxel;
 //            Math::Matrix<float> fod_to_aPSF_weights_transform;
 //            Math::Matrix<float> transform;
-//
+
 //            Math::Matrix<float> transformed_directions;
 //            Math::Vector<float> weights;
 //            Math::Matrix<float> directions;
+//        };
+
+
+
+//        template <class FODVoxelType, class WarpVoxelType>
+//        class WarpReorientKernel : public Base<FODVoxelType> {
+
+//          public:
+//            WarpReorientKernel (FODVoxelType& fod_voxel,
+//                                const Math::Matrix<float>& directions,
+//                                const WarpVoxelType& warp) :
+//                                  warp_gradient (warp),
+//                                  jacobian (3, 3) {}
+
+//              void operator() (const Image::Iterator& pos) {
+//                Image::voxel_assign (Base<FODVoxelType>::fod_voxel, pos, 0, 3);
+//                Base<FODVoxelType>::fod_voxel[3] = 0;
+//                if (Base<FODVoxelType>::fod_voxel.value() > 0) {
+//                  jacobian.identity();
+//                  Image::voxel_assign (warp_gradient, pos, 0, 3);
+//                  for (size_t i = 0; i < 3; ++i) {
+//                    warp_gradient.set_axis(i);
+//                    for (size_t j = 0; j < 3; ++j) {
+//                      warp_gradient[3] = j;
+//                      jacobian(i, j) += warp_gradient.value();
+//                    } // TODO check the rows/cols
+//                  }
+//                  // adjust for scanner coord TODO
+//                  Math::LU::inv (Base<FODVoxelType>::transform, jacobian);
+//                  Base<FODVoxelType>::reorient_FOD ();
+//                }
+//              }
+
+//          private:
+//            Adapter::Gradient1D<WarpVoxelType> warp_gradient;
+//            Math::Matrix<float> jacobian;
 //        };
 
 
@@ -168,39 +189,7 @@ namespace MR
 
 
 
-//        template <class FODVoxelType, class WarpVoxelType>
-//        class WarpReorientKernel : public Base<FODVoxelType> {
-//
-//          public:
-//            WarpReorientKernel (FODVoxelType& fod_voxel,
-//                                const Math::Matrix<float>& directions,
-//                                const WarpVoxelType& warp) :
-//                                  warp_gradient (warp),
-//                                  jacobian (3, 3) {}
-//
-//              void operator() (const Image::Iterator& pos) {
-//                Image::voxel_assign (Base<FODVoxelType>::fod_voxel, pos, 0, 3);
-//                Base<FODVoxelType>::fod_voxel[3] = 0;
-//                if (Base<FODVoxelType>::fod_voxel.value() > 0) {
-//                  jacobian.identity();
-//                  Image::voxel_assign (warp_gradient, pos, 0, 3);
-//                  for (size_t i = 0; i < 3; ++i) {
-//                    warp_gradient.set_axis(i);
-//                    for (size_t j = 0; j < 3; ++j) {
-//                      warp_gradient[3] = j;
-//                      jacobian(i, j) += warp_gradient.value();
-//                    } // TODO check the rows/cols
-//                  }
-//                  // adjust for scanner coord TODO
-//                  Math::LU::inv(Base<FODVoxelType>::transform, jacobian);
-//                  Base<FODVoxelType>::reorient_FOD ();
-//                }
-//              }
-//
-//          private:
-//            Adapter::Gradient1D<WarpVoxelType> warp_gradient;
-//            Math::Matrix<float> jacobian;
-//        };
+
 
 
 
@@ -218,7 +207,7 @@ namespace MR
 
 
         template <class FODVoxelType>
-        void reorient (std::string& progress_message,
+        void reorient (const std::string progress_message,
                        FODVoxelType& fod_vox_in,
                        FODVoxelType& fod_vox_out,
                        const Math::Matrix<float>& transform,
@@ -230,7 +219,7 @@ namespace MR
         }
 
 
-//
+
 //        template <class FODVoxelType, class WarpVoxelType>
 //        void reorient (FODVoxelType& fod_vox,
 //                       const WarpVoxelType& warp,
@@ -240,9 +229,9 @@ namespace MR
 //          Image::ThreadedLoop loop (fod_vox, 0, 3);
 //          loop.run (kernel);
 //        }
-//
-//
-//
+
+
+
 //        template <class FODVoxelType, class WarpVoxelType>
 //        void reorient (std::string& progress_message,
 //                       FODVoxelType& fod_vox,
