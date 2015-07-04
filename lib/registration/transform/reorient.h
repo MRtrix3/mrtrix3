@@ -23,19 +23,17 @@
 #ifndef __image_registration_transform_reorient_h__
 #define __image_registration_transform_reorient_h__
 
-#include "image/threaded_loop.h"
-#include "image/adapter/gradient1D.h"
+#include "algo/threaded_loop.h"
+#include "adapter/gradient1D.h"
 #include "math/SH.h"
-#include "image/voxel.h"
+#include "image.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Transform
     {
-      namespace Transform
-      {
 
 
 
@@ -116,107 +114,107 @@ namespace MR
 
 
 
-        template <class FODVoxelType>
-        class LinearReorientKernel {
+      template <class FODVoxelType>
+      class LinearReorientKernel {
 
-        public:
-          LinearReorientKernel (FODVoxelType& fod_image_in,
-                                FODVoxelType& fod_image_out,
-                                const Math::Matrix<float>& directions_transposed,
-                                const Math::Matrix<float>& transform) :
-                                  fod_voxel_in (fod_image_in),
-                                  fod_voxel_out (fod_image_out),
-                                  fod_in (fod_image_in.dim(3)),
-                                  fod_out (fod_image_out.dim(3)) {
+      public:
+        LinearReorientKernel (FODVoxelType& fod_image_in,
+                              FODVoxelType& fod_image_out,
+                              const Math::Matrix<float>& directions_transposed,
+                              const Math::Matrix<float>& transform) :
+                                fod_voxel_in (fod_image_in),
+                                fod_voxel_out (fod_image_out),
+                                fod_in (fod_image_in.dim(3)),
+                                fod_out (fod_image_out.dim(3)) {
 
-            Image::check_dimensions(fod_image_in, fod_image_out);
+          Image::check_dimensions(fod_image_in, fod_image_out);
 
-            Math::Matrix<float> forward_transform;
-            Math::LU::inv (forward_transform, transform.sub(0,3,0,3));
+          Math::Matrix<float> forward_transform;
+          Math::LU::inv (forward_transform, transform.sub(0,3,0,3));
 
-            Math::Matrix<float> transformed_directions;
-            Math::mult (transformed_directions, forward_transform, Math::transpose (directions_transposed));
+          Math::Matrix<float> transformed_directions;
+          Math::mult (transformed_directions, forward_transform, Math::transpose (directions_transposed));
 
-            Math::Matrix<float> fod_to_aPSF_weights_transform;
-            precompute_FOD_to_aPSF_weights_transform (fod_image_in.dim(3), directions_transposed, fod_to_aPSF_weights_transform);
+          Math::Matrix<float> fod_to_aPSF_weights_transform;
+          precompute_FOD_to_aPSF_weights_transform (fod_image_in.dim(3), directions_transposed, fod_to_aPSF_weights_transform);
 
-            Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (fod_image_in.dim(3)));
-            Math::Vector<float> aPSF;
-            Math::Matrix<float> aPSF_matrix (fod_image_in.dim(3), transformed_directions.columns());
-            for (size_t i = 0; i < transformed_directions.columns(); ++i) {
-              Point<float> dir (transformed_directions (0, i), transformed_directions (1, i), transformed_directions (2, i));
-              aPSF_generator (aPSF, dir);
-              for (int j = 0; j < fod_image_in.dim(3); ++j)
-                aPSF_matrix (j, i) = aPSF[j];
-            }
-            Math::mult (reorient_transform, aPSF_matrix, fod_to_aPSF_weights_transform);
+          Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (fod_image_in.dim(3)));
+          Math::Vector<float> aPSF;
+          Math::Matrix<float> aPSF_matrix (fod_image_in.dim(3), transformed_directions.columns());
+          for (size_t i = 0; i < transformed_directions.columns(); ++i) {
+            Point<float> dir (transformed_directions (0, i), transformed_directions (1, i), transformed_directions (2, i));
+            aPSF_generator (aPSF, dir);
+            for (int j = 0; j < fod_image_in.dim(3); ++j)
+              aPSF_matrix (j, i) = aPSF[j];
           }
-
-          void operator() (const Image::Iterator& pos) {
-            Image::voxel_assign (fod_voxel_in, pos, 0, 3);
-            Image::voxel_assign (fod_voxel_out, pos, 0, 3);
-            fod_voxel_in[3] = 0;
-            if (fod_voxel_in.value() > 0) {
-              for (fod_voxel_in[3] = 0; fod_voxel_in[3] < (int)fod_in.size(); ++fod_voxel_in[3])
-                fod_in[fod_voxel_in[3]] = fod_voxel_in.value();
-              Math::mult (fod_out, reorient_transform, fod_in);
-              for (fod_voxel_out[3] = 0; fod_voxel_out[3] < (int)fod_out.size(); ++fod_voxel_out[3])
-                 fod_voxel_out.value() = fod_out[fod_voxel_out[3]];
-            }
-          }
-
-          void precompute_FOD_to_aPSF_weights_transform (const int num_SH,
-                                                         const Math::Matrix<float>& directions,
-                                                         Math::Matrix<float>& fod_to_aPSF_weights_transform) {
-            Math::Matrix<float> aPSF_matrix (num_SH, directions.rows());
-            Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (num_SH));
-            Math::Vector<float> aPSF;
-            for (size_t i = 0; i < directions.rows(); ++i) {
-              Point<float> dir (directions (i, 0), directions (i, 1), directions (i, 2));
-              aPSF_generator (aPSF, dir);
-              aPSF_matrix.column(i) = aPSF;
-            }
-            Math::pinv (fod_to_aPSF_weights_transform, aPSF_matrix);
-          }
-
-        protected:
-            FODVoxelType fod_voxel_in;
-            FODVoxelType fod_voxel_out;
-            Math::Matrix<float> reorient_transform;
-            Math::Vector<float> fod_in;
-            Math::Vector<float> fod_out;
-        };
-
-
-
-
-
-
-
-        template <class FODVoxelType>
-        void reorient (FODVoxelType& fod_vox_in,
-                       FODVoxelType& fod_vox_out,
-                       const Math::Matrix<float>& transform,
-                       const Math::Matrix<float>& directions)
-        {
-          LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
-          Image::ThreadedLoop loop (fod_vox_in, 0, 3);
-          loop.run (kernel);
+          Math::mult (reorient_transform, aPSF_matrix, fod_to_aPSF_weights_transform);
         }
 
-
-
-        template <class FODVoxelType>
-        void reorient (const std::string progress_message,
-                       FODVoxelType& fod_vox_in,
-                       FODVoxelType& fod_vox_out,
-                       const Math::Matrix<float>& transform,
-                       const Math::Matrix<float>& directions)
-        {
-          LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
-          Image::ThreadedLoop loop (progress_message, fod_vox_in, 0, 3);
-          loop.run (kernel);
+        void operator() (const Image::Iterator& pos) {
+          Image::voxel_assign (fod_voxel_in, pos, 0, 3);
+          Image::voxel_assign (fod_voxel_out, pos, 0, 3);
+          fod_voxel_in[3] = 0;
+          if (fod_voxel_in.value() > 0) {
+            for (fod_voxel_in[3] = 0; fod_voxel_in[3] < (int)fod_in.size(); ++fod_voxel_in[3])
+              fod_in[fod_voxel_in[3]] = fod_voxel_in.value();
+            Math::mult (fod_out, reorient_transform, fod_in);
+            for (fod_voxel_out[3] = 0; fod_voxel_out[3] < (int)fod_out.size(); ++fod_voxel_out[3])
+               fod_voxel_out.value() = fod_out[fod_voxel_out[3]];
+          }
         }
+
+        void precompute_FOD_to_aPSF_weights_transform (const int num_SH,
+                                                       const Math::Matrix<float>& directions,
+                                                       Math::Matrix<float>& fod_to_aPSF_weights_transform) {
+          Math::Matrix<float> aPSF_matrix (num_SH, directions.rows());
+          Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (num_SH));
+          Math::Vector<float> aPSF;
+          for (size_t i = 0; i < directions.rows(); ++i) {
+            Point<float> dir (directions (i, 0), directions (i, 1), directions (i, 2));
+            aPSF_generator (aPSF, dir);
+            aPSF_matrix.column(i) = aPSF;
+          }
+          Math::pinv (fod_to_aPSF_weights_transform, aPSF_matrix);
+        }
+
+      protected:
+          FODVoxelType fod_voxel_in;
+          FODVoxelType fod_voxel_out;
+          Math::Matrix<float> reorient_transform;
+          Math::Vector<float> fod_in;
+          Math::Vector<float> fod_out;
+      };
+
+
+
+
+
+
+
+      template <class FODImageType>
+      void reorient (FODImageType& fod_vox_in,
+                     FODVoxelType& fod_vox_out,
+                     const Math::Matrix<float>& transform,
+                     const Math::Matrix<float>& directions)
+      {
+        LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
+        Image::ThreadedLoop loop (fod_vox_in, 0, 3);
+        loop.run (kernel);
+      }
+
+
+
+      template <class FODVoxelType>
+      void reorient (const std::string progress_message,
+                     FODVoxelType& fod_vox_in,
+                     FODVoxelType& fod_vox_out,
+                     const Math::Matrix<float>& transform,
+                     const Math::Matrix<float>& directions)
+      {
+        LinearReorientKernel<FODVoxelType> kernel (fod_vox_in, fod_vox_out, directions, transform);
+        Image::ThreadedLoop loop (progress_message, fod_vox_in, 0, 3);
+        loop.run (kernel);
+      }
 
 
 
@@ -244,7 +242,6 @@ namespace MR
 //        }
 
 
-      }
     }
   }
 }

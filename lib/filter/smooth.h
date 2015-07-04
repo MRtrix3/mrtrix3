@@ -123,8 +123,6 @@ namespace MR
           std::shared_ptr <Image<ValueType> > in (std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input)));
           threaded_copy (input, *in);
 
-//          input.save("test.mif");
-
           std::shared_ptr <Image<ValueType> > out;
 
           std::unique_ptr<ProgressBar> progress;
