@@ -331,7 +331,7 @@ namespace MR
    * \a vox is a 3D ImageType (i.e. vox.ndim() == 3) with strides [ 2 -1 3 ]:
    * \code
    * float sum = 0.0;
-   * for (auto i = Image::LoopInOrder().run (vox); i ++i)
+   * for (auto i = Image::LoopInOrder().run (vox); i; ++i)
    *   sum += vox.value();
    * \endcode
    * This is equivalent to:

@@ -243,35 +243,22 @@ void run ()
 //  }
 
 
-  opt = get_options ("template"); // need to reslice
-  if (opt.size()) {
-    INFO ("image will be regridded");
+//  opt = get_options ("template"); // need to reslice
+//  if (opt.size()) {
+//    INFO ("image will be regridded");
 
-//    std::string name = opt[0][0];
-//    Image::ConstHeader template_header (name);
+//    auto template_header = Header::open (opt[0][0]);
 //    for (size_t i = 0; i < 3; ++i) {
-//       output_header.dim(i) = template_header.dim(i);
-//       output_header.vox(i) = template_header.vox(i);
+//       output_header.size(i) = template_header.size(i);
+//       output_header.voxsize(i) = template_header.voxsize(i);
 //    }
 //    output_header.transform() = template_header.transform();
-//    output_header.comments().push_back ("resliced to reference image \"" + template_header.name() + "\"");
+//    output_header.comments().push_back ("resliced to template image \"" + template_header.name() + "\"");
 
-//    int interp = 2;
+//    int interp = 2;  // cubic
 //    opt = get_options ("interp");
 //    if (opt.size())
 //      interp = opt[0][0];
-
-//    std::vector<int> oversample;
-//    opt = get_options ("oversample");
-//    if (opt.size()) {
-//      oversample = opt[0][0];
-
-//      if (oversample.size() != 3)
-//        throw Exception ("option \"oversample\" expects a vector of 3 values");
-
-//      if (oversample[0] < 1 || oversample[1] < 1 || oversample[2] < 1)
-//        throw Exception ("oversample factors must be greater than zero");
-//    }
 
 //    float out_of_bounds_value = 0.0;
 //    opt = get_options ("nan");
@@ -298,13 +285,13 @@ void run ()
 
 //    switch (interp) {
 //      case 0:
-//        Image::Filter::reslice<Image::Interp::Nearest> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
+//        Filter::reslice<Image::Interp::Nearest> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
 //        break;
 //      case 1:
-//        Image::Filter::reslice<Image::Interp::Linear> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
+//        Filter::reslice<Image::Interp::Linear> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
 //        break;
 //      case 2:
-//        Image::Filter::reslice<Image::Interp::Cubic> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
+//        Filter::reslice<Image::Interp::Cubic> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
 //        break;
 //      case 3:
 //        FAIL ("FIXME: sinc interpolation needs a lot of work!");
@@ -318,7 +305,7 @@ void run ()
 //    if (do_reorientation)
 //      Image::Registration::Transform::reorient ("reorienting...", output_vox, output_vox, linear_transform, directions_cartesian);
 
-  } else {
+//  } else {
     // straight copy:
     INFO ("image will not be regridded");
     if (linear) {
@@ -337,6 +324,6 @@ void run ()
 //        Math::mult (transform, linear_transform, Math::LU::inv (output_header.transform()));
 //      Image::Registration::Transform::reorient ("reorienting...", out, out, transform, directions_cartesian);
 //    }
-  }
+//  }
 }
 
