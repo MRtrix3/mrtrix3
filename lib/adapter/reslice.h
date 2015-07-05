@@ -37,26 +37,26 @@ namespace MR
     //! \addtogroup interp
     // @{
 
-    //! a Image::Voxel providing interpolated values from another Image::Voxel
-    /*! the Reslice class provides a Image::Voxel interface to data
+    //! an Image providing interpolated values from another Image
+    /*! the Reslice class provides an Image interface to data
      * interpolated using the specified Interpolator class from the
-     * Image::Voxel \a original. The Reslice object will have the same
-     * dimensions, voxel sizes and transform as the \a reference Image::Info.
+     * Image \a original. The Reslice object will have the same
+     * dimensions, voxel sizes and transform as the \a reference HeaderType.
      * Any of the interpolator classes (currently Interp::Nearest,
-     * Interp::Linear, and Interp::Cubic) can be used.
+     * Interp::Linear, Interp::Cubic and Interp::Sinc) can be used.
      *
      * For example:
      * \code
      * // reference header:
      * auto reference = Header::open (argument[0]);
      * // input data to be resliced:
-     * auto data = Header::open (argument[1]).get_image<float>(); 
+     * auto input = Image<float>::open (argument[1]);
      *
-     * auto regridder = Adapter::make_reslice<Interp::Cubic> (data, reference);
-     * auto out = Header::create (argument[2], regridder).get_image<float>();
+     * Adapter::Reslice<Interp::Cubic, Image<float> > reslicer (input, reference);
+     * auto output = Image::create<float> (argument[2], reslicer);
      *
      * // copy data from regridder to output
-     * copy (regridder, out);
+     * copy (reslicer, output);
      * \endcode
      *
      * It is also possible to supply an additional transform to be applied to
@@ -74,7 +74,7 @@ namespace MR
      * over-sampling factor for each of the 3 imaging axes. Specifying the
      * vector [ 1 1 1 ] will therefore disable over-sampling.
      *
-     * \sa Image::Interp::reslice()
+     * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
       class Reslice 
@@ -84,10 +84,10 @@ namespace MR
 
         template <class HeaderType>
           Reslice (const ImageType& original,
-              const HeaderType& reference,
-              const transform_type& transform = NoTransform,
-              const std::vector<int>& oversample = AutoOverSample,
-              const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+                   const HeaderType& reference,
+                   const transform_type& transform = NoTransform,
+                   const std::vector<int>& oversample = AutoOverSample,
+                   const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
             dim { reference.size(0), reference.size(1), reference.size(2) },

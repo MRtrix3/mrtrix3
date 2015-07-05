@@ -1,7 +1,7 @@
 /*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by J-Donald Tournier and David Raffelt
 
     This file is part of MRtrix.
 
@@ -102,17 +102,9 @@ void usage ()
         "set the interpolation method to use when reslicing (default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
-    + Option ("oversample", 
-        "set the oversampling factor to use when down-sampling (i.e. the "
-        "number of samples to take and average per voxel along each spatial dimension). "
-        "This should be supplied as a vector of 3 integers. By default, the "
-        "oversampling factor is determined based on the differences between "
-        "input and output voxel sizes.")
-    + Argument ("factors").type_sequence_int()
-
     + OptionGroup ("Non-linear transformation options")
 
-    + Option ("warp_df",
+    + Option ("warp",
         "apply a non-linear deformation field to the input image. If no template image is supplied, "
         "then the input warp will define the output image dimensions.")
     + Argument ("image").type_image_in ()
@@ -138,35 +130,36 @@ void usage ()
 }
 
 
-
-typedef float value_type;
-
-
 void run ()
 {
   auto input_header = Header::open(argument[0]);
-  auto input = input_header.get_image<float>();
   Header output_header (input_header);
   output_header.datatype() = DataType::from_command_line (output_header.datatype());
 
-  transform_type linear_transform;
+  const bool replace = get_options ("replace").size();
 
+  // Linear
+  transform_type linear_transform;
   bool linear = false;
   auto opt = get_options ("linear");
   if (opt.size()) {
     linear = true;
     linear_transform = load_transform (opt[0][0]);
+  } else {
+    if (replace)
+      throw Exception ("no transform provided for option '-replace'");
   }
 
+  // Inverse
   const bool inverse = get_options ("inverse").size();
-  const bool replace = get_options ("replace").size();
-
   if (inverse) {
     if (!linear)
       throw Exception ("no transform provided for option '-inverse'");
     linear_transform = linear_transform.inverse();
   }
 
+
+  // Flip
   opt = get_options ("flip");
   if (opt.size()) {
     std::vector<int> axes = opt[0][0];
@@ -175,36 +168,63 @@ void run ()
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
         throw Exception ("axes supplied to -flip are out of bounds (" + std::string (opt[0][0]) + ")");
-      flip(axes[i],3) += flip(axes[i],axes[i]) * input.voxsize(axes[i]) * (input.size(axes[i])-1);
+      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.voxsize(axes[i]) * (input_header.size(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
     }
-
     if (!linear)
-      linear_transform.setIdentity();
-    
+      linear_transform.setIdentity();    
     transform_type tmp;
     if (!replace) {
-      transform_type irot = input.transform().inverse();
+      transform_type irot = input_header.transform().inverse();
       tmp = flip * irot;
-      flip = input.transform() * tmp;
+      flip = input_header.transform() * tmp;
     }
     tmp = linear_transform * flip;
     linear_transform = tmp;
   }
 
-  if (replace)
-    if (!linear)
-      throw Exception ("no transform provided for option '-replace'");
+  Stride::List stride = Stride::get (input_header);
+
+  // Detect FOD image for reorientation
+  opt = get_options ("noreorientation");
+  bool fod_reorientation = false;
+  Eigen::MatrixXd directions_cartesian;
+  if (!opt.size() && linear && input_header.ndim() == 4 &&
+      input_header.size(3) >= 6 &&
+      input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)))) {
+    CONSOLE ("SH series detected, performing apodised PSF reorientation");
+    fod_reorientation = true;
+
+    Eigen::MatrixXd directions_el_az;
+    opt = get_options ("directions");
+    if (opt.size())
+      directions_el_az = load_matrix (opt[0][0]);
+    else
+      directions_el_az = DWI::Directions::electrostatic_repulsion_60();
+    Math::SH::spherical2cartesian (directions_el_az, directions_cartesian);
+
+    // load with SH coeffients contiguous in RAM
+    stride = Stride::contiguous_along_axis (3, input_header);
+  }
+
+  auto input = input_header.get_image<float>().with_direct_io (stride);
+
+  // Warp
+  bool warp = false;
+  opt = get_options ("warp");
+  if (opt.size()) {
+    warp = true;
+    //TODO
+  }
 
 
-
-
-  if (linear && input.ndim() == 4) {
+  if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
         INFO ("DW gradients will be reoriented");
 
+        // TODO do we want to detect and warn about shears here?
         auto rotation = linear_transform.linear();
         if (replace)
           rotation = linear_transform.linear() * input_header.transform().linear().inverse();
@@ -223,89 +243,56 @@ void run ()
   }
 
 
-//  opt = get_options ("noreorientation");
-//  bool do_reorientation = false;
-//  Math::Matrix<value_type> directions_cartesian;
-//  if (!opt.size() && linear_transform.is_set() && input_header.ndim() == 4 &&
-//      input_header.dim(3) >= 6 &&
-//      input_header.dim(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.dim(3)))) {
-//    do_reorientation = true;
-//    CONSOLE ("SH series detected, performing apodised PSF reorientation");
 
-//    Math::Matrix<value_type> directions_el_az;
-//    opt = get_options ("directions");
-//    if (opt.size())
-//      directions_el_az.load(opt[0][0]);
-//    else
-//      DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
-//    Math::SH::S2C (directions_el_az, directions_cartesian);
+  opt = get_options ("template"); // need to reslice
+  if (opt.size()) {
+    INFO ("image will be regridded");
 
-//  }
+    if (replace)
+      throw Exception ("you cannot use the -replace option with the -template option");
 
+    auto template_header = Header::open (opt[0][0]);
+    for (size_t i = 0; i < 3; ++i) {
+       output_header.size(i) = template_header.size(i);
+       output_header.voxsize(i) = template_header.voxsize(i);
+    }
+    output_header.transform() = template_header.transform();
+    add_line (output_header.keyval()["comments"], std::string ("resliced to template image \"" + template_header.name() + "\""));
 
-//  opt = get_options ("template"); // need to reslice
-//  if (opt.size()) {
-//    INFO ("image will be regridded");
+    int interp = 2;  // cubic
+    opt = get_options ("interp");
+    if (opt.size())
+      interp = opt[0][0];
 
-//    auto template_header = Header::open (opt[0][0]);
-//    for (size_t i = 0; i < 3; ++i) {
-//       output_header.size(i) = template_header.size(i);
-//       output_header.voxsize(i) = template_header.voxsize(i);
-//    }
-//    output_header.transform() = template_header.transform();
-//    output_header.comments().push_back ("resliced to template image \"" + template_header.name() + "\"");
+    float out_of_bounds_value = 0.0;
+    opt = get_options ("nan");
+    if (opt.size())
+      out_of_bounds_value = NAN;
 
-//    int interp = 2;  // cubic
-//    opt = get_options ("interp");
-//    if (opt.size())
-//      interp = opt[0][0];
+    auto output = Image<float>::create (argument[1], output_header);
 
-//    float out_of_bounds_value = 0.0;
-//    opt = get_options ("nan");
-//    if (opt.size())
-//      out_of_bounds_value = NAN;
-
-//    Image::Stride::List stride = Image::Stride::get (input_header);
-
-//    InputBufferType input_buffer (input_header, stride);
-//    if (replace) {
-//      Image::Info& info_in (input_buffer);
-//      info_in.transform().swap (linear_transform);
-//      linear_transform.clear();
-//    }
-//    InputBufferType::voxel_type in (input_buffer);
-
-//    if (do_reorientation) {
-//      stride = Image::Stride::contiguous_along_axis (3, input_header);
-//      Image::Stride::set (output_header, stride);
-//    }
-
-//    OutputBufferType output_buffer (argument[1], output_header);
-//    OutputBufferType::voxel_type output_vox (output_buffer);
-
-//    switch (interp) {
-//      case 0:
-//        Filter::reslice<Image::Interp::Nearest> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
-//        break;
-//      case 1:
-//        Filter::reslice<Image::Interp::Linear> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
-//        break;
-//      case 2:
-//        Filter::reslice<Image::Interp::Cubic> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
-//        break;
-//      case 3:
-//        FAIL ("FIXME: sinc interpolation needs a lot of work!");
-//        Image::Filter::reslice<Image::Interp::Sinc> (in, output_vox, linear_transform, oversample, out_of_bounds_value);
-//        break;
-//      default:
-//        assert (0);
-//        break;
-//    }
+    switch (interp) {
+      case 0:
+        Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        break;
+      case 1:
+        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        break;
+      case 2:
+        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        break;
+      case 3:
+        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        break;
+      default:
+        assert (0);
+        break;
+    }
 
 //    if (do_reorientation)
 //      Image::Registration::Transform::reorient ("reorienting...", output_vox, output_vox, linear_transform, directions_cartesian);
 
-//  } else {
+  } else {
     // straight copy:
     INFO ("image will not be regridded");
     if (linear) {
@@ -324,6 +311,6 @@ void run ()
 //        Math::mult (transform, linear_transform, Math::LU::inv (output_header.transform()));
 //      Image::Registration::Transform::reorient ("reorienting...", out, out, transform, directions_cartesian);
 //    }
-//  }
+  }
 }
 
