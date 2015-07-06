@@ -59,48 +59,8 @@ using namespace DWI::Tractography;
 
 void run ()
 {
+  Eigen::MatrixXf M = Eigen::MatrixXf::Random (4,3);
+  std::cerr.width(15);
+  VAR(M);
 
-  auto input = Image<float>::open (argument[0]).with_direct_io();
-  auto output = Image<float>::create (argument[1], input);
-
-  VAR (is_header_type<decltype(input)>::value);
-  VAR (is_image_type<decltype(input)>::value);
-  VAR (is_pure_image<decltype(input)>::value);
-  VAR (is_adapter_type<decltype(input)>::value);
-
-  auto adapter = Adapter::make <Adapter::Median3D> (input);
-
-  VAR (is_header_type<decltype(adapter)>::value);
-  VAR (is_image_type<decltype(adapter)>::value);
-  VAR (is_pure_image<decltype(adapter)>::value);
-  VAR (is_adapter_type<decltype(adapter)>::value);
-
-  save (input, "out.mih");
-  save (adapter, "out2.mif");
-
-  display (adapter);
-
-  input.index(0) = 10;
-  input.index(1) = 13;
-  input.index(2) = 10;
-
-  output.index(0) = input.index(0);
-  output.index(1) = input.index(1);
-  output.index(2) = input.index(2);
-
-
-  VAR (input.value());
-  VAR (output.value());
-
-  output.value() = input.value();
-
-  VAR (input);
-  VAR (output);
-  VAR (input.value());
-  VAR (output.value());
-
-
-//  std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
-//  Thread::run (Thread::multi (thread_func()));
 }
-

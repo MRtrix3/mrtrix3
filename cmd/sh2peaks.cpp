@@ -251,7 +251,7 @@ class Processor
       }
       else std::partial_sort_copy (all_peaks.begin(), all_peaks.end(), peaks_out.begin(), peaks_out.end());
 
-      int actual_npeaks = MIN (npeaks, (int) all_peaks.size());
+      int actual_npeaks = std::min (npeaks, (int) all_peaks.size());
       dirs_vox[3] = 0;
       for (int n = 0; n < actual_npeaks; n++) {
         dirs_vox.value() = peaks_out[n].a*peaks_out[n].v[0];

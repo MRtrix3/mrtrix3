@@ -196,6 +196,19 @@ namespace MR
       assert (H.io);
       H.format_ = (*format_handler)->description;
 
+
+      auto get_next = [](decltype(num)& pos, const decltype(Pdim)& limits) {
+        size_t axis = 0;
+        while (axis < limits.size()) {
+          pos[axis]++;
+          if (pos[axis] < limits[axis]) 
+            return true;
+          pos[axis] = 0;
+          axis++;
+        }
+        return false;
+      };
+
       while (get_next (num, Pdim)) {
         header.name() = parser.name (num);
         std::shared_ptr<ImageIO::Base> io_handler ((*format_handler)->create (header));

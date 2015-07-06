@@ -88,7 +88,7 @@ namespace MR
 
                 // Have to modify length criteria, as they are enforced in points, not mm
                 const float min_dist = to<float> (properties["min_dist"]);
-                min_num_points = std::max (2, round (min_dist/internal_step_size()) + 1);
+                min_num_points = std::max (2, Math::round<int> (min_dist/internal_step_size()) + 1);
                 const float max_dist = to<float> (properties["max_dist"]);
                 max_num_points = round (max_dist/internal_step_size()) + 1;
 
@@ -321,7 +321,7 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = MAX (0, act().sgm_depth - points_to_remove);
+              act().sgm_depth = std::max (0, act().sgm_depth - points_to_remove);
             }
 
 

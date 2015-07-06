@@ -86,7 +86,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
           out.factor = INFINITY;
           for (const auto& i : factors) {
             if (std::isfinite (i))
-              out.factor = MIN (out.factor, i);
+              out.factor = std::min (out.factor, i);
           }
           break;
 
@@ -105,7 +105,7 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
           out.factor = -INFINITY;
           for (const auto& i : factors) {
             if (std::isfinite (i))
-              out.factor = MAX (out.factor, i);
+              out.factor = std::max (out.factor, i);
           }
           break;
 

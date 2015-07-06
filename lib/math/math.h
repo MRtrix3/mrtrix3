@@ -63,13 +63,6 @@ namespace MR
     template <typename T> inline constexpr T pow10 (const T& v) { return pow8 (v) *pow2 (v); }
 
 
-    //! template function with cast to different type
-    /** example:
-     * \code
-     * float f = 21.412;
-     * int x = round<int> (f);
-     * \endcode
-     */
     template <typename I, typename T> inline constexpr I round (const T x) throw ()
     {
       return static_cast<I> (std::round (x));
@@ -97,76 +90,11 @@ namespace MR
       return static_cast<I> (std::ceil (x));
     }
 
-    //! swap values in arrays
-    /** \param a the first array containing the values to be swapped
-     * \param b the second array containing the values to be swapped
-     * \param size the number of elements to swap
-     * \param stride_a the increment between successive elements in the first array
-     * \param stride_b the increment between successive elements in the second array */
-    template <typename T> inline void swap (T* a, T* b, const int size, const int stride_a = 1, const int stride_b = 1) throw ()
-    {
-      T* const end (a + size*stride_a);
-      for (; a < end; a += stride_a, b += stride_b) 
-        std::swap (*a, *b);
-    }
-
-    //! find maximum value in array
-    /** \param x the array containing the values to be searched
-     * \param size the number of elements to search
-     * \param index the index in the array of the result
-     * \param stride the increment between successive elements in the array
-     * \return the maximum value found in the array */
-    template <typename T> inline T max (const T* const x, const int size, int& index, const int stride = 1) throw ()
-    {
-      T cval = *x, c;
-      index = 0;
-      for (int i = 1; i < size; i++)
-        if ( (c = x[i*stride]) > cval) {
-          cval = c;
-          index = i;
-        }
-      return c;
-    }
-
-    //! find minimum value in array
-    /** \param x the array containing the values to be searched
-     * \param size the number of elements to search
-     * \param index the index in the array of the result
-     * \param stride the increment between successive elements in the array
-     * \return the minimum value found in the array */
-    template <typename T> inline T min (const T* const x, const int size, int& index, const int stride = 1) throw ()
-    {
-      T cval = *x, c;
-      index = 0;
-      for (int i = 1; i < size; i++)
-        if ( (c = x[i*stride]) < cval) {
-          cval = c;
-          index = i;
-        }
-      return c;
-    }
-
-    //! find maximum absolute value in array
-    /** \param x the array containing the values to be searched
-     * \param size the number of elements to search
-     * \param index the index in the array of the result
-     * \param stride the increment between successive elements in the array
-     * \return the maximum absolute value found in the array */
-    template <typename T> inline T absmax (const T* const x, const int size, int& index, const int stride = 1) throw ()
-    {
-      T cval = abs (*x), c;
-      index = 0;
-      for (int i = 1; i < size; i++)
-        if ( (c = abs (x[i*stride])) > cval) {
-          cval = c;
-          index = i;
-        }
-      return c;
-    }
-
-
     /** @} */
   }
+
+
+
 
   //! write the matrix \a M to file
   template <class MatrixType>
@@ -283,7 +211,6 @@ namespace MR
         V[n] = vec[n];
       return V;
     }
-
 
 
 }

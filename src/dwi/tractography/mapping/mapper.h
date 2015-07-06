@@ -213,7 +213,7 @@ namespace MR {
           {
             typedef Eigen::Vector3f PointF;
 
-            const float accuracy = Math::pow2 (0.005 * minvalue (info.voxsize (0), info.voxsize (1), info.voxsize (2)));
+            const float accuracy = Math::pow2 (0.005 * std::min (info.voxsize (0), std::min (info.voxsize (1), info.voxsize (2))));
 
             if (tck.size() < 2)
               return;

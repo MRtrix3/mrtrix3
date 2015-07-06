@@ -56,7 +56,7 @@ namespace MR
           public:
             GMWMI_finder (Image<float>& buffer) :
               interp_template (buffer),
-              min_vox (minvalue (buffer.voxsize(0), buffer.voxsize(1), buffer.voxsize(2))) { }
+              min_vox (std::min (buffer.voxsize(0), std::min (buffer.voxsize(1), buffer.voxsize(2)))) { }
 
             GMWMI_finder (const GMWMI_finder& that) :
               interp_template (that.interp_template),

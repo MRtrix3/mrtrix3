@@ -411,7 +411,7 @@ namespace MR
               for (const auto& i : tck) { 
                 if (method.act().fetch_tissue_data (i)) {
                   const float wm = method.act().tissues().get_wm();
-                  max_value = MAX (max_value, wm);
+                  max_value = std::max (max_value, wm);
                   if (((integral += (Math::pow2 (wm) * S.internal_step_size())) > ACT_WM_INT_REQ) && (max_value > ACT_WM_ABS_REQ))
                     return true;
                 }

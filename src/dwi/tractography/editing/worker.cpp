@@ -195,7 +195,7 @@ namespace MR {
           if (maxlength)
             max_num_points = std::round (maxlength / step_size) + 1;
           if (minlength)
-            min_num_points = std::max (2, round (minlength/step_size) + 1);
+            min_num_points = std::max (2L, std::lround (minlength/step_size) + 1);
 
           if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);

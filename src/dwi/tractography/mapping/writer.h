@@ -352,9 +352,9 @@ namespace MR {
               const float factor = get_factor (i, in);
               const float weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;              break;
-                case V_MIN:  buffer.value() = MIN(buffer.value(), factor); break;
-                case V_MAX:  buffer.value() = MAX(buffer.value(), factor); break;
+                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_MIN:  buffer.value() = std::min (float (buffer.value()), factor); break;
+                case V_MAX:  buffer.value() = std::max (float (buffer.value()), factor); break;
                 case V_MEAN:
                              buffer.value() += weight * factor;
                              assert (counts);
@@ -420,9 +420,9 @@ namespace MR {
               const float factor = get_factor (i, in);
               const float weight = in.weight * i.get_length();
               switch (voxel_statistic) {
-                case V_SUM:  buffer.value() += weight * factor;              break;
-                case V_MIN:  buffer.value() = MIN(buffer.value(), factor); break;
-                case V_MAX:  buffer.value() = MAX(buffer.value(), factor); break;
+                case V_SUM:  buffer.value() += weight * factor;                  break;
+                case V_MIN:  buffer.value() = std::min (float (buffer.value()), factor); break;
+                case V_MAX:  buffer.value() = std::max (float (buffer.value()), factor); break;
                 case V_MEAN:
                              buffer.value() += weight * factor;
                              assert (counts);

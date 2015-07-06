@@ -27,6 +27,7 @@
 
 #include <stdint.h>
 #include <complex>
+#include <iostream>
 
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
@@ -152,6 +153,26 @@ namespace std
   inline uint8_t abs (uint8_t x) { return x; }
   inline uint16_t abs (uint16_t x) { return x; }
   inline uint32_t abs (uint32_t x) { return x; }
+
+
+  template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < V.size(); n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
+  template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < N; n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
 }
 
 namespace Eigen {

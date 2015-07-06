@@ -229,7 +229,7 @@ namespace MR {
           if (i.is_negative()) {
             mean_neg_peak += i.get_peak_value();
             ++neg_lobe_count;
-            max_neg_integral = MAX (max_neg_integral, i.get_integral());
+            max_neg_integral = std::max (max_neg_integral, i.get_integral());
           }
         }
 
@@ -238,7 +238,7 @@ namespace MR {
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
-          if (i->is_negative() || i->get_peak_value() < MAX(min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
+          if (i->is_negative() || i->get_peak_value() < std::max (min_peak_amp, peak_value_threshold) || i->get_integral() < min_integral) {
             i = out.erase (i);
           } else {
             const dir_t peak_bin (i->get_peak_dir_bin());

@@ -105,7 +105,7 @@ namespace MR
           for (size_t i = revert_step; i && tck.size(); --i)
             tck.pop_back();
           if (S.is_act())
-            act().sgm_depth = MAX (0, act().sgm_depth - int(revert_step));
+            act().sgm_depth = std::max (0, act().sgm_depth - int(revert_step));
         }
 
 

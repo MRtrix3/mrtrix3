@@ -39,7 +39,7 @@ namespace MR {
         {
           size_t upsample_ratio = 1;
           if (step_size && std::isfinite (step_size))
-            upsample_ratio = std::ceil (step_size / (minvalue (header.voxsize(0), header.voxsize(1), header.voxsize(2)) * ratio));
+            upsample_ratio = std::ceil (step_size / (std::min (header.voxsize(0), std::min (header.voxsize(1), header.voxsize(2))) * ratio));
           return upsample_ratio;
         }
 
