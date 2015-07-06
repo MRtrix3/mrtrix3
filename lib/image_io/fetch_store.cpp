@@ -20,11 +20,10 @@
 
 */
 
-#include "image.h"
+#include "image_io/fetch_store.h"
 
 namespace MR
 {
-
 
   // functions needed for conversion to/from storage:
   namespace
@@ -255,8 +254,6 @@ namespace MR
 #undef MRTRIX_EXTERN
 #define MRTRIX_EXTERN
   __DEFINE_FETCH_STORE_FUNCTIONS;
-
-
 
 }
 

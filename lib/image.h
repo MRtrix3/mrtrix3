@@ -29,7 +29,7 @@
 
 #include "debug.h"
 #include "header.h"
-#include "raw.h"
+#include "image_io/fetch_store.h"
 #include "image_helpers.h"
 #include "formats/mrtrix_utils.h"
 #include "algo/copy.h"
@@ -214,7 +214,9 @@ namespace MR
         std::function<ValueType(const void*,size_t,default_type,default_type)> fetch_func;
         std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
 
-        void set_fetch_store_functions ();
+        void set_fetch_store_functions () {
+          __set_fetch_store_functions (fetch_func, store_func, datatype());
+        }
     };
 
 
@@ -262,26 +264,6 @@ namespace MR
   }
 
 
-  template <typename ValueType>
-    typename std::enable_if<!is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
-        DataType datatype) { }
-
-
-
-  template <typename ValueType>
-    typename std::enable_if<is_data_type<ValueType>::value, void>::type __set_fetch_store_functions (
-        std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func,
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, 
-        DataType datatype);
-
-
-
-  template <typename ValueType> 
-    inline void Image<ValueType>::Buffer::set_fetch_store_functions () {
-      __set_fetch_store_functions (fetch_func, store_func, datatype());
-    }
 
 
 
@@ -479,42 +461,6 @@ namespace MR
 
 
 
-
-
-
-
-  //define fetch/store methods for all types using C++11 extern templates, 
-  //to avoid massive compile times...
-#define __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(ValueType) \
-  MRTRIX_EXTERN template void __set_fetch_store_functions<ValueType> ( \
-      std::function<ValueType(const void*,size_t,default_type,default_type)>& fetch_func, \
-        std::function<void(ValueType,void*,size_t,default_type,default_type)>& store_func, \
-        DataType datatype); \
-  MRTRIX_EXTERN template Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides); \
-  MRTRIX_EXTERN template void* Image<ValueType>::Buffer::get_data_pointer (); \
-  MRTRIX_EXTERN template Image<ValueType> Header::get_image (); \
-  MRTRIX_EXTERN template Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& desired_strides); \
-  MRTRIX_EXTERN template Image<ValueType>::~Image (); \
-  MRTRIX_EXTERN template Image<ValueType> Image<ValueType>::with_direct_io (Stride::List with_strides)
-
-#define __DEFINE_FETCH_STORE_FUNCTIONS \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(bool); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint8_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int8_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint16_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int16_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint32_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int32_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(uint64_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(int64_t); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(float); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(double); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cfloat); \
-  __DEFINE_FETCH_STORE_FUNCTION_FOR_TYPE(cdouble); \
-
-
-#define MRTRIX_EXTERN extern
-  __DEFINE_FETCH_STORE_FUNCTIONS;
 
 
 
