@@ -168,36 +168,6 @@ namespace MR
     /** @} */
   }
 
-
-
-  template <class Derived>
-    std::ostream& operator<< (std::ostream& out, const Eigen::EigenBase<Derived>& M)
-    {
-      for (ssize_t i = 0; i < M.rows(); i++) {
-        for (ssize_t j = 0; j < M.cols(); j++)
-          out << M(i,j) << " ";
-        out << "\n";
-      }
-      return out;
-    }
-
-
-   inline std::ostream& operator<< (std::ostream& out, const transform_type& transform)
-   {
-     out.precision (5);
-     out << std::fixed;
-     const ssize_t w = 11;
-     for (ssize_t i = 0; i < 3; i++) {
-       for (ssize_t j = 0; j < 4; j++)
-         out << std::setw(w) << transform(i,j);
-       out << std::endl;
-     }
-     out << std::setw(w) << 0 << std::setw(w) << 0 << std::setw(w) << 0 << std::setw(w) << 1;
-     return out;
-   }
-
-
-
   //! write the matrix \a M to file
   template <class MatrixType>
     void save_matrix (const MatrixType& M, const std::string& filename) 
