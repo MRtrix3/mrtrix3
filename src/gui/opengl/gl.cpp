@@ -56,9 +56,10 @@ namespace MR
         f.setDoubleBuffer (true);
 #endif
 
-        f.setVersion (3,3);
-        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true))
+        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true)) {
+          f.setVersion (3,3);
           f.setProfile (GL::Format::CoreProfile);
+        }
         
         f.setDepthBufferSize (24);
         f.setRedBufferSize (8);
