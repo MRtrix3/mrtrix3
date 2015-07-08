@@ -34,25 +34,25 @@ namespace MR
   namespace {
 
     template <class AxesType>
-      inline auto __ndim (const AxesType& axes) -> decltype (axes.size(), size_t()) { return axes.size(); }
+      FORCE_INLINE auto __ndim (const AxesType& axes) -> decltype (axes.size(), size_t()) { return axes.size(); }
 
     template <class AxesType>
-      inline auto __ndim (const AxesType& axes) -> decltype (axes.ndim(), size_t()) { return axes.ndim(); }
+      FORCE_INLINE auto __ndim (const AxesType& axes) -> decltype (axes.ndim(), size_t()) { return axes.ndim(); }
 
     template <class AxesType>
-      inline auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.size(), ssize_t()) 
+      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.size(), ssize_t()) 
       { return axes[axis]; }
 
     template <class AxesType>
-      inline auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.ndim(), ssize_t()) 
+      FORCE_INLINE auto __get_index (const AxesType& axes, size_t axis) -> decltype (axes.ndim(), ssize_t()) 
       { return axes.index(axis); }
 
     template <class AxesType>
-      inline auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.size(), void()) 
+      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.size(), void()) 
       { axes[axis] = index; }
 
     template <class AxesType>
-      inline auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.ndim(), void()) 
+      FORCE_INLINE auto __set_index (AxesType& axes, size_t axis, ssize_t index) -> decltype (axes.ndim(), void()) 
       { axes.index(axis) = index; }
 
 
@@ -62,7 +62,7 @@ namespace MR
         const size_t axis;
         const ssize_t index;
         template <class ImageType> 
-          void operator() (ImageType& x) { __set_index (x, axis, index); }
+          FORCE_INLINE void operator() (ImageType& x) { __set_index (x, axis, index); }
       };
 
     template <class... DestImageType>
@@ -71,7 +71,7 @@ namespace MR
         const size_t axis;
         const ssize_t index;
         template <class ImageType> 
-          void operator() (ImageType& x) { apply (__assign<DestImageType...> (axis, index), x); }
+          FORCE_INLINE void operator() (ImageType& x) { apply (__assign<DestImageType...> (axis, index), x); }
       };
 
     template <class... DestImageType>
@@ -79,7 +79,7 @@ namespace MR
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType> 
-          void operator() (ImageType& x) { if (axis > __ndim(x)) axis = __ndim(x); }
+          FORCE_INLINE void operator() (ImageType& x) { if (axis > __ndim(x)) axis = __ndim(x); }
       };
 
     template <class... DestImageType>
@@ -87,14 +87,14 @@ namespace MR
         __max_axis (size_t& axis) : axis (axis) { }
         size_t& axis;
         template <class ImageType> 
-          void operator() (ImageType& x) { apply (__max_axis<DestImageType...> (axis), x); }
+          FORCE_INLINE void operator() (ImageType& x) { apply (__max_axis<DestImageType...> (axis), x); }
       };
 
     template <class ImageType>
       struct __assign_pos_axis_range
       {
         template <class... DestImageType>
-          void to (DestImageType&... dest) const {
+          FORCE_INLINE void to (DestImageType&... dest) const {
             size_t last_axis = to_axis;
             apply (__max_axis<DestImageType...> (last_axis), std::tie (ref, dest...));
             for (size_t n = from_axis; n < last_axis; ++n)
@@ -109,7 +109,7 @@ namespace MR
       struct __assign_pos_axes
       {
         template <class... DestImageType>
-          void to (DestImageType&... dest) const {
+          FORCE_INLINE void to (DestImageType&... dest) const {
             for (auto a : axes) 
               apply (__assign<DestImageType...> (a, __get_index (ref, a)), std::tie (dest...));
           }
@@ -200,7 +200,7 @@ namespace MR
    * index(size_t) methods) or VectorType objects (i.e. with size() &
    * operator[](size_t) methods). */
   template <class ImageType>
-    inline __assign_pos_axis_range<ImageType> 
+    FORCE_INLINE __assign_pos_axis_range<ImageType> 
     assign_pos_of (const ImageType& reference, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) 
     {
       return { reference, from_axis, to_axis };
@@ -217,7 +217,7 @@ namespace MR
    * index(size_t) methods) or VectorType objects (i.e. with size() &
    * operator[](size_t) methods). */
   template <class ImageType, typename IntType>
-    inline __assign_pos_axes<ImageType, IntType> 
+    FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
     assign_pos_of (const ImageType& reference, const std::vector<IntType>& axes) 
     {
       return { reference, axes };
@@ -225,7 +225,7 @@ namespace MR
 
   //! \copydoc __assign_pos_axes
   template <class ImageType, typename IntType>
-    inline __assign_pos_axes<ImageType, IntType> 
+    FORCE_INLINE __assign_pos_axes<ImageType, IntType> 
     assign_pos_of (const ImageType& reference, const std::vector<IntType>&& axes) 
     {
       return assign_pos_of (reference, axes);
@@ -234,7 +234,7 @@ namespace MR
 
 
   template <class ImageType>
-    inline bool is_out_of_bounds (const ImageType& image, 
+    FORCE_INLINE bool is_out_of_bounds (const ImageType& image, 
         ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
     {
       for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(image.ndim())); ++n)
@@ -244,7 +244,7 @@ namespace MR
     }
 
   template <class HeaderType, class VectorType>
-    inline bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
+    FORCE_INLINE bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
         ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
     {
       for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(header.ndim())); ++n)
@@ -384,26 +384,26 @@ namespace MR
     template <class ImageType>
       class Index {
         public:
-          Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
+          FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
           Index (const Index&) = delete;
-          Index (Index&&) = default;
+          FORCE_INLINE Index (Index&&) = default;
 
-          ssize_t get () const { const ImageType& _i (image); return _i.index (axis); }
-          operator ssize_t () const { return get (); }
-          ssize_t operator++ () { move( 1); return get(); }
-          ssize_t operator-- () { move(-1); return get(); }
-          ssize_t operator++ (int) { auto p = get(); move( 1); return p; }
-          ssize_t operator-- (int) { auto p = get(); move(-1); return p; }
-          ssize_t operator+= (ssize_t increment) { move( increment); return get(); }
-          ssize_t operator-= (ssize_t increment) { move(-increment); return get(); }
-          ssize_t operator= (ssize_t position) { return ( *this += position - get() ); }
-          ssize_t operator= (Index&& position) { return ( *this = position.get() ); }
+          FORCE_INLINE ssize_t get () const { const ImageType& _i (image); return _i.index (axis); }
+          FORCE_INLINE operator ssize_t () const { return get (); }
+          FORCE_INLINE ssize_t operator++ () { move( 1); return get(); }
+          FORCE_INLINE ssize_t operator-- () { move(-1); return get(); }
+          FORCE_INLINE ssize_t operator++ (int) { auto p = get(); move( 1); return p; }
+          FORCE_INLINE ssize_t operator-- (int) { auto p = get(); move(-1); return p; }
+          FORCE_INLINE ssize_t operator+= (ssize_t increment) { move( increment); return get(); }
+          FORCE_INLINE ssize_t operator-= (ssize_t increment) { move(-increment); return get(); }
+          FORCE_INLINE ssize_t operator= (ssize_t position) { return ( *this += position - get() ); }
+          FORCE_INLINE ssize_t operator= (Index&& position) { return ( *this = position.get() ); }
           friend std::ostream& operator<< (std::ostream& stream, const Index& p) { stream << p.get(); return stream; }
         protected:
           ImageType& image;
           const size_t axis;
-          void move (ssize_t amount) { image.move_index (axis, amount); }
+          FORCE_INLINE void move (ssize_t amount) { image.move_index (axis, amount); }
       };
 
 
@@ -413,35 +413,35 @@ namespace MR
           typedef typename ImageType::value_type value_type;
           Value () = delete;
           Value (const Value&) = delete;
-          Value (Value&&) = default;
+          FORCE_INLINE Value (Value&&) = default;
 
-          Value (ImageType& parent) : image (parent) { }
-          value_type get () const { const ImageType& _i (image); return _i.value(); }
-          operator value_type () const { return get(); }
-          value_type operator= (value_type value) { return set (value); }
+          FORCE_INLINE Value (ImageType& parent) : image (parent) { }
+          FORCE_INLINE value_type get () const { const ImageType& _i (image); return _i.value(); }
+          FORCE_INLINE operator value_type () const { return get(); }
+          FORCE_INLINE value_type operator= (value_type value) { return set (value); }
           template <typename OtherType>
-            inline value_type operator= (Value<OtherType>&& V) { return set (V.get()); }
-          value_type operator+= (value_type value) { return set (get() + value); }
-          value_type operator-= (value_type value) { return set (get() - value); }
-          value_type operator*= (value_type value) { return set (get() * value); }
-          value_type operator/= (value_type value) { return set (get() / value); }
+            FORCE_INLINE value_type operator= (Value<OtherType>&& V) { return set (V.get()); }
+          FORCE_INLINE value_type operator+= (value_type value) { return set (get() + value); }
+          FORCE_INLINE value_type operator-= (value_type value) { return set (get() - value); }
+          FORCE_INLINE value_type operator*= (value_type value) { return set (get() * value); }
+          FORCE_INLINE value_type operator/= (value_type value) { return set (get() / value); }
           friend std::ostream& operator<< (std::ostream& stream, const Value& V) { stream << V.get(); return stream; }
       private:
         ImageType& image;
-        value_type set (value_type value) { image.set_value (value); return value; }
+        FORCE_INLINE value_type set (value_type value) { image.set_value (value); return value; }
     };
 
 
 
     //! convenience function returning fully-formed VoxelIndex 
     template <class ImageType>
-      inline Index<ImageType> index (ImageType& image, size_t axis) {
+      FORCE_INLINE Index<ImageType> index (ImageType& image, size_t axis) {
         return { image, axis };
       }
 
     //! convenience function returning fully-formed VoxelValue
     template <class ImageType>
-      inline Value<ImageType> value (ImageType& image) {
+      FORCE_INLINE Value<ImageType> value (ImageType& image) {
         return { image };
       }
 

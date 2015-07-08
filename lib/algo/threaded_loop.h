@@ -336,20 +336,20 @@ namespace MR
 
 
       //! all axes to be looped over
-      std::vector<size_t> all_axes () const {
+      FORCE_INLINE std::vector<size_t> all_axes () const {
         std::vector<size_t> a (inner_axes());
         a.insert (a.end(), outer_axes().begin(), outer_axes().end());
         return a;
       }
       //! return an ordered vector of axes in the outer loop
-      const std::vector<size_t>& outer_axes () const { return loop.axes(); }
+      FORCE_INLINE const std::vector<size_t>& outer_axes () const { return loop.axes(); }
       //! return an ordered vector of axes in the inner loop
-      const std::vector<size_t>& inner_axes () const { return axes; }
+      FORCE_INLINE const std::vector<size_t>& inner_axes () const { return axes; }
       //! a dummy object that can be used to construct other Iterators
-      const Iterator& iterator () const { return dummy; }
+      FORCE_INLINE const Iterator& iterator () const { return dummy; }
 
       //! get next position in the outer loop
-      bool next (Iterator& pos) {
+      FORCE_INLINE bool next (Iterator& pos) {
         std::lock_guard<std::mutex> lock (mutex);
         if (loop.ok()) {
           loop.set_position (dummy, pos);
@@ -443,7 +443,7 @@ namespace MR
             shared (shared_info),
             func (functor) { }
 
-          void execute () {
+          FORCE_INLINE void execute () {
             Iterator pos (shared.iterator());
             while (shared.next (pos))
               func (pos);
@@ -470,7 +470,7 @@ namespace MR
             outer_axes (shared_info.outer_axes()),
             vox (voxels...) { }
 
-          void operator() (const Iterator& pos) {
+          FORCE_INLINE void operator() (const Iterator& pos) {
             assign_pos_of (pos, this->outer_axes).to (vox);
             for (auto i = unpack (loop, vox); i; ++i) 
               unpack (this->func, vox);
@@ -493,7 +493,7 @@ namespace MR
             loop (shared_info.inner_axes()),
             vox (voxels...) { }
 
-          void operator() (Iterator& pos) {
+          FORCE_INLINE void operator() (Iterator& pos) {
             for (auto i = loop (pos); i; ++i)
               func (pos);
           }

@@ -108,6 +108,12 @@
 
 //! \}
 
+#ifdef NDEBUG
+# define FORCE_INLINE inline __attribute__((always_inline))
+#else // don't force inlining in debug mode, so we can get more informative backtraces
+# define FORCE_INLINE inline
+#endif
+
 namespace MR
 {
 

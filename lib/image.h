@@ -46,54 +46,54 @@ namespace MR
         class Buffer;
 
         Image ();
-        Image (const Image&) = default;
-        Image (Image&&) = default;
-        Image& operator= (const Image& image) = default;
-        Image& operator= (Image&&) = default;
+        FORCE_INLINE Image (const Image&) = default;
+        FORCE_INLINE Image (Image&&) = default;
+        FORCE_INLINE Image& operator= (const Image& image) = default;
+        FORCE_INLINE Image& operator= (Image&&) = default;
         ~Image();
 
         //! used internally to instantiate Image objects
         Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
 
-        bool valid () const { return bool(buffer); }
-        bool operator! () const { return !valid(); }
+        FORCE_INLINE bool valid () const { return bool(buffer); }
+        FORCE_INLINE bool operator! () const { return !valid(); }
 
-        const Header& header () const { return *buffer; }
+        FORCE_INLINE const Header& header () const { return *buffer; }
 
-        const std::string& name() const { return buffer->name(); }
-        const transform_type& transform() const { return buffer->transform(); }
+        FORCE_INLINE const std::string& name() const { return buffer->name(); }
+        FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
 
-        size_t  ndim () const { return buffer->ndim(); }
-        ssize_t size (size_t axis) const { return buffer->size (axis); }
-        default_type voxsize (size_t axis) const { return buffer->voxsize (axis); }
-        ssize_t stride (size_t axis) const { return strides[axis]; }
+        FORCE_INLINE size_t  ndim () const { return buffer->ndim(); }
+        FORCE_INLINE ssize_t size (size_t axis) const { return buffer->size (axis); }
+        FORCE_INLINE default_type voxsize (size_t axis) const { return buffer->voxsize (axis); }
+        FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
         //! offset to current voxel from start of data
-        size_t offset () const { return data_offset; }
+        FORCE_INLINE size_t offset () const { return data_offset; }
 
         //! reset index to zero (origin)
-        void reset () {
+        FORCE_INLINE void reset () {
           for (size_t n = 0; n < ndim(); ++n)
             index(n) = 0;
         }
 
         //! get position of current voxel location along \a axis
-        ssize_t index (size_t axis) const { return x[axis]; }
+        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
 
         //! get/set position of current voxel location along \a axis
-        auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
-        void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
+        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { data_offset += stride (axis) * increment; x[axis] += increment; }
 
-        bool is_direct_io () const { return data_pointer; }
+        FORCE_INLINE bool is_direct_io () const { return data_pointer; }
 
         //! get voxel value at current location
-        ValueType value () const {
+        FORCE_INLINE ValueType value () const {
           if (data_pointer) return Raw::fetch_native<ValueType> (data_pointer, data_offset);
           return buffer->get_value (data_offset);
         }
         //! get/set voxel value at current location
-        auto value () -> decltype (Helper::value (*this)) { return { *this }; }
-        void set_value (ValueType val) {
+        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        FORCE_INLINE void set_value (ValueType val) {
           if (data_pointer) Raw::store_native<ValueType> (val, data_pointer, data_offset);
           else buffer->set_value (data_offset, val);
         }
@@ -195,12 +195,12 @@ namespace MR
           Header (b), fetch_func (b.fetch_func), store_func (b.store_func) { }
 
 
-        ValueType get_value (size_t offset) const {
+        FORCE_INLINE ValueType get_value (size_t offset) const {
           ssize_t nseg = offset / io->segment_size();
           return fetch_func (io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
 
-        void set_value (size_t offset, ValueType val) const {
+        FORCE_INLINE void set_value (size_t offset, ValueType val) const {
           ssize_t nseg = offset / io->segment_size();
           store_func (val, io->segment (nseg), offset - nseg*io->segment_size(), intensity_offset(), intensity_scale());
         }
@@ -208,7 +208,7 @@ namespace MR
         std::unique_ptr<uint8_t[]> data_buffer;
         void* get_data_pointer ();
 
-        ImageIO::Base* get_io () const { return io.get(); }
+        FORCE_INLINE ImageIO::Base* get_io () const { return io.get(); }
 
       protected:
         std::function<ValueType(const void*,size_t,default_type,default_type)> fetch_func;
@@ -248,17 +248,17 @@ namespace MR
         size_t offset;
 
         const std::string name () const { return "direct IO buffer"; }
-        size_t ndim () const { return b.ndim(); }
-        ssize_t size (size_t axis) const { return b.size(axis); }
-        ssize_t stride (size_t axis) const { return strides[axis]; }
+        FORCE_INLINE size_t ndim () const { return b.ndim(); }
+        FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }
+        FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
-        ssize_t index (size_t axis) const { return x[axis]; }
-        auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
-        void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
+        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
+        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { offset += stride (axis) * increment; x[axis] += increment; }
 
-        value_type value () const { return Raw::fetch_native<ValueType> (data, offset); } 
-        auto value () -> decltype (Helper::value (*this)) { return { *this }; }
-        void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
+        FORCE_INLINE value_type value () const { return Raw::fetch_native<ValueType> (data, offset); } 
+        FORCE_INLINE auto value () -> decltype (Helper::value (*this)) { return { *this }; }
+        FORCE_INLINE void set_value (ValueType val) { Raw::store_native<ValueType> (val, data, offset); }
       };
 
   }
@@ -325,10 +325,9 @@ namespace MR
 
 
   template <typename ValueType>
-    inline Image<ValueType>::Image () :
+    FORCE_INLINE Image<ValueType>::Image () :
       data_pointer (nullptr), 
-      data_offset (0)
-  { }
+      data_offset (0) { }
 
   template <typename ValueType>
     Image<ValueType>::Image (const std::shared_ptr<Image<ValueType>::Buffer>& buffer_p, const Stride::List& desired_strides) :

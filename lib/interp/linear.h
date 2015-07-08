@@ -155,7 +155,7 @@ namespace MR
          * millimeters. The origin is taken to be the centre of the voxel at [
          * 0 0 0 ]. */
         template <class VectorType>
-          bool image (const VectorType& pos) {
+          FORCE_INLINE bool image (const VectorType& pos) {
             return voxel (voxelsize.inverse() * pos.template cast<default_type>());
           }
         //! Set the current position to the <b>scanner space</b> position \a pos
@@ -163,11 +163,11 @@ namespace MR
          * be interpolated, assuming that \a pos provides the position as a
          * scanner space coordinate, in units of millimeters. */
         template <class VectorType>
-        bool scanner (const VectorType& pos) {
+        FORCE_INLINE bool scanner (const VectorType& pos) {
           return voxel (scanner2voxel * pos.template cast<default_type>());
         }
 
-        value_type value () {
+        FORCE_INLINE value_type value () {
           if (out_of_bounds)
             return out_of_bounds_value;
           value_type val = 0.0;

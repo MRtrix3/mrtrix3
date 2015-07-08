@@ -36,19 +36,19 @@ namespace MR
   template <class LoopType, typename... ImageType>
     class LoopIter {
       public:
-        LoopIter (const LoopType& loop_type, ImageType&... voxels) : 
+        FORCE_INLINE LoopIter (const LoopType& loop_type, ImageType&... voxels) : 
           loop (loop_type), vox (voxels...) { 
             unpack ([this](ImageType&... v) { loop.start (v...); }, vox); 
           }
-        LoopIter (LoopIter&&) = default;
+        FORCE_INLINE LoopIter (LoopIter&&) = default;
 
         LoopIter () = delete;
         LoopIter (const LoopIter&) = delete;
         LoopIter& operator=(const LoopIter&) = delete;
 
-        operator bool() const { return loop.ok(); }
-        void operator++ () { unpack ([this](ImageType&... v) { loop.next (v...); }, vox); }
-        void operator++ (int) { unpack ([this](ImageType&... v) { loop.next (v...); }, vox); }
+        FORCE_INLINE operator bool() const { return loop.ok(); }
+        FORCE_INLINE void operator++ () { unpack ([this](ImageType&... v) { loop.next (v...); }, vox); }
+        FORCE_INLINE void operator++ (int) { unpack ([this](ImageType&... v) { loop.next (v...); }, vox); }
       private:
         LoopType loop;
         std::tuple<ImageType&...> vox;
@@ -58,17 +58,17 @@ namespace MR
   namespace {
 
     struct set_pos {
-      set_pos (size_t axis, ssize_t index) : axis (axis), index (index) { }
+      FORCE_INLINE set_pos (size_t axis, ssize_t index) : axis (axis), index (index) { }
       template <class ImageType> 
-        void operator() (ImageType& vox) { vox.index(axis) = index; }
+        FORCE_INLINE void operator() (ImageType& vox) { vox.index(axis) = index; }
       size_t axis;
       ssize_t index;
     };
 
     struct inc_pos {
-      inc_pos (size_t axis) : axis (axis) { }
+      FORCE_INLINE inc_pos (size_t axis) : axis (axis) { }
       template <class ImageType> 
-        void operator() (ImageType& vox) { ++vox.index(axis); }
+        FORCE_INLINE void operator() (ImageType& vox) { ++vox.index(axis); }
       size_t axis;
     };
 
@@ -169,13 +169,13 @@ namespace MR
          * iterate over that axis only. If both \a from_axis and \a to_axis are specified,
          * the Loop will iterate from axis \a from_axis up to but \b not
          * including axis \a to_axis. */
-        explicit Loop (size_t from_axis, size_t to_axis) :
+        FORCE_INLINE explicit Loop (size_t from_axis, size_t to_axis) :
           from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true) { }
 
         //! \copydoc Loop(size_t,size_t)
-        explicit Loop (size_t axis) : Loop (axis, axis+1) { }
+        FORCE_INLINE explicit Loop (size_t axis) : Loop (axis, axis+1) { }
         //! \copydoc Loop(size_t,size_t)
-        explicit Loop () : Loop (0, std::numeric_limits<size_t>::max()) { }
+        FORCE_INLINE explicit Loop () : Loop (0, std::numeric_limits<size_t>::max()) { }
 
         //! Constructor with progress status
         /*! Construct a Loop object to iterate over the axes specified and
@@ -185,13 +185,13 @@ namespace MR
          * Loop will iterate over that axis only. If both \a from_axis and \a
          * to_axis are specified, the Loop will iterate from axis \a from_axis
          * up to but \b not including axis \a to_axis. */
-        explicit Loop (const std::string& message, size_t from_axis, size_t to_axis) :
+        FORCE_INLINE explicit Loop (const std::string& message, size_t from_axis, size_t to_axis) :
           from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true), progress_ (message, 1) { }
         
         //! \copydoc Loop(const std::string&,size_t,size_t)
-        explicit Loop (const std::string& message, size_t axis) : Loop (message, axis, axis+1) { }
+        FORCE_INLINE explicit Loop (const std::string& message, size_t axis) : Loop (message, axis, axis+1) { }
         //! \copydoc Loop(const std::string&,size_t,size_t)
-        explicit Loop (const std::string& message) : Loop (message, 0, std::numeric_limits<size_t>::max()) { }
+        FORCE_INLINE explicit Loop (const std::string& message) : Loop (message, 0, std::numeric_limits<size_t>::max()) { }
 
         //! return iteratable object for use in loop
         /*! This start the loop by resetting the appropriate coordinates of
@@ -208,12 +208,12 @@ namespace MR
          *   vox_out.value() = vox_in.value();
          * \endcode */
         template <typename... ImageType> 
-          LoopIter<Loop,ImageType&...> run (ImageType&... vox) {
+          FORCE_INLINE LoopIter<Loop,ImageType&...> run (ImageType&... vox) {
             return { *this, vox... };
           }
         //! equivalent to run()
         template <typename... ImageType> 
-          LoopIter<Loop,ImageType&...> operator() (ImageType&... vox) {
+          FORCE_INLINE LoopIter<Loop,ImageType&...> operator() (ImageType&... vox) {
             return { *this, vox... };
           }
 
@@ -224,10 +224,11 @@ namespace MR
          * constructor will have their coordinates set to zero; the coordinates
          * of all other axes will be left untouched. */
         template <typename... ImageType>
-          void start (ImageType&... vox) {
+          FORCE_INLINE void start (ImageType&... vox) {
             cont_ = true;
             auto& ref = std::get<0> (std::tie (vox...));
             max_axis_ = std::min (ref.ndim(), to_);
+            first_axis_dim = ref.size (from_) - 1;
             for (size_t n = from_; n < max_axis_; ++n) 
               apply (set_pos (n, 0), std::tie (vox...));
 
@@ -237,7 +238,7 @@ namespace MR
 
         //! Check whether the loop should continue iterating
         /*! \return true if the loop has not completed, false otherwise. */
-        bool ok() const {
+        FORCE_INLINE bool ok() const {
           return cont_;
         }
 
@@ -245,17 +246,26 @@ namespace MR
         /*! Advance coordinates of all specified ImageType objects to the next position
          * to be processed, and update the progress status if appropriate. */
         template <typename... ImageType>
-          void next (ImageType&... vox) {
+          FORCE_INLINE void next (ImageType&... vox) {
+            auto tvox = std::tie (vox...);
+            auto& ref = std::get<0> (tvox);
             ++progress_;
-            next_axis (from_, std::tie (vox...));
-          }
+            if (ref.index (from_) < first_axis_dim)
+              apply (inc_pos (from_), tvox);
+            else {
+              next_axis (from_+1, tvox);
+              if (cont_) 
+                apply (set_pos (from_, 0), tvox);
+            }
+          }    
+        
 
         //! set position along relevant axes of \a target to that of \a reference
         /*! set the position of \a target along those axes involved in the
          * loop to the that of \a reference, leaving all other coordinates
          * unchanged. */
         template <typename RefImageType, typename... ImageType>
-          void set_position (const RefImageType& reference, ImageType&... target) const {
+          FORCE_INLINE void set_position (const RefImageType& reference, ImageType&... target) const {
             auto t = std::tie (target...);
             set_position (reference, t);
           }
@@ -265,7 +275,7 @@ namespace MR
          * loop to the that of \a reference, leaving all other coordinates
          * unchanged. */
         template <typename RefImageType, typename... ImageType>
-          void set_position (const RefImageType& reference, std::tuple<ImageType&...>& target) const {
+          FORCE_INLINE void set_position (const RefImageType& reference, std::tuple<ImageType&...>& target) const {
             for (size_t i = from_; i < max_axis_; ++i) 
               apply (set_pos (i, reference.index(i)), target);
           }
@@ -274,10 +284,11 @@ namespace MR
       private:
         const size_t from_, to_;
         size_t max_axis_;
+        ssize_t first_axis_dim;
         bool cont_;
         ProgressBar progress_;
-
-        template <typename... ImageType>
+        
+        template <typename... ImageType> 
           void next_axis (size_t axis, const std::tuple<ImageType&...>& vox) {
             if (axis < max_axis_) {
               if (std::get<0>(vox).index(axis) + 1 < std::get<0>(vox).size (axis)) 
@@ -419,13 +430,13 @@ namespace MR
       public:
         //! Constructor from axes indices
         /*! Construct a LoopInOrder object to iterate over the axes specified. */
-        explicit LoopInOrder (const std::vector<size_t>& axes) :
+        FORCE_INLINE explicit LoopInOrder (const std::vector<size_t>& axes) :
           axes_ (axes), first_axis (axes_[0]), cont_ (true) { }
 
         //! Construct from axes indices with progress status
         /*! Construct a LoopInOrder object to iterate over the axes specified and
          * display the progress status with the specified message. */
-        explicit LoopInOrder (const std::string& message, const std::vector<size_t>& axes) :
+        FORCE_INLINE explicit LoopInOrder (const std::string& message, const std::vector<size_t>& axes) :
           axes_ (axes), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
         //! Construct from ImageType strides
@@ -440,7 +451,7 @@ namespace MR
          * to \a from_axis alone. Use Loop if you need to loop over a single
          * axis.*/
         template <class ImageType>
-          explicit LoopInOrder (const ImageType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
+          FORCE_INLINE explicit LoopInOrder (const ImageType& vox, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true) { }
 
         //! Constructor from ImageType strides with progress status
@@ -456,7 +467,7 @@ namespace MR
          * to \a from_axis alone. Use Loop if you need to loop over a single
          * axis.*/
         template <class ImageType>
-          explicit LoopInOrder (const std::string& message, const ImageType& vox, 
+          FORCE_INLINE explicit LoopInOrder (const std::string& message, const ImageType& vox, 
               size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) :
             axes_ (Stride::order (vox, from_axis, to_axis)), first_axis (axes_[0]), cont_ (true), progress_ (message, 1) { }
 
@@ -475,13 +486,13 @@ namespace MR
          *   vox_out.value() = vox_in.value();
          * \endcode */
         template <typename... ImageType> 
-          LoopIter<LoopInOrder,ImageType&...> run (ImageType&... vox) {
+          FORCE_INLINE LoopIter<LoopInOrder,ImageType&...> run (ImageType&... vox) {
             return { *this, vox... };
           }
 
         //! equivalent to run()
         template <typename... ImageType> 
-          LoopIter<LoopInOrder,ImageType&...> operator() (ImageType&... vox) {
+          FORCE_INLINE LoopIter<LoopInOrder,ImageType&...> operator() (ImageType&... vox) {
             return { *this, vox... };
           }
 
@@ -493,7 +504,7 @@ namespace MR
          * constructor will have their coordinates set to zero; the coordinates
          * of all other axes will be left untouched. */
         template <typename... ImageType>
-          void start (ImageType&... vox) {
+          FORCE_INLINE void start (ImageType&... vox) {
             cont_ = true;
             auto& ref = std::get<0> (std::tie (vox...));
             first_axis_dim = ref.size (first_axis) - 1;
@@ -505,7 +516,7 @@ namespace MR
 
         //! Check whether the loop should continue iterating
         /*! \return true if the loop has not completed, false otherwise. */
-        bool ok() const {
+        FORCE_INLINE bool ok() const {
           return cont_;
         }
 
@@ -513,7 +524,7 @@ namespace MR
         /*! Advance coordinates of all specified ImageType objects to the next position
          * to be processed, and update the progress status if appropriate. */
         template <typename... ImageType>
-          void next (ImageType&... vox) {
+          FORCE_INLINE void next (ImageType&... vox) {
             auto tvox = std::tie (vox...);
             auto& ref = std::get<0> (tvox);
             ++progress_;
@@ -531,7 +542,7 @@ namespace MR
          * loop to the that of \a reference, leaving all other coordinates
          * unchanged. */
         template <typename RefImageType, typename... ImageType>
-          void set_position (const RefImageType& reference, ImageType&... target) const {
+          FORCE_INLINE void set_position (const RefImageType& reference, ImageType&... target) const {
             auto t = std::tie (target...);
             set_position (reference, t);
           }
@@ -541,13 +552,13 @@ namespace MR
          * loop to the that of \a reference, leaving all other coordinates
          * unchanged. */
         template <typename RefImageType, typename... ImageType>
-          void set_position (const RefImageType& reference, std::tuple<ImageType&...>& target) const {
+          FORCE_INLINE void set_position (const RefImageType& reference, std::tuple<ImageType&...>& target) const {
             for (size_t i = 0; i < axes_.size(); ++i) 
               apply (set_pos (axes_[i], reference.index(axes_[i])), target);
           }
 
 
-        const std::vector<size_t>& axes () const { return axes_; }
+        FORCE_INLINE const std::vector<size_t>& axes () const { return axes_; }
 
       private:
         const std::vector<size_t> axes_;
