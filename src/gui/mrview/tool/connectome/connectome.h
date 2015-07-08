@@ -79,6 +79,7 @@
 //       If attempting this, make use of the assignments matrix now provided by tck2connectome, loading
 //       it and the tractogram file as input
 //   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
+//   - Combobox to scale cylinder / streamtube size by radius rather than volume?
 //
 // * Drawing nodes
 //   - Drawing as overlay in 3D: Currently disabled, realistically needs its own shaders
@@ -86,6 +87,7 @@
 //      only let each node contribute to each fragment once?
 //   - Drawing as spheres
 //     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
+//   - Combobox to scale cube / sphere size by radius rather than volume?
 //
 // * OpenGL drawing general:
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
