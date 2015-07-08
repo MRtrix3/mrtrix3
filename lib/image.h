@@ -340,7 +340,8 @@ namespace MR
       { 
         assert (buffer);
         assert (data_pointer || buffer->get_io());
-        DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset));
+        DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset) 
+            + ", using " + ( is_direct_io() ? "" : "in" ) + "direct IO");
       }
 
 

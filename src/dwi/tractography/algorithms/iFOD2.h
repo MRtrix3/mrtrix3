@@ -450,11 +450,10 @@ end_init:
                   P (method),
                   fod (P.values),
                   positions (P.S.num_samples),
-                  tangents (P.S.num_samples)
-              {
-                Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
-                init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax));
-              }
+                  tangents (P.S.num_samples) {
+                    Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
+                    init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax));
+                  }
 
                 float operator() (float el)
                 {
