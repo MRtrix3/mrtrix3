@@ -120,7 +120,7 @@ namespace MR
           typedef typename VectorType::Scalar value_type;
           value_type x2 = pow2 (x);
           if (m && x2 >= 1.0) {
-            for (int n = m; n < lmax-m+1; ++n)
+            for (int n = m; n <= lmax; ++n)
               array[n] = 0.0;
             return;
           }
