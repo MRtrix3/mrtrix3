@@ -805,7 +805,7 @@ namespace MR
               node_shader.start (*this);
               projection.set (node_shader);
 
-              const bool alpha = use_alpha();
+              const bool alpha = use_alpha_nodes();
 
               gl::Enable (gl::DEPTH_TEST);
               if (alpha) {
@@ -955,7 +955,7 @@ namespace MR
             edge_shader.start (*this);
             projection.set (edge_shader);
 
-            bool alpha = use_alpha();
+            bool alpha = use_alpha_edges();
 
             gl::Enable (gl::DEPTH_TEST);
             if (alpha) {
@@ -1170,7 +1170,7 @@ namespace MR
           if (index == 5)
             return; // Selected currently-open LUT; nothing to do
 
-          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", tr ("Text files (*.txt)"));
+          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", "Text files (*.txt)");
           if (path.empty())
             return;
 
@@ -1198,7 +1198,7 @@ namespace MR
 
         void Connectome::config_open_slot()
         {
-          const std::string path = Dialog::File::get_file (this, "Select connectome configuration file", tr ("Text files (*.txt)"));
+          const std::string path = Dialog::File::get_file (this, "Select connectome configuration file", "Text files (*.txt)");
           if (path.empty())
             return;
           config.clear();
@@ -2792,7 +2792,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, tr ("Data files (*.csv"));
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv");
           if (path.empty())
             return false;
           data.clear();
@@ -2808,7 +2808,7 @@ namespace MR
 
         bool Connectome::import_matrix_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, tr ("Data files (*.csv)"));
+          const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
           if (path.empty())
             return false;
           Math::Matrix<float> temp (path);
@@ -3495,7 +3495,7 @@ namespace MR
         void Connectome::get_meshes()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", tr ("OBJ mesh files (*.obj)"));
+          const std::string path = GUI::Dialog::File::get_file (this, "Select file containing mesh for each node", "OBJ mesh files (*.obj)");
           if (!path.size()) return;
           Mesh::MeshMulti meshes;
           meshes.load (path);
@@ -3512,7 +3512,7 @@ namespace MR
         void Connectome::get_exemplars()
         {
           // Request exemplar track file path from user
-          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", tr ("Track files (*.tck)"));
+          const std::string path = GUI::Dialog::File::get_file (this, "Select track file resulting from running connectome2tck -exemplars", "Track files (*.tck)");
           if (!path.size()) return;
           MR::DWI::Tractography::Properties properties;
           MR::DWI::Tractography::Reader<float> reader (path, properties);
@@ -3554,10 +3554,18 @@ namespace MR
           return lighting_checkbox->isChecked();
         }
 
-        bool Connectome::use_alpha() const
+        bool Connectome::use_alpha_nodes() const
         {
           bool alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
           if (selected_node_count && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_node_not_selected_alpha_multiplier() < 1.0f))
+            alpha = true;
+          return alpha;
+        }
+
+        bool Connectome::use_alpha_edges() const
+        {
+          bool alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
+          if (selected_node_count && (node_selection_settings.get_edge_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_edge_not_selected_alpha_multiplier() < 1.0f))
             alpha = true;
           return alpha;
         }

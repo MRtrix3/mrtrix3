@@ -443,7 +443,8 @@ namespace MR
             void get_streamtubes();
 
             bool use_lighting() const;
-            bool use_alpha() const;
+            bool use_alpha_nodes() const;
+            bool use_alpha_edges() const;
 
             friend class NodeColourObserver;
             friend class EdgeColourObserver;

@@ -65,7 +65,7 @@ namespace MR
           if (geometry != parent.node_geometry) return true;
           if (colour != parent.node_colour) return true;
           if ((colour == node_colour_t::VECTOR_FILE || colour == node_colour_t::MATRIX_FILE) && colourmap_index != parent.node_colourmap_index) return true;
-          const bool need_alpha = parent.use_alpha();
+          const bool need_alpha = parent.use_alpha_nodes();
           if (use_alpha != need_alpha) return true;
           return false;
         }
@@ -79,7 +79,7 @@ namespace MR
           assert (geometry != node_geometry_t::OVERLAY);
           colour = parent.node_colour;
           colourmap_index = parent.node_colourmap_index;
-          use_alpha = parent.use_alpha();
+          use_alpha = parent.use_alpha_nodes();
 
           const std::string GS_in  = is_3D ? "" : "_GSin";
           const std::string GS_out = is_3D ? "" : "_GSout";
@@ -300,7 +300,7 @@ namespace MR
           if (geometry != parent.edge_geometry) return true;
           if (colour != parent.edge_colour) return true;
           if (colour == edge_colour_t::MATRIX_FILE && colourmap_index != parent.edge_colourmap_index) return true;
-          const bool need_alpha = parent.use_alpha();
+          const bool need_alpha = parent.use_alpha_edges();
           if (use_alpha != need_alpha) return true;
           return false;
         }
@@ -313,7 +313,7 @@ namespace MR
           geometry = parent.edge_geometry;
           colour = parent.edge_colour;
           colourmap_index = parent.edge_colourmap_index;
-          use_alpha = parent.use_alpha();
+          use_alpha = parent.use_alpha_edges();
 
           const std::string GS_in  = is_3D ? "" : "_GSin";
           const std::string GS_out = is_3D ? "" : "_GSout";
