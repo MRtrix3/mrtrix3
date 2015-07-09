@@ -189,8 +189,11 @@ namespace MR {
             // User may set these values to a precise value, which may then fail due to floating-point
             //   calculation of streamline length
             // Therefore throw a bit of error margin in here
-            max_length += 0.1 * step_size;
-            min_length -= 0.1 * step_size;
+            float error_margin = 0.1;
+            if (properties.find ("downsample_factor") != properties.end())
+              error_margin = 0.5 / to<float>(properties["downsample_factor"]);
+            max_length += error_margin * step_size;
+            min_length -= error_margin * step_size;
           } catch (...) { }
 
           if (properties.find ("max_weight") != properties.end())

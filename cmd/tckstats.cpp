@@ -174,7 +174,7 @@ void run ()
   double stdev = 0.0;
   for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
     stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
-  stdev /= sum_weights;
+  stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
 
   const size_t width = 12;
 
@@ -194,7 +194,9 @@ void run ()
 
   Options opt = get_options ("histogram");
   if (opt.size()) {
-    File::OFStream out (argument[1], std::ios_base::out | std::ios_base::trunc);
+    File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    if (!std::isfinite (step_size))
+      step_size = 1.0f;
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)
