@@ -59,6 +59,11 @@ class Metric_base {
       throw Exception ("Calling empty virtual function Metric_base::operator()");
     }
 
+    virtual double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const
+    {
+      throw Exception ("Calling empty virtual function Metric_base::operator()");
+    }
+
     const bool scale_edges_by_streamline_count() const { return scale_by_count; }
 
   private:
@@ -73,7 +78,12 @@ class Metric_count : public Metric_base {
   public:
     Metric_count () : Metric_base (false) { }
 
-    double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const override
+    {
+      return 1.0;
+    }
+
+    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
     {
       return 1.0;
     }
@@ -86,7 +96,12 @@ class Metric_meanlength : public Metric_base {
   public:
     Metric_meanlength () : Metric_base (true) { }
 
-    double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const override
+    {
+      return (tck.size() - 1);
+    }
+
+    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
     {
       return (tck.size() - 1);
     }
@@ -99,7 +114,12 @@ class Metric_invlength : public Metric_base {
   public:
     Metric_invlength () : Metric_base (false) { }
 
-    double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const override
+    {
+      return (tck.size() > 1 ? (1.0 / (tck.size() - 1)) : 0);
+    }
+
+    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
     {
       return (tck.size() > 1 ? (1.0 / (tck.size() - 1)) : 0);
     }
@@ -124,9 +144,20 @@ class Metric_invnodevolume : public Metric_base {
       }
     }
 
-    virtual double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    virtual double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
-      return (2.0 / (node_volumes[nodes.first] + node_volumes[nodes.second]));
+      const size_t volume_sum = node_volumes[nodes.first] + node_volumes[nodes.second];
+      if (!volume_sum) return 0.0;
+      return (2.0 / double(volume_sum));
+    }
+
+    virtual double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
+    {
+      size_t volume_sum = 0;
+      for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n)
+        volume_sum += node_volumes[*n];
+      if (!volume_sum) return 0.0;
+      return (nodes.size() / double(volume_sum));
     }
 
   private:
@@ -142,7 +173,12 @@ class Metric_invlength_invnodevolume : public Metric_invnodevolume {
     Metric_invlength_invnodevolume (Image::Buffer<node_t>& in_data) :
       Metric_invnodevolume (in_data) { }
 
-    double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const override
+    {
+      return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
+    }
+
+    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
     {
       return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
     }
@@ -160,7 +196,7 @@ class Metric_meanscalar : public Metric_base {
       v (image),
       interp_template (v) { }
 
-    double operator() (const Streamline<>& tck, const NodePair& nodes) const
+    double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
       auto interp = interp_template;
       double sum = 0.0;
@@ -172,6 +208,11 @@ class Metric_meanscalar : public Metric_base {
         }
       }
       return (count ? (sum / double(count)) : 0.0);
+    }
+
+    double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
+    {
+      return (*this) (tck, std::make_pair (0, 0));
     }
 
 

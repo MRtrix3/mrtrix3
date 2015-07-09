@@ -196,11 +196,21 @@ void run ()
   INFO ("A total of " + str (writer.file_count()) + " output track files will be generated");
 
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "extracting streamlines of interest... ");
-  Thread::run_queue (
-      loader, 
-      Thread::batch (Tractography::Streamline<float>()), 
-      Thread::multi (mapper), 
-      Thread::batch (MappedTrackWithData()), 
-      writer);
+
+  if (tck2nodes->provides_pair()) {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (MappedTrackWithData_nodepair()),
+        writer);
+  } else {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (MappedTrackWithData_nodelist()),
+        writer);
+  }
 
 }

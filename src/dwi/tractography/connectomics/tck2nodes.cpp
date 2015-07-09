@@ -33,7 +33,7 @@ namespace Connectomics {
 
 
 
-node_t Tck2nodes_voxel::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_end_voxels::select_node (const Streamline<>& tck, VoxelType& voxel, const bool end) const
 {
 
   const Point<float>& p (end ? tck.back() : tck.front());
@@ -72,7 +72,7 @@ void Tck2nodes_radial::initialise_search ()
 
 
 
-node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel, const bool end) const
 {
 
   float min_dist = max_dist;
@@ -107,7 +107,7 @@ node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel,
 
 
 
-node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& voxel, const bool end) const
 {
 
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
@@ -138,7 +138,7 @@ node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& vox
 
 
 
-node_t Tck2nodes_forwardsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_forwardsearch::select_node (const Streamline<>& tck, VoxelType& voxel, const bool end) const
 {
 
   // Start by defining the endpoint and the tangent at the endpoint
@@ -227,6 +227,33 @@ float Tck2nodes_forwardsearch::get_cf (const Point<float>& p, const Point<float>
   return (cf > max_dist ? NAN : cf);
 
 }
+
+
+
+
+
+
+
+
+
+
+void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, VoxelType& voxel, std::vector<node_t>& out) const
+{
+  std::set<node_t> nodes;
+  for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
+    const Point<float> v_float = transform.scanner2voxel (*p);
+    const Point<int> v (std::round (v_float[0]), std::round (v_float[1]), std::round (v_float[2]));
+    if (Image::Nav::within_bounds (voxel, v)) {
+      const node_t this_node = Image::Nav::get_value_at_pos (voxel, v);
+      if (this_node)
+        nodes.insert (this_node);
+    }
+  }
+  out.clear();
+  for (std::set<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n)
+    out.push_back (*n);
+}
+
 
 
 
