@@ -2628,6 +2628,7 @@ namespace MR
             node_coms[n] *= (1.0f / float(node_volumes[n]));
 
           nodes.clear();
+          const size_t pixheight = dynamic_cast<Node_list*>(node_list->tool)->row_height();
 
           {
             nodes.push_back (Node());
@@ -2642,7 +2643,7 @@ namespace MR
                 auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
                 MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
 
-                nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], node_mask));
+                nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], pixheight, node_mask));
 
               } else {
                 nodes.push_back (Node());

@@ -40,7 +40,7 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
+        Node::Node (const Point<float>& com, const size_t vol, const size_t pixheight, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
             centre_of_mass (com),
             volume (vol),
             mask (image),
@@ -49,7 +49,7 @@ namespace MR
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
             visible (true),
-            pixmap (12, 12)
+            pixmap (pixheight, pixheight)
         {
           pixmap.fill (QColor (128, 128, 128));
         }

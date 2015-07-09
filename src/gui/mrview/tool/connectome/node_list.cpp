@@ -131,6 +131,7 @@ namespace MR
         node_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
         node_list_view->horizontalHeader()->setStretchLastSection (true);
         node_list_view->verticalHeader()->hide();
+        node_list_view->verticalHeader()->setDefaultSectionSize (row_height());
         connect (node_list_view->selectionModel(),
             SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
             SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
@@ -152,6 +153,13 @@ namespace MR
       void Node_list::colours_changed()
       {
         node_list_model->reset_pixmaps();
+      }
+
+
+
+      int Node_list::row_height() const
+      {
+        return node_list_view->fontMetrics().height();
       }
 
 

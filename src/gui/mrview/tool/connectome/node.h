@@ -43,7 +43,7 @@ namespace MR
       class Node
       {
         public:
-          Node (const Point<float>&, const size_t, std::shared_ptr< MR::Image::BufferScratch<bool> >&);
+          Node (const Point<float>&, const size_t, const size_t, std::shared_ptr< MR::Image::BufferScratch<bool> >&);
           Node ();
 
           void assign_mesh (MR::Mesh::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }

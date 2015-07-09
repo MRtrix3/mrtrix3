@@ -118,6 +118,7 @@ namespace MR
 
             void initialize();
             void colours_changed();
+            int row_height() const;
 
           private slots:
             void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);

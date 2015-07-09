@@ -98,7 +98,6 @@
 //   - Enable collapsing of group boxes; will make room for future additions
 //   - Change node list into a separate dockable widget
 //     Initial changes done, still to do:
-//     * Reduce height of rows as far as possible
 //     * Reset selection (both in table and in main connectome tool settings) when closed
 //
 // * Additional functionalities:
