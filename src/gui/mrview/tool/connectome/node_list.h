@@ -23,6 +23,11 @@
 #ifndef __gui_mrview_tool_connectome_node_list_h__
 #define __gui_mrview_tool_connectome_node_list_h__
 
+#include <memory>
+
+#include "gui/mrview/tool/base.h"
+#include "gui/mrview/tool/connectome/selection.h"
+
 #include <QAbstractItemModel>
 #include <QTableView>
 
@@ -33,6 +38,9 @@ namespace MR
   {
     namespace MRView
     {
+
+      class Window;
+
       namespace Tool
       {
 
@@ -96,6 +104,36 @@ namespace MR
               //setColumnWidth (0, model->headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
               //setColumnWidth (1, model->headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
             }
+        };
+
+
+
+        class Node_list : public Tool::Base
+        {
+
+            Q_OBJECT
+
+          public:
+            Node_list (Window&, Tool::Dock*, Connectome*);
+
+            void initialize();
+            void colours_changed();
+
+          private slots:
+            void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);
+            void node_selection_settings_dialog_slot();
+
+          private:
+            Window& window;
+            Connectome& connectome;
+
+            Node_list_model *node_list_model;
+            Node_list_view *node_list_view;
+            QPushButton *node_selection_settings_button;
+
+            // Settings related to how visual elements are changed on selection / non-selection
+            std::unique_ptr<NodeSelectionSettingsDialog> node_selection_dialog;
+
         };
 
 

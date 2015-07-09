@@ -72,7 +72,6 @@
 //   - Display options:
 //     * Colour by: Corresponding nodes? Would require some plotting cleverness
 //   - Draw as streamlines
-//     * Implement lighting for exemplars
 //     * Consider a cross-talk solution with the tractography tool;
 //       make use of more advanced tractography shaders
 //       Would however require addition to tractography shaders: variable radius between exemplars
@@ -94,14 +93,16 @@
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
 //   - Add compatibility with clip planes
-//   - Standardise lighting: changed connectome tool so that lighting position is fixed, but
-//       other tools have the light source rotate with the camera
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
+//   - Change node list into a separate dockable widget
+//     Initial changes done, still to do:
+//     * Reduce height of rows as far as possible
+//     * Reset selection (both in table and in main connectome tool settings) when closed
 //
 // * Additional functionalities:
-//   - Print node name in the GL window
+//   - Print node names in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?
 //     - Maybe allow editing of short name in the list view
 //     How to determine where to draw the names? Not sure if the width of the text box will be known
@@ -159,9 +160,7 @@ namespace MR
             void lighting_parameter_slot();
             void crop_to_slab_toggle_slot (int);
             void crop_to_slab_parameter_slot();
-
-            void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);
-            void node_selection_settings_dialog_slot();
+            void show_node_list_slot();
             void node_selection_settings_changed_slot();
 
             void node_visibility_selection_slot (int);
@@ -211,10 +210,8 @@ namespace MR
             QCheckBox *crop_to_slab_checkbox;
             QLabel *crop_to_slab_label;
             AdjustButton *crop_to_slab_button;
-
-            Node_list_model *node_list_model;
-            Node_list_view *node_list_view;
-            QPushButton *node_selection_settings_button;
+            QLabel *show_node_list_label;
+            QPushButton *show_node_list_button;
 
             QComboBox *node_visibility_combobox;
             QComboBox *node_visibility_matrix_operator_combobox;
@@ -319,6 +316,10 @@ namespace MR
             std::unique_ptr<Dialog::Lighting> lighting_dialog;
 
 
+            // Node selection
+            Tool::Dock* node_list;
+
+
             // Used when the geometry of node visualisation is a sphere
             Shapes::Sphere sphere;
             GL::VertexArrayObject sphere_VAO;
@@ -340,11 +341,6 @@ namespace MR
             float slab_thickness;
 
 
-            // Settings related to how visual elements are changed on selection / non-selection
-            NodeSelectionSettings node_selection_settings;
-            std::unique_ptr<NodeSelectionSettingsDialog> node_selection_dialog;
-
-
             // Settings for colour bars
             ColourMap::Renderer colourbar_renderer;
             bool show_node_colour_bar, show_edge_colour_bar;
@@ -357,9 +353,10 @@ namespace MR
             node_size_t node_size;
             node_alpha_t node_alpha;
 
-            // Other values that need to be stored w.r.t. node visualisation
+            // Values that need to be stored locally w.r.t. node visualisation
             BitSet selected_nodes;
             node_t selected_node_count;
+            NodeSelectionSettings node_selection_settings;
 
             bool have_meshes;
             node_visibility_matrix_operator_t node_visibility_matrix_operator;
@@ -429,6 +426,8 @@ namespace MR
 
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
+            void node_selection_changed (const std::vector<node_t>&);
+
             bool         node_visibility_given_selection (const node_t);
             Point<float> node_colour_given_selection     (const node_t);
             float        node_size_given_selection       (const node_t);
@@ -452,6 +451,7 @@ namespace MR
             friend class NodeShader;
             friend class EdgeShader;
 
+            friend class Node_list;
             friend class Node_list_model;
 
         };

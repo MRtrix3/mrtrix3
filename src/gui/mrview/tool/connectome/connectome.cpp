@@ -65,11 +65,10 @@ namespace MR
             mat2vec (0),
             lighting (this),
             lighting_dialog (nullptr),
+            node_list (new Tool::Dock (&main_window, "Connectome node list")),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
-            node_selection_settings (),
-            node_selection_dialog (nullptr),
             show_node_colour_bar (true),
             show_edge_colour_bar (true),
             node_visibility (node_visibility_t::ALL),
@@ -79,6 +78,7 @@ namespace MR
             node_alpha (node_alpha_t::FIXED),
             selected_nodes (0),
             selected_node_count (0),
+            node_selection_settings (),
             have_meshes (false),
             node_visibility_matrix_operator (node_visibility_matrix_operator_t::ANY),
             node_colour_matrix_operator (node_property_matrix_operator_t::SUM),
@@ -198,39 +198,12 @@ namespace MR
           hlayout->addWidget (crop_to_slab_button);
           gridlayout->addLayout (hlayout, 1, 1);
 
-          group_box = new QGroupBox ("Node list and selection");
-          main_box->addWidget (group_box);
-          vlayout = new VBoxLayout();
-          group_box->setLayout (vlayout);
-
-          node_list_model = new Node_list_model (this);
-          node_list_view = new Node_list_view (this);
-          node_list_view->setModel (node_list_model);
-          node_list_view->setAcceptDrops (false);
-          node_list_view->setAlternatingRowColors (true);
-          node_list_view->setCornerButtonEnabled (false);
-          node_list_view->setDragEnabled (false);
-          node_list_view->setDropIndicatorShown (false);
-          node_list_view->setEditTriggers (QAbstractItemView::NoEditTriggers);
-          node_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
-          node_list_view->setObjectName ("Node list view");
-          node_list_view->resizeColumnsToContents();
-          node_list_view->resizeRowsToContents();
-          node_list_view->setSelectionBehavior (QAbstractItemView::SelectRows);
-          node_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
-          //node_list_view->horizontalHeader()->setResizeMode (QHeaderView::Stretch);
-          node_list_view->horizontalHeader()->setStretchLastSection (true);
-          node_list_view->verticalHeader()->hide();
-          //node_list_view->setUniformItemSizes (true);
-          connect (node_list_view->selectionModel(),
-                   SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
-                   SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
-          vlayout->addWidget (node_list_view);
-          node_selection_settings_button = new QPushButton ("Selection visualisation settings...");
-          connect (node_selection_settings_button, SIGNAL(clicked()), this, SLOT (node_selection_settings_dialog_slot()));
-          vlayout->addWidget (node_selection_settings_button);
-
-          connect (&node_selection_settings, SIGNAL(dataChanged()), this, SLOT (node_selection_settings_changed_slot()));
+          show_node_list_label = new QLabel ("Node selection: ");
+          gridlayout->addWidget (show_node_list_label, 2, 0);
+          show_node_list_button = new QPushButton ("Show list");
+          show_node_list_button->setToolTip (tr ("Open window that displays list of nodes and enables their selection"));
+          connect (show_node_list_button, SIGNAL (clicked()), this, SLOT (show_node_list_slot()));
+          gridlayout->addWidget (show_node_list_button, 2, 1);
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
@@ -707,8 +680,17 @@ namespace MR
           edge_alpha_invert_checkbox->setVisible (false);
           gridlayout->addLayout (hlayout, 8, 1, 1, 4);
 
+          main_box->addWidget (node_list);
+
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
+
+          node_list->tool = new Node_list (window, node_list, this);
+          node_list->tool->adjustSize();
+          node_list->setWidget (node_list->tool);
+          node_list->setFeatures (QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
+          main_window.addDockWidget (Qt::RightDockWidgetArea, node_list);
+          connect (&node_selection_settings, SIGNAL(dataChanged()), this, SLOT (node_selection_settings_changed_slot()));
 
           cube.generate();
           cube_VAO.gen();
@@ -1257,104 +1239,17 @@ namespace MR
           node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
           window.updateGL();
         }
-
-
-
-
-
-
-
-        void Connectome::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
+        void Connectome::show_node_list_slot()
         {
-          QModelIndexList list = node_list_view->selectionModel()->selectedRows();
-          selected_nodes.clear();
-          selected_node_count = list.size();
-          for (int i = 0; i != list.size(); ++i)
-            selected_nodes[list[i].row()] = true;
-          if (node_visibility == node_visibility_t::MATRIX_FILE) {
-            if (selected_node_count >= 2) {
-              node_visibility_matrix_operator_combobox->removeItem (2);
-              switch (node_visibility_matrix_operator) {
-                case node_visibility_matrix_operator_t::ANY: node_visibility_matrix_operator_combobox->setCurrentIndex (0); break;
-                case node_visibility_matrix_operator_t::ALL: node_visibility_matrix_operator_combobox->setCurrentIndex (1); break;
-              }
-              node_visibility_matrix_operator_combobox->setEnabled (true);
-            } else {
-              if (node_visibility_matrix_operator_combobox->count() == 2)
-                node_visibility_matrix_operator_combobox->addItem ("N/A");
-              node_visibility_matrix_operator_combobox->setCurrentIndex (2);
-              node_visibility_matrix_operator_combobox->setEnabled (false);
-            }
-            calculate_node_visibility();
-          }
-          if (node_colour == node_colour_t::MATRIX_FILE) {
-            if (selected_node_count >= 2) {
-              node_colour_matrix_operator_combobox->removeItem (4);
-              switch (node_colour_matrix_operator) {
-                case node_property_matrix_operator_t::MIN:  node_colour_matrix_operator_combobox->setCurrentIndex (0); break;
-                case node_property_matrix_operator_t::MEAN: node_colour_matrix_operator_combobox->setCurrentIndex (1); break;
-                case node_property_matrix_operator_t::SUM:  node_colour_matrix_operator_combobox->setCurrentIndex (2); break;
-                case node_property_matrix_operator_t::MAX:  node_colour_matrix_operator_combobox->setCurrentIndex (3); break;
-              }
-              node_colour_matrix_operator_combobox->setEnabled (true);
-            } else {
-              if (node_colour_matrix_operator_combobox->count() == 4)
-                node_colour_matrix_operator_combobox->addItem ("N/A");
-              node_colour_matrix_operator_combobox->setCurrentIndex (4);
-              node_colour_matrix_operator_combobox->setEnabled (false);
-            }
-            calculate_node_colours();
-          }
-          if (node_size == node_size_t::MATRIX_FILE) {
-            if (selected_node_count >= 2) {
-              node_size_matrix_operator_combobox->removeItem (4);
-              switch (node_size_matrix_operator) {
-                case node_property_matrix_operator_t::MIN:  node_size_matrix_operator_combobox->setCurrentIndex (0); break;
-                case node_property_matrix_operator_t::MEAN: node_size_matrix_operator_combobox->setCurrentIndex (1); break;
-                case node_property_matrix_operator_t::SUM:  node_size_matrix_operator_combobox->setCurrentIndex (2); break;
-                case node_property_matrix_operator_t::MAX:  node_size_matrix_operator_combobox->setCurrentIndex (3); break;
-              }
-              node_size_matrix_operator_combobox->setEnabled (true);
-            } else {
-              if (node_size_matrix_operator_combobox->count() == 4)
-                node_size_matrix_operator_combobox->addItem ("N/A");
-              node_size_matrix_operator_combobox->setCurrentIndex (4);
-              node_size_matrix_operator_combobox->setEnabled (false);
-            }
-            calculate_node_sizes();
-          }
-          if (node_alpha == node_alpha_t::MATRIX_FILE) {
-            if (selected_node_count >= 2) {
-              node_alpha_matrix_operator_combobox->removeItem (4);
-              switch (node_alpha_matrix_operator) {
-                case node_property_matrix_operator_t::MIN:  node_alpha_matrix_operator_combobox->setCurrentIndex (0); break;
-                case node_property_matrix_operator_t::MEAN: node_alpha_matrix_operator_combobox->setCurrentIndex (1); break;
-                case node_property_matrix_operator_t::SUM:  node_alpha_matrix_operator_combobox->setCurrentIndex (2); break;
-                case node_property_matrix_operator_t::MAX:  node_alpha_matrix_operator_combobox->setCurrentIndex (3); break;
-              }
-              node_alpha_matrix_operator_combobox->setEnabled (true);
-            } else {
-              if (node_alpha_matrix_operator_combobox->count() == 4)
-                node_alpha_matrix_operator_combobox->addItem ("N/A");
-              node_alpha_matrix_operator_combobox->setCurrentIndex (4);
-              node_alpha_matrix_operator_combobox->setEnabled (false);
-            }
-            calculate_node_alphas();
-          }
-          window.updateGL();
+          node_list->show();
         }
-
-        void Connectome::node_selection_settings_dialog_slot()
-        {
-          if (!node_selection_dialog)
-            node_selection_dialog.reset (new NodeSelectionSettingsDialog (&window, "Node selection visual settings", node_selection_settings));
-          node_selection_dialog->show();
-        }
-
         void Connectome::node_selection_settings_changed_slot()
         {
           window.updateGL();
         }
+
+
+
 
 
 
@@ -2556,8 +2451,8 @@ namespace MR
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("(none)");
-          node_list_model->clear();
           selected_nodes.resize (0);
+          selected_node_count = 0;
           if (node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
             node_visibility_combobox->removeItem (5);
             node_visibility_combobox->setCurrentIndex (0);
@@ -2630,9 +2525,7 @@ namespace MR
           crop_to_slab_checkbox->setEnabled (value);
           crop_to_slab_label->setEnabled (value && crop_to_slab);
           crop_to_slab_button->setEnabled (value && crop_to_slab);
-
-          node_list_view->setEnabled (value);
-          node_selection_settings_button->setEnabled (value);
+          show_node_list_button->setEnabled (value);
 
           node_visibility_combobox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
@@ -2779,11 +2672,9 @@ namespace MR
           node_overlay.reset (new NodeOverlay (overlay_info));
           update_node_overlay();
 
-          node_list_model->initialize();
-          node_list_view->hideRow (0);
-
           selected_nodes.resize (num_nodes()+1);
 
+          dynamic_cast<Node_list*>(node_list->tool)->initialize();
         }
 
 
@@ -3039,7 +2930,7 @@ namespace MR
           }
           update_node_overlay();
           // Need to indicate to the node list view that data have changed (specifically the node colour pixmaps)
-          node_list_model->reset_pixmaps();
+          dynamic_cast<Node_list*>(node_list->tool)->colours_changed();
         }
 
         void Connectome::calculate_node_sizes()
@@ -3338,6 +3229,89 @@ namespace MR
           }
         }
 
+
+
+
+
+
+        void Connectome::node_selection_changed (const std::vector<node_t>& list)
+        {
+          selected_nodes.clear();
+          selected_node_count = list.size();
+          for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
+            selected_nodes[*n] = true;
+          if (node_visibility == node_visibility_t::MATRIX_FILE) {
+            if (selected_node_count >= 2) {
+              node_visibility_matrix_operator_combobox->removeItem (2);
+              switch (node_visibility_matrix_operator) {
+                case node_visibility_matrix_operator_t::ANY: node_visibility_matrix_operator_combobox->setCurrentIndex (0); break;
+                case node_visibility_matrix_operator_t::ALL: node_visibility_matrix_operator_combobox->setCurrentIndex (1); break;
+              }
+              node_visibility_matrix_operator_combobox->setEnabled (true);
+            } else {
+              if (node_visibility_matrix_operator_combobox->count() == 2)
+                node_visibility_matrix_operator_combobox->addItem ("N/A");
+              node_visibility_matrix_operator_combobox->setCurrentIndex (2);
+              node_visibility_matrix_operator_combobox->setEnabled (false);
+            }
+            calculate_node_visibility();
+          }
+          if (node_colour == node_colour_t::MATRIX_FILE) {
+            if (selected_node_count >= 2) {
+              node_colour_matrix_operator_combobox->removeItem (4);
+              switch (node_colour_matrix_operator) {
+                case node_property_matrix_operator_t::MIN:  node_colour_matrix_operator_combobox->setCurrentIndex (0); break;
+                case node_property_matrix_operator_t::MEAN: node_colour_matrix_operator_combobox->setCurrentIndex (1); break;
+                case node_property_matrix_operator_t::SUM:  node_colour_matrix_operator_combobox->setCurrentIndex (2); break;
+                case node_property_matrix_operator_t::MAX:  node_colour_matrix_operator_combobox->setCurrentIndex (3); break;
+              }
+              node_colour_matrix_operator_combobox->setEnabled (true);
+            } else {
+              if (node_colour_matrix_operator_combobox->count() == 4)
+                node_colour_matrix_operator_combobox->addItem ("N/A");
+              node_colour_matrix_operator_combobox->setCurrentIndex (4);
+              node_colour_matrix_operator_combobox->setEnabled (false);
+            }
+            calculate_node_colours();
+          }
+          if (node_size == node_size_t::MATRIX_FILE) {
+            if (selected_node_count >= 2) {
+              node_size_matrix_operator_combobox->removeItem (4);
+              switch (node_size_matrix_operator) {
+                case node_property_matrix_operator_t::MIN:  node_size_matrix_operator_combobox->setCurrentIndex (0); break;
+                case node_property_matrix_operator_t::MEAN: node_size_matrix_operator_combobox->setCurrentIndex (1); break;
+                case node_property_matrix_operator_t::SUM:  node_size_matrix_operator_combobox->setCurrentIndex (2); break;
+                case node_property_matrix_operator_t::MAX:  node_size_matrix_operator_combobox->setCurrentIndex (3); break;
+              }
+              node_size_matrix_operator_combobox->setEnabled (true);
+            } else {
+              if (node_size_matrix_operator_combobox->count() == 4)
+                node_size_matrix_operator_combobox->addItem ("N/A");
+              node_size_matrix_operator_combobox->setCurrentIndex (4);
+              node_size_matrix_operator_combobox->setEnabled (false);
+            }
+            calculate_node_sizes();
+          }
+          if (node_alpha == node_alpha_t::MATRIX_FILE) {
+            if (selected_node_count >= 2) {
+              node_alpha_matrix_operator_combobox->removeItem (4);
+              switch (node_alpha_matrix_operator) {
+                case node_property_matrix_operator_t::MIN:  node_alpha_matrix_operator_combobox->setCurrentIndex (0); break;
+                case node_property_matrix_operator_t::MEAN: node_alpha_matrix_operator_combobox->setCurrentIndex (1); break;
+                case node_property_matrix_operator_t::SUM:  node_alpha_matrix_operator_combobox->setCurrentIndex (2); break;
+                case node_property_matrix_operator_t::MAX:  node_alpha_matrix_operator_combobox->setCurrentIndex (3); break;
+              }
+              node_alpha_matrix_operator_combobox->setEnabled (true);
+            } else {
+              if (node_alpha_matrix_operator_combobox->count() == 4)
+                node_alpha_matrix_operator_combobox->addItem ("N/A");
+              node_alpha_matrix_operator_combobox->setCurrentIndex (4);
+              node_alpha_matrix_operator_combobox->setEnabled (false);
+            }
+            calculate_node_alphas();
+          }
+          window.updateGL();
+        }
 
 
 

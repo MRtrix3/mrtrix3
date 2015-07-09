@@ -24,6 +24,7 @@
 
 #include <QVector>
 
+#include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/connectome/connectome.h"
 
 namespace MR
@@ -98,6 +99,83 @@ namespace MR
         QVector<int> roles (1, Qt::DecorationRole);
         emit dataChanged (topleft, bottomright, roles);
       }
+
+
+
+
+
+
+
+      Node_list::Node_list (Window& main_window, Tool::Dock* dock, Connectome* master) :
+          Tool::Base (main_window, dock),
+          window (main_window),
+          connectome (*master),
+          node_selection_dialog (nullptr)
+      {
+        VBoxLayout* main_box = new VBoxLayout (this);
+
+        node_list_model = new Node_list_model (master);
+        node_list_view = new Node_list_view (master);
+        node_list_view->setModel (node_list_model);
+        node_list_view->setAcceptDrops (false);
+        node_list_view->setAlternatingRowColors (true);
+        node_list_view->setCornerButtonEnabled (false);
+        node_list_view->setDragEnabled (false);
+        node_list_view->setDropIndicatorShown (false);
+        node_list_view->setEditTriggers (QAbstractItemView::NoEditTriggers);
+        node_list_view->setHorizontalScrollBarPolicy (Qt::ScrollBarAlwaysOff);
+        node_list_view->setObjectName ("Node list view");
+        node_list_view->resizeColumnsToContents();
+        node_list_view->resizeRowsToContents();
+        node_list_view->setSelectionBehavior (QAbstractItemView::SelectRows);
+        node_list_view->setSelectionMode (QAbstractItemView::ExtendedSelection);
+        node_list_view->horizontalHeader()->setStretchLastSection (true);
+        node_list_view->verticalHeader()->hide();
+        connect (node_list_view->selectionModel(),
+            SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
+            SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
+        main_box->addWidget (node_list_view);
+        node_selection_settings_button = new QPushButton ("Selection visualisation settings...");
+        connect (node_selection_settings_button, SIGNAL(clicked()), this, SLOT (node_selection_settings_dialog_slot()));
+        main_box->addWidget (node_selection_settings_button);
+      }
+
+
+      void Node_list::initialize()
+      {
+        node_list_model->initialize();
+        node_list_view->hideRow (0);
+      }
+
+
+
+      void Node_list::colours_changed()
+      {
+        node_list_model->reset_pixmaps();
+      }
+
+
+
+      void Node_list::node_selection_settings_dialog_slot()
+      {
+        if (!node_selection_dialog)
+          node_selection_dialog.reset (new NodeSelectionSettingsDialog (&window, "Node selection visual settings", connectome.node_selection_settings));
+        node_selection_dialog->show();
+      }
+
+
+
+      void Node_list::node_selection_changed_slot (const QItemSelection&, const QItemSelection&)
+      {
+        QModelIndexList list = node_list_view->selectionModel()->selectedRows();
+        std::vector<node_t> nodes;
+        for (int i = 0; i != list.size(); ++i)
+          nodes.push_back (list[i].row());
+        connectome.node_selection_changed (nodes);
+      }
+
+
+
 
 
 
