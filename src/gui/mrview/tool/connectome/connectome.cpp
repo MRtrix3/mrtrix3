@@ -864,10 +864,8 @@ namespace MR
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
               }
 
-              if ((use_lighting() && node_geometry != node_geometry_t::POINT) || crop_to_slab)
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
-
               if (crop_to_slab) {
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
                 if (is_3D) {
                   gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
                   gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
@@ -978,7 +976,7 @@ namespace MR
             if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
               gl::Enable (GL_LINE_SMOOTH);
 
-            GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0, radius_ID = 0;
+            GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
             if (edge_geometry == edge_geometry_t::CYLINDER) {
               cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
               cylinder_VAO.bind();
@@ -988,27 +986,28 @@ namespace MR
               rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
             }
 
+            GLuint radius_ID = 0;
+            if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)
+              radius_ID = gl::GetUniformLocation (edge_shader, "radius");
+
             GLuint specular_ID = 0;
-            if (use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) {
+            if (use_lighting()) {
               gl::UniformMatrix4fv (gl::GetUniformLocation (edge_shader, "MV"), 1, gl::FALSE_, projection.modelview());
-              radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
-              specular_ID = gl::GetUniformLocation (edge_shader, "specular");
+              specular_ID   = gl::GetUniformLocation (edge_shader, "specular");
               gl::Uniform1f  (specular_ID, lighting.specular);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
             }
 
-            if ((use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) || crop_to_slab)
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
-
             if (crop_to_slab) {
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
               if (is_3D) {
                 gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
                 gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
               } else {
-                gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
               }
             }
 

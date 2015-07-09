@@ -132,18 +132,28 @@ namespace MR
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, 2 * sizeof (Point<float>), &data[0][0], gl::STATIC_DRAW);
 
+          data.assign (2, parent.get_dir());
+
+          tangent_buffer.gen();
+          tangent_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, 2 * sizeof (Point<float>), &data[0][0], gl::STATIC_DRAW);
+
           vertex_array_object.gen();
           vertex_array_object.bind();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          tangent_buffer.bind (gl::ARRAY_BUFFER);
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
         }
 
         void Edge::Line::render() const
         {
-          if (!vertex_buffer || !vertex_array_object)
+          if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
+          tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::DrawArrays (gl::LINES, 0, 2);
         }

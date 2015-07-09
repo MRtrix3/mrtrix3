@@ -109,11 +109,12 @@ namespace MR
               Line (const Edge& parent);
               Line (Line&& that) :
                   vertex_buffer (std::move (that.vertex_buffer)),
+                  tangent_buffer (std::move (that.tangent_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { }
               Line () = delete;
               void render() const;
             private:
-              GL::VertexBuffer vertex_buffer;
+              GL::VertexBuffer vertex_buffer, tangent_buffer;
               GL::VertexArrayObject vertex_array_object;
           } line;
 

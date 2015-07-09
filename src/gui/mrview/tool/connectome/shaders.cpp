@@ -243,8 +243,7 @@ namespace MR
 
             fragment_shader_source +=
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
-              "uniform vec3 screen_normal;\n";
+              "uniform vec3 light_pos;\n";
 
             if (geometry == node_geometry_t::SPHERE || geometry == node_geometry_t::CUBE || geometry == node_geometry_t::MESH) {
               fragment_shader_source +=
@@ -324,28 +323,50 @@ namespace MR
               "uniform mat4 MVP;\n"
               "uniform mat4 MV;\n";
 
+          if (geometry == edge_geometry_t::LINE) {
+            vertex_shader_source +=
+              "layout (location = 1) in vec3 vertexTangent_modelspace;\n";
+            if (use_lighting) {
+              vertex_shader_source +=
+              "out vec3 tangent" + GS_in + ";\n";
+            }
+          }
+
           if (geometry == edge_geometry_t::CYLINDER) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexNormal_modelspace;\n"
               "uniform vec3 centre_one, centre_two;\n"
               "uniform mat3 rot_matrix;\n"
-              "uniform float radius;\n"
+              "uniform float radius;\n";
+            if (use_lighting) {
+              vertex_shader_source +=
               "out vec3 normal" + GS_in + ";\n";
+            }
           }
 
           if (geometry == edge_geometry_t::STREAMLINE) {
             vertex_shader_source +=
-              "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
+              "layout (location = 1) in vec3 vertexTangent_modelspace;\n";
+            if (use_lighting) {
+              vertex_shader_source +=
               "out vec3 tangent" + GS_in + ";\n";
+            }
           }
 
           if (geometry == edge_geometry_t::STREAMTUBE) {
             vertex_shader_source +=
               "layout (location = 1) in vec3 vertexTangent_modelspace;\n"
               "layout (location = 2) in vec3 vertexNormal_modelspace;\n"
-              "uniform float radius;\n"
-              "out vec3 tangent" + GS_in + ";\n"
+              "uniform float radius;\n";
+            if (use_lighting) {
+              vertex_shader_source +=
               "out vec3 normal" + GS_in + ";\n";
+            }
+          }
+
+          if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
+            vertex_shader_source +=
+              "out vec3 dir" + GS_in + ";\n";
           }
 
           if (crop_to_slab) {
@@ -370,6 +391,10 @@ namespace MR
             case edge_geometry_t::LINE:
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace;\n";
+              if (use_lighting) {
+              vertex_shader_source +=
+              "  tangent" + GS_in + " = normalize (mat3(MV) * vertexTangent_modelspace);\n";
+              }
               break;
             case edge_geometry_t::CYLINDER:
               vertex_shader_source +=
@@ -380,19 +405,35 @@ namespace MR
               "    offset[2] = 0.0;\n"
               "  }\n"
               "  offset = offset * rot_matrix;\n"
-              "  normal" + GS_in + " = normalize (mat3(MV) * (vertexNormal_modelspace * rot_matrix));\n"
               "  vec3 pos = centre + (radius * offset);\n";
+              if (use_lighting) {
+              vertex_shader_source +=
+              "  normal" + GS_in + " = normalize (mat3(MV) * (vertexNormal_modelspace * rot_matrix));\n";
+              }
               break;
             case edge_geometry_t::STREAMLINE:
               vertex_shader_source +=
-              "  vec3 pos = vertexPosition_modelspace;\n"
-              "  tangent" + GS_in + " = vertexTangent_modelspace;\n";
+              "  vec3 pos = vertexPosition_modelspace;\n";
+              if (use_lighting) {
+              vertex_shader_source +=
+              "  tangent" + GS_in + " = normalize (mat3(MV) * vertexTangent_modelspace);\n";
+              }
+              if (colour == edge_colour_t::DIRECTION) {
+              vertex_shader_source +=
+              "  dir" + GS_in + " = vertexTangent_modelspace;\n";
+              }
               break;
             case edge_geometry_t::STREAMTUBE:
               vertex_shader_source +=
-              "  vec3 pos = vertexPosition_modelspace + (radius * vertexNormal_modelspace);\n"
-              "  tangent" + GS_in + " = vertexTangent_modelspace;\n"
+              "  vec3 pos = vertexPosition_modelspace + (radius * vertexNormal_modelspace);\n";
+              if (use_lighting) {
+              vertex_shader_source +=
               "  normal" + GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
+              }
+              if (colour == edge_colour_t::DIRECTION) {
+              vertex_shader_source +=
+              "  dir" + GS_in + " = vertexTangent_modelspace;\n";
+              }
               break;
           }
 
@@ -424,18 +465,30 @@ namespace MR
                 "layout(lines) in;\n"
                 "layout(points, max_vertices=1) out;\n"
                 "in float depth[2];\n";
+                if (use_lighting) {
+                geometry_shader_source +=
+                "in vec3 tangent" + GS_in + "[2];\n"
+                "out vec3 tangent" + GS_out + ";\n";
+                }
                 break;
               case edge_geometry_t::CYLINDER:
               case edge_geometry_t::STREAMTUBE:
                 geometry_shader_source +=
                 "layout(triangles) in;\n"
                 "layout(line_strip, max_vertices=2) out;\n"
-                "in vec3 normal" + GS_in + "[3];\n"
-                "in vec3 tangent" + GS_in + "[3];\n"
-                "out vec3 normal" + GS_out + ";\n"
-                "out vec3 tangent" + GS_out + ";\n"
                 "in float depth[3];\n";
+                if (use_lighting) {
+                geometry_shader_source +=
+                "in vec3 normal" + GS_in + "[3];\n"
+                "out vec3 normal" + GS_out + ";\n";
+                }
                 break;
+            }
+
+            if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
+              geometry_shader_source +=
+                "in vec3 dir" + GS_in + "[3];\n"
+                "out vec3 dir" + GS_out + ";\n";
             }
 
             geometry_shader_source +=
@@ -447,7 +500,16 @@ namespace MR
                 geometry_shader_source +=
                 "  float mu = depth[0] / (depth[0] - depth[1]);\n"
                 "  if (mu >= 0.0 && mu <= 1.0) {\n"
-                "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n"
+                "    gl_Position = gl_in[0].gl_Position + (mu * (gl_in[1].gl_Position - gl_in[0].gl_Position));\n";
+                if (use_lighting) {
+                geometry_shader_source +=
+                "    tangent" + GS_out + " = normalize(((1.0 - mu) * tangent" + GS_in + "[1]) + (mu * tangent" + GS_in + "[0]));\n";
+                }
+                if (colour == edge_colour_t::DIRECTION && geometry == edge_geometry_t::STREAMLINE) {
+                geometry_shader_source +=
+                "      dir" + GS_out + " = normalize(((1.0 - mu) * dir" + GS_in + "[v1]) + (mu * dir" + GS_in + "[v2]));\n";
+                }
+                geometry_shader_source +=
                 "    EmitVertex();\n"
                 "  }\n"
                 "  EndPrimitive();\n";
@@ -459,9 +521,16 @@ namespace MR
                 "    int v2 = (v1 == 2) ? 0 : v1+1;\n"
                 "    float mu = depth[v1] / (depth[v1] - depth[v2]);\n"
                 "    if (mu >= 0.0 && mu <= 1.0) {\n"
-                "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n"
-                "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n"
-                "      tangent" + GS_out + " = normalize(((1.0 - mu) * tangent" + GS_in + "[v1]) + (mu * tangent" + GS_in + "[v2]));\n"
+                "      gl_Position = gl_in[v1].gl_Position + (mu * (gl_in[v2].gl_Position - gl_in[v1].gl_Position));\n";
+                if (use_lighting) {
+                geometry_shader_source +=
+                "      normal" + GS_out + " = normalize(((1.0 - mu) * normal" + GS_in + "[v1]) + (mu * normal" + GS_in + "[v2]));\n";
+                }
+                if (colour == edge_colour_t::DIRECTION && geometry == edge_geometry_t::STREAMTUBE) {
+                geometry_shader_source +=
+                "      dir" + GS_out + " = normalize(((1.0 - mu) * dir" + GS_in + "[v1]) + (mu * dir" + GS_in + "[v2]));\n";
+                }
+                geometry_shader_source +=
                 "      EmitVertex();\n"
                 "    }\n"
                 "  }\n"
@@ -488,16 +557,21 @@ namespace MR
               "out vec3 color;\n";
           }
 
-          if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
+          if (use_lighting) {
             fragment_shader_source +=
-              "in vec3 normal" + GS_out + ";\n"
               "uniform float ambient, diffuse, specular, shine;\n"
-              "uniform vec3 light_pos;\n"
-              "uniform vec3 screen_normal;\n";
-          }
-          if (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE) {
-            fragment_shader_source +=
+              "uniform vec3 light_pos;\n";
+            if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
+              fragment_shader_source +=
+              "in vec3 normal" + GS_out + ";\n";
+            } else { // Line and streamline
+              fragment_shader_source +=
               "in vec3 tangent" + GS_out + ";\n";
+            }
+          }
+          if (colour == edge_colour_t::DIRECTION && (geometry == edge_geometry_t::STREAMLINE || geometry == edge_geometry_t::STREAMTUBE)) {
+            fragment_shader_source +=
+              "in vec3 dir" + GS_out + ";\n";
           }
 
           if (crop_to_slab && is_3D) {
@@ -517,10 +591,10 @@ namespace MR
 
             if (use_alpha) {
               fragment_shader_source +=
-              "  color.rgb = vec3 (abs(tangent" + GS_out + "[0]), abs(tangent" + GS_out + "[1]), abs(tangent" + GS_out + "[2]));\n";
+              "  color.rgb = vec3 (abs(dir" + GS_out + "[0]), abs(dir" + GS_out + "[1]), abs(dir" + GS_out + "[2]));\n";
             } else {
               fragment_shader_source +=
-              "  color = vec3 (abs(tangent" + GS_out + "[0]), abs(tangent" + GS_out + "[1]), abs(tangent" + GS_out + "[2]));\n";
+              "  color = vec3 (abs(dir" + GS_out + "[0]), abs(dir" + GS_out + "[1]), abs(dir" + GS_out + "[2]));\n";
             }
 
           } else {
@@ -535,13 +609,25 @@ namespace MR
 
           }
 
-          if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
-            fragment_shader_source +=
+          if (use_lighting) {
+            if (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE) {
+              fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
               "  color += specular * pow (clamp (dot (reflect (-light_pos, normal" + GS_out + "), vec3(0.0,0.0,1.0)), 0, 1), shine);\n";
+            } else { // Line and streamline
+              fragment_shader_source +=
+              "  vec3 t = normalize (tangent" + GS_out + ");\n"
+              "  float l_dot_t = dot(light_pos, t);\n"
+              "  vec3 l_perp = light_pos - l_dot_t * t;\n"
+              "  vec3 l_perp_norm = normalize (l_perp);\n"
+              "  float n_dot_t = t.z;\n"
+              "  vec3 n_perp = vec3(0.0, 0.0, 1.0) - n_dot_t * t;\n"
+              "  vec3 n_perp_norm = normalize (n_perp);\n"
+              "  float cos2_theta = 0.5+0.5*dot(l_perp_norm,n_perp_norm);\n"
+              "  color *= ambient + diffuse * length(l_perp) * cos2_theta;\n"
+              "  color += specular * sqrt(cos2_theta) * pow (clamp (-l_dot_t*n_dot_t + length(l_perp)*length(n_perp), 0, 1), shine);\n";
+            }
           }
-
-          // TODO Lighting for streamline rendering
 
           if (use_alpha) {
             fragment_shader_source +=
