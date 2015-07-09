@@ -94,6 +94,7 @@ namespace MR
 
           vertex_shader_source +=
               "uniform mat4 MVP;\n"
+              "uniform mat4 MV;\n"
               "uniform vec3 node_centre;\n"
               "uniform float node_size;\n";
 
@@ -124,12 +125,12 @@ namespace MR
             case node_geometry_t::SPHERE:
               vertex_shader_source +=
               "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
-              "  normal" + GS_in + " = vertexPosition_modelspace;\n";
+              "  normal" + GS_in + " = normalize (mat3(MV) * vertexPosition_modelspace);\n";
               break;
             case node_geometry_t::CUBE:
               vertex_shader_source +=
               "  vec3 pos = node_centre + (vertexPosition_modelspace * node_size);\n"
-              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
+              "  normal" + GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
               break;
             case node_geometry_t::POINT:
               vertex_shader_source +=
@@ -141,7 +142,7 @@ namespace MR
             case node_geometry_t::MESH:
               vertex_shader_source +=
               "  vec3 pos = node_centre + (node_size * (vertexPosition_modelspace - node_centre));"
-              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
+              "  normal" + GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
               break;
           }
 
@@ -275,7 +276,7 @@ namespace MR
           if (use_lighting && geometry != node_geometry_t::POINT) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
-              "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";
+              "  color += specular * pow (clamp (dot (reflect (-light_pos, normal" + GS_out + "), vec3(0.0,0.0,1.0)), 0, 1), shine);\n";
           }
 
           if (use_alpha) {
@@ -320,7 +321,8 @@ namespace MR
 
           vertex_shader_source =
               "layout (location = 0) in vec3 vertexPosition_modelspace;\n"
-              "uniform mat4 MVP;\n";
+              "uniform mat4 MVP;\n"
+              "uniform mat4 MV;\n";
 
           if (geometry == edge_geometry_t::CYLINDER) {
             vertex_shader_source +=
@@ -378,7 +380,7 @@ namespace MR
               "    offset[2] = 0.0;\n"
               "  }\n"
               "  offset = offset * rot_matrix;\n"
-              "  normal" + GS_in + " = vertexNormal_modelspace * rot_matrix;\n"
+              "  normal" + GS_in + " = normalize (mat3(MV) * (vertexNormal_modelspace * rot_matrix));\n"
               "  vec3 pos = centre + (radius * offset);\n";
               break;
             case edge_geometry_t::STREAMLINE:
@@ -390,7 +392,7 @@ namespace MR
               vertex_shader_source +=
               "  vec3 pos = vertexPosition_modelspace + (radius * vertexNormal_modelspace);\n"
               "  tangent" + GS_in + " = vertexTangent_modelspace;\n"
-              "  normal" + GS_in + " = vertexNormal_modelspace;\n";
+              "  normal" + GS_in + " = normalize (mat3(MV) * vertexNormal_modelspace);\n";
               break;
           }
 
@@ -536,7 +538,7 @@ namespace MR
           if (use_lighting && (geometry == edge_geometry_t::CYLINDER || geometry == edge_geometry_t::STREAMTUBE)) {
             fragment_shader_source +=
               "  color *= ambient + diffuse * clamp (dot (normal" + GS_out + ", light_pos), 0, 1);\n"
-              "  color += specular * pow (clamp (dot (reflect (light_pos, normal" + GS_out + "), screen_normal), 0, 1), shine);\n";
+              "  color += specular * pow (clamp (dot (reflect (-light_pos, normal" + GS_out + "), vec3(0.0,0.0,1.0)), 0, 1), shine);\n";
           }
 
           // TODO Lighting for streamline rendering

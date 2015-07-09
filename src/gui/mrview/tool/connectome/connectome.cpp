@@ -855,6 +855,7 @@ namespace MR
 
               GLuint specular_ID = 0;
               if (use_lighting() && node_geometry != node_geometry_t::POINT) {
+                gl::UniformMatrix4fv (gl::GetUniformLocation (node_shader, "MV"), 1, gl::FALSE_, projection.modelview());
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
                 gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
@@ -989,6 +990,7 @@ namespace MR
 
             GLuint specular_ID = 0;
             if (use_lighting() && (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)) {
+              gl::UniformMatrix4fv (gl::GetUniformLocation (edge_shader, "MV"), 1, gl::FALSE_, projection.modelview());
               radius_ID     = gl::GetUniformLocation (edge_shader, "radius");
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
               gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
