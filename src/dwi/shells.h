@@ -66,7 +66,7 @@ namespace MR
 
     extern const App::OptionGroup ShellOption;
 
-    inline default_type bzero_threshold () {
+    FORCE_INLINE default_type bzero_threshold () {
       static const default_type value = File::Config::get_float ("BZeroThreshold", 10.0);
       return value;
     }
