@@ -39,7 +39,8 @@ def colorize(s):
 
 
 system = None
-dependencies = False
+dependencies = 0
+dep_recursive = False
 verbose = False
 targets = []
 
@@ -201,7 +202,7 @@ def make_intermediate (name, confname):
 for arg in sys.argv[1:]:
   if '-help'.startswith (arg):
     print ('''
-usage: ./build [-verbose] [-dependencies] [target ...]
+usage: ./build [-verbose] [-showdep[=target|all]] [target ...]
 
 This script will compile and link the MRtrix3 source tree. It relies on the
 configuration file produced by ./configure - please ensure you have run this
@@ -222,14 +223,25 @@ config folder (by default: 'release').
 
 OPTIONS:
 
-  -verbose       print each command as it is being invoked
-  -dependencies  print the list of dependencies for every target 
+  -verbose               print each command as it is being invoked
+  -showdep[=target|all]  print the list of dependencies for every target (with 
+                         -showdep=target; the default) or for all files
+  -tree                  [only used with -showdep) print full dependency tree for 
+                         each file
 ''')
     exit (0)
-  elif   '-verbose'.startswith(arg): 
+  elif '-verbose'.startswith(arg): 
     verbose = True
-  elif '-dependencies'.startswith(arg): 
-    dependencies = True
+  elif '-showdep'.startswith(arg): 
+    dependencies = 1
+  elif arg.startswith ('-showdep='):
+    if arg[9:] == 'target': dependencies = 1
+    elif arg[9:] == 'all': dependencies = 2
+    else: 
+      sys.stderr.write ('invalid specified for option "-showdep" (expected target, all)\n')
+      sys.exit (1)
+  elif '-tree'.startswith(arg):
+    dep_recursive = True
   elif arg[0] == '-':
     sys.stderr.write ('unknown command-line option "' + arg + '"\n')
     sys.exit (1)
@@ -283,7 +295,7 @@ if 'clean' in targets:
 if config_name is None: 
   config_name = 'default'
 if config_file is None:
-  config_file = os.path.join (mrtrix_dir[-1], config_name, 'config')
+  config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], config_name, 'config'))
 
 try:
   log ('reading configuration from "' + config_file + '"...' + os.linesep)
@@ -357,7 +369,7 @@ class Entry:
     self.name = name
     self.cmd = []
     self.deps = set()
-    self.action = 'NA'
+    self.action = '--'
     self.timestamp = mtime (self.name)
     self.dep_timestamp = self.timestamp
     self.currently_being_processed = False
@@ -502,15 +514,23 @@ class Entry:
   def need_rebuild (self):
     return self.timestamp == float("inf") or self.timestamp < self.dep_timestamp
 
-  def display (self):
-    sys.stdout.write ('[' + self.action + '] ' + self.name)
-    if self.need_rebuild():
-      sys.stdout.write (' [REBUILD]')
-    sys.stdout.write (''':
-  deps: ''' + ' '.join(self.deps) + '''
-  command: ''' + ' '.join(self.cmd) + '''
-  timestamp: ''' + str(self.timestamp) + ', dep timestamp: ' + str(self.dep_timestamp) + '''
-''')
+  def display (self, indent=''):
+    show_rebuild = lambda x: x+' [REBUILD]' if todo[x].need_rebuild() else x 
+    sys.stdout.write (indent + '[' + self.action + '] ' + show_rebuild (self.name) + ':\n')
+    sys.stdout.write (indent + '  timestamp: ' + str(self.timestamp))
+    if len(self.deps):
+      sys.stdout.write (', dep timestamp: ' + str(self.dep_timestamp) + ', diff: ' + str(self.timestamp-self.dep_timestamp))
+    sys.stdout.write ('\n')
+    if len(self.cmd):
+      sys.stdout.write (indent + '  command:   ' + ' '.join(self.cmd) + '\n')
+    if len(self.deps):
+      sys.stdout.write (indent + '  deps:      ')
+      if dep_recursive:
+        sys.stdout.write ('\n')
+        for x in self.deps:
+          todo[x].display (indent + '    ')
+      else:
+        sys.stdout.write ((indent+'\n             ').join([ show_rebuild(x) for x in self.deps ]) + '\n')
 
 
 
@@ -976,20 +996,28 @@ if nogui:
 log ('building targets: ' + ' '.join (targets) + os.linesep)
 
 
-if dependencies:
+if dependencies==1:
   sys.stderr.write ('''
-Printing dependencies:
+Printing dependencies for targets:
 
 ''')
   for entry in targets:
-    print_deps (entry)
+    todo[entry].display()
+  sys.exit (0)
+elif dependencies==2:
+  sys.stderr.write ('''
+Printing dependencies for all files:
+
+''')
+  for entry in todo:
+    todo[entry].display()
   sys.exit (0)
 
-todo_tmp = todo
-todo = {}
-for item in todo_tmp.keys():
-  if todo_tmp[item].action != 'NA' and todo_tmp[item].need_rebuild():
-    todo[item] = todo_tmp[item]
+todo_tmp = {}
+for item in todo.keys():
+  if todo[item].action != '--' and todo[item].need_rebuild():
+    todo_tmp[item] = todo[item]
+todo = todo_tmp
 
 log ('TODO list contains ' + str(len(todo)) + ''' items
 
