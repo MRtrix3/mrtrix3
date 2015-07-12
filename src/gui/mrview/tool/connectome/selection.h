@@ -176,7 +176,6 @@ namespace MR
           void edge_other_alpha_slot();
 
         private:
-          // TODO Add frames to help separate these
           QCheckBox *node_selected_visibility_checkbox;
           QSlider *node_selected_colour_slider;
           QColorButton *node_selected_colour_button;

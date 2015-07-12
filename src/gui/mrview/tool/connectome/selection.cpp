@@ -200,8 +200,14 @@ namespace MR
         setLayout (main_box);
 
         QGroupBox* group_box = new QGroupBox ("Selected nodes highlight");
+        QVBoxLayout* vlayout = new QVBoxLayout;
+        QFrame* frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         Base::GridLayout* grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         QLabel *label = new QLabel ("Visibility: ");
         grid_layout->addWidget (label, 0, 0);
@@ -246,8 +252,14 @@ namespace MR
         main_box->addWidget (group_box, 0, 0);
 
         group_box = new QGroupBox ("Selected edges highlight");
+        frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        vlayout = new QVBoxLayout;
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         label = new QLabel ("Visibility: ");
         grid_layout->addWidget (label, 0, 0);
@@ -294,8 +306,14 @@ namespace MR
         //////////////////////////////////////////////////////////////////////
 
         group_box = new QGroupBox ("Associated nodes highlight");
+        frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        vlayout = new QVBoxLayout;
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         label = new QLabel ("Colour: ");
         grid_layout->addWidget (label, 1, 0);
@@ -332,8 +350,14 @@ namespace MR
         main_box->addWidget (group_box, 1, 0);
 
         group_box = new QGroupBox ("Associated edges highlight");
+        frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        vlayout = new QVBoxLayout;
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         label = new QLabel ("Colour: ");
         grid_layout->addWidget (label, 1, 0);
@@ -372,8 +396,14 @@ namespace MR
         //////////////////////////////////////////////////////////////////////
 
         group_box = new QGroupBox ("Other nodes");
+        frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        vlayout = new QVBoxLayout;
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         label = new QLabel ("Visibility: ");
         grid_layout->addWidget (label, 0, 0);
@@ -419,8 +449,14 @@ namespace MR
         main_box->addWidget (group_box, 2, 0);
 
         group_box = new QGroupBox ("Other edges");
+        frame = new QFrame (this);
+        frame->setFrameShadow (QFrame::Sunken);
+        frame->setFrameShape (QFrame::Panel);
+        vlayout = new QVBoxLayout;
+        group_box->setLayout (vlayout);
+        vlayout->addWidget (frame);
         grid_layout = new Base::GridLayout;
-        group_box->setLayout (grid_layout);
+        frame->setLayout (grid_layout);
 
         label = new QLabel ("Visibility: ");
         grid_layout->addWidget (label, 0, 0);
