@@ -92,13 +92,16 @@
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
+//   - As a reduced version of this, create independent functions to draw nodes and edges, and
+//     draw edges before nodes if nodes are transparent but edges are not
 //   - Add compatibility with clip planes
 //
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
-//   - Change node list into a separate dockable widget
-//     Initial changes done, still to do:
-//     * Reset selection (both in table and in main connectome tool settings) when closed
+//
+// * Node list:
+//   - Move settings button to top, change to a settings icon
+//   - Add a ' deselect all' button
 //
 // * Additional functionalities:
 //   - Print node names in the GL window

@@ -3321,19 +3321,23 @@ namespace MR
 
         bool Connectome::node_visibility_given_selection (const node_t index)
         {
-          if (selected_nodes[index]) {
-            if (node_selection_settings.get_node_selected_visibility_override())
-              return true;
-            else
-              return nodes[index].is_visible();
-          } else if (selected_node_count) {
-            if (node_selection_settings.get_node_not_selected_visibility_override())
-              return false;
-            else
-              return nodes[index].is_visible();
-          } else {
+          if (!selected_node_count)
             return nodes[index].is_visible();
+          if (node_selection_settings.get_node_selected_visibility_override() && selected_nodes[index])
+            return true;
+          if (!nodes[index].is_visible())
+            return false;
+          if (node_selection_settings.get_node_other_visibility_override()) {
+            // Only override here if there are no connected selected nodes
+            for (auto e = edges.begin(); e != edges.end(); ++e) {
+              if (e->is_visible() && (e->get_node_index (0) == index || e->get_node_index (1) == index)
+                                  && (selected_nodes[e->get_node_index (0)] || selected_nodes[e->get_node_index (1)])) {
+                  return true;
+              }
+            }
+            return false;
           }
+          return true;
         }
         Point<float> Connectome::node_colour_given_selection (const node_t index)
         {
@@ -3341,8 +3345,17 @@ namespace MR
             const float fade = node_selection_settings.get_node_selected_colour_fade();
             return ((fade * node_selection_settings.get_node_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
           } else if (selected_node_count) {
-            const float fade = node_selection_settings.get_node_not_selected_colour_fade();
-            return ((fade * node_selection_settings.get_node_not_selected_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
+            // Need to find out whether or not there is a visible connection to a selected node
+            // TODO Needs to be a more efficient way of calculating this...
+            for (auto e = edges.begin(); e != edges.end(); ++e) {
+              if (e->is_visible() && (e->get_node_index (0) == index || e->get_node_index (1) == index)
+                                  && (selected_nodes[e->get_node_index (0)] || selected_nodes[e->get_node_index (1)])) {
+                const float fade = node_selection_settings.get_node_associated_colour_fade();
+                return ((fade * node_selection_settings.get_node_associated_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
+              }
+            }
+            const float fade = node_selection_settings.get_node_other_colour_fade();
+            return ((fade * node_selection_settings.get_node_other_colour()) + ((1.0f - fade) * nodes[index].get_colour()));
           } else {
             return nodes[index].get_colour();
           }
@@ -3352,7 +3365,13 @@ namespace MR
           if (selected_nodes[index]) {
             return (node_selection_settings.get_node_selected_size_multiplier() * nodes[index].get_size());
           } else if (selected_node_count) {
-            return (node_selection_settings.get_node_not_selected_size_multiplier() * nodes[index].get_size());
+            for (auto e = edges.begin(); e != edges.end(); ++e) {
+              if (e->is_visible() && (e->get_node_index (0) == index || e->get_node_index (1) == index)
+                                  && (selected_nodes[e->get_node_index (0)] || selected_nodes[e->get_node_index (1)])) {
+                return (node_selection_settings.get_node_associated_size_multiplier() * nodes[index].get_size());
+              }
+            }
+            return (node_selection_settings.get_node_other_size_multiplier() * nodes[index].get_size());
           } else {
             return nodes[index].get_size();
           }
@@ -3362,105 +3381,71 @@ namespace MR
           if (selected_nodes[index]) {
             return (node_selection_settings.get_node_selected_alpha_multiplier() * nodes[index].get_alpha());
           } else if (selected_node_count) {
-            return (node_selection_settings.get_node_not_selected_alpha_multiplier() * nodes[index].get_alpha());
+            for (auto e = edges.begin(); e != edges.end(); ++e) {
+              if (e->is_visible() && (e->get_node_index (0) == index || e->get_node_index (1) == index)
+                                  && (selected_nodes[e->get_node_index (0)] || selected_nodes[e->get_node_index (1)])) {
+                return (node_selection_settings.get_node_associated_alpha_multiplier() * nodes[index].get_alpha());
+              }
+            }
+            return (node_selection_settings.get_node_other_alpha_multiplier() * nodes[index].get_alpha());
           } else {
             return nodes[index].get_alpha();
           }
         }
         bool Connectome::edge_visibility_given_selection (const Edge& edge)
         {
-          switch (selected_node_count) {
-            case 0:
-              return edge.is_visible();
-            case 1:
-              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)]) {
-                if (node_selection_settings.get_edge_selected_visibility_override())
-                  return true;
-                else
-                  return edge.is_visible();
-              } else {
-                if (node_selection_settings.get_edge_not_selected_visibility_override())
-                  return false;
-                else
-                  return edge.is_visible();
-              }
-            default:
-              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)]) {
-                if (node_selection_settings.get_edge_selected_visibility_override())
-                  return true;
-                else
-                  return edge.is_visible();
-              } else {
-                if (node_selection_settings.get_edge_not_selected_visibility_override())
-                  return false;
-                else
-                  return edge.is_visible();
-              }
-          }
+          if (!selected_node_count)
+            return edge.is_visible();
+          if (!edge.is_visible())
+            return false;
+          if (node_selection_settings.get_edge_other_visibility_override()
+              && !(selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)]))
+            return false;
+          return true;
         }
         Point<float> Connectome::edge_colour_given_selection (const Edge& edge)
         {
-          float fade = 0.0f;
-          switch (selected_node_count) {
-            case 0:
-              return edge.get_colour();
-            case 1:
-              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
-                fade = node_selection_settings.get_edge_selected_colour_fade();
-              else
-                fade = node_selection_settings.get_edge_not_selected_colour_fade();
-              break;
-            default:
-              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
-                fade = node_selection_settings.get_edge_selected_colour_fade();
-              else
-                fade = node_selection_settings.get_edge_not_selected_colour_fade();
-              break;
+          if (!selected_node_count)
+            return edge.get_colour();
+          float fade = node_selection_settings.get_edge_other_colour_fade();
+          Point<float> colour = node_selection_settings.get_edge_other_colour();
+          if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)]) {
+            fade = node_selection_settings.get_edge_associated_colour_fade();
+            colour = node_selection_settings.get_edge_associated_colour();
           }
-          return ((fade * node_selection_settings.get_edge_selected_colour()) + ((1.0f - fade) * edge.get_colour()));
+          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)]) {
+            fade = node_selection_settings.get_edge_selected_colour_fade();
+            colour = node_selection_settings.get_edge_selected_colour();
+          }
+          return ((fade * colour) + ((1.0f - fade) * edge.get_colour()));
         }
         float Connectome::edge_size_given_selection (const Edge& edge)
         {
-          float multiplier = 0.0f;
-          switch (selected_node_count) {
-            case 0:
-              return edge.get_size();
-            case 1:
-              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
-                multiplier = node_selection_settings.get_edge_selected_size_multiplier();
-              else
-                multiplier = node_selection_settings.get_edge_not_selected_size_multiplier();
-              break;
-            default:
-              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
-                multiplier = node_selection_settings.get_edge_selected_size_multiplier();
-              else
-                multiplier = node_selection_settings.get_edge_not_selected_size_multiplier();
-              break;
-          }
+          if (!selected_node_count)
+            return edge.get_size();
+          float multiplier = node_selection_settings.get_edge_other_size_multiplier();
+          if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)])
+            multiplier = node_selection_settings.get_edge_associated_size_multiplier();
+          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)])
+            multiplier = node_selection_settings.get_edge_selected_size_multiplier();
           return (multiplier * edge.get_size());
         }
         float Connectome::edge_alpha_given_selection (const Edge& edge)
         {
-          float multiplier = 0.0f;
-          switch (selected_node_count) {
-            case 0:
-              return edge.get_alpha();
-            case 1:
-              if (selected_nodes[edge.get_node_index(0)] || selected_nodes[edge.get_node_index(1)])
-                multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
-              else
-                multiplier = node_selection_settings.get_edge_not_selected_alpha_multiplier();
-              break;
-            default:
-              if (selected_nodes[edge.get_node_index(0)] && selected_nodes[edge.get_node_index(1)])
-                multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
-              else
-                multiplier = node_selection_settings.get_edge_not_selected_alpha_multiplier();
-              break;
-          }
+          if (!selected_node_count)
+            return edge.get_alpha();
+          float multiplier = node_selection_settings.get_edge_other_alpha_multiplier();
+          if (selected_nodes[edge.get_node_index (0)] || selected_nodes[edge.get_node_index (1)])
+            multiplier = node_selection_settings.get_edge_associated_alpha_multiplier();
+          if (selected_nodes[edge.get_node_index (0)] & selected_nodes[edge.get_node_index (1)])
+            multiplier = node_selection_settings.get_edge_selected_alpha_multiplier();
           return (multiplier * edge.get_alpha());
         }
+
+
+
+
+
 
 
 
@@ -3533,7 +3518,7 @@ namespace MR
         bool Connectome::use_alpha_nodes() const
         {
           bool alpha = !(node_alpha == node_alpha_t::FIXED && node_fixed_alpha == 1.0f);
-          if (selected_node_count && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_node_not_selected_alpha_multiplier() < 1.0f))
+          if (selected_node_count && (node_selection_settings.get_node_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_node_associated_alpha_multiplier() < 1.0f || node_selection_settings.get_node_other_alpha_multiplier() < 1.0f))
             alpha = true;
           return alpha;
         }
@@ -3541,7 +3526,7 @@ namespace MR
         bool Connectome::use_alpha_edges() const
         {
           bool alpha = !(edge_alpha == edge_alpha_t::FIXED && edge_fixed_alpha == 1.0f);
-          if (selected_node_count && (node_selection_settings.get_edge_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_edge_not_selected_alpha_multiplier() < 1.0f))
+          if (selected_node_count && (node_selection_settings.get_edge_selected_alpha_multiplier() < 1.0f || node_selection_settings.get_edge_associated_alpha_multiplier() < 1.0f || node_selection_settings.get_edge_other_alpha_multiplier() < 1.0f))
             alpha = true;
           return alpha;
         }
