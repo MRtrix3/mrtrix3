@@ -92,8 +92,6 @@
 //   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
 //     update index vector accordingly, do a single draw call for both edges and nodes
 //     (this is the only way transparency of both nodes and edges can work)
-//   - As a reduced version of this, create independent functions to draw nodes and edges, and
-//     draw edges before nodes if nodes are transparent but edges are not
 //   - Add compatibility with clip planes
 //
 // * Toolbar
@@ -404,6 +402,9 @@ namespace MR
             void clear_all();
             void enable_all (const bool);
             void initialise (const std::string&);
+
+            void draw_nodes (const Projection&);
+            void draw_edges (const Projection&);
 
             bool import_vector_file (FileDataVector&, const std::string&);
             bool import_matrix_file (FileDataVector&, const std::string&);

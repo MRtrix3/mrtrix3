@@ -748,320 +748,12 @@ namespace MR
           else
             gl::Enable (gl::CULL_FACE);
 
-          if (node_visibility != node_visibility_t::NONE) {
-
-            if (node_geometry == node_geometry_t::OVERLAY) {
-
-              if (is_3D) {
-                //
-                //window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
-                // FIXME Need a better approach for displaying the node overlay image in 3D
-                // Can't rely on the volume shader; requires user to change mode, doesn't
-                //   support alpha channel, conflicts with connectome tool mannual configuration
-                //   of 2D / 3D, wouldn't support slab crop
-                //
-                // Is there anything better that can be done? Something like a volume render, but
-                //   instead of accumulating values along the ray, do a Bresenham test to find
-                //   voxels intersected by the ray. Go back to front, and render each node only
-                //   once per fragment. Can use transparency.
-                //
-              } else {
-                // set up OpenGL environment:
-                gl::Enable (gl::BLEND);
-                gl::Disable (gl::DEPTH_TEST);
-                gl::DepthMask (gl::FALSE_);
-                gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
-                gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-                gl::BlendEquation (gl::FUNC_ADD);
-
-                node_overlay->render3D (node_overlay->slice_shader, projection, projection.depth_of (window.focus()));
-
-                // restore OpenGL environment:
-                gl::Disable (gl::BLEND);
-                gl::Enable (gl::DEPTH_TEST);
-                gl::DepthMask (gl::TRUE_);
-              }
-
-            } else {
-
-              node_shader.start (*this);
-              projection.set (node_shader);
-
-              const bool alpha = use_alpha_nodes();
-
-              gl::Enable (gl::DEPTH_TEST);
-              if (alpha) {
-                gl::Enable (gl::BLEND);
-                gl::DepthMask (gl::FALSE_);
-                gl::BlendEquation (gl::FUNC_ADD);
-                //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-                //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
-                gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
-                gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
-              } else {
-                gl::Disable (gl::BLEND);
-                 if (is_3D)
-                  gl::DepthMask (gl::TRUE_);
-                else
-                  gl::DepthMask (gl::FALSE_);
-              }
-
-              if (node_geometry == node_geometry_t::POINT) {
-                if (node_geometry_point_round_checkbox->isChecked())
-                  gl::Enable (GL_POINT_SMOOTH);
-                gl::Enable (GL_PROGRAM_POINT_SIZE);
-              }
-
-              const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
-
-              GLuint node_alpha_ID = 0;
-              if (alpha)
-                node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
-
-              const GLuint node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
-              const GLuint node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
-
-              if (node_colour == node_colour_t::VECTOR_FILE && ColourMap::maps[node_colourmap_index].is_colour)
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
-
-              if (node_geometry == node_geometry_t::SPHERE) {
-                sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
-                sphere_VAO.bind();
-                sphere.index_buffer.bind();
-              } else if (node_geometry == node_geometry_t::CUBE) {
-                cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
-                cube.normals_buffer.bind (gl::ARRAY_BUFFER);
-                cube_VAO.bind();
-                cube.index_buffer.bind();
-              }
-
-              GLuint specular_ID = 0;
-              if (use_lighting() && node_geometry != node_geometry_t::POINT) {
-                gl::UniformMatrix4fv (gl::GetUniformLocation (node_shader, "MV"), 1, gl::FALSE_, projection.modelview());
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
-                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
-                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
-                specular_ID = gl::GetUniformLocation (node_shader, "specular");
-                gl::Uniform1f  (specular_ID, lighting.specular);
-                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
-              }
-
-              if (crop_to_slab) {
-                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
-                if (is_3D) {
-                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
-                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
-                } else {
-                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
-                }
-              }
-
-              std::map<float, size_t> node_ordering;
-              for (size_t i = 1; i <= num_nodes(); ++i)
-                node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
-
-              for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
-                const Node& node (nodes[it->second]);
-                if (node_visibility_given_selection (it->second)) {
-                  gl::Uniform3fv (node_colour_ID, 1, node_colour_given_selection (it->second));
-                  if (alpha)
-                    gl::Uniform1f (node_alpha_ID, node_alpha_given_selection (it->second) * node_fixed_alpha);
-                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
-                  gl::Uniform1f (node_size_ID, node_size_given_selection (it->second) * node_size_scale_factor);
-                  switch (node_geometry) {
-                    case node_geometry_t::SPHERE:
-                      if (alpha) {
-                        gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
-                        gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                        gl::CullFace (gl::BACK);
-                        gl::Uniform1f  (specular_ID, lighting.specular);
-                      }
-                      gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
-                      break;
-                    case node_geometry_t::CUBE:
-                      if (alpha) {
-                        gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
-                        gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
-                        gl::CullFace (gl::BACK);
-                        gl::Uniform1f  (specular_ID, lighting.specular);
-                      }
-                      gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
-                      break;
-                    case node_geometry_t::POINT:
-                      glBegin (GL_POINTS);
-                      glVertex3fv (node.get_com());
-                      glEnd();
-                      break;
-                    case node_geometry_t::OVERLAY:
-                      assert (0);
-                      break;
-                    case node_geometry_t::MESH:
-                      if (alpha) {
-                        gl::CullFace (gl::FRONT);
-                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
-                        node.render_mesh();
-                        gl::CullFace (gl::BACK);
-                        gl::Uniform1f  (specular_ID, lighting.specular);
-                      }
-                      node.render_mesh();
-                      break;
-                  }
-                }
-              }
-
-              // Reset to defaults if we've been doing transparency
-              if (alpha) {
-                gl::Disable (gl::BLEND);
-                gl::DepthMask (gl::TRUE_);
-              }
-
-              if (node_geometry == node_geometry_t::POINT) {
-                gl::Disable (GL_PROGRAM_POINT_SIZE);
-                if (node_geometry_point_round_checkbox->isChecked())
-                  gl::Disable (GL_POINT_SMOOTH);
-              }
-
-              node_shader.stop();
-
-            }
-
-          }
-
-          // =================================================================
-
-          if (edge_visibility != edge_visibility_t::NONE) {
-
-            edge_shader.start (*this);
-            projection.set (edge_shader);
-
-            bool alpha = use_alpha_edges();
-
-            gl::Enable (gl::DEPTH_TEST);
-            if (alpha) {
-              gl::Enable (gl::BLEND);
-              gl::DepthMask (gl::FALSE_);
-              gl::BlendEquation (gl::FUNC_ADD);
-              //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
-              //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
-              gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
-              gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
-            } else {
-              gl::Disable (gl::BLEND);
-              if (is_3D)
-                gl::DepthMask (gl::TRUE_);
-              else
-                gl::DepthMask (gl::FALSE_);
-            }
-
-            if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
-              gl::Enable (GL_LINE_SMOOTH);
-
-            GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
-            if (edge_geometry == edge_geometry_t::CYLINDER) {
-              cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
-              cylinder_VAO.bind();
-              cylinder.index_buffer.bind();
-              node_centre_one_ID = gl::GetUniformLocation (edge_shader, "centre_one");
-              node_centre_two_ID = gl::GetUniformLocation (edge_shader, "centre_two");
-              rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
-            }
-
-            GLuint radius_ID = 0;
-            if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)
-              radius_ID = gl::GetUniformLocation (edge_shader, "radius");
-
-            GLuint specular_ID = 0;
-            if (use_lighting()) {
-              gl::UniformMatrix4fv (gl::GetUniformLocation (edge_shader, "MV"), 1, gl::FALSE_, projection.modelview());
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
-              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
-              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
-              specular_ID   = gl::GetUniformLocation (edge_shader, "specular");
-              gl::Uniform1f  (specular_ID, lighting.specular);
-              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
-            }
-
-            if (crop_to_slab) {
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
-              if (is_3D) {
-                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
-                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
-              } else {
-                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
-              }
-            }
-
-            const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
-
-            GLuint edge_alpha_ID = 0;
-            if (alpha)
-              edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
-
-            if (edge_colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
-              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
-
-            std::map<float, size_t> edge_ordering;
-            for (size_t i = 0; i != num_edges(); ++i)
-              edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
-
-            for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
-              const Edge& edge (edges[it->second]);
-              if (edge_visibility_given_selection (edge)) {
-                gl::Uniform3fv (edge_colour_ID, 1, edge_colour_given_selection (edge));
-                if (alpha)
-                  gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
-                switch (edge_geometry) {
-                  case edge_geometry_t::LINE:
-                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
-                    edge.render_line();
-                    break;
-                  case edge_geometry_t::CYLINDER:
-                    gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
-                    gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
-                    gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
-                    gl::Uniform1f        (radius_ID,                    std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
-                    if (alpha) {
-                      gl::CullFace (gl::FRONT);
-                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
-                      gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
-                      gl::CullFace (gl::BACK);
-                      gl::Uniform1f  (specular_ID, lighting.specular);
-                    }
-                    gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
-                    break;
-                  case edge_geometry_t::STREAMLINE:
-                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
-                    edge.render_streamline();
-                    break;
-                  case edge_geometry_t::STREAMTUBE:
-                    gl::Uniform1f (radius_ID, std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
-                    if (alpha) {
-                      gl::CullFace (gl::FRONT);
-                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
-                      edge.render_streamtube();
-                      gl::CullFace (gl::BACK);
-                      gl::Uniform1f  (specular_ID, lighting.specular);
-                    }
-                    edge.render_streamtube();
-                }
-              }
-            }
-
-            // Reset to defaults if we've been doing transparency
-            if (alpha) {
-              gl::Disable (gl::BLEND);
-              gl::DepthMask (gl::TRUE_);
-            }
-
-            if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) {
-              gl::LineWidth (1.0f);
-              if (edge_geometry_line_smooth_checkbox->isChecked())
-                gl::Disable (GL_LINE_SMOOTH);
-            }
-
-            edge_shader.stop();
+          if (use_alpha_nodes() && !use_alpha_edges()) {
+            draw_edges (projection);
+            draw_nodes (projection);
+          } else {
+            draw_nodes (projection);
+            draw_edges (projection);
           }
 
           if (!current_cull_face)
@@ -2584,7 +2276,6 @@ namespace MR
 
         void Connectome::initialise (const std::string& path)
         {
-
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
             throw Exception ("Input parcellation image must have an integer datatype");
@@ -2676,6 +2367,330 @@ namespace MR
           selected_nodes.resize (num_nodes()+1);
 
           dynamic_cast<Node_list*>(node_list->tool)->initialize();
+        }
+
+
+
+
+
+        void Connectome::draw_nodes (const Projection& projection)
+        {
+          if (node_visibility != node_visibility_t::NONE) {
+
+            if (node_geometry == node_geometry_t::OVERLAY) {
+
+              if (is_3D) {
+                //
+                //window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
+                // FIXME Need a better approach for displaying the node overlay image in 3D
+                // Can't rely on the volume shader; requires user to change mode, doesn't
+                //   support alpha channel, conflicts with connectome tool manual configuration
+                //   of 2D / 3D, wouldn't support slab crop
+                //
+                // Is there anything better that can be done? Something like a volume render, but
+                //   instead of accumulating values along the ray, do a Bresenham test to find
+                //   voxels intersected by the ray. Go back to front, and render each node only
+                //   once per fragment. Can use transparency.
+                //
+              } else {
+                // set up OpenGL environment:
+                gl::Enable (gl::BLEND);
+                gl::Disable (gl::DEPTH_TEST);
+                gl::DepthMask (gl::FALSE_);
+                gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
+                gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                gl::BlendEquation (gl::FUNC_ADD);
+
+                node_overlay->render3D (node_overlay->slice_shader, projection, projection.depth_of (window.focus()));
+
+                // restore OpenGL environment:
+                gl::Disable (gl::BLEND);
+                gl::Enable (gl::DEPTH_TEST);
+                gl::DepthMask (gl::TRUE_);
+              }
+
+            } else {
+
+              node_shader.start (*this);
+              projection.set (node_shader);
+
+              const bool alpha = use_alpha_nodes();
+
+              gl::Enable (gl::DEPTH_TEST);
+              if (alpha) {
+                gl::Enable (gl::BLEND);
+                gl::DepthMask (gl::FALSE_);
+                gl::BlendEquation (gl::FUNC_ADD);
+                //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+                //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+                gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
+                gl::BlendColor (1.0, 1.0, 1.0, node_fixed_alpha);
+              } else {
+                gl::Disable (gl::BLEND);
+                 if (is_3D)
+                  gl::DepthMask (gl::TRUE_);
+                else
+                  gl::DepthMask (gl::FALSE_);
+              }
+
+              if (node_geometry == node_geometry_t::POINT) {
+                if (node_geometry_point_round_checkbox->isChecked())
+                  gl::Enable (GL_POINT_SMOOTH);
+                gl::Enable (GL_PROGRAM_POINT_SIZE);
+              }
+
+              const GLuint node_colour_ID = gl::GetUniformLocation (node_shader, "node_colour");
+
+              GLuint node_alpha_ID = 0;
+              if (alpha)
+                node_alpha_ID = gl::GetUniformLocation (node_shader, "node_alpha");
+
+              const GLuint node_centre_ID = gl::GetUniformLocation (node_shader, "node_centre");
+              const GLuint node_size_ID = gl::GetUniformLocation (node_shader, "node_size");
+
+              if (node_colour == node_colour_t::VECTOR_FILE && ColourMap::maps[node_colourmap_index].is_colour)
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "colourmap_colour"), 1, &node_fixed_colour[0]);
+
+              if (node_geometry == node_geometry_t::SPHERE) {
+                sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+                sphere_VAO.bind();
+                sphere.index_buffer.bind();
+              } else if (node_geometry == node_geometry_t::CUBE) {
+                cube.vertex_buffer.bind (gl::ARRAY_BUFFER);
+                cube.normals_buffer.bind (gl::ARRAY_BUFFER);
+                cube_VAO.bind();
+                cube.index_buffer.bind();
+              }
+
+              GLuint specular_ID = 0;
+              if (use_lighting() && node_geometry != node_geometry_t::POINT) {
+                gl::UniformMatrix4fv (gl::GetUniformLocation (node_shader, "MV"), 1, gl::FALSE_, projection.modelview());
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "light_pos"), 1, lighting.lightpos);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "ambient"), lighting.ambient);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "diffuse"), lighting.diffuse);
+                specular_ID = gl::GetUniformLocation (node_shader, "specular");
+                gl::Uniform1f  (specular_ID, lighting.specular);
+                gl::Uniform1f  (gl::GetUniformLocation (node_shader, "shine"), lighting.shine);
+              }
+
+              if (crop_to_slab) {
+                gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
+                if (is_3D) {
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+                } else {
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+                }
+              }
+
+              std::map<float, size_t> node_ordering;
+              for (size_t i = 1; i <= num_nodes(); ++i)
+                node_ordering.insert (std::make_pair (projection.depth_of (nodes[i].get_com()), i));
+
+              for (auto it = node_ordering.rbegin(); it != node_ordering.rend(); ++it) {
+                const Node& node (nodes[it->second]);
+                if (node_visibility_given_selection (it->second)) {
+                  gl::Uniform3fv (node_colour_ID, 1, node_colour_given_selection (it->second));
+                  if (alpha)
+                    gl::Uniform1f (node_alpha_ID, node_alpha_given_selection (it->second) * node_fixed_alpha);
+                  gl::Uniform3fv (node_centre_ID, 1, &node.get_com()[0]);
+                  gl::Uniform1f (node_size_ID, node_size_given_selection (it->second) * node_size_scale_factor);
+                  switch (node_geometry) {
+                    case node_geometry_t::SPHERE:
+                      if (alpha) {
+                        gl::CullFace (gl::FRONT);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
+                        gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                        gl::CullFace (gl::BACK);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
+                      gl::DrawElements (gl::TRIANGLES, sphere.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      break;
+                    case node_geometry_t::CUBE:
+                      if (alpha) {
+                        gl::CullFace (gl::FRONT);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
+                        gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
+                        gl::CullFace (gl::BACK);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
+                      gl::DrawElements (gl::TRIANGLES, cube.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      break;
+                    case node_geometry_t::POINT:
+                      glBegin (GL_POINTS);
+                      glVertex3fv (node.get_com());
+                      glEnd();
+                      break;
+                    case node_geometry_t::OVERLAY:
+                      assert (0);
+                      break;
+                    case node_geometry_t::MESH:
+                      if (alpha) {
+                        gl::CullFace (gl::FRONT);
+                        gl::Uniform1f  (specular_ID, (1.0 - node_alpha_given_selection (it->second) * node_fixed_alpha) * lighting.specular);
+                        node.render_mesh();
+                        gl::CullFace (gl::BACK);
+                        gl::Uniform1f  (specular_ID, lighting.specular);
+                      }
+                      node.render_mesh();
+                      break;
+                  }
+                }
+              }
+
+              // Reset to defaults if we've been doing transparency
+              if (alpha) {
+                gl::Disable (gl::BLEND);
+                gl::DepthMask (gl::TRUE_);
+              }
+
+              if (node_geometry == node_geometry_t::POINT) {
+                gl::Disable (GL_PROGRAM_POINT_SIZE);
+                if (node_geometry_point_round_checkbox->isChecked())
+                  gl::Disable (GL_POINT_SMOOTH);
+              }
+
+              node_shader.stop();
+            }
+
+          }
+
+        }
+
+        void Connectome::draw_edges (const Projection& projection)
+        {
+          if (edge_visibility != edge_visibility_t::NONE) {
+
+            edge_shader.start (*this);
+            projection.set (edge_shader);
+
+            bool alpha = use_alpha_edges();
+
+            gl::Enable (gl::DEPTH_TEST);
+            if (alpha) {
+              gl::Enable (gl::BLEND);
+              gl::DepthMask (gl::FALSE_);
+              gl::BlendEquation (gl::FUNC_ADD);
+              //gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+              //gl::BlendFunc (gl::SRC_ALPHA, gl::DST_ALPHA);
+              gl::BlendFuncSeparate (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA, gl::SRC_ALPHA, gl::DST_ALPHA);
+              gl::BlendColor (1.0, 1.0, 1.0, edge_fixed_alpha);
+            } else {
+              gl::Disable (gl::BLEND);
+              if (is_3D)
+                gl::DepthMask (gl::TRUE_);
+              else
+                gl::DepthMask (gl::FALSE_);
+            }
+
+            if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
+              gl::Enable (GL_LINE_SMOOTH);
+
+            GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
+            if (edge_geometry == edge_geometry_t::CYLINDER) {
+              cylinder.vertex_buffer.bind (gl::ARRAY_BUFFER);
+              cylinder_VAO.bind();
+              cylinder.index_buffer.bind();
+              node_centre_one_ID = gl::GetUniformLocation (edge_shader, "centre_one");
+              node_centre_two_ID = gl::GetUniformLocation (edge_shader, "centre_two");
+              rot_matrix_ID      = gl::GetUniformLocation (edge_shader, "rot_matrix");
+            }
+
+            GLuint radius_ID = 0;
+            if (edge_geometry == edge_geometry_t::CYLINDER || edge_geometry == edge_geometry_t::STREAMTUBE)
+              radius_ID = gl::GetUniformLocation (edge_shader, "radius");
+
+            GLuint specular_ID = 0;
+            if (use_lighting()) {
+              gl::UniformMatrix4fv (gl::GetUniformLocation (edge_shader, "MV"), 1, gl::FALSE_, projection.modelview());
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "light_pos"), 1, lighting.lightpos);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "ambient"), lighting.ambient);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "diffuse"), lighting.diffuse);
+              specular_ID   = gl::GetUniformLocation (edge_shader, "specular");
+              gl::Uniform1f  (specular_ID, lighting.specular);
+              gl::Uniform1f  (gl::GetUniformLocation (edge_shader, "shine"), lighting.shine);
+            }
+
+            if (crop_to_slab) {
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
+              if (is_3D) {
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+              } else {
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+              }
+            }
+
+            const GLuint edge_colour_ID = gl::GetUniformLocation (edge_shader, "edge_colour");
+
+            GLuint edge_alpha_ID = 0;
+            if (alpha)
+              edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
+
+            if (edge_colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
+              gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
+
+            std::map<float, size_t> edge_ordering;
+            for (size_t i = 0; i != num_edges(); ++i)
+              edge_ordering.insert (std::make_pair (projection.depth_of (edges[i].get_com()), i));
+
+            for (auto it = edge_ordering.rbegin(); it != edge_ordering.rend(); ++it) {
+              const Edge& edge (edges[it->second]);
+              if (edge_visibility_given_selection (edge)) {
+                gl::Uniform3fv (edge_colour_ID, 1, edge_colour_given_selection (edge));
+                if (alpha)
+                  gl::Uniform1f (edge_alpha_ID, edge_alpha_given_selection (edge) * edge_fixed_alpha);
+                switch (edge_geometry) {
+                  case edge_geometry_t::LINE:
+                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
+                    edge.render_line();
+                    break;
+                  case edge_geometry_t::CYLINDER:
+                    gl::Uniform3fv       (node_centre_one_ID, 1,        edge.get_node_centre (0));
+                    gl::Uniform3fv       (node_centre_two_ID, 1,        edge.get_node_centre (1));
+                    gl::UniformMatrix3fv (rot_matrix_ID,      1, false, edge.get_rot_matrix());
+                    gl::Uniform1f        (radius_ID,                    std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
+                    if (alpha) {
+                      gl::CullFace (gl::FRONT);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
+                      gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
+                      gl::CullFace (gl::BACK);
+                      gl::Uniform1f  (specular_ID, lighting.specular);
+                    }
+                    gl::DrawElements (gl::TRIANGLES, cylinder.num_indices, gl::UNSIGNED_INT, (void*)0);
+                    break;
+                  case edge_geometry_t::STREAMLINE:
+                    gl::LineWidth (edge_size_given_selection (edge) * edge_size_scale_factor);
+                    edge.render_streamline();
+                    break;
+                  case edge_geometry_t::STREAMTUBE:
+                    gl::Uniform1f (radius_ID, std::sqrt (edge_size_given_selection (edge) * edge_size_scale_factor / Math::pi));
+                    if (alpha) {
+                      gl::CullFace (gl::FRONT);
+                      gl::Uniform1f  (specular_ID, (1.0 - edge_alpha_given_selection (edge) * edge_fixed_alpha) * lighting.specular);
+                      edge.render_streamtube();
+                      gl::CullFace (gl::BACK);
+                      gl::Uniform1f  (specular_ID, lighting.specular);
+                    }
+                    edge.render_streamtube();
+                }
+              }
+            }
+
+            // Reset to defaults if we've been doing transparency
+            if (alpha) {
+              gl::Disable (gl::BLEND);
+              gl::DepthMask (gl::TRUE_);
+            }
+
+            if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) {
+              gl::LineWidth (1.0f);
+              if (edge_geometry_line_smooth_checkbox->isChecked())
+                gl::Disable (GL_LINE_SMOOTH);
+            }
+
+            edge_shader.stop();
+          }
         }
 
 
