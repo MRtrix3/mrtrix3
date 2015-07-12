@@ -121,6 +121,7 @@ namespace MR
             int row_height() const;
 
           private slots:
+            void clear_selection_slot();
             void node_selection_changed_slot (const QItemSelection&, const QItemSelection&);
             void node_selection_settings_dialog_slot();
 
@@ -128,9 +129,10 @@ namespace MR
             Window& window;
             Connectome& connectome;
 
+            QPushButton *clear_selection_button;
+            QPushButton *node_selection_settings_button;
             Node_list_model *node_list_model;
             Node_list_view *node_list_view;
-            QPushButton *node_selection_settings_button;
 
             // Settings related to how visual elements are changed on selection / non-selection
             std::unique_ptr<NodeSelectionSettingsDialog> node_selection_dialog;

@@ -99,10 +99,6 @@
 // * Toolbar
 //   - Enable collapsing of group boxes; will make room for future additions
 //
-// * Node list:
-//   - Move settings button to top, change to a settings icon
-//   - Add a ' deselect all' button
-//
 // * Additional functionalities:
 //   - Print node names in the GL window
 //     How to get access to shorter node names? Rely on user making a new LUT?

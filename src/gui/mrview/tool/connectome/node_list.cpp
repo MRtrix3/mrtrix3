@@ -114,6 +114,19 @@ namespace MR
       {
         VBoxLayout* main_box = new VBoxLayout (this);
 
+        HBoxLayout* hlayout = new HBoxLayout;
+        main_box->addLayout (hlayout);
+        clear_selection_button = new QPushButton (this);
+        clear_selection_button->setToolTip (tr ("Clear node selection"));
+        clear_selection_button->setIcon (QIcon (":/clear.svg"));
+        connect (clear_selection_button, SIGNAL(clicked()), this, SLOT (clear_selection_slot()));
+        hlayout->addWidget (clear_selection_button);
+        node_selection_settings_button = new QPushButton (this);
+        node_selection_settings_button->setToolTip (tr ("Visual settings for selections"));
+        node_selection_settings_button->setIcon (QIcon (":/settings.svg"));
+        connect (node_selection_settings_button, SIGNAL(clicked()), this, SLOT (node_selection_settings_dialog_slot()));
+        hlayout->addWidget (node_selection_settings_button);
+
         node_list_model = new Node_list_model (master);
         node_list_view = new Node_list_view (master);
         node_list_view->setModel (node_list_model);
@@ -136,9 +149,6 @@ namespace MR
             SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),
             SLOT (node_selection_changed_slot(const QItemSelection &, const QItemSelection &)) );
         main_box->addWidget (node_list_view);
-        node_selection_settings_button = new QPushButton ("Selection visualisation settings...");
-        connect (node_selection_settings_button, SIGNAL(clicked()), this, SLOT (node_selection_settings_dialog_slot()));
-        main_box->addWidget (node_selection_settings_button);
       }
 
 
@@ -162,6 +172,14 @@ namespace MR
         return node_list_view->fontMetrics().height();
       }
 
+
+
+      void Node_list::clear_selection_slot()
+      {
+        node_list_view->clearSelection();
+        std::vector<node_t> empty_node_list;
+        connectome.node_selection_changed (empty_node_list);
+      }
 
 
       void Node_list::node_selection_settings_dialog_slot()
