@@ -148,8 +148,7 @@ namespace MR
         /*! \note this will only work if image access is direct (i.e. for a
          * scratch image, with preloading, or when the data type is native and
          * without scaling. */
-        // TODO do we need this??
-        //ValueType* address () const { return data_pointer ? data_pointer + data_offset : nullptr; }
+        ValueType* address () const { return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
 
         static Image open (const std::string& image_name) {
           return Header::open (image_name).get_image<ValueType>();

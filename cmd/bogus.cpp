@@ -1,30 +1,16 @@
 #include "command.h"
 #include "debug.h"
-#include "thread.h"
-#include "dwi/tractography/rng.h"
 #include "image.h"
 
-#include "adapter/median3D.h"
+#include "adapter/vector.h"
 
 namespace MR {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 using namespace MR;
 using namespace App;
 
-
-std::mutex mutex;
 
 void usage ()
 {
@@ -36,31 +22,39 @@ void usage ()
   ARGUMENTS
   + Argument ("in", "the input image.").type_image_in ()
   + Argument ("out", "the output image.").type_image_out ();
-
-  OPTIONS
-  + Option ("power", "the power by which to raise each value (default: 1)")
-  +   Argument ("value").type_float()
-
-  + Option ("noise", "the std. dev. of the noise to add to each value (default: 1)")
-  +   Argument ("value").type_float();
 }
-
-typedef float value_type;
-
-using namespace DWI::Tractography;
-
-//struct thread_func {
-//  void execute () {
-//    std::lock_guard<std::mutex> lock (mutex);
-//    std::cerr << &rng << ": " << rng() << " " << rng() << " " << rng() << "\n";
-//  }
-//};
 
 
 void run ()
 {
-  Eigen::MatrixXf M = Eigen::MatrixXf::Random (4,3);
-  std::cerr.width(15);
-  VAR(M);
+//  Eigen::MatrixXf M = Eigen::MatrixXf::Random (4,3);
+//  std::cerr.width(15);
+//  VAR(M);
 
+  auto input = Image<float>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis((3)));
+
+  Adapter::Vector<decltype(input)> vector_input (input);
+
+  vector_input.index(0) = 30;
+  vector_input.index(1) = 30;
+  vector_input.index(2) = 30;
+
+  Eigen::VectorXf vector = vector_input.value();
+  std::cout << vector << std::endl;
+
+
+  auto header = input.header();
+  header.stride(0) = 1;
+  header.stride(1) = 2;
+  header.stride(2) = 3;
+  header.stride(3) = 0;
+  auto temp = Image<float>::scratch (header);
+
+  threaded_copy (input, temp, 0, 3);
+
+  temp.index(0) = 30;
+  temp.index(1) = 30;
+  temp.index(2) = 30;
+
+  std::cout << temp.value() << std::endl;
 }
