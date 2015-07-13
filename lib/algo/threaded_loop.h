@@ -336,20 +336,20 @@ namespace MR
 
 
       //! all axes to be looped over
-      FORCE_INLINE std::vector<size_t> all_axes () const {
+      std::vector<size_t> all_axes () const {
         std::vector<size_t> a (inner_axes());
         a.insert (a.end(), outer_axes().begin(), outer_axes().end());
         return a;
       }
       //! return an ordered vector of axes in the outer loop
-      FORCE_INLINE const std::vector<size_t>& outer_axes () const { return loop.axes(); }
+      const std::vector<size_t>& outer_axes () const { return loop.axes(); }
       //! return an ordered vector of axes in the inner loop
-      FORCE_INLINE const std::vector<size_t>& inner_axes () const { return axes; }
+      const std::vector<size_t>& inner_axes () const { return axes; }
       //! a dummy object that can be used to construct other Iterators
-      FORCE_INLINE const Iterator& iterator () const { return dummy; }
+      const Iterator& iterator () const { return dummy; }
 
       //! get next position in the outer loop
-      FORCE_INLINE bool next (Iterator& pos) {
+      bool next (Iterator& pos) {
         std::lock_guard<std::mutex> lock (mutex);
         if (loop.ok()) {
           loop.set_position (dummy, pos);
@@ -443,7 +443,7 @@ namespace MR
             shared (shared_info),
             func (functor) { }
 
-          FORCE_INLINE void execute () {
+          void execute () {
             Iterator pos (shared.iterator());
             while (shared.next (pos))
               func (pos);
@@ -470,7 +470,7 @@ namespace MR
             outer_axes (shared_info.outer_axes()),
             vox (voxels...) { }
 
-          FORCE_INLINE void operator() (const Iterator& pos) {
+          void operator() (const Iterator& pos) {
             assign_pos_of (pos, this->outer_axes).to (vox);
             for (auto i = unpack (loop, vox); i; ++i) 
               unpack (this->func, vox);
@@ -493,7 +493,7 @@ namespace MR
             loop (shared_info.inner_axes()),
             vox (voxels...) { }
 
-          FORCE_INLINE void operator() (Iterator& pos) {
+          void operator() (Iterator& pos) {
             for (auto i = loop (pos); i; ++i)
               func (pos);
           }

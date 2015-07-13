@@ -53,13 +53,13 @@ namespace MR {
 
             void operator () (const Iterator& pos) {
               assign_pos_of (pos).to (dwi, noise);
-              for (auto l = Loop (axis, axis+1) (dwi); l; ++l)  
+              for (auto l = Loop (axis) (dwi); l; ++l)  
                 for (auto l2 = Loop (3) (dwi); l2; ++l2) 
                   S(dwi.index(3), dwi.index(axis)) = dwi.value();
 
               R.noalias() = H.selfadjointView<Lower>() * S - S;
 
-              for (auto l = Loop (axis, axis+1) (noise); l; ++l) {
+              for (auto l = Loop (axis) (noise); l; ++l) {
                 R.col (noise.index (axis)).array() *= leverage.array();
                 noise.value() = scale_estimator (R.col (noise.index (axis)));
               }

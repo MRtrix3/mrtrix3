@@ -130,7 +130,7 @@ namespace MR
             std::declval<HeaderType>().ndim() + 
             std::declval<HeaderType>().size(0) + 
             std::declval<HeaderType>().name().size() 
-        ), ReturnType()) type;
+        ), std::declval<ReturnType>()) type;
     };
 
   //! convenience function for SFINAE on header types
@@ -156,7 +156,7 @@ namespace MR
             std::declval<ImageType>().name().size() +
             std::declval<ImageType>().value() +
             std::declval<ImageType>().index(0)
-        ), ReturnType()) type;
+        ), std::declval<ReturnType>()) type;
     };
 
 
@@ -272,6 +272,16 @@ namespace MR
       size_t fp = 1;
       for (size_t n = 0; n < in.ndim(); ++n)
         if (specifier[n] != ' ') fp *= in.size (n);
+      return fp;
+    }
+
+  //! returns the number of voxel in the relevant subvolume of the data set
+  template <class HeaderType> 
+    inline size_t voxel_count (const HeaderType& in, const std::initializer_list<size_t> axes)
+    {
+      size_t fp = 1;
+      for (auto n : axes)
+        fp *= in.size (n);
       return fp;
     }
 

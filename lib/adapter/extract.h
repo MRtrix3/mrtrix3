@@ -68,9 +68,12 @@ namespace MR
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; } 
         void move_index (size_t axis, ssize_t increment) {
           if (axis == extract_axis) {
-            ssize_t prev_pos = indices[current_pos];
+            ssize_t prev_pos = current_pos < ssize_t (indices.size()) ? indices[current_pos] : 0;
             current_pos += increment;
-            parent().index(axis) += current_pos < ssize_t(indices.size()) ? indices[current_pos] - prev_pos : 0;
+            if (current_pos < ssize_t (indices.size())) 
+              parent().index(axis) += indices[current_pos] - prev_pos;
+            else 
+              parent().index(axis) = 0;
           }
           else 
             parent().index(axis) += increment;

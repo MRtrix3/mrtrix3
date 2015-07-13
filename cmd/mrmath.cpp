@@ -242,7 +242,7 @@ class AxisKernel {
     template <class InputImageType, class OutputImageType>
       void operator() (InputImageType& in, OutputImageType& out) {
         Operation op;
-        for (auto l = Loop (axis).run (in); l; ++l)
+        for (auto l = Loop (axis) (in); l; ++l)
           op (in.value());
         out.value() = op.result();
       }

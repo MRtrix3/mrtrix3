@@ -195,15 +195,13 @@ namespace MR {
 
             FODQueueWriter (const FODImageType& fod) :
               fod (fod),
-              loop ("Segmenting FODs...", 0, 3) {
-                loop.start (fod);
+              loop (Loop ("Segmenting FODs...", 0, 3)(fod)) {
               }
 
             FODQueueWriter (const FODImageType& fod, const MaskImageType& mask) :
               fod (fod),
               mask (mask),
-              loop ("Segmenting FODs...", 0, 3) {
-                loop.start (fod);
+              loop (Loop ("Segmenting FODs...", 0, 3)(fod)) {
               }
 
             void set_mask (const MaskImageType& mask_vox) {
@@ -213,20 +211,20 @@ namespace MR {
 
             bool operator () (SH_coefs& out)
             {
-              if (!loop.ok())
+              if (!loop)
                 return false;
               if (mask.valid()) {
                 do {
                   assign_pos_of (fod, 0, 3).to (mask);
                   if (!mask.value())
-                    loop.next (fod);
-                } while (loop.ok() && !mask.value());
+                    ++loop;
+                } while (loop && !mask.value());
               }
               out.vox[0] = fod.index(0); out.vox[1] = fod.index(1); out.vox[2] = fod.index(2);
               out.resize (fod.size (3));
               for (auto l = Loop (3) (fod); l; ++l) 
                 out[fod.index(3)] = fod.value();
-              loop.next (fod);
+              ++loop;
               return true;
             }
 
@@ -234,7 +232,7 @@ namespace MR {
           private:
             FODImageType fod;
             MaskImageType mask;
-            Loop loop;
+            decltype(Loop("text", 0,3)(fod)) loop;
 
         };
 

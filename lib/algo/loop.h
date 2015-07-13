@@ -89,244 +89,6 @@ namespace MR
   /** \defgroup loop Looping functions
     @{ */
 
-  //! a class to loop over arbitrary numbers of axes of a ImageType  
-  /*! This class can be used to loop over any number of axes of one of more
-   * ImageType classes, within the same thread of execution (for
-   * multi-threaded applications, see Image::ThreadedLoop). Its use is best
-   * illustrated with the following examples.
-   *
-   * If \a vox in the following example is a 3D ImageType (i.e. vox.ndim() ==
-   * 3), then:
-   * \code
-   * float sum = 0.0;
-   * Image::Loop loop;
-   * for (auto i = loop.run (vox); i; ++i)
-   *   sum += vox.value();
-   * \endcode
-   * is equivalent to:
-   * \code
-   * float sum = 0.0;
-   * for (vox.index(2) = 0; vox.index(2) < vox.size(2); ++vox.index(2))
-   *   for (vox.index(1) = 0; vox.index(1) < vox.size(1); ++vox.index(1))
-   *     for (vox.index(0) = 0; vox.index(0) < vox.size(0); ++vox.index(0))
-   *       sum += vox.value();
-   * \endcode
-   * This has the advantage that the dimensionality of the ImageType does not
-   * need to be known at compile-time. In other words, if the ImageType was
-   * 4-dimensional, the first looping construct would correctly iterate over
-   * all voxels, whereas the second one would only process the first 3D
-   * volume.
-   *
-   * \section multiloop Looping over multiple ImageType objects
-   *
-   * It is often required to loop over more than one ImageType of the same
-   * dimensions. This is done trivially by passing any additional ImageType
-   * objects to be looped over to the run() member function. For example,
-   * this code snippet will copy the contents of the ImageType \a src into a
-   * ImageType \a dest, assumed to have the same dimensions as \a src:
-   * \code
-   * for (auto i = Image::Loop().run(dest, src); i; ++i)
-   *   dest.value() = vox.value();
-   * \endcode
-   *
-   * \section restrictedloop Looping over a specific range of axes
-   * It is also possible to explicitly specify the range of axes to be looped
-   * over. In the following example, the program will loop over each 3D
-   * volume in the ImageType in turn:
-   * \code
-   * Image::Loop outer (3); // outer loop iterates over axis 3
-   * for (auto i = outer.run (vox)); i; ++i {
-   *   float sum = 0.0;
-   *   Image::Loop inner (0, 3); // inner loop iterates over axes 0 to 2
-   *   for (auto j = inner.run (vox); j; ++j)
-   *     sum += vox.value();
-   *   print ("total = " + str (sum) + "\n");
-   * }
-   * \endcode
-   *
-   * \section progressloop Displaying progress status
-   *
-   * The Loop object can also display its progress as it proceeds, using the
-   * appropriate constructor. In the following example, the program will
-   * display its progress as it averages a ImageType:
-   * \code
-   * float sum = 0.0;
-   *
-   * Loop loop ("averaging...");
-   * for (auto i = loop.run (vox); i; ++i) 
-   *   sum += vox.value();
-   *
-   * float average = sum / float (Image::voxel_count (vox));
-   * print ("average = " + str (average) + "\n");
-   * \endcode
-   * The output would look something like this:
-   * \code
-  * myprogram: averaging... 100%
-    * average = 23.42
-    * \endcode
-    *
-    * \sa Image::LoopInOrder
-    * \sa Image::ThreadedLoop
-    */
-    class Loop
-    {
-      public:
-
-        //! Constructor
-        /*! Construct a Loop object to iterate over the axes specified. With
-         * no arguments, the Loop will iterate over all axes of the first ImageType
-         * supplied to next(). If a single argument is specified, the Loop will
-         * iterate over that axis only. If both \a from_axis and \a to_axis are specified,
-         * the Loop will iterate from axis \a from_axis up to but \b not
-         * including axis \a to_axis. */
-        FORCE_INLINE explicit Loop (size_t from_axis, size_t to_axis) :
-          from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true) { }
-
-        //! \copydoc Loop(size_t,size_t)
-        FORCE_INLINE explicit Loop (size_t axis) : Loop (axis, axis+1) { }
-        //! \copydoc Loop(size_t,size_t)
-        FORCE_INLINE explicit Loop () : Loop (0, std::numeric_limits<size_t>::max()) { }
-
-        //! Constructor with progress status
-        /*! Construct a Loop object to iterate over the axes specified and
-         * display the progress status with the specified message. With no
-         * arguments, the Loop will iterate over all axes of the first
-         * ImageType supplied to next(). If a single argument is specified, the
-         * Loop will iterate over that axis only. If both \a from_axis and \a
-         * to_axis are specified, the Loop will iterate from axis \a from_axis
-         * up to but \b not including axis \a to_axis. */
-        FORCE_INLINE explicit Loop (const std::string& message, size_t from_axis, size_t to_axis) :
-          from_ (from_axis), to_ (to_axis), max_axis_ (0), cont_ (true), progress_ (message, 1) { }
-        
-        //! \copydoc Loop(const std::string&,size_t,size_t)
-        FORCE_INLINE explicit Loop (const std::string& message, size_t axis) : Loop (message, axis, axis+1) { }
-        //! \copydoc Loop(const std::string&,size_t,size_t)
-        FORCE_INLINE explicit Loop (const std::string& message) : Loop (message, 0, std::numeric_limits<size_t>::max()) { }
-
-        //! return iteratable object for use in loop
-        /*! This start the loop by resetting the appropriate coordinates of
-         * each of the specified ImageType objects to zero, and initialising
-         * the progress status if appropriate. Note that only those axes
-         * specified in the Loop constructor will have their coordinates set
-         * to zero; the coordinates of all other axes will be left untouched.
-         *
-         * The object returned by this function is designed to be used
-         * directly the loop, for example:
-         * \code
-         * Loop loop ("copy...");
-         * for (auto i = loop (vox_in, vox_out); i; ++i)
-         *   vox_out.value() = vox_in.value();
-         * \endcode */
-        template <typename... ImageType> 
-          FORCE_INLINE LoopIter<Loop,ImageType&...> run (ImageType&... vox) {
-            return { *this, vox... };
-          }
-        //! equivalent to run()
-        template <typename... ImageType> 
-          FORCE_INLINE LoopIter<Loop,ImageType&...> operator() (ImageType&... vox) {
-            return { *this, vox... };
-          }
-
-        //! Start the loop to iterate over the VoxelTypes specified
-        /*! Start the loop by resetting the appropriate coordinates of each of
-         * the specified ImageType objects to zero, and initialising the progress status
-         * if appropriate. Note that only those axes specified in the Loop
-         * constructor will have their coordinates set to zero; the coordinates
-         * of all other axes will be left untouched. */
-        template <typename... ImageType>
-          FORCE_INLINE void start (ImageType&... vox) {
-            cont_ = true;
-            auto& ref = std::get<0> (std::tie (vox...));
-            max_axis_ = std::min (ref.ndim(), to_);
-            first_axis_dim = ref.size (from_) - 1;
-            for (size_t n = from_; n < max_axis_; ++n) 
-              apply (set_pos (n, 0), std::tie (vox...));
-
-            if (progress_)
-              progress_.set_max (voxel_count (ref, from_, to_));
-          }
-
-        //! Check whether the loop should continue iterating
-        /*! \return true if the loop has not completed, false otherwise. */
-        FORCE_INLINE bool ok() const {
-          return cont_;
-        }
-
-        //! Advance coordinates of specified VoxelTypes
-        /*! Advance coordinates of all specified ImageType objects to the next position
-         * to be processed, and update the progress status if appropriate. */
-        template <typename... ImageType>
-          FORCE_INLINE void next (ImageType&... vox) {
-            auto tvox = std::tie (vox...);
-            auto& ref = std::get<0> (tvox);
-            ++progress_;
-            if (ref.index (from_) < first_axis_dim)
-              apply (inc_pos (from_), tvox);
-            else {
-              next_axis (from_+1, tvox);
-              if (cont_) 
-                apply (set_pos (from_, 0), tvox);
-            }
-          }    
-        
-
-        //! set position along relevant axes of \a target to that of \a reference
-        /*! set the position of \a target along those axes involved in the
-         * loop to the that of \a reference, leaving all other coordinates
-         * unchanged. */
-        template <typename RefImageType, typename... ImageType>
-          FORCE_INLINE void set_position (const RefImageType& reference, ImageType&... target) const {
-            auto t = std::tie (target...);
-            set_position (reference, t);
-          }
-
-        //! set position along relevant axes of \a target to that of \a reference
-        /*! set the position of \a target along those axes involved in the
-         * loop to the that of \a reference, leaving all other coordinates
-         * unchanged. */
-        template <typename RefImageType, typename... ImageType>
-          FORCE_INLINE void set_position (const RefImageType& reference, std::tuple<ImageType&...>& target) const {
-            for (size_t i = from_; i < max_axis_; ++i) 
-              apply (set_pos (i, reference.index(i)), target);
-          }
-
-
-      private:
-        const size_t from_, to_;
-        size_t max_axis_;
-        ssize_t first_axis_dim;
-        bool cont_;
-        ProgressBar progress_;
-        
-        template <typename... ImageType> 
-          void next_axis (size_t axis, const std::tuple<ImageType&...>& vox) {
-            if (axis < max_axis_) {
-              if (std::get<0>(vox).index(axis) + 1 < std::get<0>(vox).size (axis)) 
-                apply (inc_pos (axis), vox);
-              else {
-                if (axis+1 == max_axis_) {
-                  cont_ = false;
-                  progress_.done();
-                }
-                else {
-                  next_axis (axis+1, vox);
-                  if (cont_) 
-                    apply (set_pos (axis, 0), vox);
-                }
-              }
-            }
-            else {
-              cont_ = false;
-              progress_.done();
-            }
-          }
-    };
-
-
-
-
-
-
 
 
   //! a class to loop over arbitrary numbers and orders of axes of a ImageType
@@ -597,243 +359,249 @@ namespace MR
     };
 
 
-  namespace {
 
-    template <class... ImageType> struct  __LoopImagesAlongAxisRange {
-      const std::tuple<ImageType&...> vox;
-      const size_t from, to;
+  struct LoopAlongSingleAxis {
+    const size_t axis;
 
-      template <class Functor> void run (const std::string& progress_message, Functor&& body) const {
-        ProgressBar progress (progress_message, voxel_count (std::get<0>(vox), from, to));
-        run ([&]() { body(); ++progress; });
-      }
+    template <class... ImageType>
+      struct Run {
+        const size_t axis;
+        const std::tuple<ImageType&...> vox;
+        const ssize_t size0;
+        FORCE_INLINE Run (const size_t axis, const std::tuple<ImageType&...>& vox) : 
+          axis (axis), vox (vox), size0 (std::get<0>(vox).size(axis)) { apply (set_pos (axis, 0), vox); }
+        FORCE_INLINE operator bool() const { return std::get<0>(vox).index(axis) < size0; }
+        FORCE_INLINE void operator++() const { apply (inc_pos (axis), vox); }
+        FORCE_INLINE void operator++(int) const { operator++(); }
+      };
 
-      template <class Functor> void run (Functor&& body) const {
-        auto& ref = std::get<0>(vox);
-        const ssize_t size0 = ref.size(from);
-        for (size_t n = from+1; n < to; ++n)
-          apply (set_pos ({ n, 0 }), vox);
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axis, std::tie (images...) }; }
+  };
 
-next_iteration:
-        for (apply (set_pos ({ from, 0 }), vox); ref.index(from) < size0; apply (inc_pos ({ from }), vox))
-          body();
+  struct LoopAlongSingleAxisProgress {
+    const std::string& text;
+    const size_t axis;
 
-        size_t axis = from+1;
-inc_next_axis:
-        apply (inc_pos ({ axis }), vox);
-        if (ref.index(axis) < ref.size(axis))
-          goto next_iteration;
-        apply (set_pos ({ axis, 0 }), vox);
-        ++axis;
-        if (axis < to)
-          goto inc_next_axis;
-      }
+    template <class... ImageType>
+      struct Run {
+        MR::ProgressBar progress;
+        const size_t axis;
+        const std::tuple<ImageType&...> vox;
+        const ssize_t size0;
+        FORCE_INLINE Run (const std::string& text, const size_t axis, const std::tuple<ImageType&...>& vox) : 
+          progress (text, std::get<0>(vox).size(axis)), axis (axis), vox (vox), size0 (std::get<0>(vox).size(axis)) { apply (set_pos (axis, 0), vox); }
+        FORCE_INLINE operator bool() const { return std::get<0>(vox).index(axis) < size0; }
+        FORCE_INLINE void operator++() { apply (inc_pos (axis), vox); ++progress; }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, axis, std::tie (images...) }; }
+  };
+
+
+
+  struct LoopAlongAxisRange {
+    const size_t from, to;
+
+    template <class... ImageType>
+      struct Run {
+        const size_t from, to;
+        const std::tuple<ImageType&...> vox;
+        const ssize_t size0;
+        bool ok;
+        FORCE_INLINE Run (const size_t axis_from, const size_t axis_to, const std::tuple<ImageType&...>& vox) : 
+          from (axis_from), to (axis_to ? axis_to : std::get<0>(vox).ndim()), vox (vox), size0 (std::get<0>(vox).size(from)), ok (true) { 
+            for (size_t n = from; n < to; ++n)
+              apply (set_pos (n, 0), vox); 
+          }
+        FORCE_INLINE operator bool() const { return ok; }
+        FORCE_INLINE void operator++() { 
+          apply (inc_pos (from), vox); 
+          if (std::get<0>(vox).index(from) < size0)
+            return;
+
+          apply (set_pos (from, 0), vox);
+          size_t axis = from+1;
+          do {
+            apply (inc_pos ({ axis }), vox);
+            if (std::get<0>(vox).index(axis) < std::get<0>(vox).size(axis))
+              return;
+            apply (set_pos (axis, 0), vox);
+            ++axis;
+          } while (axis < to);
+          ok = false;
+        }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { from, to, std::tie (images...) }; }
+  };
+
+  struct LoopAlongAxisRangeProgress : public LoopAlongAxisRange {
+    const std::string& text;
+    LoopAlongAxisRangeProgress (const std::string& text, const size_t from, const size_t to) :
+      LoopAlongAxisRange ({ from, to }), text (text) { }
+
+    template <class... ImageType>
+      struct Run : public LoopAlongAxisRange::Run<ImageType...> {
+        MR::ProgressBar progress;
+        FORCE_INLINE Run (const std::string& text, const size_t from, const size_t to, const std::tuple<ImageType&...>& vox) : 
+          LoopAlongAxisRange::Run<ImageType...> (from, to, vox), progress (text, MR::voxel_count (std::get<0>(vox), from, to)) { }
+        FORCE_INLINE void operator++() { LoopAlongAxisRange::Run<ImageType...>::operator++(); ++progress; }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, from, to, std::tie (images...) }; }
+  };
+
+
+
+  struct LoopAlongAxes {
+    template <class... ImageType>
+      FORCE_INLINE LoopAlongAxisRange::Run<ImageType...> operator() (ImageType&... images) const { return { 0, std::get<0>(std::tie(images...)).ndim(), std::tie (images...) }; }
+  };
+
+  struct LoopAlongAxesProgress {
+    const std::string& text;
+    template <class... ImageType>
+      FORCE_INLINE LoopAlongAxisRangeProgress::Run<ImageType...> operator() (ImageType&... images) const { return { text, 0, std::get<0>(std::tie(images...)).ndim(), std::tie (images...) }; }
+  };
+
+
+
+  struct LoopAlongStaticAxes {
+    const std::initializer_list<size_t> axes;
+
+    template <class... ImageType>
+      struct Run {
+        const std::initializer_list<size_t> axes;
+        const std::tuple<ImageType&...> vox;
+        const size_t from;
+        const ssize_t size0;
+        bool ok;
+        FORCE_INLINE Run (const std::initializer_list<size_t> axes, const std::tuple<ImageType&...>& vox) : 
+          axes (axes), vox (vox), from (*axes.begin()), size0 (std::get<0>(vox).size(from)), ok (true) { 
+            for (auto axis : axes)
+              apply (set_pos (axis, 0), vox); 
+          }
+        FORCE_INLINE operator bool() const { return ok; }
+        FORCE_INLINE void operator++() { 
+          apply (inc_pos (from), vox); 
+          if (std::get<0>(vox).index(from) < size0)
+            return;
+
+          apply (set_pos (from, 0), vox);
+          auto axis = axes.begin()+1;
+          do {
+            apply (inc_pos ({ *axis }), vox);
+            if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis))
+              return;
+            apply (set_pos (*axis, 0), vox);
+            ++axis;
+          } while (axis != axes.end());
+          ok = false;
+        }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axes, std::tie (images...) }; }
+  };
+
+  struct LoopAlongStaticAxesProgress : public LoopAlongStaticAxes {
+    const std::string& text;
+    LoopAlongStaticAxesProgress (const std::string& text, const std::initializer_list<size_t> axes) : 
+      LoopAlongStaticAxes ({ axes }), text (text) { }
+
+    template <class... ImageType>
+      struct Run : public LoopAlongStaticAxes::Run<ImageType...> {
+        MR::ProgressBar progress;
+        FORCE_INLINE Run (const std::string& text, const std::initializer_list<size_t> axes, const std::tuple<ImageType&...>& vox) : 
+          LoopAlongStaticAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
+        FORCE_INLINE void operator++() { LoopAlongStaticAxes::Run<ImageType...>::operator++(); ++progress; }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, axes, std::tie (images...) }; }
+  };
+
+
+
+  struct LoopAlongDynamicAxes {
+    const std::vector<size_t> axes;
+
+    template <class... ImageType>
+      struct Run {
+        const std::vector<size_t>& axes;
+        const std::tuple<ImageType&...> vox;
+        const size_t from;
+        const ssize_t size0;
+        bool ok;
+        FORCE_INLINE Run (const std::vector<size_t>& axes, const std::tuple<ImageType&...>& vox) : 
+          axes (axes), vox (vox), from (axes[0]), size0 (std::get<0>(vox).size(from)), ok (true) { 
+            for (auto axis : axes)
+              apply (set_pos (axis, 0), vox); 
+          }
+        FORCE_INLINE operator bool() const { return ok; }
+        FORCE_INLINE void operator++() { 
+          apply (inc_pos (from), vox); 
+          if (std::get<0>(vox).index(from) < size0)
+            return;
+
+          apply (set_pos (from, 0), vox);
+          auto axis = axes.cbegin()+1;
+          do {
+            apply (inc_pos ({ *axis }), vox);
+            if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis))
+              return;
+            apply (set_pos (*axis, 0), vox);
+            ++axis;
+          } while (axis != axes.cend());
+          ok = false;
+        }
+        FORCE_INLINE void operator++(int) { operator++(); }
+      };
+
+    template <class... ImageType>
+      FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { axes, std::tie (images...) }; }
+  };
+
+  struct LoopAlongDynamicAxesProgress : public LoopAlongDynamicAxes {
+      const std::string& text;
+      LoopAlongDynamicAxesProgress (const std::string& text, const std::vector<size_t>& axes) : 
+        LoopAlongDynamicAxes ({ axes }), text (text) { }
+
+      template <class... ImageType>
+        struct Run : public LoopAlongDynamicAxes::Run<ImageType...> {
+          MR::ProgressBar progress;
+          FORCE_INLINE Run (const std::string& text, const std::vector<size_t> axes, const std::tuple<ImageType&...>& vox) : 
+            LoopAlongDynamicAxes::Run<ImageType...> (axes, vox), progress (text, MR::voxel_count (std::get<0>(vox), axes)) { }
+          FORCE_INLINE void operator++() { LoopAlongDynamicAxes::Run<ImageType...>::operator++(); ++progress; }
+          FORCE_INLINE void operator++(int) { operator++(); }
+        };
+
+      template <class... ImageType>
+        FORCE_INLINE Run<ImageType...> operator() (ImageType&... images) const { return { text, axes, std::tie (images...) }; }
     };
 
 
-    template <class... ImageType> struct  __LoopImagesAlongSingleAxis {
-      const std::tuple<ImageType&...> vox;
-      const size_t axis;
 
-      template <class Functor> void run (const std::string& progress_message, Functor&& body) const {
-        ProgressBar progress (progress_message, std::get<0>(vox).size(axis));
-        run ([&]() { body(); ++progress; });
-      }
+  FORCE_INLINE LoopAlongAxes Loop () { return { }; }
+  FORCE_INLINE LoopAlongAxesProgress Loop (const std::string& progress_message) { return { progress_message }; }
+  FORCE_INLINE LoopAlongSingleAxis Loop (size_t axis) { return { axis }; }
+  FORCE_INLINE LoopAlongSingleAxisProgress Loop (const std::string& progress_message, size_t axis) { return { progress_message, axis }; }
+  FORCE_INLINE LoopAlongAxisRange Loop (size_t axis_from, size_t axis_to) { return { axis_from, axis_to }; }
+  FORCE_INLINE LoopAlongAxisRangeProgress Loop (const std::string& progress_message, size_t axis_from, size_t axis_to) { return { progress_message, axis_from, axis_to }; }
+  FORCE_INLINE LoopAlongStaticAxes Loop (std::initializer_list<size_t> axes) { return { axes }; }
+  FORCE_INLINE LoopAlongStaticAxesProgress Loop (const std::string& progress_message, std::initializer_list<size_t> axes) { return { progress_message, axes }; }
+  FORCE_INLINE LoopAlongDynamicAxes Loop (std::vector<size_t> axes) { return { axes }; }
+  FORCE_INLINE LoopAlongDynamicAxesProgress Loop (const std::string& progress_message, std::vector<size_t> axes) { return { progress_message, axes }; }
 
-      template <class Functor> FORCE_INLINE void run (Functor&& body) const {
-        auto& ref = std::get<0>(vox);
-        const ssize_t size0 = ref.size(axis);
-        for (apply (set_pos ({ axis, 0 }), vox); ref.index(axis) < size0; apply (inc_pos ({ axis }), vox))
-          body();
-      }
-      FORCE_INLINE const __LoopImagesAlongAxisRange<ImageType&...> to (const size_t axis_to) const { return { vox, axis, axis_to }; }
-    };
-
-
-
-
-    template <class... ImageType> struct  __LoopImagesAlongStaticAxes {
-      const std::tuple<ImageType&...> vox;
-      const std::initializer_list<size_t> axes;
-
-      template <class Functor> void run (const std::string& progress_message, Functor&& body) const {
-        ProgressBar progress (progress_message, voxel_count (std::get<0>(vox), axes));
-        run ([&]() { body(); ++progress; });
-      }
-
-      template <class Functor> void run (Functor&& body) const {
-        auto& ref = std::get<0>(vox);
-        const size_t from = *axes.begin();
-        const ssize_t size0 = ref.size(from);
-        for (auto axis = axes.begin()+1; axis != axes.end(); ++axis)
-          apply (set_pos ({ *axis, 0 }), vox);
-
-next_iteration:
-        for (apply (set_pos ({ from, 0 }), vox); ref.index(from) < size0; apply (inc_pos ({ from }), vox))
-          body();
-
-        auto axis = axes.begin()+1;
-inc_next_axis:
-        apply (inc_pos ({ *axis }), vox);
-        if (ref.index(*axis) < ref.size(*axis))
-          goto next_iteration;
-        apply (set_pos ({ *axis, 0 }), vox);
-        ++axis;
-        if (axis != axes.end())
-          goto inc_next_axis;
-      }
-    };
-
-
-
-    template <class... ImageType> struct  __LoopImagesAlongDynamicAxes {
-      const std::tuple<ImageType&...> vox;
-      const std::vector<size_t> axes;
-
-      template <class Functor> void run (const std::string& progress_message, Functor&& body) const {
-        ProgressBar progress (progress_message, voxel_count (std::get<0>(vox), axes));
-        run ([&]() { body(); ++progress; });
-      }
-
-
-      template <class Functor> void run (Functor&& body) const {
-        auto& ref = std::get<0>(vox);
-        const size_t from = axes[0];
-        const ssize_t size0 = ref.size(from);
-        size_t other_axes[axes.size()-1];
-        size_t* last = other_axes;
-        for (auto a = axes.cbegin()+1; a != axes.cend(); ++a)
-          *last++ = *a;
-
-        for (const auto axis : other_axes)
-          apply (set_pos ({ axis, 0 }), vox);
-
-next_iteration:
-        for (apply (set_pos ({ from, 0 }), vox); ref.index(from) < size0; apply (inc_pos ({ from }), vox))
-          body();
-
-        auto axis = other_axes;
-inc_next_axis:
-        apply (inc_pos ({ *axis }), vox);
-        if (ref.index(*axis) < ref.size(*axis))
-          goto next_iteration;
-        apply (set_pos ({ *axis, 0 }), vox);
-        ++axis;
-        if (axis != last)
-          goto inc_next_axis;
-      }
-    };
-
-
-
-    template <class... ImageType> struct __LoopImages {
-      std::tuple<ImageType&...> vox;
-      __LoopImages (ImageType&... images) : vox (images...) { }
-      FORCE_INLINE const __LoopImagesAlongSingleAxis<ImageType&...> along (const size_t axis) const { return { vox, axis }; }
-      FORCE_INLINE const __LoopImagesAlongStaticAxes<ImageType&...> along (const std::initializer_list<size_t> axes) const { return { vox, axes }; }
-      FORCE_INLINE const __LoopImagesAlongDynamicAxes<ImageType&...> along (const std::vector<size_t>& axes) const { return { vox, axes }; }
-      template <class RefImageType>
-        FORCE_INLINE const __LoopImagesAlongDynamicAxes<ImageType&...> 
-        according_to (const RefImageType& ref, size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max()) const { return { vox, Stride::order (ref, from_axis, to_axis) }; }
-
-
-      template <class Functor> void run (const std::string& progress_message, Functor&& body) const {
-        according_to (std::get<0>(vox)).run (progress_message, body); 
-      }
-      template <class Functor> void run (Functor&& body) const { according_to (std::get<0>(vox)).run (body); }
-
-    };
-
-
-
-  }
-
-
-
-  //! single-threaded looping over images
-  /*!
-   * This function and its associated classes allow looping over arbitrary
-   * images, along specified axes, and optionally with a progress report.
-   * It can be used as follows:
-   *
-   * The loop_over() function itself takes the images to be looped over as
-   * arguments. It returns a proxy object with a number of methods, used to
-   * specify the axes of the loop. These in turn return a further proxy object
-   * with a run() method, specifying body of the loop in the form of a functor
-   * or lambda function (with the lambda function typically being the most
-   * convenient).
-   *
-   * For example:
-   *
-   * \par Looping over whole images
-   * This loops over all voxels of the input images, writing the difference
-   * between \a in1 & \a in2 into \a out. Note that this assumes all images
-   * have the same dimensions - no checking is done in this function. Also, the
-   * axes will be looped over in order of increasing (absolute) stride of the
-   * first image specified (\a in1 in this example). Note the use of a lambda
-   * function to provide the body of the loop (and the use of the [&] specifier
-   * to make variables in the current scope available to the body of the loop:
-   * \code
-   * loop_over (in1, in2, out).run ([&]() { out.value() = in1.value() - in2.value(); });
-   *
-   * \par Looping over a single axis
-   * This loops over two images \a input & \a output, copying input to output
-   * along axis 3 (volume axis) for the current voxel. As before, we use a
-   * lambda function to provide the body of the loop:
-   * \code 
-   * loop_over (input, output).along (3).run ([&]() { output.value() = input.value(); });
-   * \endcode 
-   *
-   * \par Looping over a range of axes:
-   * This loops over a single image, squaring the voxel intensities along the
-   * spatial axes (0 to 3 - axis 3 is \e not included). In this example, we use
-   * a functor to provide the body of the loop:
-   * \code
-   * struct Square {
-   *   Image<float>& vox;
-   *   void operator() () { vox.value() = math::pow2 (vox.value()); }
-   * };
-   *
-   * loop_over (image).along (0).to (3).run (Square ({ image }));
-   * \endcode
-   *
-   * \par Looping over selected axes known at compile time
-   * This loops over the x & z axes, computing the exponential of its input
-   * in-place:
-   * \code
-   * loop_over (input).over ({ 0, 2 }).run ([&]() { input.value() = std::exp (input.value()); });
-   * \endcode
-   *
-   *
-   * \par Looping over selected axes unknown at compile time
-   * When the axes to be looped over are determined at runtime, they can be
-   * passed as a std::vector:
-   * \code 
-   * std::vector axes = { 3,0,1,2 };
-   * loop_over (input, output).over (axes).run ([&]() { output.value() -= input.value(); });
-   * \endcode
-   *
-   * \par Looping over axes in order of increasing stride of a specific image
-   * This will loop over images \a in & \a out, with the axes and order of
-   * traversal determined by the order of increasing strides of \a ref, along
-   * all non-spatial axes (greater than 3):
-   * \code
-   * loop_over (in, out).according_to (ref, 3).run ([&]() { out.value() *= in.value(); });
-   * \endcode
-   */
-  /*
-   * \par Looping with a progress report
-   * All of the above examples can be modified to provide a progress report on
-   * the command line by providing the text to be displayed as first argument
-   * in the run() method:
-   * \code
-   * double rms = 0;
-   * loop_over (in).run ("computing RMS...", [&]() { rms += Math::pow2 (in.value()); });
-   * rms = std::sqrt (rms);
-   * \endcode
-   */
-  template <class... ImageType>
-    FORCE_INLINE const __LoopImages<ImageType&...> loop_over (ImageType&... images) { return { images... }; }
 
   //! @}
 }
