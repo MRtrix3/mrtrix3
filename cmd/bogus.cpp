@@ -38,10 +38,9 @@ void run ()
   vector_input.index(0) = 30;
   vector_input.index(1) = 30;
   vector_input.index(2) = 30;
+  vector_input.value()[1] = 10;
 
-  Eigen::VectorXf vector = vector_input.value();
-  std::cout << vector << std::endl;
-
+  std::cout << vector_input.value() << std::endl;
 
   auto header = input.header();
   header.stride(0) = 1;
@@ -50,11 +49,15 @@ void run ()
   header.stride(3) = 0;
   auto temp = Image<float>::scratch (header);
 
-  threaded_copy (input, temp, 0, 3);
+  Adapter::Vector<decltype(temp)> vector_temp (temp);
 
-  temp.index(0) = 30;
-  temp.index(1) = 30;
-  temp.index(2) = 30;
+//  threaded_copy (vector_input, vector_temp, 0, 3);  // TODO not working
 
-  std::cout << temp.value() << std::endl;
+  vector_temp.index(0) = 30;
+  vector_temp.index(1) = 30;
+  vector_temp.index(2) = 30;
+
+  vector_temp.value() = vector_input.value();  // working
+
+  std::cout << vector_temp.value() << std::endl;
 }

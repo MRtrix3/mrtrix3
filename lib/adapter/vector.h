@@ -46,14 +46,12 @@ namespace MR
           } else if (vector_size > parent.size (axis)) {
             throw Exception ("Vector adapter: vector size is larger than the size of the image along axis");
           }
-          std::cout << vector_size << " " << axis << std::endl;
         }
 
 
         Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 > > value ()
         {
-          vector_size = 3; // comment out this
-          std::cout << vector_size <<  " " << axis << std::endl;
+          vector_size = 3; // TODO figure out why this not being set properly in the constructor
           Base<ImageType>::index (3) = 0;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 > > (Base<ImageType>::parent_.address(), vector_size);
         }
