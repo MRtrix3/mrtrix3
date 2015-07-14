@@ -36,8 +36,8 @@ namespace MR
       public:
         typedef typename ImageType::value_type value_type;
 
-        Vector (const ImageType& parent, size_t axis = 3, size_t vector_size = 0) :
-          Base<ImageType> (parent), axis (axis), vector_size (vector_size) {
+        Vector (const ImageType& parent, size_t axis = 3, size_t size = 0) :
+          Base<ImageType> (parent), axis (axis), vector_size (size) {
           if (!parent.is_direct_io())
             throw Exception ("Vector adapter class can only be used images loaded with direct IO access or scrach images");
 
@@ -49,11 +49,14 @@ namespace MR
         }
 
 
-        Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 > > value ()
+        Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > value ()
         {
-          vector_size = 3; // TODO figure out why this not being set properly in the constructor
-          Base<ImageType>::index (3) = 0;
-          return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 > > (Base<ImageType>::parent_.address(), vector_size);
+          Base<ImageType>::index (axis) = 0;
+          std::cout << Base<ImageType>::parent_.address()[0] << " " <<
+                       Base<ImageType>::parent_.address()[Base<ImageType>::stride (axis)] << " " <<
+                       Base<ImageType>::parent_.address()[Base<ImageType>::stride (axis) * 2] << std::endl;
+          return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
+                   (Base<ImageType>::parent_.address(), vector_size, Base<ImageType>::stride (axis));
         }
 
       protected:
