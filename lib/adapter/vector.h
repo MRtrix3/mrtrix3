@@ -49,14 +49,11 @@ namespace MR
         }
 
 
-        Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > value ()
+        Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > value ()
         {
           Base<ImageType>::index (axis) = 0;
-          std::cout << Base<ImageType>::parent_.address()[0] << " " <<
-                       Base<ImageType>::parent_.address()[Base<ImageType>::stride (axis)] << " " <<
-                       Base<ImageType>::parent_.address()[Base<ImageType>::stride (axis) * 2] << std::endl;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
-                   (Base<ImageType>::parent_.address(), vector_size, Base<ImageType>::stride (axis));
+                   (Base<ImageType>::parent_.address(), vector_size, Eigen::InnerStride<> (Base<ImageType>::stride (axis)));
         }
 
       protected:
