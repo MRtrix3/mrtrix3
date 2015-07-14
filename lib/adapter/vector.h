@@ -23,7 +23,8 @@
 #ifndef __image_adapter_vector_h__
 #define __image_adapter_vector_h__
 
-#include "adapter/base.h"
+//#include "adapter/base.h"
+#include "image.h"
 
 namespace MR
 {
@@ -31,33 +32,43 @@ namespace MR
   {
 
     template <class ImageType>
-      class Vector : public Base<ImageType> {
+      class Vector : public Image<typename ImageType::value_type> {
 
       public:
         typedef typename ImageType::value_type value_type;
+        typedef Image<typename ImageType::value_type> ParentType;
 
-        Vector (const ImageType& parent, size_t axis = 3, size_t size = 0) :
-          Base<ImageType> (parent), axis (axis), vector_size (size) {
+        Vector (const ImageType& parent, ssize_t axis = -1, size_t size = 0) :
+          ParentType (parent), vector_axis (axis), vector_size (size) {
           if (!parent.is_direct_io())
-            throw Exception ("Vector adapter class can only be used images loaded with direct IO access or scrach images");
+            throw Exception ("vector adapter can only be used images loaded with direct IO access or scrach images");
 
-          if (!vector_size) {
-            vector_size = Base<ImageType>::size (axis);
-          } else if (vector_size > parent.size (axis)) {
-            throw Exception ("Vector adapter: vector size is larger than the size of the image along axis");
-          }
+          if (vector_axis < 0)
+            vector_axis = parent.ndim() - 1;
+          else if (vector_axis >= parent.ndim())
+            throw Exception ("axis requested in vector adapter is larger than the number of image dimensions");
+
+          if (!vector_size)
+            vector_size = parent.size (vector_axis);
+          else if (vector_size > parent.size (vector_axis))
+            throw Exception ("vector adapter: vector size is larger than the size of the image along axis");
         }
 
 
         Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > value ()
         {
-          Base<ImageType>::index (axis) = 0;
+          index (vector_axis) = 0;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
-                   (Base<ImageType>::parent_.address(), vector_size, Eigen::InnerStride<> (Base<ImageType>::stride (axis)));
+                   (address(), vector_size, Eigen::InnerStride<> (stride (vector_axis)));
         }
 
+        using ParentType::index;
+        using ParentType::size;
+        using ParentType::address;
+        using ParentType::stride;
+
       protected:
-        size_t axis;
+        ssize_t vector_axis;
         size_t vector_size;
 
       };
