@@ -37,6 +37,7 @@ namespace MR
   class Iterator
   {
     public:
+      Iterator() = delete;
       template <class InfoType>
         Iterator (const InfoType& S) :
           d (S.ndim()),
@@ -62,7 +63,6 @@ namespace MR
     private:
       std::vector<ssize_t> d, p;
 
-      Iterator() { assert (0); }
       void value () const { assert (0); }
   };
 

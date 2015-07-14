@@ -340,7 +340,7 @@ void run ()
 
     auto image_out = Header::create (output_path, header_out).get_image<float>();
 
-    ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
+    auto loop = ThreadedLoop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
 
     switch (op) {
       case 0: loop.run  (AxisKernel<Mean>   (axis), image_in, image_out); return;

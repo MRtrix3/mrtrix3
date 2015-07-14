@@ -44,15 +44,6 @@ namespace MR
    *
    * @} */
 
-
-  namespace {
-    template <class Functor>
-      class __Outer;
-
-    template <int N, class Functor, class... ImageType>
-      class __RunFunctor;
-  }
-
   /*! \addtogroup loop 
    * \{ */
 
@@ -265,247 +256,201 @@ namespace MR
    * \sa Loop
    * \sa ThreadedLoop
    */
-  class ThreadedLoop
-  {
-    public:
-
-      template <class InfoType>
-        ThreadedLoop (
-            const InfoType& source,
-            const std::vector<size_t>& axes_out_of_thread,
-            const std::vector<size_t>& axes_in_thread) :
-          loop (axes_out_of_thread),
-          dummy (source),
-          axes (axes_in_thread) {
-          }
-
-      template <class InfoType>
-        ThreadedLoop (
-            const InfoType& source,
-            const std::vector<size_t>& axes_in_loop,
-            size_t num_inner_axes = 1) :
-          loop (__get_axes_out_of_thread (axes_in_loop, num_inner_axes)),
-          dummy (source),
-          axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-          }
-
-      template <class InfoType>
-        ThreadedLoop (
-            const InfoType& source,
-            size_t from_axis = 0,
-            size_t to_axis = std::numeric_limits<size_t>::max(),
-            size_t num_inner_axes = 1) :
-          loop (__get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis)),
-          dummy (source),
-          axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-          }
-
-      template <class InfoType>
-        ThreadedLoop (
-            const std::string& progress_message,
-            const InfoType& source,
-            const std::vector<size_t>& axes_out_of_thread,
-            const std::vector<size_t>& axes_in_thread) :
-          loop (progress_message, axes_out_of_thread),
-          dummy (source),
-          axes (axes_in_thread) {
-          }
-
-      template <class InfoType>
-        ThreadedLoop (
-            const std::string& progress_message,
-            const InfoType& source,
-            const std::vector<size_t>& axes_in_loop,
-            size_t num_inner_axes = 1) :
-          loop (progress_message, __get_axes_out_of_thread (axes_in_loop, num_inner_axes)),
-          dummy (source),
-          axes (__get_axes_in_thread (axes_in_loop, num_inner_axes)) {
-          }
-
-      template <class InfoType>
-        ThreadedLoop (
-            const std::string& progress_message,
-            const InfoType& source,
-            size_t from_axis = 0,
-            size_t to_axis = std::numeric_limits<size_t>::max(), 
-            size_t num_inner_axes = 1) :
-          loop (progress_message, __get_axes_out_of_thread (source, num_inner_axes, from_axis, to_axis)),
-          dummy (source),
-          axes (__get_axes_in_thread (source, num_inner_axes, from_axis, to_axis)) {
-          }
-
-
-      //! all axes to be looped over
-      std::vector<size_t> all_axes () const {
-        std::vector<size_t> a (inner_axes());
-        a.insert (a.end(), outer_axes().begin(), outer_axes().end());
-        return a;
-      }
-      //! return an ordered vector of axes in the outer loop
-      const std::vector<size_t>& outer_axes () const { return loop.axes(); }
-      //! return an ordered vector of axes in the inner loop
-      const std::vector<size_t>& inner_axes () const { return axes; }
-      //! a dummy object that can be used to construct other Iterators
-      const Iterator& iterator () const { return dummy; }
-
-      //! get next position in the outer loop
-      bool next (Iterator& pos) {
-        std::lock_guard<std::mutex> lock (mutex);
-        if (loop.ok()) {
-          loop.set_position (dummy, pos);
-          loop.next (dummy);
-          return true;
-        }
-        else return false;
-      }
-
-      //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
-      template <class Functor> 
-        void run_outer (Functor&& functor)
-        {
-          if (Thread::number_of_threads() == 0) {
-            for (auto i = loop.run (dummy); i; ++i)
-              functor (dummy);
-            return;
-          }
-
-          __Outer<typename std::remove_reference<Functor>::type> loop_thread (*this, functor);
-          loop.start (dummy);
-          auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
-          t.wait();
-        }
-
-
-
-
-
-      template <class Functor, class... ImageType>
-        void run (Functor&& functor, ImageType&&... vox)
-        {
-          __RunFunctor< 
-            sizeof...(ImageType),
-            typename std::remove_reference<Functor>::type, 
-            typename std::remove_reference<ImageType>::type...
-              > loop_thread (*this, functor, vox...);
-          run_outer (loop_thread);
-        }
-
-
-    protected:
-      LoopInOrder loop;
-      Iterator dummy;
-      const std::vector<size_t> axes;
-      std::mutex mutex;
-
-      static std::vector<size_t> __get_axes_in_thread (
-          const std::vector<size_t>& axes_in_loop,
-          size_t num_inner_axes) {
-        return std::vector<size_t> (axes_in_loop.begin(), axes_in_loop.begin()+num_inner_axes);
-      }
-
-      static std::vector<size_t> __get_axes_out_of_thread (
-          const std::vector<size_t>& axes_in_loop,
-          size_t num_inner_axes) {
-        return std::vector<size_t> (axes_in_loop.begin()+num_inner_axes, axes_in_loop.end());
-      }
-
-      template <class InfoType>
-        static std::vector<size_t> __get_axes_in_thread (
-            const InfoType& source,
-            size_t num_inner_axes,
-            size_t from_axis,
-            size_t to_axis) {
-          return __get_axes_in_thread (Stride::order (source, from_axis, to_axis), num_inner_axes);
-        }
-
-      template <class InfoType>
-        static std::vector<size_t> __get_axes_out_of_thread (
-            const InfoType& source,
-            size_t num_inner_axes,
-            size_t from_axis,
-            size_t to_axis) {
-          return __get_axes_out_of_thread (Stride::order (source, from_axis, to_axis), num_inner_axes);
-        }
-
-  };
-
-
 
 
 
   namespace {
 
+    inline std::vector<size_t> get_inner_axes (const std::vector<size_t>& axes, size_t num_inner_axes) {
+      return { axes.begin(), axes.begin()+num_inner_axes };
+    }
 
-    template <class Functor>
-      class __Outer {
-        public:
-          __Outer (ThreadedLoop& shared_info, Functor& functor) :
-            shared (shared_info),
-            func (functor) { }
+    inline std::vector<size_t> get_outer_axes (const std::vector<size_t>& axes, size_t num_inner_axes) {
+      return { axes.begin()+num_inner_axes, axes.end() };
+    }
 
-          void execute () {
-            Iterator pos (shared.iterator());
-            while (shared.next (pos))
-              func (pos);
-          }
+    template <class HeaderType>
+      inline std::vector<size_t> get_inner_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+        return get_inner_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
+      }
 
-        protected:
-          ThreadedLoop& shared;
-          typename std::remove_reference<Functor>::type func;
-      };
-
-
-
-
-
+    template <class HeaderType>
+      inline std::vector<size_t> get_outer_axes (const HeaderType& source, size_t num_inner_axes, size_t from_axis, size_t to_axis) {
+        return get_outer_axes (Stride::order (source, from_axis, to_axis), num_inner_axes);
+      }
 
 
     template <int N, class Functor, class... ImageType>
-      class __RunFunctor
+      struct ThreadedLoopRunInner
       {
-        public:
-          __RunFunctor (ThreadedLoop& shared_info, const Functor& functor, ImageType&... voxels) :
-            func (functor), 
-            loop (shared_info.inner_axes()),
-            outer_axes (shared_info.outer_axes()),
-            vox (voxels...) { }
+        const std::vector<size_t>& outer_axes;
+        decltype (Loop (outer_axes)) loop;
+        typename std::remove_reference<Functor>::type func;
+        std::tuple<ImageType...> vox;
 
-          void operator() (const Iterator& pos) {
-            assign_pos_of (pos, this->outer_axes).to (vox);
-            for (auto i = unpack (loop, vox); i; ++i) 
-              unpack (this->func, vox);
-          }
+        ThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
+            const Functor& functor, ImageType&... voxels) :
+          outer_axes (outer_axes),
+          loop (Loop (inner_axes)),
+          func (functor), 
+          vox (voxels...) { }
 
-        protected:
-          typename std::remove_reference<Functor>::type func;
-          LoopInOrder loop;
-          const std::vector<size_t>& outer_axes;
-          std::tuple<ImageType...> vox;
+        void operator() (const Iterator& pos) {
+          assign_pos_of (pos, outer_axes).to (vox);
+          for (auto i = unpack (loop, vox); i; ++i) 
+            unpack (func, vox);
+        }
       };
 
 
     template <class Functor, class... ImageType>
-      class __RunFunctor<0,Functor,ImageType...>
+      struct ThreadedLoopRunInner<0,Functor,ImageType...>
       {
-        public:
-          __RunFunctor (ThreadedLoop& shared_info, const Functor& functor, ImageType&... voxels) :
-            func (functor), 
-            loop (shared_info.inner_axes()),
-            vox (voxels...) { }
+        const std::vector<size_t>& outer_axes;
+        decltype (Loop (outer_axes)) loop;
+        typename std::remove_reference<Functor>::type func;
 
-          void operator() (Iterator& pos) {
-            for (auto i = loop (pos); i; ++i)
-              func (pos);
-          }
+        ThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
+            const Functor& functor, ImageType&... voxels) :
+          outer_axes (outer_axes),
+          loop (Loop (inner_axes)),
+          func (functor) { }
 
-        protected:
-          typename std::remove_reference<Functor>::type func;
-          LoopInOrder loop;
-          std::tuple<ImageType...> vox;
+        void operator() (Iterator& pos) {
+          for (auto i = loop (pos); i; ++i)
+            func (pos);
+        }
       };
 
 
+    template <class OuterLoopType>
+      struct ThreadedLoopRunOuter {
+        Iterator iterator;
+        OuterLoopType outer_loop;
+        std::vector<size_t> inner_axes;
+
+        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+        template <class Functor> 
+          void run_outer (Functor&& functor)
+          {
+            if (Thread::number_of_threads() == 0) {
+              for (auto i = outer_loop (iterator); i; ++i)
+                functor (iterator);
+              return;
+            }
+
+            struct Shared {
+              Iterator& iterator;
+              decltype (outer_loop (iterator)) loop;
+              std::mutex mutex;
+              FORCE_INLINE bool next (Iterator& pos) {
+                std::lock_guard<std::mutex> lock (mutex);
+                if (loop) {
+                  assign_pos_of (iterator, loop.axes).to (pos);
+                  ++loop;
+                  return true;
+                }
+                else return false;
+              }
+            } shared = { iterator, outer_loop (iterator) };
+
+            struct {
+              Shared& shared;
+              typename std::remove_reference<Functor>::type func;
+              void execute () {
+                Iterator pos = shared.iterator;
+                while (shared.next (pos))
+                  func (pos);
+              }
+            } loop_thread = { shared, functor };
+
+            auto t = Thread::run (Thread::multi (loop_thread), "loop threads");
+            t.wait();
+          }
+
+
+
+        //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
+        template <class Functor, class... ImageType>
+          void run (Functor&& functor, ImageType&&... vox)
+          {
+            ThreadedLoopRunInner< 
+              sizeof...(ImageType),
+              typename std::remove_reference<Functor>::type, 
+              typename std::remove_reference<ImageType>::type...
+                > loop_thread (outer_loop.axes, inner_axes, functor, vox...);
+            run_outer (loop_thread);
+          }
+
+      };
   }
+
+
+
+
+
+
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+        const HeaderType& source,
+        const std::vector<size_t>& outer_axes,
+        const std::vector<size_t>& inner_axes) {
+      return { source, Loop (outer_axes), inner_axes };
+    }
+
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+        const HeaderType& source,
+        const std::vector<size_t>& axes,
+        size_t num_inner_axes = 1) {
+      return { source, Loop (get_outer_axes (axes, num_inner_axes)), get_inner_axes (axes, num_inner_axes) }; 
+    }
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop(std::vector<size_t>()))> ThreadedLoop (
+        const HeaderType& source,
+        size_t from_axis = 0,
+        size_t to_axis = std::numeric_limits<size_t>::max(),
+        size_t num_inner_axes = 1) {
+      return { source, 
+        Loop (get_outer_axes (source, num_inner_axes, from_axis, to_axis)), 
+        get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
+      }
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+        const std::string& progress_message,
+        const HeaderType& source,
+        const std::vector<size_t>& outer_axes,
+        const std::vector<size_t>& inner_axes) {
+      return { source, Loop (progress_message, outer_axes), inner_axes };
+    }
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+        const std::string& progress_message,
+        const HeaderType& source,
+        const std::vector<size_t>& axes,
+        size_t num_inner_axes = 1) {
+      return { source, 
+        Loop (progress_message, get_outer_axes (axes, num_inner_axes)),
+        get_inner_axes (axes, num_inner_axes) };
+      }
+
+  template <class HeaderType>
+    inline ThreadedLoopRunOuter<decltype(Loop("", std::vector<size_t>()))> ThreadedLoop (
+        const std::string& progress_message,
+        const HeaderType& source,
+        size_t from_axis = 0,
+        size_t to_axis = std::numeric_limits<size_t>::max(), 
+        size_t num_inner_axes = 1) {
+      return { source,
+        Loop (progress_message, get_outer_axes (source, num_inner_axes, from_axis, to_axis)),
+        get_inner_axes (source, num_inner_axes, from_axis, to_axis) };
+      }
+
 
   /*! \} */
 

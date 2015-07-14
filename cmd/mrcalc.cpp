@@ -591,13 +591,13 @@ void get_header (const StackEntry& entry, Header& header)
 class ThreadFunctor {
   public:
     ThreadFunctor (
-        const ThreadedLoop& threaded_loop,
+        const std::vector<size_t>& inner_axes,
         const StackEntry& top_of_stack, 
         Image<complex_type>& output_image) :
       top_entry (top_of_stack),
       image (output_image),
-      loop (threaded_loop.inner_axes()) {
-        storage.axes = loop.axes();
+      loop (Loop (inner_axes)) {
+        storage.axes = loop.axes;
         storage.size.push_back (image.size(storage.axes[0]));
         storage.size.push_back (image.size(storage.axes[1]));
         chunk_size = image.size (storage.axes[0]) * image.size (storage.axes[1]);
@@ -639,7 +639,7 @@ class ThreadFunctor {
 
     const StackEntry& top_entry;
     Image<complex_type> image;
-    LoopInOrder loop;
+    decltype (Loop (std::vector<size_t>())) loop;
     ThreadLocalStorage storage;
     size_t chunk_size;
 };
@@ -667,9 +667,9 @@ void run_operations (const std::vector<StackEntry>& stack)
 
   auto output = Header::create (stack[1].arg, header).get_image<complex_type>();
 
-  ThreadedLoop loop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
+  auto loop = ThreadedLoop ("computing: " + operation_string(stack[0]) + " ...", output, 0, output.ndim(), 2);
 
-  ThreadFunctor functor (loop, stack[0], output);
+  ThreadFunctor functor (loop.inner_axes, stack[0], output);
   loop.run_outer (functor);
 }
 

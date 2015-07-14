@@ -80,8 +80,8 @@ namespace MR {
 
     template <class InputImageType, class OutputImageType, class MatrixType> 
       inline void estimate_noise (InputImageType& dwi, OutputImageType& noise, const MatrixType& SH2amp_mapping) {
-        ThreadedLoop loop ("estimating noise level...", dwi, 0, 3);
-        NoiseEstimatorFunctor<InputImageType,OutputImageType,MatrixType> functor (SH2amp_mapping, loop.inner_axes()[0], dwi, noise);
+        auto loop = ThreadedLoop ("estimating noise level...", dwi, 0, 3);
+        NoiseEstimatorFunctor<InputImageType,OutputImageType,MatrixType> functor (SH2amp_mapping, loop.inner_axes[0], dwi, noise);
         loop.run_outer (functor);
       } 
 

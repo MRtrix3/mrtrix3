@@ -88,16 +88,15 @@ namespace MR
                 INFO ("5TT image dimensions match fixel image - importing directly");
                 copy (in_anat.get_image<float>(), *act_5tt);
               } else {
-                ThreadedLoop threaded_loop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
+                auto threaded_loop  = ThreadedLoop ("resampling ACT 5TT image to fixel image space...", in_dwi, 0, 3);
                 auto v_anat = in_anat.get_image<float>();
                 ResampleFunctor<DWIType, decltype(v_anat), ACTType> functor (in_dwi, v_anat, *act_5tt);
                 threaded_loop.run (functor);
               }
 
               // Once all of the 5TT data has been read in, use it to derive the processing mask
-              LoopInOrder loop (*act_5tt, 0, 3);
               act_5tt->index(3) = 2; // Access the WM fraction
-              for (auto l = loop (*act_5tt, mask); l; ++l)
+              for (auto l = Loop (*act_5tt,0,3) (*act_5tt, mask); l; ++l)
                 mask.value() = Math::pow2<float> (act_5tt->value()); // Processing mask value is the square of the WM fraction
 
             } else {

@@ -125,7 +125,7 @@ namespace MR {
             buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
             //v_buffer (buffer)
           {
-            LoopInOrder loop (buffer);
+            auto loop = Loop (buffer);
             if (type == DEC || type == TOD) {
 
               if (voxel_statistic == V_MIN) {
@@ -170,7 +170,7 @@ namespace MR {
 
           void finalise () {
 
-            LoopInOrder loop (buffer, 0, 3);
+            auto loop = Loop (buffer, 0, 3);
             switch (voxel_statistic) {
 
               case V_SUM:
@@ -220,8 +220,7 @@ namespace MR {
                 } else { // Dixel
                   // TODO For dixels, should this be a voxel mean i.e. normalise each non-zero voxel to unit density,
                   //   rather than a per-dixel mean?
-                  LoopInOrder loop_dixel (buffer);
-                  for (auto l = loop_dixel (buffer, *counts); l; ++l) {
+                  for (auto l = Loop (buffer) (buffer, *counts); l; ++l) {
                     if (counts->value())
                       buffer.value() /= float(counts->value());
                   }
@@ -235,8 +234,7 @@ namespace MR {
                       buffer.value() = value_type(0);
                   }
                 } else if (type == DIXEL) {
-                  LoopInOrder loop_dixel (buffer);
-                  for (auto l = loop_dixel (buffer); l; ++l) {
+                  for (auto l = Loop (buffer) (buffer); l; ++l) {
                     if (buffer.value() == -std::numeric_limits<value_type>::max())
                       buffer.value() = value_type(0);
                   }

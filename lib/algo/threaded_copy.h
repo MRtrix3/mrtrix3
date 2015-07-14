@@ -33,7 +33,7 @@ namespace MR
 
     struct __copy_func {
       template <class InputImageType, class OutputImageType>
-        inline void operator() (InputImageType& in, OutputImageType& out) const {
+        FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
           out.value() = in.value();
         }
     };
@@ -92,8 +92,8 @@ namespace MR
         size_t to_axis = std::numeric_limits<size_t>::max(), 
         size_t num_axes_in_thread = 1)
     {
-      ThreadedLoop loop (message, source, from_axis, to_axis, num_axes_in_thread);
-      loop.run (__copy_func(), source, destination);
+      ThreadedLoop (message, source, from_axis, to_axis, num_axes_in_thread)
+        .run (__copy_func(), source, destination);
     }
 
 
