@@ -164,7 +164,6 @@ void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
 
-  bool import_grad = check_option_group (GradImportOptions);
   bool export_grad = check_option_group (GradExportOptions);
 
   if (export_grad && argument.size() > 1 )
@@ -196,12 +195,11 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Image::Header header (argument[i]);
-    if (import_grad) {
-      if (validate) 
-        header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header);
-      else 
-        header.DW_scheme() = DWI::get_DW_scheme<float> (header);
-    }
+    if (validate) 
+      header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header);
+    else if (check_option_group (GradImportOptions)) 
+      header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
