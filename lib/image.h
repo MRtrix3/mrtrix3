@@ -98,6 +98,13 @@ namespace MR
           else buffer->set_value (data_offset, val);
         }
 
+        FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
+        {
+          index (axis) = 0;
+          return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
+                   (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
+        }
+
         //! use for debugging
         friend std::ostream& operator<< (std::ostream& stream, const Image& V) {
           stream << "\"" << V.name() << "\", datatype " << DataType::from<Image::value_type>().specifier() << ", index [ ";
