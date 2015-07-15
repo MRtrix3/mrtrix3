@@ -150,12 +150,12 @@ namespace MR
                 coeff_vec[i] = ImageType::value ();
                 weights_vec[i] = H[0].weights[x] * partial_weight;
 
-                i+=1;
+                i += 1;
               }
             }
           }
 
-          return coeff_vec.dot(weights_vec);
+          return coeff_vec.dot (weights_vec);
         }
 
 
@@ -184,11 +184,11 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                weights_matrix(i, 0) = H[0].deriv_weights[x] * partial_weight;
-                weights_matrix(i, 1) = H[0].weights[x] * partial_weight_dy;
-                weights_matrix(i, 2) = H[0].weights[x] * partial_weight_dz;
+                weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
+                weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
+                weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
 
-                i+=1;
+                i += 1;
               }
             }
           }
@@ -197,7 +197,7 @@ namespace MR
         }
 
 
-        void value_and_gradient(value_type* value, Eigen::Matrix<value_type, 1, 3>* gradient) {
+        void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
           if (out_of_bounds)
             return out_of_bounds_value;
 
@@ -223,18 +223,18 @@ namespace MR
                 index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
                 // Gradient
-                weights_matrix(i, 0) = H[0].deriv_weights[x] * partial_weight;
-                weights_matrix(i, 1) = H[0].weights[x] * partial_weight_dy;
-                weights_matrix(i, 2) = H[0].weights[x] * partial_weight_dz;
+                weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
+                weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
+                weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
                 // Value
-                weights_matrix(i, 3) = H[0].weights[x] * partial_weight;
+                weights_matrix(i,3) = H[0].weights[x] * partial_weight;
 
-                i+=1;
+                i += 1;
               }
             }
           }
 
-          Eigen::Matrix<value_type, 1, 4> grad_and_value(coeff_vec * weights_matrix);
+          Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
 
           *gradient = grad_and_value.segment(1,3);
           *value = grad_and_value[3];
@@ -256,13 +256,13 @@ namespace MR
     // Template alias for default Cubic interpolator
     // This allows an interface that's consistent with other interpolators that all have one template argument
     template <typename ImageType>
-    using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::ValueAndDerivative>;
+    using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
 
 
-  template <class ImageType, typename... Args>
-    inline Cubic<ImageType> make_cubic (const ImageType& parent, Args&&... args) {
-      return Cubic<ImageType> (parent, std::forward<Args> (args)...);
-    }
+    template <class ImageType, typename... Args>
+      inline Cubic<ImageType> make_cubic (const ImageType& parent, Args&&... args) {
+        return Cubic<ImageType> (parent, std::forward<Args> (args)...);
+      }
 
 
 

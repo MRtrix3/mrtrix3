@@ -51,7 +51,7 @@ namespace MR
         }
 
       protected:
-        static const BasisMatrix cubic_poly_derivate_operator;
+        static const BasisMatrix cubic_poly_derivative_operator;
         const BasisMatrix basis_matrix;
         const BasisMatrix deriv_basis_matrix;
 
@@ -82,17 +82,17 @@ namespace MR
         void (CubicSpline::*_internal_set) (T);
 
         inline void _set_value (T position) {
-          const auto vec = WeightVector (position*position*position, position*position, position, 1);
+          const auto vec = WeightVector (position * position * position, position * position, position, 1);
           weights = (vec * basis_matrix);
         }
 
         inline void _set_deriv (T position) {
-          const auto vec = WeightVector (position*position*position, position*position, position, 1);
+          const auto vec = WeightVector (position * position * position, position * position, position, 1);
           deriv_weights = (vec * deriv_basis_matrix);
         }
 
         inline void _set_value_deriv (T position) {
-          const auto vec = WeightVector (position*position*position, position*position, position, 1);
+          const auto vec = WeightVector (position * position * position, position * position, position, 1);
           weights = (vec * basis_matrix);
           deriv_weights = (vec * deriv_basis_matrix);
         }
@@ -100,7 +100,6 @@ namespace MR
 
 
     // Hermite spline implementation
-
     template <typename T> class HermiteSpline :
     public CubicSpline<T> {
       public:
@@ -114,7 +113,6 @@ namespace MR
 
 
     // Uniform bspline implementation
-
     template <typename T> class UniformBSpline :
     public CubicSpline<T> {
       public:
@@ -129,10 +127,9 @@ namespace MR
 
 
     // Initialise our static const matrices
-
     template <typename T>
     const typename CubicSpline<T>::BasisMatrix
-    CubicSpline<T>::cubic_poly_derivate_operator((BasisMatrix() <<
+    CubicSpline<T>::cubic_poly_derivative_operator((BasisMatrix() <<
       0, 0, 0, 0,
       3, 0, 0, 0,
       0, 2, 0, 0,
@@ -140,7 +137,6 @@ namespace MR
 
 
     // Hermite spline
-
     template <typename T>
     const typename HermiteSpline<T>::BasisMatrix
     HermiteSpline<T>::hermite_basis_mtrx((BasisMatrix() <<
@@ -151,11 +147,10 @@ namespace MR
 
     template <typename T>
     const typename HermiteSpline<T>::BasisMatrix
-    HermiteSpline<T>::hermite_derivative_basis_mtrx(CubicSpline<T>::cubic_poly_derivate_operator * hermite_basis_mtrx);
+    HermiteSpline<T>::hermite_derivative_basis_mtrx(CubicSpline<T>::cubic_poly_derivative_operator * hermite_basis_mtrx);
 
 
     // Uniform b-spline
-
     template <typename T>
     const typename UniformBSpline<T>::BasisMatrix
     UniformBSpline<T>::uniform_bspline_basis_mtrx((1/6.0) * (BasisMatrix() <<
@@ -166,7 +161,7 @@ namespace MR
 
     template <typename T>
     const typename UniformBSpline<T>::BasisMatrix
-    UniformBSpline<T>::uniform_bspline_derivative_basis_mtrx(CubicSpline<T>::cubic_poly_derivate_operator * uniform_bspline_basis_mtrx);
+    UniformBSpline<T>::uniform_bspline_derivative_basis_mtrx(CubicSpline<T>::cubic_poly_derivative_operator * uniform_bspline_basis_mtrx);
 
   }
 }
