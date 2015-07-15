@@ -113,8 +113,7 @@ namespace MR
             }
 
             if (centre_zero_) {
-              LoopInOrder loop (output);
-              for (auto l = loop (output); l; ++l) {
+              for (auto l = Loop (output)(output); l; ++l) {
                 assign_pos_of (output).to (temp);
                 for (std::vector<size_t>::const_iterator flip_axis = axes_to_process.begin(); flip_axis != axes_to_process.end(); ++flip_axis)
                   temp.index(*flip_axis) = (temp.index(*flip_axis) >= (temp.size (*flip_axis) / 2)) ?

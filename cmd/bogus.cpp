@@ -42,11 +42,11 @@ void run ()
   std::cout << test << std::endl << std::endl;
   test[1] = 0.5;
 
-//  vector_input.value() = test; // seg faults
-//  std::cout << vector_input.value() << std::endl << std::endl;
+  vector_input.value() = test; // seg faults
+  std::cout << vector_input.value() << std::endl << std::endl;
 
-//  vector_input.value()[1] = 10;  // seg faults
-//  std::cout << vector_input.value() << std::endl;
+  vector_input.value()[1] = 10;  // seg faults
+  std::cout << vector_input.value() << std::endl;
 
   auto temp = Image<float>::scratch (input.header());
 

@@ -105,8 +105,7 @@ namespace MR
             full_gradient.set_message (message);
             auto temp = Image<float>::scratch (full_gradient, "full 3D gradient image");
             full_gradient (in, temp);
-            for (auto l = LoopInOrder(out) (out); l; ++l) {
-              assign_pos_of (out, 0, 3).to (temp);
+            for (auto l = Loop (out)(out, temp); l; ++l) {
               if (out.ndim() == 4) {
                 ssize_t tmp = out.index(3);
                 temp.index(4) = tmp;

@@ -151,8 +151,7 @@ void run () {
         filter (input, temp);
         filter.datatype() = DataType::Float32;
         auto output = Image<float>::create (argument[2], filter);
-        LoopInOrder loop (output);
-        for (auto l = loop (temp, output); l; ++l)
+        for (auto l = Loop (output) (temp, output); l; ++l)
           output.value() = std::abs (cdouble(temp.value()));
       } else {
         auto output = Image<cdouble>::create (argument[2], filter);
