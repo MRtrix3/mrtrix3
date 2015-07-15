@@ -52,7 +52,7 @@ namespace MR
       Math::Matrix<ValueType>& normalise_grad (Math::Matrix<ValueType>& grad)
       {
         if (grad.columns() < 3)
-          throw Exception ("invalid gradient matrix dimensions");
+          throw Exception ("invalid diffusion gradient table dimensions");
         for (size_t i = 0; i < grad.rows(); i++) {
           ValueType norm = Math::norm (grad.row (i).sub (0,3));
           if (norm) 
@@ -191,7 +191,7 @@ namespace MR
           const Options opt_fsl = get_options ("fslgrad");
           if (opt_fsl.size()) {
             if (opt_mrtrix.size())
-              throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
+              throw Exception ("Please provide diffusion gradient table using either -grad or -fslgrad option (not both)");
             load_bvecs_bvals (grad, header, opt_fsl[0][0], opt_fsl[0][1]);
           }
           if (!opt_mrtrix.size() && !opt_fsl.size() && header.DW_scheme().is_set())
@@ -199,16 +199,16 @@ namespace MR
         }
         catch (Exception& E) {
           E.display (3);
-          throw Exception ("error importing diffusion encoding for image \"" + header.name() + "\"");
+          throw Exception ("error importing diffusion gradient table for image \"" + header.name() + "\"");
         }
 
         if (!grad.rows())
           return grad;
 
         if (grad.columns() < 4)
-          throw Exception ("unexpected diffusion encoding matrix dimensions");
+          throw Exception ("unexpected diffusion gradient table dimensions");
 
-        INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion-weighted encoding");
+        INFO ("found " + str (grad.rows()) + "x" + str (grad.columns()) + " diffusion gradient table");
 
         return grad;
       }
@@ -219,13 +219,13 @@ namespace MR
       inline void check_DW_scheme (const Image::Header& header, const Math::Matrix<ValueType>& grad)
       {
         if (!grad.rows())
-          throw Exception ("no valid diffusion encoding scheme found");
+          throw Exception ("no valid diffusion gradient table found");
 
         if (header.ndim() != 4)
           throw Exception ("dwi image should contain 4 dimensions");
 
         if (header.dim (3) != (int) grad.rows())
-          throw Exception ("number of studies in base image does not match that in encoding file");
+          throw Exception ("number of studies in base image does not match that in diffusion gradient table");
       }
 
 
@@ -247,10 +247,9 @@ namespace MR
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
     template <typename ValueType> 
-      inline Math::Matrix<ValueType> get_valid_DW_scheme (const Image::Header& header)
+      inline Math::Matrix<ValueType> get_valid_DW_scheme (const Image::Header& header, bool nofail = false)
       {
         Math::Matrix<ValueType> grad = get_DW_scheme<ValueType> (header);
-        check_DW_scheme (header, grad);
 
         //CONF option: BValueScaling
         //CONF default: 1 (true)
@@ -269,7 +268,15 @@ namespace MR
 
         if (scale_bvalues)
           scale_bvalue_by_G_squared (grad);
-        normalise_grad (grad);
+
+        try {
+          normalise_grad (grad);
+          check_DW_scheme (header, grad);
+        }
+        catch (Exception& e) {
+          if (!nofail)
+            throw;
+        }
         return grad;
       }
 
