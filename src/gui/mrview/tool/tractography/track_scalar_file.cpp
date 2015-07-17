@@ -140,9 +140,9 @@ namespace MR
             tractogram.scaling_max_thresholded() :
             tractogram.scaling_max();
 
-          window.colourbar_renderer.render (tractogram, tractogram.scale_inverted(),
+          window.colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
                                             min_value, max_value,
-                                            tractogram.scaling_min(), tractogram.display_range);
+                                            tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
         }
 
 

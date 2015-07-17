@@ -90,6 +90,7 @@ namespace MR
 
             void draw (const Projection& transform, bool is_3D, int axis, int slice);
             void draw_colourbars() override;
+            size_t visible_number_colourbars () override;
             bool process_batch_command (const std::string& cmd, const std::string& args);
 
             node_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }

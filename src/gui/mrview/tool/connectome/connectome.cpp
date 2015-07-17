@@ -784,10 +784,23 @@ namespace MR
         {
           if (hide_all_button->isChecked()) return;
           if ((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
-          { } // TODO
+            window.colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
+                                              node_colour_lower_button->value(), node_colour_upper_button->value(),
+                                              node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
+                                              node_fixed_colour);
           if (edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar)
-          { } // TODO
+            window.colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
+                                              edge_colour_lower_button->value(), edge_colour_upper_button->value(),
+                                              edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
+                                              edge_fixed_colour);
         }
+
+
+        size_t Connectome::visible_number_colourbars()
+        {
+          return ((show_node_colour_bar ? 1 : 0) + (show_edge_colour_bar ? 1 : 0));
+        }
+
 
 
         bool Connectome::process_batch_command (const std::string& cmd, const std::string& args)

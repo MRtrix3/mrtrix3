@@ -388,9 +388,9 @@ namespace MR
                         image.scaling_max_thresholded() :
                         image.scaling_max();
 
-            window.colourbar_renderer.render (image,image.scale_inverted(),
+            window.colourbar_renderer.render (image.colourmap, image.scale_inverted(),
                                        min_value, max_value,
-                                       image.scaling_min(), image.display_range);
+                                       image.scaling_min(), image.display_range, image.colour);
         }
 
 

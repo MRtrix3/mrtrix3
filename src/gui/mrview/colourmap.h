@@ -147,9 +147,10 @@ namespace MR
               current_colourbar_index = 0;
             }
 
-            void render (const Displayable& object, bool inverted,
+            void render (size_t colourmap, bool inverted,
                          float local_min_value, float local_max_value,
-                         float global_min_value, float global_range);
+                         float global_min_value, float global_range,
+                         Point<float> colour = Point<float>());
 
             void render (const Displayable& object, bool inverted);
 

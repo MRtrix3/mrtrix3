@@ -285,9 +285,9 @@ namespace MR
                       fixel.scaling_max_thresholded() :
                       fixel.scaling_max();
 
-          window.colourbar_renderer.render (fixel, fixel.scale_inverted(),
+          window.colourbar_renderer.render (fixel.colourmap, fixel.scale_inverted(),
                                      min_value, max_value,
-                                     fixel.scaling_min(), fixel.display_range);
+                                     fixel.scaling_min(), fixel.display_range, fixel.colour);
         }
 
 

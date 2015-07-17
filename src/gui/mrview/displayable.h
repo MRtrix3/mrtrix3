@@ -54,6 +54,7 @@ namespace MR
 
       class Image;
       namespace Tool { class AbstractFixel; }
+      namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
       {
