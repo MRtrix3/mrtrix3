@@ -111,6 +111,11 @@ void usage ()
   DESCRIPTION
   + "successor to the SIFT method; instead of removing streamlines, use an EM framework to find an appropriate cross-section multiplier for each streamline";
 
+  REFERENCES
+    + "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
+    "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
+    "NeuroImage, doi:10.1016/j.neuroimage.2015.06.092";
+
   ARGUMENTS
   + Argument ("in_tracks",   "the input track file").type_file_in()
   + Argument ("in_fod",      "input image containing the spherical harmonics of the fibre orientation distributions").type_image_in()
