@@ -303,7 +303,7 @@ namespace MR
           double best_FPS, best_FPS_time;
           bool show_FPS;
 
-          friend class Image;
+          friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
           friend class Window::GLArea;

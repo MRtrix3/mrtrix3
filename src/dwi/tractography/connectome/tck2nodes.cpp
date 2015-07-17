@@ -21,19 +21,19 @@
  */
 
 
-#include "dwi/tractography/connectomics/tck2nodes.h"
+#include "dwi/tractography/connectome/tck2nodes.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
 
 
-node_t Tck2nodes_voxel::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_voxel::select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const
 {
 
   const Point<float>& p (end ? tck.back() : tck.front());
@@ -72,7 +72,7 @@ void Tck2nodes_radial::initialise_search ()
 
 
 
-node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_radial::select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const
 {
 
   float min_dist = max_dist;
@@ -107,7 +107,7 @@ node_t Tck2nodes_radial::select_node (const Streamline<>& tck, VoxelType& voxel,
 
 
 
-node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const
 {
 
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
@@ -138,7 +138,7 @@ node_t Tck2nodes_revsearch::select_node (const Streamline<>& tck, VoxelType& vox
 
 
 
-node_t Tck2nodes_forwardsearch::select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const
+node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const
 {
 
   // Start by defining the endpoint and the tangent at the endpoint

@@ -81,7 +81,7 @@ namespace MR
             source += " scale * (amplitude - offset), 0.0, 1.0);\n  ";
           }
 
-          source += ColourMap::maps[object.colourmap].mapping;
+          source += ColourMap::maps[object.colourmap].glsl_mapping;
 
           source += "}\n";
 

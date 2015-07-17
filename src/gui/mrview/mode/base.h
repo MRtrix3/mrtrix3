@@ -82,7 +82,7 @@ namespace MR
             Window& window;
             Projection projection;
             const int features;
-            QList<Image*> overlays_for_3D;
+            QList<ImageBase*> overlays_for_3D;
             bool update_overlays;
 
             virtual void paint (Projection& projection);

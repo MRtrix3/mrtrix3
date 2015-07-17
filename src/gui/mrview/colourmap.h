@@ -23,6 +23,10 @@
 #ifndef __gui_mrview_colourmap_h__
 #define __gui_mrview_colourmap_h__
 
+#include <functional>
+
+#include "point.h"
+
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
@@ -54,20 +58,27 @@ namespace MR
 
         class Entry {
           public:
-            Entry (const char* name, const char* mapping, const char* amplitude = NULL, 
-                bool special = false, bool is_colour = false) : 
+
+            typedef std::function< Point<float> (float) > basic_map_fn;
+
+            Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
+                const char* amplitude = NULL, bool special = false, bool is_colour = false) :
               name (name),
-              mapping (mapping), 
+              glsl_mapping (glsl_mapping),
+              basic_mapping (basic_mapping),
               amplitude (amplitude ? amplitude : default_amplitude), 
               special (special),
               is_colour (is_colour) { }
 
             const char* name;
-            const char* mapping;
+            const char* glsl_mapping;
+            basic_map_fn basic_mapping;
             const char* amplitude;
             bool special, is_colour;
 
             static const char* default_amplitude;
+
+
         };
 
         extern const Entry maps[];

@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_connectomics_h__
-#define __dwi_tractography_connectomics_connectomics_h__
+#ifndef __dwi_tractography_connectome_connectome_h__
+#define __dwi_tractography_connectome_connectome_h__
 
 
 #include "app.h"
@@ -31,12 +31,14 @@
 
 #include "image/buffer.h"
 
+#include "connectome/connectome.h"
+
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -45,7 +47,7 @@ namespace Connectomics {
 #define TCK2NODES_FORWARDSEARCH_DEFAULT_DIST 3.0
 
 
-typedef uint32_t node_t;
+typedef MR::Connectome::node_t node_t;
 typedef std::pair<node_t, node_t> NodePair;
 
 class Tck2nodes_base;

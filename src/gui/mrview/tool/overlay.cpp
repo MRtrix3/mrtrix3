@@ -21,6 +21,7 @@
 */
 
 #include "mrtrix.h"
+#include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/mrview/tool/overlay.h"

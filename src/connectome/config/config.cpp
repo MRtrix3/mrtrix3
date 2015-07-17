@@ -22,16 +22,14 @@
 
 
 
-#include "dwi/tractography/connectomics/config.h"
+#include "connectome/config/config.h"
 
 
 
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -40,8 +38,7 @@ namespace Connectomics {
 void load_config (const std::string& path, ConfigInvLookup& config)
 {
 
-  if (!config.empty())
-    throw Exception ("Code error: Connectomics::load_config() called with non-empty config class");
+  assert (config.empty());
 
   // Import the configuration file
   if (!Path::exists (path))
@@ -73,8 +70,7 @@ void load_config (const std::string& path, ConfigInvLookup& config)
 void load_config (const std::string& path, std::vector<std::string>& config)
 {
 
-  if (!config.empty())
-    throw Exception ("Code error: Connectomics::load_config() called with non-empty config class");
+  assert (config.empty());
 
   // Import the configuration file
   if (!Path::exists (path))
@@ -109,8 +105,6 @@ void load_config (const std::string& path, std::vector<std::string>& config)
 
 
 
-}
-}
 }
 }
 

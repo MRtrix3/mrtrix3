@@ -1,7 +1,7 @@
 /*
-    Copyright 2011 Brain Research Institute, Melbourne, Australia
+    Copyright 2012 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert Smith, 2013.
+    Written by Robert Smith, 22/04/2015.
 
     This file is part of MRtrix.
 
@@ -22,37 +22,24 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_config_h__
-#define __dwi_tractography_connectomics_config_h__
+#ifndef __connectome_connectome_h__
+#define __connectome_connectome_h__
 
-#include "file/path.h"
+#include "exception.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
-
-#include <map>
-#include <string>
+#include "math/matrix.h"
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
+typedef uint32_t node_t;
 
 
-typedef std::map<std::string, node_t> ConfigInvLookup;
+void verify_matrix (Math::Matrix<float>& in, const node_t num_nodes);
 
 
-void load_config (const std::string&, ConfigInvLookup&);
-void load_config (const std::string&, std::vector<std::string>&);
-
-
-
-
-
-}
-}
 }
 }
 

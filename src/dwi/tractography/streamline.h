@@ -49,15 +49,45 @@ namespace MR
             index (-1),
             weight (value_type (1.0)) { }
 
+          Streamline (size_t size, const Point<float>& fill) :
+            std::vector< Point<value_type> > (size, fill),
+            index (-1),
+            weight (value_type (1.0)) { }
+
           Streamline (const Streamline& that) :
             std::vector< Point<value_type> > (that),
             index (that.index),
             weight (that.weight) { }
 
+          Streamline (Streamline&& that) :
+            std::vector< Point<value_type> > (std::move (that)),
+            index (that.index),
+            weight (that.weight)
+          {
+            that.index = -1;
+            that.weight = 1.0f;
+          }
+
           Streamline (const std::vector< Point<value_type> >& tck) :
             std::vector< Point<value_type> > (tck),
             index (-1),
             weight (1.0) { }
+
+          Streamline& operator= (Streamline&& that)
+          {
+            *this = std::move (std::vector< Point<T> > (that));
+            index = that.index; that.index = -1;
+            weight = that.weight; that.weight = 1.0f;
+            return *this;
+          }
+
+          Streamline& operator= (const Streamline& that)
+          {
+            *this = std::vector< Point<T> > (that);
+            index = that.index;
+            weight = that.weight;
+            return *this;
+          }
 
           void clear()
           {

@@ -22,8 +22,8 @@
 
 
 
-#ifndef __dwi_tractography_connectomics_tck2nodes_h__
-#define __dwi_tractography_connectomics_tck2nodes_h__
+#ifndef __dwi_tractography_connectome_tck2nodes_h__
+#define __dwi_tractography_connectome_tck2nodes_h__
 
 
 #include <stdint.h>
@@ -41,15 +41,15 @@
 #include "image/voxel.h"
 #include "image/interp/linear.h"
 
-#include "dwi/tractography/streamline.h"
+#include "dwi/tractography/connectome/connectome.h"
 
-#include "dwi/tractography/connectomics/connectomics.h"
+#include "dwi/tractography/streamline.h"
 
 
 namespace MR {
 namespace DWI {
 namespace Tractography {
-namespace Connectomics {
+namespace Connectome {
 
 
 
@@ -69,14 +69,11 @@ class Tck2nodes_base {
 
     virtual ~Tck2nodes_base() { }
 
-    virtual NodePair operator() (const Streamline<>& tck) const {
+    virtual NodePair operator() (const Tractography::Streamline<float>& tck) const {
       VoxelType voxel (nodes);
       const node_t node_one = select_node (tck, voxel, false);
       const node_t node_two = select_node (tck, voxel, true);
-      if (node_two < node_one)
-        return std::make_pair (node_two, node_one);
-      else
-        return std::make_pair (node_one, node_two);
+      return std::make_pair (node_one, node_two);
     }
 
   protected:
@@ -85,7 +82,7 @@ class Tck2nodes_base {
     Image::Buffer<node_t>& nodes;
     Image::Transform transform;
 
-    virtual node_t select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const {
+    virtual node_t select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const {
       throw Exception ("Calling empty virtual function Tck2nodes_base::select_node()");
     }
 
@@ -109,7 +106,7 @@ class Tck2nodes_voxel : public Tck2nodes_base {
     ~Tck2nodes_voxel() { }
 
   private:
-    node_t select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const;
+    node_t select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const;
 
 };
 
@@ -138,7 +135,7 @@ class Tck2nodes_radial : public Tck2nodes_base {
     ~Tck2nodes_radial() { }
 
   private:
-    node_t select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const;
+    node_t select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const;
 
     void initialise_search ();
     std::vector< Point<int> > radial_search;
@@ -170,7 +167,7 @@ class Tck2nodes_revsearch : public Tck2nodes_base
     ~Tck2nodes_revsearch() { }
 
   private:
-    node_t select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const;
+    node_t select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const;
 
     const float max_dist;
 
@@ -196,7 +193,7 @@ class Tck2nodes_forwardsearch : public Tck2nodes_base
     ~Tck2nodes_forwardsearch() { }
 
   private:
-    node_t select_node (const Streamline<>& tck, VoxelType& voxel, bool end) const;
+    node_t select_node (const Tractography::Streamline<float>& tck, VoxelType& voxel, bool end) const;
 
     const float max_dist;
     const float angle_limit;
