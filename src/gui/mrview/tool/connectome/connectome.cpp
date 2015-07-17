@@ -798,7 +798,8 @@ namespace MR
 
         size_t Connectome::visible_number_colourbars()
         {
-          return ((show_node_colour_bar ? 1 : 0) + (show_edge_colour_bar ? 1 : 0));
+          return ((((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
+                  + (edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar) ? 1 : 0);
         }
 
 
