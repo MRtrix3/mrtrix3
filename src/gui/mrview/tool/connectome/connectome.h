@@ -66,53 +66,6 @@
 
 
 
-// Elements that could be added to the Connectome tool:
-//
-// * Drawing edges
-//   - Display options:
-//     * Colour by: Corresponding nodes? Would require some plotting cleverness
-//   - Draw as streamlines
-//     * Consider a cross-talk solution with the tractography tool;
-//       make use of more advanced tractography shaders
-//       Would however require addition to tractography shaders: variable radius between exemplars
-//       If attempting this, make use of the assignments matrix now provided by tck2connectome, loading
-//       it and the tractogram file as input
-//   - Draw as arcs: determine cylinder tangents at node COMs, and draw arcs between nodes with variable tension
-//   - Combobox to scale cylinder / streamtube size by radius rather than volume?
-//
-// * Drawing nodes
-//   - Drawing as overlay in 3D: Currently disabled, realistically needs its own shaders
-//     Would it be possible to do a ray per fragment, build a voxel list back-to-front, and
-//      only let each node contribute to each fragment once?
-//   - Drawing as spheres
-//     * May be desirable in some instances to symmetrize the node centre-of-mass positions...?
-//   - Combobox to scale cube / sphere size by radius rather than volume?
-//
-// * OpenGL drawing general:
-//   - Consider generating all polygonal geometry, store in a vector, sort by camera distance,
-//     update index vector accordingly, do a single draw call for both edges and nodes
-//     (this is the only way transparency of both nodes and edges can work)
-//   - Add compatibility with clip planes
-//
-// * Toolbar
-//   - Enable collapsing of group boxes; will make room for future additions
-//
-// * Additional functionalities:
-//   - Print node names in the GL window
-//     How to get access to shorter node names? Rely on user making a new LUT?
-//     - Maybe allow editing of short name in the list view
-//     How to determine where to draw the names? Not sure if the width of the text box will be known
-//     - Use focus plane, offset away from the origin, disable depth testing; or:
-//     - Determine point in 3D, offset away from origin, enable depth testing,
-//       possibly also angle labels slightly from projection plane
-//     May be better to use COM of all nodes, rather than scanner space origin, to offset node labels
-//   - Enhance compatibility with parcellation images that do not have sequential indices
-//
-
-
-
-
-
 namespace MR
 {
   namespace GUI

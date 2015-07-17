@@ -139,7 +139,7 @@ namespace MR
           lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
                                         "If the primary parcellation image has come from an atlas that\n"
                                         "provides a look-up table, select that file here so that MRview \n"
-                                        "can access the node names and colours."));
+                                        "can access the appropriate node colours."));
           for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
             lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
           connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
@@ -152,11 +152,8 @@ namespace MR
           hlayout->addWidget (new QLabel ("Config: "));
           config_button = new QPushButton (this);
           config_button->setToolTip (tr ("Open connectome config file\n"
-                                         "If the primary parcellation image has been modified using the\n"
-                                         "labelconfig command, the node indices in the image will no longer\n"
-                                         "correspond with the indices in the lookup table provided with the\n"
-                                         "atlas. Therefore, use this button to provide the config file that\n"
-                                         "was utilised by labelconfig so that MRview can cross-reference. "));
+                                         "Provide the connectome config file used at the labelconfig\n"
+                                         "step to access the proper node names in the node list."));
           config_button->setText ("(none)");
           connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
           hlayout->addWidget (config_button, 1);
@@ -226,7 +223,9 @@ namespace MR
           hlayout->setSpacing (0);
           QIcon warning_icon (":/warn.svg");
           node_visibility_matrix_operator_combobox = new QComboBox (this);
-          node_visibility_matrix_operator_combobox->setToolTip (tr ("Controls how node visibility is determined from the matrix file when multiple nodes are selected"));
+          node_visibility_matrix_operator_combobox->setToolTip (tr ("If node visibility is determined from a matrix file, and multiple\n"
+                                                                    "nodes are selected, this operator defines which nodes are visible\n"
+                                                                    "and which are not based on the corresponding rows of the matrix."));
           node_visibility_matrix_operator_combobox->addItem ("Any");
           node_visibility_matrix_operator_combobox->addItem ("All");
           node_visibility_matrix_operator_combobox->addItem ("N/A");
@@ -278,6 +277,7 @@ namespace MR
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
           hlayout->addWidget (node_geometry_sphere_lod_label, 1);
           node_geometry_sphere_lod_spinbox = new QSpinBox (this);
+          node_geometry_sphere_lod_spinbox->setToolTip (tr ("Level of Detail for drawing spheres"));
           node_geometry_sphere_lod_spinbox->setMinimum (1);
           node_geometry_sphere_lod_spinbox->setMaximum (7);
           node_geometry_sphere_lod_spinbox->setSingleStep (1);
@@ -285,11 +285,13 @@ namespace MR
           connect (node_geometry_sphere_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(sphere_lod_slot(int)));
           hlayout->addWidget (node_geometry_sphere_lod_spinbox, 1);
           node_geometry_overlay_interp_checkbox = new QCheckBox ("Interp");
+          node_geometry_overlay_interp_checkbox->setToolTip (tr ("Interpolate the node overlay image"));
           node_geometry_overlay_interp_checkbox->setTristate (false);
           node_geometry_overlay_interp_checkbox->setVisible (false);
           connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
           hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
           node_geometry_point_round_checkbox = new QCheckBox ("Round");
+          node_geometry_point_round_checkbox->setToolTip (tr ("Draw round points for each node, instead of square ones"));
           node_geometry_point_round_checkbox->setTristate (false);
           node_geometry_point_round_checkbox->setChecked (true);
           node_geometry_point_round_checkbox->setVisible (false);
@@ -317,7 +319,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           node_colour_matrix_operator_combobox = new QComboBox (this);
-          node_colour_matrix_operator_combobox->setToolTip (tr ("Controls how node colour is determined from the matrix file when multiple nodes are selected"));
+          node_colour_matrix_operator_combobox->setToolTip (tr ("If node colours are determined from a matrix file, and multiple\n"
+                                                                "nodes are selected, this operator defines how the entries from\n"
+                                                                "the corresponding rows of the matrix are combined to produce a\n"
+                                                                "colour for each node."));
           node_colour_matrix_operator_combobox->addItem ("Min");
           node_colour_matrix_operator_combobox->addItem ("Mean");
           node_colour_matrix_operator_combobox->addItem ("Sum");
@@ -329,9 +334,11 @@ namespace MR
           connect (node_colour_matrix_operator_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_matrix_operator_slot (int)));
           hlayout->addWidget (node_colour_matrix_operator_combobox);
           node_colour_fixedcolour_button = new QColorButton;
+          node_colour_fixedcolour_button->setToolTip (tr ("Set the fixed colour to use for all nodes"));
           connect (node_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (node_fixed_colour_change_slot()));
           hlayout->addWidget (node_colour_fixedcolour_button, 1);
           node_colour_colourmap_button = new ColourMapButton (this, node_colourmap_observer, false, false, true);
+          node_colour_colourmap_button->setToolTip (tr ("Select the colourmap for nodes"));
           node_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (node_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
@@ -361,7 +368,7 @@ namespace MR
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 5, 0, 1, 2);
           node_size_combobox = new QComboBox (this);
-          node_size_combobox->setToolTip (tr ("Scale the size of each node"));
+          node_size_combobox->setToolTip (tr ("Set how the size of each node is determined"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
           node_size_combobox->addItem ("Vector file");
@@ -372,7 +379,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           node_size_matrix_operator_combobox = new QComboBox (this);
-          node_size_matrix_operator_combobox->setToolTip (tr ("Controls how node size is determined from the matrix file when multiple nodes are selected"));
+          node_size_matrix_operator_combobox->setToolTip (tr ("If node sizes are determined from a matrix file, and multiple\n"
+                                                              "nodes are selected, this operator defines how the entries from\n"
+                                                              "the corresponding rows of the matrix are combined to produce a\n"
+                                                              "size value for each node."));
           node_size_matrix_operator_combobox->addItem ("Min");
           node_size_matrix_operator_combobox->addItem ("Mean");
           node_size_matrix_operator_combobox->addItem ("Sum");
@@ -431,7 +441,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           node_alpha_matrix_operator_combobox = new QComboBox (this);
-          node_alpha_matrix_operator_combobox->setToolTip (tr ("Controls how node transparency is determined from the matrix file when multiple nodes are selected"));
+          node_alpha_matrix_operator_combobox->setToolTip (tr ("If node transparency is determined from a matrix file, and multiple\n"
+                                                                "nodes are selected, this operator defines how the entries from\n"
+                                                                "the corresponding rows of the matrix are combined to produce an\n"
+                                                                "alpha value for each node."));
           node_alpha_matrix_operator_combobox->addItem ("Min");
           node_alpha_matrix_operator_combobox->addItem ("Mean");
           node_alpha_matrix_operator_combobox->addItem ("Sum");
@@ -535,6 +548,7 @@ namespace MR
           edge_geometry_cylinder_lod_label->setVisible (false);
           hlayout->addWidget (edge_geometry_cylinder_lod_label, 1);
           edge_geometry_cylinder_lod_spinbox = new QSpinBox (this);
+          edge_geometry_cylinder_lod_spinbox->setToolTip (tr ("Level of Detail for drawing cylinders / streamtubes"));
           edge_geometry_cylinder_lod_spinbox->setMinimum (1);
           edge_geometry_cylinder_lod_spinbox->setMaximum (7);
           edge_geometry_cylinder_lod_spinbox->setSingleStep (1);
@@ -543,6 +557,7 @@ namespace MR
           connect (edge_geometry_cylinder_lod_spinbox, SIGNAL (valueChanged(int)), this, SLOT(cylinder_lod_slot(int)));
           hlayout->addWidget (edge_geometry_cylinder_lod_spinbox, 1);
           edge_geometry_line_smooth_checkbox = new QCheckBox ("Smooth");
+          edge_geometry_line_smooth_checkbox->setToolTip (tr ("Use OpenGL's smooth line drawing feature"));
           edge_geometry_line_smooth_checkbox->setTristate (false);
           connect (edge_geometry_line_smooth_checkbox, SIGNAL (stateChanged(int)), this, SLOT(edge_size_value_slot()));
           hlayout->addWidget (edge_geometry_line_smooth_checkbox, 1);
@@ -561,9 +576,11 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
           edge_colour_fixedcolour_button = new QColorButton;
+          edge_colour_fixedcolour_button->setToolTip (tr ("Set the fixed colour to use for all edges"));
           connect (edge_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (edge_colour_change_slot()));
           hlayout->addWidget (edge_colour_fixedcolour_button, 1);
           edge_colour_colourmap_button = new ColourMapButton (this, edge_colourmap_observer, false, false, true);
+          edge_colour_colourmap_button->setToolTip (tr ("Select the colourmap for nodes"));
           edge_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (edge_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
@@ -593,7 +610,7 @@ namespace MR
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 5, 0, 1, 2);
           edge_size_combobox = new QComboBox (this);
-          edge_size_combobox->setToolTip (tr ("Scale the width of each edge"));
+          edge_size_combobox->setToolTip (tr ("Set how the width of each edge is determined"));
           edge_size_combobox->addItem ("Fixed");
           edge_size_combobox->addItem ("Matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
@@ -638,7 +655,7 @@ namespace MR
           label = new QLabel ("Transparency: ");
           gridlayout->addWidget (label, 7, 0, 1, 2);
           edge_alpha_combobox = new QComboBox (this);
-          edge_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
+          edge_alpha_combobox->setToolTip (tr ("Set how edge transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
           edge_alpha_combobox->addItem ("Matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
