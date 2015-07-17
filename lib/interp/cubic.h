@@ -68,8 +68,12 @@ namespace MR
      * \endcode
      */
 
+    // To avoid unnecessary computation, we want to partially specialize our template based
+    // on processing type (value/gradient or both), however each specialization has common core logic
+    // which we store in SplineInterpBase
+
     template <class ImageType, class SplineType, Math::SplineProcessingType PType>
-    class SplineInterp : public ImageType, public Transform
+    class SplineInterpBase : public ImageType, public Transform
     {
       public:
         typedef typename ImageType::value_type value_type;
@@ -85,11 +89,61 @@ namespace MR
 
         //! construct a Nearest object to obtain interpolated values using the
         // parent DataSet class
-        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+        SplineInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
           ImageType (parent),
           Transform (parent),
           out_of_bounds_value (value_when_out_of_bounds),
           H { SplineType(PType), SplineType(PType), SplineType(PType) }
+        { }
+
+        const value_type out_of_bounds_value;
+
+      protected:
+        SplineType H[3];
+        Eigen::Vector3d P;
+
+        ssize_t check (ssize_t x, ssize_t dim) const {
+          if (x < 0) return 0;
+          if (x > dim) return dim;
+          return x;
+        }
+    };
+
+
+    template <class ImageType, class SplineType, Math::SplineProcessingType PType>
+    class SplineInterp : public SplineInterpBase <ImageType, SplineType, PType>
+    {
+      public:
+        typedef typename ImageType::value_type value_type;
+
+      private:
+        SplineInterp ();
+    };
+
+
+    // Specialization of SplineInterp when we're only after interpolated values
+
+    template <class ImageType, class SplineType>
+    class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Value>:
+    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value>
+    {
+      public:
+        typedef typename ImageType::value_type value_type;
+        using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Value>;
+
+        using SplineBase::size;
+        using SplineBase::index;
+        using SplineBase::set_to_nearest;
+        using SplineBase::voxelsize;
+        using SplineBase::scanner2voxel;
+        using SplineBase::out_of_bounds;
+        using SplineBase::out_of_bounds_value;
+        using SplineBase::P;
+        using SplineBase::H;
+        using SplineBase::check;
+
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds)
         { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
@@ -98,14 +152,28 @@ namespace MR
          * (floating-point) voxel coordinate within the dataset. */
         template <class VectorType>
         bool voxel (const VectorType& pos) {
-          Eigen::Vector3d f = Transform::set_to_nearest (pos);
+          Eigen::Vector3d f = set_to_nearest (pos);
           if (out_of_bounds)
             return true;
           P = pos;
           for(size_t i =0; i <3; ++i)
             H[i].set (f[i]);
+
+          // Precompute weights
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            for (ssize_t y = 0; y < 4; ++y) {
+              value_type partial_weight = H[1].weights[y] * H[2].weights[z];
+              for (ssize_t x = 0; x < 4; ++x) {
+                weights_vec[i] = H[0].weights[x] * partial_weight;
+                i += 1;
+              }
+            }
+          }
+
           return false;
         }
+
         //! Set the current position to <b>image space</b> position \a pos
         /*! This will set the position from which the image intensity values will
          * be interpolated, assuming that \a pos provides the position as a
@@ -122,34 +190,25 @@ namespace MR
          * scanner space coordinate, in units of millimeters. */
         template <class VectorType>
         bool scanner (const VectorType& pos) {
-          return voxel (Transform::scanner2voxel * pos.template cast<double>());
+          return voxel (scanner2voxel * pos.template cast<double>());
         }
-
 
         value_type value () {
           if (out_of_bounds)
             return out_of_bounds_value;
 
-          // Make sure that underlying spline for each dim has computed value weights
-          assert (PType & Math::SplineProcessingType::Value);
-
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
           Eigen::Matrix<value_type, 64, 1> coeff_vec;
-          Eigen::Matrix<value_type, 64, 1> weights_vec;
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
             index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
               index(1) = check (c[1] + y, size (1)-1);
-              value_type partial_weight = H[1].weights[y] * H[2].weights[z];
-
               for (ssize_t x = 0; x < 4; ++x) {
                 index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                weights_vec[i] = H[0].weights[x] * partial_weight;
-
                 i += 1;
               }
             }
@@ -158,13 +217,92 @@ namespace MR
           return coeff_vec.dot (weights_vec);
         }
 
+      protected:
+        Eigen::Matrix<value_type, 64, 1> weights_vec;
+    };
+
+
+    // Specialization of SplineInterp when we're only after interpolated gradients
+
+    template <class ImageType, class SplineType>
+    class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::Derivative>:
+    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative>
+    {
+      public:
+        typedef typename ImageType::value_type value_type;
+        using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::Derivative>;
+
+        using SplineBase::size;
+        using SplineBase::index;
+        using SplineBase::set_to_nearest;
+        using SplineBase::voxelsize;
+        using SplineBase::scanner2voxel;
+        using SplineBase::out_of_bounds;
+        using SplineBase::out_of_bounds_value;
+        using SplineBase::P;
+        using SplineBase::H;
+        using SplineBase::check;
+
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds),
+          out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds)
+        { }
+
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * (floating-point) voxel coordinate within the dataset. */
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          Eigen::Vector3d f = set_to_nearest (pos);
+          if (out_of_bounds)
+            return true;
+          P = pos;
+          for(size_t i =0; i <3; ++i)
+            H[i].set (f[i]);
+
+          // Precompute weights
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            for (ssize_t y = 0; y < 4; ++y) {
+              value_type partial_weight = H[1].weights[y] * H[2].weights[z];
+              value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
+              value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
+
+              for (ssize_t x = 0; x < 4; ++x) {
+                weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
+                weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
+                weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
+                i += 1;
+              }
+            }
+          }
+
+          return false;
+        }
+
+        //! Set the current position to <b>image space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * coordinate relative to the axes of the dataset, in units of
+         * millimeters. The origin is taken to be the centre of the voxel at [
+         * 0 0 0 ]. */
+        template <class VectorType>
+        bool image (const VectorType& pos) {
+          return voxel (voxelsize.inverse() * pos.template cast<double>());
+        }
+        //! Set the current position to the <b>scanner space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * scanner space coordinate, in units of millimeters. */
+        template <class VectorType>
+        bool scanner (const VectorType& pos) {
+          return voxel (scanner2voxel * pos.template cast<double>());
+        }
 
         Eigen::Matrix<value_type, 1, 3> gradient () {
           if (out_of_bounds)
-            return Eigen::Matrix<value_type, 1, 3>(out_of_bounds, out_of_bounds, out_of_bounds);
-
-          // Make sure that underlying spline for each dim has computed derivative weights
-          assert (PType & Math::SplineProcessingType::Derivative);
+            return out_of_bounds_vec;
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -176,18 +314,9 @@ namespace MR
             index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
               index(1) = check (c[1] + y, size (1)-1);
-
-              value_type partial_weight = H[1].weights[y] * H[2].weights[z];
-              value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
-              value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
-
               for (ssize_t x = 0; x < 4; ++x) {
                 index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
-                weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
-                weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
-
                 i += 1;
               }
             }
@@ -196,32 +325,59 @@ namespace MR
           return coeff_vec * weights_matrix;
         }
 
+      protected:
+        const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
+        Eigen::Matrix<value_type, 64, 3> weights_matrix;
+    };
 
-        void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
+
+    // Specialization of SplineInterp when we're after both interpolated gradients and values
+
+    template <class ImageType, class SplineType>
+    class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>:
+    public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
+    {
+      public:
+        typedef typename ImageType::value_type value_type;
+        using SplineBase = SplineInterpBase<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>;
+
+        using SplineBase::size;
+        using SplineBase::index;
+        using SplineBase::set_to_nearest;
+        using SplineBase::voxelsize;
+        using SplineBase::scanner2voxel;
+        using SplineBase::out_of_bounds;
+        using SplineBase::out_of_bounds_value;
+        using SplineBase::P;
+        using SplineBase::H;
+        using SplineBase::check;
+
+        SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds)
+        { }
+
+        //! Set the current position to <b>voxel space</b> position \a pos
+        /*! This will set the position from which the image intensity values will
+         * be interpolated, assuming that \a pos provides the position as a
+         * (floating-point) voxel coordinate within the dataset. */
+        template <class VectorType>
+        bool voxel (const VectorType& pos) {
+          Eigen::Vector3d f = set_to_nearest (pos);
           if (out_of_bounds)
-            return out_of_bounds_value;
+            return true;
+          P = pos;
+          for(size_t i =0; i <3; ++i)
+            H[i].set (f[i]);
 
-          // Make sure that underlying spline for each dim has computed both value and derivative weights
-          assert (PType & Math::SplineProcessingType::ValueAndDerivative);
-
-          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
-
-          Eigen::Matrix<value_type, 1, 64> coeff_vec;
-          Eigen::Matrix<value_type, 64, 4> weights_matrix;
-
+          // Precompute weights
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
-
               value_type partial_weight = H[1].weights[y] * H[2].weights[z];
               value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
               value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
 
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
-                coeff_vec[i] = ImageType::value ();
                 // Gradient
                 weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
                 weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
@@ -234,24 +390,41 @@ namespace MR
             }
           }
 
+          return false;
+        }
+
+
+        void value_and_gradient (value_type& value, Eigen::Matrix<value_type, 1, 3>& gradient) {
+          if (out_of_bounds)
+            return;
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+
+          Eigen::Matrix<value_type, 1, 64> coeff_vec;
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            index(2) = check (c[2] + z, size (2)-1);
+            for (ssize_t y = 0; y < 4; ++y) {
+              index(1) = check (c[1] + y, size (1)-1);
+              for (ssize_t x = 0; x < 4; ++x) {
+                index(0) = check (c[0] + x, size (0)-1);
+                coeff_vec[i] = ImageType::value ();
+                i += 1;
+              }
+            }
+          }
+
           Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
 
-          *gradient = grad_and_value.segment(1,3);
-          *value = grad_and_value[3];
+          gradient = grad_and_value.segment(1,3);
+          value = grad_and_value[3];
         }
-
-        const value_type out_of_bounds_value;
 
       protected:
-        SplineType H[3];
-        Eigen::Vector3d P;
-
-        ssize_t check (ssize_t x, ssize_t dim) const {
-          if (x < 0) return 0;
-          if (x > dim) return dim;
-          return x;
-        }
+        Eigen::Matrix<value_type, 64, 4> weights_matrix;
     };
+
 
     // Template alias for default Cubic interpolator
     // This allows an interface that's consistent with other interpolators that all have one template argument
