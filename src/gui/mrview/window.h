@@ -133,6 +133,10 @@ namespace MR
           void on_scaling_changed ();
           void updateGL ();
 
+          void startProgressBar ();
+          void displayProgressBar (ProgressInfo& p);
+          void doneProgressBar ();
+
         private slots:
           void image_open_slot ();
           void image_import_DICOM_slot ();
