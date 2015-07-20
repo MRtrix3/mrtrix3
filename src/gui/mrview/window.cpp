@@ -1787,7 +1787,6 @@ namespace MR
           progress_dialog = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0, this);
           progress_dialog->setWindowModality (Qt::ApplicationModal);
           progress_dialog->show();
-          qApp->processEvents();
         }
         progress_dialog->setValue (p.value);
         qApp->processEvents();
