@@ -38,7 +38,6 @@ namespace MR
           projection (window.glarea, window.font),
           features (flags),
           update_overlays (false),
-          painting (false),
           visible (true) { }
 
 
@@ -52,7 +51,6 @@ namespace MR
         void Base::paintGL ()
         {
           GL_CHECK_ERROR;
-          painting = true;
 
           projection.set_viewport (window, 0, 0, width(), height());
 
@@ -150,7 +148,6 @@ namespace MR
           }
 
 done_painting:
-          painting = false;
           update_overlays = false;
         }
 

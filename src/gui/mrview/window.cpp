@@ -8,6 +8,7 @@
 #include "gui/opengl/lighting.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/opengl.h"
+#include "gui/dialog/progress.h"
 #include "gui/dialog/image_properties.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/mode/list.h"
@@ -85,6 +86,7 @@ namespace MR
       Window::GLArea::GLArea (Window& parent) :
         GL::Area (&parent),
         main (parent) {
+          Dialog::ProgressBar::set_main_window (this);
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
@@ -1255,8 +1257,6 @@ namespace MR
         GL_CHECK_ERROR;
         glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
-        if (mode->in_paint())
-          return;
 
         if (glarea->format().samples() > 1) 
           gl::Enable (gl::MULTISAMPLE);

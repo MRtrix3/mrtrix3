@@ -190,7 +190,6 @@ namespace MR
             int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
-            bool in_paint () const { return painting; } 
             void updateGL () { window.updateGL(); } 
 
           protected:
@@ -202,7 +201,6 @@ namespace MR
 
             void reset_view ();
 
-            bool painting;
             bool visible;
         };
 

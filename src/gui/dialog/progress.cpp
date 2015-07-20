@@ -32,39 +32,78 @@ namespace MR
       namespace ProgressBar
       {
 
+        namespace {
+          QWidget* main_window = nullptr;
+          struct Data {
+            Data () : dialog (nullptr) { }
+            QProgressDialog* dialog;
+            Timer timer;
+          };
+        }
+
+        void set_main_window (QWidget* window) {
+          main_window = window;
+        }
+
         void display (ProgressInfo& p)
         {
-#if QT_VERSION >= 0x050400
-          QOpenGLContext* context = QOpenGLContext::currentContext();
-          QSurface* surface = context->surface();
-#endif
           if (!p.data) {
             INFO (App::NAME + ": " + p.text);
-            p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
-            reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
+            main_window->setUpdatesEnabled (false);
+            p.data = new Data;
           }
-          reinterpret_cast<QProgressDialog*> (p.data)->setValue (p.value);
+          else {
+#if QT_VERSION >= 0x050400
+            QOpenGLContext* context = QOpenGLContext::currentContext();
+            QSurface* surface = context ? context->surface() : nullptr;
+#endif
+            Data* data = reinterpret_cast<Data*> (p.data);
+            if (!data->dialog) {
+              if (data->timer.elapsed() > 1.0) {
+                data->dialog = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
+                data->dialog->setWindowModality (Qt::ApplicationModal);
+                data->dialog->show();
+                qApp->processEvents();
+              }
+            }
+            else {
+              data->dialog->setValue (p.value);
+              qApp->processEvents();
+            }
 
 #if QT_VERSION >= 0x050400
-          context->makeCurrent (surface);
+            if (context) {
+              assert (surface);
+              context->makeCurrent (surface);
+            }
 #endif
+          }
         }
 
 
         void done (ProgressInfo& p)
         {
-#if QT_VERSION >= 0x050400
-          QOpenGLContext* context = QOpenGLContext::currentContext();
-          QSurface* surface = context->surface();
-#endif
-         
           INFO (App::NAME + ": " + p.text + " [done]");
-          delete reinterpret_cast<QProgressDialog*> (p.data);
-          p.data = nullptr;
+          if (p.data) {
+            Data* data = reinterpret_cast<Data*> (p.data);
+            if (data->dialog) {
+#if QT_VERSION >= 0x050400
+              QOpenGLContext* context = QOpenGLContext::currentContext();
+              QSurface* surface = context ? context->surface() : nullptr;
+#endif
+              delete data->dialog;
 
 #if QT_VERSION >= 0x050400
-          context->makeCurrent (surface);
+              if (context) {
+                assert (surface);
+                context->makeCurrent (surface);
+              }
 #endif
+            }
+            delete data;
+          }
+          p.data = nullptr;
+          main_window->setUpdatesEnabled (true);
         }
 
       }
