@@ -88,8 +88,8 @@ namespace MR
                 std::string vertex_shader_source (const Displayable& displayable) override;
                 std::string fragment_shader_source (const Displayable& displayable) override;
                 std::string geometry_shader_source (const Displayable&) override;
-                virtual bool need_update (const Displayable& object) const;
-                virtual void update (const Displayable& object);
+                virtual bool need_update (const Displayable& object) const override;
+                virtual void update (const Displayable& object) override;
               protected:
                 bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
                 TrackColourType color_type;

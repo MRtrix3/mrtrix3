@@ -88,16 +88,15 @@ namespace MR
 
             virtual ~Connectome ();
 
-            void draw (const Projection& transform, bool is_3D, int axis, int slice);
+            void draw (const Projection& transform, bool is_3D, int axis, int slice) override;
             void draw_colourbars() override;
             size_t visible_number_colourbars () override;
-            bool process_batch_command (const std::string& cmd, const std::string& args);
 
             node_t num_nodes() const { return nodes.size() ? nodes.size() - 1 : 0; }
             size_t num_edges() const { return edges.size(); }
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
             void image_open_slot();

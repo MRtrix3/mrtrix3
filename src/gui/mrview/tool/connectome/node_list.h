@@ -69,7 +69,7 @@ namespace MR
             int rowCount (const QModelIndex& parent = QModelIndex()) const override;
             int columnCount (const QModelIndex& parent = QModelIndex()) const override;
 
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const {
+            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const override {
               (void ) parent;
               return createIndex (row, column);
             }

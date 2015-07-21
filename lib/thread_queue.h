@@ -550,13 +550,8 @@ namespace MR
         std::vector<std::unique_ptr<T>> items;
         std::string name;
 
-        Queue (const Queue& queue) {
-          assert (0);
-        }
-        Queue& operator= (const Queue& queue) {
-          assert (0);
-          return (*this);
-        }
+        Queue (const Queue&) = delete;
+        Queue& operator= (const Queue&) = delete;
 
         void register_writer ()   {
           std::lock_guard<std::mutex> lock (mutex);

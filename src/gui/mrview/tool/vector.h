@@ -54,7 +54,7 @@ namespace MR
             void render_fixel_colourbar(const Tool::AbstractFixel& fixel) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;
             void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;

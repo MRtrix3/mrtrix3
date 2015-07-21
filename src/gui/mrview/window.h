@@ -283,8 +283,8 @@ namespace MR
 
           void paintGL ();
           void initGL ();
-          void keyPressEvent (QKeyEvent* event);
-          void keyReleaseEvent (QKeyEvent* event);
+          void keyPressEvent (QKeyEvent* event) override;
+          void keyReleaseEvent (QKeyEvent* event) override;
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);
@@ -296,7 +296,7 @@ namespace MR
           void set_mode_features ();
           void set_image_navigation_menu ();
 
-          void closeEvent (QCloseEvent* event);
+          void closeEvent (QCloseEvent* event) override;
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);

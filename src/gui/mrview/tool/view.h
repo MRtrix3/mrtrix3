@@ -61,8 +61,8 @@ namespace MR
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 
           protected:
-            virtual void showEvent (QShowEvent* event);
-            virtual void closeEvent (QCloseEvent* event);
+            virtual void showEvent (QShowEvent* event) override;
+            virtual void closeEvent (QCloseEvent* event) override;
 
           private slots:
             void onImageChanged ();

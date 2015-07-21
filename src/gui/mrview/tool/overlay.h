@@ -45,7 +45,7 @@ namespace MR
 
             Overlay (Window& main_window, Dock* parent);
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
             void draw_colourbars () override;
             int draw_tool_labels (int position, int start_line_num, const Projection&transform) const override;
 
@@ -59,7 +59,7 @@ namespace MR
             void render_image_colourbar(const Image& image) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
             void image_open_slot ();

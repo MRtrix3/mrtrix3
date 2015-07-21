@@ -105,7 +105,7 @@ namespace MR
         value_type* data_;
         using Buffer<value_type>::handler_;
 
-        template <class Set> BufferPreload& operator= (const Set& H) { assert (0); return *this; }
+        template <class Set> BufferPreload& operator= (const Set&) { assert (0); return *this; }
 
         void init (const Stride::List& desired_strides) {
           Stride::List new_strides = Image::Stride::get_nearest_match (static_cast<ConstHeader&> (*this), desired_strides);

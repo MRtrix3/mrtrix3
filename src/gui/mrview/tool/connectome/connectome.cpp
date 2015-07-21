@@ -804,21 +804,6 @@ namespace MR
 
 
 
-        bool Connectome::process_batch_command (const std::string& cmd, const std::string& args)
-        {
-          // BATCH_COMMAND connectome.load path # Load the connectome tool based on a parcellation image
-          if (cmd == "connectome.load") {
-            try {
-              initialise (args);
-              // TODO If this initialisation is successful, automatically hide the main image
-              window.updateGL();
-            }
-            catch (Exception& E) { clear_all(); E.display(); }
-            return true;
-          }
-          return false;
-        }
-
 
         void Connectome::add_commandline_options (MR::App::OptionList& options)
         {
