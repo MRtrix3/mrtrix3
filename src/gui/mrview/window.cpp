@@ -1450,8 +1450,17 @@ namespace MR
       void Window::wheelEventGL (QWheelEvent* event)
       {
         assert (mode);
+#if QT_VERSION >= 0x050400
+        QPoint delta = event->pixelDelta();
+        if (delta.isNull())
+          delta = event->angleDelta() / 120.0;
+#else
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta() / 120.0) : QPoint (event->delta() / 120.0, 0);
+#endif
+        if (delta.isNull())
+          return;
 
-        if (event->orientation() == Qt::Vertical) {
+        if (delta.y()) {
 
           if (image()) {
             grab_mouse_state (event);
@@ -1460,47 +1469,21 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * std::exp (-event->delta()/1200.0));
+                set_FOV (FOV() * std::exp (-0.1*delta.y()));
                 glarea->update();
                 event->accept();
                 return;
               }
 
-              int delta = event->delta() / 120.0;
-              if (modifiers_ == Qt::ShiftModifier) delta *= 10.0;
+              float dx = delta.y();
+              if (modifiers_ == Qt::ShiftModifier) dx *= 10.0;
               else if (modifiers_ != Qt::NoModifier) 
                 return;
 
-              mode->slice_move_event (delta);
+              mode->slice_move_event (dx);
               event->accept();
               return;
             }
-          }
-
-          if (buttons_ == Qt::LeftButton && modifiers_ == Qt::NoModifier) {
-            int current = 0, num = 0;
-            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-              if (mode_action_group->actions()[current] != mode_action_group->checkedAction())
-                current = num;
-              if (mode_action_group->actions()[i]->isEnabled())
-                ++num;
-            }
-
-            current = (current + num - int(event->delta()/120.0)) % num;
-
-            num = 0;
-            for (int i = 0; i < mode_action_group->actions().size(); ++i) {
-              if (mode_action_group->actions()[i]->isEnabled()) {
-                if (current == num) {
-                  mode_action_group->actions()[i]->setChecked (true);
-                  break;
-                }
-                ++num;
-              }
-            }
-            mouse_action = NoAction;
-            set_cursor();
-            return;
           }
 
           if (buttons_ == Qt::RightButton && modifiers_ == Qt::NoModifier) {
@@ -1508,7 +1491,7 @@ namespace MR
               QAction* action = image_group->checkedAction();
               int N = image_group->actions().size();
               int n = image_group->actions().indexOf (action);
-              image_select_slot (image_group->actions()[(n+N+int(event->delta()/120.0))%N]);
+              image_select_slot (image_group->actions()[(n+N+delta.y())%N]);
             }
           }
         }
