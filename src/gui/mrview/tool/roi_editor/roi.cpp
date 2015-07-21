@@ -275,6 +275,7 @@ namespace MR
         void ROI::new_slot ()
         {
           assert (window.image());
+          window.makeGLcurrent();
           list_model->create (window.image()->header());
           list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
@@ -337,6 +338,7 @@ namespace MR
 
         void ROI::save_slot ()
         {
+          window.makeGLcurrent();
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           assert (indices.size() == 1);
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
@@ -348,6 +350,7 @@ namespace MR
 
         void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
+          window.makeGLcurrent();
           list_model->load (list);
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
@@ -357,6 +360,7 @@ namespace MR
 
         void ROI::close_slot ()
         {
+          window.makeGLcurrent();
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
           assert (indices.size() == 1);
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
@@ -387,6 +391,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return;
           }
+          window.makeGLcurrent();
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           roi->undo();
@@ -405,6 +410,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return;
           }
+          window.makeGLcurrent();
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           roi->redo();
@@ -421,6 +427,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return;
           }
+          window.makeGLcurrent();
           ROI_Item* roi = dynamic_cast<ROI_Item*> (list_model->get (indices[0]));
 
           const Projection* proj = window.get_current_mode()->get_current_projection();
@@ -613,6 +620,7 @@ namespace MR
             WARN ("FIXME: shouldn't be here!");
             return false;
           }
+          window.makeGLcurrent();
 
           const Projection* proj = window.get_current_mode()->get_current_projection();
           if (!proj) 
@@ -676,6 +684,8 @@ namespace MR
           const Projection* proj = window.get_current_mode()->get_current_projection();
           if (!proj) 
             return false;
+          window.makeGLcurrent();
+
           Point<> pos =  proj->screen_to_model (window.mouse_position(), window.focus());
           Point<> slice_axis (0.0, 0.0, 0.0);
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
