@@ -193,6 +193,7 @@ namespace MR
               void dragMoveEvent (QDragMoveEvent* event) override;
               void dragLeaveEvent (QDragLeaveEvent* event) override;
               void dropEvent (QDropEvent* event) override;
+              bool event (QEvent* event) override;
             private:
               Window& main;
 
@@ -289,6 +290,7 @@ namespace MR
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);
           void wheelEventGL (QWheelEvent* event);
+          bool gestureEventGL (QGestureEvent* event);
 
           int get_mouse_mode ();
           void set_cursor ();
