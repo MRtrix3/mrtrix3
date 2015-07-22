@@ -40,24 +40,24 @@ namespace MR
         {
           master.node_colourmap_index = index;
           master.calculate_node_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void NodeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
           master.node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           master.calculate_node_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void NodeColourObserver::toggle_show_colour_bar (bool show, const ColourMapButton&)
         {
           master.show_node_colour_bar = show;
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void NodeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {
           master.node_colourmap_invert = invert;
           master.calculate_node_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void NodeColourObserver::reset_colourmap (const ColourMapButton&)
         {
@@ -65,7 +65,7 @@ namespace MR
           master.node_colour_lower_button->setValue (master.node_values_from_file_colour.get_min());
           master.node_colour_upper_button->setValue (master.node_values_from_file_colour.get_max());
           master.calculate_node_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
 
 
@@ -76,24 +76,24 @@ namespace MR
         {
           master.edge_colourmap_index = index;
           master.calculate_edge_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void EdgeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
           master.edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           master.calculate_edge_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void EdgeColourObserver::toggle_show_colour_bar (bool show, const ColourMapButton&)
         {
           master.show_edge_colour_bar = show;
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void EdgeColourObserver::toggle_invert_colourmap (bool invert, const ColourMapButton&)
         {
           master.edge_colourmap_invert = invert;
           master.calculate_edge_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
         void EdgeColourObserver::reset_colourmap (const ColourMapButton&)
         {
@@ -101,7 +101,7 @@ namespace MR
           master.edge_colour_lower_button->setValue (master.edge_values_from_file_colour.get_min());
           master.edge_colour_upper_button->setValue (master.edge_values_from_file_colour.get_max());
           master.calculate_edge_colours();
-          master.window.updateGL();
+          master.window().updateGL();
         }
 
 

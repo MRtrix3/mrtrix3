@@ -44,7 +44,7 @@ namespace MR
         {
           Q_OBJECT
           public:
-            Capture (Window& main_window, Dock* parent);
+            Capture (Dock* parent);
             virtual ~Capture() {}
 
             static void add_commandline_options (MR::App::OptionList& options);

@@ -89,7 +89,8 @@ namespace MR
 
 
 
-        void ROI_Item::zero () {
+        void ROI_Item::zero () 
+        {
           bind();
           std::vector<GLubyte> data (info().dim(0)*info().dim(1));
           for (int n = 0; n < info().dim(2); ++n)
@@ -98,7 +99,8 @@ namespace MR
 
 
 
-        void ROI_Item::load (const MR::Image::Header& header) {
+        void ROI_Item::load (const MR::Image::Header& header) 
+        {
           bind();
           MR::Image::Buffer<bool> buffer (header);
           auto vox = buffer.voxel();
@@ -116,7 +118,8 @@ namespace MR
 
 
 
-        void ROI_Item::start (ROI_UndoEntry&& entry) {
+        void ROI_Item::start (ROI_UndoEntry&& entry)
+        {
           saved = false;
           if (current_undo < 0)
             current_undo = -1;
@@ -128,14 +131,16 @@ namespace MR
           current_undo = undo_list.size()-1;
         }
 
-        void ROI_Item::undo () {
+        void ROI_Item::undo () 
+        {
           if (has_undo()) {
             undo_list[current_undo].undo (*this);
             --current_undo;
           }
         }
 
-        void ROI_Item::redo () {
+        void ROI_Item::redo () 
+        {
           if (has_redo()) {
             ++current_undo;
             undo_list[current_undo].redo (*this);

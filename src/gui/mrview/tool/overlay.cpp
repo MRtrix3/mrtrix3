@@ -78,8 +78,8 @@ namespace MR
 
 
 
-        Overlay::Overlay (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+        Overlay::Overlay (Dock* parent) :
+          Base (parent) { 
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -245,9 +245,9 @@ namespace MR
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
-                window.get_current_mode()->overlays_for_3D.push_back (image);
+                window().get_current_mode()->overlays_for_3D.push_back (image);
               else
-                image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
+                image->render3D (image->slice_shader, projection, projection.depth_of (window().focus()));
             }
           }
 
@@ -302,8 +302,8 @@ namespace MR
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
               cfloat value = image->interpolate() ?
-                image->nearest_neighbour_value(window.focus()) :
-                image->trilinear_value(window.focus());
+                image->nearest_neighbour_value(window().focus()) :
+                image->trilinear_value(window().focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
@@ -388,7 +388,7 @@ namespace MR
                         image.scaling_max_thresholded() :
                         image.scaling_max();
 
-            window.colourbar_renderer.render (image.colourmap, image.scale_inverted(),
+            window().colourbar_renderer.render (image.colourmap, image.scale_inverted(),
                                        min_value, max_value,
                                        image.scaling_min(), image.display_range, image.colour);
         }
@@ -489,7 +489,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->alpha = opacity_slider->value() / 1.0e3f;
           }
-          window.updateGL();
+          window().updateGL();
         }
 
         void Overlay::interpolate_changed ()
@@ -499,7 +499,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->set_interpolate (interpolate_check_box->isChecked());
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 

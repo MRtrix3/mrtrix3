@@ -36,6 +36,7 @@ namespace MR
 #undef MODE_OPTION
 */
 
+      Window* Window::main = nullptr;
       
       namespace {
 
@@ -84,8 +85,7 @@ namespace MR
       // GLArea definitions:
       
       Window::GLArea::GLArea (Window& parent) :
-        GL::Area (&parent),
-        main (parent) {
+        GL::Area (&parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
           setAcceptDrops (true);
@@ -135,32 +135,32 @@ namespace MR
             }
           }
           if (list.size())
-            main.add_images (list);
+            main->add_images (list);
         }
       }
 
       void Window::GLArea::initializeGL () {
-        main.initGL();
+        main->initGL();
       }
       void Window::GLArea::paintGL () {
-        main.paintGL();
+        main->paintGL();
       }
       void Window::GLArea::mousePressEvent (QMouseEvent* event) {
-        main.mousePressEventGL (event);
+        main->mousePressEventGL (event);
       }
       void Window::GLArea::mouseMoveEvent (QMouseEvent* event) {
-        main.mouseMoveEventGL (event);
+        main->mouseMoveEventGL (event);
       }
       void Window::GLArea::mouseReleaseEvent (QMouseEvent* event) {
-        main.mouseReleaseEventGL (event);
+        main->mouseReleaseEventGL (event);
       }
       void Window::GLArea::wheelEvent (QWheelEvent* event) {
-        main.wheelEventGL (event);
+        main->wheelEventGL (event);
       }
 
       bool Window::GLArea::event (QEvent* event) {
         if (event->type() == QEvent::Gesture)
-          return main.gestureEventGL (static_cast<QGestureEvent*>(event));
+          return main->gestureEventGL (static_cast<QGestureEvent*>(event));
         return QWidget::event(event);
       }
 
@@ -215,6 +215,7 @@ namespace MR
         tool_has_focus (nullptr), 
         best_FPS (NAN),
         show_FPS (false) {
+          main = this;
           Dialog::ProgressBar::set_main_window (this);
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -727,8 +728,16 @@ namespace MR
       void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
-          QAction* action = new Image (*this, *list[i]);
+          QAction* action = new Image (*list[i]);
+          action->setText (shorten (list[i]->name(), 20, 0).c_str());
+          action->setParent (Window::main);
+          action->setCheckable (true);
+          action->setToolTip (list[i]->name().c_str());
+          action->setStatusTip (list[i]->name().c_str());
           image_group->addAction (action);
+          image_menu->addAction (action);
+          connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
+
           if (!i) image_select_slot (action);
         }
         set_image_menu();
@@ -787,7 +796,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
-        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
+        mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create());
         mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
         emit modeChanged();
@@ -810,7 +819,7 @@ namespace MR
       {
         Tool::Dock* tool = dynamic_cast<Tool::__Action__*>(action)->dock;
         if (!tool) {
-          tool = dynamic_cast<Tool::__Action__*>(action)->create (*this);
+          tool = dynamic_cast<Tool::__Action__*>(action)->create();
           connect (tool, SIGNAL (visibilityChanged (bool)), action, SLOT (setChecked (bool)));
           if (MR::File::Config::get_int ("MRViewDockFloating", 0))
             return;
@@ -1324,7 +1333,7 @@ namespace MR
         // CONF The default image background colour
         File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
-        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
+        mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create());
         set_mode_features();
 
         if (MR::App::option.size()) 

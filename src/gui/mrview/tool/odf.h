@@ -49,7 +49,7 @@ namespace MR
 
           public:
 
-            ODF (Window& main_window, Dock* parent);
+            ODF (Dock* parent);
             ~ODF();
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice) override;

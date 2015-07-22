@@ -38,9 +38,8 @@ namespace MR
 
 
 
-        ODF::Preview::RenderFrame::RenderFrame (QWidget* parent, Window& window) :
-            DWI::RenderFrame (parent),
-            window (window) {
+        ODF::Preview::RenderFrame::RenderFrame (QWidget* parent) :
+            DWI::RenderFrame (parent) {
           setMinimumSize (300, 300);    
         }
 
@@ -52,10 +51,10 @@ namespace MR
 
 
 
-        ODF::Preview::Preview (Window& main_window, ODF* parent) :
-            QWidget (&main_window, Qt::Tool),
+        ODF::Preview::Preview (ODF* parent) :
+            QWidget (&window(), Qt::Tool),
             parent (parent),
-            render_frame (new RenderFrame (this, main_window))
+            render_frame (new RenderFrame (this))
         {
           delete render_frame->lighting;
           render_frame->lighting = parent->lighting;
@@ -122,7 +121,7 @@ namespace MR
         void ODF::Preview::lock_orientation_to_image_slot (int)
         {
           if (lock_orientation_to_image_box->isChecked()) {
-            const Projection* proj = parent->window.get_current_mode()->get_current_projection();
+            const Projection* proj = window().get_current_mode()->get_current_projection();
             if (!proj) return;
             render_frame->set_rotation (proj->modelview());
           }

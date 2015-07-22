@@ -40,8 +40,7 @@ namespace MR
             Q_OBJECT
 
           public:
-              Ortho (Window& parent) : 
-                Slice (parent),
+              Ortho () : 
                 projections (3, projection),
                 current_plane (0) { }
 

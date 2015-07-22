@@ -114,7 +114,7 @@ namespace MR
             Q_OBJECT
 
           public:
-            Node_list (Window&, Tool::Dock*, Connectome*);
+            Node_list (Tool::Dock*, Connectome*);
 
             void initialize();
             void colours_changed();
@@ -126,7 +126,6 @@ namespace MR
             void node_selection_settings_dialog_slot();
 
           private:
-            Window& window;
             Connectome& connectome;
 
             QPushButton *clear_selection_button;

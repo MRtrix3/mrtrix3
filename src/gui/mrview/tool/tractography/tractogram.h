@@ -51,7 +51,7 @@ namespace MR
           Q_OBJECT
 
           public:
-            Tractogram (Window& parent, Tractography& tool, const std::string& filename);
+            Tractogram (Tractography& tool, const std::string& filename);
 
             ~Tractogram ();
 

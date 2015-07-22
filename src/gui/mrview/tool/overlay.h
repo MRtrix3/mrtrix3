@@ -43,7 +43,7 @@ namespace MR
 
           public:
 
-            Overlay (Window& main_window, Dock* parent);
+            Overlay (Dock* parent);
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
             void draw_colourbars () override;
@@ -103,8 +103,8 @@ namespace MR
 
              void update_selection ();
              void updateGL() { 
-               window.get_current_mode()->update_overlays = true;
-               window.updateGL();
+               window().get_current_mode()->update_overlays = true;
+               window().updateGL();
              }
              
              void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);

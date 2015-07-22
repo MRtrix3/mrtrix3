@@ -316,7 +316,7 @@ namespace MR
 
 
 
-        Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
+        Tractogram::Tractogram (Tractography& tool, const std::string& filename) :
             Displayable (filename),
             scalarfile_by_direction (false),
             show_colour_bar (true),

@@ -114,6 +114,7 @@ namespace MR
           ColourMap::Renderer colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
+          static Window* main;
 
         signals:
           void focusChanged ();
@@ -195,8 +196,6 @@ namespace MR
               void dropEvent (QDropEvent* event) override;
               bool event (QEvent* event) override;
             private:
-              Window& main;
-
               void initializeGL () override;
               void paintGL () override;
               void mousePressEvent (QMouseEvent* event) override;

@@ -44,7 +44,7 @@ namespace MR
           public:
             class Model;
 
-            Vector (Window& main_window, Dock* parent);
+            Vector (Dock* parent);
 
             virtual ~Vector ();
 

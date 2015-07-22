@@ -84,7 +84,7 @@ namespace MR
 
           public:
 
-            Connectome (Window& main_window, Dock* parent);
+            Connectome (Dock* parent);
 
             virtual ~Connectome ();
 

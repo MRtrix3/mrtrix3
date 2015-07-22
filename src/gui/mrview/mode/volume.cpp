@@ -466,7 +466,7 @@ namespace MR
 
           GL_CHECK_ERROR;
 #if QT_VERSION >= 0x050100
-          int m = window.windowHandle()->devicePixelRatio();
+          int m = window().windowHandle()->devicePixelRatio();
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m*projection.width(), m*projection.height(), 0);
 #else
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
@@ -527,7 +527,7 @@ namespace MR
 
         inline Tool::View* Volume::get_view_tool () const
         {
-          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window().tools()->actions()[0])->dock;
           if (!dock) 
             return NULL;
           return dynamic_cast<Tool::View*> (dock->tool);
@@ -601,7 +601,7 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            Point<> move = get_current_projection()->screen_to_model_direction (window.mouse_displacement(), target());
+            Point<> move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
             for (size_t n = 0; n < clip.size(); ++n) {
               GL::vec4& p (*clip[n]);
               p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
@@ -617,7 +617,7 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) 
-            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window.mouse_displacement().y() * FOV());
+            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * FOV());
           else
             Base::panthrough_event();
         }

@@ -51,7 +51,7 @@ namespace MR
         {
           Q_OBJECT
           public:
-            View (Window& main_window, Dock* parent);
+            View (Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 

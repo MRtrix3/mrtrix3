@@ -42,8 +42,8 @@ namespace MR
         class Volume : public Base
         {
           public:
-            Volume (Window& parent) :
-              Base (parent, FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
+            Volume () :
+              Base (FocusContrast | MoveTarget | TiltRotate | ShaderTransparency | ShaderThreshold | ShaderClipping),
               volume_shader (*this) { 
               }
 

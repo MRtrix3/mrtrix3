@@ -38,8 +38,7 @@ namespace MR
         float LightBox::slice_focus_inc_adjust_rate(0.2f);
         std::string LightBox::prev_image_name;
 
-        LightBox::LightBox(Window &parent) :
-          Slice(parent),
+        LightBox::LightBox () :
           layout_is_dirty(true),
           current_slice_index((n_rows*n_cols) / 2),
           slices_proj_focusdelta(n_rows*n_cols, proj_focusdelta(projection, 0.f))
@@ -137,7 +136,7 @@ namespace MR
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
 
-          const Point<> orig_focus = window.focus();
+          const Point<> orig_focus = window().focus();
 
           if(layout_is_dirty)
           {
@@ -153,7 +152,7 @@ namespace MR
               Projection& slice_proj = slices_proj_focusdelta[slice_idx].first;
 
               // Place the first slice in the top-left corner
-              slice_proj.set_viewport(window, x + dw * col, y + h - (dh * (row+1)), dw, dh);
+              slice_proj.set_viewport(window(), x + dw * col, y + h - (dh * (row+1)), dw, dh);
 
               // We need to setup the modelview/proj matrices before we set the new focus
               // because move_in_out_displacement is reliant on MVP
@@ -177,7 +176,7 @@ namespace MR
 
           // Restore view state
           set_focus(orig_focus);
-          projection.set_viewport(window, x, y, w, h);
+          projection.set_viewport(window(), x, y, w, h);
 
           // Users may want to screen capture without grid lines
           if(show_grid_lines) {
@@ -268,7 +267,7 @@ namespace MR
           GLint w = projection.width(), h = projection.height();
           GLint dw = w / n_cols, dh = h / n_rows;
 
-          const auto& mouse_pos = window.mouse_position();
+          const auto& mouse_pos = window().mouse_position();
 
           size_t col = (mouse_pos.x() - x) / dw;
           size_t row = n_rows - (mouse_pos.y() - y) / dh - 1;

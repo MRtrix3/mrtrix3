@@ -60,12 +60,12 @@ namespace MR
 
 
 
-        Connectome::Connectome (Window& main_window, Dock* parent) :
-            Base (main_window, parent),
+        Connectome::Connectome (Dock* parent) :
+            Base (parent),
             mat2vec (0),
             lighting (this),
             lighting_dock (nullptr),
-            node_list (new Tool::Dock (&main_window, "Connectome node list")),
+            node_list (new Tool::Dock ("Connectome node list")),
             is_3D (true),
             crop_to_slab (false),
             slab_thickness (0.0f),
@@ -702,11 +702,11 @@ namespace MR
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
 
-          node_list->tool = new Node_list (window, node_list, this);
+          node_list->tool = new Node_list (node_list, this);
           node_list->tool->adjustSize();
           node_list->setWidget (node_list->tool);
           node_list->setFeatures (QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
-          main_window.addDockWidget (Qt::RightDockWidgetArea, node_list);
+          window().addDockWidget (Qt::RightDockWidgetArea, node_list);
           connect (&node_selection_settings, SIGNAL(dataChanged()), this, SLOT (node_selection_settings_changed_slot()));
 
           cube.generate();
@@ -784,12 +784,12 @@ namespace MR
         {
           if (hide_all_button->isChecked()) return;
           if ((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
-            window.colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
+            window().colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
                                               node_colour_lower_button->value(), node_colour_upper_button->value(),
                                               node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
                                               node_fixed_colour);
           if (edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar)
-            window.colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
+            window().colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
                                               edge_colour_lower_button->value(), edge_colour_upper_button->value(),
                                               edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
                                               edge_fixed_colour);
@@ -845,7 +845,7 @@ namespace MR
           image_button->setText (QString::fromStdString (Path::basename (path)));
           load_properties();
           enable_all (true);
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -883,7 +883,7 @@ namespace MR
           lut_combobox->setCurrentIndex (5);
 
           load_properties();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -903,12 +903,12 @@ namespace MR
             config.clear();
           }
           load_properties();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::hide_all_slot()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -918,7 +918,7 @@ namespace MR
 
         void Connectome::lighting_change_slot (int /*value*/)
         {
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::lighting_settings_slot()
         {
@@ -929,7 +929,7 @@ namespace MR
         void Connectome::lighting_parameter_slot()
         {
           if (use_lighting())
-            window.updateGL();
+            window().updateGL();
         }
         void Connectome::crop_to_slab_toggle_slot (int /*value*/)
         {
@@ -938,14 +938,14 @@ namespace MR
           crop_to_slab_label->setEnabled (crop_to_slab);
           crop_to_slab_button->setEnabled (crop_to_slab);
           node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::crop_to_slab_parameter_slot()
         {
           slab_thickness = crop_to_slab_button->value();
           is_3D = !(crop_to_slab && !slab_thickness);
           node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::show_node_list_slot()
         {
@@ -953,7 +953,7 @@ namespace MR
         }
         void Connectome::node_selection_settings_changed_slot()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -1098,7 +1098,7 @@ namespace MR
               return;
           }
           calculate_node_visibility();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::node_geometry_selection_slot (int index)
@@ -1206,7 +1206,7 @@ namespace MR
           }
           if (node_visibility == node_visibility_t::NONE)
             node_visibility_warning_icon->setVisible (true);
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::node_colour_selection_slot (int index)
@@ -1365,7 +1365,7 @@ namespace MR
           if (node_visibility == node_visibility_t::NONE)
             node_visibility_warning_icon->setVisible (true);
           calculate_node_colours();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::node_size_selection_slot (int index)
@@ -1495,7 +1495,7 @@ namespace MR
           if (node_visibility == node_visibility_t::NONE)
             node_visibility_warning_icon->setVisible (true);
           calculate_node_sizes();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::node_alpha_selection_slot (int index)
@@ -1636,7 +1636,7 @@ namespace MR
           if (node_visibility == node_visibility_t::NONE)
             node_visibility_warning_icon->setVisible (true);
           calculate_node_alphas();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -1649,29 +1649,29 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_visibility();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_visibility_parameter_slot()
         {
           calculate_node_visibility();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::sphere_lod_slot (int value)
         {
           sphere.LOD (value);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::overlay_interp_slot (int)
         {
           assert (node_overlay);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           node_overlay->set_interpolate (node_geometry_overlay_interp_checkbox->isChecked());
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::point_smooth_slot (int)
         {
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_colour_matrix_operator_slot (int value)
         {
@@ -1683,7 +1683,7 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_colours();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_fixed_colour_change_slot()
         {
@@ -1691,14 +1691,14 @@ namespace MR
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
           calculate_node_colours();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_colour_parameter_slot()
         {
           node_colour_lower_button->setMax (node_colour_upper_button->value());
           node_colour_upper_button->setMin (node_colour_lower_button->value());
           calculate_node_colours();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_size_matrix_operator_slot (int value)
         {
@@ -1710,19 +1710,19 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_sizes();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_size_value_slot()
         {
           node_size_scale_factor = node_size_button->value();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_size_parameter_slot()
         {
           node_size_lower_button->setMax (node_size_upper_button->value());
           node_size_upper_button->setMin (node_size_lower_button->value());
           calculate_node_sizes();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_alpha_matrix_operator_slot (int value)
         {
@@ -1734,21 +1734,21 @@ namespace MR
             default: assert (0); break;
           }
           calculate_node_alphas();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_alpha_value_slot (int position)
         {
           node_fixed_alpha = position / 1000.0f;
           if (node_overlay)
             node_overlay->alpha = node_fixed_alpha;
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::node_alpha_parameter_slot()
         {
           node_alpha_lower_button->setMax (node_alpha_upper_button->value());
           node_alpha_upper_button->setMin (node_alpha_lower_button->value());
           calculate_node_alphas();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -1833,7 +1833,7 @@ namespace MR
               return;
           }
           calculate_edge_visibility();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::edge_geometry_selection_slot (int index)
@@ -1903,7 +1903,7 @@ namespace MR
           }
           if (edge_visibility == edge_visibility_t::NONE)
             edge_visibility_warning_icon->setVisible (true);
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::edge_colour_selection_slot (int index)
@@ -1975,7 +1975,7 @@ namespace MR
           if (edge_visibility == edge_visibility_t::NONE)
             edge_visibility_warning_icon->setVisible (true);
           calculate_edge_colours();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::edge_size_selection_slot (int index)
@@ -2033,7 +2033,7 @@ namespace MR
           if (edge_visibility == edge_visibility_t::NONE)
             edge_visibility_warning_icon->setVisible (true);
           calculate_edge_sizes();
-          window.updateGL();
+          window().updateGL();
         }
 
         void Connectome::edge_alpha_selection_slot (int index)
@@ -2092,7 +2092,7 @@ namespace MR
           if (edge_visibility == edge_visibility_t::NONE)
             edge_visibility_warning_icon->setVisible (true);
           calculate_edge_alphas();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -2102,13 +2102,13 @@ namespace MR
         void Connectome::edge_visibility_parameter_slot()
         {
           calculate_edge_visibility();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::cylinder_lod_slot (int index)
         {
           cylinder.LOD (index);
           edge_visibility_warning_icon->setVisible (edge_visibility == edge_visibility_t::NONE);
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_colour_change_slot()
         {
@@ -2116,32 +2116,32 @@ namespace MR
           edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           edge_visibility_warning_icon->setVisible (edge_visibility == edge_visibility_t::NONE);
           calculate_edge_colours();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_colour_parameter_slot()
         {
           calculate_edge_colours();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_size_value_slot()
         {
           edge_size_scale_factor = edge_size_button->value();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_size_parameter_slot()
         {
           calculate_edge_sizes();
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_alpha_value_slot (int position)
         {
           edge_fixed_alpha = position / 1000.0f;
-          window.updateGL();
+          window().updateGL();
         }
         void Connectome::edge_alpha_parameter_slot()
         {
           calculate_edge_alphas();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -2397,7 +2397,7 @@ namespace MR
 
               if (is_3D) {
                 //
-                //window.get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
+                //window().get_current_mode()->overlays_for_3D.push_back (node_overlay.get());
                 // FIXME Need a better approach for displaying the node overlay image in 3D
                 // Can't rely on the volume shader; requires user to change mode, doesn't
                 //   support alpha channel, conflicts with connectome tool manual configuration
@@ -2417,7 +2417,7 @@ namespace MR
                 gl::BlendFunc (gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
                 gl::BlendEquation (gl::FUNC_ADD);
 
-                node_overlay->render3D (node_overlay->slice_shader, projection, projection.depth_of (window.focus()));
+                node_overlay->render3D (node_overlay->slice_shader, projection, projection.depth_of (window().focus()));
 
                 // restore OpenGL environment:
                 gl::Disable (gl::BLEND);
@@ -2493,9 +2493,9 @@ namespace MR
                 gl::Uniform3fv (gl::GetUniformLocation (node_shader, "screen_normal"), 1, projection.screen_normal());
                 if (is_3D) {
                   gl::Uniform1f (gl::GetUniformLocation (node_shader, "slab_thickness"), slab_thickness);
-                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "crop_var"), window().focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
                 } else {
-                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+                  gl::Uniform1f (gl::GetUniformLocation (node_shader, "depth_offset"), window().focus().dot (projection.screen_normal()));
                 }
               }
 
@@ -2631,9 +2631,9 @@ namespace MR
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "screen_normal"), 1, projection.screen_normal());
               if (is_3D) {
                 gl::Uniform1f (gl::GetUniformLocation (edge_shader, "slab_thickness"), slab_thickness);
-                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window.focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "crop_var"), window().focus().dot (projection.screen_normal()) - slab_thickness / 2.0f);
               } else {
-                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "depth_offset"), window.focus().dot (projection.screen_normal()));
+                gl::Uniform1f (gl::GetUniformLocation (edge_shader, "depth_offset"), window().focus().dot (projection.screen_normal()));
               }
             }
 
@@ -3342,7 +3342,7 @@ namespace MR
             }
             calculate_node_alphas();
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 

@@ -44,19 +44,6 @@ namespace MR
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
       }
 
-      ImageBase::ImageBase (Window& window, const MR::Image::Info& image_info) :
-        Volume (window, image_info),
-        position (image_info.ndim())
-      {
-        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        setCheckable (true);
-        setToolTip (info().name().c_str());
-        setStatusTip (info().name().c_str());
-        window.image_group->addAction (this);
-        window.image_menu->addAction (this);
-        connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
-      }
-
 
 
 
@@ -131,14 +118,6 @@ namespace MR
 
       Image::Image (const MR::Image::Header& image_header) :
         ImageBase (image_header),
-        buffer (image_header),
-        interp (buffer)
-      {
-        set_colourmap (guess_colourmap ());
-      }
-
-      Image::Image (Window& window, const MR::Image::Header& image_header) :
-        ImageBase (window, image_header),
         buffer (image_header),
         interp (buffer)
       {

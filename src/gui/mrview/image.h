@@ -49,7 +49,6 @@ namespace MR
       {
         public:
           ImageBase (const MR::Image::Info&);
-          ImageBase (Window&, const MR::Image::Info&);
 
           void render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth);
@@ -69,7 +68,6 @@ namespace MR
       {
         public:
           Image (const MR::Image::Header& image_header);
-          Image (Window& parent, const MR::Image::Header& image_header);
 
           MR::Image::Header& header () { return buffer; }
           const MR::Image::Header& header () const { return buffer; }

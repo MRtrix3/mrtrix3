@@ -70,7 +70,6 @@ namespace MR
 
         public:
           Displayable (const std::string& filename);
-          Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
 

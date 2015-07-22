@@ -49,7 +49,7 @@ namespace MR
 
             class Model;
 
-            Tractography (Window& main_window, Dock* parent);
+            Tractography (Dock* parent);
 
             virtual ~Tractography ();
 

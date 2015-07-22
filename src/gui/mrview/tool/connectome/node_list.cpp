@@ -110,9 +110,8 @@ namespace MR
 
 
 
-      Node_list::Node_list (Window& main_window, Tool::Dock* dock, Connectome* master) :
-          Tool::Base (main_window, dock),
-          window (main_window),
+      Node_list::Node_list (Tool::Dock* dock, Connectome* master) :
+          Tool::Base (dock),
           connectome (*master),
           node_selection_dialog (nullptr)
       {
@@ -189,7 +188,7 @@ namespace MR
       void Node_list::node_selection_settings_dialog_slot()
       {
         if (!node_selection_dialog)
-          node_selection_dialog.reset (new NodeSelectionSettingsDialog (&window, "Node selection visual settings", connectome.node_selection_settings));
+          node_selection_dialog.reset (new NodeSelectionSettingsDialog (&window(), "Node selection visual settings", connectome.node_selection_settings));
         node_selection_dialog->show();
       }
 

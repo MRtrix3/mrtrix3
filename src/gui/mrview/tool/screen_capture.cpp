@@ -35,8 +35,8 @@ namespace MR
       namespace Tool
       {
 
-        Capture::Capture (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
+        Capture::Capture (Dock* parent) :
+          Base (parent),
           rotation_type(RotationType::World),
           translation_type(TranslationType::Voxel),
           is_playing (false)
@@ -205,7 +205,7 @@ namespace MR
 
           directory = new QDir();
 
-          connect (&window, SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
+          connect (&window(), SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
           on_image_changed();
         }
 
@@ -214,7 +214,7 @@ namespace MR
 
         void Capture::on_image_changed() {
           cached_state.clear();
-          const auto image = window.image();
+          const auto image = window().image();
           if(!image) return;
 
           Image::VoxelType& vox (image->interp);
@@ -245,14 +245,14 @@ namespace MR
 
         void Capture::cache_capture_state()
         {
-            if (!window.image())
+            if (!window().image())
               return;
-            Image::VoxelType& vox (window.image()->interp);
+            Image::VoxelType& vox (window().image()->interp);
 
             cached_state.emplace( cached_state.end(),
-              window.orientation(), window.focus(), window.target(), window.FOV(),
+              window().orientation(), window().focus(), window().target(), window().FOV(),
               volume_axis->value() < ssize_t (vox.ndim()) ? vox[volume_axis->value()] : 0,
-              volume_axis->value(), start_index->value(), window.plane()
+              volume_axis->value(), start_index->value(), window().plane()
             );
 
             if(cached_state.size() > max_cache_size)
@@ -264,17 +264,17 @@ namespace MR
 
         void Capture::on_restore_capture_state()
         {
-            if (!window.image() || !cached_state.size())
+            if (!window().image() || !cached_state.size())
               return;
 
             const CaptureState& state = cached_state.back();
 
-            window.set_plane(state.plane);
-            window.set_orientation(state.orientation);
-            window.set_focus(state.focus);
-            window.set_target(state.target);
-            window.set_FOV(state.fov);
-            window.set_image_volume(state.volume_axis, state.volume);
+            window().set_plane(state.plane);
+            window().set_orientation(state.orientation);
+            window().set_focus(state.focus);
+            window().set_target(state.target);
+            window().set_FOV(state.fov);
+            window().set_image_volume(state.volume_axis, state.volume);
             start_index->setValue(state.frame_index);
 
             cached_state.pop_back();
@@ -285,14 +285,14 @@ namespace MR
 
         void Capture::run (bool with_capture)
         {
-          if (!window.image())
+          if (!window().image())
             return;
 
           is_playing = true;
 
           cache_capture_state();
 
-          Image::VoxelType& vox (window.image()->interp);
+          Image::VoxelType& vox (window().image()->interp);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -316,8 +316,8 @@ namespace MR
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
-          if (window.snap_to_image () && degrees_button->value() > 0.0)
-            window.set_snap_to_image (false);
+          if (window().snap_to_image () && degrees_button->value() > 0.0)
+            window().set_snap_to_image (false);
 
 
           size_t frames_value = frames->value();
@@ -340,10 +340,10 @@ namespace MR
               break;
 
             if (with_capture)
-              this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+              this->window().captureGL (folder + "/" + prefix + printf ("%04d.png", i));
 
             // Rotation
-            Math::Versor<float> orientation (this->window.orientation());
+            Math::Versor<float> orientation (this->window().orientation());
             Math::Vector<float> axis (3);
             axis[0] = rotation_axis_x->value();
             axis[1] = rotation_axis_y->value();
@@ -361,32 +361,32 @@ namespace MR
                 break;
             }
 
-            this->window.set_orientation (orientation);
+            this->window().set_orientation (orientation);
 
             // Translation
             Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
             trans_vec /= frames_value;
             if(translation_type == TranslationType::Voxel)
-              trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
+              trans_vec = window().image()->interp.voxel2scanner_dir(trans_vec);
 
-            Point<float> focus (this->window.focus());
+            Point<float> focus (this->window().focus());
             focus += trans_vec;
-            window.set_focus (focus);
-            Point<float> target (this->window.target());
+            window().set_focus (focus);
+            Point<float> target (this->window().target());
             target += trans_vec;
-            window.set_target (target);
+            window().set_target (target);
 
             // Volume
             if (volume_axis->value() < ssize_t (vox.ndim())) {
               volume += volume_inc;
-              window.set_image_volume (volume_axis->value(), std::round(volume));
+              window().set_image_volume (volume_axis->value(), std::round(volume));
             }
 
             // FOV
-            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
+            window().set_FOV (window().FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
 
             start_index->setValue (i + 1);
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
           } 
 
@@ -455,7 +455,7 @@ namespace MR
           }
 
           if (opt.opt->is ("capture.grab")) {
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
             on_screen_capture();
             return true;

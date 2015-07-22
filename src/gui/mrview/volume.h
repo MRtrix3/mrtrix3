@@ -51,13 +51,6 @@ namespace MR
               _transform (_info),
               interpolation (gl::LINEAR),
               texture_mode_changed (true) { }
-          template <class InfoType>
-            Volume (Window& parent, const InfoType& info) :
-              Displayable (parent, info.name()),
-              _info (info),
-              _transform (_info),
-              interpolation (gl::LINEAR),
-              texture_mode_changed (true) { }
 
           void set_interpolate (bool linear) { interpolation = linear ? gl::LINEAR : gl::NEAREST; }
           bool interpolate () const { return interpolation == gl::LINEAR; }
