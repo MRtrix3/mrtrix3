@@ -134,7 +134,7 @@ namespace MR
           void updateGL ();
 
           void startProgressBar ();
-          void displayProgressBar (ProgressInfo& p);
+          void displayProgressBar (void* progress_info);
           void doneProgressBar ();
 
         private slots:

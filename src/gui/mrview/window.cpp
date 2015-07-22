@@ -1800,8 +1800,10 @@ namespace MR
         setUpdatesEnabled (false);
       }
 
-      void Window::displayProgressBar (ProgressInfo& p)
+      void Window::displayProgressBar (void* progress_info)
       {
+        assert (progress_info);
+        ProgressInfo& p (*reinterpret_cast<ProgressInfo*> (progress_info));
         assert (p.data);
 #if QT_VERSION >= 0x050400
         QOpenGLContext* context = QOpenGLContext::currentContext();

@@ -49,7 +49,7 @@ namespace MR
           }
           else {
             if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
-              QMetaObject::invokeMethod (main_window, "displayProgressBar", Q_ARG (ProgressInfo&, p));
+              QMetaObject::invokeMethod (main_window, "displayProgressBar", Q_ARG (void*, reinterpret_cast<void*>(&p)));
           }
         }
 
