@@ -279,6 +279,7 @@ namespace MR
           list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
+          in_insert_mode = false;
         }
 
 
@@ -293,6 +294,7 @@ namespace MR
             list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (names[n])));
 
           load (list);
+          in_insert_mode = false;
         }
 
 
@@ -321,6 +323,7 @@ namespace MR
           catch (Exception& E) {
             E.display();
           }
+          in_insert_mode = false;
         }
 
 
@@ -351,6 +354,7 @@ namespace MR
         void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           list_model->load (list);
+          list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
         }
@@ -369,6 +373,7 @@ namespace MR
 
           list_model->remove_item (indices.first());
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -394,6 +399,7 @@ namespace MR
           roi->undo();
           update_undo_redo();
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -412,6 +418,7 @@ namespace MR
           roi->redo();
           update_undo_redo();
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -441,6 +448,7 @@ namespace MR
           ROI_UndoEntry source (*roi, current_axis, source_slice);
           roi->current().copy (*roi, source);
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -454,6 +462,7 @@ namespace MR
         void ROI::hide_all_slot () 
         {
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -504,6 +513,7 @@ namespace MR
             }
           }
           updateGL();
+          in_insert_mode = false;
         }
 
 
@@ -535,6 +545,7 @@ namespace MR
             roi->alpha = opacity_slider->value() / 1.0e3f;
           }
           window().updateGL();
+          in_insert_mode = false;
         }
 
 
