@@ -75,7 +75,7 @@ namespace MR
 
           Streamline& operator= (Streamline&& that)
           {
-            *this = std::move (std::vector< Point<T> > (that));
+            std::vector< Point<T> >::operator= (std::move (that));
             index = that.index; that.index = -1;
             weight = that.weight; that.weight = 1.0f;
             return *this;
@@ -83,7 +83,7 @@ namespace MR
 
           Streamline& operator= (const Streamline& that)
           {
-            *this = std::vector< Point<T> > (that);
+            std::vector< Point<float> >::operator= (that);
             index = that.index;
             weight = that.weight;
             return *this;
