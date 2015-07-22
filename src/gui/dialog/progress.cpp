@@ -57,7 +57,8 @@ namespace MR
         void done (ProgressInfo& p)
         {
           INFO (App::NAME + ": " + p.text + " [done]");
-          QMetaObject::invokeMethod (main_window, "doneProgressBar");
+          if (p.data) 
+            QMetaObject::invokeMethod (main_window, "doneProgressBar");
           p.data = nullptr;
         }
 

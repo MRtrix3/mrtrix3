@@ -1814,10 +1814,8 @@ namespace MR
         assert (progress_info);
         ProgressInfo& p (*reinterpret_cast<ProgressInfo*> (progress_info));
         assert (p.data);
-#if QT_VERSION >= 0x050400
-        QOpenGLContext* context = QOpenGLContext::currentContext();
-        QSurface* surface = context ? context->surface() : nullptr;
-#endif
+        GrabContext context;
+
         if (!progress_dialog) {
           progress_dialog = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0, this);
           progress_dialog->setWindowModality (Qt::ApplicationModal);
@@ -1825,30 +1823,17 @@ namespace MR
         }
         progress_dialog->setValue (p.value);
         qApp->processEvents();
-#if QT_VERSION >= 0x050400
-        if (context) {
-          assert (surface);
-          context->makeCurrent (surface);
-        }
-#endif
       }
 
 
       void Window::doneProgressBar ()
       {
-#if QT_VERSION >= 0x050400
-        QOpenGLContext* context = QOpenGLContext::currentContext();
-        QSurface* surface = context ? context->surface() : nullptr;
-#endif
-        delete progress_dialog;
-        progress_dialog = nullptr;
-
-#if QT_VERSION >= 0x050400
-        if (context) {
-          assert (surface);
-          context->makeCurrent (surface);
+        if (progress_dialog) {
+          GrabContext context;
+          delete progress_dialog;
+          progress_dialog = nullptr;
         }
-#endif
+
         setUpdatesEnabled (true);
       }
 

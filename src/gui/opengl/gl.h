@@ -58,6 +58,9 @@
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
 #endif
 
+#define GLGETBOOL(x,n) { GLboolean __v[n]; gl::GetBooleanv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
+#define GLGETINT(x,n) { GLint __v[n]; gl::GetIntegerv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
+
 namespace MR
 {
   namespace GUI

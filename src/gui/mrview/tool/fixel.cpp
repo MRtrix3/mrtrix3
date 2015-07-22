@@ -360,7 +360,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::main->makeGLcurrent();
+          Window::GrabContext context;
 
           load_image_buffer ();
 

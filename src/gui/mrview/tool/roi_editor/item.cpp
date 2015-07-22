@@ -31,6 +31,7 @@
 #include "image/loop.h"
 
 #include "gui/dialog/file.h"
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/item.h"
 
 
@@ -83,6 +84,7 @@ namespace MR
           name << "ROI" << std::setfill('0') << std::setw(5) << new_roi_counter++ << ".mif";
           filename = name.str();
 
+          Window::GrabContext context;
           bind();
           allocate();
         }
@@ -91,6 +93,7 @@ namespace MR
 
         void ROI_Item::zero () 
         {
+          Window::GrabContext context;
           bind();
           std::vector<GLubyte> data (info().dim(0)*info().dim(1));
           for (int n = 0; n < info().dim(2); ++n)
@@ -101,6 +104,7 @@ namespace MR
 
         void ROI_Item::load (const MR::Image::Header& header) 
         {
+          Window::GrabContext context;
           bind();
           MR::Image::Buffer<bool> buffer (header);
           auto vox = buffer.voxel();
