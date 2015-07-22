@@ -1271,7 +1271,6 @@ namespace MR
       void Window::paintGL ()
       {
         GL_CHECK_ERROR;
-        glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
         if (glarea->format().samples() > 1) 
@@ -1317,6 +1316,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true); 
         gl::Clear (GL_COLOR_BUFFER_BIT);
+        glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
       }
