@@ -100,6 +100,7 @@ namespace MR
 
         FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
         {
+          assert (V.data_pointer);
           index (axis) = 0;
           return Eigen::Map<Eigen::Matrix<value_type, Eigen:: Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> >
                    (address(), size (axis), Eigen::InnerStride<> (stride (axis)));
