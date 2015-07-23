@@ -55,6 +55,8 @@ namespace MR
 
             ~Tractogram ();
 
+            Window& window () const { return *Window::main; }
+
             void render (const Projection& transform);
 
             void request_render_colourbar(DisplayableVisitor& visitor) override {
@@ -101,7 +103,6 @@ namespace MR
 
           private:
             static const int max_sample_stride = 6;
-            Window& window;
             Tractography& tractography_tool;
             std::string filename;
             std::vector<GLuint> vertex_buffers;

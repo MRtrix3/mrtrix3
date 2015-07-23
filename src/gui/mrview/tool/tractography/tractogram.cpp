@@ -323,14 +323,13 @@ namespace MR
             color_type (Direction),
             original_fov (NAN),
             scalar_filename (""),
-            window (tool.window()),
             tractography_tool (tool),
             filename (filename),
             sample_stride (0)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
-          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (on_FOV_changed()));
+          connect (&window(), SIGNAL (fieldOfViewChanged()), this, SLOT (on_FOV_changed()));
           on_FOV_changed ();
         }
 
@@ -365,7 +364,7 @@ namespace MR
             gl::Uniform3f (gl::GetUniformLocation (track_shader, "screen_normal"),
                 transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "crop_var"),
-                window.focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
+                window().focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "slab_width"),
                 tractography_tool.slab_thickness);
           }
@@ -392,14 +391,14 @@ namespace MR
             // set line thickness once upon loading, but don't touch it after that:
             // it shouldn't change when the background image changes
             float dim[] = {
-              window.image()->header().dim (0) * window.image()->header().vox (0),
-              window.image()->header().dim (1) * window.image()->header().vox (1),
-              window.image()->header().dim (2) * window.image()->header().vox (2)
+              window().image()->header().dim (0) * window().image()->header().vox (0),
+              window().image()->header().dim (1) * window().image()->header().vox (1),
+              window().image()->header().dim (2) * window().image()->header().vox (2)
             };
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
 
-          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window.FOV()*transform.width()*transform.height());
+          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window().FOV()*transform.width()*transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
