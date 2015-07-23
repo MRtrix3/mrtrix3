@@ -144,8 +144,8 @@ namespace MR
                 threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
 
-            __multi_thread (const __multi_thread& m) = delete;
-            __multi_thread (__multi_thread&& m) = default;
+            __multi_thread (const __multi_thread&) = delete;
+            __multi_thread (__multi_thread&&) = default;
 
             void wait () noexcept (false) {
               DEBUG ("waiting for completion of threads \"" + name + "\"...");
