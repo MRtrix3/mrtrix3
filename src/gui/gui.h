@@ -98,7 +98,7 @@ namespace MR
 
       public slots:
         void startProgressBar ();
-        void displayProgressBar (void* progress_info);
+        void displayProgressBar (QString text, int value, bool bounded);
         void doneProgressBar ();
 
     };
