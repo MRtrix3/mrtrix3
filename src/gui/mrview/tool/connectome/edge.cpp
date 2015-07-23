@@ -124,6 +124,8 @@ namespace MR
 
         Edge::Line::Line (const Edge& parent)
         {
+          Window::GrabContext context;
+
           std::vector< Point<float> > data;
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
@@ -192,6 +194,7 @@ namespace MR
 
         Edge::Streamline::Streamline (const Exemplar& data)
         {
+          Window::GrabContext context;
           assert (data.tangents.size() == data.vertices.size());
 
           count = data.vertices.size();
@@ -240,6 +243,7 @@ namespace MR
         Edge::Streamtube::Streamtube (const Exemplar& data) :
             count (data.vertices.size())
         {
+          Window::GrabContext context;
           assert (data.normals.size() == data.vertices.size());
           assert (data.binormals.size() == data.vertices.size());
 

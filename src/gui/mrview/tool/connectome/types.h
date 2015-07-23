@@ -40,7 +40,7 @@ namespace MR
       typedef MR::Connectome::Node_map  Node_map;
 
       enum class node_visibility_t { ALL, NONE, DEGREE, VECTOR_FILE, MATRIX_FILE };
-      enum class node_geometry_t   { SPHERE, CUBE, POINT, OVERLAY, MESH };
+      enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };
       enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
       enum class node_size_t       { FIXED, NODE_VOLUME, VECTOR_FILE, MATRIX_FILE };
       enum class node_alpha_t      { FIXED, FROM_LUT, VECTOR_FILE, MATRIX_FILE };

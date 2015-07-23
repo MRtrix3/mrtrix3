@@ -122,7 +122,6 @@ namespace MR
             void node_visibility_parameter_slot();
             void sphere_lod_slot (int);
             void overlay_interp_slot (int);
-            void point_smooth_slot (int);
             void node_colour_matrix_operator_slot (int);
             void node_fixed_colour_change_slot();
             void node_colour_parameter_slot();
@@ -173,7 +172,6 @@ namespace MR
             QLabel *node_geometry_sphere_lod_label;
             QSpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
-            QCheckBox *node_geometry_point_round_checkbox;
             QLabel *node_geometry_overlay_3D_warning_icon;
 
             QComboBox *node_colour_combobox;
@@ -396,6 +394,8 @@ namespace MR
             bool use_lighting() const;
             bool use_alpha_nodes() const;
             bool use_alpha_edges() const;
+
+            float calc_line_width (const float, const bool) const;
 
             friend class NodeColourObserver;
             friend class EdgeColourObserver;
