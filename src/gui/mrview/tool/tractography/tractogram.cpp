@@ -323,7 +323,7 @@ namespace MR
             color_type (Direction),
             original_fov (NAN),
             scalar_filename (""),
-            window (window),
+            window (tool.window()),
             tractography_tool (tool),
             filename (filename),
             sample_stride (0)
