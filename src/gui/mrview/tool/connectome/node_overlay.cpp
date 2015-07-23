@@ -25,8 +25,6 @@
 #include <limits>
 #include <vector>
 
-#include "progressbar.h"
-
 namespace MR
 {
   namespace GUI

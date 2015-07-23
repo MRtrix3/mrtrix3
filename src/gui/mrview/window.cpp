@@ -1795,49 +1795,6 @@ namespace MR
 
 
 
-
-
-
-      // ProgressBar handling:
-
-      namespace {
-        QProgressDialog* progress_dialog = nullptr;
-      }
-
-      void Window::startProgressBar ()
-      {
-        setUpdatesEnabled (false);
-      }
-
-      void Window::displayProgressBar (void* progress_info)
-      {
-        assert (progress_info);
-        ProgressInfo& p (*reinterpret_cast<ProgressInfo*> (progress_info));
-        assert (p.data);
-        GrabContext context;
-
-        if (!progress_dialog) {
-          progress_dialog = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0, this);
-          progress_dialog->setWindowModality (Qt::ApplicationModal);
-          progress_dialog->show();
-        }
-        progress_dialog->setValue (p.value);
-        qApp->processEvents();
-      }
-
-
-      void Window::doneProgressBar ()
-      {
-        if (progress_dialog) {
-          GrabContext context;
-          delete progress_dialog;
-          progress_dialog = nullptr;
-        }
-
-        setUpdatesEnabled (true);
-      }
-
-
     }
   }
 }

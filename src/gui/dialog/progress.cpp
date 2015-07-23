@@ -17,7 +17,6 @@
 
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
 */
 
 #include <cassert>
@@ -34,6 +33,11 @@ namespace MR
 
         namespace {
           QWidget* main_window = nullptr;
+          struct Data {
+            Data () : dialog (nullptr) { }
+            QProgressDialog* dialog;
+            Timer timer;
+          };
         }
 
         void set_main_window (QWidget* window) {
@@ -44,12 +48,34 @@ namespace MR
         {
           if (!p.data) {
             INFO (App::NAME + ": " + p.text);
-            QMetaObject::invokeMethod (main_window, "startProgressBar");
-            p.data = new Timer;
+            main_window->setUpdatesEnabled (false);
+            p.data = new Data;
           }
           else {
-            if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
-              QMetaObject::invokeMethod (main_window, "displayProgressBar", Q_ARG (void*, reinterpret_cast<void*>(&p)));
+#if QT_VERSION >= 0x050400
+            QOpenGLContext* context = QOpenGLContext::currentContext();
+            QSurface* surface = context ? context->surface() : nullptr;
+#endif
+            Data* data = reinterpret_cast<Data*> (p.data);
+            if (!data->dialog) {
+              if (data->timer.elapsed() > 1.0) {
+                data->dialog = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
+                data->dialog->setWindowModality (Qt::ApplicationModal);
+                data->dialog->show();
+                qApp->processEvents();
+              }
+            }
+            else {
+              data->dialog->setValue (p.value);
+              qApp->processEvents();
+            }
+
+#if QT_VERSION >= 0x050400
+            if (context) {
+              assert (surface);
+              context->makeCurrent (surface);
+            }
+#endif
           }
         }
 
@@ -57,9 +83,26 @@ namespace MR
         void done (ProgressInfo& p)
         {
           INFO (App::NAME + ": " + p.text + " [done]");
-          if (p.data) 
-            QMetaObject::invokeMethod (main_window, "doneProgressBar");
+          if (p.data) {
+            Data* data = reinterpret_cast<Data*> (p.data);
+            if (data->dialog) {
+#if QT_VERSION >= 0x050400
+              QOpenGLContext* context = QOpenGLContext::currentContext();
+              QSurface* surface = context ? context->surface() : nullptr;
+#endif
+              delete data->dialog;
+
+#if QT_VERSION >= 0x050400
+              if (context) {
+                assert (surface);
+                context->makeCurrent (surface);
+              }
+#endif
+            }
+            delete data;
+          }
           p.data = nullptr;
+          main_window->setUpdatesEnabled (true);
         }
 
       }

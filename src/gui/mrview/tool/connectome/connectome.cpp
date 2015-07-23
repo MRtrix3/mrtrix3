@@ -22,7 +22,7 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
-#include "thread_queue.h"
+//#include "thread_queue.h"
 
 #include "file/path.h"
 #include "gui/dialog/file.h"
@@ -33,7 +33,7 @@
 #include "image/info.h"
 #include "image/loop.h"
 #include "image/nav.h"
-#include "image/threaded_loop.h"
+//#include "image/threaded_loop.h"
 #include "image/transform.h"
 
 #include "math/math.h"
@@ -2345,10 +2345,13 @@ namespace MR
                 MR::Image::Adapter::Subset<decltype(voxel)> subset (voxel, node_lower_corners[node_index], node_upper_corners[node_index] - node_lower_corners[node_index] + Point<int> (1, 1, 1));
 
                 std::shared_ptr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
-                auto voxel = node_mask->voxel();
+                auto v_mask = node_mask->voxel();
 
-                auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
-                MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
+                //auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
+                //MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
+                MR::Image::LoopInOrder loop (v_mask);
+                for (auto i = loop (subset, v_mask); i; ++i)
+                  v_mask.value() = (subset.value() == node_index);
 
                 nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], pixheight, node_mask));
 
@@ -3136,7 +3139,11 @@ namespace MR
               }
             };
 
-            MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
+            //MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
+            MR::Image::LoopInOrder loop (v_in);
+            for (auto i = loop (v_in, v_out); i; ++i)
+              functor (v_in, v_out);
+
           }
         }
 
@@ -3511,13 +3518,13 @@ namespace MR
           const size_t num_tracks = to<size_t>(properties["count"]);
           if (num_tracks != num_edges())
             throw Exception ("Track file " + Path::basename (path) + " contains " + str(num_tracks) + " streamlines; connectome expects " + str(num_edges()) + " exemplars");
-          auto source = [&] (MR::DWI::Tractography::Streamline<float>& out) { return reader (out); };
-          std::mutex mutex;
-          ProgressBar progress ("Generating connection exemplars... ", num_edges());
-          auto sink = [&] (const MR::DWI::Tractography::Streamline<float>& in) { edges[in.index].load_exemplar (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-          Thread::run_queue (source, MR::DWI::Tractography::Streamline<float>(), Thread::multi (sink));
-          for (auto i = edges.begin(); i != edges.end(); ++i)
-            i->create_streamline();
+          ProgressBar progress ("Importing connection exemplars... ", num_edges());
+          MR::DWI::Tractography::Streamline<float> tck;
+          while (reader (tck)) {
+            edges[tck.index].load_exemplar (tck);
+            edges[tck.index].create_streamline();
+            ++progress;
+          }
           have_exemplars = true;
         }
 
