@@ -836,15 +836,16 @@ namespace MR
           if (path.empty())
             return;
 
-          // If a new parcellation image is opened, all other data should be invalidated
-          clear_all();
-
           // Read in the image file, do the necessary conversions e.g. to mesh, store the number of nodes, ...
-          initialise (path);
-
-          image_button->setText (QString::fromStdString (Path::basename (path)));
-          load_properties();
-          enable_all (true);
+          try {
+            initialise (path);
+            image_button->setText (QString::fromStdString (Path::basename (path)));
+            load_properties();
+            enable_all (true);
+          } catch (Exception& e) {
+            e.display();
+            // If importing a new image has failed, but another image was loaded previously, keep existing data
+          }
           window().updateGL();
         }
 
