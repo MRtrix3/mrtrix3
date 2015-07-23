@@ -259,6 +259,10 @@ namespace MR
         }
 
 
+
+
+
+
         ROI::~ROI()
         {
           for (int i = 0; i != list_model->rowCount(); ++i) {
@@ -272,6 +276,9 @@ namespace MR
         }
 
 
+
+
+
         void ROI::new_slot ()
         {
           assert (window().image());
@@ -281,6 +288,10 @@ namespace MR
           updateGL ();
           in_insert_mode = false;
         }
+
+
+
+
 
 
 
@@ -296,6 +307,8 @@ namespace MR
           load (list);
           in_insert_mode = false;
         }
+
+
 
 
 
@@ -327,6 +340,9 @@ namespace MR
         }
 
 
+
+
+
         int ROI::normal2axis (const Point<>& normal, const MR::Image::Transform& transform) const
         {
           float x_dot_n = std::abs (transform.image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
@@ -337,6 +353,8 @@ namespace MR
           else
             return y_dot_n > z_dot_n ? 1 : 2;
         }
+
+
 
 
 
@@ -351,6 +369,8 @@ namespace MR
 
 
 
+
+
         void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           list_model->load (list);
@@ -358,6 +378,10 @@ namespace MR
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
         }
+
+
+
+
 
 
 
@@ -377,6 +401,11 @@ namespace MR
         }
 
 
+
+
+
+
+
         void ROI::draw_slot ()
         {
           if (draw_button->isChecked())
@@ -384,6 +413,10 @@ namespace MR
           else
             release_focus ();
         }
+
+
+
+
 
 
 
@@ -406,6 +439,8 @@ namespace MR
 
 
 
+
+
         void ROI::redo_slot () 
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -420,6 +455,10 @@ namespace MR
           updateGL();
           in_insert_mode = false;
         }
+
+
+
+
 
 
 
@@ -453,10 +492,20 @@ namespace MR
 
 
 
+
+
+
+
+
         void ROI::select_edit_mode (QAction*) 
         {
           brush_size_button->setEnabled (brush_button->isChecked());
         }
+
+
+
+
+
 
 
         void ROI::hide_all_slot () 
@@ -464,6 +513,10 @@ namespace MR
           updateGL();
           in_insert_mode = false;
         }
+
+
+
+
 
 
         void ROI::draw (const Projection& projection, bool is_3D, int, int)
@@ -499,6 +552,11 @@ namespace MR
         }
 
 
+
+
+
+
+
         void ROI::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
         {
           if (index.row() == index2.row()) {
@@ -517,10 +575,18 @@ namespace MR
         }
 
 
+
+
+
+
         void ROI::update_slot () 
         {
           updateGL();
         }
+
+
+
+
 
 
         void ROI::colour_changed () 
@@ -537,6 +603,9 @@ namespace MR
 
 
 
+
+
+
         void ROI::opacity_changed (int)
         {
           QModelIndexList indices = list_view->selectionModel()->selectedIndexes();
@@ -547,6 +616,11 @@ namespace MR
           window().updateGL();
           in_insert_mode = false;
         }
+
+
+
+
+
 
 
         void ROI::update_undo_redo () 
@@ -563,6 +637,10 @@ namespace MR
             redo_button->defaultAction()->setEnabled (false);
           }
         }
+
+
+
+
 
 
         void ROI::update_selection () 
@@ -589,7 +667,7 @@ namespace MR
           update_undo_redo();
 
           if (!indices.size()) {
-            release_focus();
+            draw_button->defaultAction()->setChecked (false);
             return;
           }
 
@@ -677,6 +755,10 @@ namespace MR
         }
 
 
+
+
+
+
         bool ROI::mouse_move_event () 
         { 
           if (!in_insert_mode)
@@ -720,6 +802,11 @@ namespace MR
           return true; 
         }
 
+
+
+
+
+
         bool ROI::mouse_release_event () 
         { 
           in_insert_mode = false;
@@ -727,6 +814,11 @@ namespace MR
           update_undo_redo();
           return true; 
         }
+
+
+
+
+
 
         QCursor* ROI::get_cursor ()
         {
@@ -736,6 +828,10 @@ namespace MR
             return &Cursor::erase;
           return &Cursor::draw;
         }
+
+
+
+
 
 
 
@@ -751,6 +847,11 @@ namespace MR
             + Option ("roi.opacity", "Sets the overlay opacity to floating value [0-1].")
             +   Argument ("value").type_float (0.0, 1.0, 1.0);
         }
+
+
+
+
+
 
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
