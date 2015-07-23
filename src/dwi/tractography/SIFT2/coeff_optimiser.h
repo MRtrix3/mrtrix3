@@ -56,7 +56,7 @@ namespace MR {
       class CoefficientOptimiserBase
       {
         public:
-          CoefficientOptimiserBase (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserBase (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
           virtual ~CoefficientOptimiserBase();
 
@@ -79,7 +79,7 @@ namespace MR {
         private:
           StreamlineStats& step_stats;
           StreamlineStats& coefficient_stats;
-          size_t& nonzero_streamlines;
+          unsigned int& nonzero_streamlines;
           BitSet& fixels_to_exclude;
           double& sum_costs;
 
@@ -107,7 +107,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserGSS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserGSS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
           ~CoefficientOptimiserGSS() { }
 
@@ -127,7 +127,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserQLS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserQLS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
           ~CoefficientOptimiserQLS() { }
 
@@ -147,7 +147,7 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserIterative (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, size_t&, BitSet&, double&);
+          CoefficientOptimiserIterative (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
           ~CoefficientOptimiserIterative();
 

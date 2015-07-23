@@ -141,7 +141,7 @@ namespace MR
             const ValueType n = (0.5*(l+m)) - ((sl*(u-l)) / (2.0*(su-sl)));
 
             const ValueType fn = functor (n);
-            if (!finite(fn))
+            if (!std::isfinite(fn))
               return m;
 
             if (n < l) {

@@ -195,20 +195,20 @@ namespace MR {
         double cf_data = init_cf;
         double new_cf = init_cf;
         double prev_cf = init_cf;
+        double cf_reg = 0.0;
         const double required_cf_change = -min_cf_decrease_percentage * init_cf;
 
-        size_t nonzero_streamlines = 0;
+        unsigned int nonzero_streamlines = 0;
         for (SIFT::track_t i = 0; i != num_tracks(); ++i) {
           if (contributions[i] && contributions[i]->dim())
             ++nonzero_streamlines;
         }
 
-        size_t iter = 0;
-
-        if (App::log_level) {
-          fprintf (stderr, "%s:   Iteration     CF (data)      CF (reg)     Streamlines\n", App::NAME.c_str());
-          fprintf (stderr, "%s:     %5lu        %3.3f%%        %2.3f%%        %lu   ", App::NAME.c_str(), iter, 100.0, 0.0, nonzero_streamlines);
-        }
+        unsigned int iter = 0;
+        
+        auto display_func = [&](){ return printf("    %5u        %3.3f%%         %2.3f%%        %u", iter, 100.0 * cf_data / init_cf, 100.0 * cf_reg / init_cf, nonzero_streamlines); };
+        CONSOLE ("  Iteration     CF (data)      CF (reg)     Streamlines");
+        ProgressBar progress ("");
 
         // Keep track of total exclusions, not just how many are removed in each iteration
         size_t total_excluded = 0;
@@ -296,7 +296,7 @@ namespace MR {
           cf_reg_tik *= reg_multiplier_tikhonov;
           cf_reg_tv  *= reg_multiplier_tv;
 
-          const double cf_reg = cf_reg_tik + cf_reg_tv;
+          cf_reg = cf_reg_tik + cf_reg_tv;
 
           new_cf = cf_data + cf_reg;
 
@@ -309,14 +309,12 @@ namespace MR {
             csv_out->flush();
           }
 
-          if (App::log_level)
-            fprintf (stderr, "\r%s:     %5lu        %3.3f%%         %2.3f%%        %lu        \b\b\b\b\b\b", App::NAME.c_str(), iter, 100.0 * cf_data / init_cf, 100.0 * (cf_reg) / init_cf, nonzero_streamlines);
-
+          progress.update (display_func);
+          
           // Leaving out testing the fixel exclusion mask criterion; doesn't converge, and results in CF increase
         } while (((new_cf - prev_cf < required_cf_change) || (iter < min_iters) /* || !fixels_to_exclude.empty() */ ) && (iter < max_iters));
 
-        if (App::log_level)
-          fprintf (stderr, "\n");
+        progress.done();
       }
 
 

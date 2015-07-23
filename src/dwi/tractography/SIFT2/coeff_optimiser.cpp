@@ -38,7 +38,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserBase::CoefficientOptimiserBase (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
             master (tckfactor),
             mu (tckfactor.mu()),
             //projected_steps (projected_steps),
@@ -240,7 +240,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserGSS::CoefficientOptimiserGSS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
             CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs) { }
 
       CoefficientOptimiserGSS::CoefficientOptimiserGSS (const CoefficientOptimiserGSS& that) :
@@ -266,7 +266,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserQLS::CoefficientOptimiserQLS (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
             CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs),
             qls (-master.max_coeff_step, master.max_coeff_step)
       {
@@ -290,7 +290,7 @@ namespace MR {
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
         ++total;
 #endif
-        if (!finite (dFs)) {
+        if (!std::isfinite (dFs)) {
           dFs = Math::golden_section_search (line_search_functor, std::string(""), -master.max_coeff_step, float(0.0), master.max_coeff_step, float(0.001 / (2.0 * master.max_coeff_step)));
           double cost = line_search_functor (dFs);
           if (dFs > 0.99 * master.max_coeff_step && line_search_functor (master.max_coeff_step) < cost)
@@ -312,7 +312,7 @@ namespace MR {
 
 
 
-      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, size_t& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
+      CoefficientOptimiserIterative::CoefficientOptimiserIterative (TckFactor& tckfactor, /*const std::vector<float>& projected_steps,*/ StreamlineStats& step_stats, StreamlineStats& coefficient_stats, unsigned int& nonzero_streamlines, BitSet& fixels_to_exclude, double& sum_costs) :
             CoefficientOptimiserBase (tckfactor, /*projected_steps,*/ step_stats, coefficient_stats, nonzero_streamlines, fixels_to_exclude, sum_costs)
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
       , iter_count (0)
