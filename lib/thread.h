@@ -58,24 +58,19 @@ namespace MR
         ~__Backend();
 
         static void register_thread () { 
+          std::lock_guard<std::mutex> lock (mutex);
           if (!backend)
             backend = new __Backend;
-          std::lock_guard<std::mutex> lock (get_lock());
           ++backend->refcount; 
         }
         static void unregister_thread () {
-          std::lock_guard<std::mutex> lock (get_lock());
-          --backend->refcount;
-          if (!backend->refcount) {
+          assert (backend);
+          std::lock_guard<std::mutex> lock (mutex);
+          if (!(--backend->refcount)) {
             delete backend;
             backend = nullptr;
           }
         }
-
-        static std::mutex& get_lock () {
-          return backend->mutex;
-        }
-
 
         static void thread_print_func (const std::string& msg);
         static void thread_report_to_user_func (const std::string& msg, int type);
@@ -85,9 +80,9 @@ namespace MR
 
       protected:
         size_t refcount;
-        std::mutex mutex;
 
         static __Backend* backend;
+        static std::mutex mutex;
     };
 
 
