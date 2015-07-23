@@ -1,4 +1,5 @@
 #include "gui/gui.h"
+#include "command.h"
 #include "progressbar.h"
 #include "memory.h"
 #include "gui/mrview/icons.h"

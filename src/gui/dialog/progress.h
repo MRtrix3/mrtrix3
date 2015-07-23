@@ -35,7 +35,6 @@ namespace MR
       namespace ProgressBar
       {
 
-        void set_main_window (QWidget* window);
         void display (ProgressInfo& p);
         void done (ProgressInfo& p);
 

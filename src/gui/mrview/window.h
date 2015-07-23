@@ -2,6 +2,7 @@
 #define __gui_mrview_window_h__
 
 #include "memory.h"
+#include "gui/gui.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
@@ -114,34 +115,8 @@ namespace MR
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
 
-
-#if QT_VERSION >= 0x050400
-          static std::pair<QOpenGLContext*,QSurface*> currentContext () { 
-            QOpenGLContext* context = QOpenGLContext::currentContext(); 
-            QSurface* surface = context ? context->surface() : nullptr;
-            return { context, surface };
-          }
-
-          static std::pair<QOpenGLContext*,QSurface*> makeContextCurrent() { 
-            auto previous_context = currentContext();
-            main->glarea->makeCurrent(); 
-            return previous_context;
-          }
-
-          static void restoreContext (std::pair<QOpenGLContext*,QSurface*> previous_context) { 
-            if (previous_context.first) 
-              previous_context.first->makeCurrent (previous_context.second);
-          }
-#else
-          static std::pair<int,int> currentContext () { return { 0, 0 }; }
-          static std::pair<int,int> makeContextCurrent () { return { 0, 0 }; }
-          static void restoreContext (std::pair<int,int>) { }
-#endif
-
-          struct GrabContext {
-            decltype (currentContext()) previous_context;
-            GrabContext () : previous_context (makeContextCurrent()) { }
-            ~GrabContext () { restoreContext (previous_context); }
+          struct GrabContext : public App::GrabContext {
+            GrabContext () : App::GrabContext (main) { }
           };
 
         signals:

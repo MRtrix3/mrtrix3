@@ -216,7 +216,7 @@ namespace MR
         best_FPS (NAN),
         show_FPS (false) {
           main = this;
-          Dialog::ProgressBar::set_main_window (this);
+          GUI::App::set_main_window (this);
 
           setDockOptions (AllowTabbedDocks | VerticalTabs);
           setDocumentMode (true);
@@ -1245,16 +1245,16 @@ namespace MR
       void Window::about_slot ()
       {
         std::string message = 
-          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + App::mrtrix_version + "<br>"
+          std::string ("<h1>MRView</h1>The MRtrix viewer, version ") + MR::App::mrtrix_version + "<br>"
           "<em>" + str (8*sizeof (size_t)) + " bit " 
 #ifdef NDEBUG
           "release"
 #else
           "debug"
 #endif
-          " version, built " + App::build_date +  "</em><p>"
-          "<h4>Authors:</h4>" + MR::join (MR::split (App::AUTHOR, ",;&\n", true), "<br>") + 
-          "<p><em>" + App::COPYRIGHT + "</em>";
+          " version, built " + MR::App::build_date +  "</em><p>"
+          "<h4>Authors:</h4>" + MR::join (MR::split (MR::App::AUTHOR, ",;&\n", true), "<br>") + 
+          "<p><em>" + MR::App::COPYRIGHT + "</em>";
 
         QMessageBox::about (this, tr ("About MRView"), message.c_str());
       }

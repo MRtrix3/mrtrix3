@@ -37,9 +37,12 @@ namespace MR
   namespace GUI
   {
 
-    class App {
+    class App : public QObject {
+      Q_OBJECT
+
       public:
         App (int& cmdline_argc, char** cmdline_argv) {
+          application = this;
           ::MR::File::Config::init ();
           ::MR::GUI::GL::set_default_context ();
 
@@ -58,12 +61,50 @@ namespace MR
           delete qApp;
         }
 
+        static void set_main_window (QWidget* window);
+
+#if QT_VERSION >= 0x050400
+        static std::pair<QOpenGLContext*,QSurface*> currentContext () { 
+          QOpenGLContext* context = QOpenGLContext::currentContext(); 
+          QSurface* surface = context ? context->surface() : nullptr;
+          return { context, surface };
+        }
+
+        static std::pair<QOpenGLContext*,QSurface*> makeContextCurrent (QWidget* window) { 
+          auto previous_context = currentContext();
+          if (window) 
+            reinterpret_cast<QOpenGLWidget*> (window)->makeCurrent(); 
+          return previous_context;
+        }
+
+        static void restoreContext (std::pair<QOpenGLContext*,QSurface*> previous_context) { 
+          if (previous_context.first) 
+            previous_context.first->makeCurrent (previous_context.second);
+        }
+#else
+        static std::pair<int,int> currentContext () { return { 0, 0 }; }
+        static std::pair<int,int> makeContextCurrent (QWidget*) { return { 0, 0 }; }
+        static void restoreContext (std::pair<int,int>) { }
+#endif
+
+        struct GrabContext {
+          decltype (currentContext()) previous_context;
+          GrabContext (QWidget* window = nullptr) : previous_context (makeContextCurrent (window)) { }
+          ~GrabContext () { restoreContext (previous_context); }
+        };
+
+        static QWidget* main_window;
+        static App* application;
+
+      public slots:
+        void startProgressBar ();
+        void displayProgressBar (void* progress_info);
+        void doneProgressBar ();
+
     };
 
   }
 }
-
-#include "./command.h"
 
 #endif
 

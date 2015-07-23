@@ -21,6 +21,7 @@
 */
 
 #include "gui/gui.h"
+#include "command.h"
 #include "progressbar.h"
 #include "file/path.h"
 #include "math/SH.h"
