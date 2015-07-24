@@ -35,11 +35,10 @@ namespace MR
 
     void App::displayProgressBar (QString text, int value, bool bounded)
     {
-      assert (progress_info);
       GrabContext context;
 
       if (!progress_dialog) {
-        progress_dialog = new QProgressDialog (text, "Cancel", 0, bounded ? 100 : 0, main_window);
+        progress_dialog = new QProgressDialog (text, QString(), 0, bounded ? 100 : 0, main_window);
         progress_dialog->setWindowModality (Qt::ApplicationModal);
         progress_dialog->show();
         qApp->processEvents();
