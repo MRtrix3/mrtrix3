@@ -33,7 +33,7 @@
 #include "image/info.h"
 #include "image/loop.h"
 #include "image/nav.h"
-//#include "image/threaded_loop.h"
+#include "image/threaded_loop.h"
 #include "image/transform.h"
 
 #include "math/math.h"
@@ -2273,7 +2273,11 @@ namespace MR
           if (H.ndim() != 3)
             throw Exception ("Input parcellation image must be a 3D image");
           voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
-          buffer.reset (new MR::Image::BufferPreload<node_t> (path));
+          {
+            // Prevent progress dialog from appearing in a multi-threading context
+            LogLevelLatch latch (0);
+            buffer.reset (new MR::Image::BufferPreload<node_t> (path));
+          }
           auto voxel = buffer->voxel();
           MR::Image::Transform transform (H);
           std::vector< Point<float> > node_coms;
@@ -2322,11 +2326,11 @@ namespace MR
                 std::shared_ptr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
                 auto v_mask = node_mask->voxel();
 
-                //auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
-                //MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
-                MR::Image::LoopInOrder loop (v_mask);
-                for (auto i = loop (subset, v_mask); i; ++i)
-                  v_mask.value() = (subset.value() == node_index);
+                auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
+                MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
+                //MR::Image::LoopInOrder loop (v_mask);
+                //for (auto i = loop (subset, v_mask); i; ++i)
+                //  v_mask.value() = (subset.value() == node_index);
 
                 nodes.push_back (Node (node_coms[node_index], node_volumes[node_index], pixheight, node_mask));
 
@@ -3097,10 +3101,10 @@ namespace MR
               }
             };
 
-            //MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
-            MR::Image::LoopInOrder loop (v_in);
-            for (auto i = loop (v_in, v_out); i; ++i)
-              functor (v_in, v_out);
+            MR::Image::ThreadedLoop (v_in).run (functor, v_in, v_out);
+            //MR::Image::LoopInOrder loop (v_in);
+            //for (auto i = loop (v_in, v_out); i; ++i)
+            //  functor (v_in, v_out);
 
           }
         }
