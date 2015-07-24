@@ -33,7 +33,7 @@
 #include "algo/copy.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
-//#include "registration/transform/reorient.h"
+#include "registration/transform/reorient.h"
 
 
 
@@ -44,6 +44,9 @@ const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL };
 
 void usage ()
 {
+
+  AUTHOR = "J-Donald Tournier (jdtournier@gmail.com) & David Raffelt (david.raffelt@florey.edu.au)";
+
   DESCRIPTION
   + "apply spatial transformations to an image. "
 
@@ -289,27 +292,27 @@ void run ()
         break;
     }
 
-//    if (do_reorientation)
-//      Image::Registration::Transform::reorient ("reorienting...", output_vox, output_vox, linear_transform, directions_cartesian);
+    if (fod_reorientation)
+      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian);
 
   } else {
-    // straight copy:
-    INFO ("image will not be regridded");
-    if (linear) {
-      add_line (output_header.keyval()["comments"], std::string ("transform modified"));
-      if (replace)
-        output_header.transform() = linear_transform;
-      else
-        output_header.transform() = linear_transform.inverse() * output_header.transform();
-    }
-    auto output = Image<float>::create (argument[1], output_header);
-    copy_with_progress (input, output);
-
-//    if (do_reorientation) {
-//      Math::Matrix<float> transform (linear_transform);
+//    // straight copy:
+//    INFO ("image will not be regridded");
+//    if (linear) {
+//      add_line (output_header.keyval()["comments"], std::string ("transform modified"));
 //      if (replace)
-//        Math::mult (transform, linear_transform, Math::LU::inv (output_header.transform()));
-//      Image::Registration::Transform::reorient ("reorienting...", out, out, transform, directions_cartesian);
+//        output_header.transform() = linear_transform;
+//      else
+//        output_header.transform() = linear_transform.inverse() * output_header.transform();
+//    }
+//    auto output = Image<float>::create (argument[1], output_header);
+//    copy_with_progress (input, output);
+
+//    if (fod_reorientation) {
+//      transform_type transform = linear_transform;
+//      if (replace)
+//        transform = linear_transform * output_header.transform().inverse().
+////      Registration::Transform::reorient ("reorienting...", output, transform, directions_cartesian);
 //    }
   }
 }
