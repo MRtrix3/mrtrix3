@@ -149,6 +149,7 @@ void run ()
     linear = true;
     linear_transform = load_transform (opt[0][0]);
   } else {
+    linear_transform.setIdentity();
     if (replace)
       throw Exception ("no transform provided for option '-replace'");
   }
@@ -174,8 +175,6 @@ void run ()
       flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.voxsize(axes[i]) * (input_header.size(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
     }
-    if (!linear)
-      linear_transform.setIdentity();    
     transform_type tmp;
     if (!replace) {
       transform_type irot = input_header.transform().inverse();
@@ -274,7 +273,7 @@ void run ()
 
     auto output = Image<float>::create (argument[1], output_header);
 
-    switch (interp) {
+      switch (interp) {
       case 0:
         Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
         break;
@@ -293,27 +292,27 @@ void run ()
     }
 
     if (fod_reorientation)
-      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian);
+      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose());
 
   } else {
-//    // straight copy:
-//    INFO ("image will not be regridded");
-//    if (linear) {
-//      add_line (output_header.keyval()["comments"], std::string ("transform modified"));
-//      if (replace)
-//        output_header.transform() = linear_transform;
-//      else
-//        output_header.transform() = linear_transform.inverse() * output_header.transform();
-//    }
-//    auto output = Image<float>::create (argument[1], output_header);
-//    copy_with_progress (input, output);
+    // straight copy:
+    INFO ("image will not be regridded");
+    if (linear) {
+      add_line (output_header.keyval()["comments"], std::string ("transform modified"));
+      if (replace)
+        output_header.transform() = linear_transform;
+      else
+        output_header.transform() = linear_transform.inverse() * output_header.transform();
+    }
+    auto output = Image<float>::create (argument[1], output_header);
+    copy_with_progress (input, output);
 
-//    if (fod_reorientation) {
-//      transform_type transform = linear_transform;
-//      if (replace)
-//        transform = linear_transform * output_header.transform().inverse().
-////      Registration::Transform::reorient ("reorienting...", output, transform, directions_cartesian);
-//    }
+    if (fod_reorientation) {
+      transform_type transform = linear_transform;
+      if (replace)
+        transform = linear_transform * output_header.transform().inverse();
+      Registration::Transform::reorient ("reorienting...", output, transform, directions_cartesian.transpose());
+    }
   }
 }
 

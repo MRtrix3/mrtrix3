@@ -25,6 +25,7 @@
 
 #include "algo/threaded_loop.h"
 #include "math/SH.h"
+#include "math/least_squares.h"
 
 namespace MR
 {
@@ -34,11 +35,11 @@ namespace MR
     {
 
       FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform (const int num_SH, const Eigen::MatrixXd& directions) {
-        Eigen::MatrixXd aPSF_matrix (num_SH, directions.rows());
+        Eigen::MatrixXd aPSF_matrix (num_SH, directions.cols());
         Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (num_SH));
         Eigen::Matrix<default_type, Eigen::Dynamic,1> aPSF;
-        for (ssize_t i = 0; i < directions.rows(); ++i)
-          aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.row (i).head(3));
+        for (ssize_t i = 0; i < directions.cols(); ++i)
+          aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.col(i).head(3));
         return aPSF_matrix;
       }
 
@@ -46,8 +47,8 @@ namespace MR
       FORCE_INLINE Eigen::MatrixXd compute_reorient_transform (const ssize_t n_SH,
                                                                const transform_type& transform,
                                                                const Eigen::MatrixXd& directions) {
-        return aPSF_weights_to_FOD_transform (n_SH, transform.linear().inverse() * directions.transpose())
-               * aPSF_weights_to_FOD_transform (n_SH, directions.transpose()).inverse();
+        return aPSF_weights_to_FOD_transform (n_SH, transform.linear().inverse() * directions)
+               * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions));
       }
 
 
@@ -72,6 +73,7 @@ namespace MR
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions)
       {
+        assert (directions.cols() > directions.rows());
         ThreadedLoop (fod_image, 0, 3)
             .run (LinearKernel<FODImageType>(compute_reorient_transform (fod_image.size(3), transform, directions)), fod_image);
       }
@@ -83,6 +85,7 @@ namespace MR
                      const transform_type& transform,
                      const Eigen::MatrixXd& directions)
       {
+        assert (directions.cols() > directions.rows());
         ThreadedLoop (progress_message, fod_image, 0, 3)
             .run (LinearKernel<FODImageType>(compute_reorient_transform (fod_image.size(3), transform, directions)), fod_image);
       }
