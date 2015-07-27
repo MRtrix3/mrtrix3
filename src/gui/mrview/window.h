@@ -116,7 +116,7 @@ namespace MR
           static Window* main;
 
           struct GrabContext : public App::GrabContext {
-            GrabContext () : App::GrabContext (main) { }
+            GrabContext () : App::GrabContext (main->glarea) { }
           };
 
         signals:

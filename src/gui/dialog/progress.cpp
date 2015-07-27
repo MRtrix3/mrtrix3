@@ -37,12 +37,13 @@ namespace MR
         {
           if (!p.data) {
             INFO (MR::App::NAME + ": " + p.text);
-            QMetaObject::invokeMethod (GUI::App::application, "startProgressBar");
+            QMetaObject::invokeMethod (GUI::App::application, "startProgressBar", Qt::DirectConnection);
             p.data = new Timer;
           }
           else {
             if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
-              QMetaObject::invokeMethod (GUI::App::application, "displayProgressBar", Q_ARG (QString, p.text.c_str()), Q_ARG (int, p.value), Q_ARG(bool, p.multiplier));
+              QMetaObject::invokeMethod (GUI::App::application, "displayProgressBar", Qt::DirectConnection,
+                  Q_ARG (QString, p.text.c_str()), Q_ARG (int, p.value), Q_ARG(bool, p.multiplier));
           }
         }
 
@@ -51,7 +52,7 @@ namespace MR
         {
           INFO (MR::App::NAME + ": " + p.text + " [done]");
           if (p.data) 
-            QMetaObject::invokeMethod (GUI::App::application, "doneProgressBar");
+            QMetaObject::invokeMethod (GUI::App::application, "doneProgressBar", Qt::DirectConnection);
           p.data = nullptr;
         }
 
