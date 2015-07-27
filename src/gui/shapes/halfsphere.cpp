@@ -142,7 +142,7 @@ namespace MR
           std::map<Edge,GLuint>::const_iterator iter;
           if ( (iter = edges.find (E)) == edges.end()) {
             index1 = vertices.size();
-            edges[E] = index1;
+            edges.insert (std::make_pair (E, index1));
             vertices.push_back (Vertex (vertices, indices[n][0], indices[n][1]));
           }
           else index1 = iter->second;
@@ -150,7 +150,7 @@ namespace MR
           E.set (indices[n][1], indices[n][2]);
           if ( (iter = edges.find (E)) == edges.end()) {
             index2 = vertices.size();
-            edges[E] = index2;
+            edges.insert (std::make_pair (E, index2));
             vertices.push_back (Vertex (vertices, indices[n][1], indices[n][2]));
           }
           else index2 = iter->second;
@@ -158,7 +158,7 @@ namespace MR
           E.set (indices[n][2], indices[n][0]);
           if ( (iter = edges.find (E)) == edges.end()) {
             index3 = vertices.size();
-            edges[E] = index3;
+            edges.insert (std::make_pair (E, index3));
             vertices.push_back (Vertex (vertices, indices[n][2], indices[n][0]));
           }
           else index3 = iter->second;
