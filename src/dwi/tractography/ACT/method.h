@@ -39,7 +39,6 @@
 #define GMWMI_NORMAL_PERTURBATION 0.001
 
 
-
 namespace MR
 {
   namespace DWI
@@ -57,7 +56,12 @@ namespace MR
           public:
             ACT_Method_additions (const SharedBase& shared) :
                 sgm_depth (0),
+                seed_in_sgm (false),
+                sgm_seed_to_wm (false),
                 act_image (shared.act().voxel) { }
+
+            ACT_Method_additions (const ACT_Method_additions&) = delete;
+            ACT_Method_additions() = delete;
 
 
             const Tissues& tissues() const { return tissue_values; }
@@ -76,6 +80,11 @@ namespace MR
                   return ENTER_CGM;
                 ++sgm_depth;
               } else if (sgm_depth) {
+                if (seed_in_sgm && !sgm_seed_to_wm) {
+                  sgm_seed_to_wm = true;
+                  sgm_depth = 0;
+                  return CONTINUE;
+                }
                 return EXIT_SGM;
               }
 
@@ -85,8 +94,18 @@ namespace MR
 
             bool check_seed (const Point<value_type>& pos)
             {
+              sgm_depth = 0;
+
               if (!fetch_tissue_data (pos))
                 return false;
+
+              if (tissues().is_sgm()) {
+                seed_in_sgm = true;
+                sgm_seed_to_wm = false;
+                return true;
+              }
+
+              seed_in_sgm = false;
 
               if ((tissues().is_csf()) || !tissues().get_wm() || ((tissues().get_gm() - tissues().get_wm()) >= GMWMI_ACCURACY))
                 return false;
@@ -98,6 +117,7 @@ namespace MR
             bool seed_is_unidirectional (const Point<value_type>& pos, Point<value_type>& dir)
             {
               // Tissue values should have already been acquired for the seed point when this function is run
+              if (tissues().is_sgm()) return false;
               if ((tissues().get_wm() >= tissues().get_gm()) || (tissues().get_sgm() >= tissues().get_cgm()))
                 return false;
 
@@ -135,18 +155,14 @@ namespace MR
             bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
 
 
-            int sgm_depth;
+            unsigned int sgm_depth;
+            bool seed_in_sgm;
+            bool sgm_seed_to_wm;
 
 
           private:
             Image::Interp::Linear< Image::Buffer<float>::voxel_type > act_image;
             Tissues tissue_values;
-
-
-            // This class should be copy-constructed by Method using shared as the parameter
-            ACT_Method_additions (const ACT_Method_additions& that) :
-                sgm_depth (0),
-                act_image (that.act_image) { }
 
         };
 

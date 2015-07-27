@@ -418,6 +418,9 @@ namespace MR
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
                 return true;
+              // If the seed was in SGM, need to confirm that one side of the track actually made it to WM
+              if (method.act().seed_in_sgm && !method.act().sgm_seed_to_wm)
+                return false;
               // Used these in the ACT paper, but wasn't entirely happy with the method; can change these #defines to re-enable
               // ACT instead now defaults to a 2-voxel minimum length
               if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
