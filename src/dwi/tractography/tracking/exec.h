@@ -239,6 +239,7 @@ namespace MR
               if (S.is_act() && S.act().backtrack()) {
 
                 size_t revert_step = 0;
+                size_t max_size_at_backtrack = tck.size();
 
                 do {
                   termination = iterate();
@@ -247,7 +248,14 @@ namespace MR
                   if (termination) {
                     apply_priors (termination);
                     if (track_excluded && termination != ENTER_EXCLUDE) {
-                      method.truncate_track (tck, ++revert_step);
+                      if (tck.size() > max_size_at_backtrack) {
+                        max_size_at_backtrack = tck.size();
+                        revert_step = 1;
+                      } else {
+                        ++revert_step;
+                        tck.resize (max_size_at_backtrack, Point<float>());
+                      }
+                      method.truncate_track (tck, revert_step);
                       if (tck.size() > tck.get_seed_index() + 1) {
                         track_excluded = false;
                         termination = CONTINUE;
