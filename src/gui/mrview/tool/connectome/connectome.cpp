@@ -2269,7 +2269,7 @@ namespace MR
         {
           MR::Image::Header H (path);
           if (!H.datatype().is_integer())
-            throw Exception ("Input parcellation image must have an integer datatype");
+            throw Exception ("Input parcellation image must have an integer datatype; try running mrconvert -datatype uint32");
           if (H.ndim() != 3)
             throw Exception ("Input parcellation image must be a 3D image");
           voxel_volume = H.vox(0) * H.vox(1) * H.vox(2);
