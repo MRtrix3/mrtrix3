@@ -217,6 +217,31 @@ namespace MR
           return coeff_vec.dot (weights_vec);
         }
 
+        // Collectively interpolates values along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          if (out_of_bounds)
+            return Eigen::Matrix<value_type, Eigen::Dynamic, 1>();
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( size(3), 64 );
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            index(2) = check (c[2] + z, size (2)-1);
+            for (ssize_t y = 0; y < 4; ++y) {
+              index(1) = check (c[1] + y, size (1)-1);
+              for (ssize_t x = 0; x < 4; ++x) {
+                index(0) = check (c[0] + x, size (0)-1);
+                coeff_matrix.col (i) = ImageType::row (axis);
+                i += 1;
+              }
+            }
+          }
+
+          return coeff_matrix * weights_vec;
+        }
+
       protected:
         Eigen::Matrix<value_type, 64, 1> weights_vec;
     };
@@ -244,7 +269,7 @@ namespace MR
         using SplineBase::check;
 
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds),
+          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
           out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds)
         { }
 
@@ -307,7 +332,6 @@ namespace MR
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
           Eigen::Matrix<value_type, 1, 64> coeff_vec;
-          Eigen::Matrix<value_type, 64, 3> weights_matrix;
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
@@ -323,6 +347,31 @@ namespace MR
           }
 
           return coeff_vec * weights_matrix;
+        }
+
+        // Collectively interpolates gradients along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row (size_t axis) {
+          if (out_of_bounds)
+            return Eigen::Matrix<value_type, Eigen::Dynamic, 1>();
+
+          ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( size(3), 64 );
+
+          size_t i(0);
+          for (ssize_t z = 0; z < 4; ++z) {
+            index(2) = check (c[2] + z, size (2)-1);
+            for (ssize_t y = 0; y < 4; ++y) {
+              index(1) = check (c[1] + y, size (1)-1);
+              for (ssize_t x = 0; x < 4; ++x) {
+                index(0) = check (c[0] + x, size (0)-1);
+                coeff_matrix.col (i) = ImageType::row (axis);
+                i += 1;
+              }
+            }
+          }
+
+          return coeff_matrix * weights_matrix;
         }
 
       protected:
@@ -353,7 +402,7 @@ namespace MR
         using SplineBase::check;
 
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
-          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Value> (parent, value_when_out_of_bounds)
+          SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative> (parent, value_when_out_of_bounds)
         { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
