@@ -2536,11 +2536,13 @@ namespace MR
           if (path.empty())
             return false;
           try {
+            FileDataVector prev_data (data);
             data.clear();
             data.load (path);
             const size_t numel = data.size();
             if (data.size() != num_nodes()) {
-              data.clear();
+              // Restore data in case user is trying to change from one file to another
+              data = std::move (prev_data);
               throw Exception ("File " + Path::basename (path) + " contains " + str (numel) + " elements, but connectome has " + str(num_nodes()) + " nodes");
             }
             data.set_name (Path::basename (path));
@@ -2557,19 +2559,19 @@ namespace MR
           const std::string path = Dialog::File::get_file (this, "Select matrix file to determine " + attribute, "Data files (*.csv)");
           if (path.empty())
             return false;
+          Math::Matrix<float> temp;
           try {
-            Math::Matrix<float> temp (path);
+            temp.load (path);
             MR::Connectome::verify_matrix (temp, num_nodes());
-            data.clear();
-            mat2vec (temp, data);
-            data.calc_minmax();
-            data.set_name (Path::basename (path));
-            return true;
           } catch (Exception& e) {
             e.display();
-            data.clear();
             return false;
           }
+          data.clear();
+          mat2vec (temp, data);
+          data.calc_minmax();
+          data.set_name (Path::basename (path));
+          return true;
         }
 
 
