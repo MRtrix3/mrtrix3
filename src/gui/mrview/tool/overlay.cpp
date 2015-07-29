@@ -426,7 +426,6 @@ namespace MR
 
         void Overlay::volume_changed (int)
         {
-          VAR (volume_selecter->value());
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
