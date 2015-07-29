@@ -161,13 +161,15 @@ namespace MR
           source += 
             std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
 
-          for (size_t n = 0; n < clip.size(); ++n) 
-            source += 
-              "        if (clip"+str(n)+"_selected != 0) {\n" 
-              "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
-              "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
-              "        }\n";
-
+          if (mode.get_cliphighlightstate()) {
+            for (size_t n = 0; n < clip.size(); ++n) 
+              source += 
+                "        if (clip"+str(n)+"_selected != 0) {\n" 
+                "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
+                "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
+                "        }\n";
+          }
+          
           source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "        final_color.a += color.a;\n"
@@ -242,6 +244,10 @@ namespace MR
             return true;
           if (mode.get_active_clip_planes().size() != active_clip_planes) 
             return true;
+          if (mode.get_cliphighlightstate() != cliphighlight)
+            return true;
+          if (mode.get_clipintersectionmodestate() != clipintersectionmode)
+            return true;
           return Displayable::Shader::need_update (object);
         }
 
@@ -250,6 +256,8 @@ namespace MR
         void Volume::Shader::update (const Displayable& object) 
         {
           active_clip_planes = mode.get_active_clip_planes().size();
+          cliphighlight = mode.get_cliphighlightstate();
+          clipintersectionmode = mode.get_clipintersectionmodestate();
           Displayable::Shader::update (object);
         }
 
@@ -524,7 +532,6 @@ namespace MR
           draw_orientation_labels (projection);
         }
 
-
         inline Tool::View* Volume::get_view_tool () const
         {
           Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window().tools()->actions()[0])->dock;
@@ -533,22 +540,29 @@ namespace MR
           return dynamic_cast<Tool::View*> (dock->tool);
         }
 
-
         inline std::vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_active_clip_planes() : std::vector< std::pair<GL::vec4,bool> >();
         }
 
-
-
         inline std::vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4*>();
         }
+        
+        inline bool Volume::get_cliphighlightstate () const
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_cliphighlightstate() : true;
+        }
 
-
+        inline bool Volume::get_clipintersectionmodestate () const
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_clipintersectionmodestate() : false;
+        }
 
         inline void Volume::move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance)
         {

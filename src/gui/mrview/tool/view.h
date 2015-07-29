@@ -57,8 +57,8 @@ namespace MR
 
             std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
-            bool get_clipintersectionmodestate () const;
             bool get_cliphighlightstate () const;
+            bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 

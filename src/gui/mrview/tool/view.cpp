@@ -896,12 +896,12 @@ namespace MR
           return ret;
         }
 
-        bool View::get_clipintersectionmodestate () const
+        bool View::get_cliphighlightstate () const
         {
           return clip_highlight_check_box->isChecked();
         }
 
-        bool View::get_cliphighlightstate () const
+        bool View::get_clipintersectionmodestate () const
         {
           return clip_intersectionmode_check_box->isChecked();
         }

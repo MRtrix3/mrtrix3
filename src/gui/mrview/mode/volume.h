@@ -62,19 +62,22 @@ namespace MR
 
             class Shader : public Displayable::Shader {
               public:
-                Shader (const Volume& mode) : mode (mode), active_clip_planes (0) { }
+                Shader (const Volume& mode) : mode (mode), active_clip_planes (0), cliphighlight (true), clipintersectionmode (false) { }
                 virtual std::string vertex_shader_source (const Displayable& object);
                 virtual std::string fragment_shader_source (const Displayable& object);
                 virtual bool need_update (const Displayable& object) const;
                 virtual void update (const Displayable& object);
                 const Volume& mode;
                 size_t active_clip_planes;
+                bool cliphighlight;
+                bool clipintersectionmode;
             } volume_shader;
 
             Tool::View* get_view_tool () const;
             std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
-
+            bool get_cliphighlightstate () const;
+            bool get_clipintersectionmodestate () const;
 
             void move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance);
             void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versor<float>& rot);
