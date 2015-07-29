@@ -2326,8 +2326,8 @@ namespace MR
                 std::shared_ptr< MR::Image::BufferScratch<bool> > node_mask (new MR::Image::BufferScratch<bool> (subset.info(), "Node " + str(node_index) + " mask"));
                 auto v_mask = node_mask->voxel();
 
-                auto copy_func = [&] (const decltype(subset)& in, decltype(voxel)& out) { out.value() = (in.value() == node_index); };
-                MR::Image::ThreadedLoop (subset).run (copy_func, subset, voxel);
+                auto copy_func = [&] (const decltype(subset)& in, decltype(v_mask)& out) { out.value() = (in.value() == node_index); };
+                MR::Image::ThreadedLoop (subset).run (copy_func, subset, v_mask);
                 //MR::Image::LoopInOrder loop (v_mask);
                 //for (auto i = loop (subset, v_mask); i; ++i)
                 //  v_mask.value() = (subset.value() == node_index);
