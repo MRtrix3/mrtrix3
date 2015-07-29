@@ -117,6 +117,21 @@ namespace MR
 
             main_box->addWidget (image_list_view, 1);
 
+            layout = new HBoxLayout;
+            volume_label = new QLabel ("Volume: ");
+            volume_label->setEnabled (false);
+            layout->addWidget (volume_label);
+            volume_selecter = new QSpinBox (this);
+            volume_selecter->setMinimum (0);
+            volume_selecter->setMaximum (0);
+            volume_selecter->setValue (0);
+            volume_selecter->setEnabled (false);
+            volume_selecter->setToolTip ("For 4D overlay images, select the 3D volume index");
+            connect (volume_selecter, SIGNAL (valueChanged(int)), this, SLOT(volume_changed(int)));
+            layout->addWidget (volume_selecter);
+
+            main_box->addLayout (layout, 0);
+
             QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
             HBoxLayout* hlayout = new HBoxLayout;
@@ -227,7 +242,6 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
-
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -410,6 +424,19 @@ namespace MR
         }
 
 
+        void Overlay::volume_changed (int)
+        {
+          VAR (volume_selecter->value());
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) return;
+          Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+          if (overlay->info().ndim() < 4) return;
+          overlay->interp[3] = volume_selecter->value();
+          if (overlay->show)
+            updateGL();
+        }
+
+
         void Overlay::update_slot (int)
         {
           updateGL();
@@ -513,6 +540,8 @@ namespace MR
         void Overlay::update_selection () 
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          volume_label->setEnabled (false);
+          volume_selecter->setEnabled (false);
           colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
@@ -568,6 +597,19 @@ namespace MR
           lower_threshold_val /= indices.size();
           upper_threshold_val /= indices.size();
           opacity /= indices.size();
+
+          if (indices.size() == 1) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+            if (overlay->info().ndim() == 4 && overlay->info().dim(3) > 1) {
+              volume_label->setEnabled (true);
+              volume_selecter->setMaximum (overlay->info().dim(3)-1);
+              volume_selecter->setValue (overlay->interp[3]);
+              volume_selecter->setEnabled (true);
+            } else {
+              volume_selecter->setMaximum (0);
+              volume_selecter->setValue (0);
+            }
+          }
 
           colourmap_button->set_colourmap_index(colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);
