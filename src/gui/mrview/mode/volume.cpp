@@ -125,14 +125,23 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-              if (clip.size()) {
-                source += "    bool show = true;\n";
-                for (size_t n = 0; n < clip.size(); ++n)
-                  source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
+          if (clip.size()) {
+            if (mode.get_clipintersectionmodestate()) {
+              source += "    bool show = false;\n";
+              for (size_t n = 0; n < clip.size(); ++n)
+                source += "    if (dot (coord, clip" + str(n) + ".xyz) < clip" + str(n) + ".w)\n";
+                source += 
+                  "          show = true;\n"
+                  "    if (show) {\n";
+            } else {
+              source += "    bool show = true;\n";
+              for (size_t n = 0; n < clip.size(); ++n)
+                source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
                 source += 
                   "          show = false;\n"
                   "    if (show) {\n";
-              }
+            }
+          }
 
 
           source += 
