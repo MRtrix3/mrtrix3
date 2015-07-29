@@ -130,16 +130,25 @@ namespace MR
               source += "    bool show = false;\n";
               for (size_t n = 0; n < clip.size(); ++n)
                 source += "    if (dot (coord, clip" + str(n) + ".xyz) < clip" + str(n) + ".w)\n";
-                source += 
-                  "          show = true;\n"
-                  "    if (show) {\n";
+              source += "          show = true;\n";
+                  
+              if (mode.get_cliphighlightstate()) {
+                source += "    bool ghost = false;\n";
+                for (size_t n = 0; n < clip.size(); ++n) {
+                  source += "    if (clip"+str(n)+"_selected != 0 && dot (coord, clip" + str(n) + ".xyz) < clip" + str(n) + ".w)\n";
+                  source += "          ghost = true;\n";
+                }
+                source += "    if (show || ghost) {\n";
+              } else {
+                source += "    if (show) {\n";
+              }
             } else {
               source += "    bool show = true;\n";
               for (size_t n = 0; n < clip.size(); ++n)
                 source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
-                source += 
-                  "          show = false;\n"
-                  "    if (show) {\n";
+              source += 
+                "          show = false;\n"
+                "    if (show) {\n";
             }
           }
 
@@ -170,13 +179,17 @@ namespace MR
           source += 
             std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
 
-          if (mode.get_cliphighlightstate()) {
+          if (clip.size() && mode.get_cliphighlightstate()) {
             for (size_t n = 0; n < clip.size(); ++n) 
               source += 
-                "        if (clip"+str(n)+"_selected != 0) {\n" 
+                "        if (clip"+str(n)+"_selected != 0) {\n"
                 "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
                 "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
                 "        }\n";
+            if (mode.get_clipintersectionmodestate())
+              source += 
+                "        if (!show)\n"
+                "              color.a = color.a / 42;\n";
           }
           
           source +=
