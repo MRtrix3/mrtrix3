@@ -2681,7 +2681,7 @@ namespace MR
 
         bool Connectome::import_vector_file (FileDataVector& data, const std::string& attribute)
         {
-          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv");
+          const std::string path = Dialog::File::get_file (this, "Select vector file to determine " + attribute, "Data files (*.csv)");
           if (path.empty())
             return false;
           data.clear();
