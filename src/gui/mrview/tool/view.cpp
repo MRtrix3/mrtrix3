@@ -328,8 +328,11 @@ namespace MR
           clip_box->setCheckable (true);
           connect (clip_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_shown_slot()));
           main_box->addWidget (clip_box);
+          vlayout = new VBoxLayout;
+          clip_box->setLayout (vlayout);
           hlayout = new HBoxLayout;
-          clip_box->setLayout (hlayout);
+          vlayout->addLayout (hlayout);
+          
 
           clip_planes_model = new ClipPlaneModel (this);
           connect (clip_planes_model, SIGNAL (dataChanged (const QModelIndex&, const QModelIndex&)),
@@ -357,6 +360,20 @@ namespace MR
           toolbar->setMovable (false);
           toolbar->setIconSize (QSize (16, 16));
           hlayout->addWidget (toolbar);
+          
+          clip_highlight_check_box = new QCheckBox ("Highlight selected clip planes");
+          clip_highlight_check_box->setToolTip ("Helps to identify selected clip planes that can be interacted with.");
+          clip_highlight_check_box->setChecked (true);
+          connect (clip_highlight_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_highlight_slot()));
+          vlayout->addWidget (clip_highlight_check_box);
+          
+          clip_intersectionmode_check_box = new QCheckBox ("Intersection mode");
+          clip_intersectionmode_check_box->setToolTip ("Generated volume is the intersection of individual clipped volumes, rather than the union.");
+          clip_intersectionmode_check_box->setChecked (false);
+          connect (clip_intersectionmode_check_box, SIGNAL (toggled(bool)), this, SLOT(clip_planes_toggle_intersectionmode_slot()));
+          vlayout->addWidget (clip_intersectionmode_check_box);
+          
+
 
           // clip planes handling:
 
@@ -879,6 +896,16 @@ namespace MR
           return ret;
         }
 
+        bool View::get_clipintersectionmodestate () const
+        {
+          return clip_highlight_check_box->isChecked();
+        }
+
+        bool View::get_cliphighlightstate () const
+        {
+          return clip_intersectionmode_check_box->isChecked();
+        }
+
         void View::clip_planes_selection_changed_slot () 
         {
           bool selected = clip_planes_list_view->selectionModel()->selectedIndexes().size();
@@ -891,6 +918,16 @@ namespace MR
 
 
         void View::clip_planes_toggle_shown_slot ()
+        {
+          window().updateGL();
+        }
+        
+        void View::clip_planes_toggle_highlight_slot ()
+        {
+          window().updateGL();
+        }
+        
+        void View::clip_planes_toggle_intersectionmode_slot ()
         {
           window().updateGL();
         }
