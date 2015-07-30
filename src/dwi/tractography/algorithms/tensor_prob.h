@@ -134,7 +134,7 @@ namespace MR
 
           }
 */
-        void truncate_track (std::vector< Point<value_type> >& tck, const int revert_step) {}
+        void truncate_track (std::vector< Point<value_type> >& tck, const size_t length_to_revert_from, const int revert_step) { }
 
 
         protected:

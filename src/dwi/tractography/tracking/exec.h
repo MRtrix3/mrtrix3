@@ -238,8 +238,9 @@ namespace MR
 
               if (S.is_act() && S.act().backtrack()) {
 
-                size_t revert_step = 0;
+                size_t revert_step = 1;
                 size_t max_size_at_backtrack = tck.size();
+                unsigned int revert_count = 0;
 
                 do {
                   termination = iterate();
@@ -251,11 +252,14 @@ namespace MR
                       if (tck.size() > max_size_at_backtrack) {
                         max_size_at_backtrack = tck.size();
                         revert_step = 1;
+                        revert_count = 1;
                       } else {
-                        ++revert_step;
-                        tck.resize (max_size_at_backtrack, Point<float>());
+                        if (revert_count++ == ACT_BACKTRACK_ATTEMPTS) {
+                          revert_count = 1;
+                          ++revert_step;
+                        }
                       }
-                      method.truncate_track (tck, revert_step);
+                      method.truncate_track (tck, max_size_at_backtrack, revert_step);
                       if (tck.size() > tck.get_seed_index() + 1) {
                         track_excluded = false;
                         termination = CONTINUE;
