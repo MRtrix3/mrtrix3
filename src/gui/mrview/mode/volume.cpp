@@ -70,8 +70,8 @@ namespace MR
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
-
           std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
+          const bool AND = mode.get_clipintersectionmodestate();
 
           std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
@@ -126,30 +126,12 @@ namespace MR
             "    coord += ray;\n";
 
           if (clip.size()) {
-            if (mode.get_clipintersectionmodestate()) {
-              source += "    bool show = false;\n";
-              for (size_t n = 0; n < clip.size(); ++n)
-                source += "    if (dot (coord, clip" + str(n) + ".xyz) < clip" + str(n) + ".w)\n";
-              source += "          show = true;\n";
-                  
-              if (mode.get_cliphighlightstate()) {
-                source += "    bool ghost = false;\n";
-                for (size_t n = 0; n < clip.size(); ++n) {
-                  source += "    if (clip"+str(n)+"_selected != 0 && dot (coord, clip" + str(n) + ".xyz) < clip" + str(n) + ".w)\n";
-                  source += "          ghost = true;\n";
-                }
-                source += "    if (show || ghost) {\n";
-              } else {
-                source += "    if (show) {\n";
-              }
-            } else {
-              source += "    bool show = true;\n";
-              for (size_t n = 0; n < clip.size(); ++n)
-                source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
-              source += 
-                "          show = false;\n"
-                "    if (show) {\n";
-            }
+            source += std::string("    bool show = ") + ( AND ? "false" : "true" ) + ";\n";
+            for (size_t n = 0; n < clip.size(); ++n)
+              source += std::string("    if (dot (coord, clip") + str(n) + ".xyz) " + ( AND ? "<" : ">" ) + " clip" + str(n) + ".w)\n";
+            source += 
+              std::string("          show = ") + ( AND ? "true" : "false" ) + ";\n"
+              "    if (show) {\n";
           }
 
 
@@ -178,19 +160,6 @@ namespace MR
 
           source += 
             std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
-
-          if (clip.size() && mode.get_cliphighlightstate()) {
-            for (size_t n = 0; n < clip.size(); ++n) 
-              source += 
-                "        if (clip"+str(n)+"_selected != 0) {\n"
-                "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
-                "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
-                "        }\n";
-            if (mode.get_clipintersectionmodestate())
-              source += 
-                "        if (!show)\n"
-                "              color.a = color.a / 42;\n";
-          }
           
           source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
@@ -248,6 +217,18 @@ namespace MR
           }
 
 
+
+          if (clip.size() && mode.get_cliphighlightstate()) {
+            source += "    float highlight = 0.0;\n";
+            for (size_t n = 0; n < clip.size(); ++n) 
+              source +=
+                "    if (clip"+str(n)+"_selected != 0)\n"
+                "      highlight += clamp (selection_thickness - abs (dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
+            source += 
+              "    highlight *= 0.05/selection_thickness;\n"
+              "    final_color.rgb += (1.0 - final_color.a) * vec3(1.0,0.0,0.0) * highlight;\n"
+              "    final_color.a += highlight;\n";
+          }
 
           source += 
             "    if (final_color.a > 0.95) break;\n"
