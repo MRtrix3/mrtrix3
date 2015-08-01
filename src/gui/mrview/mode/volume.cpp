@@ -225,7 +225,7 @@ namespace MR
                 "    if (clip"+str(n)+"_selected != 0)\n"
                 "      highlight += clamp (selection_thickness - abs (dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
             source += 
-              "    highlight *= 0.05/selection_thickness;\n"
+              "    highlight *= 0.1;\n"
               "    final_color.rgb += (1.0 - final_color.a) * vec3(1.0,0.0,0.0) * highlight;\n"
               "    final_color.a += highlight;\n";
           }
@@ -270,11 +270,16 @@ namespace MR
 
         namespace {
 
-          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const GL::vec4& plane) 
+          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const Point<>& ray, const GL::vec4& plane) 
           {
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
+            float off_axis_thickness = std::abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
+            normal[0] /= off_axis_thickness;
+            normal[1] /= off_axis_thickness;
+            normal[2] /= off_axis_thickness;
+            normal[3] /= off_axis_thickness;
             return normal;
           }
 
@@ -370,7 +375,9 @@ namespace MR
           else 
             min_vox_index = image()->interp.vox(1) < image()->interp.vox (2) ? 1 : 2;
           float step_size = 0.5 * image()->interp.vox(min_vox_index);
-          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal() * step_size);
+          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
+          Point<> ray_real_space = ray;
+          ray *= step_size;
           ray[0] /= image()->interp.dim(0);
           ray[1] /= image()->interp.dim(1);
           ray[2] /= image()->interp.dim(2);
@@ -491,7 +498,7 @@ namespace MR
 
           for (size_t n = 0; n < clip.size(); ++n) {
             gl::Uniform4fv (gl::GetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
-                clip_real2tex (T2S, S2T, clip[n].first));
+                clip_real2tex (T2S, S2T, ray_real_space, clip[n].first));
             gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
           }
           GL_CHECK_ERROR;
