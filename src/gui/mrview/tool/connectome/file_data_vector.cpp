@@ -47,6 +47,16 @@ namespace MR
             min (V.min),
             max (V.max) { }
 
+        FileDataVector::FileDataVector (FileDataVector&& V) :
+            Math::Vector<float> (std::move (V)),
+            name (V.name),
+            min (V.min),
+            max (V.max)
+        {
+          V.name.clear();
+          V.min = V.max = NAN;
+        }
+
         FileDataVector::FileDataVector (size_t nelements) :
             Math::Vector<float> (nelements),
             min (NAN),
@@ -59,6 +69,28 @@ namespace MR
             max (NAN)
         {
           calc_minmax();
+        }
+
+
+
+
+        FileDataVector& FileDataVector::operator= (const FileDataVector& that)
+        {
+          Math::Vector<float>::operator= (that);
+          name = that.name;
+          min = that.min;
+          max = that.max;
+          return *this;
+        }
+        FileDataVector& FileDataVector::operator= (FileDataVector&& that)
+        {
+          Math::Vector<float>::operator= (std::move (that));
+          name = that.name;
+          min = that.min;
+          max = that.max;
+          that.name.clear();
+          that.min = that.max = NAN;
+          return *this;
         }
 
 

@@ -43,8 +43,12 @@ namespace MR
         public:
           FileDataVector ();
           FileDataVector (const FileDataVector& V);
+          FileDataVector (FileDataVector&& V);
           FileDataVector (size_t nelements);
           FileDataVector (const std::string& file);
+
+          FileDataVector& operator= (const FileDataVector&);
+          FileDataVector& operator= (FileDataVector&&);
 
           FileDataVector& load (const std::string&);
           FileDataVector& clear();
