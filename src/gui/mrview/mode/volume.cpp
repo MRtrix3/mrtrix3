@@ -20,6 +20,7 @@
 
 */
 
+#include "file/config.h"
 #include "gui/opengl/lighting.h"
 #include "math/vector.h"
 #include "gui/mrview/mode/volume.h"
@@ -72,6 +73,14 @@ namespace MR
         {
           std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
           const bool AND = mode.get_clipintersectionmodestate();
+          std::string clip_color_spec = File::Config::get ("MRViewClipPlaneColour");
+          std::vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
+          if (clip_color_spec.size()) {
+            auto colour = parse_floats (clip_color_spec);
+            if (colour.size() < 4) 
+              WARN ("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
+            clip_color = colour;
+          }
 
           std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
@@ -225,8 +234,9 @@ namespace MR
                 "    if (clip"+str(n)+"_selected != 0)\n"
                 "      highlight += clamp (selection_thickness - abs (dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
             source += 
-              "    highlight *= 0.1;\n"
-              "    final_color.rgb += (1.0 - final_color.a) * vec3(1.0,0.0,0.0) * highlight;\n"
+              "    highlight *= " + str(clip_color[3]) + ";\n"
+              "    final_color.rgb += (1.0 - final_color.a) * vec3(" 
+              + str(clip_color[0]) + "," + str(clip_color[1]) + "," + str(clip_color[2]) + ") * highlight;\n"
               "    final_color.a += highlight;\n";
           }
 
