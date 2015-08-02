@@ -32,7 +32,7 @@ namespace MR
       namespace Tool
       {
 
-        void Dock::hideEvent (QHideEvent*) { assert (tool); tool->hide_event(); }
+        void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
         Base::Base (Window& main_window, Dock* parent) : 
           QFrame (parent),

@@ -14,6 +14,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/tool/list.h"
 
+
 namespace MR
 {
   namespace GUI
@@ -82,7 +83,7 @@ namespace MR
       // GLArea definitions:
       
       Window::GLArea::GLArea (Window& parent) :
-        QGLWidget (GL::core_format(), &parent),
+        GL::Area (&parent),
         main (parent) {
           setCursor (Cursor::crosshair);
           setMouseTracking (true);
@@ -186,7 +187,6 @@ namespace MR
 
       Window::Window() :
         glarea (new GLArea (*this)),
-        glrefresh_timer (new QTimer (this)),
         mode (nullptr),
         font (glarea->font()),
 #ifdef MRTRIX_MACOSX
@@ -203,7 +203,9 @@ namespace MR
         colourbar_position (ColourMap::Position::BottomRight),
         tools_colourbar_position (ColourMap::Position::TopRight),
         snap_to_image_axes_and_voxel (true),
-        tool_has_focus (nullptr)
+        tool_has_focus (nullptr), 
+        best_FPS (NAN),
+        show_FPS (false)
       {
 
         setDockOptions (AllowTabbedDocks | VerticalTabs);
@@ -436,32 +438,32 @@ namespace MR
         action->setShortcut (tr("Space"));
         addAction (action);
 
-        show_crosshairs_action = menu->addAction (tr ("Show focus"), this, SLOT (updateGL()));
+        show_crosshairs_action = menu->addAction (tr ("Show focus"), glarea, SLOT (update()));
         show_crosshairs_action->setShortcut (tr("F"));
         show_crosshairs_action->setCheckable (true);
         show_crosshairs_action->setChecked (true);
         addAction (show_crosshairs_action);
 
-        show_comments_action = menu->addAction (tr ("Show comments"), this, SLOT (updateGL()));
+        show_comments_action = menu->addAction (tr ("Show comments"), glarea, SLOT (update()));
         show_comments_action->setToolTip (tr ("Show/hide image comments\n\nShortcut: H"));
         show_comments_action->setShortcut (tr("H"));
         show_comments_action->setCheckable (true);
         show_comments_action->setChecked (true);
         addAction (show_comments_action);
 
-        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), this, SLOT (updateGL()));
+        show_voxel_info_action = menu->addAction (tr ("Show voxel information"), glarea, SLOT (update()));
         show_voxel_info_action->setShortcut (tr("V"));
         show_voxel_info_action->setCheckable (true);
         show_voxel_info_action->setChecked (true);
         addAction (show_voxel_info_action);
 
-        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), this, SLOT (updateGL()));
+        show_orientation_labels_action = menu->addAction (tr ("Show orientation labels"), glarea, SLOT (update()));
         show_orientation_labels_action->setShortcut (tr("O"));
         show_orientation_labels_action->setCheckable (true);
         show_orientation_labels_action->setChecked (true);
         addAction (show_orientation_labels_action);
 
-        show_colourbar_action = menu->addAction (tr ("Show colour bar"), this, SLOT (updateGL()));
+        show_colourbar_action = menu->addAction (tr ("Show colour bar"), glarea, SLOT (update()));
         show_colourbar_action->setShortcut (tr("B"));
         show_colourbar_action->setCheckable (true);
         show_colourbar_action->setChecked (true);
@@ -469,16 +471,18 @@ namespace MR
 
         menu->addSeparator();
 
-        image_visible_action = menu->addAction (tr ("Show image"), this, SLOT (show_image_slot()));
-        image_visible_action->setShortcut (tr ("M"));
-        image_visible_action->setCheckable (true);
-        image_visible_action->setChecked (true);
-        addAction (image_visible_action);
-
         action = menu->addAction (tr ("Background colour..."), this, SLOT (background_colour_slot()));
         action->setShortcut (tr ("G"));
         action->setCheckable (false);
         addAction (action);
+        
+        image_hide_action = menu->addAction (tr ("Hide main image"), this, SLOT (hide_image_slot()));
+        image_hide_action->setShortcut (tr ("M"));
+        image_hide_action->setCheckable (true);
+        image_hide_action->setChecked (false);
+        addAction (image_hide_action);
+        
+        menu->addSeparator();
 
         full_screen_action = menu->addAction (tr ("Full screen"), this, SLOT (full_screen_slot()));
         full_screen_action->setShortcut (tr ("F11"));
@@ -595,18 +599,19 @@ namespace MR
 
         toolbar->addSeparator();
 
-        // Help menu:
+        // Information menu:
 
-        menu = new QMenu (tr ("Help"), this);
+        menu = new QMenu (tr ("Info"), this);
 
         menu->addAction (tr ("About MRView"), this, SLOT (about_slot()));
-        menu->addAction (tr ("OpenGL"), this, SLOT (OpenGL_slot()));
         menu->addAction (tr ("About Qt"), this, SLOT (aboutQt_slot()));
+        menu->addAction (tr ("OpenGL information"), this, SLOT (OpenGL_slot()));
+        
 
         button = new QToolButton (this);
-        button->setText ("Help");
+        button->setText ("Info");
         button->setToolButtonStyle (button_style);
-        button->setToolTip (tr ("Help"));
+        button->setToolTip (tr ("Information"));
         button->setIcon (QIcon (":/help.svg"));
         button->setPopupMode (QToolButton::InstantPopup);
         button->setMenu (menu);
@@ -615,7 +620,7 @@ namespace MR
 
 
         lighting_ = new GL::Lighting (this);
-        connect (lighting_, SIGNAL (changed()), this, SLOT (updateGL()));
+        connect (lighting_, SIGNAL (changed()), glarea, SLOT (update()));
 
         set_image_menu ();
 
@@ -636,9 +641,6 @@ namespace MR
         tools_colourbar_position = parse_colourmap_position_str(cbar_pos);
         if(!tools_colourbar_position)
           WARN ("invalid specifier \"" + cbar_pos + "\" for config file entry \"MRViewToolsColourBarPosition\"");
-
-        glrefresh_timer->setSingleShot (true);
-        connect (glrefresh_timer, SIGNAL (timeout()), glarea, SLOT (updateGL()));
       }
 
 
@@ -665,7 +667,6 @@ namespace MR
       {
         mode = nullptr;
         delete glarea;
-        delete glrefresh_timer;
       }
 
 
@@ -778,10 +779,10 @@ namespace MR
       void Window::select_mode_slot (QAction* action)
       {
         mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create (*this));
-        mode->set_visible(image_visible_action->isChecked());
+        mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
         emit modeChanged();
-        updateGL();
+        glarea->update();
       }
 
 
@@ -831,7 +832,7 @@ namespace MR
         } else {
           tool->close();
         }
-        updateGL();
+        glarea->update();
       }
 
 
@@ -840,7 +841,7 @@ namespace MR
           Image* imagep = image();
           if (imagep) {
             imagep->set_colourmap (colourmap);
-            updateGL();
+            glarea->update();
           }
       }
 
@@ -852,7 +853,7 @@ namespace MR
           if (imagep) {
             std::array<GLubyte, 3> c_colour{{GLubyte(colour.red()), GLubyte(colour.green()), GLubyte(colour.blue())}};
             imagep->set_colour(c_colour);
-            updateGL();
+            glarea->update();
           }
       }
 
@@ -862,7 +863,7 @@ namespace MR
       {
         if (image()) {
           image()->set_invert_scale (invert_scale_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -874,7 +875,7 @@ namespace MR
           snap_to_image_axes_and_voxel = snap_to_image_action->isChecked();
           if (snap_to_image_axes_and_voxel) 
             mode->reset_orientation();
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -891,10 +892,7 @@ namespace MR
 
       void Window::updateGL () 
       { 
-        if (glrefresh_timer->isActive())
-          return;
-
-        glrefresh_timer->start();
+        glarea->update();
       }
 
 
@@ -905,7 +903,7 @@ namespace MR
         if (imagep) {
           imagep->reset_windowing();
           on_scaling_changed();
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -916,7 +914,7 @@ namespace MR
         Image* imagep = image();
         if (imagep) {
           imagep->set_interpolate (image_interpolate_action->isChecked());
-          updateGL();
+          glarea->update();
         }
       }
 
@@ -935,7 +933,7 @@ namespace MR
         else if (action == sagittal_action) set_plane (0);
         else if (action == coronal_action) set_plane (1);
         else assert (0);
-        updateGL();
+        glarea->update();
       }
 
 
@@ -962,22 +960,22 @@ namespace MR
           background_colour[0] = GLubyte(colour.red()) / 255.0f;
           background_colour[1] = GLubyte(colour.green()) / 255.0f;
           background_colour[2] = GLubyte(colour.blue()) / 255.0f;
-          updateGL();
+          glarea->update();
         }
 
       }
 
 
       void Window::set_image_visibility (bool flag) {
-        image_visible_action->setChecked(flag);
+        image_hide_action->setChecked(! flag);
         mode->set_visible(flag);
       }
 
 
 
-      void Window::show_image_slot ()
+      void Window::hide_image_slot ()
       {
-        bool visible = image_visible_action->isChecked();
+        bool visible = ! image_hide_action->isChecked();
         mode->set_visible(visible);
         emit imageVisibilityChanged(visible);
       }
@@ -1072,7 +1070,7 @@ namespace MR
             mode->features & Mode::ShaderTransparency,
             mode->features & Mode::ShaderLighting);
         emit imageChanged();
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1102,7 +1100,7 @@ namespace MR
           show_orientation_labels_action->setChecked (annotations & 0x00000008);
           show_colourbar_action->setChecked (annotations & 0x00000010);
         }
-        updateGL();
+        glarea->update();
       }
 
 
@@ -1117,7 +1115,7 @@ namespace MR
         close_action->setEnabled (N>0);
         properties_action->setEnabled (N>0);
         set_image_navigation_menu();
-        updateGL();
+        glarea->update();
       }
 
       int Window::get_mouse_mode ()
@@ -1253,14 +1251,58 @@ namespace MR
 
 
       void Window::paintGL ()
-      {  
+      {
+        GL_CHECK_ERROR;
+        glColorMask (true, true, true, true);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
-        gl::Enable (gl::MULTISAMPLE);
         if (mode->in_paint())
           return;
 
-        gl::DrawBuffer (gl::BACK);
+        if (glarea->format().samples() > 1) 
+          gl::Enable (gl::MULTISAMPLE);
+
+        GL_CHECK_ERROR;
+
         mode->paintGL();
+        GL_CHECK_ERROR;
+
+        if (show_FPS) {
+          render_times.push_back (Timer::current_time());
+          while (render_times.size() > 10)
+            render_times.erase (render_times.begin());
+          double FPS = NAN;
+          std::string FPS_string = "-";
+          std::string FPS_best_string = "-";
+
+          if (render_times.back() - best_FPS_time > 3.0)
+            best_FPS = NAN;
+
+          if (render_times.size() == 10) {
+            FPS = (render_times.size()-1.0) / (render_times.back()-render_times.front());
+            FPS_string = str (FPS, 4);
+            if (!std::isfinite (best_FPS) || FPS > best_FPS) {
+              best_FPS = FPS;
+              best_FPS_time = render_times.back();
+            }
+          }
+          else 
+            best_FPS = NAN;
+
+          if (std::isfinite (best_FPS))
+            FPS_best_string = str (best_FPS, 4);
+          mode->projection.setup_render_text (0.0, 1.0, 0.0);
+          mode->projection.render_text ("max FPS: " + FPS_best_string, RightEdge | TopEdge);
+          mode->projection.render_text ("FPS: " + FPS_string, RightEdge | TopEdge, 1);
+          mode->projection.done_render_text();
+        }
+
+        // need to clear alpha channel when using QOpenGLWidget (Qt >= 5.4)
+        // otherwise we get transparent windows...
+#if QT_VERSION >= 0x050400
+        gl::ColorMask (false, false, false, true); 
+        gl::Clear (GL_COLOR_BUFFER_BIT);
+#endif
+        GL_CHECK_ERROR;
       }
 
 
@@ -1272,7 +1314,7 @@ namespace MR
         gl::Enable (gl::DEPTH_TEST);
         //CONF option: ImageBackgroundColour
         //CONF default: 0,0,0 (black)
-        //CONF The default image background colour
+        // CONF The default image background colour
         File::Config::get_RGB ("ImageBackgroundColour", background_colour, 0.0f, 0.0f, 0.0f);
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
         mode.reset (dynamic_cast<Mode::__Action__*> (mode_group->actions()[0])->create (*this));
@@ -1420,7 +1462,7 @@ namespace MR
 
               if (modifiers_ == Qt::ControlModifier) {
                 set_FOV (FOV() * std::exp (-event->delta()/1200.0));
-                updateGL();
+                glarea->update();
                 event->accept();
                 return;
               }
@@ -1486,16 +1528,16 @@ namespace MR
       {
 #undef TOOL
 #define TOOL(classname, name, description) \
-          stub = lowercase (#classname "."); \
-          if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
-            tool_group->actions()[tool_id]->setChecked (true); \
-            select_tool_slot (tool_group->actions()[tool_id]); \
-            if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
-              continue; \
-          } \
-          ++tool_id;
-            
-        updateGL();
+        stub = lowercase (#classname "."); \
+        if (stub.compare (0, stub.size(), std::string (opt.opt->id), 0, stub.size()) == 0) { \
+          tool_group->actions()[tool_id]->setChecked (true); \
+          select_tool_slot (tool_group->actions()[tool_id]); \
+          if (dynamic_cast<Tool::__Action__*>(tool_group->actions()[tool_id])->dock->tool->process_commandline_option (opt)) \
+          continue; \
+        } \
+        ++tool_id;
+
+        glarea->update();
         qApp->processEvents();
 
         try {
@@ -1538,7 +1580,7 @@ namespace MR
             else if (opt.opt->is ("fov")) { 
               float fov = opt[0];
               set_FOV (fov);
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1547,7 +1589,7 @@ namespace MR
               if (pos.size() != 3) 
                 throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
               set_focus (Point<> (pos[0], pos[1], pos[2]));
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1557,7 +1599,7 @@ namespace MR
                 if (pos.size() != 3) 
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
                 set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
-                updateGL();
+                glarea->update();
               }
               continue;
             }
@@ -1565,14 +1607,14 @@ namespace MR
             if (opt.opt->is ("fov")) { 
               float fov = opt[0];
               set_FOV (fov);
-              updateGL();
+              glarea->update();
               continue;
             }
 
             if (opt.opt->is ("plane")) { 
               int n = opt[0];
               set_plane (n);
-              updateGL();
+              glarea->update();
               continue;
             }
 
@@ -1618,7 +1660,7 @@ namespace MR
                 if (param.size() != 2) 
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);
-                updateGL();
+                glarea->update();
               }
               continue;
             }
@@ -1634,6 +1676,11 @@ namespace MR
             if (opt.opt->is ("fullscreen")) { 
               full_screen_action->setChecked (true);
               full_screen_slot();
+              continue;
+            }
+
+            if (opt.opt->is ("fps")) {
+              show_FPS = true;
               continue;
             }
 
@@ -1704,7 +1751,12 @@ namespace MR
 
           + Option ("fullscreen", "Start fullscreen.")
 
-          + Option ("exit", "quit MRView");
+          + Option ("exit", "quit MRView")
+
+          + OptionGroup ("Debugging options")
+
+          + Option ("fps", "Display frames per second, averaged over the last 10 frames. "
+              "The maximum over the last 3 seconds is also displayed.");
 
       }
 

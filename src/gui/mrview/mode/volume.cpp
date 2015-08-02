@@ -309,6 +309,7 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
+          GL_CHECK_ERROR;
           // info for projection:
           int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
@@ -329,6 +330,7 @@ namespace MR
           GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
+          GL_CHECK_ERROR;
 
 
           overlays_for_3D.clear();
@@ -346,6 +348,7 @@ namespace MR
           }
 
 
+          GL_CHECK_ERROR;
           GL::mat4 T2S = get_tex_to_scanner_matrix (*image());
           GL::mat4 M = projection.modelview_projection() * T2S;
           GL::mat4 S2T = GL::inv (T2S);
@@ -392,6 +395,7 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
           }
 
+          GL_CHECK_ERROR;
           GLubyte indices[12];
 
           if (ray[0] < 0) {
@@ -460,7 +464,7 @@ namespace MR
           else 
             depth_texture.bind();
 
-          gl::ReadBuffer (gl::BACK);
+          GL_CHECK_ERROR;
 #if QT_VERSION >= 0x050100
           int m = window.windowHandle()->devicePixelRatio();
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m*projection.width(), m*projection.height(), 0);
@@ -468,15 +472,18 @@ namespace MR
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
 #endif
 
+          GL_CHECK_ERROR;
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
           std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
+          GL_CHECK_ERROR;
 
           for (size_t n = 0; n < clip.size(); ++n) {
             gl::Uniform4fv (gl::GetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
                 clip_real2tex (T2S, S2T, clip[n].first));
             gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
           }
+          GL_CHECK_ERROR;
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
             gl::ActiveTexture (gl::TEXTURE2 + n);
@@ -493,6 +500,7 @@ namespace MR
             overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scale_factor(), "overlay"+str(n)+"_");
           }
 
+          GL_CHECK_ERROR;
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
           gl::Uniform1f (gl::GetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
 
@@ -505,10 +513,14 @@ namespace MR
           const GLsizei counts[] = { 4, 4, 4 };
           const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
 
+          GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
+          GL_CHECK_ERROR;
           image()->stop (volume_shader);
+          GL_CHECK_ERROR;
           gl::Disable (gl::BLEND);
 
+          GL_CHECK_ERROR;
           draw_orientation_labels (projection);
         }
 

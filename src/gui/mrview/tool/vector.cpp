@@ -80,6 +80,7 @@ namespace MR
 
         Vector::Vector (Window& main_window, Dock* parent) :
           Base (main_window, parent),
+          do_lock_to_grid (true),
           do_crop_to_slice (true),
           not_3D (true),
           line_opacity (1.0) {
@@ -200,8 +201,8 @@ namespace MR
 
             GridLayout* default_opt_grid = new GridLayout;
             line_thickness_slider = new QSlider (Qt::Horizontal);
-            line_thickness_slider->setRange (1,25);
-            line_thickness_slider->setSliderPosition (10);
+            line_thickness_slider->setRange (10,1000);
+            line_thickness_slider->setSliderPosition (200);
             connect (line_thickness_slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 0, 0);
             default_opt_grid->addWidget (line_thickness_slider, 0, 1);
@@ -213,11 +214,17 @@ namespace MR
             default_opt_grid->addWidget (new QLabel ("opacity"), 1, 0);
             default_opt_grid->addWidget (opacity_slider, 1, 1);
 
+            lock_to_grid = new QGroupBox (tr("lock to grid"));
+            lock_to_grid->setCheckable (true);
+            lock_to_grid->setChecked (true);
+            connect (lock_to_grid, SIGNAL (clicked (bool)), this, SLOT (on_lock_to_grid_slot (bool)));
+            default_opt_grid->addWidget (lock_to_grid, 2, 0, 1, 2);
+
             crop_to_slice = new QGroupBox (tr("crop to slice"));
             crop_to_slice->setCheckable (true);
             crop_to_slice->setChecked (true);
             connect (crop_to_slice, SIGNAL (clicked (bool)), this, SLOT (on_crop_to_slice_slot (bool)));
-            default_opt_grid->addWidget (crop_to_slice, 2, 0, 1, 2);
+            default_opt_grid->addWidget (crop_to_slice, 3, 0, 1, 2);
 
             main_box->addLayout (default_opt_grid, 0);
 
@@ -230,14 +237,12 @@ namespace MR
         Vector::~Vector () {}
 
 
-        void Vector::draw (const Projection& transform, bool is_3D, int axis, int slice)
+        void Vector::draw (const Projection& transform, bool is_3D, int, int)
         {
           not_3D = !is_3D;
-          if (!window.snap_to_image() && do_crop_to_slice)
-            return;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
-              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform, axis, slice);
+              dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
         }
 
@@ -290,7 +295,6 @@ namespace MR
         {
           std::vector<std::string> list = Dialog::File::get_files (this,
                                                                    "Select fixel images to open",
-                                                                   "MRtrix sparse format (*.msf *.msh);;" +
                                                                    GUI::Dialog::File::image_filter_string);
           if (list.empty())
             return;
@@ -492,7 +496,7 @@ namespace MR
           }
           threshold_upper->setRate (rate);
 
-          line_thickness_slider->setValue(static_cast<int>(line_thickness * 1000));
+          line_thickness_slider->setValue(static_cast<int>(line_thickness * 1.0e5f));
         }
 
 
@@ -507,7 +511,7 @@ namespace MR
         {
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
-            fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1000.f);
+            fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1.0e5f);
           window.updateGL();
         }
 
@@ -551,9 +555,18 @@ namespace MR
         }
 
 
+        void Vector::on_lock_to_grid_slot(bool is_checked)
+        {
+          do_lock_to_grid = is_checked;
+          window.updateGL();
+        }
+
+
         void Vector::on_crop_to_slice_slot (bool is_checked)
         {
-          do_crop_to_slice = is_checked;
+          do_crop_to_slice = is_checked;         
+          lock_to_grid->setEnabled(do_crop_to_slice);
+
           window.updateGL();
         }
 

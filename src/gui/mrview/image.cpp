@@ -392,59 +392,59 @@ namespace MR
           for (size_t n = 3; n < V.ndim(); ++n) 
             V[n] = position[n];
 
-        for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
+          for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
-          if (format == gl::RED) {
-            auto p = data.begin();
+            if (format == gl::RED) {
+              auto p = data.begin();
 
-            for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
-              for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
-                ValueType val = *p = V.value();
-                if (std::isfinite (val)) {
-                  if (val < value_min) value_min = val;
-                  if (val > value_max) value_max = val;
-                }
-                ++p;
-              }
-            }
-
-          }
-          else {
-
-            for (auto& d : data) d = 0.0f;
-
-            for (size_t n = 0; n < 3; ++n) {
-              if (V.ndim() > 3) {
-                if (V.dim(3) > int(position[3] + n))
-                  V[3] = position[3] + n;
-                else break;
-              }
-
-              auto p = data.begin() + n;
-              for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
-                for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-                  ValueType val = *p = abs_if_signed (ValueType (V.value()));
+              for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
+                for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
+                  ValueType val = *p = V.value();
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
                   }
-                  p += 3;
+                  ++p;
                 }
               }
 
-              if (V.ndim() <= 3) 
-                break;
             }
-            if (V.ndim() > 3) 
-              V[3] = position[3];
+            else {
 
+              for (auto& d : data) d = 0.0f;
+
+              for (size_t n = 0; n < 3; ++n) {
+                if (V.ndim() > 3) {
+                  if (V.dim(3) > int(position[3] + n))
+                    V[3] = position[3] + n;
+                  else break;
+                }
+
+                auto p = data.begin() + n;
+                for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
+                  for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
+                    ValueType val = *p = abs_if_signed (ValueType (V.value()));
+                    if (std::isfinite (val)) {
+                      if (val < value_min) value_min = val;
+                      if (val > value_max) value_max = val;
+                    }
+                    p += 3;
+                  }
+                }
+
+                if (V.ndim() <= 3) 
+                  break;
+              }
+              if (V.ndim() > 3) 
+                V[3] = position[3];
+
+            }
+
+            upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+            ++progress;
           }
 
-          upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
-          ++progress;
         }
-
-      }
 
 
 

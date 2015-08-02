@@ -30,6 +30,9 @@
 #include "gui/opengl/lighting.h"
 #include "gui/lighting_dock.h"
 
+ // as a fraction of the image FOV:
+#define MRTRIX_DEFAULT_LINE_THICKNESS 0.002f
+
 namespace MR
 {
   namespace GUI
@@ -72,7 +75,7 @@ namespace MR
 
         Tractography::Tractography (Window& main_window, Dock* parent) :
           Base (main_window, parent),
-          line_thickness (0.001f),
+          line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
@@ -144,14 +147,14 @@ namespace MR
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
             slider->setRange (1,1000);
-            slider->setSliderPosition (int (1000));
+            slider->setSliderPosition (1000);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
             default_opt_grid->addWidget (slider, 0, 1);
 
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (100,1000);
-            slider->setSliderPosition (float (100.0));
+            slider->setRange (-1000,1000);
+            slider->setSliderPosition (0);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
@@ -187,6 +190,8 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
 
             lighting = new GL::Lighting (parent); 
+            lighting->diffuse = 0.8;
+            lighting->shine = 5.0;
             connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
 
 
@@ -304,6 +309,12 @@ namespace MR
         void Tractography::on_crop_to_slab_slot (bool is_checked)
         {
           do_crop_to_slab = is_checked;
+
+          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            tractogram->should_update_stride = true;
+          }
+
           window.updateGL();
         }
 
@@ -341,7 +352,13 @@ namespace MR
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 100000.0f;
+          line_thickness = MRTRIX_DEFAULT_LINE_THICKNESS * std::exp (2.0e-3f * thickness);
+
+          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            tractogram->should_update_stride = true;
+          }
+
           window.updateGL();
         }
 
@@ -388,6 +405,7 @@ namespace MR
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
+              tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
               tractogram_list_model->get_tractogram (indices[i])->color_type = Manual;
               tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
             }
@@ -463,7 +481,7 @@ namespace MR
           options
             + OptionGroup ("Tractography tool options")
 
-            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.")
+            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
             +   Argument ("tracks").type_file_in();
         }
 

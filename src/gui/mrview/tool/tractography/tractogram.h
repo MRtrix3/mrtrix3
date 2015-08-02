@@ -77,8 +77,9 @@ namespace MR
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
+            bool should_update_stride;
             TrackColourType color_type;
-            float colour[3];
+            float colour[3], original_fov;
             std::string scalar_filename;
 
             class Shader : public Displayable::Shader {
@@ -99,7 +100,7 @@ namespace MR
             void scalingChanged ();
 
           private:
-            static constexpr size_t max_num_tracks_no_downscaling = 5000;
+            static const int max_sample_stride = 6;
             Window& window;
             Tractography& tractography_tool;
             std::string filename;
@@ -110,9 +111,12 @@ namespace MR
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
+            std::vector<std::vector<GLint> > original_track_sizes;
+            std::vector<std::vector<GLint> > original_track_starts;
             std::vector<size_t> num_tracks_per_buffer;
-            float downscale_factor;
-            bool should_downscale_tracks;
+            GLint sample_stride;
+            float line_thickness_screenspace;
+            bool vao_dirty;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
@@ -126,9 +130,11 @@ namespace MR
 
             void render_streamlines ();
 
+            void update_stride ();
+
           private slots:
             void on_FOV_changed() {
-              downscale_factor = should_downscale_tracks && window.FOV() > 50 ? 1 : 0;
+              should_update_stride = true;
             }
         };
       }

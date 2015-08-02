@@ -94,7 +94,7 @@ namespace MR
             updateGL();
           }
 
-          bool get_image_visibility () const { return image_visible_action->isChecked(); }
+          bool get_image_visibility () const { return ! image_hide_action->isChecked(); }
           void set_image_visibility (bool flag);
 
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
@@ -106,7 +106,7 @@ namespace MR
           void makeGLcurrent () { glarea->makeCurrent(); }
 
           void captureGL (std::string filename) {
-            QImage image (glarea->grabFrameBuffer());
+            QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
           }
 
@@ -149,7 +149,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
-          void show_image_slot ();
+          void hide_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -179,26 +179,25 @@ namespace MR
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
 
-
-          class GLArea : public QGLWidget {
+          class GLArea : public GL::Area {
             public:
               GLArea (Window& parent);
-              QSize sizeHint () const;
+              QSize sizeHint () const override;
 
             protected:
-              void dragEnterEvent (QDragEnterEvent* event);
-              void dragMoveEvent (QDragMoveEvent* event);
-              void dragLeaveEvent (QDragLeaveEvent* event);
-              void dropEvent (QDropEvent* event);
+              void dragEnterEvent (QDragEnterEvent* event) override;
+              void dragMoveEvent (QDragMoveEvent* event) override;
+              void dragLeaveEvent (QDragLeaveEvent* event) override;
+              void dropEvent (QDropEvent* event) override;
             private:
               Window& main;
 
-              void initializeGL ();
-              void paintGL ();
-              void mousePressEvent (QMouseEvent* event);
-              void mouseMoveEvent (QMouseEvent* event);
-              void mouseReleaseEvent (QMouseEvent* event);
-              void wheelEvent (QWheelEvent* event);
+              void initializeGL () override;
+              void paintGL () override;
+              void mousePressEvent (QMouseEvent* event) override;
+              void mouseMoveEvent (QMouseEvent* event) override;
+              void mouseReleaseEvent (QMouseEvent* event) override;
+              void wheelEvent (QWheelEvent* event) override;
           };
 
           enum MouseAction {
@@ -212,7 +211,6 @@ namespace MR
           };
 
           GLArea* glarea;
-          QTimer* glrefresh_timer;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
@@ -247,7 +245,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-                  *image_visible_action,
+                  *image_hide_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,
@@ -300,6 +298,10 @@ namespace MR
           template <class Event> void update_mouse_state (Event* event);
 
           Tool::Base* tool_has_focus;
+
+          std::vector<double> render_times;
+          double best_FPS, best_FPS_time;
+          bool show_FPS;
 
           friend class Image;
           friend class Mode::Base;

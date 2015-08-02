@@ -43,7 +43,7 @@ namespace MR
           fixel_tool (fixel_tool),
           voxel_size_length_multipler (1.f),
           user_line_length_multiplier (1.f),
-          line_thickness (0.005f),
+          line_thickness (0.0015f),
           length_type (Unity),
           colour_type (CValue)
         {
@@ -56,27 +56,6 @@ namespace MR
           value_max = -std::numeric_limits<float>::infinity();
           voxel_size_length_multipler = 0.45 * (header.vox(0) + header.vox(1) + header.vox(2)) / 3;
         }
-
-
-        Fixel::Fixel (const std::string& filename, Vector& fixel_tool) :
-          AbstractFixel(filename, fixel_tool),
-          fixel_data (header),
-          fixel_vox (fixel_data),
-          header_transform (fixel_vox)
-        {
-          load_image();
-        }
-
-
-        PackedFixel::PackedFixel (const std::string& filename, Vector& fixel_tool) :
-          AbstractFixel (filename, fixel_tool),
-          packed_fixel_data (header),
-          packed_fixel_vox (packed_fixel_data),
-          header_transform (packed_fixel_vox)
-        {
-          load_image();
-        }
-
 
         std::string AbstractFixel::Shader::vertex_shader_source (const Displayable&)
         {
@@ -229,12 +208,8 @@ namespace MR
         }
 
 
-        void AbstractFixel::render (const Projection& projection, int axis, int slice)
+        void AbstractFixel::render (const Projection& projection)
         {
-
-          if (fixel_tool.do_crop_to_slice && (slice < 0 || slice >= header.dim(axis)))
-            return;
-
           start (fixel_shader);
           projection.set (fixel_shader);
 
@@ -263,13 +238,17 @@ namespace MR
             gl::DepthMask (gl::TRUE_);
           }
 
-          vertex_array_object.bind();
-
           if (!fixel_tool.do_crop_to_slice) {
-            for (size_t x = 0; x < slice_fixel_indices[0].size(); ++x)
-              gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
+            vertex_array_object.bind();
+            for (size_t x = 0, N = slice_fixel_indices[0].size(); x < N; ++x) {
+              if (slice_fixel_counts[0][x])
+                gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[0][x][0], &slice_fixel_sizes[0][x][0], slice_fixel_counts[0][x]);
+            }
           } else {
-            gl::MultiDrawArrays (gl::POINTS, &slice_fixel_indices[axis][slice][0], &slice_fixel_sizes[axis][slice][0], slice_fixel_counts[axis][slice]);
+            request_update_interp_image_buffer (projection);
+
+            if (GLsizei points_count = regular_grid_buffer_pos.size())
+              gl::DrawArrays(gl::POINTS, 0, points_count);
           }
 
           if (fixel_tool.line_opacity < 1.0) {
@@ -282,16 +261,125 @@ namespace MR
         }
 
 
+        void AbstractFixel::update_interp_image_buffer (const Projection& projection,
+                                                const MR::Image::ConstHeader &fixel_header,
+                                                const MR::Image::Transform &header_transform)
+        {
+          // Code below "inspired" by ODF::draw
+          const auto& window = fixel_tool.window;
+          Point<> p (window.target());
+          p += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - p));
+          p = header_transform.scanner2voxel (p);
+
+          if (fixel_tool.do_lock_to_grid) {
+            p[0] = (int)std::round (p[0]);
+            p[1] = (int)std::round (p[1]);
+            p[2] = (int)std::round (p[2]);
+          }
+
+          p = header_transform.voxel2scanner (p);
+
+          const MR::Image::Info& header_info = fixel_header.info();
+
+          Point<> x_dir = projection.screen_to_model_direction (1.0f, 0.0f, projection.depth_of (p));
+          x_dir.normalise();
+          x_dir = header_transform.scanner2image_dir (x_dir);
+          x_dir[0] *= header_info.vox(0);
+          x_dir[1] *= header_info.vox(1);
+          x_dir[2] *= header_info.vox(2);
+          x_dir = header_transform.image2scanner_dir (x_dir);
+
+          Point<> y_dir = projection.screen_to_model_direction (0.0f, 1.0f, projection.depth_of (p));
+          y_dir.normalise();
+          y_dir = header_transform.scanner2image_dir (y_dir);
+          y_dir[0] *= header_info.vox(0);
+          y_dir[1] *= header_info.vox(1);
+          y_dir[2] *= header_info.vox(2);
+          y_dir = header_transform.image2scanner_dir (y_dir);
+
+          Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0f, 0.0f, projection.depth_of (p));
+          int nx = std::ceil (x_width.norm() / x_dir.norm());
+          Point<> y_width = projection.screen_to_model_direction (0.0f, projection.height()/2.0f, projection.depth_of (p));
+          int ny = std::ceil (y_width.norm() / y_dir.norm());
+
+          regular_grid_buffer_pos.clear();
+          regular_grid_buffer_dir.clear();
+          regular_grid_buffer_val.clear();
+
+          for (int y = -nx; y <= ny; ++y) {
+            for (int x = -nx; x <= nx; ++x) {
+              Point<> scanner_pos = p + float(x)*x_dir + float(y)*y_dir;
+              Point<> voxel_pos = header_transform.scanner2voxel(scanner_pos);
+
+              // Round to nearest neighbour
+              voxel_pos[0] = (int)std::round (voxel_pos[0]);
+              voxel_pos[1] = (int)std::round (voxel_pos[1]);
+              voxel_pos[2] = (int)std::round (voxel_pos[2]);
+
+              // Find and add point indices that correspond to projected voxel
+              const auto &voxel_indices = voxel_to_indices_map[voxel_pos];
+
+              // Load all corresponding fixel data into separate buffer
+              // We can't reuse original buffer because off-axis rendering means that
+              // two or more points in our regular grid may correspond to the same nearest voxel
+              for(const GLsizei index : voxel_indices) {
+                regular_grid_buffer_pos.push_back(scanner_pos);
+                regular_grid_buffer_dir.push_back(buffer_dir[index]);
+                regular_grid_buffer_val.push_back(buffer_val[2 * index]);
+                regular_grid_buffer_val.push_back(buffer_val[(2 * index) + 1]);
+              }
+            }
+          }
+
+          if(!regular_grid_buffer_pos.size())
+            return;
+
+          regular_grid_vao.bind();
+          regular_grid_vertex_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_pos.size() * sizeof(Point<float>),
+                          &regular_grid_buffer_pos[0], gl::DYNAMIC_DRAW);
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+
+          // fixel directions
+          regular_grid_dir_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_dir.size() * sizeof(Point<float>),
+                          &regular_grid_buffer_dir[0], gl::DYNAMIC_DRAW);
+          gl::EnableVertexAttribArray (1);
+          gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+
+          // fixel sizes and values
+          regular_grid_val_buffer.bind (gl::ARRAY_BUFFER);
+          gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_val.size() * sizeof(float),
+                          &regular_grid_buffer_val[0], gl::DYNAMIC_DRAW);
+          gl::EnableVertexAttribArray (2);
+          gl::VertexAttribPointer (2, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+        }
+
+
         void AbstractFixel::load_image ()
         {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          fixel_tool.window.makeGLcurrent();
+
           load_image_buffer ();
+
+          regular_grid_buffer_pos = std::vector<Point<float>>(buffer_pos.size());
+
+          regular_grid_vao.gen();
+
+          regular_grid_vertex_buffer.gen();
+          regular_grid_dir_buffer.gen();
+          regular_grid_val_buffer.gen();
+
+          vertex_array_object.gen();
+          vertex_array_object.bind();
 
           // voxel centres
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, buffer_pos.size() * sizeof(Point<float>), &buffer_pos[0][0], gl::STATIC_DRAW);
-          vertex_array_object.gen();
-          vertex_array_object.bind();
           gl::EnableVertexAttribArray (0);
           gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 0, (void*)0);
 
@@ -339,11 +427,15 @@ namespace MR
               buffer_val.push_back (fixel_vox.value()[f].size);
               buffer_val.push_back (fixel_vox.value()[f].value);
 
+              GLint point_index = buffer_pos.size() - 1;
+
               for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][fixel_vox[dim]].push_back (buffer_pos.size() - 1);
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (point_index);
                 slice_fixel_sizes[dim][fixel_vox[dim]].push_back(1);
                 slice_fixel_counts[dim][fixel_vox[dim]]++;
               }
+
+              voxel_to_indices_map[Point<int>(fixel_vox[0], fixel_vox[1], fixel_vox[2])].push_back(point_index);
             }
           }
 
@@ -355,14 +447,14 @@ namespace MR
 
         void PackedFixel::load_image_buffer()
         {
-          size_t ndim = packed_fixel_vox.ndim();
+          size_t ndim = fixel_vox.ndim();
 
           if (ndim != 4)
             throw InvalidImageException ("Vector image " + filename
                                          + " should contain 4 dimensions. Instead "
                                          + str(ndim) + " found.");
 
-          size_t dim4_len = packed_fixel_vox.dim(3);
+          size_t dim4_len = fixel_vox.dim(3);
 
           if (dim4_len % 3)
             throw InvalidImageException ("Expecting 4th-dimension size of vector image "
@@ -370,34 +462,34 @@ namespace MR
                                          + str(dim4_len) + " entries found.");
 
           for (size_t dim = 0; dim < 3; ++dim) {
-            slice_fixel_indices[dim].resize (packed_fixel_vox.dim(dim));
-            slice_fixel_sizes[dim].resize (packed_fixel_vox.dim(dim));
-            slice_fixel_counts[dim].resize (packed_fixel_vox.dim(dim), 0);
+            slice_fixel_indices[dim].resize (fixel_vox.dim(dim));
+            slice_fixel_sizes[dim].resize (fixel_vox.dim(dim));
+            slice_fixel_counts[dim].resize (fixel_vox.dim(dim), 0);
           }
 
-          MR::Image::LoopInOrder loop (packed_fixel_vox, 0, 3);
+          MR::Image::LoopInOrder loop (fixel_vox, 0, 3);
 
           Point<float> voxel_pos;
           size_t n_fixels = dim4_len / 3;
 
-          for (auto l = loop (packed_fixel_vox); l; ++l) {
+          for (auto l = loop (fixel_vox); l; ++l) {
             for (size_t f = 0; f < n_fixels; ++f) {
 
               // Fetch the vector components
               float x_comp, y_comp, z_comp;
-              packed_fixel_vox[3] = 3*f;
-              x_comp = packed_fixel_vox.value();
-              packed_fixel_vox[3]++;
-              y_comp = packed_fixel_vox.value();
-              packed_fixel_vox[3]++;
-              z_comp = packed_fixel_vox.value();
+              fixel_vox[3] = 3*f;
+              x_comp = fixel_vox.value();
+              fixel_vox[3]++;
+              y_comp = fixel_vox.value();
+              fixel_vox[3]++;
+              z_comp = fixel_vox.value();
 
               Point<> vector(x_comp, y_comp, z_comp);
               float length = vector.norm();
               value_min = std::min(value_min, length);
               value_max = std::max(value_max, length);
 
-              header_transform.voxel2scanner (packed_fixel_vox, voxel_pos);
+              header_transform.voxel2scanner (fixel_vox, voxel_pos);
               buffer_pos.push_back (voxel_pos);
               buffer_dir.push_back (vector.normalise());
 
@@ -405,11 +497,15 @@ namespace MR
               buffer_val.push_back (length);
               buffer_val.push_back (length);
 
+              GLint point_index = buffer_pos.size() - 1;
+
               for (size_t dim = 0; dim < 3; ++dim) {
-                slice_fixel_indices[dim][packed_fixel_vox[dim]].push_back (buffer_pos.size() - 1);
-                slice_fixel_sizes[dim][packed_fixel_vox[dim]].push_back(1);
-                slice_fixel_counts[dim][packed_fixel_vox[dim]]++;
+                slice_fixel_indices[dim][fixel_vox[dim]].push_back (point_index);
+                slice_fixel_sizes[dim][fixel_vox[dim]].push_back(1);
+                slice_fixel_counts[dim][fixel_vox[dim]]++;
               }
+
+              voxel_to_indices_map[Point<int>(fixel_vox[0], fixel_vox[1], fixel_vox[2])].push_back(point_index);
             }
           }
 
