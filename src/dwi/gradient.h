@@ -55,7 +55,7 @@ namespace MR
       Eigen::MatrixXd& normalise_grad (MatrixType& grad)
       {
         if (grad.cols() < 3)
-          throw Exception ("invalid gradient matrix dimensions");
+          throw Exception ("invalid diffusion gradient table dimensions");
         for (ssize_t i = 0; i < grad.rows(); i++) {
           auto norm = grad.row(i).template head<3>().norm();
           if (norm) 
@@ -155,13 +155,13 @@ namespace MR
       inline void check_DW_scheme (const Header& header, const MatrixType& grad)
       {
         if (!grad.rows())
-          throw Exception ("no valid diffusion encoding scheme found");
+          throw Exception ("no valid diffusion gradient table found");
 
         if (header.ndim() != 4)
           throw Exception ("dwi image should contain 4 dimensions");
 
         if (header.size (3) != (int) grad.rows())
-          throw Exception ("number of studies in base image does not match that in encoding file");
+          throw Exception ("number of studies in base image does not match that in diffusion gradient table");
       }
 
 
@@ -177,7 +177,7 @@ namespace MR
      *
      * This is the version that should be used in any application that
      * processes the DWI raw data. */
-    Eigen::MatrixXd get_valid_DW_scheme (const Header& header);
+    Eigen::MatrixXd get_valid_DW_scheme (const Header& header, bool nofail = false);
 
 
     //! \brief get the matrix mapping SH coefficients to amplitudes

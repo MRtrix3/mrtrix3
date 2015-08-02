@@ -134,7 +134,7 @@ namespace MR
         const auto opt_fsl = get_options ("fslgrad");
         if (opt_fsl.size()) {
           if (opt_mrtrix.size())
-            throw Exception ("Please provide diffusion encoding using either -grad or -fslgrad option (not both)");
+            throw Exception ("Please provide diffusion gradient table using either -grad or -fslgrad option (not both)");
           grad = load_bvecs_bvals (header, opt_fsl[0][0], opt_fsl[0][1]);
         }
         if (!opt_mrtrix.size() && !opt_fsl.size())
@@ -142,16 +142,16 @@ namespace MR
       }
       catch (Exception& E) {
         E.display (3);
-        throw Exception ("error importing diffusion encoding for image \"" + header.name() + "\"");
+        throw Exception ("error importing diffusion gradient table for image \"" + header.name() + "\"");
       }
 
       if (!grad.rows())
         return grad;
 
       if (grad.cols() < 4)
-        throw Exception ("unexpected diffusion encoding matrix dimensions");
+        throw Exception ("unexpected diffusion gradient table matrix dimensions");
 
-      INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion-weighted encoding");
+      INFO ("found " + str (grad.rows()) + "x" + str (grad.cols()) + " diffusion gradient table");
 
       return grad;
     }
@@ -160,10 +160,9 @@ namespace MR
 
 
 
-    MatrixXd get_valid_DW_scheme (const Header& header)
+    MatrixXd get_valid_DW_scheme (const Header& header, bool nofail)
     {
       auto grad = get_DW_scheme (header);
-      check_DW_scheme (header, grad);
 
       //CONF option: BValueScaling
       //CONF default: 1 (true)
@@ -182,7 +181,15 @@ namespace MR
 
       if (scale_bvalues)
         scale_bvalue_by_G_squared (grad);
+
+      try {
       normalise_grad (grad);
+      check_DW_scheme (header, grad);
+      }
+      catch (Exception& e) {
+        if (!nofail)
+          throw;
+      }
       return grad;
     }
 

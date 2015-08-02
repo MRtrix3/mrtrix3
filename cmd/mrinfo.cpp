@@ -83,10 +83,11 @@ void usage ()
     +   Argument ("key").type_text()
 
     + GradImportOptions
-    +   Option ("validate", 
-          "verify that DW scheme matches the image, and sanitise the information as would "
-          "normally be done within an MRtrix application (i.e. scaling of b-value by gradient "
-          "norm, normalisation of gradient vectors)")
+    + Option ("raw_dwgrad", 
+        "do not modify the gradient table from what was found in the image headers. This skips the "
+        "validation steps normally performed within MRtrix applications (i.e. do not verify that "
+        "the number of entries in the gradient table matches the number of volumes in the image, "
+        "do not scale b-values by gradient norms, do not normalise gradient vectors)")
 
     + GradExportOptions
     +   Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
@@ -160,7 +161,6 @@ void run ()
 {
   auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
 
-  bool import_grad = check_option_group (GradImportOptions);
   bool export_grad = check_option_group (GradExportOptions);
 
   if (export_grad && argument.size() > 1 )
@@ -182,7 +182,7 @@ void run ()
   const bool dwgrad      = get_options("dwgrad")        .size();
   const bool shells      = get_options("shells")        .size();
   const bool shellcounts = get_options("shellcounts")   .size();
-  const bool validate    = get_options("validate")      .size();
+  const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
 
   const bool print_full_header = !(format || ndim || size || vox || datatype || stride || 
       offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts);
@@ -190,12 +190,10 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
-    if (import_grad) {
-      if (validate) 
-        header.set_DW_scheme (DWI::get_valid_DW_scheme (header));
-      else 
-        header.set_DW_scheme (DWI::get_DW_scheme (header));
-    }
+    if (raw_dwgrad) 
+      header.set_DW_scheme (DWI::get_DW_scheme (header));
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts) 
+      header.set_DW_scheme (DWI::get_valid_DW_scheme (header, true));
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";

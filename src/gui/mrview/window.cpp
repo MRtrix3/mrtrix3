@@ -165,7 +165,7 @@ namespace MR
 
 
       //CONF option: MRViewFocusModifierKey 
-      //CONF default: alt (cmd on MacOSX) 
+      //CONF default: meta (cmd on MacOSX) 
       //CONF modifier key to select focus mode in MRView. Valid
       //CONF choices include shift, alt, ctrl, meta (on MacOSX: shift, alt,
       //CONF ctrl, cmd).

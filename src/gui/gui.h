@@ -40,9 +40,11 @@ namespace MR
     class App {
       public:
         App (int& cmdline_argc, char** cmdline_argv) {
+          ::MR::File::Config::init ();
           ::MR::GUI::GL::set_default_context ();
 
           new QApplication (cmdline_argc, cmdline_argv);
+          ::MR::App::init (cmdline_argc, cmdline_argv); 
 
           ::MR::ProgressInfo::display_func = Dialog::ProgressBar::display;
           ::MR::ProgressInfo::done_func = Dialog::ProgressBar::done;

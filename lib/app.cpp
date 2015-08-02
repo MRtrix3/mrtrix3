@@ -31,7 +31,7 @@
 #include "file/path.h"
 #include "file/config.h"
 
-#define MRTRIX_HELP_COMMAND "less"
+#define MRTRIX_HELP_COMMAND "less -X"
 
 #define HELP_WIDTH  80
 

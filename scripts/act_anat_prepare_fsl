@@ -112,7 +112,10 @@ else:
 runCommand('5ttgen T1_bet_pve_0' + fast_suffix + ' T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
-result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+root,ext = os.path.splitext(sys.argv[2])
+if ext.lower() == '.gz':
+  ext = os.path.splitext(root)[1] + ext
+result_path = 'result' + ext
 runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif ' + result_path + ' -mask -')
 
 lib.app.moveFileToDest(result_path, sys.argv[2])
