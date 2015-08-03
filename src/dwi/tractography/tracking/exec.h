@@ -260,11 +260,9 @@ namespace MR
                         }
                       }
                       method.truncate_track (tck, max_size_at_backtrack, revert_step);
-                      if (tck.size() > tck.get_seed_index() + 1) {
+                      if (method.pos.valid()) {
                         track_excluded = false;
                         termination = CONTINUE;
-                        method.pos = tck.back();
-                        method.dir = (tck.back() - tck[tck.size() - 2]).normalise();
                       }
                     }
                   } else if (tck.size() >= S.max_num_points) {

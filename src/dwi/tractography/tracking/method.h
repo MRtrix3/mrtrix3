@@ -112,7 +112,13 @@ namespace MR
             dir.invalidate();
             return;
           }
+          const size_t new_size = length_to_revert_from - revert_step;
+          if (tck.size() == 2)
+            dir = (tck[1] - tck[0]).normalise();
+          else
+            dir = (tck[new_size] - tck[new_size - 2]).normalise();
           tck.resize (length_to_revert_from - revert_step);
+          pos = tck.back();
           if (S.is_act())
             act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
         }

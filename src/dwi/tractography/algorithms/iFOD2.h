@@ -312,7 +312,7 @@ end_init:
                 return;
               }
               const size_t new_size = length_to_revert_from - points_to_remove;
-              if (new_size == 1)
+              if (tck.size() == 2)
                 dir = (tck[1] - tck[0]).normalise();
               else if (new_size != tck.size())
                 dir = (tck[new_size] - tck[new_size - 2]).normalise();
