@@ -405,7 +405,7 @@ end_init:
             }
 
 
-
+          protected:
             void get_path (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents, const Point<value_type>& end_dir) const
             {
               value_type cos_theta = end_dir.dot (dir);
@@ -445,7 +445,7 @@ end_init:
 
 
 
-
+          private:
             class Calibrate
             {
               public:
