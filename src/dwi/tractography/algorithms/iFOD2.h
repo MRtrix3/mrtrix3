@@ -238,18 +238,14 @@ end_init:
               Point<value_type> next_pos, next_dir;
 
               value_type max_val = 0.0;
-              size_t nan_count = 0;
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
                 value_type val = path_prob (calib_positions, calib_tangents);
                 if (std::isnan (val))
-                  ++nan_count;
+                  return EXIT_IMAGE;
                 else if (val > max_val)
                   max_val = val;
               }
-
-              if (nan_count == calibrate_list.size())
-                return EXIT_IMAGE;
 
               if (max_val <= 0.0)
                 return CALIBRATE_FAIL;
@@ -313,7 +309,7 @@ end_init:
                 return;
               }
               const size_t new_size = length_to_revert_from - points_to_remove;
-              if (tck.size() == 2)
+              if (tck.size() == 2 || new_size == 1)
                 dir = (tck[1] - tck[0]).normalise();
               else if (new_size != tck.size())
                 dir = (tck[new_size] - tck[new_size - 2]).normalise();

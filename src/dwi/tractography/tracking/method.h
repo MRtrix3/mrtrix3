@@ -113,7 +113,7 @@ namespace MR
             return;
           }
           const size_t new_size = length_to_revert_from - revert_step;
-          if (tck.size() == 2)
+          if (tck.size() == 2 || new_size == 1)
             dir = (tck[1] - tck[0]).normalise();
           else
             dir = (tck[new_size] - tck[new_size - 2]).normalise();
