@@ -125,7 +125,7 @@ namespace MR
                   ++num_proc;
                 }
 
-                float internal_step_size() const { return step_size / float(num_samples); }
+                float internal_step_size() const override { return step_size / float(num_samples); }
 
                 size_t lmax, num_samples, max_trials;
                 value_type sin_max_angle, fod_power;
@@ -289,10 +289,11 @@ end_init:
 
 
             // Restore proper probability from the FOD at the track seed point
-            void reverse_track()
+            void reverse_track() override
             {
               half_log_prob0 = half_log_prob0_seed;
               sample_idx = S.num_samples;
+              MethodBase::reverse_track();
             }
 
 

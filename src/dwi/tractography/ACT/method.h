@@ -154,6 +154,8 @@ namespace MR
 
             bool in_pathology() const { return (tissue_values.valid() && tissue_values.is_path()); }
 
+            void reverse_track() { sgm_depth = 0; }
+
 
             size_t sgm_depth;
             bool seed_in_sgm;

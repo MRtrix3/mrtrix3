@@ -98,7 +98,7 @@ namespace MR
         }
 
 
-        void reverse_track() { }
+        virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
         bool init() { return false; }
         term_t next() { return term_t(); }
         float get_metric() { return NAN; }

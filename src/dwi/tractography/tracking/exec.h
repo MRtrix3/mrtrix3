@@ -231,9 +231,6 @@ namespace MR
             void gen_track_unidir (GeneratedTrack& tck)
             {
 
-              if (S.is_act())
-                method.act().sgm_depth = 0;
-
               term_t termination = CONTINUE;
 
               if (S.is_act() && S.act().backtrack()) {
