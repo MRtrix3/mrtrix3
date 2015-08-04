@@ -98,6 +98,7 @@ namespace MR
           else buffer->set_value (data_offset, val);
         }
 
+        //! get set/set a row of values at the current index position along the specified axis
         FORCE_INLINE Eigen::Map<Eigen::Matrix<value_type, Eigen::Dynamic, 1 >, Eigen::Unaligned, Eigen::InnerStride<> > row (size_t axis)
         {
           assert (is_direct_io());
