@@ -288,17 +288,13 @@ namespace MR
      * maximum value of \a default_lmax (defaults to 8), or the value specified
      * using c -lmax command-line option (if \a lmax_from_command_line is
      * true). If the resulting DW scheme is ill-posed (condition number less
-     * than \a max_cond, default 2), lmax will be reduced until it becomes
-     * sufficiently well conditioned (unless overridden on the command-line).
-     *
-     * Note that this uses get_valid_DW_scheme() to get the DW_scheme, so will
-     * check for the -grad option as required. */
+     * than \a 10), lmax will be reduced until it becomes sufficiently well
+     * conditioned (unless overridden on the command-line). */
     template <typename ValueType>
       inline Math::Matrix<ValueType> compute_SH2amp_mapping (
           const Math::Matrix<ValueType>& directions,
           bool lmax_from_command_line = true, 
-          int default_lmax = 8, 
-          ValueType max_cond = 2.0)
+          int default_lmax = 8)
       {
         int lmax = -1;
         int lmax_from_ndir = Math::SH::LforN (directions.rows());
@@ -308,6 +304,10 @@ namespace MR
           if (opt.size()) {
             lmax_set_from_commandline = true;
             lmax = to<int> (opt[0][0]);
+            if (lmax % 2)
+              throw Exception ("lmax must be an even number");
+            if (lmax < 0)
+              throw Exception ("lmax must be a non-negative number");
             if (lmax > lmax_from_ndir) {
               WARN ("not enough directions for lmax = " + str(lmax) + " - dropping down to " + str(lmax_from_ndir));
               lmax = lmax_from_ndir;
@@ -340,6 +340,21 @@ namespace MR
           WARN ("reducing lmax to " + str(lmax) + " to improve conditioning");
 
         return mapping;
+      }
+
+
+      //! \brief get the maximum spherical harmonic order given a set of directions
+      /*! Computes the maximum spherical harmonic order \a lmax given a set of
+       *  directions on the sphere. This may be less than the value requested at
+       *  the command-line, or that calculated from the number of directions, if
+       *  the resulting transform matrix is ill-posed. */
+      template <typename ValueType>
+      inline size_t lmax_for_directions (const Math::Matrix<ValueType>& directions,
+                                         const bool lmax_from_command_line = true,
+                                         const int default_lmax = 8)
+      {
+        const Math::Matrix<ValueType> mapping = compute_SH2amp_mapping (directions, lmax_from_command_line, default_lmax);
+        return Math::SH::LforN (mapping.columns());
       }
 
 
