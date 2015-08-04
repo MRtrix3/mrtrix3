@@ -21,6 +21,7 @@
 */
 
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -121,21 +122,48 @@ void run ()
   Tractography::Properties properties;
   Tractography::Reader<float> reader (argument[0], properties);
 
-  std::vector<NodePair> assignments;
+  std::vector< std::vector<node_t> > assignments_lists;
+  std::vector<NodePair> assignments_pairs;
+  bool nonpair_found = false;
   node_t max_node_index = 0;
   {
     std::ifstream stream (argument[1]);
     std::string line;
     NodePair temp;
     while (std::getline (stream, line)) {
-      sscanf (line.c_str(), "%u %u", &temp.first, &temp.second);
-      assignments.push_back (temp);
-      max_node_index = maxvalue (max_node_index, temp.first, temp.second);
+      std::stringstream line_stream (line);
+      std::vector<node_t> nodes;
+      while (1) {
+        node_t n;
+        line_stream >> n;
+        if (!line_stream) break;
+        nodes.push_back (n);
+        max_node_index = std::max (max_node_index, n);
+      }
+      if (nodes.size() != 2)
+        nonpair_found = true;
+      assignments_lists.push_back (std::move (nodes));
+      //sscanf (line.c_str(), "%u %u", &temp.first, &temp.second);
+      //assignments.push_back (temp);
+      //max_node_index = maxvalue (max_node_index, temp.first, temp.second);
     }
   }
+
   const size_t count = to<size_t>(properties["count"]);
-  if (assignments.size() != count)
-    throw Exception ("Assignments file contains " + str(assignments.size()) + " entries; track file contains " + str(count) + " tracks");
+  if (assignments_lists.size() != count)
+    throw Exception ("Assignments file contains " + str(assignments_lists.size()) + " entries; track file contains " + str(count) + " tracks");
+
+  // If the node assignments have been performed in such a way that each streamline is
+  //   assigned to precisely two nodes, use the assignments_pairs class which is
+  //   designed as such. This _should_ be the majority of cases, but the situation
+  //   where each streamline could potentially be assigned to any number of nodes is
+  //   now supported.
+  if (!nonpair_found) {
+    assignments_pairs.reserve (assignments_lists.size());
+    for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
+      assignments_pairs.push_back (NodePair ((*i)[0], (*i)[1]));
+    assignments_lists.clear();
+  }
 
   const std::string prefix (argument[2]);
   Options opt = get_options ("prefix_tck_weights_out");
@@ -202,9 +230,15 @@ void run ()
     {
       std::mutex mutex;
       ProgressBar progress ("generating exemplars for connectome... ", count);
-      auto loader = [&] (Tractography::Connectome::Streamline& out) { if (!reader (out)) return false; out.set_nodes (assignments[out.index]); return true; };
-      auto worker = [&] (const Tractography::Connectome::Streamline& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-      Thread::run_queue (loader, Tractography::Connectome::Streamline(), Thread::multi (worker));
+      if (assignments_pairs.size()) {
+        auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
+        auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+        Thread::run_queue (loader, Tractography::Connectome::Streamline_nodepair(), Thread::multi (worker));
+      } else {
+        auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.index]); return true; };
+        auto worker = [&] (const Tractography::Connectome::Streamline_nodelist& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
+        Thread::run_queue (loader, Tractography::Connectome::Streamline_nodelist(), Thread::multi (worker));
+      }
     }
 
     generator.finalize();
@@ -285,12 +319,21 @@ void run ()
         break;
     }
 
-    Tractography::Connectome::Streamline tck;
     ProgressBar progress ("Extracting tracks from connectome... ", count);
-    while (reader (tck)) {
-      tck.set_nodes (assignments[tck.index]);
-      writer (tck);
-      ++progress;
+    if (assignments_pairs.size()) {
+      Tractography::Connectome::Streamline_nodepair tck;
+      while (reader (tck)) {
+        tck.set_nodes (assignments_pairs[tck.index]);
+        writer (tck);
+        ++progress;
+      }
+    } else {
+      Tractography::Connectome::Streamline_nodelist tck;
+      while (reader (tck)) {
+        tck.set_nodes (assignments_lists[tck.index]);
+        writer (tck);
+        ++progress;
+      }
     }
 
   }

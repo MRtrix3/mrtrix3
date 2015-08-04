@@ -83,7 +83,10 @@ void usage ()
     + Argument ("path").type_file_out()
 
   + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
-                             "(these represent streamlines that connect to the same node at both ends)");
+                             "(these represent streamlines that connect to the same node at both ends)")
+
+  + Option ("vector", "output a vector representing connectivities from a given seed point to target nodes, "
+                      "rather than a matrix of node-node connectivities");
 
 
 };
@@ -123,6 +126,9 @@ void run ()
     WARN ("(This may indicate poor parcellation image preparation, use of incorrect config file in labelconfig, or very poor registration)");
   }
 
+  // Are we generating a matrix or a vector?
+  const bool vector_output = get_options ("vector").size();
+
   // Get the metric & assignment mechanism for connectome construction
   std::unique_ptr<Metric_base>    metric    (load_metric (nodes_data));
   std::unique_ptr<Tck2nodes_base> tck2nodes (load_assignment_mode (nodes_data));
@@ -131,16 +137,27 @@ void run ()
   Tractography::Properties properties;
   Tractography::Reader<float> reader (argument[0], properties);
 
-  // Multi-threaded connectome construction
+  // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");
   Tractography::Connectome::Mapper mapper (*tck2nodes, *metric);
-  Tractography::Connectome::Matrix connectome (max_node_index);
-  Thread::run_queue (
-      loader, 
-      Thread::batch (Tractography::Streamline<float>()), 
-      Thread::multi (mapper), 
-      Thread::batch (Mapped_track()), 
-      connectome);
+  Tractography::Connectome::Matrix connectome (max_node_index, vector_output);
+
+  // Multi-threaded connectome construction
+  if (tck2nodes->provides_pair()) {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (Mapped_track_nodepair()),
+        connectome);
+  } else {
+    Thread::run_queue (
+        loader,
+        Thread::batch (Tractography::Streamline<float>()),
+        Thread::multi (mapper),
+        Thread::batch (Mapped_track_nodelist()),
+        connectome);
+  }
 
   if (metric->scale_edges_by_streamline_count())
     connectome.scale_by_streamline_count();

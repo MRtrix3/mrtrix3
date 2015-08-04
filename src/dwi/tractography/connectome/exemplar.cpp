@@ -47,10 +47,8 @@ Exemplar& Exemplar::operator= (const Exemplar& that)
   return *this;
 }
 
-void Exemplar::add (const Tractography::Connectome::Streamline& in)
+void Exemplar::add (const Tractography::Connectome::Streamline_nodepair& in)
 {
-  assert (!is_finalized);
-  std::lock_guard<std::mutex> lock (mutex);
   // Determine whether or not this streamline is reversed w.r.t. the exemplar
   // Now the ordering of the nodes is retained; use those
   bool is_reversed = false;
@@ -59,6 +57,49 @@ void Exemplar::add (const Tractography::Connectome::Streamline& in)
     assert (in.get_nodes().first == nodes.second && in.get_nodes().second == nodes.first);
   }
   // Contribute this streamline toward the mean exemplar streamline
+  add (in, is_reversed);
+}
+
+void Exemplar::add (const Connectome::Streamline_nodelist& in)
+{
+  // In this case, the streamline hasn't been neatly assigned to a node pair,
+  //   but has potentially traversed many nodes.
+  // To try to make the exemplars sensible, find the two points along the streamline
+  //   that are closest to the node COMs, and truncate the track to that range,
+  //   before contributing to the exemplar
+  size_t index_closest_to_first_node = 0, index_closest_to_second_node = 0;
+  float min_distance_to_first_node  = dist2 (node_COMs.first,  in[0]);
+  float min_distance_to_second_node = dist2 (node_COMs.second, in[0]);
+  for (size_t i = 1; i != in.size(); ++i) {
+    const float distance_to_first_node = dist2 (node_COMs.first, in[i]);
+    if (distance_to_first_node < min_distance_to_first_node) {
+      min_distance_to_first_node = distance_to_first_node;
+      index_closest_to_first_node = i;
+    }
+    const float distance_to_second_node = dist2 (node_COMs.second, in[i]);
+    if (distance_to_second_node < min_distance_to_second_node) {
+      min_distance_to_second_node = distance_to_second_node;
+      index_closest_to_second_node = i;
+    }
+  }
+  if (index_closest_to_first_node == index_closest_to_second_node)
+    return;
+  const bool is_reversed = (index_closest_to_second_node < index_closest_to_first_node);
+  const size_t first = std::min (index_closest_to_first_node, index_closest_to_second_node);
+  const size_t last  = std::max (index_closest_to_first_node, index_closest_to_second_node);
+  Tractography::Streamline<float> subtck;
+  for (size_t i = first; i <= last; ++i)
+    subtck.push_back (in[i]);
+  subtck.index  = in.index;
+  subtck.weight = in.weight;
+  add (in, is_reversed);
+}
+
+void Exemplar::add (const Tractography::Streamline<float>& in, const bool is_reversed)
+{
+  assert (!is_finalized);
+  std::lock_guard<std::mutex> lock (mutex);
+
   for (uint32_t i = 0; i != size(); ++i) {
     float interp_pos = (in.size() - 1) * i / float(size());
     if (is_reversed)
@@ -72,6 +113,7 @@ void Exemplar::add (const Tractography::Connectome::Streamline& in)
       pos = ((1.0f-mu) * in[lower]) + (mu * in[upper]);
     (*this)[i] += (pos * in.weight);
   }
+
   weight += in.weight;
 }
 

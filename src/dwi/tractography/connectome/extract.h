@@ -63,6 +63,7 @@ class Selector
     bool operator() (const node_t) const;
     bool operator() (const NodePair&) const;
     bool operator() (const node_t one, const node_t two) const { return (*this) (NodePair (one, two)); }
+    bool operator() (const std::vector<node_t>&) const;
 
   private:
     std::vector<node_t> list;
@@ -79,7 +80,8 @@ class WriterExemplars
   public:
     WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector< Point<float> >&);
 
-    bool operator() (const Tractography::Connectome::Streamline&);
+    bool operator() (const Tractography::Connectome::Streamline_nodepair&);
+    bool operator() (const Tractography::Connectome::Streamline_nodelist&);
 
     void finalize();
 
@@ -115,7 +117,8 @@ class WriterExtraction
 
     void clear();
 
-    bool operator() (const Connectome::Streamline&) const;
+    bool operator() (const Connectome::Streamline_nodepair&) const;
+    bool operator() (const Connectome::Streamline_nodelist&) const;
 
     size_t file_count() const { return writers.size(); }
 

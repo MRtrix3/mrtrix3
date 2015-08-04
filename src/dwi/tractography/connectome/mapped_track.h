@@ -29,48 +29,82 @@
 
 
 namespace MR {
-namespace DWI {
-namespace Tractography {
-namespace Connectome {
+  namespace DWI {
+    namespace Tractography {
+      namespace Connectome {
 
 
 
-class Mapped_track
-{
+        class Mapped_track_base
+        {
 
-  public:
-    Mapped_track() :
-      nodes (std::make_pair (0, 0)),
-      factor (0.0),
-      weight (1.0) { }
+          public:
+            Mapped_track_base() :
+              track_index (-1),
+              factor (0.0),
+              weight (1.0) { }
 
-    void set_track_index (const size_t i) { track_index = i; }
-    void set_first_node  (const node_t i) { nodes.first = i;  }
-    void set_second_node (const node_t i) { nodes.second = i; }
-    void set_nodes       (const NodePair& i) { nodes = i; }
-    void set_factor      (const float i)    { factor = i; }
-    void set_weight      (const float i)    { weight = i; }
+            void set_track_index (const size_t i) { track_index = i; }
+            void set_factor      (const float i)  { factor = i; }
+            void set_weight      (const float i)  { weight = i; }
 
-    size_t get_track_index() const { return track_index; }
-    node_t get_first_node()  const { return nodes.first;  }
-    node_t get_second_node() const { return nodes.second; }
-    const NodePair& get_nodes() const { return nodes; }
-    float get_factor() const { return factor; }
-    float get_weight() const { return weight; }
+            size_t get_track_index() const { return track_index; }
+            float  get_factor()      const { return factor; }
+            float  get_weight()      const { return weight; }
 
-  private:
-    size_t track_index;
-    NodePair nodes;
-    float factor, weight;
-
-};
+          private:
+            size_t track_index;
+            float factor, weight;
+        };
 
 
+        class Mapped_track_nodepair : public Mapped_track_base
+        {
+
+          public:
+            Mapped_track_nodepair() :
+              Mapped_track_base (),
+              nodes (std::make_pair (0, 0)) { }
+
+            void set_first_node  (const node_t i)   { nodes.first = i;  }
+            void set_second_node (const node_t i)   { nodes.second = i; }
+            void set_nodes       (const NodePair i) { nodes = i; }
+
+            node_t get_first_node()     const { return nodes.first;  }
+            node_t get_second_node()    const { return nodes.second; }
+            const NodePair& get_nodes() const { return nodes; }
+
+          private:
+            NodePair nodes;
+
+        };
 
 
-}
-}
-}
+        class Mapped_track_nodelist : public Mapped_track_base
+        {
+
+          public:
+            Mapped_track_nodelist() :
+              Mapped_track_base (),
+              nodes () { }
+
+            void add_node   (const node_t i)               { nodes.push_back (i);  }
+            void set_nodes  (const std::vector<node_t>& i) { nodes = i; }
+            void set_nodes  (std::vector<node_t>&& i)       { std::swap (nodes, i); }
+
+            const std::vector<node_t>& get_nodes() const { return nodes; }
+
+          private:
+            std::vector<node_t> nodes;
+
+        };
+
+
+
+
+      }
+    }
+  }
 }
 
 

@@ -24,6 +24,8 @@
 
 #include "dwi/tractography/connectome/extract.h"
 
+#include "bitset.h"
+
 
 namespace MR {
 namespace DWI {
@@ -56,6 +58,19 @@ bool Selector::operator() (const NodePair& nodes) const
     return (found_first && found_second);
   else
     return (found_first || found_second);
+}
+
+bool Selector::operator() (const std::vector<node_t>& nodes) const
+{
+  BitSet found (list.size());
+  for (std::vector<node_t>::const_iterator n = nodes.begin(); n != nodes.end(); ++n) {
+    for (size_t i = 0; i != list.size(); ++i)
+      if (*n == list[i]) found[i] = true;
+  }
+  if (exact_match)
+    return found.full();
+  else
+    return !found.empty();
 }
 
 
@@ -112,7 +127,16 @@ WriterExemplars::WriterExemplars (const Tractography::Properties& properties, co
 
 
 
-bool WriterExemplars::operator() (const Tractography::Connectome::Streamline& in)
+bool WriterExemplars::operator() (const Tractography::Connectome::Streamline_nodepair& in)
+{
+  for (size_t index = 0; index != selectors.size(); ++index) {
+    if (selectors[index] (in.get_nodes()))
+      exemplars[index].add (in);
+  }
+  return true;
+}
+
+bool WriterExemplars::operator() (const Tractography::Connectome::Streamline_nodelist& in)
 {
   for (size_t index = 0; index != selectors.size(); ++index) {
     if (selectors[index] (in.get_nodes()))
@@ -248,7 +272,7 @@ void WriterExtraction::clear()
 
 
 
-bool WriterExtraction::operator() (const Connectome::Streamline& in) const
+bool WriterExtraction::operator() (const Connectome::Streamline_nodepair& in) const
 {
   if (exclusive) {
     // Make sure that both nodes are within the list of nodes of interest;
@@ -259,6 +283,27 @@ bool WriterExtraction::operator() (const Connectome::Streamline& in) const
       if (*i == in.get_nodes().second) second_in_list = true;
     }
     if (!first_in_list || !second_in_list) return true;
+  }
+  for (size_t i = 0; i != file_count(); ++i) {
+    if (selectors[i] (in.get_nodes()))
+      (*writers[i]) (in);
+    else
+      (*writers[i]) (empty_tck);
+  }
+  return true;
+}
+
+bool WriterExtraction::operator() (const Connectome::Streamline_nodelist& in) const
+{
+  if (exclusive) {
+    // Make sure _all_ nodes are within the list of nodes of interest;
+    //   if not, don't pass to any of the selectors
+    BitSet in_list (in.get_nodes().size());
+    for (std::vector<node_t>::const_iterator i = node_list.begin(); i != node_list.end(); ++i) {
+      for (size_t n = 0; n != in.get_nodes().size(); ++n)
+        if (*i == in.get_nodes()[n]) in_list[n] = true;
+    }
+    if (!in_list.full()) return true;
   }
   for (size_t i = 0; i != file_count(); ++i) {
     if (selectors[i] (in.get_nodes()))

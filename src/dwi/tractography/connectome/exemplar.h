@@ -70,7 +70,8 @@ class Exemplar : private Tractography::Streamline<float>
 
     Exemplar& operator= (const Exemplar& that);
 
-    void add (const Connectome::Streamline& in);
+    void add (const Connectome::Streamline_nodepair&);
+    void add (const Connectome::Streamline_nodelist&);
     void finalize (const float);
 
     const Tractography::Streamline<float>& get() const { assert (is_finalized); return *this; }
@@ -84,6 +85,8 @@ class Exemplar : private Tractography::Streamline<float>
     NodePair nodes;
     std::pair< Point<float>, Point<float> > node_COMs;
     bool is_finalized;
+
+    void add (const Tractography::Streamline<float>&, const bool is_reversed);
 };
 
 

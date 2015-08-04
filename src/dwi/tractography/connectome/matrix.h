@@ -46,16 +46,17 @@ class Matrix
 {
 
   public:
-    Matrix (const node_t max_node_index) :
-      data   (max_node_index + 1, max_node_index + 1),
-      counts (max_node_index + 1, max_node_index + 1)
+    Matrix (const node_t max_node_index, const bool vector_output = false) :
+        data   (vector_output ? 1 : (max_node_index + 1), max_node_index + 1),
+        counts (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)
     {
       data = 0.0;
       counts = 0.0;
     }
 
 
-    bool operator() (const Mapped_track&);
+    bool operator() (const Mapped_track_nodepair&);
+    bool operator() (const Mapped_track_nodelist&);
 
     void scale_by_streamline_count();
     void remove_unassigned();
@@ -66,12 +67,13 @@ class Matrix
     void write (const std::string& path) { data.save (path); }
     void write_assignments (const std::string&);
 
-    node_t num_nodes() const { return (data.rows() - 1); }
+    bool is_vector() const { return (data.rows() == 1); }
 
 
   private:
     Math::Matrix<double> data, counts;
-    std::vector<NodePair> assignments;
+    std::vector<NodePair> assignments_pairs;
+    std::vector< std::vector<node_t> > assignments_lists;
 
 };
 
