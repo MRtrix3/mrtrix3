@@ -63,7 +63,7 @@ const OptionGroup AssignmentOption = OptionGroup ("Structural connectome streaml
     + Argument ("max_dist").type_float (0.0, TCK2NODES_FORWARDSEARCH_DEFAULT_DIST, 1e6)
 
   + Option ("assignment_all_voxels", "assign the streamline to all nodes it intersects along its length "
-                                     "(note that this means a streamline may be assigned to more than two nodes)");
+                                     "(note that this means a streamline may be assigned to more than two nodes, or indeed none at all)");
 
 
 

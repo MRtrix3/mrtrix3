@@ -69,7 +69,7 @@ const OptionGroup OutputOptions = OptionGroup ("Options for determining the cont
     + Option ("nodes", "only select tracks that involve a set of nodes of interest")
       + Argument ("list").type_sequence_int()
 
-    + Option ("exclusive", "only select tracks that exclusively connect nodes of interest at both ends")
+    + Option ("exclusive", "only select tracks that exclusively connect nodes from within the list of nodes of interest")
 
     + Option ("files", "select how the resulting streamlines will be grouped in output files. "
                        "Options are: per_edge, per_node, single (default: per_edge)")
@@ -123,13 +123,14 @@ void run ()
   Tractography::Reader<float> reader (argument[0], properties);
 
   std::vector< std::vector<node_t> > assignments_lists;
+  assignments_lists.reserve (to<size_t>(properties["count"]));
   std::vector<NodePair> assignments_pairs;
   bool nonpair_found = false;
   node_t max_node_index = 0;
   {
     std::ifstream stream (argument[1]);
     std::string line;
-    NodePair temp;
+    ProgressBar progress ("reading streamline assignments file... ");
     while (std::getline (stream, line)) {
       std::stringstream line_stream (line);
       std::vector<node_t> nodes;
@@ -143,9 +144,7 @@ void run ()
       if (nodes.size() != 2)
         nonpair_found = true;
       assignments_lists.push_back (std::move (nodes));
-      //sscanf (line.c_str(), "%u %u", &temp.first, &temp.second);
-      //assignments.push_back (temp);
-      //max_node_index = maxvalue (max_node_index, temp.first, temp.second);
+      ++progress;
     }
   }
 
@@ -159,6 +158,7 @@ void run ()
   //   where each streamline could potentially be assigned to any number of nodes is
   //   now supported.
   if (!nonpair_found) {
+    INFO ("Assignments file contains node pair for every streamline; operating accordingly");
     assignments_pairs.reserve (assignments_lists.size());
     for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i)
       assignments_pairs.push_back (NodePair ((*i)[0], (*i)[1]));
@@ -176,13 +176,19 @@ void run ()
   // Get the list of nodes of interest
   std::vector<node_t> nodes;
   opt = get_options ("nodes");
+  bool manual_node_list = false;
   if (opt.size()) {
+    manual_node_list = true;
     std::vector<int> data = parse_ints (opt[0][0]);
     bool zero_in_list = false;
     for (std::vector<int>::const_iterator i = data.begin(); i != data.end(); ++i) {
-      nodes.push_back (node_t (*i));
-      if (!*i)
-        zero_in_list = true;
+      if (size_t(*i) > max_node_index) {
+        WARN ("Node of interest " + str(*i) + " is above the maximum detected node index of " + str(max_node_index));
+      } else {
+        nodes.push_back (node_t (*i));
+        if (!*i)
+          zero_in_list = true;
+      }
     }
     if (!zero_in_list && !first_node)
       nodes.push_back (0);
@@ -193,6 +199,8 @@ void run ()
   }
 
   const bool exclusive = get_options ("exclusive").size();
+  if (exclusive && !manual_node_list)
+    WARN ("List of nodes of interest not provided; -exclusive option will have no effect");
 
   opt = get_options ("files");
   const int file_format = opt.size() ? opt[0][0] : 0;
@@ -233,11 +241,11 @@ void run ()
       if (assignments_pairs.size()) {
         auto loader = [&] (Tractography::Connectome::Streamline_nodepair& out) { if (!reader (out)) return false; out.set_nodes (assignments_pairs[out.index]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodepair& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-        Thread::run_queue (loader, Tractography::Connectome::Streamline_nodepair(), Thread::multi (worker));
+        Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodepair()), Thread::multi (worker));
       } else {
         auto loader = [&] (Tractography::Connectome::Streamline_nodelist& out) { if (!reader (out)) return false; out.set_nodes (assignments_lists[out.index]); return true; };
         auto worker = [&] (const Tractography::Connectome::Streamline_nodelist& in) { generator (in); std::lock_guard<std::mutex> lock (mutex); ++progress; return true; };
-        Thread::run_queue (loader, Tractography::Connectome::Streamline_nodelist(), Thread::multi (worker));
+        Thread::run_queue (loader, Thread::batch (Tractography::Connectome::Streamline_nodelist()), Thread::multi (worker));
       }
     }
 

@@ -79,7 +79,7 @@ void usage ()
   + Option ("keep_unassigned", "By default, the program discards the information regarding those streamlines that are not successfully assigned to a node pair. "
                                "Set this option to keep these values (will be the first row/column in the output matrix)")
 
-  + Option ("assignments", "write the node assignments of each streamline to a file")
+  + Option ("out_assignments", "output the node assignments of each streamline to a file")
     + Argument ("path").type_file_out()
 
   + Option ("zero_diagonal", "set all diagonal entries in the matrix to zero \n"
@@ -164,16 +164,14 @@ void run ()
 
   connectome.error_check (missing_nodes);
 
-  Options opt = get_options ("keep_unassigned");
-  if (!opt.size())
+  if (!get_options ("keep_unassigned").size())
     connectome.remove_unassigned();
 
-  opt = get_options ("zero_diagonal");
-  if (opt.size())
+  if (get_options ("zero_diagonal").size())
     connectome.zero_diagonal();
 
   connectome.write (argument[2]);
-  opt = get_options ("assignments");
+  Options opt = get_options ("out_assignments");
   if (opt.size())
     connectome.write_assignments (opt[0][0]);
 

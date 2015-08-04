@@ -65,10 +65,11 @@ bool Matrix::operator() (const Mapped_track_nodepair& in)
 
 bool Matrix::operator() (const Mapped_track_nodelist& in)
 {
-  assert (in.get_first_node()  < data.rows());
-  assert (in.get_second_node() < data.rows());
   assert (assignments_pairs.empty());
   std::vector<node_t> list (in.get_nodes());
+  for (std::vector<node_t>::const_iterator i = list.begin(); i != list.end(); ++i) {
+    assert (*i < data.rows());
+  }
   if (is_vector()) {
     if (list.empty()) {
       data   (0, 0) += in.get_factor() * in.get_weight();
@@ -189,6 +190,13 @@ void Matrix::write_assignments (const std::string& path)
   File::OFStream stream (path);
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)
     stream << str(i->first) << " " << str(i->second) << "\n";
+  for (auto i = assignments_lists.begin(); i != assignments_lists.end(); ++i) {
+    assert (i->size());
+    stream << str((*i)[0]);
+    for (size_t j = 1; j != i->size(); ++j)
+      stream << " " << str((*i)[j]);
+    stream << "\n";
+  }
 }
 
 
