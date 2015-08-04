@@ -50,9 +50,11 @@ namespace MR
           main_box->addWidget (rotate_group_box);
           rotate_group_box->setLayout (rotate_layout);
 
+          rotate_layout->addWidget (new QLabel (tr("Type: ")), 0, 0);
           rotation_type_combobox = new QComboBox;
           rotation_type_combobox->insertItem (0, tr("World"), RotationType::World);
           rotation_type_combobox->insertItem (1, tr("Camera"), RotationType::Eye);
+          rotation_type_combobox->insertItem (2, tr("Image"), RotationType::Image);
           connect (rotation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_rotation_type(int)));
           rotate_layout->addWidget(rotation_type_combobox, 0, 1, 1, 4);
 
@@ -362,6 +364,7 @@ namespace MR
                 orientation = rotation*orientation;
                 break;
               case RotationType::Eye:
+              case RotationType::Image:
                 orientation *= rotation;
                 break;
               default:
@@ -402,7 +405,24 @@ namespace MR
             }
 
 
-            focus += trans_vec;
+            Point<float> focus_delta (trans_vec);
+
+
+            // If rotating image we need to offset the translation so that the rotation is relative to
+            // the center (i.e. target) of the image
+            if (rotation_type == RotationType::Image) {
+              float T[16];
+              Math::Matrix<float> M (T, 3, 3, 4);
+              rotation.to_matrix (M);
+              T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0f;
+              T[15] = 1.0f;
+
+              GL::vec4 target_after = GL::inv (GL::mat4 (T)) * GL::vec4 (target[0], target[1], target[2], 1.0f);
+              trans_vec += Point<float> (target_after[0], target_after[1], target_after[2]) - target;
+            }
+
+
+            focus += focus_delta;
             win.set_focus (focus);
 
             target += trans_vec;

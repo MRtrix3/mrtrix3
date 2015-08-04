@@ -62,7 +62,7 @@ namespace MR
             void on_restore_capture_state ();
 
           private:
-            enum RotationType { World, Eye } rotation_type;
+            enum RotationType { World = 0, Eye, Image } rotation_type;
             QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
