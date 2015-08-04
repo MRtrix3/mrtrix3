@@ -69,7 +69,8 @@ namespace MR
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
 
-            enum TranslationType { Voxel, Scanner } translation_type;
+            enum TranslationType { Voxel = 0, Scanner, Camera } translation_type;
+
             QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
