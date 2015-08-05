@@ -154,7 +154,7 @@ namespace MR
         gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
         texture2D[plane].set_interp (interpolation);
 
-        if (position[plane] == slice && volume_unchanged())
+        if (position[plane] == slice && volume_unchanged () && format_unchanged ())
           return;
 
         position[plane] = slice;
@@ -504,6 +504,21 @@ namespace MR
           position[0] = position[1] = position[2] = -1;
 
         return is_unchanged;
+      }
+
+
+      inline bool Image::format_unchanged ()
+      {
+        std::string cmap_name = ColourMap::maps[colourmap].name;
+
+        if (cmap_name == "RGB" && format != gl::RGB)
+          return false;
+        else if (cmap_name == "Complex" && format != gl::RG)
+          return false;
+        else if (format != gl::RED)
+          return false;
+
+        return true;
       }
 
 

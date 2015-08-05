@@ -108,6 +108,7 @@ namespace MR
 
         private:
           bool volume_unchanged ();
+          bool format_unchanged ();
           size_t guess_colourmap () const;
 
           template <typename T> void copy_texture_3D ();
