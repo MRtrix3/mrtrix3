@@ -80,6 +80,7 @@ namespace MR
 
         using ImageType::size;
         using ImageType::index;
+        using ImageType::ndim;
         using Transform::set_to_nearest;
         using Transform::voxelsize;
         using Transform::scanner2voxel;
@@ -259,6 +260,7 @@ namespace MR
 
         using SplineBase::size;
         using SplineBase::index;
+        using SplineBase::ndim;
         using SplineBase::set_to_nearest;
         using SplineBase::voxelsize;
         using SplineBase::scanner2voxel;
@@ -325,6 +327,7 @@ namespace MR
           return voxel (scanner2voxel * pos.template cast<double>());
         }
 
+        //! Returns the image gradient at the current position
         Eigen::Matrix<value_type, 1, 3> gradient () {
           if (out_of_bounds)
             return out_of_bounds_vec;
@@ -349,10 +352,18 @@ namespace MR
           return coeff_vec * weights_matrix;
         }
 
-        // Collectively interpolates gradients along axis >= 3
-        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row (size_t axis) {
+
+        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<value_type, 1, 3> gradient_wrt_scanner () {
+          return Transform::voxel2scanner.linear() * gradient ();
+        }
+
+        // Collectively interpolates gradients along axis 3 // TODO: might need to input axis argument for interpolating 5D images
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row () {
           if (out_of_bounds)
             return Eigen::Matrix<value_type, Eigen::Dynamic, 1>();
+
+          assert (ndim() > 3);
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -365,13 +376,19 @@ namespace MR
               index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
                 index(0) = check (c[0] + x, size (0)-1);
-                coeff_matrix.col (i) = ImageType::row (axis);
+                coeff_matrix.col (i) = ImageType::row (3);
                 i += 1;
               }
             }
           }
 
           return coeff_matrix * weights_matrix;
+        }
+
+
+        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
+          return Transform::voxel2scanner.linear() * gradient_row ();
         }
 
       protected:
@@ -381,7 +398,6 @@ namespace MR
 
 
     // Specialization of SplineInterp when we're after both interpolated gradients and values
-
     template <class ImageType, class SplineType>
     class SplineInterp<ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>:
     public SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::ValueAndDerivative>
@@ -392,6 +408,7 @@ namespace MR
 
         using SplineBase::size;
         using SplineBase::index;
+        using SplineBase::ndim;
         using SplineBase::set_to_nearest;
         using SplineBase::voxelsize;
         using SplineBase::scanner2voxel;

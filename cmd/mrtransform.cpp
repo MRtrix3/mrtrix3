@@ -29,6 +29,7 @@
 #include "interp/cubic.h"
 #include "interp/sinc.h"
 #include "filter/reslice.h"
+#include "filter/warp.h"
 #include "algo/loop.h"
 #include "algo/copy.h"
 #include "dwi/directions/predefined.h"
@@ -212,12 +213,10 @@ void run ()
   auto input = input_header.get_image<float>().with_direct_io (stride);
 
   // Warp
-  bool warp = false;
   opt = get_options ("warp");
-  if (opt.size()) {
-    warp = true;
-    //TODO
-  }
+  Image<float> warp;
+  if (opt.size())
+    warp = Image<float>::open(opt[0][0]);
 
 
   if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
@@ -275,16 +274,28 @@ void run ()
 
       switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp)
+          Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Nearest> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
         break;
       case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp)
+          Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Linear> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
         break;
       case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp)
+          Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Cubic> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
         break;
       case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp)
+          Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Sinc> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
         break;
       default:
         assert (0);

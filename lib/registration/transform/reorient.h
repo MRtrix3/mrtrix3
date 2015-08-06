@@ -61,7 +61,7 @@ namespace MR
 
         void operator() (FODImageType& image) {
           image.index(3) = 0;
-          if (image.value() > 0)  // only reorient voxels that contain a FODs
+          if (image.value() > 0)  // only reorient voxels that contain a FOD
             image.row(3) = transform * image.row(3); // Eigen automatically takes care of the temporary
         }
          const Eigen::Matrix<typename FODImageType::value_type, Eigen::Dynamic, Eigen::Dynamic> transform;
