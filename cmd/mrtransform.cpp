@@ -214,12 +214,12 @@ void run ()
 
   // Warp
   opt = get_options ("warp");
-  Image<float> warp;
+  std::shared_ptr<Image<float> > warp_ptr;
   if (opt.size())
-    warp = Image<float>::open(opt[0][0]);
+    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
 
 
-  if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
+  if (linear && input_header.ndim() == 4 && !warp_ptr && !fod_reorientation) {
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
@@ -270,40 +270,54 @@ void run ()
     if (opt.size())
       out_of_bounds_value = NAN;
 
+
+
+    // compose warp with affine
+    std::shared_ptr<Image<float> > warp_composed_ptr;
+    if (warp_ptr && linear) {
+      warp_composed_ptr = std::make_shared<Image<float> > (Image<float>::scratch (*warp_ptr));
+      Registration::Transform::compose (linear_transform, *warp_ptr, *warp_composed_ptr);
+    } else {
+      warp_composed_ptr = warp_ptr;
+    }
+
     auto output = Image<float>::create (argument[1], output_header);
 
       switch (interp) {
       case 0:
-        if (!warp)
+        if (!warp_ptr)
           Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
         else
-          Filter::warp<Interp::Nearest> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
+          Filter::warp<Interp::Nearest> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 1:
-        if (!warp)
+        if (!warp_ptr)
           Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
         else
-          Filter::warp<Interp::Linear> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
+          Filter::warp<Interp::Linear> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 2:
-        if (!warp)
+        if (!warp_ptr)
           Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
         else
-          Filter::warp<Interp::Cubic> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
+          Filter::warp<Interp::Cubic> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 3:
-        if (!warp)
+        if (!warp_ptr)
           Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
         else
-          Filter::warp<Interp::Sinc> (input, output, warp, fod_reorientation, linear_transform, out_of_bounds_value);
+          Filter::warp<Interp::Sinc> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       default:
         assert (0);
         break;
     }
 
-    if (fod_reorientation)
+    // only reorient if linear or warp input
+    if (fod_reorientation && linear && !warp_ptr)
       Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose());
+//    else if (fod_reorientation && warp.valid())
+//      Registration::Transform::reorient ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose());
 
   } else {
     // straight copy:

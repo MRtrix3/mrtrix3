@@ -56,7 +56,7 @@ namespace MR
       template <class WarpImageType>
       void compose (const transform_type& transform, WarpImageType& warp_in, WarpImageType& warp_out)
       {
-        ThreadedLoop ("composing", warp_in, 0, 3).run (ComposeKernel<WarpImageType> (transform, warp_in, warp_out));
+        ThreadedLoop ("composing...", warp_in, 0, 3).run (ComposeKernel<WarpImageType> (transform, warp_in, warp_out));
       }
 
     }

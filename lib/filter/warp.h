@@ -56,8 +56,6 @@ namespace MR
           ImageTypeSource& source,
           ImageTypeDestination& destination,
           WarpType& warp,
-          const bool reorient_fods = false,
-          const transform_type& transform = Adapter::NoTransform,
           const typename ImageTypeDestination::value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<typename ImageTypeDestination::value_type>())
       {
 
@@ -72,17 +70,10 @@ namespace MR
         auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
         reslice<Interp::Linear> (warp, warp_resliced);
 
-        // compose warp with affine
-        Registration::Transform::compose (transform, warp_resliced, warp_resliced);
-
         // apply warp
         Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
         threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
 
-        // reorient FODs
-        if (reorient_fods) {
-
-        }
 
       }
 
