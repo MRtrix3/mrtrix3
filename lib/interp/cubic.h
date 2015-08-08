@@ -300,6 +300,8 @@ namespace MR
               value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
               value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
 
+               std::cout << partial_weight << " " <<  partial_weight_dy << " " << partial_weight_dz << std::endl;
+
               for (ssize_t x = 0; x < 4; ++x) {
                 weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
                 weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
@@ -308,6 +310,7 @@ namespace MR
               }
             }
           }
+
 
           return false;
         }
@@ -335,6 +338,8 @@ namespace MR
         Eigen::Matrix<value_type, 1, 3> gradient () {
           if (out_of_bounds)
             return out_of_bounds_vec;
+
+
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -365,9 +370,9 @@ namespace MR
         // Collectively interpolates gradients along axis 3 // TODO: might need to input axis argument for interpolating 5D images
         Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row () {
           if (out_of_bounds)
-            return Eigen::Matrix<value_type, Eigen::Dynamic, 1>();
+            return Eigen::Matrix<value_type, Eigen::Dynamic, 3>(); //TODO
 
-          assert (ndim() > 3);
+          assert (ndim() == 4);
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
@@ -390,10 +395,11 @@ namespace MR
         }
 
 
-        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
-        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
-          return Transform::voxel2scanner.linear() * gradient_row ();
-        }
+//        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
+//        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
+//          Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradients = gradient_row();
+//          return Transform::voxel2scanner.linear() * gradients.transpose();
+//        }
 
       protected:
         const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;

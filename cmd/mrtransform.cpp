@@ -188,11 +188,22 @@ void run ()
 
   Stride::List stride = Stride::get (input_header);
 
+
+
+  auto input = input_header.get_image<float>().with_direct_io (stride);
+
+  // Warp
+  opt = get_options ("warp");
+  std::shared_ptr<Image<float> > warp_ptr;
+  if (opt.size())
+    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
+
+
   // Detect FOD image for reorientation
   opt = get_options ("noreorientation");
   bool fod_reorientation = false;
   Eigen::MatrixXd directions_cartesian;
-  if (!opt.size() && linear && input_header.ndim() == 4 &&
+  if (!opt.size() && (linear || warp_ptr) && input_header.ndim() == 4 &&
       input_header.size(3) >= 6 &&
       input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)))) {
     CONSOLE ("SH series detected, performing apodised PSF reorientation");
@@ -209,14 +220,6 @@ void run ()
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
   }
-
-  auto input = input_header.get_image<float>().with_direct_io (stride);
-
-  // Warp
-  opt = get_options ("warp");
-  std::shared_ptr<Image<float> > warp_ptr;
-  if (opt.size())
-    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
 
 
   if (linear && input_header.ndim() == 4 && !warp_ptr && !fod_reorientation) {
@@ -316,8 +319,8 @@ void run ()
     // only reorient if linear or warp input
     if (fod_reorientation && linear && !warp_ptr)
       Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose());
-//    else if (fod_reorientation && warp.valid())
-//      Registration::Transform::reorient ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose());
+    else if (fod_reorientation && warp_ptr)
+      Registration::Transform::reorient_warp ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose());
 
   } else {
     // straight copy:
