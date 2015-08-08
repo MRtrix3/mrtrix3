@@ -33,8 +33,6 @@ namespace MR
   namespace Adapter
   {
 
-    extern const transform_type NoTransform;
-
     //! \addtogroup interp
     // @{
 
@@ -48,7 +46,7 @@ namespace MR
      * auto reference = Header::open (argument[0]);
      * // input data to be resliced:
      * auto input = Image<float>::open (argument[1]);
-     *
+     * TOOD
      * \endcode
      *
      *
@@ -88,15 +86,19 @@ namespace MR
             interp.index(n) = 0;
         }
 
-        value_type value () {
-          warp.index(0) = x[0];
-          warp.index(1) = x[1];
-          warp.index(2) = x[2];
 
-          Eigen::Vector3d position = warp.row(3).template cast<double>();
-          interp.scanner (position);
+        value_type value () {
+          interp.scanner (get_position());
           return interp.value();
         }
+
+
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          assert (interp.ndim() > 3);
+          interp.scanner (get_position());
+          return interp.row(axis);
+        }
+
 
         ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
@@ -106,6 +108,15 @@ namespace MR
         }
 
       private:
+
+        Eigen::Vector3d get_position (){
+          warp.index(0) = x[0];
+          warp.index(1) = x[1];
+          warp.index(2) = x[2];
+
+          return warp.row(3).template cast<double>();
+        }
+
         Interpolator<ImageType> interp;
         WarpType warp;
         ssize_t x[3];

@@ -131,6 +131,18 @@ namespace MR
           return ImageType::value();
         }
 
+        // Collectively interpolates values along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            return out_of_bounds_row;
+          }
+
+          return ImageType::row(axis);
+        }
+
         const value_type out_of_bounds_value;
     };
 

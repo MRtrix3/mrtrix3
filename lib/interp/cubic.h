@@ -220,8 +220,12 @@ namespace MR
 
         // Collectively interpolates values along axis >= 3
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
-          if (out_of_bounds)
-            return Eigen::Matrix<value_type, Eigen::Dynamic, 1>();
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            return out_of_bounds_row;
+          }
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 

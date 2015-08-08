@@ -192,6 +192,38 @@ namespace MR
           return val;
         }
 
+        // Collectively interpolates values along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            return out_of_bounds_row;
+          }
+
+          Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (ImageType::size(axis));
+          row.setZero();
+          if (faaa) row  = faaa * ImageType::row(axis);
+          index(2)++;
+          if (faab) row += faab * ImageType::row(axis);
+          index(1)++;
+          if (fabb) row += fabb * ImageType::row(axis);
+          index(2)--;
+          if (faba) row += faba * ImageType::row(axis);
+          index(0)++;
+          if (fbba) row += fbba * ImageType::row(axis);
+          index(1)--;
+          if (fbaa) row += fbaa * ImageType::row(axis);
+          index(2)++;
+          if (fbab) row += fbab * ImageType::row(axis);
+          index(1)++;
+          if (fbbb) row += fbbb * ImageType::row(axis);
+          index(0)--;
+          index(1)--;
+          index(2)--;
+          return row;
+        }
+
         const value_type out_of_bounds_value;
 
       protected:

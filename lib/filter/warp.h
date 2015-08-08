@@ -25,6 +25,7 @@
 
 #include "adapter/warp.h"
 #include "algo/threaded_copy.h"
+#include "algo/threaded_loop.h"
 #include "datatype.h"
 #include "interp/cubic.h"
 #include "filter/reslice.h"
@@ -33,6 +34,18 @@ namespace MR
 {
   namespace Filter
   {
+
+
+  // TODO if there is a use for this elsewhere then we should have threaded_copy4D convenience functions
+  class CopyKernel4D {
+    public:
+      template <class InputImageType, class OutputImageType>
+        FORCE_INLINE void operator() (InputImageType& in, OutputImageType& out) const {
+          out.row(3) = in.row(3);
+        }
+  };
+
+
 
     //! convenience function to warp one DataSet onto another
     /*! This function resamples (regrids) the Image \a source onto the
@@ -72,7 +85,12 @@ namespace MR
 
         // apply warp
         Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
-        threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+        if (destination.ndim() == 4) {
+          ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1)
+            .run (CopyKernel4D(), interp, destination);
+        } else {
+          threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+        }
 
 
       }

@@ -151,6 +151,12 @@ namespace MR
           return Sinc_z.value (z_values);
         }
 
+        // Collectively interpolates values along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          // TODO
+          throw Exception ("Sinc interpolation of 4D images not yet implemented");
+        }
+
         const value_type out_of_bounds_value;
 
       protected:
