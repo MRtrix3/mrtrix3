@@ -628,9 +628,9 @@ namespace MR
 
             V.push_back (std::unique_ptr<std::vector<ValueType>> (new std::vector<ValueType>));
 
-            const std::vector<std::string> elements = MR::split (sbuf, " ,;\t");
-            for (std::vector<std::string>::const_iterator entry = elements.begin(); entry != elements.end(); ++entry)
-              V.back()->push_back (to<ValueType> (*entry));
+            const auto elements = MR::split (sbuf, " ,;\t", true);
+            for (const auto& entry : elements)
+              V.back()->push_back (to<ValueType> (entry));
 
             if (V.size() > 1)
               if (V.back()->size() != V[0]->size())
