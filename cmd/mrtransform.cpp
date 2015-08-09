@@ -68,7 +68,12 @@ void usage ()
     + "If FOD reorientation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
-    "Magnetic Resonance in Medicine, 2012, 67, 844-855";
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855"
+
+    + "If FOD modulation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; "
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
+    "Neuroimage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()
@@ -103,20 +108,22 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option ("interp", 
-        "set the interpolation method to use when reslicing (default: cubic).")
+        "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
     + OptionGroup ("Non-linear transformation options")
 
     + Option ("warp",
-        "apply a non-linear deformation field to the input image. If no template image is supplied, "
-        "then the input warp will define the output image dimensions.")
+        "apply a non-linear deformation field to warp the input image.")
     + Argument ("image").type_image_in ()
 
     + OptionGroup ("Fibre orientation distribution handling options")
 
+    + Option ("modulate",
+        "modulate the FOD during reorientation to preserve the apparent fibre density")
+
     + Option ("directions", 
-        "the directions used for FOD reorientation using apodised point spread functions "
+        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation"
         "(Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
@@ -221,6 +228,13 @@ void run ()
     stride = Stride::contiguous_along_axis (3, input_header);
   }
 
+  bool modulate = false;
+  if (get_options ("modulate").size()) {
+    modulate = true;
+    if (!fod_reorientation)
+      throw Exception ("modulation can only be performed with FOD reorientation");
+  }
+
 
   if (linear && input_header.ndim() == 4 && !warp_ptr && !fod_reorientation) {
     try {
@@ -318,9 +332,9 @@ void run ()
 
     // only reorient if linear or warp input
     if (fod_reorientation && linear && !warp_ptr)
-      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose());
+      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose(), modulate);
     else if (fod_reorientation && warp_ptr)
-      Registration::Transform::reorient_warp ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose());
+      Registration::Transform::reorient_warp ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose(), modulate);
 
   } else {
     // straight copy:

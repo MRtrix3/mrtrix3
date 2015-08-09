@@ -300,8 +300,6 @@ namespace MR
               value_type partial_weight_dy = H[1].deriv_weights[y] * H[2].weights[z];
               value_type partial_weight_dz = H[1].weights[y] * H[2].deriv_weights[z];
 
-               std::cout << partial_weight << " " <<  partial_weight_dy << " " << partial_weight_dz << std::endl;
-
               for (ssize_t x = 0; x < 4; ++x) {
                 weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
                 weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;

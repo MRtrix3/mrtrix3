@@ -38,7 +38,7 @@ namespace MR
       FORCE_INLINE Eigen::MatrixXd aPSF_weights_to_FOD_transform (const int num_SH, const Eigen::MatrixXd& directions)
       {
         Eigen::MatrixXd aPSF_matrix (num_SH, directions.cols());
-        Math::SH::aPSF<float> aPSF_generator (Math::SH::LforN (num_SH));
+        Math::SH::aPSF<default_type> aPSF_generator (Math::SH::LforN (num_SH));
         Eigen::Matrix<default_type, Eigen::Dynamic,1> aPSF;
         for (ssize_t i = 0; i < directions.cols(); ++i)
           aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.col(i).head(3));
@@ -46,20 +46,26 @@ namespace MR
       }
 
 
-      FORCE_INLINE Eigen::MatrixXd compute_reorient_transform (const ssize_t n_SH,
-                                                               const transform_type& transform,
-                                                               const Eigen::MatrixXd& directions)
-      {
-        return aPSF_weights_to_FOD_transform (n_SH, transform.linear().inverse() * directions)
-               * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions));
-      }
-
 
       template <class FODImageType>
       class LinearKernel {
 
         public:
-          LinearKernel (const Eigen::MatrixXd& transform) : transform (transform.cast <typename FODImageType::value_type> ()) {}
+          LinearKernel (const ssize_t n_SH,
+                        const transform_type& linear_transform,
+                        const Eigen::MatrixXd& directions,
+                        const bool modulate)
+          {
+            Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
+            if (modulate) {
+              Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().determinant();
+              transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
+                           * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+            } else {
+              transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
+                           * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+            }
+          }
 
           void operator() (FODImageType& image)
           {
@@ -69,49 +75,7 @@ namespace MR
           }
 
         protected:
-          const Eigen::Matrix<typename FODImageType::value_type, Eigen::Dynamic, Eigen::Dynamic> transform;
-      };
-
-
-
-
-      template <class FODImageType, class WarpImageType>
-      class NonLinearKernel {
-
-      public:
-        NonLinearKernel (WarpImageType& warp, const Eigen::MatrixXd& directions, const ssize_t n_SH) :
-                           warp_interp (warp),
-                           directions (directions),
-                           n_SH (n_SH),
-                           FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
-
-
-        void operator() (FODImageType& image) {
-          image.index(3) = 0;
-          if (image.value() > 0) {  // only reorient voxels that contain a FOD
-
-            Eigen::Vector3d vox;
-            vox[0] = static_cast<default_type> (image.index(0));
-            vox[1] = static_cast<default_type> (image.index(1));
-            vox[2] = static_cast<default_type> (image.index(2));
-            warp_interp.voxel(vox);
-
-//            Eigen::Matrix<typename WarpImageType::value_type, Eigen::Dynamic, 3> jacobian = warp_interp.gradient_row();
-
-            std::cout << warp_interp.gradient() << std::endl;
-
-//            Eigen::MatrixXd transform = aPSF_weights_to_FOD_transform (n_SH, jacobian.linear().inverse() * directions) * FOD_to_aPSF_transform;
-
-//            image.row(3) = transform * image.row(3); // Eigen automatically takes care of the temporary
-          }
-        }
-        protected:
-          Interp::SplineInterp<WarpImageType,
-                               Math::UniformBSpline<typename WarpImageType::value_type>,
-                               Math::SplineProcessingType::Derivative> warp_interp;
-          const Eigen::MatrixXd& directions;
-          const ssize_t n_SH;
-          Eigen::MatrixXd FOD_to_aPSF_transform;
+          Eigen::Matrix<typename FODImageType::value_type, Eigen::Dynamic, Eigen::Dynamic> transform;
       };
 
 
@@ -120,45 +84,91 @@ namespace MR
       template <class FODImageType>
       void reorient (FODImageType& fod_image,
                      const transform_type& transform,
-                     const Eigen::MatrixXd& directions)
+                     const Eigen::MatrixXd& directions,
+                     bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
         ThreadedLoop (fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(compute_reorient_transform (fod_image.size(3), transform, directions)), fod_image);
+            .run (LinearKernel<FODImageType>(fod_image.size(3), transform, directions, modulate), fod_image);
       }
+
 
 
       template <class FODImageType>
       void reorient (const std::string progress_message,
                      FODImageType& fod_image,
                      const transform_type& transform,
-                     const Eigen::MatrixXd& directions)
+                     const Eigen::MatrixXd& directions,
+                     bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
         ThreadedLoop (progress_message, fod_image, 0, 3)
-            .run (LinearKernel<FODImageType>(compute_reorient_transform (fod_image.size(3), transform, directions)), fod_image);
+            .run (LinearKernel<FODImageType>(fod_image.size(3), transform, directions, modulate), fod_image);
       }
 
-//      template <class FODImageType, class WarpImageType>
-//      void reorient (FODImageType& fod_image,
-//                     WarpImageType& warp,
-//                     const Eigen::MatrixXd& directions)
-//      {
-//        assert (directions.cols() > directions.rows());
-//        ThreadedLoop (fod_image, 0, 3)
-//            .run (NonLinearKernel<FODImageType, WarpImageType>(warp, directions, fod_image.size(3)), fod_image);
-//      }
+
+
+
+      template <class FODImageType, class WarpImageType>
+      class NonLinearKernel {
+
+        public:
+          NonLinearKernel (const ssize_t n_SH, WarpImageType& warp, const Eigen::MatrixXd& directions, const bool modulate) :
+                             n_SH (n_SH),
+                             warp_interp (warp),
+                             directions (directions),
+                             modulate (modulate),
+                             FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
+
+
+          void operator() (FODImageType& image) {
+            image.index(3) = 0;
+            if (image.value() > 0) {  // only reorient voxels that contain a FOD
+
+              Eigen::Vector3d vox;
+              vox[0] = static_cast<default_type> (image.index(0));
+              vox[1] = static_cast<default_type> (image.index(1));
+              vox[2] = static_cast<default_type> (image.index(2));
+              warp_interp.voxel(vox);
+
+              Eigen::MatrixXd jacobian = warp_interp.gradient_row().template cast<default_type> ();
+              jacobian.setIdentity();
+
+              Eigen::MatrixXd transformed_directions = jacobian * directions;
+
+              if (modulate) {
+                Eigen::MatrixXd modulation_factors = transformed_directions.colwise().norm() / jacobian.determinant();
+                transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
+                             * FOD_to_aPSF_transform);
+              } else {
+                transform = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
+              }
+
+              image.row(3) = transform.cast<typename WarpImageType::value_type>() * image.row(3); // Eigen automatically takes care of the temporary
+            }
+          }
+          protected:
+            const ssize_t n_SH;
+            Interp::SplineInterp<WarpImageType,
+                                 Math::UniformBSpline<typename WarpImageType::value_type>,
+                                 Math::SplineProcessingType::Derivative> warp_interp;
+            const Eigen::MatrixXd& directions;
+            const bool modulate;
+            const Eigen::MatrixXd FOD_to_aPSF_transform;
+            Eigen::MatrixXd transform;
+      };
 
 
       template <class FODImageType, class WarpImageType>
       void reorient_warp (const std::string progress_message,
-                     FODImageType& fod_image,
-                     WarpImageType& warp,
-                     const Eigen::MatrixXd& directions)
+                          FODImageType& fod_image,
+                          WarpImageType& warp,
+                          const Eigen::MatrixXd& directions,
+                          const bool modulate = false)
       {
         assert (directions.cols() > directions.rows());
         ThreadedLoop (progress_message, fod_image, 0, 3)
-            .run (NonLinearKernel<FODImageType, WarpImageType>(warp, directions, fod_image.size(3)), fod_image);
+            .run (NonLinearKernel<FODImageType, WarpImageType>(fod_image.size(3), warp, directions, modulate), fod_image);
       }
 
 
