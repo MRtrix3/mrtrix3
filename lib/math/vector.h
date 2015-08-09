@@ -564,9 +564,9 @@ namespace MR
 
             std::vector<ValueType> line;
 
-            const std::vector<std::string> elements = MR::split (sbuf, " ,;\t");
-            for (std::vector<std::string>::const_iterator entry = elements.begin(); entry != elements.end(); ++entry)
-              line.push_back (to<ValueType> (*entry));
+            const auto elements = MR::split (sbuf, " ,;\t", true);
+            for (const auto& entry : elements) 
+              line.push_back (to<ValueType> (entry));
 
             if (line.size()) {
               if (axis) {
