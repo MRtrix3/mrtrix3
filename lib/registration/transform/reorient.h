@@ -40,8 +40,9 @@ namespace MR
         Eigen::MatrixXd aPSF_matrix (num_SH, directions.cols());
         Math::SH::aPSF<default_type> aPSF_generator (Math::SH::LforN (num_SH));
         Eigen::Matrix<default_type, Eigen::Dynamic,1> aPSF;
-        for (ssize_t i = 0; i < directions.cols(); ++i)
-          aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.col(i).head(3));
+        for (ssize_t i = 0; i < directions.cols(); ++i) {
+          aPSF_matrix.col(i) = aPSF_generator (aPSF, directions.col(i));
+        }
         return aPSF_matrix;
       }
 
@@ -57,11 +58,16 @@ namespace MR
                         const bool modulate)
           {
             Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
+
+            std::cout << linear_transform.linear().inverse() << std::endl;
+
             if (modulate) {
-              Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().determinant();
+              Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
+              transformed_directions.colwise().normalize();
               transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
                            * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             } else {
+              transformed_directions.colwise().normalize();
               transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
                            * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             }
@@ -70,7 +76,7 @@ namespace MR
           void operator() (FODImageType& image)
           {
             image.index(3) = 0;
-            if (image.value() > 0)  // only reorient voxels that contain a FOD
+            if (image.value() > 0.0)  // only reorient voxels that contain a FOD
               image.row(3) = transform * image.row(3); // Eigen automatically takes care of the temporary
           }
 
@@ -124,27 +130,25 @@ namespace MR
           void operator() (FODImageType& image) {
             image.index(3) = 0;
             if (image.value() > 0) {  // only reorient voxels that contain a FOD
-
               Eigen::Vector3d vox;
               vox[0] = static_cast<default_type> (image.index(0));
               vox[1] = static_cast<default_type> (image.index(1));
               vox[2] = static_cast<default_type> (image.index(2));
               warp_interp.voxel(vox);
-
-              Eigen::MatrixXd jacobian = warp_interp.gradient_row().template cast<default_type> ();
-              jacobian.setIdentity();
-
+              Eigen::MatrixXd jacobian = warp_interp.gradient_row_wrt_scanner().inverse();
               Eigen::MatrixXd transformed_directions = jacobian * directions;
 
               if (modulate) {
                 Eigen::MatrixXd modulation_factors = transformed_directions.colwise().norm() / jacobian.determinant();
+                transformed_directions.colwise().normalize();
                 transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
                              * FOD_to_aPSF_transform);
               } else {
+                transformed_directions.colwise().normalize();
                 transform = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
 
-              image.row(3) = transform.cast<typename WarpImageType::value_type>() * image.row(3); // Eigen automatically takes care of the temporary
+              image.row(3) = transform.cast<typename WarpImageType::value_type>() * image.row(3);
             }
           }
           protected:

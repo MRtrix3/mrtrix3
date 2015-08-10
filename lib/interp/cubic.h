@@ -25,6 +25,7 @@
 
 #include "transform.h"
 #include "math/cubic_spline.h"
+#include "math/least_squares.h"
 
 namespace MR
 {
@@ -360,10 +361,10 @@ namespace MR
         }
 
 
-        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
-        Eigen::Matrix<value_type, 1, 3> gradient_wrt_scanner () {
-          return Transform::voxel2scanner.linear() * gradient ();
-        }
+//        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
+//        Eigen::Matrix<value_type, 1, 3> gradient_wrt_scanner () {
+//          return Transform::voxel2scanner.linear() * gradient ();
+//        }
 
         // Collectively interpolates gradients along axis 3 // TODO: might need to input axis argument for interpolating 5D images
         Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row () {
@@ -374,7 +375,7 @@ namespace MR
 
           ssize_t c[] = { ssize_t (std::floor (P[0])-1), ssize_t (std::floor (P[1])-1), ssize_t (std::floor (P[2])-1) };
 
-          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( size(3), 64 );
+          Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix (size(3), 64);
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
@@ -393,11 +394,11 @@ namespace MR
         }
 
 
-//        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
-//        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
-//          Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradients = gradient_row();
-//          return Transform::voxel2scanner.linear() * gradients.transpose();
-//        }
+        //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
+          Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradients = gradient_row().template cast<default_type>();
+          return Transform::image2scanner.linear() * voxelsize.inverse() * gradients;
+        }
 
       protected:
         const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;

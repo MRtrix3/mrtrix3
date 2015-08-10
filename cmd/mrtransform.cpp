@@ -216,13 +216,13 @@ void run ()
     CONSOLE ("SH series detected, performing apodised PSF reorientation");
     fod_reorientation = true;
 
-    Eigen::MatrixXd directions_el_az;
+    Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
     if (opt.size())
-      directions_el_az = load_matrix (opt[0][0]);
+      directions_az_el = load_matrix (opt[0][0]);
     else
-      directions_el_az = DWI::Directions::electrostatic_repulsion_60();
-    Math::SH::spherical2cartesian (directions_el_az, directions_cartesian);
+      directions_az_el = DWI::Directions::electrostatic_repulsion_60();
+    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
