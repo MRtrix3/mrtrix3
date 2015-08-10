@@ -59,8 +59,6 @@ namespace MR
           {
             Eigen::MatrixXd transformed_directions = linear_transform.linear().inverse() * directions;
 
-            std::cout << linear_transform.linear().inverse() << std::endl;
-
             if (modulate) {
               Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
               transformed_directions.colwise().normalize();
