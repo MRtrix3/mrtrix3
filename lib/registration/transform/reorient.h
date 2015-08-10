@@ -139,8 +139,12 @@ namespace MR
               if (modulate) {
                 Eigen::MatrixXd modulation_factors = transformed_directions.colwise().norm() / jacobian.determinant();
                 transformed_directions.colwise().normalize();
-                transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
-                             * FOD_to_aPSF_transform);
+
+                Eigen::MatrixXd temp = aPSF_weights_to_FOD_transform (n_SH, transformed_directions);
+                for (size_t i = 0; i < temp.cols(); ++i)
+                  temp.col(i) = temp.col(i) * modulation_factors(0,i);
+
+                transform = temp * FOD_to_aPSF_transform;
               } else {
                 transformed_directions.colwise().normalize();
                 transform = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;

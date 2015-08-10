@@ -221,7 +221,7 @@ void run ()
     if (opt.size())
       directions_az_el = load_matrix (opt[0][0]);
     else
-      directions_az_el = DWI::Directions::electrostatic_repulsion_60();
+      directions_az_el = DWI::Directions::electrostatic_repulsion_300();
     Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
