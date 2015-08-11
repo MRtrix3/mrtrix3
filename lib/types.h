@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <complex>
 #include <iostream>
+#include <vector>
 
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
