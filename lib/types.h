@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <complex>
 #include <iostream>
+#include <vector>
 
 // These lines are to silence deprecation warnings with Eigen & GCC v5
 #pragma GCC diagnostic push
@@ -113,6 +114,13 @@
 #else // don't force inlining in debug mode, so we can get more informative backtraces
 # define FORCE_INLINE inline
 #endif
+
+#ifdef MRTRIX_MACOSX
+# define ATTRIBUTE_TLS __thread
+#else 
+# define ATTRIBUTE_TLS thread_local
+#endif
+
 
 namespace MR
 {

@@ -29,6 +29,7 @@
 #include "interp/cubic.h"
 #include "interp/sinc.h"
 #include "filter/reslice.h"
+#include "filter/warp.h"
 #include "algo/loop.h"
 #include "algo/copy.h"
 #include "dwi/directions/predefined.h"
@@ -67,7 +68,12 @@ void usage ()
     + "If FOD reorientation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
-    "Magnetic Resonance in Medicine, 2012, 67, 844-855";
+    "Magnetic Resonance in Medicine, 2012, 67, 844-855"
+
+    + "If FOD modulation is being performed:\n"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.; "
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images. "
+    "Neuroimage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("input", "input image to be transformed.").type_image_in ()
@@ -102,20 +108,22 @@ void usage ()
     + Argument ("image").type_image_in ()
 
     + Option ("interp", 
-        "set the interpolation method to use when reslicing (default: cubic).")
+        "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
     + OptionGroup ("Non-linear transformation options")
 
     + Option ("warp",
-        "apply a non-linear deformation field to the input image. If no template image is supplied, "
-        "then the input warp will define the output image dimensions.")
+        "apply a non-linear deformation field to warp the input image.")
     + Argument ("image").type_image_in ()
 
     + OptionGroup ("Fibre orientation distribution handling options")
 
+    + Option ("modulate",
+        "modulate the FOD during reorientation to preserve the apparent fibre density")
+
     + Option ("directions", 
-        "the directions used for FOD reorientation using apodised point spread functions "
+        "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation"
         "(Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
@@ -172,7 +180,7 @@ void run ()
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
         throw Exception ("axes supplied to -flip are out of bounds (" + std::string (opt[0][0]) + ")");
-      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.voxsize(axes[i]) * (input_header.size(axes[i])-1);
+      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
     }
     transform_type tmp;
@@ -187,40 +195,48 @@ void run ()
 
   Stride::List stride = Stride::get (input_header);
 
+
+
+  auto input = input_header.get_image<float>().with_direct_io (stride);
+
+  // Warp
+  opt = get_options ("warp");
+  std::shared_ptr<Image<float> > warp_ptr;
+  if (opt.size())
+    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
+
+
   // Detect FOD image for reorientation
   opt = get_options ("noreorientation");
   bool fod_reorientation = false;
   Eigen::MatrixXd directions_cartesian;
-  if (!opt.size() && linear && input_header.ndim() == 4 &&
+  if (!opt.size() && (linear || warp_ptr) && input_header.ndim() == 4 &&
       input_header.size(3) >= 6 &&
       input_header.size(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.size(3)))) {
     CONSOLE ("SH series detected, performing apodised PSF reorientation");
     fod_reorientation = true;
 
-    Eigen::MatrixXd directions_el_az;
+    Eigen::MatrixXd directions_az_el;
     opt = get_options ("directions");
     if (opt.size())
-      directions_el_az = load_matrix (opt[0][0]);
+      directions_az_el = load_matrix (opt[0][0]);
     else
-      directions_el_az = DWI::Directions::electrostatic_repulsion_60();
-    Math::SH::spherical2cartesian (directions_el_az, directions_cartesian);
+      directions_az_el = DWI::Directions::electrostatic_repulsion_300();
+    Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
 
     // load with SH coeffients contiguous in RAM
     stride = Stride::contiguous_along_axis (3, input_header);
   }
 
-  auto input = input_header.get_image<float>().with_direct_io (stride);
-
-  // Warp
-  bool warp = false;
-  opt = get_options ("warp");
-  if (opt.size()) {
-    warp = true;
-    //TODO
+  bool modulate = false;
+  if (get_options ("modulate").size()) {
+    modulate = true;
+    if (!fod_reorientation)
+      throw Exception ("modulation can only be performed with FOD reorientation");
   }
 
 
-  if (linear && input_header.ndim() == 4 && !warp && !fod_reorientation) {
+  if (linear && input_header.ndim() == 4 && !warp_ptr && !fod_reorientation) {
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
@@ -256,7 +272,7 @@ void run ()
     auto template_header = Header::open (opt[0][0]);
     for (size_t i = 0; i < 3; ++i) {
        output_header.size(i) = template_header.size(i);
-       output_header.voxsize(i) = template_header.voxsize(i);
+       output_header.spacing(i) = template_header.spacing(i);
     }
     output_header.transform() = template_header.transform();
     add_line (output_header.keyval()["comments"], std::string ("resliced to template image \"" + template_header.name() + "\""));
@@ -271,28 +287,54 @@ void run ()
     if (opt.size())
       out_of_bounds_value = NAN;
 
+
+
+    // compose warp with affine
+    std::shared_ptr<Image<float> > warp_composed_ptr;
+    if (warp_ptr && linear) {
+      warp_composed_ptr = std::make_shared<Image<float> > (Image<float>::scratch (*warp_ptr));
+      Registration::Transform::compose (linear_transform, *warp_ptr, *warp_composed_ptr);
+    } else {
+      warp_composed_ptr = warp_ptr;
+    }
+
     auto output = Image<float>::create (argument[1], output_header);
 
       switch (interp) {
       case 0:
-        Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp_ptr)
+          Filter::reslice<Interp::Nearest> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Nearest> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 1:
-        Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp_ptr)
+          Filter::reslice<Interp::Linear> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Linear> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 2:
-        Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp_ptr)
+          Filter::reslice<Interp::Cubic> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Cubic> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       case 3:
-        Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (!warp_ptr)
+          Filter::reslice<Interp::Sinc> (input, output, linear_transform, Adapter::AutoOverSample, out_of_bounds_value);
+        else
+          Filter::warp<Interp::Sinc> (input, output, *warp_composed_ptr, out_of_bounds_value);
         break;
       default:
         assert (0);
         break;
     }
 
-    if (fod_reorientation)
-      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose());
+    // only reorient if linear or warp input
+    if (fod_reorientation && linear && !warp_ptr)
+      Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose(), modulate);
+    else if (fod_reorientation && warp_ptr)
+      Registration::Transform::reorient_warp ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose(), modulate);
 
   } else {
     // straight copy:

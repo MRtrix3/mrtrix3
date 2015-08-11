@@ -93,7 +93,7 @@ namespace MR
         // Have to set a volume so that Seeding::List works correctly
         for (const auto& i : fixels)
           volume += i.get_weight();
-        volume *= fod_data.voxsize(0) * fod_data.voxsize(1) * fod_data.voxsize(2);
+        volume *= fod_data.spacing(0) * fod_data.spacing(1) * fod_data.spacing(2);
 
         // Prevent divide-by-zero at commencement
         SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;

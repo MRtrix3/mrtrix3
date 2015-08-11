@@ -85,7 +85,12 @@ void usage ()
     + "Reference for the FOD segmentation method:\n"
     "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
     "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-    "NeuroImage, 2013, 67, 298-312 (Appendix 2)";
+    "NeuroImage, 2013, 67, 298-312 (Appendix 2)"
+
+    + "Reference for Apparent Fibre Density:"
+    "Raffelt, D.; Tournier, J.-D.; Rose, S.; Ridgway, G.R.; Henderson, R.; Crozier, S.; Salvado, O.; Connelly, A.;
+    "Apparent Fibre Density: a novel measure for the analysis of diffusion-weighted magnetic resonance images."
+    "Neuroimage, 2012, 15;59(4), 3976-94.";
 
   ARGUMENTS
   + Argument ("fod", "the input fod image.").type_image_in ();

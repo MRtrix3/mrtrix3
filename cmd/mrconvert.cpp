@@ -86,7 +86,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
   header.set_ndim (input.ndim());
   for (size_t n = 0; n < header.ndim(); ++n) {
     header.size(n) = input.size(n);
-    header.voxsize(n) = input.voxsize(n);
+    header.spacing(n) = input.spacing(n);
     header.stride(n) = input.stride(n);
   }
   header.transform() = input.transform();
@@ -122,7 +122,7 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
       throw Exception ("too many axes supplied to -vox option");
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
-        header.voxsize(n) = vox[n];
+        header.spacing(n) = vox[n];
     }
   }
 

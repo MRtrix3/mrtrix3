@@ -577,8 +577,8 @@ void get_header (const StackEntry& entry, Header& header)
     if (header.size(n) > 1 && entry.image->size(n) > 1 && header.size(n) != entry.image->size(n))
       throw Exception ("dimensions of input images do not match - aborting");
     header.size(n) = std::max (header.size(n), entry.image->size(n));
-    if (!std::isfinite (header.voxsize(n))) 
-      header.voxsize(n) = entry.image->voxsize(n);
+    if (!std::isfinite (header.spacing(n))) 
+      header.spacing(n) = entry.image->spacing(n);
   }
 
 }

@@ -101,7 +101,7 @@ namespace MR
             for (size_t n = 0; n < original.ndim(); ++n) {
               size(n) = original.size(n);
               stride(n) = original.stride(n);
-              voxsize(n) = original.voxsize(n);
+              spacing(n) = original.spacing(n);
             }
             transform() = original.transform();
           }
@@ -128,7 +128,7 @@ namespace MR
           set_ndim (original.ndim());
           for (size_t n = 0; n < ndim(); ++n) {
             size(n) = original.size(n);
-            voxsize(n) = original.voxsize(n);
+            spacing(n) = original.spacing(n);
             stride(n) = original.stride(n);
           }
           transform() = original.transform();
@@ -174,9 +174,9 @@ namespace MR
       ssize_t& size (size_t axis);
 
       //! get the voxel size along axis
-      const default_type& voxsize (size_t axis) const;
+      const default_type& spacing (size_t axis) const;
       //! get/set the voxel size along axis
-      default_type& voxsize (size_t axis);
+      default_type& spacing (size_t axis);
 
       //! get the stride between adjacent voxels along axis
       const ssize_t& stride (size_t axis) const;
@@ -309,9 +309,9 @@ namespace MR
   //! a class to hold attributes about each axis
   class Header::Axis {
     public:
-      Axis () noexcept : size (1), voxsize (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
+      Axis () noexcept : size (1), spacing (std::numeric_limits<default_type>::quiet_NaN()), stride (0) { }
       ssize_t size;
-      default_type voxsize;
+      default_type spacing;
       ssize_t stride;
   };
 
@@ -327,8 +327,8 @@ namespace MR
   inline const ssize_t& Header::size (size_t axis) const { return axes_[axis].size; }
   inline ssize_t& Header::size (size_t axis) { return axes_[axis].size; }
 
-  inline const default_type& Header::voxsize (size_t axis) const { return axes_[axis].voxsize; }
-  inline default_type& Header::voxsize (size_t axis) { return axes_[axis].voxsize; }
+  inline const default_type& Header::spacing (size_t axis) const { return axes_[axis].spacing; }
+  inline default_type& Header::spacing (size_t axis) { return axes_[axis].spacing; }
 
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 

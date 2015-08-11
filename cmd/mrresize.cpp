@@ -115,7 +115,7 @@ void run () {
     throw Exception ("only a single method can be used to resize the image (image resolution, voxel size or scale factor)");
 
   Header header (resize_filter);
-  header.datatype() = DataType::from_command_line (header.datatype());
+  header.datatype() = DataType::from_command_line (DataType::from<float> ());
   auto output = Image<float>::create (argument[1], header);
 
   resize_filter (input, output);

@@ -118,7 +118,7 @@ void print_vox (const Header& header)
   std::string buffer;
   for (size_t i = 0; i < header.ndim(); ++i) {
     if (i) buffer += " ";
-    buffer += str (header.voxsize (i));
+    buffer += str (header.spacing (i));
   }
   std::cout << buffer << "\n";
 }

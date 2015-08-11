@@ -58,7 +58,7 @@ namespace MR
    * int xsize = input.size(0);    // return the dimension
    * int ysize = input.size(1);    // along the x, y & z dimensions
    * int zsize = input.size(2);
-   * float v[] = { input.voxsize(0), input.voxsize(1), input.voxsize(2) };  // return voxel dimensions
+   * float v[] = { input.spacing(0), input.spacing(1), input.spacing(2) };  // return voxel dimensions
    * input.index(0) = 0;               // these lines are used to
    * input.index(1)--;                 // set the current position
    * input.index(2)++;                 // within the data set
@@ -129,6 +129,18 @@ namespace MR
           }
 
           return ImageType::value();
+        }
+
+        // Collectively interpolates values along axis >= 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 1> out_of_bounds_row (ImageType::size(axis));
+            out_of_bounds_row.setOnes();
+            out_of_bounds_row *= out_of_bounds_value;
+            return out_of_bounds_row;
+          }
+
+          return ImageType::row(axis);
         }
 
         const value_type out_of_bounds_value;

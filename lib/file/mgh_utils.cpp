@@ -51,9 +51,9 @@ namespace MR
         if (ndim == 4)
           H.size (3) = Raw::fetch<int32_t> (&MGHH.nframes, is_BE);
 
-        H.voxsize (0) = Raw::fetch<float> (&MGHH.spacing_x, is_BE);
-        H.voxsize (1) = Raw::fetch<float> (&MGHH.spacing_y, is_BE);
-        H.voxsize (2) = Raw::fetch<float> (&MGHH.spacing_z, is_BE);
+        H.spacing (0) = Raw::fetch<float> (&MGHH.spacing_x, is_BE);
+        H.spacing (1) = Raw::fetch<float> (&MGHH.spacing_y, is_BE);
+        H.spacing (2) = Raw::fetch<float> (&MGHH.spacing_z, is_BE);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
@@ -99,7 +99,7 @@ namespace MR
 
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
-              M(i,3) -= 0.5 * H.size(j) * H.voxsize(j) * M(i,j);
+              M(i,3) -= 0.5 * H.size(j) * H.spacing(j) * M(i,j);
           }
 
 
@@ -184,9 +184,9 @@ namespace MR
 
         Raw::store<int32_t> (0, &MGHH.dof, is_BE);
         Raw::store<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        Raw::store<float> (H.voxsize (axes[0]), &MGHH.spacing_x, is_BE);
-        Raw::store<float> (H.voxsize (axes[1]), &MGHH.spacing_y, is_BE);
-        Raw::store<float> (H.voxsize (axes[2]), &MGHH.spacing_z, is_BE);
+        Raw::store<float> (H.spacing (axes[0]), &MGHH.spacing_x, is_BE);
+        Raw::store<float> (H.spacing (axes[1]), &MGHH.spacing_y, is_BE);
+        Raw::store<float> (H.spacing (axes[2]), &MGHH.spacing_z, is_BE);
 
         //const Math::Matrix<float>& M (H.transform());
         Raw::store<float> (M(0,0), &MGHH.x_r, is_BE); 
@@ -204,7 +204,7 @@ namespace MR
         for (size_t i = 0; i != 3; ++i) {
           default_type offset = M(i, 3);
           for (size_t j = 0; j != 3; ++j)
-            offset += 0.5 * H.size(axes[j]) * H.voxsize(axes[j]) * M(i,j);
+            offset += 0.5 * H.size(axes[j]) * H.spacing(axes[j]) * M(i,j);
           switch (i) {
             case 0: Raw::store<float> (offset, &MGHH.c_r, is_BE); break;
             case 1: Raw::store<float> (offset, &MGHH.c_a, is_BE); break;

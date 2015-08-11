@@ -37,7 +37,7 @@ namespace MR
         typedef typename ImageType::value_type value_type;
 
         using Base<ImageType>::name;
-        using Base<ImageType>::voxsize;
+        using Base<ImageType>::spacing;
 
         template <class VectorType>
           Subset (const ImageType& original, const VectorType& from, const VectorType& dimensions) :
@@ -52,7 +52,7 @@ namespace MR
 
               for (size_t j = 0; j < 3; ++j)
                 for (size_t i = 0; i < 3; ++i)
-                  transform_(i,3) += from[j] * voxsize(j) * transform_(i,j);
+                  transform_(i,3) += from[j] * spacing(j) * transform_(i,j);
             }
 
         void reset () {

@@ -63,9 +63,8 @@ namespace MR
             case SplineProcessingType::Value:
               _internal_set = &CubicSpline::_set_value;
               break;
+            // Could be used for partial derviative so we need to calculate both deriv and value weights
             case SplineProcessingType::Derivative:
-              _internal_set = &CubicSpline::_set_deriv;
-              break;
             case SplineProcessingType::ValueAndDerivative:
               _internal_set = &CubicSpline::_set_value_deriv;
               break;
@@ -84,11 +83,6 @@ namespace MR
         inline void _set_value (T position) {
           const auto vec = WeightVector (position * position * position, position * position, position, 1);
           weights = (vec * basis_matrix);
-        }
-
-        inline void _set_deriv (T position) {
-          const auto vec = WeightVector (position * position * position, position * position, position, 1);
-          deriv_weights = (vec * deriv_basis_matrix);
         }
 
         inline void _set_value_deriv (T position) {

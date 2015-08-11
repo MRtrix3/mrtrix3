@@ -75,7 +75,7 @@ namespace MR
             SeedMask (const std::string& in) :
               Base (in, "random seeding mask", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
               mask (in) {
-                volume = get_count (mask) * mask.voxsize(0) * mask.voxsize(1) * mask.voxsize(2);
+                volume = get_count (mask) * mask.spacing(0) * mask.spacing(1) * mask.spacing(2);
               }
 
             virtual bool get_seed (Eigen::Vector3f& p) const override;

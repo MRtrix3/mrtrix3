@@ -234,7 +234,7 @@ namespace MR
 
             float vox () const
             {
-              return std::pow (source.voxsize(0)*source.voxsize(1)*source.voxsize(2), float (1.0/3.0));
+              return std::pow (source.spacing(0)*source.spacing(1)*source.spacing(2), float (1.0/3.0));
             }
 
             void set_step_size (float stepsize)

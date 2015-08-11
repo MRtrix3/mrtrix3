@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __image_interp_reslice_h__
-#define __image_interp_reslice_h__
+#ifndef __filter_reslice_h__
+#define __filter_reslice_h__
 
 #include "adapter/reslice.h"
 #include "algo/threaded_copy.h"
