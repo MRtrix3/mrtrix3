@@ -116,7 +116,7 @@ namespace MR
           size_t get_max_attempts() const { return max_attempts; }
 
           virtual bool get_seed (Eigen::Vector3f&) const = 0;
-          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) const { return get_seed (p); }
+          virtual bool get_seed (Eigen::Vector3f& p, Eigen::Vector3f&) { return get_seed (p); }
 
           friend inline std::ostream& operator<< (std::ostream& stream, const Base& B) {
             stream << B.name;

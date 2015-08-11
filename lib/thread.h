@@ -28,6 +28,7 @@
 #include <mutex>
 
 #include "debug.h"
+#include "mrtrix.h"
 #include "exception.h"
 
 /** \defgroup Thread Multi-threading

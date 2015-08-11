@@ -1,0 +1,158 @@
+/*
+    Copyright 2008 Brain Research Institute, Melbourne, Australia
+
+    Written by J-Donald Tournier, 23/05/09.
+
+    This file is part of MRtrix.
+
+    MRtrix is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    MRtrix is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+#ifndef __sparse_image_h__
+#define __sparse_image_h__
+
+#include <typeinfo>
+
+#include "image.h"
+#include "algo/loop.h"
+#include "image_io/sparse.h"
+#include "sparse/keys.h"
+
+
+namespace MR
+{
+  namespace Sparse
+  {
+
+    template <typename DataType>
+      class Value {
+        public:
+          Value (::MR::Image<uint64_t>& offsets, ImageIO::Sparse& io) : offsets (offsets), io (io) { } 
+
+        uint32_t size() const { return io.get_numel (offsets.value()); }
+
+        void set_size (const uint32_t n)
+        {
+          // Handler allocates new memory if necessary, and sets the relevant number of elements flag in the sparse image data
+          // It returns the file offset necessary to access the relevant memory, so update the raw image value accordingly
+          offsets.value() = (io.set_numel (offsets.value(), n));
+        }
+
+        // Handler is responsible for bounds checking
+        DataType& operator[] (const size_t i)
+        {
+          uint8_t* const ptr = io.get (offsets.value(), i);
+          return *(reinterpret_cast<DataType* const>(ptr));
+        }
+        const DataType& operator[] (const size_t i) const
+        {
+          const uint8_t* const ptr = io.get (offsets.value(), i);
+          return *(reinterpret_cast<const DataType* const>(ptr));
+        }
+
+
+        // This should provide image copying capability using the relevant templated functions
+        Value& operator= (const Value& that) {
+          set_size (that.size());
+          for (uint32_t i = 0; i != size(); ++i)
+            (*this)[i] = that[i];
+          return *this;
+        }
+
+
+        friend std::ostream& operator<< (std::ostream& stream, const Value& value) {
+          stream << "Position [ ";
+          for (size_t n = 0; n < value.offsets.ndim(); ++n)
+            stream << value.offsets[n] << " ";
+          stream << "], offset = " << value.offsets.value() << ", " << value.size() << " elements";
+          return stream;
+        }
+
+
+
+        protected:
+          ::MR::Image<uint64_t>& offsets;
+          ImageIO::Sparse& io;
+      };
+
+
+
+
+
+
+
+    // A convenience class for wrapping access to sparse images
+    // Main reason for having this class is to clarify the code responsible for accessing sparse images
+    // Also: Any attempt to unify this concept of image data storage will likely also involve
+    //   generalisation of the other Buffer offshoot classes (BufferPreload, BufferScratch)
+    template <typename DataType>
+      class Image : public ::MR::Image<uint64_t>
+    {
+      public:
+        Image (const std::string& image_name, bool readwrite = false) :
+          Image<uint64_t> (image_name, readwrite), io (nullptr) { check(); }
+
+        Image (const Header& header, bool readwrite = false) :
+          Image<uint64_t> (header, readwrite), io (nullptr) { check(); }
+
+        Image (const Image<DataType>& that) = default;
+
+        Image (const std::string& image_name, const Header& template_header) :
+          Image<uint64_t> (image_name, template_header), io (nullptr) { check(); }
+
+        typedef uint64_t value_type;
+        typedef DataType sparse_data_type;
+
+        Value<DataType> value () { return { *this, *io }; }
+        const Value<DataType> value () const { return { *this, *io }; }
+
+      protected:
+        ImageIO::Sparse* io;
+
+        void check()
+        {
+          if (!buffer() || !buffer()->get_io())
+            throw Exception ("cannot create sparse image for image with no handler");
+          if (typeid (*buffer()->get_io()) != typeid (ImageIO::Sparse))
+            throw Exception ("cannot create sparse image to access non-sparse data");
+          // Use the header information rather than trying to access this from the handler
+          std::map<std::string, std::string>::const_iterator name_it = header().keyval().find (Sparse::name_key);
+          if (name_it == header().keyval().end())
+            throw Exception ("cannot create sparse image without knowledge of underlying class type in the image header");
+          const std::string& class_name = name_it->second;
+          if (str(typeid(DataType).name()) != class_name)
+            throw Exception ("class type of sparse image buffer does not match that in image header");
+          std::map<std::string, std::string>::const_iterator size_it = header().keyval().find (Sparse::size_key);
+          if (size_it == header.keys().end())
+            throw Exception ("cannot create sparse image without knowledge of underlying class size in the image header");
+          const size_t class_size = to<size_t>(size_it->second);
+          if (sizeof(DataType) != class_size)
+            throw Exception ("class size of sparse image does not match that in image header");
+          io = reinterpret_cast<ImageIO::Sparse*> (buffer()->get_io());
+          DEBUG ("Sparse image verified for accessing " + name() + " using type " + str(typeid(DataType).name()));
+        }
+
+
+    };
+
+
+
+  }
+}
+
+#endif
+
+
+

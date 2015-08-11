@@ -70,6 +70,7 @@ namespace MR
           }
 
           WriteKernel (const WriteKernel&) = delete;
+          WriteKernel& operator= (const WriteKernel&) = delete;
 
           ~WriteKernel ()
           {

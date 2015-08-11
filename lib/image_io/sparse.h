@@ -73,20 +73,36 @@ namespace MR
     class Sparse : public Default
     {
       public:
-        Sparse (const Header& header, const std::string&, const size_t, const File::Entry entry);
+
+        Sparse (const Header& header, const std::string& sparse_class_name, const size_t sparse_class_size, const File::Entry& entry) :
+          Default (header),
+          class_name (sparse_class_name),
+          class_size (sparse_class_size),
+          file (entry),
+          data_end (0) { }
 
 
-        // Find the number of elements in a particular voxel based on the file offset
-        uint32_t get_numel (const uint64_t) const;
+        //! Find the number of elements in a particular voxel based on its file offset
+        uint32_t get_numel (const uint64_t offset) const {
+          return *(reinterpret_cast<uint32_t*>(off2mem(offset)));
+        }
 
-        // Request memory location for new sparse data to be written - also ensures that the sparse data buffer is
-        //   sufficiently large to contain the new information
-        // Receives current offset value for that voxel, and the desired number of elements
-        // Return value is the offset from the start of the sparse data
-        uint64_t set_numel (const uint64_t, const uint32_t);
+        //! Request memory location for new sparse data to be written 
+        /*!
+         * This also ensures that the sparse data buffer is sufficiently large
+         * to contain the new information. It takes current offset value for
+         * that voxel, and the desired number of elements. The return value is
+         * the offset from the start of the sparse data */
+        uint64_t set_numel (const uint64_t old_offset, const uint32_t numel);
 
-        // Return a pointer to an element in a voxel
-        uint8_t* get (const uint64_t, const size_t) const;
+        //! Return a pointer to an element in a voxel
+        uint8_t* get (const uint64_t voxel_offset, const size_t index) const {
+          assert (index < get_numel (voxel_offset));
+          const uint64_t offset = sizeof(uint32_t) + (index * class_size);
+          assert (voxel_offset + offset + class_size <= data_end);
+          uint8_t* const ptr = off2mem(voxel_offset) + offset;
+          return ptr;
+        }
 
 
         const std::string& get_class_name() const { return class_name; }
@@ -104,10 +120,10 @@ namespace MR
         std::unique_ptr<File::MMap> mmap;
 
 
-        uint64_t size() const { return (mmap ? mmap->size() : 0); }
+        uint64_t size() const { return mmap ? mmap->size() : 0; }
 
         // Convert a file position offset (as read from the image data) to a pointer to the relevant sparsely-stored data
-        uint8_t* off2mem (const uint64_t i) const { assert (mmap); return (mmap->address() + i); }
+        uint8_t* off2mem (const uint64_t offset) const { assert (mmap); return mmap->address() + offset; }
 
 
     };

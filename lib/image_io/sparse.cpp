@@ -32,13 +32,6 @@ namespace MR
   {
 
 
-    Sparse::Sparse (const Header& header, const std::string& sparse_class, const size_t sparse_size, const File::Entry entry) :
-      Default (header),
-      class_name (sparse_class),
-      class_size (sparse_size),
-      file (entry),
-      data_end (0) { }
-
 
     void Sparse::load (const Header& header, size_t)
     {
@@ -53,10 +46,10 @@ namespace MR
 
       if (current_sparse_data_size) {
 
-        mmap.reset (new File::MMap (file, Base::writable, true, current_sparse_data_size));
+        mmap.reset (new File::MMap (file, is_image_readwrite(), true, current_sparse_data_size));
         data_end = current_sparse_data_size;
 
-      } else if (Base::writable) {
+      } else if (is_image_readwrite()) {
 
         //CONF option: SparseDataInitialSize
         //CONF default: 16777216
@@ -65,9 +58,10 @@ namespace MR
         // Default = initialise 16MB, this is enough to store whole-brain fixel data at 2.5mm resolution
         const uint64_t init_sparse_data_size = File::Config::get_int ("SparseDataInitialSize", 16777216);
         const size_t new_file_size = file.start + init_sparse_data_size;
-        DEBUG ("Initialising output sparse data file " + file.name + ": new file size " + str(new_file_size) + " (" + str(init_sparse_data_size) + " of which is initial sparse data buffer)");
+        DEBUG ("Initialising output sparse data file " + file.name + ": new file size " + str(new_file_size) 
+            + " (" + str(init_sparse_data_size) + " of which is initial sparse data buffer)");
         File::resize (file.name, new_file_size);
-        mmap.reset (new File::MMap (file, Base::writable, false, init_sparse_data_size));
+        mmap.reset (new File::MMap (file, is_image_readwrite(), false, init_sparse_data_size));
 
         // Writes a single uint32_t(0) to the start of the sparse data region
         // Any voxel that has its value initialised to 0 will point here, and therefore dereferencing of any
@@ -81,9 +75,9 @@ namespace MR
       // If this is the formation of a new image, want to explicitly zero all of the
       //   raw image data - otherwise any random data could be misinterpreted as a large
       //   pointer offset from the start of the sparse image data
-      if (Base::is_new) {
-        for (auto i = Default::mmaps.begin(); i != Default::mmaps.end(); ++i)
-          memset ((*i)->address(), 0x00, (*i)->size());
+      if (is_image_new()) {
+        for (auto& i : mmaps) 
+          memset (i->address(), 0x00, i->size());
       }
 
     }
@@ -114,17 +108,11 @@ namespace MR
 
 
 
-    uint32_t Sparse::get_numel (const uint64_t offset) const
-    {
-      return *(reinterpret_cast<uint32_t*>(off2mem(offset)));
-    }
-
 
 
     uint64_t Sparse::set_numel (const uint64_t old_offset, const uint32_t numel)
     {
-
-      assert (Base::writable);
+      assert (is_image_readwrite());
 
       // Before allocating new memory, verify that the current offset does not point to
       //   a voxel that has more elements than is required
@@ -196,15 +184,6 @@ namespace MR
 
 
 
-
-    uint8_t* Sparse::get (const uint64_t voxel_offset, const size_t index) const
-    {
-      assert (index < get_numel (voxel_offset));
-      const uint64_t offset = sizeof(uint32_t) + (index * class_size);
-      assert (voxel_offset + offset + class_size <= data_end);
-      uint8_t* const ptr = off2mem(voxel_offset) + offset;
-      return ptr;
-    }
 
 
 
