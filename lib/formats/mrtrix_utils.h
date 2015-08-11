@@ -105,7 +105,7 @@ namespace MR
         for (size_t n = 0; n < std::min (vox.size(), H.ndim()); n++) {
           if (vox[n] < 0.0)
             throw Exception ("invalid voxel size for MRtrix image \"" + H.name() + "\"");
-          H.voxsize(n) = vox[n];
+          H.spacing(n) = vox[n];
         }
 
 
@@ -159,9 +159,9 @@ namespace MR
         for (size_t n = 1; n < H.ndim(); ++n)
           out << "," << H.size (n);
 
-        out << "\nvox: " << H.voxsize (0);
+        out << "\nvox: " << H.spacing (0);
         for (size_t n = 1; n < H.ndim(); ++n)
-          out << "," << H.voxsize (n);
+          out << "," << H.spacing (n);
 
         auto stride = Stride::get (H);
         Stride::symbolise (stride);

@@ -60,7 +60,7 @@ namespace MR
             stdev (in.ndim(), 0.0)
         {
           for (int i = 0; i < std::min (int(in.ndim()), 3); i++)
-            stdev[i] = in.voxsize(i);
+            stdev[i] = in.spacing(i);
           datatype() = DataType::Float32;
         }
 

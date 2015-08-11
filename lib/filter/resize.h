@@ -85,13 +85,13 @@ namespace MR
           for (size_t j = 0; j < 3; ++j) {
             if (voxel_size[j] <= 0.0)
               throw Exception ("the voxel size must be larger than zero");
-            original_extent[j] = axes_[j].size * axes_[j].voxsize;
-            axes_[j].size = std::round (axes_[j].size * axes_[j].voxsize / voxel_size[j] - 0.0001); // round down at .5
+            original_extent[j] = axes_[j].size * axes_[j].spacing;
+            axes_[j].size = std::round (axes_[j].size * axes_[j].spacing / voxel_size[j] - 0.0001); // round down at .5
             // Here we adjust the translation to ensure the image extent is centered wrt the original extent.
             // This is important when the new voxel size is not an exact multiple of the original extent
             for (size_t i = 0; i < 3; ++i)
-              transform_(i,3) += 0.5 * ((voxel_size[j] - axes_[j].voxsize)  + (original_extent[j] - (axes_[j].size * voxel_size[j]))) * transform_(i,j);
-            axes_[j].voxsize = voxel_size[j];
+              transform_(i,3) += 0.5 * ((voxel_size[j] - axes_[j].spacing)  + (original_extent[j] - (axes_[j].size * voxel_size[j]))) * transform_(i,j);
+            axes_[j].spacing = voxel_size[j];
           }
         }
 
@@ -104,7 +104,7 @@ namespace MR
           for (size_t d = 0; d < 3; ++d) {
             if (image_res[d] <= 0)
               throw Exception ("the image resolution must be larger that zero for all 3 spatial dimensions");
-            new_voxel_size[d] = (this->size(d) * this->voxsize(d)) / image_res[d];
+            new_voxel_size[d] = (this->size(d) * this->spacing(d)) / image_res[d];
           }
           set_voxel_size (new_voxel_size);
         }
@@ -124,7 +124,7 @@ namespace MR
           for (size_t d = 0; d < 3; ++d) {
             if (scale[d] <= 0.0)
               throw Exception ("the scale factor must be larger than zero");
-            new_voxel_size[d] = (this->size(d) * this->voxsize(d)) / std::ceil (this->size(d) * scale[d]);
+            new_voxel_size[d] = (this->size(d) * this->spacing(d)) / std::ceil (this->size(d) * scale[d]);
           }
           set_voxel_size (new_voxel_size);
         }
@@ -142,7 +142,7 @@ namespace MR
             bool do_smoothing = false;
             std::vector<default_type> stdev (input.ndim(), 0.0);
             for (unsigned int d = 0; d < 3; ++d) {
-              default_type scale_factor = (default_type)input.voxsize(d) / (default_type)output.voxsize(d);
+              default_type scale_factor = (default_type)input.spacing(d) / (default_type)output.spacing(d);
               if (scale_factor < 1.0) {
                 do_smoothing = true;
                 stdev[d] = 1.0 / (2.0 * scale_factor);

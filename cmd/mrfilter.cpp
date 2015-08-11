@@ -178,7 +178,7 @@ void run () {
       } else {
         stdev.resize (filter.ndim(), 0.0);
         for (size_t dim = 0; dim != 3; ++dim)
-          stdev[dim] = filter.voxsize (dim);
+          stdev[dim] = filter.spacing (dim);
       }
       filter.set_stdev (stdev);
       filter.compute_wrt_scanner (get_options ("scanner").size() ? true : false);

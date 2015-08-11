@@ -65,7 +65,7 @@ namespace MR
 
         FORCE_INLINE size_t  ndim () const { return buffer->ndim(); }
         FORCE_INLINE ssize_t size (size_t axis) const { return buffer->size (axis); }
-        FORCE_INLINE default_type voxsize (size_t axis) const { return buffer->voxsize (axis); }
+        FORCE_INLINE default_type spacing (size_t axis) const { return buffer->spacing (axis); }
         FORCE_INLINE ssize_t stride (size_t axis) const { return strides[axis]; }
 
         //! offset to current voxel from start of data

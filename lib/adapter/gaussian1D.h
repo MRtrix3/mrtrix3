@@ -41,7 +41,7 @@ namespace MR
           stdev (stdev_in),
           axis (axis_in) {
           if (!extent)
-            radius = ceil(2.5 * stdev / voxsize(axis));
+            radius = ceil(2.5 * stdev / spacing(axis));
           else if (extent == 1)
             radius = 0;
           else
@@ -96,7 +96,7 @@ namespace MR
 
         using Base<ImageType>::name;
         using Base<ImageType>::size;
-        using Base<ImageType>::voxsize;
+        using Base<ImageType>::spacing;
         using Base<ImageType>::index;
 
       protected:
@@ -108,7 +108,7 @@ namespace MR
           kernel.resize(2 * radius + 1);
           default_type norm_factor = 0.0;
           for (size_t c = 0; c < kernel.size(); ++c) {
-            kernel[c] = exp(-((c-radius) * (c-radius) * voxsize(axis) * voxsize(axis))  / (2 * stdev * stdev));
+            kernel[c] = exp(-((c-radius) * (c-radius) * spacing(axis) * spacing(axis))  / (2 * stdev * stdev));
             norm_factor += kernel[c];
           }
           for (size_t c = 0; c < kernel.size(); c++) {

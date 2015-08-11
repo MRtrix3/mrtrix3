@@ -63,10 +63,10 @@ namespace MR
 
         H.size(2) = 1;
 
-        H.voxsize(0) = 3.0;
-        H.voxsize(1) = 3.0;
-        H.voxsize(2) = 10.0;
-        H.voxsize(3) = 1.0;
+        H.spacing(0) = 3.0;
+        H.spacing(1) = 3.0;
+        H.spacing(2) = 10.0;
+        H.spacing(3) = 1.0;
 
         H.stride(0) = -1;
         H.stride(1) = -2;
@@ -108,10 +108,10 @@ namespace MR
             H.size(n) = 1;
 
 
-        H.voxsize(0) = 3.0;
-        H.voxsize(1) = 3.0;
-        H.voxsize(2) = 10.0;
-        H.voxsize(3) = 1.0;
+        H.spacing(0) = 3.0;
+        H.spacing(1) = 3.0;
+        H.spacing(2) = 10.0;
+        H.spacing(3) = 1.0;
 
         H.stride(0) = -1;
         H.stride(1) = -2;

@@ -65,7 +65,7 @@ namespace MR
             warp (warp),
             x { 0, 0, 0 },
             dim { warp.size(0), warp.size(1), warp.size(2) },
-            vox { warp.voxsize(0), warp.voxsize(1), warp.voxsize(2) } {
+            vox { warp.spacing(0), warp.spacing(1), warp.spacing(2) } {
               assert (warp.ndim() == 4);
               assert (warp.size(3) == 3);
             }
@@ -73,7 +73,7 @@ namespace MR
 
         size_t ndim () const { return interp.ndim(); }
         int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
-        default_type voxsize (size_t axis) const { return axis < 3 ? vox[axis] : interp.voxsize (axis); }
+        default_type spacing (size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing (axis); }
         const std::string& name () const { return interp.name(); }
 
         ssize_t stride (size_t axis) const {

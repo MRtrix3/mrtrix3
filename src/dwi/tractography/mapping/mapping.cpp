@@ -39,7 +39,7 @@ namespace MR {
         {
           size_t upsample_ratio = 1;
           if (step_size && std::isfinite (step_size))
-            upsample_ratio = std::ceil (step_size / (std::min (header.voxsize(0), std::min (header.voxsize(1), header.voxsize(2))) * ratio));
+            upsample_ratio = std::ceil (step_size / (std::min (header.spacing(0), std::min (header.spacing(1), header.spacing(2))) * ratio));
           return upsample_ratio;
         }
 
@@ -109,7 +109,7 @@ namespace MR {
 
           for (size_t i = 0; i != 3; ++i) {
             header.size(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
-            header.voxsize(i) = voxel_size[i];
+            header.spacing(i) = voxel_size[i];
             header.stride(i) = i+1;
           }
 
@@ -127,14 +127,14 @@ namespace MR {
           INFO ("oversampling header...");
 
           header.transform().translation() += header.transform().rotation() * Eigen::Vector3d (
-              0.5 * (voxel_size[0] - header.voxsize(0)),
-              0.5 * (voxel_size[1] - header.voxsize(1)),
-              0.5 * (voxel_size[2] - header.voxsize(2))
+              0.5 * (voxel_size[0] - header.spacing(0)),
+              0.5 * (voxel_size[1] - header.spacing(1)),
+              0.5 * (voxel_size[2] - header.spacing(2))
               );
 
           for (size_t n = 0; n < 3; ++n) {
-            header.size(n) = std::ceil(header.size(n) * header.voxsize(n) / voxel_size[n]);
-            header.voxsize(n) = voxel_size[n];
+            header.size(n) = std::ceil(header.size(n) * header.spacing(n) / voxel_size[n]);
+            header.spacing(n) = voxel_size[n];
           }
         }
 

@@ -58,8 +58,8 @@ next_axis:
         ssize_t size (size_t axis) const {
           return axes_[axis] < 0 ? 1 : parent().size (axes_[axis]);
         }
-        default_type voxsize (size_t axis) const {
-          return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().voxsize (axes_[axis]);
+        default_type spacing (size_t axis) const {
+          return axes_[axis] < 0 ? std::numeric_limits<default_type>::quiet_NaN() : parent().spacing (axes_[axis]);
         }
         ssize_t stride (size_t axis) const {
           return axes_[axis] < 0 ? 0 : parent().stride (axes_[axis]);

@@ -91,7 +91,7 @@ namespace MR
             interp (original, value_when_out_of_bounds),
             x { 0, 0, 0 },
             dim { reference.size(0), reference.size(1), reference.size(2) },
-            vox { reference.voxsize(0), reference.voxsize(1), reference.voxsize(2) },
+            vox { reference.spacing(0), reference.spacing(1), reference.spacing(2) },
             transform_ (reference.transform()),
             direct_transform (Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
               using namespace Eigen;
@@ -132,7 +132,7 @@ namespace MR
 
         size_t ndim () const { return interp.ndim(); }
         int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
-        default_type voxsize (size_t axis) const { return axis < 3 ? vox[axis] : interp.voxsize (axis); }
+        default_type spacing (size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing (axis); }
         const transform_type& transform () const { return transform_; }
         const std::string& name () const { return interp.name(); }
 

@@ -62,7 +62,7 @@ namespace MR
         auto translation = M_out.col(3);
         for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
-            auto length = default_type (H.size (axes[i])-1) * H.voxsize (axes[i]);
+            auto length = default_type (H.size (axes[i])-1) * H.spacing (axes[i]);
             auto axis = M_out.col(i);
             axis = -axis;
             translation -= length * axis;
@@ -180,10 +180,10 @@ namespace MR
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.voxsize(i) = Raw::fetch<float32> (&NH.pixdim[i+1], is_BE);
-          if (H.voxsize (i) < 0.0) {
+          H.spacing(i) = Raw::fetch<float32> (&NH.pixdim[i+1], is_BE);
+          if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.voxsize(i) = std::abs (H.voxsize (i));
+            H.spacing(i) = std::abs (H.spacing (i));
           }
         }
 
@@ -230,22 +230,22 @@ namespace MR
             M(2,3) = Raw::fetch<float32> (&NH.srow_z[3], is_BE);
 
             // get voxel sizes:
-            H.voxsize(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.voxsize(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.voxsize(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.spacing(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.spacing(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.spacing(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
-            M (0,0) /= H.voxsize (0);
-            M (1,0) /= H.voxsize (0);
-            M (2,0) /= H.voxsize (0);
+            M (0,0) /= H.spacing (0);
+            M (1,0) /= H.spacing (0);
+            M (2,0) /= H.spacing (0);
 
-            M (0,1) /= H.voxsize (1);
-            M (1,1) /= H.voxsize (1);
-            M (2,1) /= H.voxsize (1);
+            M (0,1) /= H.spacing (1);
+            M (1,1) /= H.spacing (1);
+            M (2,1) /= H.spacing (1);
 
-            M (0,2) /= H.voxsize (2);
-            M (1,2) /= H.voxsize (2);
-            M (2,2) /= H.voxsize (2);
+            M (0,2) /= H.spacing (2);
+            M (1,2) /= H.spacing (2);
+            M (2,2) /= H.spacing (2);
           }
           else if (Raw::fetch<int16_t> (&NH.qform_code, is_BE)) {
             { // TODO update with Eigen3 Quaternions
@@ -435,9 +435,9 @@ namespace MR
 
         // voxel sizes:
         for (size_t i = 0; i < 3; ++i)
-          Raw::store<float32> (H.voxsize (axes[i]), &NH.pixdim[i+1], is_BE);
+          Raw::store<float32> (H.spacing (axes[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); ++i)
-          Raw::store<float32> (H.voxsize (i), &NH.pixdim[i+1], is_BE);
+          Raw::store<float32> (H.spacing (i), &NH.pixdim[i+1], is_BE);
 
         Raw::store<float32> (352.0, &NH.vox_offset, is_BE);
 
@@ -475,19 +475,19 @@ namespace MR
         Raw::store<float32> (M(1,3), &NH.qoffset_y, is_BE);
         Raw::store<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
-        Raw::store<float32> (H.voxsize (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
-        Raw::store<float32> (H.voxsize (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
-        Raw::store<float32> (H.voxsize (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
         Raw::store<float32> (M (0,3), &NH.srow_x[3], is_BE);
 
-        Raw::store<float32> (H.voxsize (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
-        Raw::store<float32> (H.voxsize (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
-        Raw::store<float32> (H.voxsize (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
         Raw::store<float32> (M (1,3), &NH.srow_y[3], is_BE);
 
-        Raw::store<float32> (H.voxsize (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
-        Raw::store<float32> (H.voxsize (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
-        Raw::store<float32> (H.voxsize (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
         Raw::store<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);

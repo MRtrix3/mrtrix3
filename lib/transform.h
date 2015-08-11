@@ -34,7 +34,7 @@ namespace MR
       //! An object for transforming between voxel, scanner and image coordinate spaces
       template <class HeaderType>
         Transform (const HeaderType& header) :
-          voxelsize (header.voxsize(0), header.voxsize(1), header.voxsize(2)),
+          voxelsize (header.spacing(0), header.spacing(1), header.spacing(2)),
           voxel2scanner (header.transform() * voxelsize),
           scanner2voxel (voxel2scanner.inverse()),
           image2scanner (header.transform()),
@@ -61,9 +61,9 @@ namespace MR
           transform_type M;
           M.setIdentity();
           M.translation() = Eigen::Vector3d (
-              -0.5 * (header.size (0)-1) * header.voxsize (0), 
-              -0.5 * (header.size (1)-1) * header.voxsize (1), 
-              -0.5 * (header.size (2)-1) * header.voxsize (2)
+              -0.5 * (header.size (0)-1) * header.spacing (0), 
+              -0.5 * (header.size (1)-1) * header.spacing (1), 
+              -0.5 * (header.size (2)-1) * header.spacing (2)
               );
           return M;
         }

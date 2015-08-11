@@ -48,7 +48,7 @@ namespace MR
       if (stride(n) != H.stride(n))
         throw Exception ("data strides differs image files for \"" + name() + "\"");
 
-      if (std::isfinite(voxsize(n)) && std::isfinite(H.voxsize(n)) && voxsize(n) != H.voxsize(n))
+      if (std::isfinite(spacing(n)) && std::isfinite(H.spacing(n)) && spacing(n) != H.spacing(n))
         WARN ("voxel dimensions differ between image files for \"" + name() + "\"");
     }
 
@@ -285,7 +285,7 @@ namespace MR
     stream << "\"" << H.name() << "\", " << H.datatype().specifier() << ", size [ ";
     for (size_t n = 0; n < H.ndim(); ++n) stream << H.size(n) << " ";
     stream << "], voxel size [ ";
-    for (size_t n = 0; n < H.ndim(); ++n) stream << H.voxsize(n) << " "; 
+    for (size_t n = 0; n < H.ndim(); ++n) stream << H.spacing(n) << " "; 
     stream << "], strides [ ";
     for (size_t n = 0; n < H.ndim(); ++n) stream << H.stride(n) << " "; 
     stream << "]";
@@ -313,7 +313,7 @@ namespace MR
     desc += "\n  Voxel size:        ";
     for (i = 0; i < ndim(); i++) {
       if (i) desc += " x ";
-      desc += std::isnan (voxsize(i)) ? "?" : str (voxsize(i));
+      desc += std::isnan (spacing(i)) ? "?" : str (spacing(i));
     }
     desc += "\n";
 
@@ -401,20 +401,20 @@ namespace MR
       set_ndim (3);
     }
 
-    if (!std::isfinite (voxsize(0)) || !std::isfinite (voxsize(1)) || !std::isfinite (voxsize(2))) {
+    if (!std::isfinite (spacing(0)) || !std::isfinite (spacing(1)) || !std::isfinite (spacing(2))) {
       WARN ("invalid voxel sizes - resetting to sane defaults");
       default_type mean_vox_size = 0.0;
       size_t num_valid_vox = 0;
       for (size_t i = 0; i < 3; ++i) {
-        if (std::isfinite(voxsize(i))) {
+        if (std::isfinite(spacing(i))) {
           ++num_valid_vox; 
-          mean_vox_size += voxsize(i);
+          mean_vox_size += spacing(i);
         }
       }
       mean_vox_size /= num_valid_vox;
       for (size_t i = 0; i < 3; ++i) 
-        if (!std::isfinite(voxsize(i))) 
-          voxsize(i) = mean_vox_size;
+        if (!std::isfinite(spacing(i))) 
+          spacing(i) = mean_vox_size;
     }
   }
 
@@ -464,7 +464,7 @@ namespace MR
     // modify translation vector:
     for (size_t i = 0; i < 3; ++i) {
       if (flip[i]) {
-        const default_type length = (size(i)-1) * voxsize(i);
+        const default_type length = (size(i)-1) * spacing(i);
         auto axis = M.matrix().col (i);
         for (size_t n = 0; n < 3; ++n) {
           axis[n] = -axis[n];

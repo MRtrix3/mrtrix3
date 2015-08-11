@@ -134,15 +134,15 @@ namespace MR {
 
         H.stride(0) = ++current_axis;
         H.size(0) = image.dim[0];
-        H.voxsize(0) = image.pixel_size[0];
+        H.spacing(0) = image.pixel_size[0];
 
         H.stride(1) = ++current_axis;
         H.size(1) = image.dim[1];
-        H.voxsize(1) = image.pixel_size[1];
+        H.spacing(1) = image.pixel_size[1];
 
         H.stride(2) = ++current_axis;
         H.size(2) = dim[1];
-        H.voxsize(2) = slice_separation;
+        H.spacing(2) = slice_separation;
 
         if (dim[0]*dim[2] > 1) {
           H.stride(current_axis) = current_axis+1;
@@ -220,8 +220,8 @@ namespace MR {
             H.size(1) = image.dim[1] / size_t (float(image.dim[1]) / float(image.acq_dim[1]));
           }
 
-          float xinc = H.voxsize(0) * (image.dim[0] - H.size(0)) / 2.0;
-          float yinc = H.voxsize(1) * (image.dim[1] - H.size(1)) / 2.0;
+          float xinc = H.spacing(0) * (image.dim[0] - H.size(0)) / 2.0;
+          float yinc = H.spacing(1) * (image.dim[1] - H.size(1)) / 2.0;
           for (size_t i = 0; i < 3; i++) 
             H.transform()(i,3) += xinc * H.transform()(i,0) + yinc * H.transform()(i,1);
 

@@ -71,7 +71,7 @@ namespace MR
 
         using Base<ImageType>::name;
         using Base<ImageType>::size;
-        using Base<ImageType>::voxsize;
+        using Base<ImageType>::spacing;
         using Base<ImageType>::index;
 
       protected:

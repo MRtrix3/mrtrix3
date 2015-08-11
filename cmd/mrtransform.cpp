@@ -180,7 +180,7 @@ void run ()
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] < 0 || axes[i] > 2)
         throw Exception ("axes supplied to -flip are out of bounds (" + std::string (opt[0][0]) + ")");
-      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.voxsize(axes[i]) * (input_header.size(axes[i])-1);
+      flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
     }
     transform_type tmp;
@@ -272,7 +272,7 @@ void run ()
     auto template_header = Header::open (opt[0][0]);
     for (size_t i = 0; i < 3; ++i) {
        output_header.size(i) = template_header.size(i);
-       output_header.voxsize(i) = template_header.voxsize(i);
+       output_header.spacing(i) = template_header.spacing(i);
     }
     output_header.transform() = template_header.transform();
     add_line (output_header.keyval()["comments"], std::string ("resliced to template image \"" + template_header.name() + "\""));

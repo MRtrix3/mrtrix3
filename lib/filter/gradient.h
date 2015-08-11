@@ -156,7 +156,7 @@ namespace MR
               for (auto l = Loop(0,3) (out); l; ++l) {
                 for (size_t dim = 0; dim < 3; dim++) {
                   out.index(3) = dim;
-                  gradient[dim] = out.value() / in.voxsize(dim);
+                  gradient[dim] = out.value() / in.spacing(dim);
                 }
                 gradient_wrt_scanner = transform.image2scanner.linear() * gradient;
                 for (size_t dim = 0; dim < 3; dim++) {

@@ -34,7 +34,7 @@ namespace MR
     {
       public:
         using Base<ImageType>::ndim;
-        using Base<ImageType>::voxsize;
+        using Base<ImageType>::spacing;
         using Base<ImageType>::parent;
         typedef typename ImageType::value_type value_type;
 
@@ -47,7 +47,7 @@ namespace MR
 
             if (extract_axis < 3) {
               Eigen::Vector3d a (0.0, 0.0, 0.0);
-              a[extract_axis] = indices[0] * voxsize (extract_axis);
+              a[extract_axis] = indices[0] * spacing (extract_axis);
               trans.translation() = trans * a;
             }
           }
@@ -109,7 +109,7 @@ namespace MR
     {
       public:
         using Base<ImageType>::ndim;
-        using Base<ImageType>::voxsize;
+        using Base<ImageType>::spacing;
         using Base<ImageType>::parent;
         typedef typename ImageType::value_type value_type;
 
@@ -120,9 +120,9 @@ namespace MR
           trans (original.transform()) {
             reset();
             trans.translation() = trans * Eigen::Vector3d (
-                indices[0][0] * voxsize (0), 
-                indices[1][0] * voxsize (1), 
-                indices[2][0] * voxsize (2) 
+                indices[0][0] * spacing (0), 
+                indices[1][0] * spacing (1), 
+                indices[2][0] * spacing (2) 
                 );
           }
 

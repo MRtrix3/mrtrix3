@@ -56,7 +56,7 @@ namespace MR
           const std::string& name () const { return parent_.name(); }
           size_t ndim () const { return parent_.ndim(); }
           ssize_t size (size_t axis) const { return parent_.size (axis); }
-          default_type voxsize (size_t axis) const { return parent_.voxsize (axis); }
+          default_type spacing (size_t axis) const { return parent_.spacing (axis); }
           ssize_t stride (size_t axis) const { return parent_.stride (axis); }
           const transform_type& transform () const { return parent_.transform(); }
 

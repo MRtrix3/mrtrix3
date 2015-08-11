@@ -215,9 +215,9 @@ namespace MR
             }
             break;
           case MRI_VOXELSIZE:
-            H.voxsize(0) = Raw::fetch<float32> (data (current), is_BE);
-            H.voxsize(1) = Raw::fetch<float32> (data (current) + sizeof (float32), is_BE);
-            H.voxsize(2) = Raw::fetch<float32> (data (current) + 2*sizeof (float32), is_BE);
+            H.spacing(0) = Raw::fetch<float32> (data (current), is_BE);
+            H.spacing(1) = Raw::fetch<float32> (data (current) + sizeof (float32), is_BE);
+            H.spacing(2) = Raw::fetch<float32> (data (current) + 2*sizeof (float32), is_BE);
             break;
           case MRI_COMMENT:
             add_line (H.keyval()["comments"], std::string (reinterpret_cast<const char*> (data (current)), size (current, is_BE)));
@@ -315,9 +315,9 @@ namespace MR
       out.write (order, 4);
 
       write_tag (out, MRI_VOXELSIZE, 3*sizeof (float32), is_BE);
-      write<float> (out, H.voxsize (0), is_BE);
-      write<float> (out, (H.ndim() > 1 ? H.voxsize (1) : 2.0f), is_BE);
-      write<float> (out, (H.ndim() > 2 ? H.voxsize (2) : 2.0f), is_BE);
+      write<float> (out, H.spacing (0), is_BE);
+      write<float> (out, (H.ndim() > 1 ? H.spacing (1) : 2.0f), is_BE);
+      write<float> (out, (H.ndim() > 2 ? H.spacing (2) : 2.0f), is_BE);
 
       const auto comments = H.keyval().find ("comments");
       if (comments != H.keyval().end()) {
