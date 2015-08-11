@@ -33,7 +33,7 @@ namespace MR
     {
 
       //! thread-local, but globally accessible RNG to simplify multi-threading
-      extern thread_local Math::RNG rng;
+      extern ATTRIBUTE_TLS Math::RNG rng;
 
     }
   }
