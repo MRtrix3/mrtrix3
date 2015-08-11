@@ -34,9 +34,9 @@ namespace MR
       class Renderer;
       class RenderFrame;
     }
-    namespace Dialog {
-      class Lighting;
-    }
+
+    class LightingDock;
+
 
     namespace MRView
     {
@@ -49,13 +49,13 @@ namespace MR
 
           public:
 
-            ODF (Window& main_window, Dock* parent);
+            ODF (Dock* parent);
             ~ODF();
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
             void onWindowChange ();
@@ -74,13 +74,14 @@ namespace MR
             void updateGL ();
             void update_preview();
 
-            void hide_event() override;
+            void close_event() override;
 
           protected:
              class Model;
              class Image;
+             class Preview;
 
-             Dock *preview;
+             Preview *preview;
 
              DWI::Renderer *renderer;
 
@@ -93,15 +94,15 @@ namespace MR
 
              AdjustButton *scale;
 
-             Dialog::Lighting *lighting_dialog;
+             LightingDock *lighting_dock;
              GL::Lighting* lighting;
 
              int lmax, level_of_detail;
              
              void add_images (std::vector<std::string>& list);
 
-             virtual void showEvent (QShowEvent* event);
-             virtual void closeEvent (QCloseEvent* event);
+             virtual void showEvent (QShowEvent* event) override;
+             virtual void closeEvent (QCloseEvent* event) override;
 
              Image* get_image ();
              void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos, const bool interp);

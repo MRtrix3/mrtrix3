@@ -22,7 +22,6 @@
 
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "math/vector.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -34,8 +33,8 @@ namespace MR
       namespace Tool
       {
 
-        TrackScalarFile::TrackScalarFile (Window& main_window, Dock* parent) :
-          Base (main_window, parent)
+        TrackScalarFile::TrackScalarFile (Dock* parent) :
+          Base (parent)
         {
           main_box = new VBoxLayout (this);
           main_box->setContentsMargins (5, 5, 5, 5);
@@ -129,6 +128,23 @@ namespace MR
           tractogram = selected_tractogram;
           update_tool_display();
         }
+
+
+
+        void TrackScalarFile::render_tractogram_colourbar(const Tractogram &tractogram) {
+          float min_value = tractogram.use_discard_lower() ?
+            tractogram.scaling_min_thresholded() :
+            tractogram.scaling_min();
+
+          float max_value = tractogram.use_discard_upper() ?
+            tractogram.scaling_max_thresholded() :
+            tractogram.scaling_max();
+
+          window().colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
+                                            min_value, max_value,
+                                            tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
+        }
+
 
 
         void TrackScalarFile::clear_tool_display () {
@@ -227,7 +243,7 @@ namespace MR
         {
           if (tractogram) {
             tractogram->show_colour_bar = show_colour_bar->isChecked();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -240,7 +256,7 @@ namespace MR
             while (action != colourmap_actions[n])
               ++n;
             tractogram->colourmap = n;
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -249,7 +265,7 @@ namespace MR
         {
           if (tractogram) {
             tractogram->set_windowing (min_entry->value(), max_entry->value());
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -259,7 +275,7 @@ namespace MR
           if (tractogram) {
             threshold_lower->setEnabled (threshold_lower_box->isChecked());
             tractogram->set_use_discard_lower (threshold_lower_box->isChecked());
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -269,7 +285,7 @@ namespace MR
           if (tractogram) {
             threshold_upper->setEnabled (threshold_upper_box->isChecked());
             tractogram->set_use_discard_upper (threshold_upper_box->isChecked());
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -279,7 +295,7 @@ namespace MR
         {
           if (tractogram && threshold_lower_box->isChecked()) {
             tractogram->lessthan = threshold_lower->value();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -289,7 +305,7 @@ namespace MR
         {
           if (tractogram && threshold_upper_box->isChecked()) {
             tractogram->greaterthan = threshold_upper->value();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -298,7 +314,7 @@ namespace MR
         {
           if (tractogram) {
             tractogram->scalarfile_by_direction = scalarfile_by_direction->isChecked();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -307,7 +323,7 @@ namespace MR
           if (tractogram) {
             tractogram->reset_windowing();
             update_tool_display ();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -316,7 +332,7 @@ namespace MR
         {
           if (tractogram) {
             tractogram->set_invert_scale (invert_scale->isChecked());
-            window.updateGL();
+            window().updateGL();
           }
         }
 

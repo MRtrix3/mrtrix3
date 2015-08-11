@@ -94,21 +94,22 @@ namespace MR
           public:
             Random_per_voxel (const std::string& in, const size_t num_per_voxel) :
               Base (in, "random per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (Tractography::get_mask (in)),
               num (num_per_voxel),
-              vox (0, 0, -1),
+              vox (*mask),
               inc (0),
               expired (false) {
-                mask = Tractography::get_mask (in);
                 count = get_count (*mask) * num_per_voxel;
+                vox[0] = 0; vox[1] = 0; vox[2] = -1;
               }
 
-            virtual ~Random_per_voxel();
+            virtual ~Random_per_voxel() { }
             virtual bool get_seed (Point<float>& p);
 
           private:
-            Mask* mask;
+            std::unique_ptr<Mask> mask;
             const size_t num;
-            Point<int> vox;
+            Mask::voxel_type vox;
             uint32_t inc;
             bool expired;
 
@@ -122,23 +123,25 @@ namespace MR
           public:
             Grid_per_voxel (const std::string& in, const size_t os_factor) :
               Base (in, "grid per voxel", MAX_TRACKING_SEED_ATTEMPTS_FIXED),
+              mask (Tractography::get_mask (in)),
               os (os_factor),
-              vox (0, 0, -1),
+              vox (*mask),
               pos (os, os, os),
               offset (-0.5 + (1.0 / (2*os))),
               step (1.0 / os),
               expired (false) {
-                mask = Tractography::get_mask (in);
+                vox[0] = 0; vox[1] = 0; vox[2] = -1;
                 count = get_count (*mask) * Math::pow3 (os_factor);
               }
 
-            virtual ~Grid_per_voxel();
+            virtual ~Grid_per_voxel() { }
             virtual bool get_seed (Point<float>& p);
 
           private:
-            Mask* mask;
+            std::unique_ptr<Mask> mask;
             const int os;
-            Point<int> vox, pos;
+            Mask::voxel_type vox;
+            Point<int> pos;
             const float offset, step;
             bool expired;
 

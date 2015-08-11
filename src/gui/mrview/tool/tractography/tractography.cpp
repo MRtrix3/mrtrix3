@@ -28,7 +28,10 @@
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/opengl/lighting.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
+
+ // as a fraction of the image FOV:
+#define MRTRIX_DEFAULT_LINE_THICKNESS 0.002f
 
 namespace MR
 {
@@ -47,11 +50,10 @@ namespace MR
               ListModelBase (parent) { }
 
             void add_items (std::vector<std::string>& filenames,
-                            Window& main_window,
                             Tractography& tractography_tool) {
 
               for (size_t i = 0; i < filenames.size(); ++i) {
-                Tractogram* tractogram = new Tractogram (main_window, tractography_tool, filenames[i]);
+                Tractogram* tractogram = new Tractogram (tractography_tool, filenames[i]);
                 try {
                   tractogram->load_tracks();
                   beginInsertRows (QModelIndex(), items.size(), items.size() + 1);
@@ -70,21 +72,21 @@ namespace MR
         };
 
 
-        Tractography::Tractography (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
-          line_thickness (0.001f),
+        Tractography::Tractography (Dock* parent) :
+          Base (parent),
+          line_thickness (MRTRIX_DEFAULT_LINE_THICKNESS),
           do_crop_to_slab (true),
           use_lighting (false),
           not_3D (true),
           line_opacity (1.0),
-          scalar_file_options (NULL),
-          lighting_dialog (NULL) {
+          scalar_file_options (nullptr),
+          lighting_dock (nullptr) {
 
             float voxel_size;
-            if (main_window.image()) {
-              voxel_size = (main_window.image()->voxel().vox(0) +
-                            main_window.image()->voxel().vox(1) +
-                            main_window.image()->voxel().vox(2)) / 3;
+            if (window().image()) {
+              voxel_size = (window().image()->voxel().vox(0) +
+                            window().image()->voxel().vox(1) +
+                            window().image()->voxel().vox(2)) / 3;
             } else {
               voxel_size = 2.5;
             }
@@ -144,14 +146,14 @@ namespace MR
             QSlider* slider;
             slider = new QSlider (Qt::Horizontal);
             slider->setRange (1,1000);
-            slider->setSliderPosition (int (1000));
+            slider->setSliderPosition (1000);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (opacity_slot (int)));
             default_opt_grid->addWidget (new QLabel ("opacity"), 0, 0);
             default_opt_grid->addWidget (slider, 0, 1);
 
             slider = new QSlider (Qt::Horizontal);
-            slider->setRange (100,1000);
-            slider->setSliderPosition (float (100.0));
+            slider->setRange (-1000,1000);
+            slider->setSliderPosition (0);
             connect (slider, SIGNAL (valueChanged (int)), this, SLOT (line_thickness_slot (int)));
             default_opt_grid->addWidget (new QLabel ("line thickness"), 1, 0);
             default_opt_grid->addWidget (slider, 1, 1);
@@ -187,6 +189,8 @@ namespace MR
             main_box->addLayout (default_opt_grid, 0);
 
             lighting = new GL::Lighting (parent); 
+            lighting->diffuse = 0.8;
+            lighting->shine = 5.0;
             connect (lighting, SIGNAL (changed()), SLOT (hide_all_slot()));
 
 
@@ -223,13 +227,35 @@ namespace MR
         }
 
 
-        void Tractography::drawOverlays (const Projection& transform)
+        void Tractography::draw_colourbars ()
         {
+          if(!scalar_file_options || hide_all_button->isChecked())
+            return;
+
+          const auto scalarFileTool = dynamic_cast<TrackScalarFile*> (scalar_file_options->tool);
+
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show)
-              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->renderColourBar (transform);
+              dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->request_render_colourbar(*scalarFileTool);
           }
         }
+
+
+
+        size_t Tractography::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(scalar_file_options && !hide_all_button->isChecked()) {
+             for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+               Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+               if (tractogram && tractogram->show && tractogram->scalar_filename.length())
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
 
 
         void Tractography::tractogram_open_slot ()
@@ -238,8 +264,8 @@ namespace MR
           if (list.empty())
             return;
           try {
-            tractogram_list_model->add_items (list, window, *this);
-            window.updateGL();
+            tractogram_list_model->add_items (list, *this);
+            window().updateGL();
           }
           catch (Exception& E) {
             E.display();
@@ -254,7 +280,7 @@ namespace MR
             tractogram_list_model->remove_item (indexes.first());
             indexes = tractogram_list_view->selectionModel()->selectedIndexes();
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -269,56 +295,70 @@ namespace MR
               }
             }
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Tractography::hide_all_slot ()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Tractography::on_crop_to_slab_slot (bool is_checked)
         {
           do_crop_to_slab = is_checked;
-          window.updateGL();
+
+          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            tractogram->should_update_stride = true;
+          }
+
+          window().updateGL();
         }
 
 
         void Tractography::on_use_lighting_slot (bool is_checked)
         {
           use_lighting = is_checked;
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Tractography::on_lighting_settings ()
         {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Tractogram lighting", *lighting);
-          lighting_dialog->show();
+          if (!lighting_dock) {
+            lighting_dock = new LightingDock("Tractogram lighting", *lighting);
+            window().addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+          }
+          lighting_dock->show();
         }
 
 
         void Tractography::on_slab_thickness_slot()
         {
           slab_thickness = slab_entry->value();
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Tractography::opacity_slot (int opacity)
         {
           line_opacity = Math::pow2(static_cast<float>(opacity)) / 1.0e6f;
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Tractography::line_thickness_slot (int thickness)
         {
-          line_thickness = static_cast<float>(thickness) / 100000.0f;
-          window.updateGL();
+          line_thickness = MRTRIX_DEFAULT_LINE_THICKNESS * std::exp (2.0e-3f * thickness);
+
+          for (size_t i = 0, N = tractogram_list_model->rowCount(); i < N; ++i) {
+            Tractogram* tractogram = dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get());
+            tractogram->should_update_stride = true;
+          }
+
+          window().updateGL();
         }
 
 
@@ -340,7 +380,7 @@ namespace MR
             tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
             tractogram_list_model->get_tractogram (indices[i])->color_type = Direction;
           }
-          window.updateGL();
+          window().updateGL();
         }
         
         
@@ -352,7 +392,7 @@ namespace MR
             tractogram_list_model->get_tractogram (indices[i])->color_type = Ends;
             tractogram_list_model->get_tractogram (indices[i])->load_end_colours();
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -364,11 +404,12 @@ namespace MR
           if (color.isValid()) {
             QModelIndexList indices = tractogram_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i) {
+              tractogram_list_model->get_tractogram (indices[i])->erase_nontrack_data();
               tractogram_list_model->get_tractogram (indices[i])->color_type = Manual;
               tractogram_list_model->get_tractogram (indices[i])->set_colour (colour);
             }
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -387,7 +428,7 @@ namespace MR
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->color_type = Manual;
             dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[i].row()].get())->set_colour (colour);
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -400,7 +441,9 @@ namespace MR
             msgBox.exec();
           } else {
             if (!scalar_file_options) {
-              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options", window);
+              scalar_file_options = Tool::create<TrackScalarFile> ("Scalar file options");
+              scalar_file_options->setFloating (false);
+              scalar_file_options->raise();
             }
             dynamic_cast<TrackScalarFile*> (scalar_file_options->tool)->set_tractogram (tractogram_list_model->get_tractogram (indices[0]));
             if (dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->scalar_filename.length() == 0) {
@@ -411,7 +454,7 @@ namespace MR
               dynamic_cast<Tractogram*> (tractogram_list_model->items[indices[0].row()].get())->color_type = ScalarFile;
             }
             scalar_file_options->show();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -437,7 +480,7 @@ namespace MR
           options
             + OptionGroup ("Tractography tool options")
 
-            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.")
+            + Option ("tractography.load", "Load the specified tracks file into the tractography tool.").allow_multiple()
             +   Argument ("tracks").type_file_in();
         }
 
@@ -446,8 +489,8 @@ namespace MR
           if (opt.opt->is ("tractography.load")) {
             std::vector<std::string> list (1, std::string(opt[0]));
             try { 
-              tractogram_list_model->add_items (list, window, *this); 
-              window.updateGL();
+              tractogram_list_model->add_items (list, *this); 
+              window().updateGL();
             }
             catch (Exception& E) { E.display(); }
             return true;

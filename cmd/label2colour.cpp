@@ -33,15 +33,15 @@
 
 #include "math/rng.h"
 
-#include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/config/config.h"
+#include "connectome/connectome.h"
+#include "connectome/lut.h"
 
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::DWI::Tractography::Connectomics;
+using namespace MR::Connectome;
 
 
 void usage ()
@@ -77,7 +77,7 @@ void run ()
   auto nodes = nodes_data.voxel();
 
   Node_map node_map;
-  load_lookup_table (node_map);
+  load_lut_from_cmdline (node_map);
 
   Options opt = get_options ("config");
   if (opt.size()) {

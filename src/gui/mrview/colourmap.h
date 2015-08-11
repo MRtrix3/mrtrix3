@@ -23,6 +23,10 @@
 #ifndef __gui_mrview_colourmap_h__
 #define __gui_mrview_colourmap_h__
 
+#include <functional>
+
+#include "point.h"
+
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
@@ -39,22 +43,42 @@ namespace MR
       namespace ColourMap
       {
 
+        enum Position {
+          None = 0x00,
+          Top = 0x01,
+          Bottom = 0x02,
+          Left = 0x04,
+          Right = 0x08,
+          TopLeft = Top | Left,
+          TopRight = Top | Right,
+          BottomLeft = Bottom | Left,
+          BottomRight = Bottom | Right
+        };
+
+
         class Entry {
           public:
-            Entry (const char* name, const char* mapping, const char* amplitude = NULL, 
-                bool special = false, bool is_colour = false) : 
+
+            typedef std::function< Point<float> (float) > basic_map_fn;
+
+            Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
+                const char* amplitude = NULL, bool special = false, bool is_colour = false) :
               name (name),
-              mapping (mapping), 
+              glsl_mapping (glsl_mapping),
+              basic_mapping (basic_mapping),
               amplitude (amplitude ? amplitude : default_amplitude), 
               special (special),
               is_colour (is_colour) { }
 
             const char* name;
-            const char* mapping;
+            const char* glsl_mapping;
+            basic_map_fn basic_mapping;
             const char* amplitude;
             bool special, is_colour;
 
             static const char* default_amplitude;
+
+
         };
 
         extern const Entry maps[];
@@ -114,9 +138,28 @@ namespace MR
         class Renderer {
           public:
             Renderer();
-            void render (const Projection& projection, const Displayable& object, int position, bool inverted,
-                         float min_value, float max_value, float abs_min_value, float range);
-            void render (const Projection& projection, const Displayable& object, int position, bool inverted);
+            void begin_render_colourbars (Projection* projection,
+                                          const Position position,
+                                          const size_t ncolourbars) {
+              current_position = position;
+              current_projection = projection;
+              current_ncolourbars = ncolourbars;
+              current_colourbar_index = 0;
+            }
+
+            void render (size_t colourmap, bool inverted,
+                         float local_min_value, float local_max_value,
+                         float global_min_value, float global_range,
+                         Point<float> colour = Point<float>());
+
+            void render (const Displayable& object, bool inverted);
+
+            void end_render_colourbars () {
+              current_position = Position::None;
+              current_projection = nullptr;
+              current_ncolourbars = 0;
+              current_colourbar_index = 0;
+            }
 
           protected:
             GL::VertexBuffer VB;
@@ -124,9 +167,15 @@ namespace MR
             GL::Shader::Program frame_program, program;
             size_t current_index;
             bool current_inverted;
-            const GLfloat width, height, inset, text_offset;
+            const GLfloat width, height, inset, text_offset, colourbar_padding;
 
             void setup (size_t index, bool inverted);
+
+          private:
+            static size_t max_n_rows;
+            Position current_position;
+            Projection* current_projection;
+            size_t current_ncolourbars, current_colourbar_index;
         };
 
 

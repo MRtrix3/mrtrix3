@@ -22,7 +22,7 @@
 
 #include "mrtrix.h"
 #include "gui/dialog/file.h"
-#include "gui/dialog/lighting.h"
+#include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/odf.h"
@@ -143,18 +143,20 @@ namespace MR
 
 
 
-        ODF::ODF (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
+        ODF::ODF (Dock* parent) :
+          Base (parent),
+          preview (nullptr),
           renderer (nullptr),
-          lighting_dialog (nullptr),
+          lighting_dock (nullptr),
           lmax (0),
-          level_of_detail (0) { 
-
+          level_of_detail (0) {
             lighting = new GL::Lighting (this);
 
             VBoxLayout *main_box = new VBoxLayout (this);
 
             HBoxLayout* layout = new HBoxLayout;
+            layout->setContentsMargins (0, 0, 0, 0);
+            layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
             button->setToolTip (tr ("Open ODF image"));
@@ -254,7 +256,7 @@ namespace MR
             box_layout->addWidget (colour_by_direction_box, 3, 2, 1, 2);
 
             main_grid_box = new QCheckBox ("use main grid");
-            main_grid_box->setToolTip (tr ("Show individual ODFs using the grid of the main image instead of the ODF image's own grid"));
+            main_grid_box->setToolTip (tr ("Show individual ODFs at the spatial resolution of the main image instead of the ODF image's own spatial resolution"));
             main_grid_box->setChecked (false);
             connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
             box_layout->addWidget (main_grid_box, 4, 0, 1, 2);
@@ -282,14 +284,6 @@ namespace MR
             lmax_slot (0);
             adjust_scale_slot ();
 
-            preview = new Dock (&main_window,nullptr);
-            main_window.addDockWidget (Qt::RightDockWidgetArea, preview);
-            preview->tool = new ODF_Preview (window, preview, this);
-            preview->tool->adjustSize();
-            preview->setWidget (preview->tool);
-            preview->setFloating (true);
-            preview->hide();
-            connect (lighting, SIGNAL (changed()), preview->tool, SLOT (lighting_update_slot()));
           }
 
         ODF::~ODF()
@@ -298,9 +292,9 @@ namespace MR
             delete renderer;
             renderer = nullptr;
           }
-          if (lighting_dialog) {
-            delete lighting_dialog;
-            lighting_dialog = nullptr;
+          if (lighting_dock) {
+            delete lighting_dock;
+            lighting_dock = nullptr;
           }
         }
 
@@ -319,7 +313,7 @@ namespace MR
           if (!settings)
             return;
 
-          MRView::Image& image (main_grid_box->isChecked() ? *window.image() : settings->image);
+          MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
 
           if (!hide_all_button->isChecked()) {
 
@@ -341,8 +335,8 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
 
-            Point<> pos (window.target());
-            pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
+            Point<> pos (window().target());
+            pos += projection.screen_normal() * (projection.screen_normal().dot (window().focus() - window().target()));
             if (lock_to_grid_box->isChecked()) {
               Point<> p = image.interp.scanner2voxel (pos);
               p[0] = std::round (p[0]);
@@ -449,15 +443,15 @@ namespace MR
 
         void ODF::showEvent (QShowEvent*)
         {
-          connect (&window, SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
           onWindowChange();
         }
 
         void ODF::closeEvent (QCloseEvent*) {
-          window.disconnect (this);
+          window().disconnect (this);
         }
 
 
@@ -481,7 +475,7 @@ namespace MR
 
         void ODF::image_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window, "Select overlay images to open");
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select overlay images to open");
           if (list.empty())
             return;
 
@@ -504,15 +498,19 @@ namespace MR
 
         void ODF::show_preview_slot ()
         {
+          if (!preview) {
+            preview = new Preview (this);
+            connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
+          }
+
           preview->show();
-          preview->raise();
           update_preview();
         }
 
 
         void ODF::hide_all_slot ()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -523,9 +521,9 @@ namespace MR
           if (!settings)
             return;
           settings->color_by_direction = colour_by_direction_box->isChecked();
-          assert (preview);
-          assert (preview->tool);
-          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
+          if (preview) {
+            preview->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
+          }
           updateGL();
         }
 
@@ -539,9 +537,8 @@ namespace MR
           if (!settings)
             return;
           settings->hide_negative_lobes = hide_negative_lobes_box->isChecked();
-          assert (preview);
-          assert (preview->tool);
-          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
+          if (preview) 
+            preview->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
           updateGL();
         }
 
@@ -557,9 +554,8 @@ namespace MR
           if (!settings)
             return;
           settings->lmax = lmax_selector->value();
-          assert (preview);
-          assert (preview->tool);
-          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_lmax (lmax_selector->value());
+          if (preview) 
+            preview->render_frame->set_lmax (lmax_selector->value());
           updateGL();
         }
 
@@ -567,9 +563,8 @@ namespace MR
 
         void ODF::use_lighting_slot (int)
         {
-          assert (preview);
-          assert (preview->tool);
-          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_use_lighting (use_lighting_box->isChecked());
+          if (preview) 
+            preview->render_frame->set_use_lighting (use_lighting_box->isChecked());
           updateGL();
         }
 
@@ -578,9 +573,11 @@ namespace MR
 
         void ODF::lighting_settings_slot (bool)
         {
-          if (!lighting_dialog)
-            lighting_dialog = new Dialog::Lighting (&window, "Advanced ODF lighting", *lighting);
-          lighting_dialog->show();
+          if (!lighting_dock) {
+            lighting_dock = new LightingDock("Advanced ODF lighting", *lighting);
+            window().addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+          }
+          lighting_dock->show();
         }
 
 
@@ -594,18 +591,17 @@ namespace MR
           if (!settings)
             return;
           settings->scale = scale->value();
-          assert (preview);
-          assert (preview->tool);
-          dynamic_cast<ODF_Preview*>(preview->tool)->render_frame->set_scale (scale->value());
+          if (preview) 
+            preview->render_frame->set_scale (scale->value());
           updateGL();
         }
 
-        void ODF::hide_event ()
+        void ODF::close_event ()
         {
-          assert (preview);
-          preview->hide();
-          if (lighting_dialog)
-            lighting_dialog->hide();
+          if (preview) 
+            preview->hide();
+          if (lighting_dock)
+            lighting_dock->hide();
         }
 
 
@@ -613,22 +609,22 @@ namespace MR
         void ODF::updateGL () 
         {
           if (!hide_all_button->isChecked())
-            window.updateGL();
+            window().updateGL();
         }
 
         void ODF::update_preview()
         {
-          assert (preview);
+          if (!preview) 
+            return;
           if (!preview->isVisible())
             return;
           Image* settings = get_image();
           if (!settings)
             return;
           MRView::Image& image (settings->image);
-          ODF_Preview* preview_tool = dynamic_cast<ODF_Preview*>(preview->tool);
           Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
-          get_values (values, image, window.focus(), preview_tool->interpolate());
-          preview_tool->set (values);
+          get_values (values, image, window().focus(), preview->interpolate());
+          preview->set (values);
         }
 
 

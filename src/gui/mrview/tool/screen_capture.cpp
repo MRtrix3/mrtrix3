@@ -35,10 +35,11 @@ namespace MR
       namespace Tool
       {
 
-        Capture::Capture (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
-          rotation_type(RotationType::World),
-          translation_type(TranslationType::Voxel)
+        Capture::Capture (Dock* parent) :
+          Base (parent),
+          rotation_type (RotationType::World),
+          translation_type (TranslationType::Voxel),
+          is_playing (false)
         {
           VBoxLayout* main_box = new VBoxLayout (this);
 
@@ -49,9 +50,11 @@ namespace MR
           main_box->addWidget (rotate_group_box);
           rotate_group_box->setLayout (rotate_layout);
 
+          rotate_layout->addWidget (new QLabel (tr("Type: ")), 0, 0);
           rotation_type_combobox = new QComboBox;
           rotation_type_combobox->insertItem (0, tr("World"), RotationType::World);
           rotation_type_combobox->insertItem (1, tr("Camera"), RotationType::Eye);
+          rotation_type_combobox->insertItem (2, tr("Image"), RotationType::Image);
           connect (rotation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_rotation_type(int)));
           rotate_layout->addWidget(rotation_type_combobox, 0, 1, 1, 4);
 
@@ -84,9 +87,11 @@ namespace MR
           main_box->addWidget (translate_group_box);
           translate_group_box->setLayout (translate_layout);
 
+          translate_layout->addWidget (new QLabel (tr("Type: ")), 0, 0);
           translation_type_combobox = new QComboBox;
           translation_type_combobox->insertItem (0, tr("Voxel"), TranslationType::Voxel);
-          translation_type_combobox->insertItem (1, tr("Scanner"), TranslationType::Scanner);
+          translation_type_combobox->insertItem (1, tr("Scanner (mm)"), TranslationType::Scanner);
+          translation_type_combobox->insertItem (2, tr("Camera (mm)"), TranslationType::Camera);
           connect (translation_type_combobox, SIGNAL (activated(int)), this, SLOT (on_translation_type(int)));
           translate_layout->addWidget(translation_type_combobox, 0, 1, 1, 4);
 
@@ -204,7 +209,7 @@ namespace MR
 
           directory = new QDir();
 
-          connect (&window, SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
+          connect (&window(), SIGNAL (imageChanged()), this, SLOT (on_image_changed()));
           on_image_changed();
         }
 
@@ -213,7 +218,7 @@ namespace MR
 
         void Capture::on_image_changed() {
           cached_state.clear();
-          const auto image = window.image();
+          const auto image = window().image();
           if(!image) return;
 
           Image::VoxelType& vox (image->interp);
@@ -225,33 +230,34 @@ namespace MR
 
 
 
-        void Capture::on_rotation_type(int index) {
+        void Capture::on_rotation_type (int index) {
           rotation_type = static_cast<RotationType>(rotation_type_combobox->itemData(index).toInt());
         }
 
-        void Capture::on_translation_type(int index) {
+
+        void Capture::on_translation_type (int index) {
           translation_type = static_cast<TranslationType>(translation_type_combobox->itemData(index).toInt());
         }
 
 
 
-        void Capture::on_screen_preview () { if(!is_playing) run (false); }
+        void Capture::on_screen_preview () { if (!is_playing) run (false); }
 
-        void Capture::on_screen_capture () { if(!is_playing) run (true); }
+        void Capture::on_screen_capture () { if (!is_playing) run (true); }
 
         void Capture::on_screen_stop () { is_playing = false; }
 
 
         void Capture::cache_capture_state()
         {
-            if (!window.image())
+            if (!window().image())
               return;
-            Image::VoxelType& vox (window.image()->interp);
+            Image::VoxelType& vox (window().image()->interp);
 
             cached_state.emplace( cached_state.end(),
-              window.orientation(), window.focus(), window.target(), window.FOV(),
+              window().orientation(), window().focus(), window().target(), window().FOV(),
               volume_axis->value() < ssize_t (vox.ndim()) ? vox[volume_axis->value()] : 0,
-              volume_axis->value(), start_index->value(), window.plane()
+              volume_axis->value(), start_index->value(), window().plane()
             );
 
             if(cached_state.size() > max_cache_size)
@@ -263,17 +269,17 @@ namespace MR
 
         void Capture::on_restore_capture_state()
         {
-            if (!window.image() || !cached_state.size())
+            if (!window().image() || !cached_state.size())
               return;
 
             const CaptureState& state = cached_state.back();
 
-            window.set_plane(state.plane);
-            window.set_orientation(state.orientation);
-            window.set_focus(state.focus);
-            window.set_target(state.target);
-            window.set_FOV(state.fov);
-            window.set_image_volume(state.volume_axis, state.volume);
+            window().set_plane(state.plane);
+            window().set_orientation(state.orientation);
+            window().set_focus(state.focus);
+            window().set_target(state.target);
+            window().set_FOV(state.fov);
+            window().set_image_volume(state.volume_axis, state.volume);
             start_index->setValue(state.frame_index);
 
             cached_state.pop_back();
@@ -284,14 +290,18 @@ namespace MR
 
         void Capture::run (bool with_capture)
         {
-          if (!window.image())
+          Window& win (window ());
+          MRView::Image* img (win.image ());
+
+          if (!img)
             return;
 
           is_playing = true;
 
           cache_capture_state();
 
-          Image::VoxelType& vox (window.image()->interp);
+          auto& interp (img->interp);
+          Image::VoxelType& vox (interp);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -315,8 +325,8 @@ namespace MR
           if (std::isnan (FOV_multipler->value()))
             FOV_multipler->setValue(1.0);
 
-          if (window.snap_to_image () && degrees_button->value() > 0.0)
-            window.set_snap_to_image (false);
+          if (window().snap_to_image () && degrees_button->value() > 0.0)
+            window().set_snap_to_image (false);
 
 
           size_t frames_value = frames->value();
@@ -334,20 +344,19 @@ namespace MR
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
-          size_t i = first_index;
-          do {
+          for (size_t i = first_index; i < first_index + frames_value; ++i) {
             if (!is_playing)
               break;
 
             if (with_capture)
-              this->window.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
+              win.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
 
             // Rotation
-            Math::Versor<float> orientation (this->window.orientation());
+            Math::Versor<float> orientation (win.orientation());
             Math::Vector<float> axis (3);
-            axis[0] = rotation_axis_x->value();
-            axis[1] = rotation_axis_y->value();
-            axis[2] = rotation_axis_z->value();
+            axis[0] = rotation_axis_x->value ();
+            axis[1] = rotation_axis_y->value ();
+            axis[2] = rotation_axis_z->value ();
             Math::Versor<float> rotation (radians, axis.ptr());
 
             switch (rotation_type) {
@@ -355,42 +364,83 @@ namespace MR
                 orientation = rotation*orientation;
                 break;
               case RotationType::Eye:
+              case RotationType::Image:
                 orientation *= rotation;
                 break;
               default:
                 break;
             }
 
-            this->window.set_orientation (orientation);
+            win.set_orientation (orientation);
 
             // Translation
-            Point<float> trans_vec(translate_x->value(), translate_y->value(), translate_z->value());
+            Point<float> trans_vec (translate_x->value (), translate_y->value (), translate_z->value ());
             trans_vec /= frames_value;
-            if(translation_type == TranslationType::Voxel)
-              trans_vec = window.image()->interp.voxel2scanner_dir(trans_vec);
 
-            Point<float> focus (this->window.focus());
-            focus += trans_vec;
-            window.set_focus (focus);
-            Point<float> target (this->window.target());
+            Point<float> focus (win.focus());
+            Point<float> target (win.target());
+
+            switch (translation_type) {
+              case TranslationType::Voxel:
+                trans_vec = interp.voxel2scanner_dir (trans_vec);
+                break;
+              case TranslationType::Camera:
+              {
+                float T[16];
+                Math::Matrix<float> M (T, 3, 3, 4);
+                orientation.to_matrix (M);
+                T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0f;
+                T[15] = 1.0f;
+
+                GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (T)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
+                trans_vec[0] = trans_gl_vec[0];
+                trans_vec[1] = trans_gl_vec[1];
+                trans_vec[2] = trans_gl_vec[2];
+                break;
+              }
+              case TranslationType::Scanner:
+                break;
+              default:
+                break;
+            }
+
+
+            Point<float> focus_delta (trans_vec);
+
+
+            // If rotating image we need to offset the translation so that the rotation is relative to
+            // the center (i.e. target) of the image
+            if (rotation_type == RotationType::Image) {
+              float T[16];
+              Math::Matrix<float> M (T, 3, 3, 4);
+              rotation.to_matrix (M);
+              T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0f;
+              T[15] = 1.0f;
+
+              GL::vec4 target_after = GL::inv (GL::mat4 (T)) * GL::vec4 (target[0], target[1], target[2], 1.0f);
+              trans_vec += Point<float> (target_after[0], target_after[1], target_after[2]) - target;
+            }
+
+
+            focus += focus_delta;
+            win.set_focus (focus);
+
             target += trans_vec;
-            window.set_target (target);
+            win.set_target (target);
 
             // Volume
             if (volume_axis->value() < ssize_t (vox.ndim())) {
               volume += volume_inc;
-              window.set_image_volume (volume_axis->value(), std::round(volume));
+              win.set_image_volume (volume_axis->value(), std::round(volume));
             }
 
             // FOV
-            window.set_FOV (window.FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
+            win.set_FOV (window().FOV() * (std::pow (FOV_multipler->value(), (float) 1.0 / frames_value)));
 
             start_index->setValue (i + 1);
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
-
-            i+=1;
-          } while((i % frames_value));
+          } 
 
           is_playing = false;
         }
@@ -457,7 +507,7 @@ namespace MR
           }
 
           if (opt.opt->is ("capture.grab")) {
-            this->window.updateGL();
+            this->window().updateGL();
             qApp->processEvents();
             on_screen_capture();
             return true;

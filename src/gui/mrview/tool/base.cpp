@@ -32,11 +32,10 @@ namespace MR
       namespace Tool
       {
 
-        void Dock::hideEvent (QHideEvent*) { assert (tool); tool->hide_event(); }
+        void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
-        Base::Base (Window& main_window, Dock* parent) : 
-          QFrame (parent),
-          window (main_window) { 
+        Base::Base (Dock* parent) : 
+          QFrame (parent) {
             QFont f = font();
             //CONF option: MRViewToolFontSize
             //CONF default: 2 points less than the standard system font
@@ -60,7 +59,7 @@ namespace MR
 
         void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection&) { }
+        void Base::draw_colourbars () { }
 
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }

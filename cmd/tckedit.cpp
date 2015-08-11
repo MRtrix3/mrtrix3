@@ -101,7 +101,7 @@ void update_output_step_size (Tractography::Properties& properties, const int up
     step_size = (properties.find ("step_size") == properties.end() ? 0.0 : to<float>(properties["step_size"]));
   else
     step_size = to<float>(properties["output_step_size"]);
-  properties["output_step_size"] = step_size * float(downsample_ratio) / float(upsample_ratio);
+  properties["output_step_size"] = str(step_size * float(downsample_ratio) / float(upsample_ratio));
 }
 
 
@@ -117,7 +117,6 @@ void run ()
   // Make sure configuration is sensible
   if (get_options("tck_weights_in").size() && num_inputs > 1)
     throw Exception ("Cannot use per-streamline weighting with multiple input files");
-  // TODO Anything else?
 
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;

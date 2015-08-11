@@ -2,6 +2,7 @@
 #define __gui_mrview_window_h__
 
 #include "memory.h"
+#include "gui/gui.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
@@ -94,16 +95,17 @@ namespace MR
             updateGL();
           }
 
+          bool get_image_visibility () const { return ! image_hide_action->isChecked(); }
+          void set_image_visibility (bool flag);
+
           bool show_crosshairs () const { return show_crosshairs_action->isChecked(); }
           bool show_comments () const { return show_comments_action->isChecked(); }
           bool show_voxel_info () const { return show_voxel_info_action->isChecked(); }
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
-          void makeGLcurrent () { glarea->makeCurrent(); }
-
           void captureGL (std::string filename) {
-            QImage image (glarea->grabFrameBuffer());
+            QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
           }
 
@@ -111,6 +113,11 @@ namespace MR
           ColourMap::Renderer colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
+          static Window* main;
+
+          struct GrabContext : public App::GrabContext {
+            GrabContext () : App::GrabContext (main->glarea) { }
+          };
 
         signals:
           void focusChanged ();
@@ -121,6 +128,7 @@ namespace MR
           void fieldOfViewChanged ();
           void modeChanged ();
           void imageChanged ();
+          void imageVisibilityChanged (bool);
           void scalingChanged ();
           void volumeChanged (size_t);
           void volumeGroupChanged (size_t);
@@ -145,7 +153,7 @@ namespace MR
           void toggle_annotations_slot ();
           void snap_to_image_slot ();
 
-          void show_image_slot ();
+          void hide_image_slot ();
           void slice_next_slot ();
           void slice_previous_slot ();
           void image_next_slot ();
@@ -175,26 +183,24 @@ namespace MR
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
 
-
-          class GLArea : public QGLWidget {
+          class GLArea : public GL::Area {
             public:
               GLArea (Window& parent);
-              QSize sizeHint () const;
+              QSize sizeHint () const override;
 
             protected:
-              void dragEnterEvent (QDragEnterEvent* event);
-              void dragMoveEvent (QDragMoveEvent* event);
-              void dragLeaveEvent (QDragLeaveEvent* event);
-              void dropEvent (QDropEvent* event);
+              void dragEnterEvent (QDragEnterEvent* event) override;
+              void dragMoveEvent (QDragMoveEvent* event) override;
+              void dragLeaveEvent (QDragLeaveEvent* event) override;
+              void dropEvent (QDropEvent* event) override;
+              bool event (QEvent* event) override;
             private:
-              Window& main;
-
-              void initializeGL ();
-              void paintGL ();
-              void mousePressEvent (QMouseEvent* event);
-              void mouseMoveEvent (QMouseEvent* event);
-              void mouseReleaseEvent (QMouseEvent* event);
-              void wheelEvent (QWheelEvent* event);
+              void initializeGL () override;
+              void paintGL () override;
+              void mousePressEvent (QMouseEvent* event) override;
+              void mouseMoveEvent (QMouseEvent* event) override;
+              void mouseReleaseEvent (QMouseEvent* event) override;
+              void wheelEvent (QWheelEvent* event) override;
           };
 
           enum MouseAction {
@@ -208,7 +214,6 @@ namespace MR
           };
 
           GLArea* glarea;
-          QTimer* glrefresh_timer;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;
@@ -219,7 +224,8 @@ namespace MR
           Point<> focal_point, camera_target;
           Math::Versor<float> orient;
           float field_of_view;
-          int anatomical_plane, annotations, colourbar_position_index;
+          int anatomical_plane, annotations;
+          ColourMap::Position colourbar_position, tools_colourbar_position;
           bool snap_to_image_axes_and_voxel;
 
           float background_colour[3];
@@ -242,7 +248,7 @@ namespace MR
                   *invert_scale_action,
                   *extra_controls_action,
                   *snap_to_image_action,
-                  *image_visible_action,
+                  *image_hide_action,
                   *next_image_action,
                   *prev_image_action,
                   *next_image_volume_action,
@@ -272,14 +278,17 @@ namespace MR
                   *about_action,
                   *aboutQt_action;
 
+          static ColourMap::Position parse_colourmap_position_str (const std::string& position_str);
+
           void paintGL ();
           void initGL ();
-          void keyPressEvent (QKeyEvent* event);
-          void keyReleaseEvent (QKeyEvent* event);
+          void keyPressEvent (QKeyEvent* event) override;
+          void keyReleaseEvent (QKeyEvent* event) override;
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);
           void wheelEventGL (QWheelEvent* event);
+          bool gestureEventGL (QGestureEvent* event);
 
           int get_mouse_mode ();
           void set_cursor ();
@@ -287,14 +296,18 @@ namespace MR
           void set_mode_features ();
           void set_image_navigation_menu ();
 
-          void closeEvent (QCloseEvent* event);
+          void closeEvent (QCloseEvent* event) override;
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
 
           Tool::Base* tool_has_focus;
 
-          friend class Image;
+          std::vector<double> render_times;
+          double best_FPS, best_FPS_time;
+          bool show_FPS;
+
+          friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
           friend class Window::GLArea;

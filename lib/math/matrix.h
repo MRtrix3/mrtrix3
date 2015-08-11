@@ -31,6 +31,7 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_linalg.h>
 
+#include "mrtrix.h"
 #include "file/ofstream.h"
 #include "math/math.h"
 #include "math/vector.h"
@@ -618,7 +619,7 @@ namespace MR
         //! read the matrix data from \a stream and assign to the matrix \a M
         friend std::istream& operator>> (std::istream& stream, Matrix& M) {
           std::vector<std::unique_ptr<std::vector<ValueType>>> V;
-          std::string sbuf, entry;
+          std::string sbuf;
 
           while (getline (stream, sbuf)) {
             sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
@@ -627,11 +628,9 @@ namespace MR
 
             V.push_back (std::unique_ptr<std::vector<ValueType>> (new std::vector<ValueType>));
 
-            std::istringstream line (sbuf);
-            while (line >> entry) 
+            const auto elements = MR::split (sbuf, " ,;\t", true);
+            for (const auto& entry : elements)
               V.back()->push_back (to<ValueType> (entry));
-            if (line.bad())
-              throw Exception (strerror (errno));
 
             if (V.size() > 1)
               if (V.back()->size() != V[0]->size())

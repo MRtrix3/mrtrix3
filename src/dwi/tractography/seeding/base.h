@@ -73,8 +73,8 @@ namespace MR
       uint32_t get_count (T& data)
       {
         auto vox = data.voxel();
-        uint32_t count = 0;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) ++count; }, vox);
+        std::atomic<uint32_t> count (0);
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, vox);
         return count;
       }
 
@@ -83,8 +83,18 @@ namespace MR
       float get_volume (T& data)
       {
         auto vox = data.voxel();
-        float volume = 0.0f;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { volume += v.value(); }, vox);
+        std::atomic<float> volume (0.0f);
+        Image::ThreadedLoop (vox).run (
+            [&] (decltype(vox)& v) {
+              const float value = v.value();
+              if (value) {
+                float current = volume.load (std::memory_order_relaxed);
+                float target;
+                do {
+                  target = current + value;
+                } while (!volume.compare_exchange_weak (current, target, std::memory_order_relaxed));
+              }
+            }, vox);
         return volume;
       }
 

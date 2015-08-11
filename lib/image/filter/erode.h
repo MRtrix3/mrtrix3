@@ -69,6 +69,14 @@ namespace MR
             datatype_ = DataType::Bit;
           }
 
+          template <class InfoType>
+          Erode (const InfoType& in, const std::string& message) :
+              Base (in, message),
+              npass_ (1)
+          {
+            datatype_ = DataType::Bit;
+          }
+
 
           template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {

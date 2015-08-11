@@ -86,6 +86,7 @@ namespace MR {
         auto vox = data.voxel();
         std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
+
         size_t sum = 0;
 
         for (auto l = Image::Loop (0,3) (vox); l; ++l) {
@@ -111,16 +112,12 @@ namespace MR {
         top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
         top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
 
-        Image::Info new_info (data);
-        for (size_t axis = 0; axis != 3; ++axis) {
-          new_info.dim(axis) = top[axis];
-          for (size_t i = 0; i < 3; ++i)
-            new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
-        }
-
         Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
+        Image::Info info (sub.info());
+        if (info.ndim() > 3)
+          info.set_ndim (3);
         
-        return new Mask (sub, new_info, data.name());
+        return new Mask (sub, info, data.name());
 
       }
 

@@ -25,7 +25,6 @@
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
-#include "gui/dialog/lighting.h"
 #include "gui/mrview/tool/view.h"
 
 namespace MR
@@ -160,7 +159,7 @@ namespace MR
           }
 
           source += 
-            std::string ("        ") + ColourMap::maps[object.colourmap].mapping;
+            std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
 
           for (size_t n = 0; n < clip.size(); ++n) 
             source += 
@@ -183,7 +182,7 @@ namespace MR
 
           // OVERLAYS:
           for (size_t n = 0, N = mode.overlays_for_3D.size(); n < N; ++n) {
-            const Image* image = mode.overlays_for_3D[n];
+            const ImageBase* image = mode.overlays_for_3D[n];
             source += 
               "    overlay_coord"+str(n) + " += overlay_ray"+str(n) + ";\n"
               "    if (overlay_coord"+str(n) + ".s >= 0.0 && overlay_coord"+str(n) + ".s <= 1.0 &&\n"
@@ -199,7 +198,7 @@ namespace MR
             if (image->use_discard_upper())
               source += " && amplitude <= overlay"+str(n)+"_upper";
 
-            source += ") {\n";
+            source += " && amplitude >= overlay"+str(n)+"_alpha_offset) {\n";
 
             if (!ColourMap::maps[image->colourmap].special) {
               source += 
@@ -210,7 +209,7 @@ namespace MR
                 " overlay"+str(n)+"_scale * (amplitude - overlay"+str(n)+"_offset), 0.0, 1.0);\n";
             }
 
-            std::string mapping (ColourMap::maps[image->colourmap].mapping);
+            std::string mapping (ColourMap::maps[image->colourmap].glsl_mapping);
             replace (mapping, "scale", "overlay"+str(n)+"_scale");
             replace (mapping, "offset", "overlay"+str(n)+"_offset");
             replace (mapping, "colourmap_colour", "overlay"+str(n)+"_colourmap_colour");
@@ -269,12 +268,12 @@ namespace MR
           }
 
 
-          inline GL::mat4 get_tex_to_scanner_matrix (const Image& image)
+          inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
-            Point<> pos = image.interp.voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
-            Point<> vec_X = image.interp.voxel2scanner_dir (Point<> (image.interp.dim(0), 0.0f, 0.0f));
-            Point<> vec_Y = image.interp.voxel2scanner_dir (Point<> (0.0f, image.interp.dim(1), 0.0f));
-            Point<> vec_Z = image.interp.voxel2scanner_dir (Point<> (0.0f, 0.0f, image.interp.dim(2)));
+            Point<> pos = image.transform().voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
+            Point<> vec_X = image.transform().voxel2scanner_dir (Point<> (image.info().dim(0), 0.0f, 0.0f));
+            Point<> vec_Y = image.transform().voxel2scanner_dir (Point<> (0.0f, image.info().dim(1), 0.0f));
+            Point<> vec_Z = image.transform().voxel2scanner_dir (Point<> (0.0f, 0.0f, image.info().dim(2)));
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];
@@ -310,6 +309,7 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
+          GL_CHECK_ERROR;
           // info for projection:
           int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
@@ -330,6 +330,7 @@ namespace MR
           GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
+          GL_CHECK_ERROR;
 
 
           overlays_for_3D.clear();
@@ -347,6 +348,7 @@ namespace MR
           }
 
 
+          GL_CHECK_ERROR;
           GL::mat4 T2S = get_tex_to_scanner_matrix (*image());
           GL::mat4 M = projection.modelview_projection() * T2S;
           GL::mat4 S2T = GL::inv (T2S);
@@ -393,6 +395,7 @@ namespace MR
             volume_VI.bind (gl::ELEMENT_ARRAY_BUFFER);
           }
 
+          GL_CHECK_ERROR;
           GLubyte indices[12];
 
           if (ray[0] < 0) {
@@ -461,23 +464,26 @@ namespace MR
           else 
             depth_texture.bind();
 
-          gl::ReadBuffer (gl::BACK);
+          GL_CHECK_ERROR;
 #if QT_VERSION >= 0x050100
-          int m = window.windowHandle()->devicePixelRatio();
+          int m = window().windowHandle()->devicePixelRatio();
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, m*projection.width(), m*projection.height(), 0);
 #else
           gl::CopyTexImage2D (gl::TEXTURE_2D, 0, gl::DEPTH_COMPONENT, 0, 0, projection.width(), projection.height(), 0);
 #endif
 
+          GL_CHECK_ERROR;
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "depth_sampler"), 1);
 
           std::vector< std::pair<GL::vec4,bool> > clip = get_active_clip_planes();
+          GL_CHECK_ERROR;
 
           for (size_t n = 0; n < clip.size(); ++n) {
             gl::Uniform4fv (gl::GetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
                 clip_real2tex (T2S, S2T, clip[n].first));
             gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
           }
+          GL_CHECK_ERROR;
 
           for (int n = 0; n < overlays_for_3D.size(); ++n) {
             gl::ActiveTexture (gl::TEXTURE2 + n);
@@ -494,6 +500,7 @@ namespace MR
             overlays_for_3D[n]->set_shader_variables (volume_shader, overlays_for_3D[n]->scale_factor(), "overlay"+str(n)+"_");
           }
 
+          GL_CHECK_ERROR;
           GL::vec4 ray_eye = M * GL::vec4 (ray, 0.0);
           gl::Uniform1f (gl::GetUniformLocation (volume_shader, "ray_z"), 0.5*ray_eye[2]);
 
@@ -506,17 +513,21 @@ namespace MR
           const GLsizei counts[] = { 4, 4, 4 };
           const GLvoid* starts[] = { reinterpret_cast<void*>(0), reinterpret_cast<void*>(4*sizeof(GLubyte)), reinterpret_cast<void*>(8*sizeof(GLubyte)) };
 
+          GL_CHECK_ERROR;
           gl::MultiDrawElements (gl::TRIANGLE_FAN, counts, gl::UNSIGNED_BYTE, starts, 3);
+          GL_CHECK_ERROR;
           image()->stop (volume_shader);
+          GL_CHECK_ERROR;
           gl::Disable (gl::BLEND);
 
+          GL_CHECK_ERROR;
           draw_orientation_labels (projection);
         }
 
 
         inline Tool::View* Volume::get_view_tool () const
         {
-          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window.tools()->actions()[0])->dock;
+          Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window().tools()->actions()[0])->dock;
           if (!dock) 
             return NULL;
           return dynamic_cast<Tool::View*> (dock->tool);
@@ -590,7 +601,7 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            Point<> move = get_current_projection()->screen_to_model_direction (window.mouse_displacement(), target());
+            Point<> move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
             for (size_t n = 0; n < clip.size(); ++n) {
               GL::vec4& p (*clip[n]);
               p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
@@ -606,7 +617,7 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) 
-            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window.mouse_displacement().y() * FOV());
+            move_clip_planes_in_out (clip, MOVE_IN_OUT_FOV_MULTIPLIER * window().mouse_displacement().y() * FOV());
           else
             Base::panthrough_event();
         }

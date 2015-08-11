@@ -70,7 +70,7 @@ const OptionGroup GradientOption = OptionGroup ("Options for gradient filter")
             "3 values, one for each axis.")
   + Argument ("sigma").type_sequence_float()
 
-  + Option ("greyscale", "output the image gradient as a greyscale image, rather "
+  + Option ("magnitude", "output magnitude of the gradient, rather "
             "than the default x,y,z components")
 
   + Option ("scanner", "compute the gradient with respect to the scanner coordinate "
@@ -135,9 +135,9 @@ Image::Filter::Base* create_fft_filter (Image::Buffer<cdouble>::voxel_type& inpu
 Image::Filter::Base* create_gradient_filter (Image::BufferPreload<float>::voxel_type& input)
 {
 
-  const bool greyscale = get_options ("greyscale").size();
+  const bool magnitude = get_options ("magnitude").size();
 
-  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input, greyscale);
+  Image::Filter::Gradient* filter = new Image::Filter::Gradient (input, magnitude);
 
   std::vector<float> stdev;
   Options opt = get_options ("stdev");

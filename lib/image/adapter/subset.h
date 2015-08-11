@@ -79,8 +79,14 @@ namespace MR
           return info_.transform();
         }
 
+        value_type value () const {
+          return get_value ();
+        }
         Value<Subset<VoxelType> > value () {
           return (Value<Subset<VoxelType> > (*this));
+        }
+        ssize_t operator[] (size_t axis) const {
+          return get_pos (axis);
         }
         Position<Subset<VoxelType> > operator[] (size_t axis) {
           return (Position<Subset<VoxelType> > (*this, axis));

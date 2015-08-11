@@ -385,10 +385,19 @@ namespace MR
 
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
-        for (size_t i = 0; i < 3; i++)
-          put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
-        for (size_t i = 3; i < H.ndim(); i++)
-          put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+        {
+          size_t i = 0;
+          for (; i < 3; i++)
+            put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
+          for (; i < H.ndim(); i++)
+            put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+
+          // pad out the other dimensions with 1, fix for fslview
+          ++i;
+          for (; i < 8; i++) 
+            put<int16_t> (1, &NH.dim[i], is_BE);
+        }
+
 
         // data type:
         int16_t dt = 0;

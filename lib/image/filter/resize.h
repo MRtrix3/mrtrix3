@@ -90,12 +90,16 @@ namespace MR
             if (voxel_size.size() != 3)
               throw Exception ("the voxel size must be defined using a value for all three dimensions.");
 
+            std::vector<float> original_extent(3);
             for (size_t j = 0; j < 3; ++j) {
               if (voxel_size[j] <= 0.0)
                 throw Exception ("the voxel size must be larger than zero");
-              axes_[j].dim = std::ceil (axes_[j].dim * axes_[j].vox / voxel_size[j]);
+              original_extent[j] = axes_[j].dim * axes_[j].vox;
+              axes_[j].dim = std::round (original_extent[j] / voxel_size[j] - 0.0001); // round down at .5
+              // Here we adjust the translation to ensure the image extent is centered wrt the original extent.
+              // This is important when the new voxel size is not an exact multiple of the original extent
               for (size_t i = 0; i < 3; ++i)
-                transform_(i,3) += 0.5 * (voxel_size[j] - axes_[j].vox) * transform_(i,j);
+                transform_(i,3) += 0.5 * ((voxel_size[j] - axes_[j].vox) + (original_extent[j] - axes_[j].dim * voxel_size[j])) * transform_(i,j);
               axes_[j].vox = voxel_size[j];
             }
           }

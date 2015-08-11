@@ -10,25 +10,32 @@ namespace GUI
 namespace MRView
 {
 
+
+// FIXME Why is this duplicating colourmap code?
 using Entry = ColourMap::Entry;
 const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
-        "color.rgb = vec3 (amplitude);\n"),
+        "color.rgb = vec3 (amplitude);\n",
+        [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
 
     Entry ("Hot",
-        "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n"),
+        "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
+        [] (float amplitude) { return Point<float> (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
 
     Entry ("Cool",
-        "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n"),
+        "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
+        [] (float amplitude) { return Point<float> (1.0 - (2.7213 * (1.0 - amplitude)), 1.0 - (2.7213 * (1.0 - amplitude) - 1.0), 1.0 - (3.7727 * (1.0 - amplitude) - 2.7727)); }),
 
     Entry ("Jet",
-        "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n")
+        "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
+        [] (float amplitude) { return Point<float> (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
 }};
 
 
 const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
     Entry ("RGB",
            "color.rgb = scale * (abs(color.rgb) - offset);\n",
+           Entry::basic_map_fn(),
            "length (color.rgb)", true),
 
     Entry ("Complex",
@@ -37,6 +44,7 @@ const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
            "if (phase > 2.0) color.b -= 6.0;\n"
            "if (phase < -2.0) color.r += 6.0;\n"
            "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+           Entry::basic_map_fn(),
            "length (color.rg)", true)
 }};
 
@@ -123,7 +131,7 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
     }
 }
 
-void ColourMapButton::init_customise_sate_menu_items()
+void ColourMapButton::init_customise_state_menu_items()
 {
     auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
     show_colour_bar->setCheckable(true);
@@ -154,7 +162,7 @@ void ColourMapButton::init_menu(bool create_shortcuts, bool use_special, bool cu
     }
 
     if(customise_state)
-        init_customise_sate_menu_items();
+        init_customise_state_menu_items();
 
     setMenu(colourmap_menu);
 }
