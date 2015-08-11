@@ -33,3 +33,8 @@ icons.cpp
 .pydevproject
 scripts/.Rhistory
 scripts/.RData
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes
