@@ -104,7 +104,7 @@ void usage ()
     + OptionGroup ("Regridding options")
 
     + Option ("template", 
-        "reslice the input image to match the specified template image.")
+        "reslice the input image to match the specified template image grid.")
     + Argument ("image").type_image_in ()
 
     + Option ("interp", 
@@ -114,7 +114,9 @@ void usage ()
     + OptionGroup ("Non-linear transformation options")
 
     + Option ("warp",
-        "apply a non-linear deformation field to warp the input image.")
+        "apply a non-linear deformation field to warp the input image. If the -template image "
+        "is also supplied the warp field will be resliced first to the template image grid. If no -template "
+        "option is supplied then the output image will have the same image grid as the warp.")
     + Argument ("image").type_image_in ()
 
     + OptionGroup ("Fibre orientation distribution handling options")
@@ -263,19 +265,29 @@ void run ()
 
 
   opt = get_options ("template"); // need to reslice
-  if (opt.size()) {
+  if (opt.size() || warp_ptr) {
     INFO ("image will be regridded");
 
     if (replace)
-      throw Exception ("you cannot use the -replace option with the -template option");
+      throw Exception ("you cannot use the -replace option with the -template or -warp option");
 
-    auto template_header = Header::open (opt[0][0]);
-    for (size_t i = 0; i < 3; ++i) {
-       output_header.size(i) = template_header.size(i);
-       output_header.spacing(i) = template_header.spacing(i);
+    if (opt.size()) {
+      auto template_header = Header::open (opt[0][0]);
+      for (size_t i = 0; i < 3; ++i) {
+        output_header.size(i) = template_header.size(i);
+        output_header.spacing(i) = template_header.spacing(i);
+      }
+      output_header.transform() = template_header.transform();
+      add_line (output_header.keyval()["comments"], std::string ("resliced to template image \"" + template_header.name() + "\""));
+    } else {
+      for (size_t i = 0; i < 3; ++i) {
+        output_header.size(i) = warp_ptr->size(i);
+        output_header.spacing(i) = warp_ptr->spacing(i);
+      }
+      output_header.transform() = warp_ptr->transform();
+      add_line (output_header.keyval()["comments"], std::string ("resliced to using warp image \"" + warp_ptr->name() + "\""));
     }
-    output_header.transform() = template_header.transform();
-    add_line (output_header.keyval()["comments"], std::string ("resliced to template image \"" + template_header.name() + "\""));
+
 
     int interp = 2;  // cubic
     opt = get_options ("interp");
