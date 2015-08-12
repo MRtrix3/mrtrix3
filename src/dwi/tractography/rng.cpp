@@ -7,7 +7,7 @@ namespace MR
     namespace Tractography
     {
 
-      ATTRIBUTE_TLS Math::RNG rng;
+      thread_local Math::RNG rng;
 
     }
   }

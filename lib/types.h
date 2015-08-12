@@ -115,13 +115,6 @@
 # define FORCE_INLINE inline
 #endif
 
-#ifdef MRTRIX_MACOSX
-# define ATTRIBUTE_TLS __thread
-#else 
-# define ATTRIBUTE_TLS thread_local
-#endif
-
-
 namespace MR
 {
 
