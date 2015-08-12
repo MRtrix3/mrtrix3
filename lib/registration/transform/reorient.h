@@ -26,7 +26,7 @@
 #include "algo/threaded_loop.h"
 #include "math/SH.h"
 #include "math/least_squares.h"
-#include "interp/cubic.h"
+#include "adapter/jacobian.h"
 
 namespace MR
 {
@@ -75,14 +75,12 @@ namespace MR
           {
             image.index(3) = 0;
             if (image.value() > 0.0)  // only reorient voxels that contain a FOD
-              image.row(3) = transform * image.row(3); // Eigen automatically takes care of the temporary
+              image.row(3) = transform * image.row(3);
           }
 
         protected:
           Eigen::Matrix<typename FODImageType::value_type, Eigen::Dynamic, Eigen::Dynamic> transform;
       };
-
-
 
 
       template <class FODImageType>
@@ -95,7 +93,6 @@ namespace MR
         ThreadedLoop (fod_image, 0, 3)
             .run (LinearKernel<FODImageType>(fod_image.size(3), transform, directions, modulate), fod_image);
       }
-
 
 
       template <class FODImageType>
@@ -119,7 +116,7 @@ namespace MR
         public:
           NonLinearKernel (const ssize_t n_SH, WarpImageType& warp, const Eigen::MatrixXd& directions, const bool modulate) :
                              n_SH (n_SH),
-                             warp_interp (warp),
+                             jacobian_adapter (warp),
                              directions (directions),
                              modulate (modulate),
                              FOD_to_aPSF_transform (Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))) {}
@@ -128,12 +125,9 @@ namespace MR
           void operator() (FODImageType& image) {
             image.index(3) = 0;
             if (image.value() > 0) {  // only reorient voxels that contain a FOD
-              Eigen::Vector3d vox;
-              vox[0] = static_cast<default_type> (image.index(0));
-              vox[1] = static_cast<default_type> (image.index(1));
-              vox[2] = static_cast<default_type> (image.index(2));
-              warp_interp.voxel(vox);
-              Eigen::MatrixXd jacobian = warp_interp.gradient_row_wrt_scanner().inverse();
+              for (size_t dim = 0; dim < 3; ++dim)
+                jacobian_adapter.index(dim) = image.index(dim);
+              Eigen::MatrixXd jacobian = jacobian_adapter.value().inverse().template cast<default_type>();
               Eigen::MatrixXd transformed_directions = jacobian * directions;
 
               if (modulate) {
@@ -155,9 +149,7 @@ namespace MR
           }
           protected:
             const ssize_t n_SH;
-            Interp::SplineInterp<WarpImageType,
-                                 Math::UniformBSpline<typename WarpImageType::value_type>,
-                                 Math::SplineProcessingType::Derivative> warp_interp;
+            Adapter::Jacobian<WarpImageType> jacobian_adapter;
             const Eigen::MatrixXd& directions;
             const bool modulate;
             const Eigen::MatrixXd FOD_to_aPSF_transform;

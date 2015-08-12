@@ -277,8 +277,8 @@ namespace MR
 
         SplineInterp (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
           SplineInterpBase <ImageType, SplineType, Math::SplineProcessingType::Derivative> (parent, value_when_out_of_bounds),
-          out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds)
-        { }
+          out_of_bounds_vec (value_when_out_of_bounds, value_when_out_of_bounds, value_when_out_of_bounds),
+          inverse_voxelsize (voxelsize.inverse()) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! This will set the position from which the image intensity values will
@@ -361,15 +361,19 @@ namespace MR
         }
 
 
-//        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
-//        Eigen::Matrix<value_type, 1, 3> gradient_wrt_scanner () {
-//          return Transform::voxel2scanner.linear() * gradient ();
-//        }
+        //! Returns the image gradient at the current position, defined with respect to the scanner coordinate frame of reference.
+        Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> gradient_wrt_scanner() {
+          return Transform::voxel2scanner.linear() * gradient().template cast<default_type>() * inverse_voxelsize;
+        }
 
-        // Collectively interpolates gradients along axis 3 // TODO: might need to input axis argument for interpolating 5D images
-        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row () {
-          if (out_of_bounds)
-            return Eigen::Matrix<value_type, Eigen::Dynamic, 3>(); //TODO
+        // Collectively interpolates gradients along axis 3
+        Eigen::Matrix<value_type, Eigen::Dynamic, 3> gradient_row() {
+          if (out_of_bounds) {
+            Eigen::Matrix<value_type, Eigen::Dynamic, 3> out_of_bounds_matrix (ImageType::size(3));
+            out_of_bounds_matrix.setOnes();
+            out_of_bounds_matrix *= out_of_bounds_value;
+            return out_of_bounds_matrix;
+          }
 
           assert (ndim() == 4);
 
@@ -395,14 +399,14 @@ namespace MR
 
 
         //! Collectively interpolates gradients along axis 3, defined with respect to the scanner coordinate frame of reference.
-        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner () {
-          Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradients = gradient_row().template cast<default_type>();
-          return Transform::image2scanner.linear() * voxelsize.inverse() * gradients;
+        Eigen::Matrix<default_type, Eigen::Dynamic, 3> gradient_row_wrt_scanner() {
+          return Transform::image2scanner.linear() * gradient_row().template cast<default_type>() * inverse_voxelsize;
         }
 
       protected:
         const Eigen::Matrix<value_type, 1, 3> out_of_bounds_vec;
         Eigen::Matrix<value_type, 64, 3> weights_matrix;
+        const Eigen::Matrix<default_type, 3, 3> inverse_voxelsize;
     };
 
 

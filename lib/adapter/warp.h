@@ -95,7 +95,7 @@ namespace MR
 
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (size_t axis) {
           assert (interp.ndim() > 3);
-          interp.scanner (get_position());
+          interp.scanner (get_position()); //TODO, check for nans in warp?
           return interp.row(axis);
         }
 
