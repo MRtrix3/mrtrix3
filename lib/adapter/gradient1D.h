@@ -33,19 +33,32 @@ namespace MR
     template <class ImageType>
       class Gradient1D : public Base<ImageType> {
       public:
-        Gradient1D (const ImageType& parent,
-                    size_t axis = 0) :
-          Base<ImageType> (parent),
-          axis (axis) { }
 
         typedef typename ImageType::value_type value_type;
+
+        Gradient1D (const ImageType& parent,
+                    size_t axis = 0,
+                    bool wrt_scanner = false) :
+          Base<ImageType> (parent),
+          axis (axis),
+          wrt_scanner (wrt_scanner),
+          derivative_weights (3, 1.0),
+          half_derivative_weights (3, 0.5)  
+          {
+            if (wrt_scanner) {
+              for (size_t dim = 0; dim < 3; ++dim) {
+                derivative_weights[dim] /= spacing(dim);
+                half_derivative_weights[dim] /= spacing(dim);
+              }
+            }  
+          }
 
         void set_axis (size_t val)
         {
           axis = val;
         }
 
-        float& value ()
+        value_type value ()
         {
           const ssize_t pos = index (axis);
           result = 0.0;
@@ -53,16 +66,16 @@ namespace MR
           if (pos == 0) {
             result = Base<ImageType>::value();
             index (axis) = pos + 1;
-            result = Base<ImageType>::value() - result;
+            result = derivative_weights[axis] * (Base<ImageType>::value() - result);
           } else if (pos == size(axis) - 1) {
             result = Base<ImageType>::value();
             index (axis) = pos - 1;
-            result -= Base<ImageType>::value();
+            result = derivative_weights[axis] * (result - Base<ImageType>::value());
           } else {
             index (axis) = pos + 1;
             result = Base<ImageType>::value();
             index (axis) = pos - 1;
-            result = 0.5 * (result - Base<ImageType>::value());
+            result = half_derivative_weights[axis] * (result - Base<ImageType>::value());
           }
           index (axis) = pos;
 
@@ -77,6 +90,9 @@ namespace MR
       protected:
         size_t axis;
         value_type result;
+        const bool wrt_scanner;
+        std::vector<value_type> derivative_weights;
+        std::vector<value_type> half_derivative_weights;
       };
   }
 }

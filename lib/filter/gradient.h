@@ -133,9 +133,8 @@ namespace MR
               out.index(4) = vol;
             }
 
-            Adapter::Gradient1D<decltype(smoothed)> gradient1D (smoothed);
+            Adapter::Gradient1D<decltype(smoothed)> gradient1D (smoothed, 0, wrt_scanner);
             out.index(3) = 0;
-            gradient1D.set_axis (0);
             threaded_copy (gradient1D, out, 0, 3, 2);
             if (progress) ++(*progress);
             out.index(3) = 1;
@@ -149,21 +148,8 @@ namespace MR
 
             if (wrt_scanner) {
               Transform transform (in);
-              Eigen::Vector3 gradient (3);
-              Eigen::Vector3 gradient_wrt_scanner (3);
-
-              // TODO use matrix_multiply
-              for (auto l = Loop(0,3) (out); l; ++l) {
-                for (size_t dim = 0; dim < 3; dim++) {
-                  out.index(3) = dim;
-                  gradient[dim] = out.value() / in.spacing(dim);
-                }
-                gradient_wrt_scanner = transform.image2scanner.linear() * gradient;
-                for (size_t dim = 0; dim < 3; dim++) {
-                  out.index(3) = dim;
-                  out.value() = gradient_wrt_scanner[dim];
-                }
-              }
+              for (auto l = Loop(0,3) (out); l; ++l)
+                out.row(3) = transform.image2scanner.linear().template cast<typename OutputImageType::value_type>() * out.row(3);
             }
           }
         }
