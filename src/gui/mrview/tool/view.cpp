@@ -248,12 +248,12 @@ namespace MR
           volume_box->setLayout (layout);
 
           layout->addWidget (new QLabel (tr("Index: ")), 0, 0);
-          vol_index = new QSpinBox(this);
+          vol_index = new SpinBox(this);
           vol_index->setMinimum(0);
           layout->addWidget (vol_index, 0, 1);
 
           layout->addWidget (new QLabel (tr("Group: ")), 0, 2);
-          vol_group = new QSpinBox(this);
+          vol_group = new SpinBox(this);
           vol_group->setMinimum(0);
           layout->addWidget (vol_group, 0, 3);
 

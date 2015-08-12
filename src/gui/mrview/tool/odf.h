@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/spin_box.h"
 
 namespace MR
 {
@@ -90,7 +91,7 @@ namespace MR
              QPushButton *show_preview_button, *hide_all_button;
              QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box, *main_grid_box;
              QCheckBox *colour_by_direction_box, *interpolation_box;
-             QSpinBox *lmax_selector, *level_of_detail_selector;
+             SpinBox *lmax_selector, *level_of_detail_selector;
 
              AdjustButton *scale;
 

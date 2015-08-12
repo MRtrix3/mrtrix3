@@ -27,6 +27,7 @@
 
 #include "gui/mrview/tool/odf.h"
 #include "gui/mrview/window.h"
+#include "gui/spin_box.h"
 
 namespace MR
 {
@@ -72,7 +73,7 @@ namespace MR
             RenderFrame* render_frame;
             QCheckBox *lock_orientation_to_image_box;
             QCheckBox *interpolation_box, *show_axes_box;
-            QSpinBox *level_of_detail_selector;
+            SpinBox *level_of_detail_selector;
             friend class ODF;
         };
 

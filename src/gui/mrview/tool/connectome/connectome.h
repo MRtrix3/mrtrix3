@@ -43,6 +43,7 @@
 #include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
+#include "gui/spin_box.h"
 
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
@@ -170,7 +171,7 @@ namespace MR
 
             QComboBox *node_geometry_combobox;
             QLabel *node_geometry_sphere_lod_label;
-            QSpinBox *node_geometry_sphere_lod_spinbox;
+            SpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
             QLabel *node_geometry_overlay_3D_warning_icon;
 
@@ -203,7 +204,7 @@ namespace MR
 
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
-            QSpinBox *edge_geometry_cylinder_lod_spinbox;
+            SpinBox *edge_geometry_cylinder_lod_spinbox;
             QCheckBox *edge_geometry_line_smooth_checkbox;
 
             QComboBox *edge_colour_combobox;
