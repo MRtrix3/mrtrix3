@@ -36,6 +36,7 @@
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/image.h"
+#include "gui/mrview/spin_box.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/shapes/cube.h"
@@ -43,7 +44,6 @@
 #include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
-#include "gui/spin_box.h"
 
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"

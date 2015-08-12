@@ -25,7 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
-#include "gui/spin_box.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {

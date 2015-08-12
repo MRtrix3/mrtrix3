@@ -23,7 +23,7 @@
 #ifndef __gui_mrview_mode_lightbox_gui_h__
 #define __gui_mrview_mode_lightbox_gui_h__
 
-#include "gui/spin_box.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {

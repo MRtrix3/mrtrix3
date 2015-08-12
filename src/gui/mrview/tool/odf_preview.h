@@ -26,8 +26,8 @@
 #include "gui/dwi/render_frame.h"
 
 #include "gui/mrview/tool/odf.h"
+#include "gui/mrview/spin_box.h"
 #include "gui/mrview/window.h"
-#include "gui/spin_box.h"
 
 namespace MR
 {
