@@ -811,12 +811,12 @@ namespace MR
         void Connectome::draw_colourbars()
         {
           if (hide_all_button->isChecked()) return;
-          if ((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
+          if ((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
             window().colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
                                               node_colour_lower_button->value(), node_colour_upper_button->value(),
                                               node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
                                               node_fixed_colour);
-          if (edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar)
+          if ((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar)
             window().colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
                                               edge_colour_lower_button->value(), edge_colour_upper_button->value(),
                                               edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
@@ -826,8 +826,8 @@ namespace MR
 
         size_t Connectome::visible_number_colourbars()
         {
-          return ((((node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
-                  + ((edge_colour == edge_colour_t::MATRIX_FILE && show_edge_colour_bar) ? 1 : 0));
+          return ((((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
+                  + (((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar) ? 1 : 0));
         }
 
 
@@ -1127,8 +1127,8 @@ namespace MR
                   case node_visibility_t::NONE:        node_visibility_combobox->setCurrentIndex (1); return;
                   case node_visibility_t::DEGREE:      node_visibility_combobox->setCurrentIndex (2); return;
                   case node_visibility_t::CONNECTOME:  node_visibility_combobox->setCurrentIndex (3); return;
-                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (5); return;
-                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (5); return;
+                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (6); return;
+                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (6); return;
                 }
               }
               node_visibility = node_visibility_t::VECTOR_FILE;
@@ -2241,22 +2241,22 @@ namespace MR
           matrix_list_model->clear();
           selected_nodes.resize (0);
           selected_node_count = 0;
-          if (node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
+          if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
             node_visibility_combobox->removeItem (6);
             node_visibility_combobox->setCurrentIndex (0);
             node_visibility = node_visibility_t::ALL;
           }
-          if (node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) {
+          if (node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) {
             node_colour_combobox->removeItem (6);
             node_colour_combobox->setCurrentIndex (0);
             node_colour = node_colour_t::FIXED;
           }
-          if (node_size == node_size_t::VECTOR_FILE || node_size == node_size_t::MATRIX_FILE) {
+          if (node_size == node_size_t::CONNECTOME || node_size == node_size_t::VECTOR_FILE || node_size == node_size_t::MATRIX_FILE) {
             node_size_combobox->removeItem (5);
             node_size_combobox->setCurrentIndex (0);
             node_size = node_size_t::FIXED;
           }
-          if (node_alpha == node_alpha_t::VECTOR_FILE || node_alpha == node_alpha_t::MATRIX_FILE) {
+          if (node_alpha == node_alpha_t::CONNECTOME || node_alpha == node_alpha_t::VECTOR_FILE || node_alpha == node_alpha_t::MATRIX_FILE) {
             node_alpha_combobox->removeItem (5);
             node_alpha_combobox->setCurrentIndex (0);
             node_alpha = node_alpha_t::FIXED;
@@ -2767,7 +2767,7 @@ namespace MR
             if (alpha)
               edge_alpha_ID = gl::GetUniformLocation (edge_shader, "edge_alpha");
 
-            if (edge_colour == edge_colour_t::MATRIX_FILE && ColourMap::maps[edge_colourmap_index].is_colour)
+            if ((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && ColourMap::maps[edge_colourmap_index].is_colour)
               gl::Uniform3fv (gl::GetUniformLocation (edge_shader, "colourmap_colour"), 1, &edge_fixed_colour[0]);
 
             std::map<float, size_t> edge_ordering;
@@ -3649,7 +3649,7 @@ namespace MR
           selected_node_count = list.size();
           for (std::vector<node_t>::const_iterator n = list.begin(); n != list.end(); ++n)
             selected_nodes[*n] = true;
-          if (node_visibility == node_visibility_t::MATRIX_FILE) {
+          if (node_visibility == node_visibility_t::CONNECTOME || node_visibility == node_visibility_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {
               node_visibility_matrix_operator_combobox->removeItem (2);
               switch (node_visibility_matrix_operator) {
@@ -3665,7 +3665,7 @@ namespace MR
             }
             calculate_node_visibility();
           }
-          if (node_colour == node_colour_t::MATRIX_FILE) {
+          if (node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {
               node_colour_matrix_operator_combobox->removeItem (4);
               switch (node_colour_matrix_operator) {
@@ -3683,7 +3683,7 @@ namespace MR
             }
             calculate_node_colours();
           }
-          if (node_size == node_size_t::MATRIX_FILE) {
+          if (node_size == node_size_t::CONNECTOME || node_size == node_size_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {
               node_size_matrix_operator_combobox->removeItem (4);
               switch (node_size_matrix_operator) {
@@ -3701,7 +3701,7 @@ namespace MR
             }
             calculate_node_sizes();
           }
-          if (node_alpha == node_alpha_t::MATRIX_FILE) {
+          if (node_alpha == node_alpha_t::CONNECTOME || node_alpha == node_alpha_t::MATRIX_FILE) {
             if (selected_node_count >= 2) {
               node_alpha_matrix_operator_combobox->removeItem (4);
               switch (node_alpha_matrix_operator) {
