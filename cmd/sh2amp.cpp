@@ -64,13 +64,26 @@ void usage ()
 
 typedef float value_type;
 
-class remove_negative 
+
+class SH2Amp
 {
   public:
-    remove_negative (bool nonnegative) : nonnegative (nonnegative) { }
-    value_type operator () (value_type val) const { return nonnegative ? std::max (val, value_type (0.0)) : val; }
-  protected:
-    const bool nonnegative;
+    template <class MatrixType>
+    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) 
+      : transformer(dirs.template cast<value_type>(), lmax), nonnegative(nonneg) { }
+    
+    void operator() (Image<value_type>& in, Image<value_type>& out) {
+      transformer.SH2A(r, in.row(3));
+      if (nonnegative)
+        r = r.cwiseMax(value_type(0.0));
+      assign_pos_of(in).to(out);
+      out.row(3) = r;
+    }
+
+  private:
+    Math::SH::Transform<value_type> transformer;
+    bool nonnegative;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> r;
 };
 
 
@@ -108,12 +121,7 @@ void run ()
 
   auto amp_data = Image<value_type>::create(argument[2], amp_header);
 
-  Math::SH::Transform<value_type> transformer (directions.cast<value_type>(), Math::SH::LforN (sh_data.size(3)));
-//  Image::matrix_multiply (
-//      "computing amplitudes...",
-//      transformer.mat_SH2A(),
-//      sh_data, 
-//      amp_data,
-//      Image<value_type>::NoOp, remove_negative (get_options("nonnegative").size()), 3);
-
+  SH2Amp sh2amp (directions, Math::SH::LforN (sh_data.size(3)), get_options("nonnegative").size());
+  ThreadedLoop("computing amplitudes...", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
+  
 }
