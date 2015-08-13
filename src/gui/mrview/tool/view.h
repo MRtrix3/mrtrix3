@@ -51,18 +51,20 @@ namespace MR
         {
           Q_OBJECT
           public:
-            View (Window& main_window, Dock* parent);
+            View (Dock* parent);
 
             QPushButton *clip_on_button[3], *clip_edit_button[3], *clip_modify_button;
 
             std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            bool get_cliphighlightstate () const;
+            bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 
           protected:
-            virtual void showEvent (QShowEvent* event);
-            virtual void closeEvent (QCloseEvent* event);
+            virtual void showEvent (QShowEvent* event) override;
+            virtual void closeEvent (QCloseEvent* event) override;
 
           private slots:
             void onImageChanged ();
@@ -87,6 +89,8 @@ namespace MR
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
+            void clip_planes_toggle_highlight_slot();
+            void clip_planes_toggle_intersectionmode_slot();
 
             void clip_planes_add_axial_slot ();
             void clip_planes_add_sagittal_slot ();
@@ -110,7 +114,7 @@ namespace MR
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
-            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box;
             QComboBox *plane_combobox;
             QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;

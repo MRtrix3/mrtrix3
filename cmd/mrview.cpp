@@ -1,4 +1,5 @@
 #include "gui/gui.h"
+#include "command.h"
 #include "progressbar.h"
 #include "memory.h"
 #include "gui/mrview/icons.h"
@@ -12,7 +13,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au) & Dave Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (d.raffelt@brain.org.au) and Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "the MRtrix image viewer.";
@@ -31,7 +32,7 @@ void usage ()
   GUI::MRView::Window::add_commandline_options (OPTIONS);
 
 #define TOOL(classname, name, description) \
-  classname::add_commandline_options (OPTIONS);
+  MR::GUI::MRView::Tool::classname::add_commandline_options (OPTIONS);
   {
     using namespace MR::GUI::MRView::Tool;
 #include "gui/mrview/tool/list.h"

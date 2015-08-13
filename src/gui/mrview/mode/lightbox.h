@@ -39,7 +39,7 @@ class LightBox : public Slice
     Q_OBJECT
     using proj_focusdelta = std::pair<Projection,float>;
 public:
-    LightBox(Window &parent);
+    LightBox();
 
     void paint(Projection& with_projection) override;
     void mouse_press_event() override;

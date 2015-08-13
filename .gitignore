@@ -31,9 +31,10 @@ icons.cpp
 .project
 .settings
 .pydevproject
-mrtrix3.config
-mrtrix3.creator
-mrtrix3.creator.user
-mrtrix3.files
-mrtrix3.includes
-
+scripts/.Rhistory
+scripts/.RData
+*.config
+*.creator
+*.creator.user
+*.files
+*.includes

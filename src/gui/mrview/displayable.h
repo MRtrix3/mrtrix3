@@ -54,6 +54,7 @@ namespace MR
 
       class Image;
       namespace Tool { class AbstractFixel; }
+      namespace Tool { class Connectome; }
       namespace Tool { class Tractogram; }
       class DisplayableVisitor
       {
@@ -69,7 +70,6 @@ namespace MR
 
         public:
           Displayable (const std::string& filename);
-          Displayable (Window& window, const std::string& filename);
 
           virtual ~Displayable ();
 

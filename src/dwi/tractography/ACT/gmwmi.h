@@ -48,6 +48,12 @@ namespace MR
   {
     namespace Tractography
     {
+
+      namespace Seeding
+      {
+        class Dynamic_ACT_additions;
+      }
+
       namespace ACT
       {
 
@@ -96,6 +102,7 @@ namespace MR
 
 
             friend class Track_extender;
+            friend class Tractography::Seeding::Dynamic_ACT_additions;
 
         };
 

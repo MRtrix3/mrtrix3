@@ -125,7 +125,7 @@ namespace MR
               }
               source +=
                 std::string ("    vec3 color;\n") +
-                ColourMap::maps[colourmap].mapping +
+                ColourMap::maps[colourmap].glsl_mapping +
                 "   fColour = color;\n";
               break;
             case Direction:
@@ -266,9 +266,8 @@ namespace MR
                                                 const MR::Image::Transform &header_transform)
         {
           // Code below "inspired" by ODF::draw
-          const auto& window = fixel_tool.window;
-          Point<> p (window.target());
-          p += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - p));
+          Point<> p (Window::main->target());
+          p += projection.screen_normal() * (projection.screen_normal().dot (Window::main->focus() - p));
           p = header_transform.scanner2voxel (p);
 
           if (fixel_tool.do_lock_to_grid) {
@@ -361,7 +360,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          fixel_tool.window.makeGLcurrent();
+          Window::GrabContext context;
 
           load_image_buffer ();
 

@@ -88,18 +88,17 @@ EOF
 
   )
 
-  cd _package 
-  echo - compressing files into mrtrix3.tar.gz
-  tar cfz ../mrtrix3.tar.gz mrtrix3
 )
-
-echo - deleting temporary files...
-rm -rf _package/
 
 cat <<EOF
 
-You can now copy the mrtrix3.tar.gz file over to your target systems and
-extract it locally using:
+You can now copy the folder _package/mrtrix3 over to your target systems.
+For example packing it up using:
+
+$ cd _package
+$ tar cfz mrtrix3.tar.gz mrtrix3
+
+On your target system, unpack mrtrix3.tar.gz using:
 
 $ tar xfz mrtrix3.tar.gz
 

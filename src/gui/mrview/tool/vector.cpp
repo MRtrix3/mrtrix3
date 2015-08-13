@@ -78,8 +78,8 @@ namespace MR
 
 
 
-        Vector::Vector (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
+        Vector::Vector (Dock* parent) :
+          Base (parent),
           do_lock_to_grid (true),
           do_crop_to_slice (true),
           not_3D (true),
@@ -285,9 +285,9 @@ namespace MR
                       fixel.scaling_max_thresholded() :
                       fixel.scaling_max();
 
-          window.colourbar_renderer.render (fixel, fixel.scale_inverted(),
+          window().colourbar_renderer.render (fixel.colourmap, fixel.scale_inverted(),
                                      min_value, max_value,
-                                     fixel.scaling_min(), fixel.display_range);
+                                     fixel.scaling_min(), fixel.display_range, fixel.colour);
         }
 
 
@@ -319,7 +319,7 @@ namespace MR
             fixel_list_model->remove_item (indexes.first());
             indexes = fixel_list_view->selectionModel()->selectedIndexes();
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -335,13 +335,13 @@ namespace MR
               }
             }
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
         void Vector::hide_all_slot ()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -503,7 +503,7 @@ namespace MR
         void Vector::opacity_slot (int opacity)
         {
           line_opacity = Math::pow2 (static_cast<float>(opacity)) / 1.0e6f;
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -512,7 +512,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_line_thickness (static_cast<float>(thickness) / 1.0e5f);
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -521,7 +521,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_line_length_multiplier (length_multiplier->value());
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -545,7 +545,7 @@ namespace MR
               break;
             }
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -558,7 +558,7 @@ namespace MR
         void Vector::on_lock_to_grid_slot(bool is_checked)
         {
           do_lock_to_grid = is_checked;
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -567,7 +567,7 @@ namespace MR
           do_crop_to_slice = is_checked;         
           lock_to_grid->setEnabled(do_crop_to_slice);
 
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -576,7 +576,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->show_colour_bar = visible;
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -587,7 +587,7 @@ namespace MR
             fixel_list_model->get_fixel_image (indices[i])->colourmap = index;
             fixel_list_model->get_fixel_image (indices[i])->set_colour_type (CValue);
           }
-          window.updateGL();
+          window().updateGL();
         }
 
         void Vector::selected_custom_colour(const QColor& colour, const ColourMapButton&)
@@ -598,7 +598,7 @@ namespace MR
             for (int i = 0; i < indices.size(); ++i) {
               fixel_list_model->get_fixel_image (indices[i])->set_colour (c_colour);
             }
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -608,7 +608,7 @@ namespace MR
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->reset_windowing ();
           update_selection ();
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -617,7 +617,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_invert_scale (inverted);
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -641,7 +641,7 @@ namespace MR
             default:
               break;
           }
-          window.updateGL();
+          window().updateGL();
 
         }
 
@@ -651,7 +651,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_windowing (min_value->value(), max_value->value());
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -662,7 +662,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_use_discard_lower (threshold_lower_box->isChecked());
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -673,7 +673,7 @@ namespace MR
           QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
           for (int i = 0; i < indices.size(); ++i)
             fixel_list_model->get_fixel_image (indices[i])->set_use_discard_upper (threshold_upper_box->isChecked());
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -684,7 +684,7 @@ namespace MR
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
               fixel_list_model->get_fixel_image (indices[i])->lessthan = threshold_lower->value();
-            window.updateGL();
+            window().updateGL();
           }
         }
 
@@ -696,7 +696,7 @@ namespace MR
             QModelIndexList indices = fixel_list_view->selectionModel()->selectedIndexes();
             for (int i = 0; i < indices.size(); ++i)
               fixel_list_model->get_fixel_image (indices[i])->greaterthan = threshold_upper->value();
-            window.updateGL();
+            window().updateGL();
           }
         }
 

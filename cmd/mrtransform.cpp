@@ -79,7 +79,8 @@ void usage ()
         "specify a 4x4 linear transform to apply, in the form "
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
-        "to the moving image.")
+        "to the moving image. Note that the reverse convention is still "
+        "assumed even if no -template image is supplied")
     +   Argument ("transform").type_file_in ()
 
     + Option ("flip",
@@ -113,8 +114,8 @@ void usage ()
 
     + OptionGroup ("Non-linear transformation options")
 
-    + Option ("warp", 
-        "apply a non-linear transform to the input image. If no template image is supplied, "
+    + Option ("warp_df",
+        "apply a non-linear deformation field to the input image. If no template image is supplied, "
         "then the input warp will define the output image dimensions.")
     + Argument ("image").type_image_in ()
 
@@ -234,6 +235,25 @@ void run ()
   }
 
 
+  opt = get_options ("noreorientation");
+  bool do_reorientation = false;
+  Math::Matrix<value_type> directions_cartesian;
+  if (!opt.size() && linear_transform.is_set() && input_header.ndim() == 4 &&
+      input_header.dim(3) >= 6 &&
+      input_header.dim(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.dim(3)))) {
+    do_reorientation = true;
+    CONSOLE ("SH series detected, performing apodised PSF reorientation");
+
+    Math::Matrix<value_type> directions_el_az;
+    opt = get_options ("directions");
+    if (opt.size())
+      directions_el_az.load(opt[0][0]);
+    else
+      DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
+    Math::SH::S2C (directions_el_az, directions_cartesian);
+
+  }
+
 
   opt = get_options ("template"); // need to reslice
   if (opt.size()) {
@@ -272,27 +292,6 @@ void run ()
 
     Image::Stride::List stride = Image::Stride::get (input_header);
 
-    Options opt = get_options ("noreorientation");
-    bool do_reorientation = false;
-    Math::Matrix<value_type> directions_cartesian;
-    if (!opt.size() && linear_transform.is_set() && input_header.ndim() == 4 &&
-        input_header.dim(3) >= 6 &&
-        input_header.dim(3) == (int) Math::SH::NforL (Math::SH::LforN (input_header.dim(3)))) {
-      do_reorientation = true;
-      CONSOLE ("SH series detected, performing apodised PSF reorientation");
-
-      Math::Matrix<value_type> directions_el_az;
-      opt = get_options ("directions");
-      if (opt.size())
-        directions_el_az.load(opt[0][0]);
-      else
-        DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
-      Math::SH::S2C (directions_el_az, directions_cartesian);
-
-      stride = Image::Stride::contiguous_along_axis (3, input_header);
-      Image::Stride::set (output_header, stride);
-    }
-
     InputBufferType input_buffer (input_header, stride);
     if (replace) {
       Image::Info& info_in (input_buffer);
@@ -300,6 +299,11 @@ void run ()
       linear_transform.clear();
     }
     InputBufferType::voxel_type in (input_buffer);
+
+    if (do_reorientation) {
+      stride = Image::Stride::contiguous_along_axis (3, input_header);
+      Image::Stride::set (output_header, stride);
+    }
 
     OutputBufferType output_buffer (argument[1], output_header);
     OutputBufferType::voxel_type output_vox (output_buffer);
@@ -323,11 +327,8 @@ void run ()
         break;
     }
 
-    if (do_reorientation) {
-      std::string msg ("reorienting...");
-      Image::Registration::Transform::reorient (msg, output_vox, output_vox, linear_transform, directions_cartesian);
-    }
-
+    if (do_reorientation)
+      Image::Registration::Transform::reorient ("reorienting...", output_vox, output_vox, linear_transform, directions_cartesian);
 
   } 
   else {
@@ -340,7 +341,7 @@ void run ()
         output_header.transform().swap (linear_transform);
       else {
         Math::Matrix<float> M (output_header.transform());
-        Math::mult (output_header.transform(), linear_transform, M);
+        Math::mult (output_header.transform(), Math::LU::inv (linear_transform), M);
       }
     }
 
@@ -351,6 +352,13 @@ void run ()
     OutputBufferType::voxel_type out (data_out);
 
     Image::copy_with_progress (in, out);
+
+    if (do_reorientation) {
+      Math::Matrix<float> transform (linear_transform);
+      if (replace)
+        Math::mult (transform, linear_transform, Math::LU::inv (output_header.transform()));
+      Image::Registration::Transform::reorient ("reorienting...", out, out, transform, directions_cartesian);
+    }
   }
 }
 

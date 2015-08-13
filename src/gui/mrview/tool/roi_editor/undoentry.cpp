@@ -24,9 +24,9 @@
 
 #include "image/transform.h"
 
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/item.h"
 #include "gui/mrview/tool/roi_editor/undoentry.h"
-
 
 namespace MR
 {
@@ -56,6 +56,7 @@ namespace MR
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
+          Window::GrabContext context;
           if (!copy_program) {
             GL::Shader::Vertex vertex_shader (
                 "layout(location = 0) in ivec3 vertpos;\n"
@@ -99,11 +100,13 @@ namespace MR
           }
           else copy_vertex_array_object.bind();
 
+
           // set up 2D texture to store slice:
           GL::Texture tex;
-          tex.gen (gl::TEXTURE_2D);
+          tex.gen (gl::TEXTURE_2D, gl::NEAREST);
           gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
           gl::TexImage2D (gl::TEXTURE_2D, 0, gl::R8, tex_size[0], tex_size[1], 0, gl::RED, gl::UNSIGNED_BYTE, nullptr);
+          GL_CHECK_ERROR;
 
           // set up off-screen framebuffer to map textures onto:
           GL::FrameBuffer framebuffer;
@@ -112,24 +115,32 @@ namespace MR
           framebuffer.attach_color (tex, 0);
           framebuffer.draw_buffers (0);
           framebuffer.check();
+          GL_CHECK_ERROR;
+
 
           // render slice onto framebuffer:
           gl::Disable (gl::DEPTH_TEST);
           gl::Disable (gl::BLEND);
+          gl::DepthMask (gl::FALSE_);
           gl::Viewport (0, 0, tex_size[0], tex_size[1]);
           roi.texture().bind();
           copy_program.start();
           gl::Uniform3iv (gl::GetUniformLocation (copy_program, "position"), 1, from.data());
           gl::Uniform2iv (gl::GetUniformLocation (copy_program, "axes"), 1, slice_axes.data());
+
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           copy_program.stop();
           framebuffer.unbind();
+          GL_CHECK_ERROR;
 
           // retrieve texture contents to main memory:
           before.resize (tex_size[0]*tex_size[1]);
-          gl::PixelStorei (GL_PACK_ALIGNMENT, 1);
+          tex.bind();
+          gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
+
           gl::GetTexImage (gl::TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*)(&before[0]));
           after = before;
+          GL_CHECK_ERROR;
         }
 
 
@@ -165,6 +176,8 @@ namespace MR
               p += dir * min_multiplier;
             }
           } while (v != final_vox);
+
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
@@ -208,6 +221,7 @@ namespace MR
 
           } } }
 
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
@@ -240,6 +254,7 @@ namespace MR
                     Math::pow2 (roi.info().vox(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
@@ -270,6 +285,7 @@ namespace MR
               for (int i = a[0]; i <= b[0]; ++i)
                 after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
@@ -312,6 +328,7 @@ namespace MR
 
             }
           }
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
@@ -320,17 +337,22 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::undo (ROI_Item& roi) {
+        void ROI_UndoEntry::undo (ROI_Item& roi) 
+        {
+          Window::GrabContext context;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&before[0]));
         }
 
-        void ROI_UndoEntry::redo (ROI_Item& roi) {
+        void ROI_UndoEntry::redo (ROI_Item& roi) 
+        {
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));
         }
 
-        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) {
+        void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
+        {
+          Window::GrabContext context;
           after = source.before;
           roi.texture().bind();
           gl::TexSubImage3D (GL_TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], GL_RED, GL_UNSIGNED_BYTE, (void*) (&after[0]));

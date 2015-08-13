@@ -56,9 +56,10 @@ namespace MR
         f.setDoubleBuffer (true);
 #endif
 
-        f.setVersion (3,3);
-        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true))
+        if (File::Config::get_bool ("NeedOpenGLCoreProfile", true)) {
+          f.setVersion (3,3);
           f.setProfile (GL::Format::CoreProfile);
+        }
         
         f.setDepthBufferSize (24);
         f.setRedBufferSize (8);
@@ -86,14 +87,17 @@ namespace MR
         INFO ("GL renderer:  " + std::string ( (const char*) gl::GetString (gl::RENDERER)));
         INFO ("GL version:   " + std::string ( (const char*) gl::GetString (gl::VERSION)));
         INFO ("GL vendor:    " + std::string ( (const char*) gl::GetString (gl::VENDOR)));
-        GL_CHECK_ERROR;
+        
         GLint gl_version (0), gl_version_major (0);
         gl::GetIntegerv (gl::MAJOR_VERSION, &gl_version_major);
-        GL_CHECK_ERROR;
         gl::GetIntegerv (gl::MINOR_VERSION, &gl_version);
         GL_CHECK_ERROR;
+
         gl_version += 10*gl_version_major;
-        if (gl_version < 33) {
+        if (gl_version == 0) {
+          WARN ("unable to determine OpenGL version - operation may be unstable if actual version is less than 3.3");
+        }
+        else if (gl_version < 33) {
           FAIL ("your OpenGL implementation is not sufficient to run MRView - need version 3.3 or higher");
           FAIL ("    operation is likely to be unstable");
         }

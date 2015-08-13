@@ -52,18 +52,18 @@ namespace MR
           // so need to guarantee depth test is off for subsequent plane.
           // Ideally, state should be restored by callee but this is safer
 
-          projections[0].set_viewport (window, w, h, w, h); 
+          projections[0].set_viewport (window(), w, h, w, h); 
           draw_plane (0, slice_shader, projections[0]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[1].set_viewport (window, 0, h, w, h); 
+          projections[1].set_viewport (window(), 0, h, w, h); 
           draw_plane (1, slice_shader, projections[1]);
 
           gl::Disable (gl::DEPTH_TEST);
-          projections[2].set_viewport (window, 0, 0, w, h); 
+          projections[2].set_viewport (window(), 0, 0, w, h); 
           draw_plane (2, slice_shader, projections[2]);
 
-          projection.set_viewport (window);
+          projection.set_viewport (window());
 
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
@@ -131,13 +131,13 @@ namespace MR
 
         void Ortho::mouse_press_event ()
         {
-          if (window.mouse_position().x() < width()/2) 
-            if (window.mouse_position().y() >= height()/2) 
+          if (window().mouse_position().x() < width()/2) 
+            if (window().mouse_position().y() >= height()/2) 
               current_plane = 1;
             else 
               current_plane = 2;
           else 
-            if (window.mouse_position().y() >= height()/2)
+            if (window().mouse_position().y() >= height()/2)
               current_plane = 0;
             else 
               current_plane = -1;
@@ -163,7 +163,7 @@ namespace MR
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window.mouse_displacement().y(), *proj);
+          move_in_out_FOV (window().mouse_displacement().y(), *proj);
           updateGL();
         }
 

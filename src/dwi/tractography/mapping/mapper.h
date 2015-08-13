@@ -173,6 +173,7 @@ class TrackMapperBase
     // Used by voxelise() and voxelise_precise() to increment the relevant set
     inline void add_to_set (SetVoxel&   , const Point<int>&, const Point<float>&, const float) const;
     inline void add_to_set (SetVoxelDEC&, const Point<int>&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelDir&, const Point<int>&, const Point<float>&, const float) const;    
     inline void add_to_set (SetDixel&   , const Point<int>&, const Point<float>&, const float) const;
     inline void add_to_set (SetVoxelTOD&, const Point<int>&, const Point<float>&, const float) const;
 
@@ -317,6 +318,10 @@ inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Point<int>& v, 
   out.insert (v, l);
 }
 inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Point<int>& v, const Point<float>& d, const float l) const
+{
+  out.insert (v, d, l);
+}
+inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   out.insert (v, d, l);
 }

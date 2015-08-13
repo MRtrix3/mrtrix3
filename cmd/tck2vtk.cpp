@@ -1,7 +1,7 @@
 /*
 
     This source has been copied from track_info and then been modified so that
-    it converts the mrtrix Tracks to a vtk readble format.
+    it converts the mrtrix Tracks to a vtk readable format.
     the source has been rewritten by
     Philip Broser 1/06/2011 Univeristy of Tuebingen, philip.broser@me.com
 
@@ -37,6 +37,7 @@
 
 #include "app.h"
 #include "command.h"
+#include "file/ofstream.h"
 #include "image/header.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -94,18 +95,16 @@ void run () {
 
   DWI::Tractography::Properties properties;
   DWI::Tractography::Reader<float> file (argument[0], properties);
+  const size_t count = to<size_t>(properties["count"]);
 
   // create and write header of VTK output file:
   std::string VTKFileName (argument[1]);
-  std::ofstream VTKout (VTKFileName.c_str(), std::ios_base::out | std::ios_base::binary);
-  if (!VTKout) 
-    throw Exception ("error opening file \"" + VTKFileName + "\": " + strerror (errno));
+  File::OFStream VTKout (VTKFileName);
   
   VTKout << 
     "# vtk DataFile Version 1.0\n"
     "Data values for Tracks\n"
     "ASCII\n"
-    "\n" 
     "DATASET POLYDATA\n"
     "POINTS ";
   // keep track of offset to write proper value later:
@@ -118,7 +117,7 @@ void run () {
   size_t current_index = 0;
 
   {
-    ProgressBar progress ("writing track data to VTK file");
+    ProgressBar progress ("writing track data to VTK file", count);
     // write out points, and build index of tracks:
     while (file (tck)) {
 
@@ -139,13 +138,12 @@ void run () {
   }
 
   // write out list of tracks:
-  VTKout << "\nLINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
+  VTKout << "LINES " << track_list.size() << " " << track_list.size() + current_index << "\n";
   for (const auto track : track_list) {
-    VTKout << track.second - track.first << "\n";
-    for (size_t i = track.first; i < track.second; ++i)
-      VTKout << i << "\n";
+    VTKout << track.second - track.first << " " << track.first;
+    for (size_t i = track.first + 1; i < track.second; ++i)
+      VTKout << " " << i;
     VTKout << "\n";
-
   };
 
   // write back total number of points:
