@@ -23,9 +23,7 @@
 
 #include "command.h"
 #include "math/SH.h"
-#include "image/matrix_multiply.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
+#include "image.h"
 #include "dwi/gradient.h"
 
 
@@ -59,7 +57,7 @@ void usage ()
     + Option ("nonnegative",
               "cap all negative amplitudes to zero")
 
-    + Image::Stride::StrideOption
+    + Stride::Options
     + DataType::options();
 }
 
@@ -79,20 +77,20 @@ class remove_negative
 
 void run ()
 {
-  Image::Buffer<value_type> sh_data (argument[0]);
+  auto sh_data = Image<value_type>::open(argument[0]);
   Math::SH::check (sh_data);
 
-  Image::Header amp_header (sh_data);
+  auto amp_header = sh_data.header();
 
-  Math::Matrix<value_type> directions;
+  Eigen::MatrixXd directions;
 
   if (get_options("gradient").size()) {
-    Math::Matrix<value_type> grad;
-    grad.load (argument[1]);
+    Eigen::MatrixXd grad;
+    grad = load_matrix(argument[1]);
     DWI::Shells shells (grad);
     directions = DWI::gen_direction_matrix (grad, shells.largest().get_volumes());
   } else {
-    directions.load (argument[1]);
+    directions = load_matrix(argument[1]);
   }
 
   if (!directions.rows())
@@ -102,20 +100,20 @@ void run ()
   for (size_t d = 0; d < directions.rows() - 1; ++d)
     dir_stream << directions(d,0) << "," << directions(d,1) << "\n";
   dir_stream << directions(directions.rows() - 1,0) << "," << directions(directions.rows() - 1,1);
-  amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
+  amp_header.keyval().insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
 
-  amp_header.dim(3) = directions.rows();
-  Image::Stride::set_from_command_line (amp_header, Image::Stride::contiguous_along_axis (3));
+  amp_header.size(3) = directions.rows();
+  Stride::set_from_command_line (amp_header, Stride::contiguous_along_axis (3));
   amp_header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Buffer<value_type> amp_data (argument[2], amp_header);
+  auto amp_data = Image<value_type>::create(argument[2], amp_header);
 
-  Math::SH::Transform<value_type> transformer (directions, Math::SH::LforN (sh_data.dim(3)));
-  Image::matrix_multiply (
-      "computing amplitudes...",
-      transformer.mat_SH2A(),
-      sh_data.voxel(), 
-      amp_data.voxel(),
-      Image::NoOp<value_type>, remove_negative (get_options("nonnegative").size()), 3);
+  Math::SH::Transform<value_type> transformer (directions.cast<value_type>(), Math::SH::LforN (sh_data.size(3)));
+//  Image::matrix_multiply (
+//      "computing amplitudes...",
+//      transformer.mat_SH2A(),
+//      sh_data, 
+//      amp_data,
+//      Image<value_type>::NoOp, remove_negative (get_options("nonnegative").size()), 3);
 
 }
