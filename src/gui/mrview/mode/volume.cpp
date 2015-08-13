@@ -20,6 +20,7 @@
 
 */
 
+#include "file/config.h"
 #include "gui/opengl/lighting.h"
 #include "math/vector.h"
 #include "gui/mrview/mode/volume.h"
@@ -70,8 +71,16 @@ namespace MR
 
         std::string Volume::Shader::fragment_shader_source (const Displayable& object)
         {
-
           std::vector< std::pair<GL::vec4,bool> > clip = mode.get_active_clip_planes();
+          const bool AND = mode.get_clipintersectionmodestate();
+          std::string clip_color_spec = File::Config::get ("MRViewClipPlaneColour");
+          std::vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
+          if (clip_color_spec.size()) {
+            auto colour = parse_floats (clip_color_spec);
+            if (colour.size() < 4) 
+              WARN ("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
+            clip_color = colour;
+          }
 
           std::string source = object.declare_shader_variables() +
             "uniform sampler3D image_sampler;\n"
@@ -125,14 +134,14 @@ namespace MR
             "  for (int n = 0; n < nmax; ++n) {\n"
             "    coord += ray;\n";
 
-              if (clip.size()) {
-                source += "    bool show = true;\n";
-                for (size_t n = 0; n < clip.size(); ++n)
-                  source += "    if (dot (coord, clip" + str(n) + ".xyz) > clip" + str(n) + ".w)\n";
-                source += 
-                  "          show = false;\n"
-                  "    if (show) {\n";
-              }
+          if (clip.size()) {
+            source += std::string("    bool show = ") + ( AND ? "false" : "true" ) + ";\n";
+            for (size_t n = 0; n < clip.size(); ++n)
+              source += std::string("    if (dot (coord, clip") + str(n) + ".xyz) " + ( AND ? "<" : ">" ) + " clip" + str(n) + ".w)\n";
+            source += 
+              std::string("          show = ") + ( AND ? "true" : "false" ) + ";\n"
+              "    if (show) {\n";
+          }
 
 
           source += 
@@ -160,14 +169,7 @@ namespace MR
 
           source += 
             std::string ("        ") + ColourMap::maps[object.colourmap].glsl_mapping;
-
-          for (size_t n = 0; n < clip.size(); ++n) 
-            source += 
-              "        if (clip"+str(n)+"_selected != 0) {\n" 
-              "          float dist = dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w;\n"
-              "          color.rgb = mix (vec3(1.5,0.0,0.0), color.rgb, clamp (abs(dist)/selection_thickness, 0.0, 1.0));\n"
-              "        }\n";
-
+          
           source +=
             "        final_color.rgb += (1.0 - final_color.a) * color.rgb * color.a;\n"
             "        final_color.a += color.a;\n"
@@ -225,6 +227,19 @@ namespace MR
 
 
 
+          if (clip.size() && mode.get_cliphighlightstate()) {
+            source += "    float highlight = 0.0;\n";
+            for (size_t n = 0; n < clip.size(); ++n) 
+              source +=
+                "    if (clip"+str(n)+"_selected != 0)\n"
+                "      highlight += clamp (selection_thickness - abs (dot (coord, clip" + str(n) + ".xyz) - clip" + str(n) + ".w), 0.0, selection_thickness);\n";
+            source += 
+              "    highlight *= " + str(clip_color[3]) + ";\n"
+              "    final_color.rgb += (1.0 - final_color.a) * vec3(" 
+              + str(clip_color[0]) + "," + str(clip_color[1]) + "," + str(clip_color[2]) + ") * highlight;\n"
+              "    final_color.a += highlight;\n";
+          }
+
           source += 
             "    if (final_color.a > 0.95) break;\n"
             "  }\n"
@@ -242,6 +257,10 @@ namespace MR
             return true;
           if (mode.get_active_clip_planes().size() != active_clip_planes) 
             return true;
+          if (mode.get_cliphighlightstate() != cliphighlight)
+            return true;
+          if (mode.get_clipintersectionmodestate() != clipintersectionmode)
+            return true;
           return Displayable::Shader::need_update (object);
         }
 
@@ -250,6 +269,8 @@ namespace MR
         void Volume::Shader::update (const Displayable& object) 
         {
           active_clip_planes = mode.get_active_clip_planes().size();
+          cliphighlight = mode.get_cliphighlightstate();
+          clipintersectionmode = mode.get_clipintersectionmodestate();
           Displayable::Shader::update (object);
         }
 
@@ -259,11 +280,16 @@ namespace MR
 
         namespace {
 
-          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const GL::vec4& plane) 
+          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const Point<>& ray, const GL::vec4& plane) 
           {
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
             normal[3] = on_plane[0]*normal[0] + on_plane[1]*normal[1] + on_plane[2]*normal[2];
+            float off_axis_thickness = std::abs (ray[0]*plane[0] + ray[1]*plane[1] + ray[2]*plane[2]);
+            normal[0] /= off_axis_thickness;
+            normal[1] /= off_axis_thickness;
+            normal[2] /= off_axis_thickness;
+            normal[3] /= off_axis_thickness;
             return normal;
           }
 
@@ -359,7 +385,9 @@ namespace MR
           else 
             min_vox_index = image()->interp.vox(1) < image()->interp.vox (2) ? 1 : 2;
           float step_size = 0.5 * image()->interp.vox(min_vox_index);
-          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal() * step_size);
+          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
+          Point<> ray_real_space = ray;
+          ray *= step_size;
           ray[0] /= image()->interp.dim(0);
           ray[1] /= image()->interp.dim(1);
           ray[2] /= image()->interp.dim(2);
@@ -480,7 +508,7 @@ namespace MR
 
           for (size_t n = 0; n < clip.size(); ++n) {
             gl::Uniform4fv (gl::GetUniformLocation (volume_shader, ("clip"+str(n)).c_str()), 1,
-                clip_real2tex (T2S, S2T, clip[n].first));
+                clip_real2tex (T2S, S2T, ray_real_space, clip[n].first));
             gl::Uniform1i (gl::GetUniformLocation (volume_shader, ("clip"+str(n)+"_selected").c_str()), clip[n].second);
           }
           GL_CHECK_ERROR;
@@ -524,7 +552,6 @@ namespace MR
           draw_orientation_labels (projection);
         }
 
-
         inline Tool::View* Volume::get_view_tool () const
         {
           Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(window().tools()->actions()[0])->dock;
@@ -533,22 +560,29 @@ namespace MR
           return dynamic_cast<Tool::View*> (dock->tool);
         }
 
-
         inline std::vector< std::pair<GL::vec4,bool> > Volume::get_active_clip_planes () const 
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_active_clip_planes() : std::vector< std::pair<GL::vec4,bool> >();
         }
 
-
-
         inline std::vector<GL::vec4*> Volume::get_clip_planes_to_be_edited () const
         {
           Tool::View* view = get_view_tool();
           return view ? view->get_clip_planes_to_be_edited() : std::vector<GL::vec4*>();
         }
+        
+        inline bool Volume::get_cliphighlightstate () const
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_cliphighlightstate() : true;
+        }
 
-
+        inline bool Volume::get_clipintersectionmodestate () const
+        {
+          Tool::View* view = get_view_tool();
+          return view ? view->get_clipintersectionmodestate() : false;
+        }
 
         inline void Volume::move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance)
         {
