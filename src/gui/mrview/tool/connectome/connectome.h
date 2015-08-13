@@ -56,6 +56,7 @@
 #include "gui/mrview/tool/connectome/colourmap_observers.h"
 #include "gui/mrview/tool/connectome/edge.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
+#include "gui/mrview/tool/connectome/matrix_list.h"
 #include "gui/mrview/tool/connectome/node.h"
 #include "gui/mrview/tool/connectome/node_list.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
@@ -112,6 +113,10 @@ namespace MR
             void show_node_list_slot();
             void node_selection_settings_changed_slot();
 
+            void matrix_open_slot();
+            void matrix_close_slot();
+            void connectome_selection_changed_slot (const QItemSelection&, const QItemSelection&);
+
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
             void node_colour_selection_slot (int);
@@ -160,6 +165,9 @@ namespace MR
             AdjustButton *crop_to_slab_button;
             QLabel *show_node_list_label;
             QPushButton *show_node_list_button;
+
+            QPushButton *matrix_open_button, *matrix_close_button;
+            QListView *matrix_list_view;
 
             QComboBox *node_visibility_combobox;
             QComboBox *node_visibility_matrix_operator_combobox;
@@ -263,6 +271,10 @@ namespace MR
             std::unique_ptr<LightingDock> lighting_dock;
 
 
+            // Model for selecting connectome matrices
+            Matrix_list_model* matrix_list_model;
+
+
             // Node selection
             Tool::Dock* node_list;
 
@@ -353,6 +365,7 @@ namespace MR
             void clear_all();
             void enable_all (const bool);
             void initialise (const std::string&);
+            void add_matrices (const std::vector<std::string>&);
 
             void draw_nodes (const Projection&);
             void draw_edges (const Projection&);
@@ -377,7 +390,6 @@ namespace MR
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
             void node_selection_changed (const std::vector<node_t>&);
-
             bool         node_visibility_given_selection (const node_t);
             Point<float> node_colour_given_selection     (const node_t);
             float        node_size_given_selection       (const node_t);
@@ -386,6 +398,16 @@ namespace MR
             Point<float> edge_colour_given_selection     (const Edge&);
             float        edge_size_given_selection       (const Edge&);
             float        edge_alpha_given_selection      (const Edge&);
+
+            // Helper functions to update the min / max / value / rate of parameter controls
+            void update_controls_node_visibility (const float, const float);
+            void update_controls_node_colour     (const float, const float);
+            void update_controls_node_size       (const float, const float);
+            void update_controls_node_alpha      (const float, const float);
+            void update_controls_edge_visibility (const float, const float);
+            void update_controls_edge_colour     (const float, const float);
+            void update_controls_edge_size       (const float, const float);
+            void update_controls_edge_alpha      (const float, const float);
 
             void get_meshes();
             void get_exemplars();

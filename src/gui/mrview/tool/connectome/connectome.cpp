@@ -90,9 +90,9 @@ namespace MR
             node_fixed_alpha (1.0f),
             node_size_scale_factor (1.0f),
             voxel_volume (0.0f),
-            edge_visibility (edge_visibility_t::NONE),
+            edge_visibility (edge_visibility_t::CONNECTOME),
             edge_geometry (edge_geometry_t::LINE),
-            edge_colour (edge_colour_t::FIXED),
+            edge_colour (edge_colour_t::CONNECTOME),
             edge_size (edge_size_t::FIXED),
             edge_alpha (edge_alpha_t::FIXED),
             have_exemplars (false),
@@ -202,6 +202,37 @@ namespace MR
           connect (show_node_list_button, SIGNAL (clicked()), this, SLOT (show_node_list_slot()));
           gridlayout->addWidget (show_node_list_button, 2, 1);
 
+          group_box = new QGroupBox ("Connectome matrices");
+          main_box->addWidget (group_box);
+          vlayout = new VBoxLayout;
+          group_box->setLayout (vlayout);
+
+          hlayout = new HBoxLayout;
+          matrix_open_button = new QPushButton (this);
+          matrix_open_button->setToolTip (tr ("Open connectome file(s)"));
+          matrix_open_button->setIcon (QIcon (":/open.svg"));
+          connect (matrix_open_button, SIGNAL (clicked()), this, SLOT (matrix_open_slot ()));
+          hlayout->addWidget (matrix_open_button, 1);
+          matrix_close_button = new QPushButton (this);
+          matrix_close_button->setToolTip (tr ("Close connectome file(s)"));
+          matrix_close_button->setIcon (QIcon (":/close.svg"));
+          connect (matrix_close_button, SIGNAL (clicked()), this, SLOT (matrix_close_slot ()));
+          hlayout->addWidget (matrix_close_button, 1);
+          vlayout->addLayout (hlayout);
+
+          matrix_list_view = new QListView (this);
+          matrix_list_view->setSelectionMode (QAbstractItemView::SingleSelection);
+          matrix_list_view->setDragEnabled (true);
+          matrix_list_view->viewport()->setAcceptDrops (true);
+          matrix_list_view->setDropIndicatorShown (true);
+          matrix_list_model = new Matrix_list_model (this);
+          matrix_list_view->setModel (matrix_list_model);
+          vlayout->addWidget (matrix_list_view);
+
+          connect (matrix_list_view->selectionModel(),
+              SIGNAL(selectionChanged (const QItemSelection &, const QItemSelection &)),
+              SLOT (connectome_selection_changed_slot (const QItemSelection &, const QItemSelection &)) );
+
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
           gridlayout = new GridLayout();
@@ -214,6 +245,7 @@ namespace MR
           node_visibility_combobox->addItem ("All");
           node_visibility_combobox->addItem ("None");
           node_visibility_combobox->addItem ("Degree >= 1");
+          node_visibility_combobox->addItem ("Connectome");
           node_visibility_combobox->addItem ("Vector file");
           node_visibility_combobox->addItem ("Matrix file");
           connect (node_visibility_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_selection_slot (int)));
@@ -303,6 +335,7 @@ namespace MR
           node_colour_combobox->addItem ("Fixed");
           node_colour_combobox->addItem ("Random");
           node_colour_combobox->addItem ("LUT");
+          node_colour_combobox->addItem ("Connectome");
           node_colour_combobox->addItem ("Vector file");
           node_colour_combobox->addItem ("Matrix file");
           connect (node_colour_combobox, SIGNAL (activated(int)), this, SLOT (node_colour_selection_slot (int)));
@@ -363,6 +396,7 @@ namespace MR
           node_size_combobox->setToolTip (tr ("Set how the size of each node is determined"));
           node_size_combobox->addItem ("Fixed");
           node_size_combobox->addItem ("Node volume");
+          node_size_combobox->addItem ("Connectome");
           node_size_combobox->addItem ("Vector file");
           node_size_combobox->addItem ("Matrix file");
           connect (node_size_combobox, SIGNAL (activated(int)), this, SLOT (node_size_selection_slot (int)));
@@ -425,6 +459,7 @@ namespace MR
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
           node_alpha_combobox->addItem ("LUT");
+          node_alpha_combobox->addItem ("Connectome");
           node_alpha_combobox->addItem ("Vector file");
           node_alpha_combobox->addItem ("Matrix file");
           connect (node_alpha_combobox, SIGNAL (activated(int)), this, SLOT (node_alpha_selection_slot (int)));
@@ -493,8 +528,9 @@ namespace MR
           edge_visibility_combobox->addItem ("All");
           edge_visibility_combobox->addItem ("None");
           edge_visibility_combobox->addItem ("By nodes");
+          edge_visibility_combobox->addItem ("Connectome");
           edge_visibility_combobox->addItem ("Matrix file");
-          edge_visibility_combobox->setCurrentIndex (1);
+          edge_visibility_combobox->setCurrentIndex (3);
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 0, 2);
           edge_visibility_warning_icon = new QLabel();
@@ -518,9 +554,6 @@ namespace MR
           edge_visibility_threshold_invert_checkbox->setTristate (false);
           connect (edge_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
           hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
-          edge_visibility_threshold_label->setVisible (false);
-          edge_visibility_threshold_button->setVisible (false);
-          edge_visibility_threshold_invert_checkbox->setVisible (false);
           gridlayout->addLayout (hlayout, 1, 1, 1, 4);
 
           label = new QLabel ("Geometry: ");
@@ -561,7 +594,9 @@ namespace MR
           edge_colour_combobox->setToolTip (tr ("Set how the colour of each edge is determined"));
           edge_colour_combobox->addItem ("Fixed");
           edge_colour_combobox->addItem ("By direction");
+          edge_colour_combobox->addItem ("Connectome");
           edge_colour_combobox->addItem ("Matrix file");
+          edge_colour_combobox->setCurrentIndex (2);
           connect (edge_colour_combobox, SIGNAL (activated(int)), this, SLOT (edge_colour_selection_slot (int)));
           gridlayout->addWidget (edge_colour_combobox, 3, 2);
           hlayout = new HBoxLayout;
@@ -569,11 +604,11 @@ namespace MR
           hlayout->setSpacing (0);
           edge_colour_fixedcolour_button = new QColorButton;
           edge_colour_fixedcolour_button->setToolTip (tr ("Set the fixed colour to use for all edges"));
+          edge_colour_fixedcolour_button->setVisible (false);
           connect (edge_colour_fixedcolour_button, SIGNAL (clicked()), this, SLOT (edge_colour_change_slot()));
           hlayout->addWidget (edge_colour_fixedcolour_button, 1);
           edge_colour_colourmap_button = new ColourMapButton (this, edge_colourmap_observer, false, false, true);
           edge_colour_colourmap_button->setToolTip (tr ("Select the colourmap for nodes"));
-          edge_colour_colourmap_button->setVisible (false);
           hlayout->addWidget (edge_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
@@ -594,9 +629,6 @@ namespace MR
           edge_colour_upper_button->setMax (std::numeric_limits<float>::max());
           connect (edge_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_colour_parameter_slot()));
           hlayout->addWidget (edge_colour_upper_button);
-          edge_colour_range_label->setVisible (false);
-          edge_colour_lower_button->setVisible (false);
-          edge_colour_upper_button->setVisible (false);
           gridlayout->addLayout (hlayout, 4, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
@@ -604,6 +636,7 @@ namespace MR
           edge_size_combobox = new QComboBox (this);
           edge_size_combobox->setToolTip (tr ("Set how the width of each edge is determined"));
           edge_size_combobox->addItem ("Fixed");
+          edge_size_combobox->addItem ("Connectome");
           edge_size_combobox->addItem ("Matrix file");
           connect (edge_size_combobox, SIGNAL (activated(int)), this, SLOT (edge_size_selection_slot (int)));
           gridlayout->addWidget (edge_size_combobox, 5, 2);
@@ -649,6 +682,7 @@ namespace MR
           edge_alpha_combobox = new QComboBox (this);
           edge_alpha_combobox->setToolTip (tr ("Set how edge transparency is determined"));
           edge_alpha_combobox->addItem ("Fixed");
+          edge_alpha_combobox->addItem ("Connectome");
           edge_alpha_combobox->addItem ("Matrix file");
           connect (edge_alpha_combobox, SIGNAL (activated(int)), this, SLOT (edge_alpha_selection_slot (int)));
           gridlayout->addWidget (edge_alpha_combobox, 7, 2);
@@ -805,19 +839,30 @@ namespace MR
           options
             + OptionGroup ("Connectome tool options")
 
-            + Option ("connectome.load", "Loads the specified parcellation image on the connectome tool.")
-            +   Argument ("image").type_image_in();
+            + Option ("connectome.init", "Initialise the connectome tool using a parcellation image.")
+            +   Argument ("image").type_image_in()
+
+            + Option ("connectome.load", "Load a matrix file into the connectome tool.")
+            +   Argument ("path").type_file_in();
+
         }
 
         bool Connectome::process_commandline_option (const MR::App::ParsedOption& opt)
         {
-          if (opt.opt->is ("connectome.load")) {
+          if (opt.opt->is ("connectome.init")) {
             try {
               initialise (opt[0]);
               image_button->setText (QString::fromStdString (Path::basename (opt[0])));
               load_properties();
               enable_all (true);
             } catch (Exception& e) { e.display(); clear_all(); }
+            return true;
+          }
+          if (opt.opt->is ("connectome.load")) {
+            try {
+              std::vector<std::string> list (1, opt[0]);
+              add_matrices (list);
+            } catch (Exception& e) { e.display(); }
             return true;
           }
           return false;
@@ -958,6 +1003,48 @@ namespace MR
 
 
 
+        void Connectome::matrix_open_slot ()
+        {
+          std::vector<std::string> list = Dialog::File::get_files (&window(), "Select connectome file(s) to open");
+          if (list.empty())
+            return;
+          add_matrices (list);
+        }
+
+        void Connectome::matrix_close_slot ()
+        {
+          QModelIndexList indexes = matrix_list_view->selectionModel()->selectedIndexes();
+          if (indexes.size())
+            matrix_list_model->remove_item (indexes.first());
+          window().updateGL();
+        }
+
+        void Connectome::connectome_selection_changed_slot (const QItemSelection&, const QItemSelection&)
+        {
+          if (node_visibility == node_visibility_t::CONNECTOME)
+            calculate_node_visibility();
+          if (node_colour == node_colour_t::CONNECTOME)
+            calculate_node_colours();
+          if (node_size == node_size_t::CONNECTOME)
+            calculate_node_sizes();
+          if (node_alpha == node_alpha_t::CONNECTOME)
+            calculate_node_alphas();
+          if (edge_visibility == edge_visibility_t::CONNECTOME)
+            calculate_edge_visibility();
+          if (edge_colour == edge_colour_t::CONNECTOME)
+            calculate_edge_colours();
+          if (edge_size == edge_size_t::CONNECTOME)
+            calculate_edge_sizes();
+          if (edge_alpha == edge_alpha_t::CONNECTOME)
+            calculate_edge_alphas();
+          window().updateGL();
+        }
+
+
+
+
+
+
 
 
 
@@ -968,7 +1055,7 @@ namespace MR
             case 0:
               if (node_visibility == node_visibility_t::ALL) return;
               node_visibility = node_visibility_t::ALL;
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
@@ -977,7 +1064,7 @@ namespace MR
             case 1:
               if (node_visibility == node_visibility_t::NONE) return;
               node_visibility = node_visibility_t::NONE;
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
@@ -996,53 +1083,16 @@ namespace MR
               } else {
                 node_visibility = node_visibility_t::DEGREE;
               }
-              node_visibility_combobox->removeItem (5);
+              node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
               node_visibility_threshold_label->setVisible (false);
               node_visibility_threshold_button->setVisible (false);
               node_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 3:
-              if (!import_vector_file (node_values_from_file_visibility, "node visibility")) {
-                switch (node_visibility) {
-                  case node_visibility_t::ALL:         node_visibility_combobox->setCurrentIndex (0); return;
-                  case node_visibility_t::NONE:        node_visibility_combobox->setCurrentIndex (1); return;
-                  case node_visibility_t::DEGREE:      node_visibility_combobox->setCurrentIndex (2); return;
-                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (5); return;
-                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (5); return;
-                }
-              }
-              node_visibility = node_visibility_t::VECTOR_FILE;
-              if (node_visibility_combobox->count() == 5)
-                node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
-              else
-                node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
-              node_visibility_combobox->setCurrentIndex (5);
-              node_visibility_matrix_operator_combobox->setVisible (false);
-              node_visibility_threshold_label->setVisible (true);
-              node_visibility_threshold_button->setVisible (true);
-              node_visibility_threshold_invert_checkbox->setVisible (true);
-              node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
-              node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
-              node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
-              node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
-              break;
-            case 4:
-              if (!import_matrix_file (node_values_from_file_visibility, "node visibility")) {
-                switch (node_visibility) {
-                  case node_visibility_t::ALL:         node_visibility_combobox->setCurrentIndex (0); return;
-                  case node_visibility_t::NONE:        node_visibility_combobox->setCurrentIndex (1); return;
-                  case node_visibility_t::DEGREE:      node_visibility_combobox->setCurrentIndex (2); return;
-                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (5); return;
-                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (5); return;
-                }
-              }
-              node_visibility = node_visibility_t::MATRIX_FILE;
-              if (node_visibility_combobox->count() == 5)
-                node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
-              else
-                node_visibility_combobox->setItemText (5, node_values_from_file_visibility.get_name());
-              node_visibility_combobox->setCurrentIndex (5);
+              if (node_visibility == node_visibility_t::CONNECTOME) return;
+              node_visibility = node_visibility_t::CONNECTOME;
+              node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (true);
               if (selected_node_count >= 2) {
                 node_visibility_matrix_operator_combobox->removeItem (2);
@@ -1060,12 +1110,76 @@ namespace MR
               node_visibility_threshold_label->setVisible (true);
               node_visibility_threshold_button->setVisible (true);
               node_visibility_threshold_invert_checkbox->setVisible (true);
-              node_visibility_threshold_button->setRate (0.001 * (node_values_from_file_visibility.get_max() - node_values_from_file_visibility.get_min()));
-              node_visibility_threshold_button->setMin (node_values_from_file_visibility.get_min());
-              node_visibility_threshold_button->setMax (node_values_from_file_visibility.get_max());
-              node_visibility_threshold_button->setValue (0.5 * (node_values_from_file_visibility.get_min() + node_values_from_file_visibility.get_max()));
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_node_visibility (min, max);
+              }
+              break;
+            case 4:
+              if (!import_vector_file (node_values_from_file_visibility, "node visibility")) {
+                switch (node_visibility) {
+                  case node_visibility_t::ALL:         node_visibility_combobox->setCurrentIndex (0); return;
+                  case node_visibility_t::NONE:        node_visibility_combobox->setCurrentIndex (1); return;
+                  case node_visibility_t::DEGREE:      node_visibility_combobox->setCurrentIndex (2); return;
+                  case node_visibility_t::CONNECTOME:  node_visibility_combobox->setCurrentIndex (3); return;
+                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (5); return;
+                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (5); return;
+                }
+              }
+              node_visibility = node_visibility_t::VECTOR_FILE;
+              if (node_visibility_combobox->count() == 6)
+                node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
+              else
+                node_visibility_combobox->setItemText (6, node_values_from_file_visibility.get_name());
+              node_visibility_combobox->setCurrentIndex (6);
+              node_visibility_matrix_operator_combobox->setVisible (false);
+              node_visibility_threshold_label->setVisible (true);
+              node_visibility_threshold_button->setVisible (true);
+              node_visibility_threshold_invert_checkbox->setVisible (true);
+              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_max());
               break;
             case 5:
+              if (!import_matrix_file (node_values_from_file_visibility, "node visibility")) {
+                switch (node_visibility) {
+                  case node_visibility_t::ALL:         node_visibility_combobox->setCurrentIndex (0); return;
+                  case node_visibility_t::NONE:        node_visibility_combobox->setCurrentIndex (1); return;
+                  case node_visibility_t::DEGREE:      node_visibility_combobox->setCurrentIndex (2); return;
+                  case node_visibility_t::CONNECTOME:  node_visibility_combobox->setCurrentIndex (3); return;
+                  case node_visibility_t::VECTOR_FILE: node_visibility_combobox->setCurrentIndex (6); return;
+                  case node_visibility_t::MATRIX_FILE: node_visibility_combobox->setCurrentIndex (6); return;
+                }
+              }
+              node_visibility = node_visibility_t::MATRIX_FILE;
+              if (node_visibility_combobox->count() == 6)
+                node_visibility_combobox->addItem (node_values_from_file_visibility.get_name());
+              else
+                node_visibility_combobox->setItemText (6, node_values_from_file_visibility.get_name());
+              node_visibility_combobox->setCurrentIndex (6);
+              node_visibility_matrix_operator_combobox->setVisible (true);
+              if (selected_node_count >= 2) {
+                node_visibility_matrix_operator_combobox->removeItem (2);
+                switch (node_visibility_matrix_operator) {
+                  case node_visibility_matrix_operator_t::ANY: node_visibility_matrix_operator_combobox->setCurrentIndex (0); break;
+                  case node_visibility_matrix_operator_t::ALL: node_visibility_matrix_operator_combobox->setCurrentIndex (1); break;
+                }
+                node_visibility_matrix_operator_combobox->setEnabled (true);
+              } else {
+                if (node_visibility_matrix_operator_combobox->count() == 2)
+                  node_visibility_matrix_operator_combobox->addItem ("N/A");
+                node_visibility_matrix_operator_combobox->setCurrentIndex (2);
+                node_visibility_matrix_operator_combobox->setEnabled (false);
+              }
+              node_visibility_threshold_label->setVisible (true);
+              node_visibility_threshold_button->setVisible (true);
+              node_visibility_threshold_invert_checkbox->setVisible (true);
+              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_max());
+              break;
+            case 6:
               return;
           }
           calculate_node_visibility();
@@ -1173,7 +1287,7 @@ namespace MR
               node_colour = node_colour_t::FIXED;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (true);
-              node_colour_combobox->removeItem (5);
+              node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
@@ -1184,7 +1298,7 @@ namespace MR
               node_colour = node_colour_t::RANDOM;
               node_colour_colourmap_button->setVisible (false);
               node_colour_fixedcolour_button->setVisible (false);
-              node_colour_combobox->removeItem (5);
+              node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
@@ -1208,59 +1322,18 @@ namespace MR
                 node_colour_fixedcolour_button->setVisible (true);
               }
               node_colour_colourmap_button->setVisible (false);
-              node_colour_combobox->removeItem (5);
+              node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
               break;
             case 3:
-              if (!import_vector_file (node_values_from_file_colour, "node colours")) {
-                switch (node_colour) {
-                  case node_colour_t::FIXED:       node_colour_combobox->setCurrentIndex (0); return;
-                  case node_colour_t::RANDOM:      node_colour_combobox->setCurrentIndex (1); return;
-                  case node_colour_t::FROM_LUT:    node_colour_combobox->setCurrentIndex (2); return;
-                  case node_colour_t::VECTOR_FILE: node_colour_combobox->setCurrentIndex (5); return;
-                  case node_colour_t::MATRIX_FILE: node_colour_combobox->setCurrentIndex (5); return;
-                }
-              }
-              node_colour = node_colour_t::VECTOR_FILE;
+              if (node_colour == node_colour_t::CONNECTOME) return;
+              node_colour = node_colour_t::CONNECTOME;
               node_colour_colourmap_button->setVisible (true);
               node_colour_fixedcolour_button->setVisible (false);
-              if (node_colour_combobox->count() == 5)
-                node_colour_combobox->addItem (node_values_from_file_colour.get_name());
-              else
-                node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
-              node_colour_combobox->setCurrentIndex (5);
-              node_colour_matrix_operator_combobox->setVisible (false);
-              node_colour_range_label->setVisible (true);
-              node_colour_lower_button->setVisible (true);
-              node_colour_upper_button->setVisible (true);
-              node_colour_lower_button->setValue (node_values_from_file_colour.get_min());
-              node_colour_upper_button->setValue (node_values_from_file_colour.get_max());
-              node_colour_lower_button->setMax (node_values_from_file_colour.get_max());
-              node_colour_upper_button->setMin (node_values_from_file_colour.get_min());
-              node_colour_lower_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
-              node_colour_upper_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
-              break;
-            case 4:
-              if (!import_matrix_file (node_values_from_file_colour, "node colours")) {
-                switch (node_colour) {
-                  case node_colour_t::FIXED:       node_colour_combobox->setCurrentIndex (0); return;
-                  case node_colour_t::RANDOM:      node_colour_combobox->setCurrentIndex (1); return;
-                  case node_colour_t::FROM_LUT:    node_colour_combobox->setCurrentIndex (2); return;
-                  case node_colour_t::VECTOR_FILE: node_colour_combobox->setCurrentIndex (5); return;
-                  case node_colour_t::MATRIX_FILE: node_colour_combobox->setCurrentIndex (5); return;
-                }
-              }
-              node_colour = node_colour_t::MATRIX_FILE;
-              node_colour_colourmap_button->setVisible (true);
-              node_colour_fixedcolour_button->setVisible (false);
-              if (node_colour_combobox->count() == 5)
-                node_colour_combobox->addItem (node_values_from_file_colour.get_name());
-              else
-                node_colour_combobox->setItemText (5, node_values_from_file_colour.get_name());
-              node_colour_combobox->setCurrentIndex (5);
+              node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (true);
               if (selected_node_count >= 2) {
                 node_colour_matrix_operator_combobox->removeItem (4);
@@ -1280,14 +1353,82 @@ namespace MR
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
-              node_colour_lower_button->setValue (node_values_from_file_colour.get_min());
-              node_colour_upper_button->setValue (node_values_from_file_colour.get_max());
-              node_colour_lower_button->setMax (node_values_from_file_colour.get_max());
-              node_colour_upper_button->setMin (node_values_from_file_colour.get_min());
-              node_colour_lower_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
-              node_colour_upper_button->setRate (0.01 * (node_values_from_file_colour.get_max() - node_values_from_file_colour.get_min()));
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_node_colour (min, max);
+              }
+              break;
+            case 4:
+              if (!import_vector_file (node_values_from_file_colour, "node colours")) {
+                switch (node_colour) {
+                  case node_colour_t::FIXED:       node_colour_combobox->setCurrentIndex (0); return;
+                  case node_colour_t::RANDOM:      node_colour_combobox->setCurrentIndex (1); return;
+                  case node_colour_t::FROM_LUT:    node_colour_combobox->setCurrentIndex (2); return;
+                  case node_colour_t::CONNECTOME:  node_colour_combobox->setCurrentIndex (3); return;
+                  case node_colour_t::VECTOR_FILE: node_colour_combobox->setCurrentIndex (6); return;
+                  case node_colour_t::MATRIX_FILE: node_colour_combobox->setCurrentIndex (6); return;
+                }
+              }
+              node_colour = node_colour_t::VECTOR_FILE;
+              node_colour_colourmap_button->setVisible (true);
+              node_colour_fixedcolour_button->setVisible (false);
+              if (node_colour_combobox->count() == 6)
+                node_colour_combobox->addItem (node_values_from_file_colour.get_name());
+              else
+                node_colour_combobox->setItemText (6, node_values_from_file_colour.get_name());
+              node_colour_combobox->setCurrentIndex (6);
+              node_colour_matrix_operator_combobox->setVisible (false);
+              node_colour_range_label->setVisible (true);
+              node_colour_lower_button->setVisible (true);
+              node_colour_upper_button->setVisible (true);
+              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_max());
               break;
             case 5:
+              if (!import_matrix_file (node_values_from_file_colour, "node colours")) {
+                switch (node_colour) {
+                  case node_colour_t::FIXED:       node_colour_combobox->setCurrentIndex (0); return;
+                  case node_colour_t::RANDOM:      node_colour_combobox->setCurrentIndex (1); return;
+                  case node_colour_t::FROM_LUT:    node_colour_combobox->setCurrentIndex (2); return;
+                  case node_colour_t::CONNECTOME:  node_colour_combobox->setCurrentIndex (3); return;
+                  case node_colour_t::VECTOR_FILE: node_colour_combobox->setCurrentIndex (6); return;
+                  case node_colour_t::MATRIX_FILE: node_colour_combobox->setCurrentIndex (6); return;
+                }
+              }
+              node_colour = node_colour_t::MATRIX_FILE;
+              node_colour_colourmap_button->setVisible (true);
+              node_colour_fixedcolour_button->setVisible (false);
+              if (node_colour_combobox->count() == 6)
+                node_colour_combobox->addItem (node_values_from_file_colour.get_name());
+              else
+                node_colour_combobox->setItemText (6, node_values_from_file_colour.get_name());
+              node_colour_combobox->setCurrentIndex (6);
+              node_colour_matrix_operator_combobox->setVisible (true);
+              if (selected_node_count >= 2) {
+                node_colour_matrix_operator_combobox->removeItem (4);
+                switch (node_colour_matrix_operator) {
+                  case node_property_matrix_operator_t::MIN:  node_colour_matrix_operator_combobox->setCurrentIndex (0); break;
+                  case node_property_matrix_operator_t::MEAN: node_colour_matrix_operator_combobox->setCurrentIndex (1); break;
+                  case node_property_matrix_operator_t::SUM:  node_colour_matrix_operator_combobox->setCurrentIndex (2); break;
+                  case node_property_matrix_operator_t::MAX:  node_colour_matrix_operator_combobox->setCurrentIndex (3); break;
+                }
+                node_colour_matrix_operator_combobox->setEnabled (true);
+              } else {
+                if (node_colour_matrix_operator_combobox->count() == 4)
+                  node_colour_matrix_operator_combobox->addItem ("N/A");
+                node_colour_matrix_operator_combobox->setCurrentIndex (4);
+                node_colour_matrix_operator_combobox->setEnabled (false);
+              }
+              node_colour_range_label->setVisible (true);
+              node_colour_lower_button->setVisible (true);
+              node_colour_upper_button->setVisible (true);
+              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_max());
+              break;
+            case 6:
               return;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -1304,7 +1445,7 @@ namespace MR
             case 0:
               if (node_size == node_size_t::FIXED) return;
               node_size = node_size_t::FIXED;
-              node_size_combobox->removeItem (4);
+              node_size_combobox->removeItem (5);
               node_size_matrix_operator_combobox->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
@@ -1314,7 +1455,7 @@ namespace MR
             case 1:
               if (node_size == node_size_t::NODE_VOLUME) return;
               node_size = node_size_t::NODE_VOLUME;
-              node_size_combobox->removeItem (4);
+              node_size_combobox->removeItem (5);
               node_size_matrix_operator_combobox->setVisible (false);
               node_size_range_label->setVisible (false);
               node_size_lower_button->setVisible (false);
@@ -1322,40 +1463,72 @@ namespace MR
               node_size_invert_checkbox->setVisible (false);
               break;
             case 2:
+              if (node_size == node_size_t::CONNECTOME) return;
+              node_size = node_size_t::CONNECTOME;
+              node_size_combobox->removeItem (5);
+              node_size_matrix_operator_combobox->setVisible (true);
+              if (selected_node_count >= 2) {
+                node_size_matrix_operator_combobox->removeItem (4);
+                switch (node_size_matrix_operator) {
+                  case node_property_matrix_operator_t::MIN:  node_size_matrix_operator_combobox->setCurrentIndex (0); break;
+                  case node_property_matrix_operator_t::MEAN: node_size_matrix_operator_combobox->setCurrentIndex (1); break;
+                  case node_property_matrix_operator_t::SUM:  node_size_matrix_operator_combobox->setCurrentIndex (2); break;
+                  case node_property_matrix_operator_t::MAX:  node_size_matrix_operator_combobox->setCurrentIndex (3); break;
+                }
+                node_size_matrix_operator_combobox->setEnabled (true);
+              } else {
+                if (node_size_matrix_operator_combobox->count() == 4)
+                  node_size_matrix_operator_combobox->addItem ("N/A");
+                node_size_matrix_operator_combobox->setCurrentIndex (4);
+                node_size_matrix_operator_combobox->setEnabled (false);
+              }
+              node_size_range_label->setVisible (true);
+              node_size_lower_button->setVisible (true);
+              node_size_upper_button->setVisible (true);
+              node_size_invert_checkbox->setVisible (true);
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_node_size (min, max);
+              }
+              node_size_invert_checkbox->setChecked (false);
+              break;
+            case 3:
               if (!import_vector_file (node_values_from_file_size, "node size")) {
                 switch (node_size) {
                   case node_size_t::FIXED:       node_size_combobox->setCurrentIndex (0); return;
                   case node_size_t::NODE_VOLUME: node_size_combobox->setCurrentIndex (1); return;
-                  case node_size_t::VECTOR_FILE: node_size_combobox->setCurrentIndex (4); return;
-                  case node_size_t::MATRIX_FILE: node_size_combobox->setCurrentIndex (4); return;
+                  case node_size_t::CONNECTOME:  node_size_combobox->setCurrentIndex (2); return;
+                  case node_size_t::VECTOR_FILE: node_size_combobox->setCurrentIndex (5); return;
+                  case node_size_t::MATRIX_FILE: node_size_combobox->setCurrentIndex (5); return;
                 }
               }
               node_size = node_size_t::VECTOR_FILE;
-              if (node_size_combobox->count() == 4)
+              if (node_size_combobox->count() == 5)
                 node_size_combobox->addItem (node_values_from_file_size.get_name());
               else
-                node_size_combobox->setItemText (4, node_values_from_file_size.get_name());
-              node_size_combobox->setCurrentIndex (4);
+                node_size_combobox->setItemText (5, node_values_from_file_size.get_name());
+              node_size_combobox->setCurrentIndex (5);
               node_size_matrix_operator_combobox->setVisible (false);
               node_size_range_label->setVisible (true);
               node_size_lower_button->setVisible (true);
               node_size_upper_button->setVisible (true);
               node_size_invert_checkbox->setVisible (true);
-              node_size_lower_button->setValue (node_values_from_file_size.get_min());
-              node_size_upper_button->setValue (node_values_from_file_size.get_max());
-              node_size_lower_button->setMax (node_values_from_file_size.get_max());
-              node_size_upper_button->setMin (node_values_from_file_size.get_min());
-              node_size_lower_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
-              node_size_upper_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
+              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
-            case 3:
+            case 4:
               if (!import_matrix_file (node_values_from_file_size, "node size")) {
                 switch (node_size) {
                   case node_size_t::FIXED:       node_size_combobox->setCurrentIndex (0); return;
                   case node_size_t::NODE_VOLUME: node_size_combobox->setCurrentIndex (1); return;
-                  case node_size_t::VECTOR_FILE: node_size_combobox->setCurrentIndex (4); return;
-                  case node_size_t::MATRIX_FILE: node_size_combobox->setCurrentIndex (4); return;
+                  case node_size_t::CONNECTOME:  node_size_combobox->setCurrentIndex (2); return;
+                  case node_size_t::VECTOR_FILE: node_size_combobox->setCurrentIndex (5); return;
+                  case node_size_t::MATRIX_FILE: node_size_combobox->setCurrentIndex (5); return;
                 }
               }
               node_size = node_size_t::MATRIX_FILE;
@@ -1384,15 +1557,10 @@ namespace MR
               node_size_lower_button->setVisible (true);
               node_size_upper_button->setVisible (true);
               node_size_invert_checkbox->setVisible (true);
-              node_size_lower_button->setValue (node_values_from_file_size.get_min());
-              node_size_upper_button->setValue (node_values_from_file_size.get_max());
-              node_size_lower_button->setMax (node_values_from_file_size.get_max());
-              node_size_upper_button->setMin (node_values_from_file_size.get_min());
-              node_size_lower_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
-              node_size_upper_button->setRate (0.01 * (node_values_from_file_size.get_max() - node_values_from_file_size.get_min()));
+              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
-            case 4:
+            case 5:
               return;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -1408,7 +1576,7 @@ namespace MR
             case 0:
               if (node_alpha == node_alpha_t::FIXED) return;
               node_alpha = node_alpha_t::FIXED;
-              node_alpha_combobox->removeItem (4);
+              node_alpha_combobox->removeItem (5);
               node_alpha_matrix_operator_combobox->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1430,7 +1598,7 @@ namespace MR
                 node_alpha_combobox->setCurrentIndex (0);
                 node_alpha = node_alpha_t::FIXED;
               }
-              node_alpha_combobox->removeItem (4);
+              node_alpha_combobox->removeItem (5);
               node_alpha_matrix_operator_combobox->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1438,40 +1606,72 @@ namespace MR
               node_alpha_invert_checkbox->setVisible (false);
               break;
             case 2:
+              if (node_alpha == node_alpha_t::CONNECTOME) return;
+              node_alpha = node_alpha_t::CONNECTOME;
+              node_alpha_combobox->removeItem (5);
+              node_alpha_matrix_operator_combobox->setVisible (true);
+              if (selected_node_count >= 2) {
+                node_alpha_matrix_operator_combobox->removeItem (4);
+                switch (node_alpha_matrix_operator) {
+                  case node_property_matrix_operator_t::MIN:  node_alpha_matrix_operator_combobox->setCurrentIndex (0); break;
+                  case node_property_matrix_operator_t::MEAN: node_alpha_matrix_operator_combobox->setCurrentIndex (1); break;
+                  case node_property_matrix_operator_t::SUM:  node_alpha_matrix_operator_combobox->setCurrentIndex (2); break;
+                  case node_property_matrix_operator_t::MAX:  node_alpha_matrix_operator_combobox->setCurrentIndex (3); break;
+                }
+                node_alpha_matrix_operator_combobox->setEnabled (true);
+              } else {
+                if (node_alpha_matrix_operator_combobox->count() == 4)
+                  node_alpha_matrix_operator_combobox->addItem ("N/A");
+                node_alpha_matrix_operator_combobox->setCurrentIndex (4);
+                node_alpha_matrix_operator_combobox->setEnabled (false);
+              }
+              node_alpha_range_label->setVisible (true);
+              node_alpha_lower_button->setVisible (true);
+              node_alpha_upper_button->setVisible (true);
+              node_alpha_invert_checkbox->setVisible (true);
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_node_alpha (min, max);
+              }
+              node_alpha_invert_checkbox->setChecked (false);
+              break;
+            case 3:
               if (!import_vector_file (node_values_from_file_alpha, "node transparency")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::FROM_LUT:    node_alpha_combobox->setCurrentIndex (1); return;
-                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (4); return;
-                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (4); return;
+                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (2); return;
+                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (5); return;
+                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (5); return;
                 }
               }
               node_alpha = node_alpha_t::VECTOR_FILE;
-              if (node_alpha_combobox->count() == 4)
+              if (node_alpha_combobox->count() == 5)
                 node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
               else
-                node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
-              node_alpha_combobox->setCurrentIndex (4);
+                node_alpha_combobox->setItemText (5, node_values_from_file_alpha.get_name());
+              node_alpha_combobox->setCurrentIndex (5);
               node_alpha_matrix_operator_combobox->setVisible (false);
               node_alpha_range_label->setVisible (true);
               node_alpha_lower_button->setVisible (true);
               node_alpha_upper_button->setVisible (true);
               node_alpha_invert_checkbox->setVisible (true);
-              node_alpha_lower_button->setValue (node_values_from_file_alpha.get_min());
-              node_alpha_upper_button->setValue (node_values_from_file_alpha.get_max());
-              node_alpha_lower_button->setMax (node_values_from_file_alpha.get_max());
-              node_alpha_upper_button->setMin (node_values_from_file_alpha.get_min());
-              node_alpha_lower_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
-              node_alpha_upper_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
+              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
-            case 3:
+            case 4:
               if (!import_matrix_file (node_values_from_file_alpha, "node transparency")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
                   case node_alpha_t::FROM_LUT:    node_alpha_combobox->setCurrentIndex (1); return;
-                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (4); return;
-                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (4); return;
+                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (2); return;
+                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (5); return;
+                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (5); return;
                 }
               }
               node_alpha = node_alpha_t::MATRIX_FILE;
@@ -1500,15 +1700,10 @@ namespace MR
               node_alpha_lower_button->setVisible (true);
               node_alpha_upper_button->setVisible (true);
               node_alpha_invert_checkbox->setVisible (true);
-              node_alpha_lower_button->setValue (node_values_from_file_alpha.get_min());
-              node_alpha_upper_button->setValue (node_values_from_file_alpha.get_max());
-              node_alpha_lower_button->setMax (node_values_from_file_alpha.get_max());
-              node_alpha_upper_button->setMin (node_values_from_file_alpha.get_min());
-              node_alpha_lower_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
-              node_alpha_upper_button->setRate (0.01 * (node_values_from_file_alpha.get_max() - node_values_from_file_alpha.get_min()));
+              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
-            case 4:
+            case 5:
               return;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -1638,7 +1833,7 @@ namespace MR
             case 0:
               if (edge_visibility == edge_visibility_t::ALL) return;
               edge_visibility = edge_visibility_t::ALL;
-              edge_visibility_combobox->removeItem (4);
+              edge_visibility_combobox->removeItem (5);
               edge_visibility_threshold_label->setVisible (false);
               edge_visibility_threshold_button->setVisible (false);
               edge_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1646,7 +1841,7 @@ namespace MR
             case 1:
               if (edge_visibility == edge_visibility_t::NONE) return;
               edge_visibility = edge_visibility_t::NONE;
-              edge_visibility_combobox->removeItem (4);
+              edge_visibility_combobox->removeItem (5);
               edge_visibility_threshold_label->setVisible (false);
               edge_visibility_threshold_button->setVisible (false);
               edge_visibility_threshold_invert_checkbox->setVisible (false);
@@ -1664,35 +1859,50 @@ namespace MR
               } else {
                 edge_visibility = edge_visibility_t::VISIBLE_NODES;
               }
-              edge_visibility_combobox->removeItem (4);
+              edge_visibility_combobox->removeItem (5);
               edge_visibility_threshold_label->setVisible (false);
               edge_visibility_threshold_button->setVisible (false);
               edge_visibility_threshold_invert_checkbox->setVisible (false);
               break;
             case 3:
+              if (edge_visibility == edge_visibility_t::CONNECTOME) return;
+              edge_visibility = edge_visibility_t::CONNECTOME;
+              edge_visibility_combobox->removeItem (5);
+              edge_visibility_threshold_label->setVisible (true);
+              edge_visibility_threshold_button->setVisible (true);
+              edge_visibility_threshold_invert_checkbox->setVisible (true);
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_edge_visibility (min, max);
+              }
+              break;
+            case 4:
               if (!import_matrix_file (edge_values_from_file_visibility, "edge visibility")) {
                 switch (edge_visibility) {
                   case edge_visibility_t::ALL:           edge_visibility_combobox->setCurrentIndex (0); return;
                   case edge_visibility_t::NONE:          edge_visibility_combobox->setCurrentIndex (1); return;
                   case edge_visibility_t::VISIBLE_NODES: edge_visibility_combobox->setCurrentIndex (2); return;
-                  case edge_visibility_t::MATRIX_FILE:   edge_visibility_combobox->setCurrentIndex (4); return;
+                  case edge_visibility_t::CONNECTOME:    edge_visibility_combobox->setCurrentIndex (3); return;
+                  case edge_visibility_t::MATRIX_FILE:   edge_visibility_combobox->setCurrentIndex (5); return;
                 }
               }
               edge_visibility = edge_visibility_t::MATRIX_FILE;
-              if (edge_visibility_combobox->count() == 4)
+              if (edge_visibility_combobox->count() == 5)
                 edge_visibility_combobox->addItem (edge_values_from_file_visibility.get_name());
               else
-                edge_visibility_combobox->setItemText (4, edge_values_from_file_visibility.get_name());
-              edge_visibility_combobox->setCurrentIndex (4);
+                edge_visibility_combobox->setItemText (5, edge_values_from_file_visibility.get_name());
+              edge_visibility_combobox->setCurrentIndex (5);
               edge_visibility_threshold_label->setVisible (true);
               edge_visibility_threshold_button->setVisible (true);
               edge_visibility_threshold_invert_checkbox->setVisible (true);
-              edge_visibility_threshold_button->setRate (0.001 * (edge_values_from_file_visibility.get_max() - edge_values_from_file_visibility.get_min()));
-              edge_visibility_threshold_button->setMin (edge_values_from_file_visibility.get_min());
-              edge_visibility_threshold_button->setMax (edge_values_from_file_visibility.get_max());
-              edge_visibility_threshold_button->setValue (0.5 * (edge_values_from_file_visibility.get_min() + edge_values_from_file_visibility.get_max()));
+              update_controls_edge_visibility (edge_values_from_file_visibility.get_min(), edge_values_from_file_visibility.get_max());
               break;
-            case 4:
+            case 5:
               return;
           }
           calculate_edge_visibility();
@@ -1778,7 +1988,7 @@ namespace MR
               edge_colour = edge_colour_t::FIXED;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (true);
-              edge_colour_combobox->removeItem (3);
+              edge_colour_combobox->removeItem (4);
               edge_colour_range_label->setVisible (false);
               edge_colour_lower_button->setVisible (false);
               edge_colour_upper_button->setVisible (false);
@@ -1788,38 +1998,53 @@ namespace MR
               edge_colour = edge_colour_t::DIRECTION;
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (false);
-              edge_colour_combobox->removeItem (3);
+              edge_colour_combobox->removeItem (4);
               edge_colour_range_label->setVisible (false);
               edge_colour_lower_button->setVisible (false);
               edge_colour_upper_button->setVisible (false);
               break;
             case 2:
+              if (edge_colour == edge_colour_t::CONNECTOME) return;
+              edge_colour = edge_colour_t::CONNECTOME;
+              edge_colour_colourmap_button->setVisible (true);
+              edge_colour_fixedcolour_button->setVisible (false);
+              edge_colour_combobox->removeItem (4);
+              edge_colour_range_label->setVisible (true);
+              edge_colour_lower_button->setVisible (true);
+              edge_colour_upper_button->setVisible (true);
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_edge_colour (min, max);
+              }
+              break;
+            case 3:
               if (!import_matrix_file (edge_values_from_file_colour, "edge colours")) {
                 switch (edge_colour) {
                   case edge_colour_t::FIXED:       edge_colour_combobox->setCurrentIndex (0); return;
                   case edge_colour_t::DIRECTION:   edge_colour_combobox->setCurrentIndex (1); return;
-                  case edge_colour_t::MATRIX_FILE: edge_colour_combobox->setCurrentIndex (3); return;
+                  case edge_colour_t::CONNECTOME:  edge_colour_combobox->setCurrentIndex (2); return;
+                  case edge_colour_t::MATRIX_FILE: edge_colour_combobox->setCurrentIndex (4); return;
                 }
               }
               edge_colour = edge_colour_t::MATRIX_FILE;
               edge_colour_colourmap_button->setVisible (true);
               edge_colour_fixedcolour_button->setVisible (false);
-              if (edge_colour_combobox->count() == 3)
+              if (edge_colour_combobox->count() == 4)
                 edge_colour_combobox->addItem (edge_values_from_file_colour.get_name());
               else
-                edge_colour_combobox->setItemText (3, edge_values_from_file_colour.get_name());
-              edge_colour_combobox->setCurrentIndex (3);
+                edge_colour_combobox->setItemText (4, edge_values_from_file_colour.get_name());
+              edge_colour_combobox->setCurrentIndex (4);
               edge_colour_range_label->setVisible (true);
               edge_colour_lower_button->setVisible (true);
               edge_colour_upper_button->setVisible (true);
-              edge_colour_lower_button->setValue (edge_values_from_file_colour.get_min());
-              edge_colour_upper_button->setValue (edge_values_from_file_colour.get_max());
-              edge_colour_lower_button->setMax (edge_values_from_file_colour.get_max());
-              edge_colour_upper_button->setMin (edge_values_from_file_colour.get_min());
-              edge_colour_lower_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
-              edge_colour_upper_button->setRate (0.01 * (edge_values_from_file_colour.get_max() - edge_values_from_file_colour.get_min()));
+              update_controls_edge_colour (edge_values_from_file_colour.get_min(), edge_values_from_file_colour.get_max());
               break;
-            case 3:
+            case 4:
               return;
           }
           if (edge_visibility == edge_visibility_t::NONE)
@@ -1835,37 +2060,51 @@ namespace MR
             case 0:
               if (edge_size == edge_size_t::FIXED) return;
               edge_size = edge_size_t::FIXED;
-              edge_size_combobox->removeItem (2);
+              edge_size_combobox->removeItem (3);
               edge_size_range_label->setVisible (false);
               edge_size_lower_button->setVisible (false);
               edge_size_upper_button->setVisible (false);
               edge_size_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (!import_matrix_file (edge_values_from_file_size, "edge size")) {
-                switch (edge_size) {
-                  case edge_size_t::FIXED:       edge_size_combobox->setCurrentIndex (0); return;
-                  case edge_size_t::MATRIX_FILE: edge_size_combobox->setCurrentIndex (2); return;
-                }
-              }
-              edge_size = edge_size_t::MATRIX_FILE;
-              if (edge_size_combobox->count() == 2)
-                edge_size_combobox->addItem (edge_values_from_file_size.get_name());
-              else
-                edge_size_combobox->setItemText (2, edge_values_from_file_size.get_name());
-              edge_size_combobox->setCurrentIndex (2);
+              if (edge_size == edge_size_t::CONNECTOME) return;
+              edge_size = edge_size_t::CONNECTOME;
+              edge_size_combobox->removeItem (3);
               edge_size_range_label->setVisible (true);
               edge_size_lower_button->setVisible (true);
               edge_size_upper_button->setVisible (true);
               edge_size_invert_checkbox->setVisible (true);
-              edge_size_lower_button->setValue (edge_values_from_file_size.get_min());
-              edge_size_upper_button->setValue (edge_values_from_file_size.get_max());
-              edge_size_lower_button->setMax (edge_values_from_file_size.get_max());
-              edge_size_upper_button->setMin (edge_values_from_file_size.get_min());
-              edge_size_lower_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
-              edge_size_upper_button->setRate (0.01 * (edge_values_from_file_size.get_max() - edge_values_from_file_size.get_min()));
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_edge_size (min, max);
+              }
               break;
             case 2:
+              if (!import_matrix_file (edge_values_from_file_size, "edge size")) {
+                switch (edge_size) {
+                  case edge_size_t::FIXED:       edge_size_combobox->setCurrentIndex (0); return;
+                  case edge_size_t::CONNECTOME:  edge_size_combobox->setCurrentIndex (1); return;
+                  case edge_size_t::MATRIX_FILE: edge_size_combobox->setCurrentIndex (3); return;
+                }
+              }
+              edge_size = edge_size_t::MATRIX_FILE;
+              if (edge_size_combobox->count() == 3)
+                edge_size_combobox->addItem (edge_values_from_file_size.get_name());
+              else
+                edge_size_combobox->setItemText (3, edge_values_from_file_size.get_name());
+              edge_size_combobox->setCurrentIndex (3);
+              edge_size_range_label->setVisible (true);
+              edge_size_lower_button->setVisible (true);
+              edge_size_upper_button->setVisible (true);
+              edge_size_invert_checkbox->setVisible (true);
+              update_controls_edge_size (edge_values_from_file_size.get_min(), edge_values_from_file_size.get_max());
+              break;
+            case 3:
               return;
           }
           if (edge_visibility == edge_visibility_t::NONE)
@@ -1881,38 +2120,52 @@ namespace MR
             case 0:
               if (edge_alpha == edge_alpha_t::FIXED) return;
               edge_alpha = edge_alpha_t::FIXED;
-              edge_alpha_combobox->removeItem (2);
+              edge_alpha_combobox->removeItem (3);
               edge_alpha_range_label->setVisible (false);
               edge_alpha_lower_button->setVisible (false);
               edge_alpha_upper_button->setVisible (false);
               edge_alpha_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (!import_matrix_file (edge_values_from_file_alpha, "edge transparency")) {
-                switch (edge_alpha) {
-                  case edge_alpha_t::FIXED: edge_alpha_combobox->setCurrentIndex (0); return;
-                  case edge_alpha_t::MATRIX_FILE:  edge_alpha_combobox->setCurrentIndex (2); return;
-                }
-              }
-              edge_alpha = edge_alpha_t::MATRIX_FILE;
-              if (edge_alpha_combobox->count() == 2)
-                edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
-              else
-                edge_alpha_combobox->setItemText (2, edge_values_from_file_alpha.get_name());
-              edge_alpha_combobox->setCurrentIndex (2);
+              if (edge_alpha == edge_alpha_t::CONNECTOME) return;
+              edge_alpha = edge_alpha_t::CONNECTOME;
+              edge_alpha_combobox->removeItem (3);
               edge_alpha_range_label->setVisible (true);
               edge_alpha_lower_button->setVisible (true);
               edge_alpha_upper_button->setVisible (true);
               edge_alpha_invert_checkbox->setVisible (true);
-              edge_alpha_lower_button->setValue (edge_values_from_file_alpha.get_min());
-              edge_alpha_upper_button->setValue (edge_values_from_file_alpha.get_max());
-              edge_alpha_lower_button->setMax (edge_values_from_file_alpha.get_max());
-              edge_alpha_upper_button->setMin (edge_values_from_file_alpha.get_min());
-              edge_alpha_lower_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
-              edge_alpha_upper_button->setRate (0.01 * (edge_values_from_file_alpha.get_max() - edge_values_from_file_alpha.get_min()));
-              edge_alpha_invert_checkbox->setChecked (false);
+              {
+                float min = 0.0f, max = 0.0f;
+                QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+                if (list.size()) {
+                  const FileDataVector& data (matrix_list_model->get (list[0]));
+                  min = data.get_min(); max = data.get_max();
+                }
+                update_controls_edge_alpha (min, max);
+              }
               break;
             case 2:
+              if (!import_matrix_file (edge_values_from_file_alpha, "edge transparency")) {
+                switch (edge_alpha) {
+                  case edge_alpha_t::FIXED:       edge_alpha_combobox->setCurrentIndex (0); return;
+                  case edge_alpha_t::CONNECTOME:  edge_alpha_combobox->setCurrentIndex (1); return;
+                  case edge_alpha_t::MATRIX_FILE: edge_alpha_combobox->setCurrentIndex (3); return;
+                }
+              }
+              edge_alpha = edge_alpha_t::MATRIX_FILE;
+              if (edge_alpha_combobox->count() == 3)
+                edge_alpha_combobox->addItem (edge_values_from_file_alpha.get_name());
+              else
+                edge_alpha_combobox->setItemText (3, edge_values_from_file_alpha.get_name());
+              edge_alpha_combobox->setCurrentIndex (3);
+              edge_alpha_range_label->setVisible (true);
+              edge_alpha_lower_button->setVisible (true);
+              edge_alpha_upper_button->setVisible (true);
+              edge_alpha_invert_checkbox->setVisible (true);
+              update_controls_edge_alpha (edge_values_from_file_alpha.get_min(), edge_values_from_file_alpha.get_max());
+              edge_alpha_invert_checkbox->setChecked (false);
+              break;
+            case 3:
               return;
           }
           if (edge_visibility == edge_visibility_t::NONE)
@@ -1985,45 +2238,46 @@ namespace MR
           lut_combobox->removeItem (5);
           lut_combobox->setCurrentIndex (0);
           config_button->setText ("(none)");
+          matrix_list_model->clear();
           selected_nodes.resize (0);
           selected_node_count = 0;
           if (node_visibility == node_visibility_t::VECTOR_FILE || node_visibility == node_visibility_t::MATRIX_FILE) {
-            node_visibility_combobox->removeItem (5);
+            node_visibility_combobox->removeItem (6);
             node_visibility_combobox->setCurrentIndex (0);
             node_visibility = node_visibility_t::ALL;
           }
           if (node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) {
-            node_colour_combobox->removeItem (5);
+            node_colour_combobox->removeItem (6);
             node_colour_combobox->setCurrentIndex (0);
             node_colour = node_colour_t::FIXED;
           }
           if (node_size == node_size_t::VECTOR_FILE || node_size == node_size_t::MATRIX_FILE) {
-            node_size_combobox->removeItem (4);
+            node_size_combobox->removeItem (5);
             node_size_combobox->setCurrentIndex (0);
             node_size = node_size_t::FIXED;
           }
           if (node_alpha == node_alpha_t::VECTOR_FILE || node_alpha == node_alpha_t::MATRIX_FILE) {
-            node_alpha_combobox->removeItem (4);
+            node_alpha_combobox->removeItem (5);
             node_alpha_combobox->setCurrentIndex (0);
             node_alpha = node_alpha_t::FIXED;
           }
           if (edge_visibility == edge_visibility_t::MATRIX_FILE) {
-            edge_visibility_combobox->removeItem (4);
-            edge_visibility_combobox->setCurrentIndex (1);
-            edge_visibility = edge_visibility_t::NONE;
+            edge_visibility_combobox->removeItem (5);
+            edge_visibility_combobox->setCurrentIndex (3);
+            edge_visibility = edge_visibility_t::CONNECTOME;
           }
           if (edge_colour == edge_colour_t::MATRIX_FILE) {
-            edge_colour_combobox->removeItem (3);
-            edge_colour_combobox->setCurrentIndex (0);
-            edge_colour = edge_colour_t::FIXED;
+            edge_colour_combobox->removeItem (4);
+            edge_colour_combobox->setCurrentIndex (2);
+            edge_colour = edge_colour_t::CONNECTOME;
           }
           if (edge_size == edge_size_t::MATRIX_FILE) {
-            edge_size_combobox->removeItem (2);
+            edge_size_combobox->removeItem (3);
             edge_size_combobox->setCurrentIndex (0);
             edge_size = edge_size_t::FIXED;
           }
           if (edge_alpha == edge_alpha_t::MATRIX_FILE) {
-            edge_alpha_combobox->removeItem (2);
+            edge_alpha_combobox->removeItem (3);
             edge_alpha_combobox->setCurrentIndex (0);
             edge_alpha = edge_alpha_t::FIXED;
           }
@@ -2060,6 +2314,10 @@ namespace MR
           crop_to_slab_label->setEnabled (value && crop_to_slab);
           crop_to_slab_button->setEnabled (value && crop_to_slab);
           show_node_list_button->setEnabled (value);
+
+          matrix_open_button->setEnabled (value);
+          matrix_close_button->setEnabled (value);
+          matrix_list_view->setEnabled (value);
 
           node_visibility_combobox->setEnabled (value);
           node_visibility_threshold_button->setEnabled (value);
@@ -2216,6 +2474,56 @@ namespace MR
           selected_nodes.resize (num_nodes()+1);
 
           dynamic_cast<Node_list*>(node_list->tool)->initialize();
+        }
+
+        void Connectome::add_matrices (const std::vector<std::string>& list)
+        {
+          std::vector<FileDataVector> data;
+          for (size_t i = 0; i < list.size(); ++i) {
+            try {
+              Math::Matrix<float> matrix (list[i]);
+              MR::Connectome::verify_matrix (matrix, num_nodes());
+              FileDataVector temp;
+              mat2vec (matrix, temp);
+              temp.calc_minmax();
+              temp.set_name (list[i]);
+              data.push_back (std::move (temp));
+            }
+            catch (Exception& E) {
+              E.display();
+            }
+          }
+
+          if (data.size()) {
+            const size_t previous_size = matrix_list_model->rowCount();
+            matrix_list_model->add_items (data);
+            QModelIndex first = matrix_list_model->index (previous_size, 0, QModelIndex());
+            matrix_list_view->selectionModel()->select (first, QItemSelectionModel::ClearAndSelect);
+            // In the specific case where there was previously no connectome data,
+            //   it is necessary to set the min/max/value of various controls
+            if (!previous_size) {
+              const FileDataVector& data (matrix_list_model->get (previous_size));
+              if (node_visibility == node_visibility_t::CONNECTOME)
+                update_controls_node_visibility (data.get_min(), data.get_max());
+              if (node_colour == node_colour_t::CONNECTOME)
+                update_controls_node_colour (data.get_min(), data.get_max());
+              if (node_size == node_size_t::CONNECTOME)
+                update_controls_node_size (data.get_min(), data.get_max());
+              if (node_alpha == node_alpha_t::CONNECTOME)
+                update_controls_node_alpha (data.get_min(), data.get_max());
+              if (edge_visibility == edge_visibility_t::CONNECTOME)
+                update_controls_edge_visibility (data.get_min(), data.get_max());
+              if (edge_colour == edge_colour_t::CONNECTOME)
+                update_controls_edge_colour (data.get_min(), data.get_max());
+              if (edge_size == edge_size_t::CONNECTOME)
+                update_controls_edge_size (data.get_min(), data.get_max());
+              if (edge_alpha == edge_alpha_t::CONNECTOME)
+                update_controls_edge_alpha (data.get_min(), data.get_max());
+            }
+
+            // Force re-calculation of any visual properties that are based on connectome data
+            connectome_selection_changed_slot (QItemSelection(), QItemSelection());
+          }
         }
 
 
@@ -2640,6 +2948,9 @@ namespace MR
 
 
 
+
+
+
         void Connectome::calculate_node_visibility()
         {
           if (node_visibility == node_visibility_t::ALL) {
@@ -2661,6 +2972,37 @@ namespace MR
                 nodes[i->get_node_index(0)].set_visible (true);
                 nodes[i->get_node_index(1)].set_visible (true);
               }
+            }
+
+          } else if (node_visibility == node_visibility_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size() && selected_node_count) {
+
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+
+              const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
+              const float threshold = node_visibility_threshold_button->value();
+              for (node_t i = 1; i <= num_nodes(); ++i) {
+                bool any = false, all = true;
+                for (node_t j = 1; j <= num_nodes(); ++j) {
+                  if (selected_nodes[j]) {
+                    const float value = data[mat2vec (i-1, j-1)];
+                    if (value >= threshold)
+                      any = true;
+                    else
+                      all = false;
+                  }
+                }
+                switch (node_visibility_matrix_operator) {
+                  case node_visibility_matrix_operator_t::ANY: nodes[i].set_visible (any != invert); break;
+                  case node_visibility_matrix_operator_t::ALL: nodes[i].set_visible (all != invert); break;
+                }
+              }
+
+            } else {
+              for (node_t i = 1; i <= num_nodes(); ++i)
+                nodes[i].set_visible (true);
             }
 
           } else if (node_visibility == node_visibility_t::VECTOR_FILE) {
@@ -2735,6 +3077,49 @@ namespace MR
                 nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
             }
 
+          } else if (node_colour == node_colour_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size() && selected_node_count) {
+
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
+              for (node_t i = 1; i <= num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  nodes[i].set_colour (node_selection_settings.get_node_selected_colour());
+                } else {
+                  float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
+                    if (selected_nodes[j]) {
+                      const float value = data[mat2vec (i-1, j-1)];
+                      min = std::min (min, value);
+                      sum += value;
+                      max = std::max (max, value);
+                    }
+                  }
+                  const float mean = sum / float(selected_node_count);
+                  float factor = 0.0f;
+                  switch (node_colour_matrix_operator) {
+                    case node_property_matrix_operator_t::MIN:  factor = min;  break;
+                    case node_property_matrix_operator_t::MEAN: factor = mean; break;
+                    case node_property_matrix_operator_t::SUM:  factor = sum;  break;
+                    case node_property_matrix_operator_t::MAX:  factor = max;  break;
+                  }
+                  factor = (factor - lower) / (upper - lower);
+                  factor = std::min (1.0f, std::max (factor, 0.0f));
+                  factor = node_colourmap_invert ? 1.0f-factor : factor;
+                  if (ColourMap::maps[node_colourmap_index].is_colour)
+                    nodes[i].set_colour (factor * node_fixed_colour);
+                  else
+                    nodes[i].set_colour (ColourMap::maps[node_colourmap_index].basic_mapping (factor));
+                }
+              }
+
+            } else {
+              for (node_t i = 1; i <= num_nodes(); ++i)
+                nodes[i].set_colour (node_fixed_colour);
+            }
+
           } else if (node_colour == node_colour_t::VECTOR_FILE) {
 
             assert (node_values_from_file_colour.size() == num_nodes());
@@ -2807,6 +3192,47 @@ namespace MR
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_size (voxel_volume * std::cbrt (i->get_volume() / (4.0 * Math::pi)));
 
+          } else if (node_size == node_size_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size() && selected_node_count) {
+
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
+              const bool invert = node_size_invert_checkbox->isChecked();
+              for (node_t i = 1; i <= num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  nodes[i].set_size (1.0f);
+                } else {
+                  float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
+                    if (selected_nodes[j]) {
+                      const float value = data[mat2vec (i-1, j-1)];
+                      min = std::min (min, value);
+                      sum += value;
+                      max = std::max (max, value);
+                    }
+                  }
+                  const float mean = sum / float(selected_node_count);
+                  float factor = 0.0f;
+                  switch (node_size_matrix_operator) {
+                    case node_property_matrix_operator_t::MIN:  factor = min;  break;
+                    case node_property_matrix_operator_t::MEAN: factor = mean; break;
+                    case node_property_matrix_operator_t::SUM:  factor = sum;  break;
+                    case node_property_matrix_operator_t::MAX:  factor = max;  break;
+                  }
+                  factor = (factor - lower) / (upper - lower);
+                  factor = std::min (1.0f, std::max (factor, 0.0f));
+                  factor = invert ? 1.0f-factor : factor;
+                  nodes[i].set_size (factor);
+                }
+              }
+
+            } else {
+              for (node_t i = 1; i <= num_nodes(); ++i)
+                nodes[i].set_size (1.0f);
+            }
+
           } else if (node_size == node_size_t::VECTOR_FILE) {
 
             assert (node_values_from_file_size.size() == num_nodes());
@@ -2878,6 +3304,47 @@ namespace MR
                 nodes[node_index].set_alpha (node_fixed_alpha);
               else
                 nodes[node_index].set_alpha (lut_mapping[node_index]->second.get_alpha() / 255.0f);
+            }
+
+          } else if (node_alpha == node_alpha_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size() && selected_node_count) {
+
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
+              const bool invert = node_alpha_invert_checkbox->isChecked();
+              for (node_t i = 1; i <= num_nodes(); ++i) {
+                if (selected_nodes[i]) {
+                  nodes[i].set_alpha (1.0f);
+                } else {
+                  float min = std::numeric_limits<float>::infinity(), sum = 0.0f, max = -std::numeric_limits<float>::infinity();
+                  for (node_t j = 1; j <= num_nodes(); ++j) {
+                    if (selected_nodes[j]) {
+                      const float value = data[mat2vec (i-1, j-1)];
+                      min = std::min (min, value);
+                      sum += value;
+                      max = std::max (max, value);
+                    }
+                  }
+                  const float mean = sum / float(selected_node_count);
+                  float factor = 0.0f;
+                  switch (node_alpha_matrix_operator) {
+                    case node_property_matrix_operator_t::MIN:  factor = min;  break;
+                    case node_property_matrix_operator_t::MEAN: factor = mean; break;
+                    case node_property_matrix_operator_t::SUM:  factor = sum;  break;
+                    case node_property_matrix_operator_t::MAX:  factor = max;  break;
+                  }
+                  factor = (factor - lower) / (upper - lower);
+                  factor = std::min (1.0f, std::max (factor, 0.0f));
+                  factor = invert ? 1.0f-factor : factor;
+                  nodes[i].set_alpha (factor);
+                }
+              }
+
+            } else {
+              for (node_t i = 1; i <= num_nodes(); ++i)
+                nodes[i].set_alpha (1.0f);
             }
 
           } else if (node_alpha == node_alpha_t::VECTOR_FILE) {
@@ -3003,6 +3470,26 @@ namespace MR
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_visible (!i->is_diagonal() && nodes[i->get_node_index(0)].to_draw() && nodes[i->get_node_index(1)].to_draw());
 
+          } else if (edge_visibility == edge_visibility_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size()) {
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const bool invert = edge_visibility_threshold_invert_checkbox->isChecked();
+              const float threshold = edge_visibility_threshold_button->value();
+              for (size_t i = 0; i != num_edges(); ++i) {
+                if (edges[i].is_diagonal()) {
+                  edges[i].set_visible (false);
+                } else {
+                  const bool above_threshold = (data[i] >= threshold);
+                  edges[i].set_visible (above_threshold != invert);
+                }
+              }
+            } else {
+              for (auto i = edges.begin(); i != edges.end(); ++i)
+                i->set_visible (false);
+            }
+
           } else if (edge_visibility == edge_visibility_t::MATRIX_FILE) {
 
             assert (edge_values_from_file_visibility.size());
@@ -3034,6 +3521,26 @@ namespace MR
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_colour (Point<float> (std::abs (i->get_dir()[0]), std::abs (i->get_dir()[1]), std::abs (i->get_dir()[2])));
 
+          } else if (edge_colour == edge_colour_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size()) {
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = edge_colour_lower_button->value(), upper = edge_colour_upper_button->value();
+              for (size_t i = 0; i != num_edges(); ++i) {
+                float factor = (data[i]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = edge_colourmap_invert ? 1.0f-factor : factor;
+                if (ColourMap::maps[edge_colourmap_index].is_colour)
+                  edges[i].set_colour (factor * edge_fixed_colour);
+                else
+                  edges[i].set_colour (ColourMap::maps[edge_colourmap_index].basic_mapping (factor));
+              }
+            } else {
+              for (auto i = edges.begin(); i != edges.end(); ++i)
+                i->set_colour (edge_fixed_colour);
+            }
+
           } else if (edge_colour == edge_colour_t::MATRIX_FILE) {
 
             assert (edge_values_from_file_colour.size());
@@ -3058,6 +3565,24 @@ namespace MR
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_size (1.0f);
 
+          } else if (edge_size == edge_size_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size()) {
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = edge_size_lower_button->value(), upper = edge_size_upper_button->value();
+              const bool invert = edge_size_invert_checkbox->isChecked();
+              for (size_t i = 0; i != num_edges(); ++i) {
+                float factor = (data[i]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = invert ? 1.0f-factor : factor;
+                edges[i].set_size (factor);
+              }
+            } else {
+              for (auto i = edges.begin(); i != edges.end(); ++i)
+                i->set_size (1.0f);
+            }
+
           } else if (edge_size == edge_size_t::MATRIX_FILE) {
 
             assert (edge_values_from_file_size.size());
@@ -3079,6 +3604,24 @@ namespace MR
 
             for (auto i = edges.begin(); i != edges.end(); ++i)
               i->set_alpha (1.0f);
+
+          } else if (edge_alpha == edge_alpha_t::CONNECTOME) {
+
+            QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
+            if (list.size()) {
+              const FileDataVector& data (matrix_list_model->get (list[0]));
+              const float lower = edge_alpha_lower_button->value(), upper = edge_alpha_upper_button->value();
+              const bool invert = edge_alpha_invert_checkbox->isChecked();
+              for (size_t i = 0; i != num_edges(); ++i) {
+                float factor = (data[i]-lower) / (upper - lower);
+                factor = std::min (1.0f, std::max (factor, 0.0f));
+                factor = invert ? 1.0f-factor : factor;
+                edges[i].set_alpha (factor);
+              }
+            } else {
+              for (auto i = edges.begin(); i != edges.end(); ++i)
+                i->set_alpha (1.0f);
+            }
 
           } else if (edge_alpha == edge_alpha_t::MATRIX_FILE) {
 
@@ -3307,6 +3850,82 @@ namespace MR
           return (multiplier * edge.get_alpha());
         }
 
+
+
+
+
+
+
+
+
+        void Connectome::update_controls_node_visibility (const float min, const float max)
+        {
+          node_visibility_threshold_button->setRate (0.001 * (max - min));
+          node_visibility_threshold_button->setMin (min);
+          node_visibility_threshold_button->setMax (max);
+          node_visibility_threshold_button->setValue (0.5 * (min + max));
+        }
+        void Connectome::update_controls_node_colour     (const float min, const float max)
+        {
+          node_colour_lower_button->setValue (min);
+          node_colour_upper_button->setValue (max);
+          node_colour_lower_button->setMax (max);
+          node_colour_upper_button->setMin (min);
+          node_colour_lower_button->setRate (0.01 * (max - min));
+          node_colour_upper_button->setRate (0.01 * (max - min));
+        }
+        void Connectome::update_controls_node_size       (const float min, const float max)
+        {
+          node_size_lower_button->setValue (min);
+          node_size_upper_button->setValue (max);
+          node_size_lower_button->setMax (max);
+          node_size_upper_button->setMin (min);
+          node_size_lower_button->setRate (0.01 * (max - min));
+          node_size_upper_button->setRate (0.01 * (max - min));
+        }
+        void Connectome::update_controls_node_alpha      (const float min, const float max)
+        {
+          node_alpha_lower_button->setValue (min);
+          node_alpha_upper_button->setValue (max);
+          node_alpha_lower_button->setMax (max);
+          node_alpha_upper_button->setMin (min);
+          node_alpha_lower_button->setRate (0.01 * (max - min));
+          node_alpha_upper_button->setRate (0.01 * (max - min));
+        }
+        void Connectome::update_controls_edge_visibility (const float min, const float max)
+        {
+          edge_visibility_threshold_button->setRate (0.001 * (max - min));
+          edge_visibility_threshold_button->setMin (min);
+          edge_visibility_threshold_button->setMax (max);
+          edge_visibility_threshold_button->setValue (0.5 * (min + max));
+        }
+        void Connectome::update_controls_edge_colour     (const float min, const float max)
+        {
+          edge_colour_lower_button->setValue (min);
+          edge_colour_upper_button->setValue (max);
+          edge_colour_lower_button->setMax (max);
+          edge_colour_upper_button->setMin (min);
+          edge_colour_lower_button->setRate (0.01 * (max - min));
+          edge_colour_upper_button->setRate (0.01 * (max - min));
+        }
+        void Connectome::update_controls_edge_size       (const float min, const float max)
+        {
+          edge_size_lower_button->setValue (min);
+          edge_size_upper_button->setValue (max);
+          edge_size_lower_button->setMax (max);
+          edge_size_upper_button->setMin (min);
+          edge_size_lower_button->setRate (0.01 * (max - min));
+          edge_size_upper_button->setRate (0.01 * (max - min));
+        }
+        void Connectome::update_controls_edge_alpha      (const float min, const float max)
+        {
+          edge_alpha_lower_button->setValue (min);
+          edge_alpha_upper_button->setValue (max);
+          edge_alpha_lower_button->setMax (max);
+          edge_alpha_upper_button->setMin (min);
+          edge_alpha_lower_button->setRate (0.01 * (max - min));
+          edge_alpha_upper_button->setRate (0.01 * (max - min));
+        }
 
 
 
