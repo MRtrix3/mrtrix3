@@ -134,21 +134,6 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          hlayout->addWidget (new QLabel ("LUT: "));
-          lut_combobox = new QComboBox (this);
-          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
-                                        "If the primary parcellation image has come from an atlas that\n"
-                                        "provides a look-up table, select that file here so that MRview \n"
-                                        "can access the appropriate node colours."));
-          for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
-            lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
-          connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
-          hlayout->addWidget (lut_combobox, 1);
-          vlayout->addLayout (hlayout);
-
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
           hlayout->addWidget (new QLabel ("Config: "));
           config_button = new QPushButton (this);
           config_button->setToolTip (tr ("Open connectome config file\n"
@@ -371,6 +356,19 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          lut_label = new QLabel ("LUT file: ");
+          lut_label->setVisible (false);
+          hlayout->addWidget (lut_label);
+          lut_combobox = new QComboBox (this);
+          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
+                                        "If the primary parcellation image has come from an atlas that\n"
+                                        "provides a look-up table, select that file here so that MRview \n"
+                                        "can access the appropriate node colours."));
+          for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
+            lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
+          lut_combobox->setVisible (false);
+          connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
+          hlayout->addWidget (lut_combobox);
           node_colour_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_colour_range_label);
           node_colour_lower_button = new AdjustButton (this);
@@ -458,7 +456,6 @@ namespace MR
           node_alpha_combobox = new QComboBox (this);
           node_alpha_combobox->setToolTip (tr ("Set how node transparency is determined"));
           node_alpha_combobox->addItem ("Fixed");
-          node_alpha_combobox->addItem ("LUT");
           node_alpha_combobox->addItem ("Connectome");
           node_alpha_combobox->addItem ("Vector file");
           node_alpha_combobox->addItem ("Matrix file");
@@ -889,44 +886,6 @@ namespace MR
         }
 
 
-        void Connectome::lut_open_slot (int index)
-        {
-          if (!index) {
-            lut.clear();
-            lut_mapping.clear();
-            lut_combobox->removeItem (5);
-            load_properties();
-            return;
-          }
-          if (index == 5)
-            return; // Selected currently-open LUT; nothing to do
-
-          const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", "Text files (*.txt)");
-          if (path.empty())
-            return;
-
-          lut.clear();
-          lut_mapping.clear();
-          lut_combobox->removeItem (5);
-
-          try {
-            switch (index) {
-              case 1: lut.load (path, MR::Connectome::LUT_BASIC);      break;
-              case 2: lut.load (path, MR::Connectome::LUT_FREESURFER); break;
-              case 3: lut.load (path, MR::Connectome::LUT_AAL);        break;
-              case 4: lut.load (path, MR::Connectome::LUT_ITKSNAP);    break;
-              default: assert (0);
-            }
-          } catch (Exception& e) { e.display(); lut.clear(); lut_combobox->setCurrentIndex (0); return; }
-
-          lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
-          lut_combobox->setCurrentIndex (5);
-
-          load_properties();
-          window().updateGL();
-        }
-
-
         void Connectome::config_open_slot()
         {
           const std::string path = Dialog::File::get_file (this, "Select connectome configuration file", "Text files (*.txt)");
@@ -1289,6 +1248,8 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
+              lut_label->setVisible (false);
+              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1300,30 +1261,21 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
+              lut_label->setVisible (false);
+              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
               break;
             case 2:
               if (node_colour == node_colour_t::FROM_LUT) return;
-              if (lut.size()) {
-                node_colour = node_colour_t::FROM_LUT;
-                node_colour_fixedcolour_button->setVisible (false);
-              } else {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot colour nodes based on a lookup table; \n"
-                                          "none has been provided (use the 'LUT' combo box at the "
-                                          "top of the toolbar)"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                node_colour_combobox->setCurrentIndex (0);
-                node_colour = node_colour_t::FIXED;
-                node_colour_fixedcolour_button->setVisible (true);
-              }
+              node_colour = node_colour_t::FROM_LUT;
+              node_colour_fixedcolour_button->setVisible (false);
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
+              lut_label->setVisible (true);
+              lut_combobox->setVisible (true);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1350,6 +1302,8 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
+              lut_label->setVisible (false);
+              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1383,6 +1337,8 @@ namespace MR
                 node_colour_combobox->setItemText (6, node_values_from_file_colour.get_name());
               node_colour_combobox->setCurrentIndex (6);
               node_colour_matrix_operator_combobox->setVisible (false);
+              lut_label->setVisible (false);
+              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1423,6 +1379,8 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
+              lut_label->setVisible (false);
+              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1576,7 +1534,7 @@ namespace MR
             case 0:
               if (node_alpha == node_alpha_t::FIXED) return;
               node_alpha = node_alpha_t::FIXED;
-              node_alpha_combobox->removeItem (5);
+              node_alpha_combobox->removeItem (4);
               node_alpha_matrix_operator_combobox->setVisible (false);
               node_alpha_range_label->setVisible (false);
               node_alpha_lower_button->setVisible (false);
@@ -1584,31 +1542,9 @@ namespace MR
               node_alpha_invert_checkbox->setVisible (false);
               break;
             case 1:
-              if (node_alpha == node_alpha_t::FROM_LUT) return;
-              if (lut.size()) {
-                node_alpha = node_alpha_t::FROM_LUT;
-              } else {
-                QMessageBox::warning (QApplication::activeWindow(),
-                                      tr ("Visualisation error"),
-                                      tr ("Cannot set node transparency based on a lookup table; \n"
-                                          "none has been provided (use the 'LUT' combo box at the "
-                                          "top of the toolbar)"),
-                                      QMessageBox::Ok,
-                                      QMessageBox::Ok);
-                node_alpha_combobox->setCurrentIndex (0);
-                node_alpha = node_alpha_t::FIXED;
-              }
-              node_alpha_combobox->removeItem (5);
-              node_alpha_matrix_operator_combobox->setVisible (false);
-              node_alpha_range_label->setVisible (false);
-              node_alpha_lower_button->setVisible (false);
-              node_alpha_upper_button->setVisible (false);
-              node_alpha_invert_checkbox->setVisible (false);
-              break;
-            case 2:
               if (node_alpha == node_alpha_t::CONNECTOME) return;
               node_alpha = node_alpha_t::CONNECTOME;
-              node_alpha_combobox->removeItem (5);
+              node_alpha_combobox->removeItem (4);
               node_alpha_matrix_operator_combobox->setVisible (true);
               if (selected_node_count >= 2) {
                 node_alpha_matrix_operator_combobox->removeItem (4);
@@ -1640,22 +1576,21 @@ namespace MR
               }
               node_alpha_invert_checkbox->setChecked (false);
               break;
-            case 3:
+            case 2:
               if (!import_vector_file (node_values_from_file_alpha, "node transparency")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
-                  case node_alpha_t::FROM_LUT:    node_alpha_combobox->setCurrentIndex (1); return;
-                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (2); return;
-                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (5); return;
-                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (5); return;
+                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
+                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (4); return;
+                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (4); return;
                 }
               }
               node_alpha = node_alpha_t::VECTOR_FILE;
-              if (node_alpha_combobox->count() == 5)
+              if (node_alpha_combobox->count() == 4)
                 node_alpha_combobox->addItem (node_values_from_file_alpha.get_name());
               else
-                node_alpha_combobox->setItemText (5, node_values_from_file_alpha.get_name());
-              node_alpha_combobox->setCurrentIndex (5);
+                node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
+              node_alpha_combobox->setCurrentIndex (4);
               node_alpha_matrix_operator_combobox->setVisible (false);
               node_alpha_range_label->setVisible (true);
               node_alpha_lower_button->setVisible (true);
@@ -1664,14 +1599,13 @@ namespace MR
               update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
-            case 4:
+            case 3:
               if (!import_matrix_file (node_values_from_file_alpha, "node transparency")) {
                 switch (node_alpha) {
                   case node_alpha_t::FIXED:       node_alpha_combobox->setCurrentIndex (0); return;
-                  case node_alpha_t::FROM_LUT:    node_alpha_combobox->setCurrentIndex (1); return;
-                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (2); return;
-                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (5); return;
-                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (5); return;
+                  case node_alpha_t::CONNECTOME:  node_alpha_combobox->setCurrentIndex (1); return;
+                  case node_alpha_t::VECTOR_FILE: node_alpha_combobox->setCurrentIndex (4); return;
+                  case node_alpha_t::MATRIX_FILE: node_alpha_combobox->setCurrentIndex (4); return;
                 }
               }
               node_alpha = node_alpha_t::MATRIX_FILE;
@@ -1703,7 +1637,7 @@ namespace MR
               update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
-            case 5:
+            case 4:
               return;
           }
           if (node_visibility == node_visibility_t::NONE)
@@ -1759,6 +1693,45 @@ namespace MR
           QColor c = node_colour_fixedcolour_button->color();
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
+          calculate_node_colours();
+          window().updateGL();
+        }
+        void Connectome::lut_open_slot (int index)
+        {
+          if (index == 5)
+            return; // Selected currently-open LUT; nothing to do
+          if (!index) {
+            lut.clear();
+            lut_mapping.clear();
+            lut_combobox->removeItem (5);
+          } else {
+            const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", "Text files (*.txt)");
+            if (path.empty()) {
+              if (lut_combobox->count() == 6) {
+                lut_combobox->setCurrentIndex (5);
+              } else {
+                lut.clear();
+                lut_mapping.clear();
+                lut_combobox->setCurrentIndex (0);
+              }
+            } else {
+              lut.clear();
+              lut_mapping.clear();
+              lut_combobox->removeItem (5);
+              try {
+                switch (index) {
+                  case 1: lut.load (path, MR::Connectome::LUT_BASIC);      break;
+                  case 2: lut.load (path, MR::Connectome::LUT_FREESURFER); break;
+                  case 3: lut.load (path, MR::Connectome::LUT_AAL);        break;
+                  case 4: lut.load (path, MR::Connectome::LUT_ITKSNAP);    break;
+                  default: assert (0);
+                }
+                lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
+                lut_combobox->setCurrentIndex (5);
+              } catch (Exception& e) { e.display(); lut.clear(); lut_mapping.clear(); lut_combobox->setCurrentIndex (0); return; }
+            }
+          }
+          load_properties();
           calculate_node_colours();
           window().updateGL();
         }
@@ -3069,12 +3042,16 @@ namespace MR
 
           } else if (node_colour == node_colour_t::FROM_LUT) {
 
-            assert (lut.size());
-            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-              if (lut_mapping[node_index] == lut.end())
-                nodes[node_index].set_colour (node_fixed_colour);
-              else
-                nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
+            if (lut.size()) {
+              for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
+                if (lut_mapping[node_index] == lut.end())
+                  nodes[node_index].set_colour (node_fixed_colour);
+                else
+                  nodes[node_index].set_colour (Point<float> (lut_mapping[node_index]->second.get_colour()) / 255.0f);
+              }
+            } else {
+              for (auto i = nodes.begin(); i != nodes.end(); ++i)
+                i->set_colour (node_fixed_colour);
             }
 
           } else if (node_colour == node_colour_t::CONNECTOME) {
@@ -3295,16 +3272,6 @@ namespace MR
 
             for (auto i = nodes.begin(); i != nodes.end(); ++i)
               i->set_alpha (1.0f);
-
-          } else if (node_alpha == node_alpha_t::FROM_LUT) {
-
-            assert (lut.size());
-            for (node_t node_index = 1; node_index <= num_nodes(); ++node_index) {
-              if (lut_mapping[node_index] == lut.end())
-                nodes[node_index].set_alpha (node_fixed_alpha);
-              else
-                nodes[node_index].set_alpha (lut_mapping[node_index]->second.get_alpha() / 255.0f);
-            }
 
           } else if (node_alpha == node_alpha_t::CONNECTOME) {
 

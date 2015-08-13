@@ -43,7 +43,7 @@ namespace MR
       enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };
       enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
       enum class node_size_t       { FIXED, NODE_VOLUME, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
-      enum class node_alpha_t      { FIXED, FROM_LUT, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+      enum class node_alpha_t      { FIXED, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
 
       enum class edge_visibility_t { ALL, NONE, VISIBLE_NODES, CONNECTOME, MATRIX_FILE };
       enum class edge_geometry_t   { LINE, CYLINDER, STREAMLINE, STREAMTUBE };

@@ -101,7 +101,6 @@ namespace MR
 
           private slots:
             void image_open_slot();
-            void lut_open_slot (int);
             void config_open_slot();
             void hide_all_slot();
 
@@ -129,6 +128,7 @@ namespace MR
             void overlay_interp_slot (int);
             void node_colour_matrix_operator_slot (int);
             void node_fixed_colour_change_slot();
+            void lut_open_slot (int);
             void node_colour_parameter_slot();
             void node_size_matrix_operator_slot (int);
             void node_size_value_slot();
@@ -155,7 +155,6 @@ namespace MR
           protected:
 
             QPushButton *image_button, *hide_all_button;
-            QComboBox *lut_combobox;
             QPushButton *config_button;
 
             QCheckBox *lighting_checkbox;
@@ -186,6 +185,8 @@ namespace MR
             QComboBox *node_colour_matrix_operator_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
+            QLabel *lut_label;
+            QComboBox *lut_combobox;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
