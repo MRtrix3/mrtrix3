@@ -275,7 +275,7 @@ namespace MR
           hlayout->setSpacing (0);
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
           hlayout->addWidget (node_geometry_sphere_lod_label, 1);
-          node_geometry_sphere_lod_spinbox = new QSpinBox (this);
+          node_geometry_sphere_lod_spinbox = new SpinBox (this);
           node_geometry_sphere_lod_spinbox->setToolTip (tr ("Level of Detail for drawing spheres"));
           node_geometry_sphere_lod_spinbox->setMinimum (1);
           node_geometry_sphere_lod_spinbox->setMaximum (7);
@@ -539,7 +539,7 @@ namespace MR
           edge_geometry_cylinder_lod_label = new QLabel ("LOD: ");
           edge_geometry_cylinder_lod_label->setVisible (false);
           hlayout->addWidget (edge_geometry_cylinder_lod_label, 1);
-          edge_geometry_cylinder_lod_spinbox = new QSpinBox (this);
+          edge_geometry_cylinder_lod_spinbox = new SpinBox (this);
           edge_geometry_cylinder_lod_spinbox->setToolTip (tr ("Level of Detail for drawing cylinders / streamtubes"));
           edge_geometry_cylinder_lod_spinbox->setMinimum (1);
           edge_geometry_cylinder_lod_spinbox->setMaximum (7);

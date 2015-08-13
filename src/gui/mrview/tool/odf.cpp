@@ -216,7 +216,7 @@ namespace MR
             label = new QLabel ("detail");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 0);
-            level_of_detail_selector = new QSpinBox (this);
+            level_of_detail_selector = new SpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
             level_of_detail_selector->setSingleStep (1);
@@ -227,7 +227,7 @@ namespace MR
             label = new QLabel ("lmax");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 2);
-            lmax_selector = new QSpinBox (this);
+            lmax_selector = new SpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);

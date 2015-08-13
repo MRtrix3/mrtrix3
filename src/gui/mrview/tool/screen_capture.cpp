@@ -119,13 +119,13 @@ namespace MR
           volume_group_box->setLayout (volume_layout);
 
           volume_layout->addWidget (new QLabel (tr("Axis: ")), 0, 0);
-          volume_axis = new QSpinBox (this);
+          volume_axis = new SpinBox (this);
           volume_axis->setMinimum (3);
           volume_axis->setValue (3);
           volume_layout->addWidget (volume_axis, 0, 1);
 
           volume_layout->addWidget (new QLabel (tr("Target: ")), 0, 2);
-          target_volume = new QSpinBox (this);
+          target_volume = new SpinBox (this);
           volume_layout->addWidget (target_volume, 0, 3);
           target_volume->setMinimum (0);
           target_volume->setMaximum (std::numeric_limits<int>::max());
@@ -165,7 +165,7 @@ namespace MR
           capture_group_box->setLayout (capture_grid_layout);
 
           capture_grid_layout->addWidget (new QLabel (tr("Start Index: ")), 0, 0);
-          start_index = new QSpinBox (this);
+          start_index = new SpinBox (this);
           start_index->setMinimum (0);
           start_index->setMaximum (std::numeric_limits<int>::max());
           start_index->setMinimumWidth(50);
@@ -173,7 +173,7 @@ namespace MR
           capture_grid_layout->addWidget (start_index, 0, 1);
 
           capture_grid_layout->addWidget (new QLabel (tr("Frames: ")), 0, 2);
-          frames = new QSpinBox (this);
+          frames = new SpinBox (this);
           frames->setMinimumWidth(50);
           frames->setMinimum (1);
           frames->setMaximum (std::numeric_limits<int>::max());

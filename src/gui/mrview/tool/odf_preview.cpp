@@ -86,7 +86,7 @@ namespace MR
           QLabel* label = new QLabel ("detail");
           label->setAlignment (Qt::AlignHCenter);
           box_layout->addWidget (label, 1, 2, 1, 1);
-          level_of_detail_selector = new QSpinBox (this);
+          level_of_detail_selector = new SpinBox (this);
           level_of_detail_selector->setMinimum (1);
           level_of_detail_selector->setMaximum (7);
           level_of_detail_selector->setSingleStep (1);

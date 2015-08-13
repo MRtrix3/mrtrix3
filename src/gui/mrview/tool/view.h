@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {
@@ -110,7 +111,7 @@ namespace MR
             QPushButton *hide_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
-            QSpinBox *vol_index, *vol_group;
+            SpinBox *vol_index, *vol_group;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
@@ -123,7 +124,7 @@ namespace MR
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
             AdjustButton* light_box_slice_inc;
-            QSpinBox *light_box_rows, *light_box_cols;
+            SpinBox *light_box_rows, *light_box_cols;
             QCheckBox *light_box_show_grid;
 
             class ClipPlaneModel;

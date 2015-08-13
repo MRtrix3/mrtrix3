@@ -36,6 +36,7 @@
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
 #include "gui/mrview/image.h"
+#include "gui/mrview/spin_box.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/shapes/cube.h"
@@ -170,7 +171,7 @@ namespace MR
 
             QComboBox *node_geometry_combobox;
             QLabel *node_geometry_sphere_lod_label;
-            QSpinBox *node_geometry_sphere_lod_spinbox;
+            SpinBox *node_geometry_sphere_lod_spinbox;
             QCheckBox *node_geometry_overlay_interp_checkbox;
             QLabel *node_geometry_overlay_3D_warning_icon;
 
@@ -203,7 +204,7 @@ namespace MR
 
             QComboBox *edge_geometry_combobox;
             QLabel *edge_geometry_cylinder_lod_label;
-            QSpinBox *edge_geometry_cylinder_lod_spinbox;
+            SpinBox *edge_geometry_cylinder_lod_spinbox;
             QCheckBox *edge_geometry_line_smooth_checkbox;
 
             QComboBox *edge_colour_combobox;

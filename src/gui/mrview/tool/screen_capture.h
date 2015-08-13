@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/spin_box.h"
 #include <deque>
 
 namespace MR
@@ -76,11 +77,11 @@ namespace MR
             AdjustButton *translate_y;
             AdjustButton *translate_z;
 
-            QSpinBox *target_volume;
+            SpinBox *target_volume;
             AdjustButton *FOV_multipler;
-            QSpinBox *start_index;
-            QSpinBox *frames;
-            QSpinBox *volume_axis;
+            SpinBox *start_index;
+            SpinBox *frames;
+            SpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;
