@@ -400,14 +400,14 @@ namespace MR
             float        edge_alpha_given_selection      (const Edge&);
 
             // Helper functions to update the min / max / value / rate of parameter controls
-            void update_controls_node_visibility (const float, const float);
-            void update_controls_node_colour     (const float, const float);
-            void update_controls_node_size       (const float, const float);
-            void update_controls_node_alpha      (const float, const float);
-            void update_controls_edge_visibility (const float, const float);
-            void update_controls_edge_colour     (const float, const float);
-            void update_controls_edge_size       (const float, const float);
-            void update_controls_edge_alpha      (const float, const float);
+            void update_controls_node_visibility (const float, const float, const float);
+            void update_controls_node_colour     (const float, const float, const float);
+            void update_controls_node_size       (const float, const float, const float);
+            void update_controls_node_alpha      (const float, const float, const float);
+            void update_controls_edge_visibility (const float, const float, const float);
+            void update_controls_edge_colour     (const float, const float, const float);
+            void update_controls_edge_size       (const float, const float, const float);
+            void update_controls_edge_alpha      (const float, const float, const float);
 
             void get_meshes();
             void get_exemplars();

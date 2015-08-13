@@ -1111,13 +1111,13 @@ namespace MR
               node_visibility_threshold_button->setVisible (true);
               node_visibility_threshold_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_node_visibility (min, max);
+                update_controls_node_visibility (min, mean, max);
               }
               break;
             case 4:
@@ -1141,7 +1141,7 @@ namespace MR
               node_visibility_threshold_label->setVisible (true);
               node_visibility_threshold_button->setVisible (true);
               node_visibility_threshold_invert_checkbox->setVisible (true);
-              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_max());
+              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_mean(), node_values_from_file_visibility.get_max());
               break;
             case 5:
               if (!import_matrix_file (node_values_from_file_visibility, "node visibility")) {
@@ -1177,7 +1177,7 @@ namespace MR
               node_visibility_threshold_label->setVisible (true);
               node_visibility_threshold_button->setVisible (true);
               node_visibility_threshold_invert_checkbox->setVisible (true);
-              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_max());
+              update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_mean(), node_values_from_file_visibility.get_max());
               break;
             case 6:
               return;
@@ -1354,13 +1354,13 @@ namespace MR
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_node_colour (min, max);
+                update_controls_node_colour (min, mean, max);
               }
               break;
             case 4:
@@ -1386,7 +1386,7 @@ namespace MR
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
-              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_max());
+              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_mean(), node_values_from_file_colour.get_max());
               break;
             case 5:
               if (!import_matrix_file (node_values_from_file_colour, "node colours")) {
@@ -1426,7 +1426,7 @@ namespace MR
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
-              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_max());
+              update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_mean(), node_values_from_file_colour.get_max());
               break;
             case 6:
               return;
@@ -1487,13 +1487,13 @@ namespace MR
               node_size_upper_button->setVisible (true);
               node_size_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_node_size (min, max);
+                update_controls_node_size (min, mean, max);
               }
               node_size_invert_checkbox->setChecked (false);
               break;
@@ -1518,7 +1518,7 @@ namespace MR
               node_size_lower_button->setVisible (true);
               node_size_upper_button->setVisible (true);
               node_size_invert_checkbox->setVisible (true);
-              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_max());
+              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_mean(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
             case 4:
@@ -1557,7 +1557,7 @@ namespace MR
               node_size_lower_button->setVisible (true);
               node_size_upper_button->setVisible (true);
               node_size_invert_checkbox->setVisible (true);
-              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_max());
+              update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_mean(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
             case 5:
@@ -1630,13 +1630,13 @@ namespace MR
               node_alpha_upper_button->setVisible (true);
               node_alpha_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_node_alpha (min, max);
+                update_controls_node_alpha (min, mean, max);
               }
               node_alpha_invert_checkbox->setChecked (false);
               break;
@@ -1661,7 +1661,7 @@ namespace MR
               node_alpha_lower_button->setVisible (true);
               node_alpha_upper_button->setVisible (true);
               node_alpha_invert_checkbox->setVisible (true);
-              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_max());
+              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
             case 4:
@@ -1700,7 +1700,7 @@ namespace MR
               node_alpha_lower_button->setVisible (true);
               node_alpha_upper_button->setVisible (true);
               node_alpha_invert_checkbox->setVisible (true);
-              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_max());
+              update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
             case 5:
@@ -1872,13 +1872,13 @@ namespace MR
               edge_visibility_threshold_button->setVisible (true);
               edge_visibility_threshold_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_edge_visibility (min, max);
+                update_controls_edge_visibility (min, mean, max);
               }
               break;
             case 4:
@@ -1900,7 +1900,7 @@ namespace MR
               edge_visibility_threshold_label->setVisible (true);
               edge_visibility_threshold_button->setVisible (true);
               edge_visibility_threshold_invert_checkbox->setVisible (true);
-              update_controls_edge_visibility (edge_values_from_file_visibility.get_min(), edge_values_from_file_visibility.get_max());
+              update_controls_edge_visibility (edge_values_from_file_visibility.get_min(), edge_values_from_file_visibility.get_mean(), edge_values_from_file_visibility.get_max());
               break;
             case 5:
               return;
@@ -2013,13 +2013,13 @@ namespace MR
               edge_colour_lower_button->setVisible (true);
               edge_colour_upper_button->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_edge_colour (min, max);
+                update_controls_edge_colour (min, mean, max);
               }
               break;
             case 3:
@@ -2042,7 +2042,7 @@ namespace MR
               edge_colour_range_label->setVisible (true);
               edge_colour_lower_button->setVisible (true);
               edge_colour_upper_button->setVisible (true);
-              update_controls_edge_colour (edge_values_from_file_colour.get_min(), edge_values_from_file_colour.get_max());
+              update_controls_edge_colour (edge_values_from_file_colour.get_min(), edge_values_from_file_colour.get_mean(), edge_values_from_file_colour.get_max());
               break;
             case 4:
               return;
@@ -2075,13 +2075,13 @@ namespace MR
               edge_size_upper_button->setVisible (true);
               edge_size_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_edge_size (min, max);
+                update_controls_edge_size (min, mean, max);
               }
               break;
             case 2:
@@ -2102,7 +2102,7 @@ namespace MR
               edge_size_lower_button->setVisible (true);
               edge_size_upper_button->setVisible (true);
               edge_size_invert_checkbox->setVisible (true);
-              update_controls_edge_size (edge_values_from_file_size.get_min(), edge_values_from_file_size.get_max());
+              update_controls_edge_size (edge_values_from_file_size.get_min(), edge_values_from_file_size.get_mean(), edge_values_from_file_size.get_max());
               break;
             case 3:
               return;
@@ -2135,13 +2135,13 @@ namespace MR
               edge_alpha_upper_button->setVisible (true);
               edge_alpha_invert_checkbox->setVisible (true);
               {
-                float min = 0.0f, max = 0.0f;
+                float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
                 if (list.size()) {
                   const FileDataVector& data (matrix_list_model->get (list[0]));
-                  min = data.get_min(); max = data.get_max();
+                  min = data.get_min(); mean = data.get_mean(); max = data.get_max();
                 }
-                update_controls_edge_alpha (min, max);
+                update_controls_edge_alpha (min, mean, max);
               }
               break;
             case 2:
@@ -2162,7 +2162,7 @@ namespace MR
               edge_alpha_lower_button->setVisible (true);
               edge_alpha_upper_button->setVisible (true);
               edge_alpha_invert_checkbox->setVisible (true);
-              update_controls_edge_alpha (edge_values_from_file_alpha.get_min(), edge_values_from_file_alpha.get_max());
+              update_controls_edge_alpha (edge_values_from_file_alpha.get_min(), edge_values_from_file_alpha.get_mean(), edge_values_from_file_alpha.get_max());
               edge_alpha_invert_checkbox->setChecked (false);
               break;
             case 3:
@@ -2485,7 +2485,7 @@ namespace MR
               MR::Connectome::verify_matrix (matrix, num_nodes());
               FileDataVector temp;
               mat2vec (matrix, temp);
-              temp.calc_minmax();
+              temp.calc_stats();
               temp.set_name (list[i]);
               data.push_back (std::move (temp));
             }
@@ -2504,21 +2504,21 @@ namespace MR
             if (!previous_size) {
               const FileDataVector& data (matrix_list_model->get (previous_size));
               if (node_visibility == node_visibility_t::CONNECTOME)
-                update_controls_node_visibility (data.get_min(), data.get_max());
+                update_controls_node_visibility (data.get_min(), data.get_mean(), data.get_max());
               if (node_colour == node_colour_t::CONNECTOME)
-                update_controls_node_colour (data.get_min(), data.get_max());
+                update_controls_node_colour (data.get_min(), data.get_mean(), data.get_max());
               if (node_size == node_size_t::CONNECTOME)
-                update_controls_node_size (data.get_min(), data.get_max());
+                update_controls_node_size (data.get_min(), data.get_mean(), data.get_max());
               if (node_alpha == node_alpha_t::CONNECTOME)
-                update_controls_node_alpha (data.get_min(), data.get_max());
+                update_controls_node_alpha (data.get_min(), data.get_mean(), data.get_max());
               if (edge_visibility == edge_visibility_t::CONNECTOME)
-                update_controls_edge_visibility (data.get_min(), data.get_max());
+                update_controls_edge_visibility (data.get_min(), data.get_mean(), data.get_max());
               if (edge_colour == edge_colour_t::CONNECTOME)
-                update_controls_edge_colour (data.get_min(), data.get_max());
+                update_controls_edge_colour (data.get_min(), data.get_mean(), data.get_max());
               if (edge_size == edge_size_t::CONNECTOME)
-                update_controls_edge_size (data.get_min(), data.get_max());
+                update_controls_edge_size (data.get_min(), data.get_mean(), data.get_max());
               if (edge_alpha == edge_alpha_t::CONNECTOME)
-                update_controls_edge_alpha (data.get_min(), data.get_max());
+                update_controls_edge_alpha (data.get_min(), data.get_mean(), data.get_max());
             }
 
             // Force re-calculation of any visual properties that are based on connectome data
@@ -2877,7 +2877,7 @@ namespace MR
           }
           data.clear();
           mat2vec (temp, data);
-          data.calc_minmax();
+          data.calc_stats();
           data.set_name (Path::basename (path));
           return true;
         }
@@ -3858,73 +3858,73 @@ namespace MR
 
 
 
-        void Connectome::update_controls_node_visibility (const float min, const float max)
+        void Connectome::update_controls_node_visibility (const float min, const float mean, const float max)
         {
           node_visibility_threshold_button->setRate (0.001 * (max - min));
           node_visibility_threshold_button->setMin (min);
           node_visibility_threshold_button->setMax (max);
-          node_visibility_threshold_button->setValue (0.5 * (min + max));
+          node_visibility_threshold_button->setValue (mean);
         }
-        void Connectome::update_controls_node_colour     (const float min, const float max)
+        void Connectome::update_controls_node_colour     (const float min, const float mean, const float max)
         {
           node_colour_lower_button->setValue (min);
           node_colour_upper_button->setValue (max);
           node_colour_lower_button->setMax (max);
           node_colour_upper_button->setMin (min);
-          node_colour_lower_button->setRate (0.01 * (max - min));
-          node_colour_upper_button->setRate (0.01 * (max - min));
+          node_colour_lower_button->setRate (0.01f * (mean - min));
+          node_colour_upper_button->setRate (0.01f * (max - mean));
         }
-        void Connectome::update_controls_node_size       (const float min, const float max)
+        void Connectome::update_controls_node_size       (const float min, const float mean, const float max)
         {
           node_size_lower_button->setValue (min);
           node_size_upper_button->setValue (max);
           node_size_lower_button->setMax (max);
           node_size_upper_button->setMin (min);
-          node_size_lower_button->setRate (0.01 * (max - min));
-          node_size_upper_button->setRate (0.01 * (max - min));
+          node_size_lower_button->setRate (0.01f * (mean - min));
+          node_size_upper_button->setRate (0.01f * (max - mean));
         }
-        void Connectome::update_controls_node_alpha      (const float min, const float max)
+        void Connectome::update_controls_node_alpha      (const float min, const float mean, const float max)
         {
           node_alpha_lower_button->setValue (min);
           node_alpha_upper_button->setValue (max);
           node_alpha_lower_button->setMax (max);
           node_alpha_upper_button->setMin (min);
-          node_alpha_lower_button->setRate (0.01 * (max - min));
-          node_alpha_upper_button->setRate (0.01 * (max - min));
+          node_alpha_lower_button->setRate (0.01f * (mean - min));
+          node_alpha_upper_button->setRate (0.01f * (max - mean));
         }
-        void Connectome::update_controls_edge_visibility (const float min, const float max)
+        void Connectome::update_controls_edge_visibility (const float min, const float mean, const float max)
         {
           edge_visibility_threshold_button->setRate (0.001 * (max - min));
           edge_visibility_threshold_button->setMin (min);
           edge_visibility_threshold_button->setMax (max);
-          edge_visibility_threshold_button->setValue (0.5 * (min + max));
+          edge_visibility_threshold_button->setValue (mean);
         }
-        void Connectome::update_controls_edge_colour     (const float min, const float max)
+        void Connectome::update_controls_edge_colour     (const float min, const float mean, const float max)
         {
           edge_colour_lower_button->setValue (min);
           edge_colour_upper_button->setValue (max);
           edge_colour_lower_button->setMax (max);
           edge_colour_upper_button->setMin (min);
-          edge_colour_lower_button->setRate (0.01 * (max - min));
-          edge_colour_upper_button->setRate (0.01 * (max - min));
+          edge_colour_lower_button->setRate (0.01f * (mean - min));
+          edge_colour_upper_button->setRate (0.01f * (max - mean));
         }
-        void Connectome::update_controls_edge_size       (const float min, const float max)
+        void Connectome::update_controls_edge_size       (const float min, const float mean, const float max)
         {
           edge_size_lower_button->setValue (min);
           edge_size_upper_button->setValue (max);
           edge_size_lower_button->setMax (max);
           edge_size_upper_button->setMin (min);
-          edge_size_lower_button->setRate (0.01 * (max - min));
-          edge_size_upper_button->setRate (0.01 * (max - min));
+          edge_size_lower_button->setRate (0.01f * (mean - min));
+          edge_size_upper_button->setRate (0.01f * (max - mean));
         }
-        void Connectome::update_controls_edge_alpha      (const float min, const float max)
+        void Connectome::update_controls_edge_alpha      (const float min, const float mean, const float max)
         {
           edge_alpha_lower_button->setValue (min);
           edge_alpha_upper_button->setValue (max);
           edge_alpha_lower_button->setMax (max);
           edge_alpha_upper_button->setMin (min);
-          edge_alpha_lower_button->setRate (0.01 * (max - min));
-          edge_alpha_upper_button->setRate (0.01 * (max - min));
+          edge_alpha_lower_button->setRate (0.01f * (mean - min));
+          edge_alpha_upper_button->setRate (0.01f * (max - mean));
         }
 
 

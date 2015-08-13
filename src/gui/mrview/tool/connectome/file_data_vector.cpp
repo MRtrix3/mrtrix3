@@ -39,36 +39,41 @@ namespace MR
         FileDataVector::FileDataVector () :
             Math::Vector<float>(),
             min (NAN),
+            mean (NAN),
             max (NAN) { }
 
         FileDataVector::FileDataVector (const FileDataVector& V) :
             Math::Vector<float> (V),
             name (V.name),
             min (V.min),
+            mean (V.mean),
             max (V.max) { }
 
         FileDataVector::FileDataVector (FileDataVector&& V) :
             Math::Vector<float> (std::move (V)),
             name (V.name),
             min (V.min),
+            mean (V.mean),
             max (V.max)
         {
           V.name.clear();
-          V.min = V.max = NAN;
+          V.min = V.mean = V.max = NAN;
         }
 
         FileDataVector::FileDataVector (size_t nelements) :
             Math::Vector<float> (nelements),
             min (NAN),
+            mean (NAN),
             max (NAN) { }
 
         FileDataVector::FileDataVector (const std::string& file) :
             Math::Vector<float> (file),
             name (Path::basename (file).c_str()),
             min (NAN),
+            mean (NAN),
             max (NAN)
         {
-          calc_minmax();
+          calc_stats();
         }
 
 
@@ -79,6 +84,7 @@ namespace MR
           Math::Vector<float>::operator= (that);
           name = that.name;
           min = that.min;
+          mean = that.mean;
           max = that.max;
           return *this;
         }
@@ -87,9 +93,10 @@ namespace MR
           Math::Vector<float>::operator= (std::move (that));
           name = that.name;
           min = that.min;
+          mean = that.mean;
           max = that.max;
           that.name.clear();
-          that.min = that.max = NAN;
+          that.min = that.mean = that.max = NAN;
           return *this;
         }
 
@@ -99,7 +106,7 @@ namespace MR
         FileDataVector& FileDataVector::load (const std::string& filename) {
           Math::Vector<float>::load (filename);
           name = Path::basename (filename).c_str();
-          calc_minmax();
+          calc_stats();
           return *this;
         }
 
@@ -107,18 +114,21 @@ namespace MR
         {
           Math::Vector<float>::clear();
           name.clear();
-          min = max = NAN;
+          min = mean = max = NAN;
           return *this;
         }
 
-        void FileDataVector::calc_minmax()
+        void FileDataVector::calc_stats()
         {
           min = std::numeric_limits<float>::max();
+          mean = 0.0f;
           max = -std::numeric_limits<float>::max();
           for (size_t i = 0; i != size(); ++i) {
             min = std::min (min, operator[] (i));
+            mean += operator[] (i);
             max = std::max (max, operator[] (i));
           }
+          mean /= float(size());
         }
 
 
