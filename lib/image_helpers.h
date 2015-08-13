@@ -325,9 +325,39 @@ namespace MR
 
 
 
+  template <class HeaderType1, class HeaderType2>
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2)
+    {
+      if (in1.ndim() != in2.ndim()) return false;
+      for (size_t n = 0; n < in1.ndim(); ++n)
+        if (in1.spacing (n) != in2.spacing(n)) return false;
+      return true;
+    }
 
-  template <class InfoType1, class InfoType2> 
-    inline bool dimensions_match (const InfoType1& in1, const InfoType2& in2)
+  template <class HeaderType1, class HeaderType2>
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis)
+    {
+      assert (from_axis < to_axis);
+      if (to_axis > in1.ndim() || to_axis > in2.ndim()) return false;
+      for (size_t n = from_axis; n < to_axis; ++n)
+        if (in1.spacing (n) != in2.spacing (n)) return false;
+      return true;
+    }
+
+  template <class HeaderType1, class HeaderType2>
+    inline bool spacings_match (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
+    {
+      for (size_t n = 0; n < axes.size(); ++n) {
+        if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
+        if (in1.spacing (axes[n]) != in2.spacing (axes[n])) return false;
+      }
+      return true;
+    }
+
+
+
+  template <class HeaderType1, class HeaderType2>
+    inline bool dimensions_match (const HeaderType1& in1, const HeaderType2& in2)
     {
       if (in1.ndim() != in2.ndim()) return false;
       for (size_t n = 0; n < in1.ndim(); ++n)
@@ -335,8 +365,8 @@ namespace MR
       return true;
     }
 
-  template <class InfoType1, class InfoType2> 
-    inline bool dimensions_match (const InfoType1& in1, const InfoType2& in2, size_t from_axis, size_t to_axis)
+  template <class HeaderType1, class HeaderType2>
+    inline bool dimensions_match (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis)
     {
       assert (from_axis < to_axis);
       if (to_axis > in1.ndim() || to_axis > in2.ndim()) return false;
@@ -345,8 +375,8 @@ namespace MR
       return true;
     }
 
-  template <class InfoType1, class InfoType2> 
-    inline bool dimensions_match (const InfoType1& in1, const InfoType2& in2, const std::vector<size_t>& axes)
+  template <class HeaderType1, class HeaderType2>
+    inline bool dimensions_match (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
     {
       for (size_t n = 0; n < axes.size(); ++n) {
         if (in1.ndim() <= axes[n] || in2.ndim() <= axes[n]) return false;
@@ -355,22 +385,22 @@ namespace MR
       return true;
     }
 
-  template <class InfoType1, class InfoType2> 
-    inline void check_dimensions (const InfoType1& in1, const InfoType2& in2)
+  template <class HeaderType1, class HeaderType2>
+    inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2)
     {
       if (!dimensions_match (in1, in2))
         throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
     }
 
-  template <class InfoType1, class InfoType2> 
-    inline void check_dimensions (const InfoType1& in1, const InfoType2& in2, size_t from_axis, size_t to_axis)
+  template <class HeaderType1, class HeaderType2>
+    inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, size_t from_axis, size_t to_axis)
     {
       if (!dimensions_match (in1, in2, from_axis, to_axis))
         throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");
     }
 
-  template <class InfoType1, class InfoType2> 
-    inline void check_dimensions (const InfoType1& in1, const InfoType2& in2, const std::vector<size_t>& axes)
+  template <class HeaderType1, class HeaderType2>
+    inline void check_dimensions (const HeaderType1& in1, const HeaderType2& in2, const std::vector<size_t>& axes)
     {
       if (!dimensions_match (in1, in2, axes))
         throw Exception ("dimension mismatch between \"" + in1.name() + "\" and \"" + in2.name() + "\"");

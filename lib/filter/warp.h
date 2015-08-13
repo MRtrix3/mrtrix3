@@ -54,14 +54,16 @@ namespace MR
      * For example:
      * \code
      * // source and destination data:
-     * Image::Buffer<float> source_buffer (...);
-     * auto source = source_buffer.voxel();
+     * auto source = Image<float>::open(argument[0]);
      *
-     * Image::Buffer<float> destination_buffer (...);
-     * auto destination = destination_buffer.voxel();
+     * auto warp = Image<float>::open(argument[1]);
+     *
+     * auto template = Header::open(argument[2]);
+     *
+     * auto destination = Image<float>::create (argument[3], template)
      *
      * // regrid source onto destination using linear interpolation:
-     * Image::Filter::warp<Image::Interp::Linear> (source, destination, deformation);
+     * Filter::warp<Image::Interp::Linear> (source, destination, warp);
      * \endcode
      */
     template <template <class VoxelType> class Interpolator, class ImageTypeDestination, class ImageTypeSource, class WarpType>
@@ -73,28 +75,35 @@ namespace MR
       {
 
         // reslice warp onto destination grid
-        auto header = destination.header();
-        header.set_ndim(4);
-        header.size(3) = 3;
-        header.stride(0) = 2;
-        header.stride(1) = 3;
-        header.stride(2) = 4;
-        header.stride(3) = 1;
-        auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
-        reslice<Interp::Linear> (warp, warp_resliced);
+        if (warp.transform().matrix() != destination.transform().matrix() ||
+           !dimensions_match (warp, destination, 0, 3) ||
+           !spacings_match (warp, destination, 0, 3)) {
 
-        // apply warp
-        Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
-        if (destination.ndim() == 4) {
-          ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1)
-            .run (CopyKernel4D(), interp, destination);
+           auto header = destination.header();
+           header.set_ndim(4);
+           header.size(3) = 3;
+           header.stride(0) = 2;
+           header.stride(1) = 3;
+           header.stride(2) = 4;
+           header.stride(3) = 1;
+           auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
+           reslice<Interp::Linear> (warp, warp_resliced);
+           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);
+
+           if (destination.ndim() == 4)
+             ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+           else
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+
+        // no need to reslice warp
         } else {
-          threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
+           Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp, value_when_out_of_bounds);
+           if (destination.ndim() == 4)
+             ThreadedLoop ("warping \"" + source.name() + "\"...", interp, 0, 3, 1).run (CopyKernel4D(), interp, destination);
+           else
+             threaded_copy_with_progress_message ("warping \"" + source.name() + "\"...", interp, destination);
         }
-
-
       }
-
 
     //! @}
   }
