@@ -70,14 +70,14 @@ class SConvFunctor {
       }
       
       // copy input to vector.   TODO: view instead of copy?
-      for (size_t i = 0; i < in.size(3); i++) {
+      for (ssize_t i = 0; i < in.size(3); i++) {
         in.index(3) = i;
         SH_in[i] = in.value();
       }
       Math::SH::sconv(SH_out, response, SH_in);
       // copy result to output
       assign_pos_of(in).to(out);
-      for (size_t i = 0; i < in.size(3); i++) {
+      for (ssize_t i = 0; i < in.size(3); i++) {
         out.index(3) = i;
         out.value() = SH_out[i];
       }
