@@ -110,7 +110,7 @@ void run ()
     throw Exception ("no directions found in input directions file");
 
   std::stringstream dir_stream;
-  for (size_t d = 0; d < directions.rows() - 1; ++d)
+  for (ssize_t d = 0; d < directions.rows() - 1; ++d)
     dir_stream << directions(d,0) << "," << directions(d,1) << "\n";
   dir_stream << directions(directions.rows() - 1,0) << "," << directions(directions.rows() - 1,1);
   amp_header.keyval().insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));

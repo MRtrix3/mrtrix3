@@ -82,10 +82,7 @@ namespace MR
            auto header = destination.header();
            header.set_ndim(4);
            header.size(3) = 3;
-           header.stride(0) = 2;
-           header.stride(1) = 3;
-           header.stride(2) = 4;
-           header.stride(3) = 1;
+           Stride::set (header, Stride::contiguous_along_axis (3));
            auto warp_resliced = Image<typename WarpType::value_type>::scratch (header);
            reslice<Interp::Linear> (warp, warp_resliced);
            Adapter::Warp<Interpolator, ImageTypeSource, Image<typename WarpType::value_type> > interp (source, warp_resliced, value_when_out_of_bounds);

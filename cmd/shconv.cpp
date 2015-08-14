@@ -60,7 +60,8 @@ class SConvFunctor {
   SConvFunctor (const size_t n, Image<bool>& mask, 
                 const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& response) :
                     image_mask (mask),
-                    response (response), SH_in(n), SH_out(n) { } 
+                    response (response),
+                    SH_out (n){ }
 
     void operator() (Image<value_type>& in, Image<value_type>& out) {
       if (image_mask.valid()) {
@@ -68,27 +69,14 @@ class SConvFunctor {
         if (!image_mask.value())
           return;
       }
-      
-      // copy input to vector.   TODO: view instead of copy?
-      for (size_t i = 0; i < in.size(3); i++) {
-        in.index(3) = i;
-        SH_in[i] = in.value();
-      }
-      Math::SH::sconv(SH_out, response, SH_in);
-      // copy result to output
-      assign_pos_of(in).to(out);
-      for (size_t i = 0; i < in.size(3); i++) {
-        out.index(3) = i;
-        out.value() = SH_out[i];
-      }
-
+      out.row(3) = Math::SH::sconv (SH_out, response, in.row(3));
     }
 
   protected:
     Image<bool> image_mask;
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> response;
-    Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_in; // initialize size in constructor?
     Eigen::Matrix<value_type, Eigen::Dynamic, 1> SH_out;
+
 };
 
 
@@ -113,5 +101,5 @@ void run() {
   auto image_out = Image<value_type>::create (argument[2], header);
   
   SConvFunctor sconv (image_in.size(3), mask, responseRH);
-  ThreadedLoop ("performing convolution...", image_in, 0, 3, 2).run(sconv, image_in, image_out);
+  ThreadedLoop ("performing convolution...", image_in, 0, 3, 2).run (sconv, image_in, image_out);
 }

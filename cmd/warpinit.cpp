@@ -21,11 +21,10 @@
 */
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/stride.h"
-#include "image/transform.h"
-#include "image/threaded_loop.h"
+#include "image.h"
+#include "stride.h"
+#include "transform.h"
+#include "algo/threaded_loop.h"
 
 
 using namespace MR;
@@ -57,37 +56,32 @@ void usage ()
 
 class write_coordinates {
   public:
-    template <class InfoType>
-      write_coordinates (const InfoType& in) :
+    template <class HeaderType>
+      write_coordinates (const HeaderType& in) :
         transform (in) { }
 
-    template <class VoxelType>
-      void operator() (VoxelType& vox) const {
-        Point<float> coord = transform.voxel2scanner (Point<float> (vox[0], vox[1], vox[2]));
-        vox.value() = coord[0];
-        ++vox[3];
-        vox.value() = coord[1];
-        ++vox[3];
-        vox.value() = coord[2];
-        vox[3] -= 2;
+    template <class ImageType>
+      void operator() (ImageType& image) const {
+        Eigen::Vector3 voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
+        image.row(3) = (transform.voxel2scanner * voxel_pos).cast<typename ImageType::value_type>();
       }
 
   private:
-    const Image::Transform transform;
+    const Transform transform;
 };
 
 
 void run ()
 {
-  Image::Header header (argument[0]);
+  auto header = Header::open (argument[0]);
 
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
-  header.dim(3) = 3;
-  Image::Stride::set (header, Image::Stride::contiguous_along_axis (3));
+  header.size(3) = 3;
+  Stride::set (header, Stride::contiguous_along_axis (3));
 
-  Image::Buffer<float> warp_buffer (argument[1], header);
+  auto warp = Image<float>::create(argument[1], header);
 
-  Image::ThreadedLoop ("initialising warp image...", warp_buffer, 0, 3)
-    .run (write_coordinates (warp_buffer), warp_buffer.voxel());
+  ThreadedLoop ("generating identity warp...", warp, 0, 3)
+    .run (write_coordinates (warp), warp);
 }
