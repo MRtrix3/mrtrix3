@@ -82,8 +82,8 @@ class SConvFunctor {
 
 void run() {
 
-  auto image_in = Image<value_type>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
-  Math::SH::check(image_in);
+  auto image_in = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
+  Math::SH::check (image_in);
 
   auto responseSH = load_vector<value_type>(argument[1]);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
