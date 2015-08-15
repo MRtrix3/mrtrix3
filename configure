@@ -40,7 +40,7 @@ In most cases, a simple invocation should work:
 
    $ ./configure
 
-By default, this creates a target folder named 'main', and a 'config' file
+By default, this creates a target folder named 'release', and a 'config' file
 within that folder. If a name is provided, the configuration will be written to
 a different folder, which can then be used by the build script. For example:
 
@@ -51,7 +51,7 @@ enabled, which can be used with the build script as follows:
 
    $ ./build testing
 
-By default, the build script will compile the 'main' folder. 
+By default, the build script will compile the 'release' folder. 
 
 All intermediate files will be placed within the target folder to avoid
 conflict with any other configurations.
@@ -144,7 +144,7 @@ PATH            Set the path to use during the configure process.
   
 
 if not profile_name:
-  profile_name = 'default'
+  profile_name = 'release'
 
 
 try: 

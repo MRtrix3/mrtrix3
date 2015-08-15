@@ -293,7 +293,7 @@ if 'clean' in targets:
 
 # load configuration file:
 if config_name is None: 
-  config_name = 'default'
+  config_name = 'release'
 if config_file is None:
   config_file = os.path.normpath (os.path.join (mrtrix_dir[-1], config_name, 'config'))
 
