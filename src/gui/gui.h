@@ -48,6 +48,7 @@ namespace MR
 
           new QApplication (cmdline_argc, cmdline_argv);
           ::MR::App::init (cmdline_argc, cmdline_argv); 
+          qApp->setAttribute (Qt::AA_DontCreateNativeWidgetSiblings);
 
           ::MR::ProgressInfo::display_func = Dialog::ProgressBar::display;
           ::MR::ProgressInfo::done_func = Dialog::ProgressBar::done;
