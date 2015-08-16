@@ -50,16 +50,27 @@ namespace MR
           {
             for (size_t dim = 0; dim < 3; ++dim)
               gradient1D.index(dim) = index(dim);
-            for (size_t j = 0; j < 3; ++j) {
-              gradient1D.index(3) = j;
-              for (size_t i = 0; i < 3; ++i) {
-                gradient1D.set_axis(i);
+            for (size_t i = 0; i < 3; ++i) {
+              gradient1D.index(3) = i;
+              for (size_t j = 0; j < 3; ++j) {
+                gradient1D.set_axis(j);
                 jacobian (i, j) = gradient1D.value();
               }
             }
 
+//            std::cout << "jacobian" << std::endl;
+
+//            std::cout << jacobian << std::endl;
+//            std::cout << "image2scanner" << std::endl;
+
+//            std::cout << transform.image2scanner.linear() << std::endl;
+//        std::cout << "scanner2image" << std::endl;
+
+//            std::cout << transform.scanner2image.linear() << std::endl;
+
+
             if (wrt_scanner)
-              jacobian = transform.image2scanner.linear().cast<value_type>() * jacobian;
+              jacobian = jacobian * transform.scanner2image.linear().cast<value_type>();
             return jacobian;
           }
 
