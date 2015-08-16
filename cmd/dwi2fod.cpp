@@ -71,8 +71,11 @@ class Processor
 
     template <class DWIType, class FODType>
     void operator () (DWIType& dwi, FODType& fod) {
-      if (!load_data (dwi))
+      if (!load_data (dwi)) {
+        for (auto l = Loop (3) (fod); l; ++l)
+          fod.value() = 0.0;
         return;
+      }
 
       sdeconv.set (data);
 
