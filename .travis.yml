@@ -8,3 +8,4 @@ compiler:
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build)
 before_script: (cd testing; git pull)
 script: ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
+after_failure: cat configure.log
