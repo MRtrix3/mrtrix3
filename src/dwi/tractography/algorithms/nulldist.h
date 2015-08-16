@@ -77,7 +77,7 @@ namespace MR
         return CONTINUE;
       }
 
-      float get_metric() { return uniform(rng); }
+      float get_metric() { return uniform(*rng); }
 
 
       protected:

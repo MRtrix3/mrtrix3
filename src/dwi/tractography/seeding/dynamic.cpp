@@ -184,7 +184,7 @@ namespace MR
         while (1) {
 
           ++this_attempts;
-          const size_t fixel_index = 1 + uniform_int (rng);
+          const size_t fixel_index = 1 + uniform_int (*rng);
           Fixel& fixel = fixels[fixel_index];
           float seed_prob;
           if (fixel.can_update()) {
@@ -220,10 +220,10 @@ namespace MR
             seed_prob = fixel.get_old_prob();
           }
 
-          if (seed_prob > uniform_float (rng)) {
+          if (seed_prob > uniform_float (*rng)) {
 
             const Eigen::Vector3i& v (fixel.get_voxel());
-            const Eigen::Vector3f vp (v[0]+uniform_float(rng)-0.5, v[1]+uniform_float(rng)-0.5, v[2]+uniform_float(rng)-0.5);
+            const Eigen::Vector3f vp (v[0]+uniform_float(*rng)-0.5, v[1]+uniform_float(*rng)-0.5, v[2]+uniform_float(*rng)-0.5);
             p = transform.voxel2scanner.cast<float>() * vp;
 
             bool good_seed = !act;

@@ -32,8 +32,12 @@ namespace MR
     namespace Tractography
     {
 
-      //! thread-local, but globally accessible RNG to simplify multi-threading
-      extern thread_local Math::RNG rng;
+      //! thread-local, but globally accessible RNG to vastly simplify multi-threading
+#ifdef MRTRIX_MACOSX
+      extern __thread Math::RNG* rng;
+#else
+      extern thread_local Math::RNG* rng;
+#endif 
 
     }
   }

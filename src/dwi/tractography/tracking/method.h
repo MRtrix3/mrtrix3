@@ -139,9 +139,9 @@ namespace MR
         {
           Eigen::Vector3f d;
           do {
-            d[0] = 2.0 * uniform(rng) - 1.0;
-            d[1] = 2.0 * uniform(rng) - 1.0;
-            d[2] = 2.0 * uniform(rng) - 1.0;
+            d[0] = 2.0 * uniform(*rng) - 1.0;
+            d[1] = 2.0 * uniform(*rng) - 1.0;
+            d[2] = 2.0 * uniform(*rng) - 1.0;
           } while (d.squaredNorm() > 1.0);
           d.normalize();
           return d;
@@ -150,11 +150,11 @@ namespace MR
 
         Eigen::Vector3f MethodBase::random_direction (float max_angle, float sin_max_angle)
         {
-          float phi = 2.0 * Math::pi * uniform(rng);
+          float phi = 2.0 * Math::pi * uniform(*rng);
           float theta;
           do {
-            theta = max_angle * uniform(rng);
-          } while (sin_max_angle * uniform(rng) > sin (theta));
+            theta = max_angle * uniform(*rng);
+          } while (sin_max_angle * uniform(*rng) > sin (theta));
           return Eigen::Vector3f (sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta));
         }
 

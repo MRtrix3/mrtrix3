@@ -40,7 +40,7 @@ namespace MR
         {
           std::uniform_real_distribution<float> uniform;
           do {
-            p = { 2.0f*uniform(rng)-1.0f, 2.0f*uniform(rng)-1.0f, 2.0f*uniform(rng)-1.0f };
+            p = { 2.0f*uniform(*rng)-1.0f, 2.0f*uniform(*rng)-1.0f, 2.0f*uniform(*rng)-1.0f };
           } while (p.squaredNorm() > 1.0f);
           p = pos + rad*p;
           return true;
@@ -54,12 +54,12 @@ namespace MR
         {
           auto seed = mask;
           do {
-            seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0)-1)(rng);
-            seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1)-1)(rng);
-            seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2)-1)(rng);
+            seed.index(0) = std::uniform_int_distribution<int>(0, mask.size(0)-1)(*rng);
+            seed.index(1) = std::uniform_int_distribution<int>(0, mask.size(1)-1)(*rng);
+            seed.index(2) = std::uniform_int_distribution<int>(0, mask.size(2)-1)(*rng);
           } while (!seed.value());
           std::uniform_real_distribution<float> uniform;
-          p = { seed.index(0)+uniform(rng)-0.5f, seed.index(1)+uniform(rng)-0.5f, seed.index(2)+uniform(rng)-0.5f };
+          p = { seed.index(0)+uniform(*rng)-0.5f, seed.index(1)+uniform(*rng)-0.5f, seed.index(2)+uniform(*rng)-0.5f };
           p = mask.voxel2scanner.cast<float>() * p;
           return true;
         }
@@ -97,7 +97,7 @@ namespace MR
           }
 
           std::uniform_real_distribution<float> uniform;
-          p = { mask.index(0)+uniform(rng)-0.5f, mask.index(1)+uniform(rng)-0.5f, mask.index(2)+uniform(rng)-0.5f };
+          p = { mask.index(0)+uniform(*rng)-0.5f, mask.index(1)+uniform(*rng)-0.5f, mask.index(2)+uniform(*rng)-0.5f };
           p = mask.voxel2scanner.cast<float>() * p;
           return true;
         }
@@ -209,24 +209,24 @@ namespace MR
           Eigen::Vector3f pos;
           do {
             pos = {
-              uniform (rng) * (interp.size(0)-1), 
-              uniform (rng) * (interp.size(1)-1), 
-              uniform (rng) * (interp.size(2)-1) 
+              uniform (*rng) * (interp.size(0)-1), 
+              uniform (*rng) * (interp.size(1)-1), 
+              uniform (*rng) * (interp.size(2)-1) 
             };
             seed.voxel (pos);
-            selector = rng.Uniform() * max;
+            selector = rng->Uniform() * max;
           } while (seed.value() < selector);
           p = interp.voxel2scanner * pos;
 #else
           auto seed = image;
           float selector;
           do {
-            seed.index(0) = std::uniform_int_distribution<int> (0, image.size(0)-1) (rng);
-            seed.index(1) = std::uniform_int_distribution<int> (0, image.size(1)-1) (rng);
-            seed.index(2) = std::uniform_int_distribution<int> (0, image.size(2)-1) (rng);
-            selector = uniform (rng) * max;
+            seed.index(0) = std::uniform_int_distribution<int> (0, image.size(0)-1) (*rng);
+            seed.index(1) = std::uniform_int_distribution<int> (0, image.size(1)-1) (*rng);
+            seed.index(2) = std::uniform_int_distribution<int> (0, image.size(2)-1) (*rng);
+            selector = uniform (*rng) * max;
           } while (seed.value() < selector);
-          p = { seed.index(0)+uniform(rng)-0.5f, seed.index(1)+uniform(rng)-0.5f, seed.index(2)+uniform(rng)-0.5f };
+          p = { seed.index(0)+uniform(*rng)-0.5f, seed.index(1)+uniform(*rng)-0.5f, seed.index(2)+uniform(*rng)-0.5f };
           p = voxel2scanner.cast<float>() * p;
 #endif
           return true;

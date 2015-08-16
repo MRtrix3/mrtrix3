@@ -267,7 +267,7 @@ end_init:
                     max_truncation = val/max_val;
                 }
 
-                if (uniform(rng) < val/max_val) {
+                if (uniform(*rng) < val/max_val) {
                   mean_sample_num += n;
                   half_log_prob0 = last_half_log_probN;
                   pos = positions[0];

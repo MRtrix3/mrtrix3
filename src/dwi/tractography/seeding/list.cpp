@@ -84,7 +84,7 @@ namespace MR
 
             do {
               float incrementer = 0.0;
-              const float sample = uniform (rng) * total_volume;
+              const float sample = uniform (*rng) * total_volume;
               for (auto& i : seeders)
                 if ((incrementer += i->vol()) > sample)
                   return i->get_seed (p, d);

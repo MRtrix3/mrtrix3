@@ -27,6 +27,7 @@
 #include "thread_queue.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -119,6 +120,7 @@ namespace MR
 
 
             bool operator() (GeneratedTrack& item) {
+              rng = &thread_local_RNG;
               if (!gen_track (item))
                 return false;
               if (track_rejected (item))
@@ -131,6 +133,7 @@ namespace MR
           private:
 
             const typename Method::Shared& S;
+            Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
             std::vector<bool> track_included;
