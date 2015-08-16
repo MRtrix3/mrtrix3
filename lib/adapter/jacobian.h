@@ -50,15 +50,16 @@ namespace MR
           {
             for (size_t dim = 0; dim < 3; ++dim)
               gradient1D.index(dim) = index(dim);
-            for (size_t i = 0; i < 3; ++i) {
-              gradient1D.index(3) = i;
-              for (size_t j = 0; j < 3; ++j) {
-                gradient1D.set_axis(j);
+            for (size_t j = 0; j < 3; ++j) {
+              gradient1D.index(3) = j;
+              for (size_t i = 0; i < 3; ++i) {
+                gradient1D.set_axis(i);
                 jacobian (i, j) = gradient1D.value();
               }
             }
+
             if (wrt_scanner)
-              jacobian = jacobian * transform.scanner2image.linear().cast<value_type>();
+              jacobian = transform.image2scanner.linear().cast<value_type>() * jacobian;
             return jacobian;
           }
 
