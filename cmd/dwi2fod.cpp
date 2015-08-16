@@ -116,8 +116,12 @@ class Processor
     bool load_data (const Image::Iterator& pos) {
       if (mask) {
         Image::voxel_assign (*mask, pos);
-        if (!mask->value())
+        if (!mask->value()) {
+          Image::voxel_assign (fod, pos);
+          for (auto l = Image::Loop (3) (fod); l; ++l)
+            fod.value() = 0.0;
           return false;
+        }
       }
 
       Image::voxel_assign (dwi, pos);
