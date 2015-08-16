@@ -10,7 +10,7 @@ before_install:
 compiler:
   - gcc
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
-script: ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
+script: ./configure -nogui && ./build && (cd testing; ./run_tests)
 after_failure: 
   - cat configure.log
   - cat build.log
