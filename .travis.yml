@@ -2,9 +2,9 @@ language: cpp
 os: linux
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install libgsl0-dev zlib1g-dev
+  - sudo apt-get install libgsl0-dev zlib1g-dev g++-4.8
 compiler:
   - gcc
-install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build)
-before_script: (cd testing; git pull)
-script: C++=/usr/bin/g++-4.8 ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
+install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
+before_script: (cd testing; git pull); export C++=/usr/bin/g++-4.8
+script: ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
