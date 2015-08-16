@@ -1,0 +1,10 @@
+language: cpp
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get libgsl0-dev zlib1g-dev git
+compiler:
+  - clang
+  - gcc
+install: (git clone git@github.com:MRtrix3/testing.git; cd testing; ln -s ../build)
+before_script: (cd testing; git pull)
+script: ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
