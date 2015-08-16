@@ -5,6 +5,6 @@ before_install:
   - sudo apt-get install libgsl0-dev zlib1g-dev
 compiler:
   - gcc
-install: (git clone git@github.com:MRtrix3/testing.git; cd testing; ln -s ../build)
+install: (git clone https://github.com/MRtrix3/mrtrix3.git; cd testing; ln -s ../build)
 before_script: (cd testing; git pull)
 script: ./configure -nogui && ./build && (cd testing; ./run_tests.sh)
