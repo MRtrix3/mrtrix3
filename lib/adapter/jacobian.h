@@ -58,7 +58,7 @@ namespace MR
               }
             }
             if (wrt_scanner)
-              jacobian = transform.image2scanner.linear().cast<value_type>() * jacobian;
+              jacobian = jacobian * transform.scanner2image.linear().cast<value_type>();
             return jacobian;
           }
 
