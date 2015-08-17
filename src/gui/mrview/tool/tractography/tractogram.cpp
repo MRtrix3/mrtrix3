@@ -79,7 +79,7 @@ namespace MR
 
           if (color_type == ScalarFile)
             source += "out float v_amp;\n";
-          else if (color_type == Ends)
+          if (color_type == Ends || color_type == ScalarFile)
             source += "out vec3 v_colour;\n";
 
           // Main function
@@ -100,18 +100,20 @@ namespace MR
           else if (color_type == ScalarFile) { // TODO: move to frag shader:
               source += "  v_amp = amp;\n";
               if (!ColourMap::maps[colourmap].special) {
-                source += "   float amplitude = clamp (";
+                source += "  float amplitude = clamp (";
                 if (tractogram.scale_inverted()) source += "1.0 -";
                 source += " scale * (amp - offset), 0.0, 1.0);\n";
               }
               if (!scalarfile_by_direction)
                 source +=
-                  std::string("  vec3 color;\n") +
+                  std::string("  vec3 color;\n  ") +
                   ColourMap::maps[colourmap].glsl_mapping +
                   "  v_colour = color;\n";
           }
 
           source += "}\n";
+
+          VAR (source);
 
           return source;
         }
