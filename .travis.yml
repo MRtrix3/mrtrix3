@@ -1,21 +1,17 @@
 language: cpp
 os:
   - linux
-  - osx
 compiler:
   - gcc
   - clang
 before_install:
-  - if [ ${TRAVIS_OS_NAME} == linux ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi
-  - if [ ${TRAVIS_OS_NAME} == linux ]; then sudo apt-get update -qq; sudo apt-get -y install libgsl0-dev zlib1g-dev; fi
-  - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi; fi
-  - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi; fi
-  - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi; fi
-  - if [ ${TRAVIS_OS_NAME} == osx ]; then sudo brew update; sudo brew install gsl; fi
-  - if [ ${TRAVIS_OS_NAME} == osx ]; then sudo brew tap homebrew/versions; sudo brew install gcc48; fi
-  - if [ ${TRAVIS_OS_NAME} == osx ]; then if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi; fi
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update -qq; sudo apt-get -y install libgsl0-dev zlib1g-dev
+  - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
-script: ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests)
+script: python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests) && python2 ./configure -nogui && python2 ./build
 after_failure: 
   - cat configure.log
   - cat build.log
