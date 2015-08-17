@@ -88,11 +88,11 @@ void usage ()
   + Option ("cfe_e", "cfe extent exponent (default: 2.0)")
   + Argument ("value").type_float (0.0, 2.0, 100000)
 
-  + Option ("cfe_h", "cfe height exponent (default: 1.0)")
-  + Argument ("value").type_float (0.0, 1.0, 100000)
+  + Option ("cfe_h", "cfe height exponent (default: 3.0)")
+  + Argument ("value").type_float (0.0, 3.0, 100000)
 
-  + Option ("cfe_c", "cfe connectivity exponent (default: 0.1)")
-  + Argument ("value").type_float (0.0, 0.1, 100000)
+  + Option ("cfe_c", "cfe connectivity exponent (default: 0.5)")
+  + Argument ("value").type_float (0.0, 0.5, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
   + Argument ("value").type_float (0.0, 30, 90)
@@ -149,17 +149,17 @@ void run() {
     cfe_dh = opt[0][0];
 
   opt = get_options ("cfe_h");
-  value_type cfe_h = 2.0;
+  value_type cfe_h = 3.0;
   if (opt.size())
     cfe_h = opt[0][0];
 
   opt = get_options ("cfe_e");
-  value_type cfe_e = 1.0;
+  value_type cfe_e = 2.0;
   if (opt.size())
     cfe_e = opt[0][0];
 
   opt = get_options ("cfe_c");
-  value_type cfe_c = 0.1;
+  value_type cfe_c = 0.5;
   if (opt.size())
     cfe_c = opt[0][0];
 
