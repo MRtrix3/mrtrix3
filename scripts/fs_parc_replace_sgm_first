@@ -77,7 +77,10 @@ mask_list = [ ]
 for struct in structure_map.keys():
   image_path = struct + '_mask.nii'
   mask_list.append (image_path)
-  runCommand('meshconvert first-' + struct + '_first.vtk transformed.vtk -transform_first2real T1.nii')
+  vtk_in_path = 'first-' + struct + '_first.vtk'
+  if not os.path.exists(vtk_in_path):
+    errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
+  runCommand('meshconvert ' + vtk_in_path + ' transformed.vtk -transform_first2real T1.nii')
   runCommand('mesh2pve transformed.vtk parc.mif - | mrthreshold - ' + image_path + ' -abs 0.5')
   # Replace the node location in the parcellation image with the new mask image
   node_index = config[structure_map[struct]]
