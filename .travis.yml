@@ -14,3 +14,4 @@ script: ./configure -nogui && ./build -disablethreading && (cd testing; ./run_te
 after_failure: 
   - cat configure.log
   - cat build.log
+  - cat testing/testing.log
