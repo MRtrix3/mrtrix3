@@ -1,5 +1,5 @@
 language: cpp
-os: 
+os:
   - linux
   - osx
 compiler:
@@ -7,11 +7,13 @@ compiler:
   - clang
 before_install:
   - if [ ${TRAVIS_OS_NAME} == linux ]; then sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y; fi
-  - if [ ${TRAVIS_OS_NAME} == linux ]; sudo apt-get update -qq; sudo apt-get -y install libgsl0-dev zlib1g-dev; fi
+  - if [ ${TRAVIS_OS_NAME} == linux ]; then sudo apt-get update -qq; sudo apt-get -y install libgsl0-dev zlib1g-dev; fi
   - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi; fi
   - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi; fi
   - if [ ${TRAVIS_OS_NAME} == linux ]; then if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi; fi
-  - if [ ${TRAVIS_OS_NAME} == osx ]; then sudo brew install gsl; fi
+  - if [ ${TRAVIS_OS_NAME} == osx ]; then sudo brew update; sudo brew install gsl; fi
+  - if [ ${TRAVIS_OS_NAME} == osx ]; then sudo brew tap homebrew/versions; sudo brew install gcc48; fi
+  - if [ ${TRAVIS_OS_NAME} == osx ]; then if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi; fi
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script: ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests)
 after_failure: 
