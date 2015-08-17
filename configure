@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex, re
+import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
 debug = False
@@ -416,7 +416,7 @@ else:
 
 if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
 if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
-ld = cxx.copy()
+ld = copy.copy(cxx)
 if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
 if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
 if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
