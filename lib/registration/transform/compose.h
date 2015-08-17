@@ -45,7 +45,7 @@ namespace MR
           }
 
         protected:
-          const Eigen::Transform<typename WarpImageType::value_type, 3, Eigen::AffineCompact> & transform;
+          const Eigen::Transform<typename WarpImageType::value_type, 3, Eigen::AffineCompact> transform;
           WarpImageType warp_in;
           WarpImageType warp_out;
       };

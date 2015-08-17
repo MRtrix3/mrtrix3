@@ -101,19 +101,21 @@ namespace MR
       class Image : public ::MR::Image<uint64_t>
     {
       public:
-        Image (const std::string& image_name, bool readwrite = false) :
-          Image<uint64_t> (image_name, readwrite), io (nullptr) { check(); }
+        Image (const std::string& image_name) :
+          ::MR::Image<uint64_t> (::MR::Image<uint64_t>::open (image_name)), io (nullptr) { check(); }
 
-        Image (const Header& header, bool readwrite = false) :
-          Image<uint64_t> (header, readwrite), io (nullptr) { check(); }
+        Image (Header& header, bool readwrite = false) :
+          ::MR::Image<uint64_t> (header.get_image<uint64_t>()), io (nullptr) { check(); }
 
         Image (const Image<DataType>& that) = default;
 
         Image (const std::string& image_name, const Header& template_header) :
-          Image<uint64_t> (image_name, template_header), io (nullptr) { check(); }
+          ::MR::Image<uint64_t> (::MR::Image<uint64_t>::create (image_name, template_header)), io (nullptr) { check(); }
 
         typedef uint64_t value_type;
         typedef DataType sparse_data_type;
+
+        using ::MR::Image<uint64_t>::header;
 
         Value<DataType> value () { return { *this, *io }; }
         const Value<DataType> value () const { return { *this, *io }; }
@@ -135,7 +137,7 @@ namespace MR
           if (str(typeid(DataType).name()) != class_name)
             throw Exception ("class type of sparse image buffer does not match that in image header");
           std::map<std::string, std::string>::const_iterator size_it = header().keyval().find (Sparse::size_key);
-          if (size_it == header.keys().end())
+          if (size_it == header().keys().end())
             throw Exception ("cannot create sparse image without knowledge of underlying class size in the image header");
           const size_t class_size = to<size_t>(size_it->second);
           if (sizeof(DataType) != class_size)
