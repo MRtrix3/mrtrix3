@@ -9,6 +9,7 @@ before_install:
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 compiler:
   - gcc
+  - glang
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script: ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests)
 after_failure: 

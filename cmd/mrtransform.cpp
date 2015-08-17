@@ -244,13 +244,13 @@ void run ()
     do_reorientation = true;
     CONSOLE ("SH series detected, performing apodised PSF reorientation");
 
-    Math::Matrix<value_type> directions_el_az;
+    Math::Matrix<value_type> directions_az_el;
     opt = get_options ("directions");
     if (opt.size())
-      directions_el_az.load(opt[0][0]);
+      directions_az_el.load(opt[0][0]);
     else
-      DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
-    Math::SH::S2C (directions_el_az, directions_cartesian);
+      DWI::Directions::electrostatic_repulsion_60 (directions_az_el);
+    Math::SH::S2C (directions_az_el, directions_cartesian);
 
   }
 
