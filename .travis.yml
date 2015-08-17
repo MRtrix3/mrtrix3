@@ -3,7 +3,9 @@ os: linux
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - sudo apt-get update -qq
-  - sudo apt-get -y install libeigen3-dev zlib1g-dev libgsl0-dev
+  - sudo apt-get -y install zlib1g-dev libgsl0-dev
+  - wget http://packages.yade-dem.org/precise/libeigen3-dev_3.2.1-1~precise1_all.deb
+  - sudo dpkg -i libeigen3-dev_3.2.1-1~precise1_all.deb
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
