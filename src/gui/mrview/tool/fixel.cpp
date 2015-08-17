@@ -94,24 +94,29 @@ namespace MR
               break;
           }
 
+          if (fixel.use_discard_lower())
+            source += "uniform float lower;\n";
+          if (fixel.use_discard_upper())
+            source += "uniform float upper;\n";
+
           source +=
-               "out vec3 fColour;\n"
-               "flat out float value_out;\n"
+               "flat out vec3 fColour;\n"
                "void main() {\n";
 
-          // Make sure we pass our output parameters before ending the primitive!
+          if (fixel.use_discard_lower())
+            source += "  if (v_fixel_metrics[0].y < lower) return;\n";
+          if (fixel.use_discard_upper())
+            source += "  if (v_fixel_metrics[0].y > upper) return;\n";
+
           switch (length_type) {
             case Unity:
-              source += "   value_out = v_fixel_metrics[0].y;\n"
-                        "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
               break;
             case Amplitude:
-              source += "   value_out = v_fixel_metrics[0].x;\n"
-                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * v_fixel_metrics[0].x * vec4 (v_dir[0], 0);\n";
               break;
             case LValue:
-              source += "   value_out = v_fixel_metrics[0].y;\n"
-                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * v_fixel_metrics[0].y * vec4 (v_dir[0], 0);\n";
               break;
           }
 
@@ -157,32 +162,14 @@ namespace MR
         }
 
 
-        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable& fixel)
+        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable&/* fixel*/)
         {
           std::string source =
               "out vec3 outColour;\n"
-              "in vec3 fColour;\n"
-              "flat in float value_out;\n";
-
-          if (fixel.use_discard_lower())
-            source += "uniform float lower;\n";
-          if (fixel.use_discard_upper())
-            source += "uniform float upper;\n";
-
-          source +=
-              "void main(){\n";
-
-
-          if (fixel.use_discard_lower())
-            source += "  if (value_out < lower) discard;\n";
-          if (fixel.use_discard_upper())
-            source += "  if (value_out > upper) discard;\n";
-
-          source +=
-            std::string("  outColour = fColour;\n");
-
-          source += "}\n";
-
+              "flat in vec3 fColour;\n"
+              "void main(){\n"
+              "  outColour = fColour;\n"
+              "}\n";
           return source;
         }
 
