@@ -278,14 +278,14 @@ void run ()
 
 
   opt = get_options ("tmask");
-  std::unique_ptr<Image<value_type> > tmask_image;
+  std::unique_ptr<Image<bool> > tmask_image;
   if (opt.size ())
-    tmask_image.reset (new Image<value_type> (Image<value_type>::open(opt[0][0])));
+    tmask_image.reset (new Image<bool> (Image<bool>::open(opt[0][0])));
 
   opt = get_options ("mmask");
-  std::unique_ptr<Image<value_type> > mmask_image;
+  std::unique_ptr<Image<bool> > mmask_image;
   if (opt.size ())
-    mmask_image.reset (new Image<value_type> > (Image<value_type>::open(opt[0][0])));
+    mmask_image.reset (new Image<bool> > (Image<bool>::open(opt[0][0])));
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;;

@@ -185,58 +185,49 @@ namespace MR
                                    Image<float>,
                                    MovingImageInterpolatorType,
                                    Image<float>,
-                                   Interp::Nearest<MovingMaskVoxelType >,
-                                   Interp::Nearest<TemplateMaskVoxelType > > ParamType;
+                                   Interp::Nearest<MovingMaskVoxelType>,
+                                   Interp::Nearest<TemplateMaskVoxelType> > ParamType;
 
-            Math::Vector<typename TransformType::ParameterType> optimiser_weights;
+            Eigen::VectorXd<typename TransformType::ParameterType> optimiser_weights;
             transform.get_optimiser_weights (optimiser_weights);
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
 
               CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
 
-              Image::Filter::Resize moving_resize_filter (moving_image);
+              Filter::Resize moving_resize_filter (moving_image);
               moving_resize_filter.set_scale_factor (scale_factor[level]);
               moving_resize_filter.set_interp_type (1);
-              Image::BufferScratch<float> moving_resized (moving_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_resized_vox (moving_resized);
-              Image::Filter::Smooth moving_smooth_filter (moving_resized_vox);
+              auto moving_resized = Image<float>::scratch (moving_resize_filter);
+              Filter::Smooth moving_smooth_filter (moving_resized);
 
-              Image::BufferScratch<float> moving_resized_smoothed (moving_smooth_filter.info());
-              Image::BufferScratch<float>::voxel_type moving_resized_smoothed_vox (moving_resized_smoothed);
+              auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
 
-              Image::Filter::Resize template_resize_filter (template_image);
+              Filter::Resize template_resize_filter (template_image);
               template_resize_filter.set_scale_factor (scale_factor[level]);
               template_resize_filter.set_interp_type (1);
-              Image::BufferScratch<float> template_resized (template_resize_filter.info());
-              Image::BufferScratch<float>::voxel_type template_resized_vox (template_resized);
-              Image::Filter::Smooth template_smooth_filter (template_resized_vox);
-              Image::BufferScratch<float> template_resized_smoothed (template_smooth_filter.info());
-              Image::BufferScratch<float>::voxel_type template_resized_smoothed_vox (template_resized_smoothed);
+              auto template_resized = Image<float>::scratch (template_resize_filter);
+              Filter::Smooth template_smooth_filter (template_resized);
+              auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
 
               {
                 LogLevelLatch log_level (0);
-                moving_resize_filter (moving_image, moving_resized_vox); // TODO check this. Shouldn't we be smoothing then resizing?
-                moving_smooth_filter (moving_resized_vox, moving_resized_smoothed_vox);
-                template_resize_filter (template_image, template_resized_vox);
-                template_smooth_filter (template_resized_vox, template_resized_smoothed_vox);
+                // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
+                moving_resize_filter (moving_image, moving_resized);
+                moving_smooth_filter (moving_resized, moving_resized_smoothed);
+                template_resize_filter (template_image, template_resized);
+                template_smooth_filter (template_resized, template_resized_smoothed);
               }
-              metric.set_moving_image (moving_resized_smoothed_vox);
-              ParamType parameters (transform, moving_resized_smoothed_vox, template_resized_smoothed_vox);
+              metric.set_moving_image (moving_resized_smoothed);
+              ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
-              std::unique_ptr<MovingMaskVoxelType> moving_mask_vox;
-              std::unique_ptr<TemplateMaskVoxelType> template_mask_vox;
-              if (moving_mask) {
-                moving_mask_vox.reset (new MovingMaskVoxelType (*moving_mask));
-                parameters.moving_mask_interp.reset (new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask_vox));
-              }
-              if (template_mask) {
-                template_mask_vox.reset (new TemplateMaskVoxelType (*template_mask));
-                parameters.template_mask_interp.reset (new Image::Interp::Nearest<TemplateMaskVoxelType> (*template_mask_vox));
-              }
+              if (moving_mask.valid())
+                parameters.moving_mask_interp.reset (new Image::Interp::Nearest<MovingMaskVoxelType> (moving_mask));
+              if (template_mask.valid)
+                parameters.template_mask_interp.reset (new Image::Interp::Nearest<TemplateMaskVoxelType> (template_mask));
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.is_set())

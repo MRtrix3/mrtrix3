@@ -26,7 +26,6 @@
 #include "image.h"
 #include "algo/iterator.h"
 #include "transform.h"
-#include "point.h"
 
 namespace MR
 {
@@ -58,7 +57,7 @@ namespace MR
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<double>& overall_gradient) :
+          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Eigen::VectorXd& overall_gradient) :
             metric (metric),
             params (parameters),
             cost_function (0.0),
@@ -66,7 +65,7 @@ namespace MR
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
             transform (params.template_image) {
-              gradient.zero();
+              gradient.setZero();
           }
 
           ~ThreadKernel () {
@@ -101,7 +100,7 @@ namespace MR
           }
 
           template <class U = MetricType>
-            void operator() (const Image::Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
+            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
               cost_function += metric (params, iter);
           }
 
@@ -110,9 +109,9 @@ namespace MR
             ParamType params;
 
             double cost_function;
-            Eigen::Vector3 gradient;
+            Eigen::VectorXd gradient;
             double& overall_cost_function;
-            Eigen::Vector3& overall_gradient;
+            Eigen::VectorXd& overall_gradient;
             Transform transform;
       };
     }

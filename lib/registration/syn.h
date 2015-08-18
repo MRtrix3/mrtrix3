@@ -24,23 +24,21 @@
 #define __registration_syn_h__
 
 #include <vector>
-#include "image/voxel.h"
+#include "image.h"
 
 namespace MR
 {
-  namespace Image
-  {
     namespace Registration
     {
 
-      class SyN
-      {
+    class SyN
+    {
 
-        public:
+      public:
 
-          typedef float value_type;
+        typedef float value_type;
 
-          SyN (){}
+        SyN (){}
 
 //          run_masked
 //
@@ -92,8 +90,7 @@ namespace MR
 //          ArrayType m_GradSmoothingMeshSize;
 //          ArrayType m_TotalSmoothingMeshSize;
 
-      };
-    }
+    };
   }
 }
 

@@ -50,14 +50,15 @@ namespace MR
             double operator() (const Eigen::Vector3& x, Eigen::Vector3& gradient) {
 
               double overall_cost_function = 0.0;
-              gradient.setZeros();
+              gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
               std::unique_ptr<Image<float> > reoriented_moving;
 
-              if (directions.is_set()) {
+              // TODO isset()
+              if (directions.cols()) {
                 reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.moving_image)));
-                Image::Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
+                Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
                 params.set_moving_iterpolator (*reoriented_moving);
                 metric.set_moving_image (*reoriented_moving);
               }
@@ -71,7 +72,7 @@ namespace MR
               return overall_cost_function;
             }
 
-            void set_directions (Math::Matrix<float>& dir) {
+            void set_directions (Eigen::MatrixXd& dir) {
               directions = dir;
             }
 
