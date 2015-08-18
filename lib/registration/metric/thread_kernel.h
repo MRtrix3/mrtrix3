@@ -20,105 +20,101 @@
 
  */
 
-#ifndef __image_registration_metric_threadkernel_h__
-#define __image_registration_metric_threadkernel_h__
+#ifndef __registration_metric_threadkernel_h__
+#define __registration_metric_threadkernel_h__
 
-#include "math/matrix.h"
-#include "image/voxel.h"
-#include "image/iterator.h"
-#include "image/transform.h"
+#include "image.h"
+#include "algo/iterator.h"
+#include "transform.h"
 #include "point.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
 
-        //! \cond skip
-        namespace {
-          template<class T>
-          struct Void {
-            typedef void type;
-          };
+      //! \cond skip
+      namespace {
+        template<class T>
+        struct Void {
+          typedef void type;
+        };
 
-          template <class MetricType, typename U = void>
-          struct is_neighbourhood_metric {
-            typedef int no;
-          };
+        template <class MetricType, typename U = void>
+        struct is_neighbourhood_metric {
+          typedef int no;
+        };
 
-          template <class MetricType>
-          struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
-            typedef int yes;
-          };
-        }
-        //! \endcond
-
-
-        template <class MetricType, class ParamType>
-        class ThreadKernel {
-          public:
-            ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<double>& overall_gradient) :
-              metric (metric),
-              params (parameters),
-              cost_function (0.0),
-              gradient (overall_gradient.size()),
-              overall_cost_function (overall_cost_function),
-              overall_gradient (overall_gradient),
-              transform (params.template_image) {
-                gradient.zero();
-            }
-
-            ~ThreadKernel () {
-              overall_cost_function += cost_function;
-              overall_gradient += gradient;
-            }
-
-            template <class U = MetricType>
-            void operator() (const Image::Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
-
-              Point<float> template_point = transform.voxel2scanner (iter);
-              if (params.template_mask_interp) {
-                params.template_mask_interp->scanner (template_point);
-                if (!params.template_mask_interp->value())
-                  return;
-              }
-
-              Point<float> moving_point;
-              Math::Vector<double> param;
-              params.transformation.get_parameter_vector (param);
-              params.transformation.transform (moving_point, template_point);
-              if (params.moving_mask_interp) {
-                params.moving_mask_interp->scanner (moving_point);
-                if (!params.moving_mask_interp->value())
-                  return;
-              }
-              Image::voxel_assign (params.template_image, iter);
-              params.moving_image_interp->scanner (moving_point);
-              if (!(*params.moving_image_interp))
-                return;
-              cost_function += metric (params, template_point, moving_point, gradient);
-            }
-
-            template <class U = MetricType>
-              void operator() (const Image::Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
-                cost_function += metric (params, iter);
-            }
-
-            protected:
-              MetricType metric;
-              ParamType params;
-
-              double cost_function;
-              Math::Vector<double> gradient;
-              double& overall_cost_function;
-              Math::Vector<double>& overall_gradient;
-              Image::Transform transform;
+        template <class MetricType>
+        struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
+          typedef int yes;
         };
       }
+      //! \endcond
+
+
+      template <class MetricType, class ParamType>
+      class ThreadKernel {
+        public:
+          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Math::Vector<double>& overall_gradient) :
+            metric (metric),
+            params (parameters),
+            cost_function (0.0),
+            gradient (overall_gradient.size()),
+            overall_cost_function (overall_cost_function),
+            overall_gradient (overall_gradient),
+            transform (params.template_image) {
+              gradient.zero();
+          }
+
+          ~ThreadKernel () {
+            overall_cost_function += cost_function;
+            overall_gradient += gradient;
+          }
+
+          template <class U = MetricType>
+          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+
+            Eigen::Vector3 template_point = transform.voxel2scanner (iter);
+            if (params.template_mask_interp) {
+              params.template_mask_interp->scanner (template_point);
+              if (!params.template_mask_interp->value())
+                return;
+            }
+
+            Eigen::Vector3 moving_point;
+            Eigen::Vector3 param;
+            params.transformation.get_parameter_vector (param);
+            params.transformation.transform (moving_point, template_point);
+            if (params.moving_mask_interp) {
+              params.moving_mask_interp->scanner (moving_point);
+              if (!params.moving_mask_interp->value())
+                return;
+            }
+            assign_pos_of (iter).to (params.template_image);
+            params.moving_image_interp->scanner (moving_point);
+            if (!(*params.moving_image_interp))
+              return;
+            cost_function += metric (params, template_point, moving_point, gradient);
+          }
+
+          template <class U = MetricType>
+            void operator() (const Image::Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
+              cost_function += metric (params, iter);
+          }
+
+          protected:
+            MetricType metric;
+            ParamType params;
+
+            double cost_function;
+            Eigen::Vector3 gradient;
+            double& overall_cost_function;
+            Eigen::Vector3& overall_gradient;
+            Transform transform;
+      };
     }
   }
 }

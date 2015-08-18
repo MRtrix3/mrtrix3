@@ -20,35 +20,32 @@
 
  */
 
-#ifndef __image_registration_transform_transform_utils_h__
-#define __image_registration_transform_transform_utils_h__
+#ifndef __registration_transform_transform_utils_h__
+#define __registration_transform_transform_utils_h__
 
 #include <limits>
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Transform
     {
-      namespace Transform
+      template <typename TransformMatrixType, typename StreamType, typename PrecisionType = int>
+      void write_affine (const TransformMatrixType& transform, StreamType& out, const PrecisionType precision = 0)
       {
-	  template <typename TransformMatrixType, typename StreamType, typename PrecisionType = int>
-	  void write_affine (const TransformMatrixType& transform, StreamType& out, const PrecisionType precision = 0)
-	  {   
-		if (precision > 0)		
-			out.precision(precision);
-		else
-			out.precision(std::numeric_limits<long double>::digits10 + 1);
-		out << "mrtrix transformation affine matrix"; 
-		out << "\nmatrix: " << transform (0,0) << "," <<  transform (0,1) << "," << transform (0,2) << "," << transform (0,3);
-		out << "\nmatrix: " << transform (1,0) << "," <<  transform (1,1) << "," << transform (1,2) << "," << transform (1,3);
-		out << "\nmatrix: " << transform (2,0) << "," <<  transform (2,1) << "," << transform (2,2) << "," << transform (2,3);
-		out << "\nmatrix: " << transform (3,0) << "," <<  transform (3,1) << "," << transform (3,2) << "," << transform (3,3);
-		out << "\n";
-	  }
+      if (precision > 0)
+        out.precision(precision);
+      else
+        out.precision(std::numeric_limits<long double>::digits10 + 1);
+      out << "mrtrix transformation affine matrix";
+      out << "\nmatrix: " << transform (0,0) << "," <<  transform (0,1) << "," << transform (0,2) << "," << transform (0,3);
+      out << "\nmatrix: " << transform (1,0) << "," <<  transform (1,1) << "," << transform (1,2) << "," << transform (1,3);
+      out << "\nmatrix: " << transform (2,0) << "," <<  transform (2,1) << "," << transform (2,2) << "," << transform (2,3);
+      out << "\nmatrix: " << transform (3,0) << "," <<  transform (3,1) << "," << transform (3,2) << "," << transform (3,3);
+      out << "\n";
+      }
 
 	  }
-	}
   }
 }
 #endif

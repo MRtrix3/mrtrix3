@@ -20,55 +20,52 @@
 
  */
 
-#ifndef __image_registration_metric_params_h__
-#define __image_registration_metric_params_h__
+#ifndef __registration_metric_params_h__
+#define __registration_metric_params_h__
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
 
-        template <class TransformType,
-                  class MovingImageVoxelType,
-                  class MovingImageInterpolatorType,
-                  class TemplateImageVoxelType,
-                  class MovingMaskInterpolatorType,
-                  class TemplateMaskInterpolatorType>
-        class Params {
-          public:
+      template <class TransformType,
+                class MovingImageType,
+                class MovingImageInterpolatorType,
+                class TemplateImageType,
+                class MovingMaskInterpolatorType,
+                class TemplateMaskInterpolatorType>
+      class Params {
+        public:
 
-            typedef typename TransformType::ParameterType TransformParamType;
+          typedef typename TransformType::ParameterType TransformParamType;
 
-            Params (TransformType& transform,
-                    MovingImageVoxelType& moving_image,
-                    TemplateImageVoxelType& template_image) :
-                      transformation (transform),
-                      moving_image (moving_image),
-                      template_image (template_image){
-                        moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
-            }
+          Params (TransformType& transform,
+                  MovingImageType& moving_image,
+                  TemplateImageType& template_image) :
+                    transformation (transform),
+                    moving_image (moving_image),
+                    template_image (template_image){
+                      moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
+          }
 
-            void set_moving_iterpolator (MovingImageVoxelType& moving_image) {
-              moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
-            }
+          void set_moving_iterpolator (MovingImageType& moving_image) {
+            moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
+          }
 
-            void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
 
-            const std::vector<size_t>& get_extent() const { return extent; }
+          const std::vector<size_t>& get_extent() const { return extent; }
 
-            TransformType& transformation;
-            TemplateImageVoxelType moving_image;
-            TemplateImageVoxelType template_image;
-            MR::copy_ptr<MovingImageInterpolatorType> moving_image_interp;
-            MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
-            MR::copy_ptr<MovingMaskInterpolatorType> moving_mask_interp;
-            std::vector<size_t> extent;
-        };
-      }
+          TransformType& transformation;
+          TemplateImageType moving_image;
+          TemplateImageType template_image;
+          MR::copy_ptr<MovingImageInterpolatorType> moving_image_interp;
+          MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
+          MR::copy_ptr<MovingMaskInterpolatorType> moving_mask_interp;
+          std::vector<size_t> extent;
+      };
     }
   }
 }

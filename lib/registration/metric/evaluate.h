@@ -20,85 +20,78 @@
 
  */
 
-#ifndef __image_registration_metric_evaluate_h__
-#define __image_registration_metric_evaluate_h__
+#ifndef __registration_metric_evaluate_h__
+#define __registration_metric_evaluate_h__
 
-#include "image/registration/metric/thread_kernel.h"
-#include "image/threaded_loop.h"
-#include "math/matrix.h"
-#include "image/registration/transform/reorient.h"
-#include "image/buffer_scratch.h"
-#include "image/voxel.h"
+#include "registration/metric/thread_kernel.h"
+#include "algo/threaded_loop.h"
+#include "registration/transform/reorient.h"
+#include "image.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
-        template <class MetricType, class ParamType>
-          class Evaluate {
-            public:
+      template <class MetricType, class ParamType>
+        class Evaluate {
+          public:
 
-              typedef typename ParamType::TransformParamType TransformParamType;
-              typedef double value_type;
+            typedef typename ParamType::TransformParamType TransformParamType;
+            typedef double value_type;
 
-              Evaluate (const MetricType& metric, ParamType& parameters) :
-                metric (metric),
-                params (parameters),
-                iteration (1) { }
+            Evaluate (const MetricType& metric, ParamType& parameters) :
+              metric (metric),
+              params (parameters),
+              iteration (1) { }
 
 
-              double operator() (const Math::Vector<double>& x, Math::Vector<double>& gradient) {
+            double operator() (const Eigen::Vector3& x, Eigen::Vector3& gradient) {
 
-                double overall_cost_function = 0.0;
-                gradient.zero();
-                params.transformation.set_parameter_vector(x);
+              double overall_cost_function = 0.0;
+              gradient.setZeros();
+              params.transformation.set_parameter_vector(x);
 
-                std::unique_ptr<Image::BufferScratch<float> > reoriented_moving;
-                std::unique_ptr<Image::BufferScratch<float>::voxel_type > reoriented_moving_vox;
+              std::unique_ptr<Image<float> > reoriented_moving;
 
-                if (directions.is_set()) {
-                  reoriented_moving.reset (new Image::BufferScratch<float> (params.moving_image));
-                  reoriented_moving_vox.reset (new Image::BufferScratch<float>::voxel_type (*reoriented_moving));
-                  Image::Registration::Transform::reorient (params.moving_image, *reoriented_moving_vox, params.transformation.get_matrix(), directions);
-                  params.set_moving_iterpolator (*reoriented_moving_vox);
-                  metric.set_moving_image (*reoriented_moving_vox);
-                }
-
-                {
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                  Image::ThreadedLoop (params.template_image, 0, 3).run (kernel);
-                }
-                // std::cerr.precision(10);
-                DEBUG("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
-                return overall_cost_function;
+              if (directions.is_set()) {
+                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.moving_image)));
+                Image::Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
+                params.set_moving_iterpolator (*reoriented_moving);
+                metric.set_moving_image (*reoriented_moving);
               }
 
-              void set_directions (Math::Matrix<float>& dir) {
-                directions = dir;
+              {
+                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
+                ThreadedLoop (params.template_image, 0, 3).run (kernel);
               }
+              // std::cerr.precision(10);
+              DEBUG("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
+              return overall_cost_function;
+            }
 
-              size_t size() {
-                return params.transformation.size();
-              }
+            void set_directions (Math::Matrix<float>& dir) {
+              directions = dir;
+            }
 
-              double init (Math::Vector<TransformParamType>& x) {
-                params.transformation.get_parameter_vector(x);
-                return 1.0;
-              }
+            size_t size() {
+              return params.transformation.size();
+            }
 
-            protected:
-                MetricType metric;
-                ParamType params;
-                Math::Matrix<float> directions;
-                std::vector<size_t> extent;
-                size_t iteration;
+            double init (Eigen::VectorXd& x) {
+              params.transformation.get_parameter_vector(x);
+              return 1.0;
+            }
 
-        };
-      }
+          protected:
+              MetricType metric;
+              ParamType params;
+              Eigen::MatrixXd directions;
+              std::vector<size_t> extent;
+              size_t iteration;
+
+      };
     }
   }
 }

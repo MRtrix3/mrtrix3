@@ -20,47 +20,34 @@
 
  */
 
-#include "image/loop.h"
-#include "image/transform.h"
+#include "algo/loop.h"
+#include "transform.h"
 #include "point.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
-    {
 
-      template <class InputVoxelType, class OutputVoxelType>
-      void displacement2deformation (InputVoxelType& input, OutputVoxelType& output) {
-        Image::LoopInOrder loop (input, 0, 3);
-        Image::Transform transform (input);
-        for (loop.start (input); loop.ok(); loop.next (input)) {
-          voxel_assign (output, input, 0, 3);
-          Point<float> point = transform.voxel2scanner (input);
-          for (size_t dim = 0; dim < 3; ++dim) {
-            input[3] = dim;
-            output[3] = dim;
-            output.value() = point[dim] + input.value();
-          }
-        }
-      }
-
-      template <class InputVoxelType, class OutputVoxelType>
-      void deformation2displacement (InputVoxelType& input, OutputVoxelType& output) {
-        Image::LoopInOrder loop (input, 0, 3);
-        Image::Transform transform (input);
-        for (loop.start (input); loop.ok(); loop.next (input)) {
-          voxel_assign (output, input, 0, 3);
-          Point<float> point = transform.voxel2scanner (input);
-          for (size_t dim = 0; dim < 3; ++dim) {
-            input[3] = dim;
-            output[3] = dim;
-            output.value() = input.value() - point[dim];
-          }
-        }
-      }
-
+    template <class ImageType>
+    void displacement2deformation (ImageType& input, ImageType& output) {
+      Transform transform (input);
+      auto kernel = [&] (InputImageType& input, OutputImageType& output) {
+        Eigen::Vector3 voxel ((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
+        output.row(3) = (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type> () + input.row(3);
+      };
+      ThreadedLoop (input, 0, 3).run (kernel, input, output);
     }
+
+    template <class ImageType>
+    void deformation2displacement (ImageType& input, ImageType& output) {
+      Transform transform (input);
+      auto kernel = [&] (InputImageType& input, OutputImageType& output) {
+        Eigen::Vector3 voxel ((default_type)input.index(0), (default_type)input.index(1), (default_type)input.index(2));
+        output.row(3) = input.row(3) - (transform.voxel2scanner * voxel).template cast<typename ImageType::value_type> ();
+      };
+      ThreadedLoop (input, 0, 3).run (kernel, input, output);
+    }
+
   }
 }

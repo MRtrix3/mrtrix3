@@ -21,101 +21,96 @@
  */
 
 
-#ifndef __image_registration_transform_initialiser_h__
-#define __image_registration_transform_initialiser_h__
+#ifndef __registration_transform_initialiser_h__
+#define __registration_transform_initialiser_h__
 
-#include "image/transform.h"
-#include "image/loop.h"
+#include "transform.h"
+#include "algo/loop.h"
 #include "math/matrix.h"
 #include "math/vector.h"
 #include "point.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Transform
     {
-      namespace Transform
+      namespace Init
       {
-        namespace Init
-        {
-          enum InitType {mass, geometric, none};
+        enum InitType {mass, geometric, none};
 
-          template <class MovingVoxelType,
-                    class TargetVoxelType,
-                    class TransformType>
-            void initialise_using_image_centres (const MovingVoxelType& moving,
-                                                 const TargetVoxelType& target,
-                                                 TransformType& transform)
-            {
-              CONSOLE ("initialising centre of rotation and translation using geometric centre");
-              Point<double> moving_centre_voxel;
-              moving_centre_voxel[0] = (static_cast<double>(moving.dim(0)) / 2.0) - 0.5;
-              moving_centre_voxel[1] = (static_cast<double>(moving.dim(1)) / 2.0) - 0.5;
-              moving_centre_voxel[2] = (static_cast<double>(moving.dim(2)) / 2.0) - 0.5;
-              Image::Transform moving_transform (moving);
-              Math::Vector<double> moving_centre_scanner (3);
-              moving_transform.voxel2scanner (moving_centre_voxel, moving_centre_scanner);
+        template <class MovingImageType,
+                  class TargetImageType,
+                  class TransformType>
+          void initialise_using_image_centres (const MovingImageType& moving,
+                                               const TargetImageType& target,
+                                               TransformType& transform)
+          {
+            CONSOLE ("initialising centre of rotation and translation using geometric centre");
+            Eigen::Vector3 moving_centre_voxel;
+            moving_centre_voxel[0] = (static_cast<double>(moving.dim(0)) / 2.0) - 0.5;
+            moving_centre_voxel[1] = (static_cast<double>(moving.dim(1)) / 2.0) - 0.5;
+            moving_centre_voxel[2] = (static_cast<double>(moving.dim(2)) / 2.0) - 0.5;
+            Transform moving_transform (moving);
+            Eigen::Vector3 moving_centre_scanner  = moving_transform.voxel2scanner * moving_centre_voxel;
 
-              Point<double> target_centre_voxel;
-              target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5 + 1.0;
-              target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5 + 1.0;
-              target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5 + 1.0;
-              Math::Vector<double> target_centre_scanner (3);
-              moving_transform.voxel2scanner (target_centre_voxel, target_centre_scanner);
+            Eigen::Vector3 target_centre_voxel;
+            target_centre_voxel[0] = (static_cast<double>(target.dim(0)) / 2.0) - 0.5 + 1.0;
+            target_centre_voxel[1] = (static_cast<double>(target.dim(1)) / 2.0) - 0.5 + 1.0;
+            target_centre_voxel[2] = (static_cast<double>(target.dim(2)) / 2.0) - 0.5 + 1.0;
+            Eigen::Vector3 target_centre_scanner = moving_transform.voxel2scanner * target_centre_voxel;
 
-              transform.set_centre (target_centre_scanner);
-              moving_centre_scanner -= target_centre_scanner;
-              transform.set_translation (moving_centre_scanner);
+            transform.set_centre (target_centre_scanner);
+            moving_centre_scanner -= target_centre_scanner;
+            transform.set_translation (moving_centre_scanner);
+          }
+
+        template <class MovingImageType,
+                  class TargetImageType,
+                  class TransformType>
+          void initialise_using_image_mass (MovingImageType& moving,
+                                            TargetImageType& target,
+                                            TransformType& transform)
+          {
+            CONSOLE ("initialising centre of rotation and translation using centre of mass");
+            Eigen::Matrix<typename TransformType::ParameterType, 3, 1> target_centre_of_mass (3);
+            target_centre_of_mass.setZeros();
+            double target_mass = 0;
+            Image::Transform target_transform (target);
+
+            // only use the first volume of a 4D file. This is important for FOD images.
+            Loop target_loop (target, 0, 3);
+            for (auto i = target_loop.run (target); i; ++i) {
+              Eigen::Vector3 voxel_pos ((default_type)target.index(0), (default_type)target.index(1), (default_type)target.index(2));
+              Eigen::Vector3 target_scanner = target_transform.voxel2scanner * voxel_pos;
+              target_mass += target.value();
+              for (size_t dim = 0; dim < 3; dim++) {
+                target_centre_of_mass[dim] += target_scanner[dim] * target.value();
+              }
             }
 
-          template <class MovingVoxelType,
-                    class TargetVoxelType,
-                    class TransformType>
-            void initialise_using_image_mass (const MovingVoxelType& moving,
-                                              const TargetVoxelType& target,
-                                              TransformType& transform)
-            {
-              CONSOLE ("initialising centre of rotation and translation using centre of mass");
-              Math::Vector<typename TransformType::ParameterType > target_centre_of_mass (3);
-              target_centre_of_mass.zero();
-              double target_mass = 0;
-              MovingVoxelType target_voxel (target);
-              Image::Transform target_transform (target_voxel);
-
-              // only use the first volume of a 4D file. This is important for FOD images.
-              Image::LoopInOrder target_loop (target_voxel, 0, 3);
-              for (target_loop.start (target_voxel); target_loop.ok(); target_loop.next (target_voxel)) {
-                Point<float> target_scanner = target_transform.voxel2scanner (target_voxel);
-                target_mass += target_voxel.value();
-                for (size_t dim = 0; dim < 3; dim++) {
-                  target_centre_of_mass[dim] += target_scanner[dim] * target_voxel.value();
-                }
-              }
-
-              Math::Vector<typename TransformType::ParameterType> moving_centre_of_mass (3);
-              moving_centre_of_mass.zero();
-              double moving_mass = 0;
-              Image::Transform moving_transform (moving);
-              MovingVoxelType moving_voxel (moving);
-              Image::LoopInOrder moving_loop (moving_voxel);
-              for (moving_loop.start (moving_voxel); moving_loop.ok(); moving_loop.next (moving_voxel)) {
-                Point<float> moving_scanner = moving_transform.voxel2scanner (moving_voxel);
-                moving_mass += moving_voxel.value();
-                for (size_t dim = 0; dim < 3; dim++) {
-                  moving_centre_of_mass[dim] += moving_scanner[dim] * moving_voxel.value();
-                }
-              }
+            Eigen::Matrix<typename TransformType::ParameterType, 3, 1>  moving_centre_of_mass (3);
+            moving_centre_of_mass.setZeros();
+            double moving_mass = 0;
+            Image::Transform moving_transform (moving);
+            Loop moving_loop (moving);
+            for (auto i = moving_loop.run (moving); i; ++i) {
+              Eigen::Vector3 voxel_pos ((default_type)moving.index(0), (default_type)moving.index(1), (default_type)moving.index(2));
+              Eigen::Vector3 moving_scanner = moving_transform.voxel2scanner * voxel_pos;
+              moving_mass += moving.value();
               for (size_t dim = 0; dim < 3; dim++) {
-                target_centre_of_mass[dim] /= target_mass;
-                moving_centre_of_mass[dim] /= moving_mass;
+                moving_centre_of_mass[dim] += moving_scanner[dim] * moving.value();
               }
+            }
+            for (size_t dim = 0; dim < 3; dim++) {
+              target_centre_of_mass[dim] /= target_mass;
+              moving_centre_of_mass[dim] /= moving_mass;
+            }
 
-              transform.set_centre (target_centre_of_mass);
-              moving_centre_of_mass -= target_centre_of_mass;
-              transform.set_translation (moving_centre_of_mass);
-          }
+            transform.set_centre (target_centre_of_mass);
+            moving_centre_of_mass -= target_centre_of_mass;
+            transform.set_translation (moving_centre_of_mass);
         }
       }
     }

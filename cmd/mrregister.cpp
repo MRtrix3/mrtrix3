@@ -21,20 +21,16 @@
  */
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/filter/reslice.h"
-#include "image/interp/cubic.h"
-#include "image/transform.h"
-#include "image/adapter/reslice.h"
-#include "image/registration/linear.h"
-#include "image/registration/syn.h"
-#include "image/registration/metric/mean_squared.h"
-#include "image/registration/metric/mean_squared_4D.h"
-#include "image/registration/transform/affine.h"
-#include "image/registration/transform/rigid.h"
+#include "image.h"
+#include "filter/reslice.h"
+#include "interp/cubic.h"
+#include "transform.h"
+#include "registration/linear.h"
+#include "registration/syn.h"
+#include "registration/metric/mean_squared.h"
+#include "registration/metric/mean_squared_4D.h"
+#include "registration/transform/affine.h"
+#include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
 #include "math/vector.h"
 #include "math/matrix.h"
@@ -50,7 +46,7 @@ const char* transformation_choices[] = { "rigid", "affine", "syn", "rigid_affine
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
       + "Register two images together using a rigid, affine or a symmetric diffeomorphic (SyN) transformation model."
@@ -90,55 +86,50 @@ void usage ()
   + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
     + Argument ("filename").type_image_in ()
 
-  + Image::Registration::rigid_options
+  + Registration::rigid_options
 
-  + Image::Registration::affine_options
+  + Registration::affine_options
 
-  + Image::Registration::syn_options
+  + Registration::syn_options
 
-  + Image::Registration::initialisation_options
+  + Registration::initialisation_options
 
-  + Image::Registration::fod_options;
+  + Registration::fod_options;
 }
 
 typedef float value_type;
 
-void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image::BufferScratch<value_type> >& image_buffer) {
-  Image::Buffer<value_type> buffer (filename);
-  Image::Buffer<value_type>::voxel_type vox (buffer);
+void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image<value_type> >& image_ptr) {
+  auto image = Image<value_type>::open(filename);
   Image::Header header (filename);
-  Image::Info info (header);
   if (num_vols > 1) {
-    info.dim(3) = num_vols;
-    info.stride(0) = 2;
-    info.stride(1) = 3;
-    info.stride(2) = 4;
-    info.stride(3) = 1;
+    header.dim(3) = num_vols;
+    header.stride(0) = 2;
+    header.stride(1) = 3;
+    header.stride(2) = 4;
+    header.stride(3) = 1;
   }
-  image_buffer.reset (new Image::BufferScratch<value_type> (info));
-  Image::BufferScratch<value_type>::voxel_type image_vox (*image_buffer);
+  image_ptr.reset (new Image<float> (Image<value_type>::scratch (header)));
   if (num_vols > 1) {
-    Image::LoopInOrder loop (vox, 0, 3);
-    for (loop.start (vox, image_vox); loop.ok(); loop.next (vox, image_vox)) {
-      for (size_t vol = 0; vol < num_vols; ++vol) {
-        vox[3] = image_vox[3] = vol;
-        image_vox.value() = vox.value();
-      }
+    Loop loop (*image_ptr);
+    for (auto i = loop.run (*image_ptr); i; ++i) {
+      assign_pos_of (*image_ptr).to (image);
+        image_ptr->value() = image.value();
     }
   } else {
-    Image::threaded_copy (vox, image_vox);
+    threaded_copy (image, *image_ptr);
   }
 }
 
 
 void run ()
 {
-  const Image::Header moving_header (argument[0]);
-  const Image::Header template_header (argument[1]);
+  const auto moving_header = Header::open (argument[0]);
+  const auto template_header = Header::open (argument[1]);
 
-  Image::check_dimensions (moving_header, template_header);
-  std::unique_ptr<Image::BufferScratch<value_type> > moving_buffer_ptr;
-  std::unique_ptr<Image::BufferScratch<value_type> > template_buffer_ptr;
+  check_dimensions (moving_header, template_header);
+  std::unique_ptr<Image<value_type> > moving_ptr;
+  std::unique_ptr<Image<value_type> > template_ptr;
 
   Options opt = get_options ("noreorientation");
   bool do_reorientation = true;
@@ -149,13 +140,13 @@ void run ()
     throw Exception ("image dimensions larger than 4 are not supported");
   }
   else if (template_header.ndim() == 4) {
-    value_type val = (std::sqrt (float (1 + 8 * template_header.dim(3))) - 3.0) / 4.0;
-    if (!(val - (int)val) && do_reorientation && template_header.dim(3) > 1) {
+    value_type val = (std::sqrt (float (1 + 8 * template_header.size(3))) - 3.0) / 4.0;
+    if (!(val - (int)val) && do_reorientation && template_header.size(3) > 1) {
         CONSOLE ("SH series detected, performing FOD registration");
         // Only load as many SH coefficients as required
         int lmax = 4;
-        if (Math::SH::LforN(template_header.dim(3)) < 4)
-          lmax = Math::SH::LforN(template_header.dim(3));
+        if (Math::SH::LforN(template_header.size(3)) < 4)
+          lmax = Math::SH::LforN(template_header.size(3));
         Options opt = get_options ("lmax");
         if (opt.size()) {
           lmax = opt[0][0];
@@ -163,30 +154,27 @@ void run ()
             throw Exception ("the input lmax must be even");
         }
         int num_SH = Math::SH::NforL (lmax);
-        if (num_SH > template_header.dim(3))
+        if (num_SH > template_header.size(3))
             throw Exception ("not enough SH coefficients within input image for desired lmax");
-        load_image(argument[0], num_SH, moving_buffer_ptr);
-        load_image(argument[1], num_SH, template_buffer_ptr);
+        load_image(argument[0], num_SH, moving_ptr);
+        load_image(argument[1], num_SH, template_ptr);
     }
     else {
       do_reorientation = false;
-      load_image (argument[0], moving_header.dim(3), moving_buffer_ptr);
-      load_image (argument[1], template_header.dim(3), template_buffer_ptr);
+      load_image (argument[0], moving_header.size(3), moving_ptr);
+      load_image (argument[1], template_header.size(3), template_ptr);
     }
   }
   else {
     do_reorientation = false;
-    load_image (argument[0], 1, moving_buffer_ptr);
-    load_image (argument[1], 1, template_buffer_ptr);
+    load_image (argument[0], 1, moving_ptr);
+    load_image (argument[1], 1, template_ptr);
   }
 
-  auto moving_voxel = moving_buffer_ptr->voxel();
-  auto template_voxel = template_buffer_ptr->voxel();
-
   opt = get_options ("transformed");
-  std::unique_ptr<Image::Buffer<value_type> > transformed_buffer_ptr;
+  std::unique_ptr<Image<value_type> > transformed_ptr;
   if (opt.size())
-    transformed_buffer_ptr.reset (new Image::Buffer<value_type> (opt[0][0], moving_header)); // MP: was template_header
+    transformed_ptr.reset (new Image<value_type> (Image<value_type>::open(opt[0][0], template_header))); // MP: was template_header - DR Changed this back
 
   opt = get_options ("type");
   bool do_rigid  = false;
@@ -248,12 +236,12 @@ void run ()
   }
 
   opt = get_options ("warp_out");
-  std::unique_ptr<Image::Buffer<value_type> > warp_buffer;
+  std::unique_ptr<Image<value_type> > warp_buffer;
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
     Image::Header warp_header (template_header);
-    warp_header.set_ndim (5);
+    warp_header.set_ndim (5); //TODO decide on format
     warp_header.dim(3) = 3;
     warp_header.dim(4) = 4;
     warp_header.stride(0) = 2;
@@ -261,7 +249,7 @@ void run ()
     warp_header.stride(2) = 4;
     warp_header.stride(3) = 1;
     warp_header.stride(4) = 5;
-    warp_buffer.reset (new Image::Buffer<value_type> (std::string (opt[0][0]), warp_header));
+    warp_buffer.reset (new Image<value_type> (Image<value_type>::create(std::string (opt[0][0]), warp_header)));
   }
 
   opt = get_options ("rigid_scale");
@@ -288,15 +276,16 @@ void run ()
     syn_scale_factors = parse_floats (opt[0][0]);
   }
 
+
   opt = get_options ("tmask");
-  std::unique_ptr<Image::BufferPreload<bool> > tmask_image;
+  std::unique_ptr<Image<value_type> > tmask_image;
   if (opt.size ())
-    tmask_image.reset (new Image::BufferPreload<bool> (opt[0][0]));
+    tmask_image.reset (new Image<value_type> (Image<value_type>::open(opt[0][0])));
 
   opt = get_options ("mmask");
-  std::unique_ptr<Image::BufferPreload<bool> > mmask_image;
+  std::unique_ptr<Image<value_type> > mmask_image;
   if (opt.size ())
-    mmask_image.reset (new Image::BufferPreload<bool> (opt[0][0]));
+    mmask_image.reset (new Image<value_type> > (Image<value_type>::open(opt[0][0])));
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;;
@@ -365,64 +354,61 @@ void run ()
   }
 
   opt = get_options ("syn_init");
-  std::unique_ptr<Image::Buffer<value_type> > init_warp_buffer;
+  std::unique_ptr<Image<value_type> > init_warp_buffer;
   if (opt.size()) {
     if (init_rigid_set || init_affine_set)
       throw Exception ("you cannot initialise registrations with both a warp and a linear transformation "
                        "(the linear transformation will already be included in the warp)");
     throw Exception ("initialise with affine not yet implemented");
-    init_warp_buffer.reset (new Image::Buffer<value_type> (opt[0][0]));
+    init_warp_buffer.reset (new Image::Buffer<value_type> (Image<value_type>::open (opt[0][0])));
   }
 
   opt = get_options ("centre");
-  Image::Registration::Transform::Init::InitType init_centre = Image::Registration::Transform::Init::mass;
+  Registration::Transform::Init::InitType init_centre = Registration::Transform::Init::mass;
   if (opt.size()) {
     switch ((int)opt[0][0]){
       case 0:
-        init_centre = Image::Registration::Transform::Init::mass;
+        init_centre = Registration::Transform::Init::mass;
         break;
       case 1:
-        init_centre = Image::Registration::Transform::Init::geometric;
+        init_centre = Registration::Transform::Init::geometric;
         break;
       case 2:
-        init_centre = Image::Registration::Transform::Init::none;
+        init_centre = Registration::Transform::Init::none;
         break;
       default:
         break;
     }
   }
 
+  Eigen::MatrixXd directions_az_el;
+  opt = get_options ("directions");
+  if (opt.size())
+    directions_az_el = load_matrix (opt[0][0]);
+  else
+    directions_az_el = DWI::Directions::electrostatic_repulsion_60();
+  Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
 
-  Math::Matrix<value_type> directions_cartesian;
-  if (do_reorientation) {
-    Math::Matrix<value_type> directions_el_az;
-    opt = get_options ("directions");
-    if (opt.size())
-      directions_el_az.load (opt[0][0]);
-    else
-      DWI::Directions::electrostatic_repulsion_60 (directions_el_az);
-    Math::SH::S2C (directions_el_az, directions_cartesian);
-  }
 
   if (do_rigid) {
     CONSOLE ("running rigid registration");
-    Image::Registration::Linear rigid_registration;
+    Registration::Linear rigid_registration;
 
     if (rigid_scale_factors.size())
       rigid_registration.set_scale_factor (rigid_scale_factors);
     if (rigid_niter.size())
       rigid_registration.set_max_iter (rigid_niter);
     if (init_rigid_set)
-      rigid_registration.set_init_type (Image::Registration::Transform::Init::none);
+      rigid_registration.set_init_type (Registration::Transform::Init::none);
     else
       rigid_registration.set_init_type (init_centre);
 
     if (template_voxel.ndim() == 4) {
-      Image::Registration::Metric::MeanSquared4D metric;
-      rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
+      Registration::Metric::MeanSquared4D metric;
+      rigid_registration.run_masked (metric, rigid, *moving_ptr, *template_ptr, mmask_image, tmask_image);
     } else {
-      Image::Registration::Metric::MeanSquared metric;
-      rigid_registration.run_masked (metric, rigid, moving_voxel, template_voxel, mmask_image, tmask_image);
+      Registration::Metric::MeanSquared metric;
+      rigid_registration.run_masked (metric, rigid, *moving_ptr, *template_ptr, mmask_image, tmask_image);
     }
 
     if (output_rigid)
@@ -431,7 +417,7 @@ void run ()
 
   if (do_affine) {
     CONSOLE ("running affine registration");
-    Image::Registration::Linear affine_registration;
+    Registration::Linear affine_registration;
 
     if (affine_scale_factors.size())
       affine_registration.set_scale_factor (affine_scale_factors);
@@ -443,7 +429,7 @@ void run ()
       affine.set_matrix (rigid.get_matrix());
     }
     if (do_rigid || init_affine_set)
-      affine_registration.set_init_type (Image::Registration::Transform::Init::none);
+      affine_registration.set_init_type (Registration::Transform::Init::none);
     else
       affine_registration.set_init_type (init_centre);
 
@@ -452,10 +438,10 @@ void run ()
 
 
     if (template_voxel.ndim() == 4) {
-      Image::Registration::Metric::MeanSquared4D metric;
+      Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
     } else {
-      Image::Registration::Metric::MeanSquared metric;
+      Registration::Metric::MeanSquared metric;
       affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
     }
 
@@ -482,20 +468,19 @@ void run ()
 
   }
 
-  if (transformed_buffer_ptr) {
-    Image::Buffer<float>::voxel_type transformed_voxel (*transformed_buffer_ptr);
+  if (transformed_ptr) {
     if (do_syn) {
     } else if (do_affine) {
-      Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, affine.get_transform(), Image::Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (moving_voxel, *transformed_ptr, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Image::Registration::Transform::reorient (msg, transformed_voxel, transformed_voxel, affine.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, *transformed_ptr, *transformed_ptr, affine.get_transform(), directions_cartesian);
       }
     } else {
-      Image::Filter::reslice<Image::Interp::Cubic> (moving_voxel, transformed_voxel, rigid.get_transform(), Image::Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (moving_voxel, *transformed_ptr, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Image::Registration::Transform::reorient (msg, transformed_voxel, transformed_voxel, rigid.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, *transformed_ptr, *transformed_ptr, rigid.get_transform(), directions_cartesian);
       }
     }
   }

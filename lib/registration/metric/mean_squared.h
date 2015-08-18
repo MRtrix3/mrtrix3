@@ -23,50 +23,45 @@
 #ifndef __image_registration_metric_mean_squared_h__
 #define __image_registration_metric_mean_squared_h__
 
-#include "image/registration/metric/base.h"
-#include "point.h"
-#include "math/vector.h"
+#include "registration/metric/base.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
 
-        class MeanSquared : public Base {
+      class MeanSquared : public Base {
 
-          public:
-            template <class Params>
-              double operator() (Params& params,
-                                 const Point<double> target_point,
-                                 const Point<double> moving_point,
-                                 Math::Vector<double>& gradient) {
-                if (isnan (double (params.template_image.value())))
-                  return 0.0;
+        public:
+          template <class Params>
+            double operator() (Params& params,
+                               const Eigen::Vector3 target_point,
+                               const Eigen::Vector3 moving_point,
+                               Eigen::Vector3& gradient) {
+              if (isnan (double (params.template_image.value())))
+                return 0.0;
 
-                params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
-                if (params.template_image.ndim() == 4) {
-                  (*gradient_interp)[4] = params.template_image[3];
-                  (*params.moving_image_interp)[3] = params.template_image[3];
-                }
+              params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
+              if (params.template_image.ndim() == 4) {
+                (*gradient_interp).index(4) = params.template_image.index(4);
+                (*params.moving_image_interp).index(3) = params.template_image.index(3);
+              }
 
-                this->compute_moving_gradient (moving_point);
+              this->compute_moving_gradient (moving_point);
 
-                double diff = params.moving_image_interp->value() - params.template_image.value();
-                for (size_t par = 0; par < gradient.size(); par++) {
-                  double sum = 0.0;
-                  for ( size_t dim = 0; dim < 3; dim++)
-                    sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
-                  gradient[par] += sum;
-                }
-                return diff * diff;
-            }
+              double diff = params.moving_image_interp->value() - params.template_image.value();
+              for (size_t par = 0; par < gradient.size(); par++) {
+                double sum = 0.0;
+                for ( size_t dim = 0; dim < 3; dim++)
+                  sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
+                gradient[par] += sum;
+              }
+              return diff * diff;
+          }
 
-        };
-      }
+      };
     }
   }
 }

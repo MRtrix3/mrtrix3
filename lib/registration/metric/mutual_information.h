@@ -24,69 +24,65 @@
 #define __registration_metric_mututual_information_h__
 
 #include "point.h"
-#include "math/vector.h"
 #include <cmath>
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
-        class MutualInformation : public Base {
-          public:
+      class MutualInformation : public Base {
+        public:
 
-            typedef double value_type;
+          typedef double value_type;
 
-            template <class Params>
-              double operator() (Params& params,
-                                 Point<double> target_point,
-                                 Point<double> moving_point,
-                                 Math::Vector<double>& gradient) {
+          template <class Params>
+            double operator() (Params& params,
+                               Eigen::Vector3 target_point,
+                               Eigen::Vector3 moving_point,
+                               Eigen::Vector3& gradient) {
 
-                params.transformation.get_jacobian_wrt_params (target_point, jacobian);
+              params.transformation.get_jacobian_wrt_params (target_point, jacobian);
 
-                value_type diff = params.moving_image_interp.value() - params.target_image.value();
+              value_type diff = params.moving_image_interp.value() - params.target_image.value();
 
-                for (size_t par = 0; par < gradient.size(); par++) {
-                  value_type sum = 0.0;
-                  for( size_t dim = 0; dim < 3; dim++) {
-                    sum += 2.0 * diff * jacobian(dim, par) * moving_grad[dim];
-                  }
-                  gradient[par] += sum;
+              for (size_t par = 0; par < gradient.size(); par++) {
+                value_type sum = 0.0;
+                for( size_t dim = 0; dim < 3; dim++) {
+                  sum += 2.0 * diff * jacobian(dim, par) * moving_grad[dim];
                 }
-                return diff * diff;
-            }
-
-          protected:
-
-            value_type evaluate_cubic_bspline_kernel (value_type val) {
-              const value_type abs_val = std::abs(val);
-              if (abs_val  < 1.0) {
-                const value_type sqr_val = abs_val * abs_val;
-                return (4.0 - 6.0 * sqr_val + 3.0 * sqr_val * abs_val) / 6.0;
-              } else if (abs_val < 2.0) {
-                const value_type sqr_val = abs_val * abs_val;
-                return (8.0 - 12.0 * abs_val + 6.0 * sqr_val - sqr_val * abs_val) / 6.0;
-              } else {
-                return 0.0;
+                gradient[par] += sum;
               }
+              return diff * diff;
+          }
+
+        protected:
+
+          value_type evaluate_cubic_bspline_kernel (value_type val) {
+            const value_type abs_val = std::abs(val);
+            if (abs_val  < 1.0) {
+              const value_type sqr_val = abs_val * abs_val;
+              return (4.0 - 6.0 * sqr_val + 3.0 * sqr_val * abs_val) / 6.0;
+            } else if (abs_val < 2.0) {
+              const value_type sqr_val = abs_val * abs_val;
+              return (8.0 - 12.0 * abs_val + 6.0 * sqr_val - sqr_val * abs_val) / 6.0;
+            } else {
+              return 0.0;
             }
+          }
 
-            size_t m_NumberOfHistogramBins;
-            double  m_MovingImageNormalizedMin;
-            double  m_FixedImageNormalizedMin;
-            double  m_FixedImageTrueMin;
-            double  m_FixedImageTrueMax;
-            double  m_MovingImageTrueMin;
-            double  m_MovingImageTrueMax;
-            double  m_FixedImageBinSize;
-            double  m_MovingImageBinSize;
+          size_t m_NumberOfHistogramBins;
+          double  m_MovingImageNormalizedMin;
+          double  m_FixedImageNormalizedMin;
+          double  m_FixedImageTrueMin;
+          double  m_FixedImageTrueMax;
+          double  m_MovingImageTrueMin;
+          double  m_MovingImageTrueMax;
+          double  m_FixedImageBinSize;
+          double  m_MovingImageBinSize;
 
-        };
-      }
+      };
     }
   }
 }

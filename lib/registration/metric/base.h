@@ -20,61 +20,56 @@
 
  */
 
-#ifndef __image_registration_metric_base_h__
-#define __image_registration_metric_base_h__
+#ifndef __registration_metric_base_h__
+#define __registration_metric_base_h__
 
-#include "image/filter/gradient.h"
-#include "image/interp/linear.h"
-#include "image/voxel.h"
-#include "image/buffer_scratch.h"
+#include "filter/gradient.h"
+#include "interp/linear.h"
+#include "image.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Metric
     {
-      namespace Metric
-      {
-        class Base {
-          public:
+      class Base {
+        public:
 
-            typedef double value_type;
+          typedef double value_type;
 
-            Base () :
-              gradient_interp (nullptr),
-              moving_grad (3) { }
+          Base () :
+            gradient_interp (nullptr),
+            moving_grad (3) { }
 
-            template <class MovingVoxelType>
-            void set_moving_image (const MovingVoxelType& moving_voxel) {
-              INFO ("Computing moving gradient...");
-              MovingVoxelType moving_voxel_copy (moving_voxel);
-              Image::Filter::Gradient gradient_filter (moving_voxel_copy);
-              gradient_data.reset (new Image::BufferScratch<float> (gradient_filter.info()));
-              Image::BufferScratch<float>::voxel_type gradient_voxel (*gradient_data);
-              gradient_filter (moving_voxel_copy, gradient_voxel);
-              gradient_interp.reset (new Image::Interp::Linear<Image::BufferScratch<float>::voxel_type > (gradient_voxel));
-            }
+          template <class MovingImageType>
+          void set_moving_image (const MovingImageType& moving) {
+            INFO ("Computing moving gradient...");
+            MovingImageType moving_copy (moving_voxel);
+            Filter::Gradient gradient_filter (moving_copy);
+            gradient_ptr = std::make_shared<Image<float> >(Image<float>::scratch (gradient_filter.info()));
+            gradient_filter (moving_copy, *gradient_ptr);
+            gradient_interp.reset (new Interp::Linear<Image<float> > (*gradient_ptr));
+          }
 
-          protected:
+        protected:
 
-            void compute_moving_gradient (const Point<value_type> moving_point) {
-              gradient_interp->scanner (moving_point);
-              (*gradient_interp)[3] = 0;
-              moving_grad[0] = gradient_interp->value();
-              ++(*gradient_interp)[3];
-              moving_grad[1] = gradient_interp->value();
-              ++(*gradient_interp)[3];
-              moving_grad[2] = gradient_interp->value();
-            }
+          void compute_moving_gradient (const Point<value_type> moving_point) {
+            gradient_interp->scanner (moving_point);
+            (*gradient_interp)[3] = 0;
+            moving_grad[0] = gradient_interp->value();
+            ++(*gradient_interp)[3];
+            moving_grad[1] = gradient_interp->value();
+            ++(*gradient_interp)[3];
+            moving_grad[2] = gradient_interp->value();
+          }
 
 
-            std::shared_ptr<Image::BufferScratch<float> > gradient_data;
-            MR::copy_ptr<Image::Interp::Linear<Image::BufferScratch<float>::voxel_type> > gradient_interp;
-            Math::Matrix<double> jacobian;
-            Math::Vector<double> moving_grad;
-        };
-      }
+          std::shared_ptr<Image<float> > gradient_ptr;
+          MR::copy_ptr<Interp::Linear<Image<float> > > gradient_interp;
+          Eigen::MatrixXd jacobian;
+          Eigen::Vector3 moving_grad;
+      };
     }
   }
 }

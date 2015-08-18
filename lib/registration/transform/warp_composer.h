@@ -20,73 +20,58 @@
 
  */
 
-#ifndef __image_registration_transform_warp_composer_h__
-#define __image_registration_transform_warp_composer_h__
+#ifndef __registration_transform_warp_composer_h__
+#define __registration_transform_warp_composer_h__
 
-#include "image/info.h"
-#include "image/transform.h"
-#include "image/interp/cubic.h"
-#include "image/iterator.h"
-#include "point.h"
+#include "transform.h"
+#include "interp/cubic.h"
+#include "algo/iterator.h"
 
 
 namespace MR
 {
-  namespace Image
+  namespace Registration
   {
-    namespace Registration
+    namespace Transform
     {
-      namespace Transform
+
+      /** \addtogroup Registration
+      @{ */
+
+      /*! a thread kernel to compose two deformation fields
+       *
+       * Typical usage:
+       * \code
+       * WarpComposer <Image<float> > warpcomposer (warp1, warp2, composed_warp)
+       * ThreadedLoop (warp1, 0, 3).run (warpcomposer, warp1, composed_warp);
+       * \endcode
+       */
+      template <class WarpType>
+      class WarpComposer
       {
+        public:
+          typedef typename WarpType::value_type value_type;
 
-        /** \addtogroup Registration
-        @{ */
-
-        /*! a thread kernel to compose two deformation fields
-         *
-         * Typical usage:
-         * \code
-         * Image::Buffer<float> composed_warp (warp1);
-         * Image::Buffer<float>::voxel_type composed_warp_vox (composed_warp);
-         *
-         * WarpComposer <Image::Buffer<float>::voxel_type > compose_kernel (warp1, warp2, composed_warp);
-         * ThreadedLoop (warp1, 0, 3).run (compose_kernel);
-         * \endcode
-         */
-        template <class FirstWarpVoxelType, class SecondWarpVoxelType, class OutputWarpVoxelType>
-        class WarpComposer
-        {
-
-          public:
-
-            WarpComposer (FirstWarpVoxelType& first_warp,
-                          SecondWarpVoxelType& second_warp,
-                          OutputWarpVoxelType& output_warp) :
-              first_warp (first_warp),
-              output_warp (output_warp),
-              second_warp (second_warp) { }
+          WarpComposer (WarpType& first_warp,
+                        WarpType& second_warp,
+                        WarpType& output_warp) :
+            first_warp (first_warp),
+            output_warp (output_warp),
+            second_warp_interp (second_warp) { }
 
 
-            void operator () (const Iterator& pos) {
-              voxel_assign (output_warp, pos, 0, 3);
-              voxel_assign (first_warp, pos, 0, 3);
-              Point<float> point;
-              for (first_warp[3] = 0; first_warp[3] < 3; ++first_warp[3])
-                point[first_warp[3]] = first_warp.value();
-              second_warp.scanner (point);
-              for (second_warp[3] = 0, output_warp[3] = 0; second_warp[3] < 3; ++second_warp[3], ++output_warp[3])
-                output_warp.value() = second_warp.value();
-            }
+          void operator () (const Iterator& pos) {
+            second_warp_interp.scanner (first_warp.row(3));
+            output_warp.row(3) = second_warp_interp.row(3);
+          }
 
+        protected:
+          WarpType first_warp;
+          WarpType output_warp;
+          Interp::Cubic<WarpType> second_warp_interp;
 
-          protected:
-            FirstWarpVoxelType first_warp;
-            OutputWarpVoxelType output_warp;
-            Interp::Cubic<SecondWarpVoxelType> second_warp;
-
-        };
-        //! @}
-      }
+      };
+      //! @}
     }
   }
 }
