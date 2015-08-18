@@ -78,7 +78,7 @@ void run ()
       float norm_factor = 0.0;
       float value = 0.0;
       for (int k = -(int)radius; k <= (int)radius; ++k) {
-        if (i + k >= 0 && i + k < tck_scalar.size()) {
+        if (i + k >= 0 && i + k < (int)tck_scalar.size()) {
           value += kernel[k + radius] * tck_scalar[i + k];
           norm_factor += kernel[k + radius];
         }
