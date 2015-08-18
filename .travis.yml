@@ -10,8 +10,10 @@ before_install:
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+  - ls /usr/bin/python*
+  - python -V
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
-script: python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests) && python2 ./configure -nogui && python2 ./build
+script: ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests)
 after_failure: 
   - cat configure.log
   - cat build.log
