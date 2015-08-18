@@ -16,7 +16,8 @@ before_install:
   - if [ ${python_version} = "3" ]; then sudo apt-get install python3; fi
 install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script: 
-  - if [ ${python_version} = "3" ]; then python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests); else ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests); if
+  - if [ ${python_version} = "3" ]; then python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests); fi
+ 
 after_failure: 
   - cat configure.log
   - cat build.log
