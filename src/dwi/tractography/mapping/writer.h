@@ -160,7 +160,7 @@ class MapWriter : public MapWriterBase
 
       // With TOD, hijack the counts buffer in voxel statistic min/max mode
       //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-      if ((voxel_statistic == V_MEAN) ||
+      if ((type != DEC && voxel_statistic == V_MEAN) ||
           (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
           (type == DEC && voxel_statistic == V_SUM))
       {
@@ -194,7 +194,9 @@ class MapWriter : public MapWriterBase
             for (auto l = loop (v_buffer, *v_counts); l; ++l) {
               if (v_counts->value()) {
                 Point<value_type> value (get_dec());
-                value *= v_counts->value() / value.norm();
+                const float norm = value.norm();
+                if (norm)
+                  value *= v_counts->value() / norm;
                 set_dec (value);
               }
             }
@@ -215,12 +217,10 @@ class MapWriter : public MapWriterBase
                 v_buffer.value() /= float(v_counts->value());
             }
           } else if (type == DEC) {
-            for (auto l = loop (v_buffer, *v_counts); l; ++l) {
+            for (auto l = loop (v_buffer); l; ++l) {
               Point<value_type> value (get_dec());
-              if (value.norm2()) {
-                value /= v_counts->value();
-                set_dec (value);
-              }
+              if (value.norm2())
+                set_dec (value.normalise());
             }
           } else if (type == TOD) {
             for (auto l = loop (v_buffer, *v_counts); l; ++l) {
