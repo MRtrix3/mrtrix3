@@ -97,10 +97,7 @@ namespace MR
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
                   std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
-                  if (header->ndim() < 4) 
-                    throw Exception ("image \"" + header->name() + "\" is not 4D");
-                  if (header->dim(3) < 6)
-                    throw Exception ("image \"" + header->name() + "\" does not contain enough SH coefficients (too few volumes along 4th axis)");
+                  Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
