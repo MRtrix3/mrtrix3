@@ -195,7 +195,8 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, Cont& output) const
     vox = round (transform.scanner2voxel (*i));
     if (check (vox, info)) {
       const Point<float> dir ((*(i+1) - *prev).normalise());
-      add_to_set (output, vox, dir, 1.0f);
+      if (dir)
+        add_to_set (output, vox, dir, 1.0f);
     }
     prev = i;
   }
@@ -203,7 +204,8 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, Cont& output) const
   vox = round (transform.scanner2voxel (*last));
   if (check (vox, info)) {
     const Point<float> dir ((*last - *prev).normalise());
-    add_to_set (output, vox, dir, 1.0f);
+    if (dir)
+      add_to_set (output, vox, dir, 1.0f);
   }
 
   for (typename Cont::iterator i = output.begin(); i != output.end(); ++i)
