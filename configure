@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex, re
+import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
 debug = False
@@ -197,7 +197,6 @@ cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
-ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
@@ -394,7 +393,6 @@ elif system == 'windows':
   runpath = ''
 elif system == 'darwin':
   cxx = [ 'clang++' ]
-  ld = [ 'clang++' ]
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
   ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
@@ -418,6 +416,7 @@ else:
 
 if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
 if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
+ld = copy.copy(cxx)
 if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
 if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
 if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])

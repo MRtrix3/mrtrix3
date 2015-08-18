@@ -25,8 +25,6 @@
 
 #include <limits>
 
-#include "math/vector.h"
-
 namespace MR
 {
   namespace Math
@@ -41,8 +39,8 @@ namespace MR
       class LinearUpdate {
         public:
           template <typename ValueType>
-            inline bool operator() (Math::Vector<ValueType>& newx, const Math::Vector<ValueType>& x, 
-                const Math::Vector<ValueType>& g, ValueType step_size) { 
+            inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
+                const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
               bool changed = false;
               for (size_t n = 0; n < x.size(); ++n) {
                 newx[n] = x[n] - step_size * g[n];
@@ -74,12 +72,12 @@ namespace MR
 
 
           value_type value () const throw () { return f; }
-          const Vector<value_type>& state () const throw () { return x; }
-          const Vector<value_type>& gradient () const throw ()  { return g; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& state () const throw () { return x; }
+          const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& gradient () const throw ()  { return g; }
           value_type gradient_norm () const throw () { return normg; }
           int function_evaluations () const throw () { return nfeval; }
 
-          void precondition (const Math::Vector<value_type>& weights) {
+          void precondition (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& weights) {
             preconditioner_weights = weights;
           }
 
@@ -109,7 +107,7 @@ namespace MR
             nfeval = 0;
             f = evaluate_func (x, g, verbose);
             compute_normg_and_step_unscaled ();
-            dt /= norm(g);
+            dt /= g.norm();
             if (verbose) {
               CONSOLE ("initialise: f = " + str (f) + ", |g| = " + str (normg) + ":");
               CONSOLE ("  x = [ " + str(x) + "]");
@@ -155,11 +153,13 @@ namespace MR
           Function& func;
           UpdateFunctor update_func;
           const value_type step_up, step_down;
-          Vector<value_type> x, x2, g, g2, preconditioner_weights;
+          Eigen::Matrix<value_type, Eigen::Dynamic, 1> x, x2, g, g2, preconditioner_weights;
           value_type f, dt, normg, step_unscaled;
           int nfeval;
 
-          value_type evaluate_func (const Vector<value_type>& newx, Vector<value_type>& newg, bool verbose = false) {
+          value_type evaluate_func (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newx,
+                                    Eigen::Matrix<value_type, Eigen::Dynamic, 1>& newg,
+                                    bool verbose = false) {
             nfeval++;
             value_type cost = func (newx, newg);
             if (!std::isfinite (cost))
@@ -171,13 +171,13 @@ namespace MR
 
 
           void compute_normg_and_step_unscaled () {
-            normg = step_unscaled = norm (g);
+            normg = step_unscaled = g.norm();
             if (preconditioner_weights.size()) {
               value_type g_projected = 0.0;
               step_unscaled = 0.0;
               for (size_t n = 0; n < g.size(); ++n) {
-                step_unscaled += Math::pow2 (g[n]);
-                g_projected += preconditioner_weights[n] * Math::pow2 (g[n]);
+                step_unscaled += std::pow(g[n], 2);
+                g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
                 g[n] *= preconditioner_weights[n];
               }
               normg = g_projected / normg;
