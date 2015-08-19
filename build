@@ -925,6 +925,35 @@ def update_git_version (folder, git_version_file, contents):
       fd.write (version_file_contents)
 
 
+def update_bash_completion ():
+  # Only attempt to generate completion file if POSIX compliant
+  if os.name != 'posix': return
+   
+  # Check whether completion generation script exists
+  scripts_dir = os.path.join (mrtrix_dir, 'scripts' )
+  script_path = os.path.join (scripts_dir, 'generate_mrtrix_cmd_completion.py') 
+  completion_path = os.path.join (scripts_dir, 'mrtrix_bash_completion')
+  if not os.path.isfile (script_path):
+    disp (colorize('WARNING: Skipping bash completion generation. Could not find script at ' + script_path + '\n')[0])
+    return
+  
+  import re
+
+  # Check whether both command files and completion file exist and completion file is newer than commands
+  bin_dir_full= os.path.join (mrtrix_dir, bin_dir)
+  if not os.path.isdir (bin_dir_full):
+    return
+  else:
+    # Only look at relevant executables in bin file
+    commands = [comm for comm in os.listdir (bin_dir_full) if os.access( os.path.join( bin_dir_full, comm ), os.X_OK) and not re.match (r'^\w+__debug', comm)]
+    if not commands: 
+      return
+    else:
+      command_freshness_time = max (commands, key = lambda x: time.ctime ( os.path.getmtime( os.path.join( bin_dir_full, x ) ) ) )
+      if os.path.isfile (completion_path) and time.ctime ( os.path.getmtime(completion_path) ) >= command_freshness_time:
+        return
+
+  sys.exit (execute ('[SH] ' + completion_path, [ script_path, "-c", completion_path, "-m", bin_dir_full ] ) )
 
 ###########################################################################
 #                            START OF PROGRAM
@@ -1057,6 +1086,11 @@ for i in range (1, num_processors):
 build_next(0)
 
 for t in threads: t.join()
+
+# update bash completion if possible and required
+
+if stop <= 1:
+  update_bash_completion()
 
 sys.exit (stop > 1)
 
