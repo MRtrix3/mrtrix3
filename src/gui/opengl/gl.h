@@ -58,6 +58,9 @@
 # define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
 #endif
 
+#define GLGETBOOL(x,n) { GLboolean __v[n]; gl::GetBooleanv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
+#define GLGETINT(x,n) { GLint __v[n]; gl::GetIntegerv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
+
 namespace MR
 {
   namespace GUI
@@ -195,6 +198,37 @@ namespace MR
             assert (id); 
             GL_DEBUG ("binding OpenGL vertex array ID " + str(id));
             gl::BindVertexArray (id);
+          }
+        protected:
+          GLuint id;
+      };
+
+
+      class IndexBuffer {
+        public:
+          IndexBuffer () : id (0) { }
+          ~IndexBuffer () { clear(); }
+          IndexBuffer (const IndexBuffer&) : id (0) { }
+          IndexBuffer (IndexBuffer&& t) : id (t.id) { t.id = 0; }
+          IndexBuffer& operator= (IndexBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          operator GLuint () const { return id; }
+          void gen () {
+            if (!id) {
+              gl::GenBuffers (1, &id);
+              GL_DEBUG ("created OpenGL index buffer ID " + str(id));
+            }
+          }
+          void clear () {
+            if (id) {
+              GL_DEBUG ("deleting OpenGL index buffer ID " + str(id));
+              gl::DeleteBuffers (1, &id);
+              id = 0;
+            }
+          }
+          void bind () const {
+            assert (id);
+            GL_DEBUG ("binding OpenGL index buffer ID " + str(id));
+            gl::BindBuffer (gl::ELEMENT_ARRAY_BUFFER, id);
           }
         protected:
           GLuint id;

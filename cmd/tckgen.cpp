@@ -110,8 +110,8 @@ void usage ()
 
    + "* -seed_dynamic:\n"
    "Smith, R. E.; Tournier, J.-D.; Calamante, F. & Connelly, A. "
-   "SIFT: Spherical-deconvolution informed filtering of tractograms. "
-   "NeuroImage, 2013, 67, 298-312";
+   "SIFT2: Enabling dense quantitative assessment of brain white matter connectivity using streamlines tractography. "
+   "NeuroImage, 2015, 119, 338-351";
 
   ARGUMENTS
     + Argument ("source",

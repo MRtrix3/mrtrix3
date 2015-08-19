@@ -160,10 +160,11 @@ namespace MR {
 
 
         Worker::Thresholds::Thresholds (Tractography::Properties& properties) :
-          max_num_points (std::numeric_limits<size_t>::max()),
-          min_num_points (0),
+          max_length (std::numeric_limits<float>::infinity()),
+          min_length (0.0f),
           max_weight (std::numeric_limits<float>::infinity()),
-          min_weight (0.0)
+          min_weight (0.0f),
+          step_size (NaN)
         {
 
           std::string step_size_string;
@@ -172,30 +173,28 @@ namespace MR {
           else
             step_size_string = properties["output_step_size"];
 
-          float maxlength = 0.0, minlength = 0.0;
           if (properties.find ("max_dist") != properties.end()) {
             try {
-              maxlength = to<float>(properties["max_dist"]);
+              max_length = to<float>(properties["max_dist"]);
             } catch (...) { }
           }
           if (properties.find ("min_dist") != properties.end()) {
             try {
-              minlength = to<float>(properties["min_dist"]);
+              min_length = to<float>(properties["min_dist"]);
             } catch (...) { }
           }
 
-          if (step_size_string == "variable" && (maxlength || minlength))
-            throw Exception ("Cannot apply length threshold; step size is inconsistent between input track files");
-
-          const float step_size = to<float>(step_size_string);
-
-          if ((!step_size || !std::isfinite (step_size)) && (maxlength || minlength))
-            throw Exception ("Cannot apply length threshold; step size information is incomplete");
-
-          if (maxlength)
-            max_num_points = std::round (maxlength / step_size) + 1;
-          if (minlength)
-            min_num_points = std::max (2L, std::lround (minlength/step_size) + 1);
+          try {
+            step_size = to<float>(step_size_string);
+            // User may set these values to a precise value, which may then fail due to floating-point
+            //   calculation of streamline length
+            // Therefore throw a bit of error margin in here
+            float error_margin = 0.1;
+            if (properties.find ("downsample_factor") != properties.end())
+              error_margin = 0.5 / to<float>(properties["downsample_factor"]);
+            max_length += error_margin * step_size;
+            min_length -= error_margin * step_size;
+          } catch (...) { }
 
           if (properties.find ("max_weight") != properties.end())
             max_weight = to<float>(properties["max_weight"]);
@@ -209,18 +208,20 @@ namespace MR {
 
 
         Worker::Thresholds::Thresholds (const Worker::Thresholds& that) :
-          max_num_points (that.max_num_points),
-          min_num_points (that.min_num_points),
+          max_length (that.max_length),
+          min_length (that.min_length),
           max_weight (that.max_weight),
-          min_weight (that.min_weight) { }
+          min_weight (that.min_weight),
+          step_size  (that.step_size) { }
 
 
 
 
         bool Worker::Thresholds::operator() (const Streamline<>& in) const
         {
-          return ((in.size() <= max_num_points) &&
-              (in.size() >= min_num_points) &&
+          const float length = (std::isfinite (step_size) ? in.calc_length (step_size) : in.calc_length());
+          return ((length <= max_length) &&
+              (length >= min_length) &&
               (in.weight <= max_weight) &&
               (in.weight >= min_weight));
         }

@@ -50,8 +50,8 @@ namespace MR
         class Dock : public QDockWidget
         {
           public:
-            Dock (QWidget* parent, const QString& name) :
-              QDockWidget (name, parent), tool (NULL) { }
+            Dock (const QString& name) :
+              QDockWidget (name, Window::main), tool (nullptr) { }
 
             void closeEvent (QCloseEvent*) override;
 
@@ -61,8 +61,8 @@ namespace MR
 
         class Base : public QFrame {
           public:
-            Base (Window& main_window, Dock* parent);
-            Window& window;
+            Base (Dock* parent);
+            Window& window () const { return *Window::main; }
 
             static void add_commandline_options (MR::App::OptionList& options);
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
@@ -70,13 +70,13 @@ namespace MR
             virtual QSize sizeHint () const;
 
             void grab_focus () {
-              window.tool_has_focus = this;
-              window.set_cursor();
+              window().tool_has_focus = this;
+              window().set_cursor();
             }
             void release_focus () {
-              if (window.tool_has_focus == this) {
-                window.tool_has_focus = nullptr;
-                window.set_cursor();
+              if (window().tool_has_focus == this) {
+                window().tool_has_focus = nullptr;
+                window().set_cursor();
               }
             }
 
@@ -136,7 +136,7 @@ namespace MR
             virtual void close_event() { }
             virtual void reset_event () { }
             virtual QCursor* get_cursor ();
-            void update_cursor() { window.set_cursor(); }
+            void update_cursor() { window().set_cursor(); }
         };
 
 
@@ -150,24 +150,24 @@ namespace MR
                         const char* const description,
                         int index) :
               QAction (name, parent),
-              dock (NULL) {
+              dock (nullptr) {
               setCheckable (true);
               setShortcut (tr (std::string ("Ctrl+F" + str (index)).c_str()));
               setStatusTip (tr (description));
             }
 
-            virtual Dock* create (Window& main_window) = 0;
+            virtual Dock* create () = 0;
             Dock* dock;
         };
         //! \endcond
 
 
         template <class T> 
-          Dock* create (const QString& text, Window& main_window)
+          Dock* create (const QString& text)
           {
-            Dock* dock = new Dock (&main_window, text);
-            main_window.addDockWidget (Qt::RightDockWidgetArea, dock);
-            dock->tool = new T (main_window, dock);
+            Dock* dock = new Dock (text);
+            Window::main->addDockWidget (Qt::RightDockWidgetArea, dock);
+            dock->tool = new T (dock);
             dock->tool->adjustSize();
             dock->setWidget (dock->tool);
             dock->setFloating (true);
@@ -186,8 +186,8 @@ namespace MR
                 int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Dock* create (Window& parent) {
-              dock = Tool::create<T> (this->text(), parent);
+            virtual Dock* create () {
+              dock = Tool::create<T> (this->text());
               return dock;
             }
         };

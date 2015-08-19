@@ -41,7 +41,7 @@ namespace MR
             Q_OBJECT
 
             public:
-              TrackScalarFile (Window& main_window, Dock* parent);
+              TrackScalarFile (Dock* parent);
               virtual ~TrackScalarFile () {}
 
               void set_tractogram (Tractogram* selected_tractogram);

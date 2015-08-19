@@ -117,7 +117,6 @@ void run ()
   // Make sure configuration is sensible
   if (get_options("tck_weights_in").size() && num_inputs > 1)
     throw Exception ("Cannot use per-streamline weighting with multiple input files");
-  // TODO Anything else?
 
   // Get the consensus streamline properties from among the multiple input files
   Tractography::Properties properties;

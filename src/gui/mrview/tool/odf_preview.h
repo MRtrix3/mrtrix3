@@ -26,6 +26,7 @@
 #include "gui/dwi/render_frame.h"
 
 #include "gui/mrview/tool/odf.h"
+#include "gui/mrview/spin_box.h"
 #include "gui/mrview/window.h"
 
 namespace MR
@@ -44,7 +45,7 @@ namespace MR
             class RenderFrame : public DWI::RenderFrame
             {
               public:
-                RenderFrame (QWidget* parent, Window& window);
+                RenderFrame (QWidget* parent);
                 
                 void set_scale (float sc) {
                   scale = sc;
@@ -52,14 +53,15 @@ namespace MR
                 }
                 
               protected:
-                Window& window;
+                Window& window () const { return *Window::main; }
                 virtual void wheelEvent (QWheelEvent*);
             };
 
           public:
-            Preview (Window&, ODF*);
+            Preview (ODF*);
             void set (const Math::Vector<float>&);
             bool interpolate() const { return interpolation_box->isChecked(); }
+            Window& window () const { return *Window::main; }
           private slots:
             void lock_orientation_to_image_slot (int);
             void interpolation_slot (int);
@@ -71,7 +73,7 @@ namespace MR
             RenderFrame* render_frame;
             QCheckBox *lock_orientation_to_image_box;
             QCheckBox *interpolation_box, *show_axes_box;
-            QSpinBox *level_of_detail_selector;
+            SpinBox *level_of_detail_selector;
             friend class ODF;
         };
 

@@ -80,8 +80,9 @@ namespace MR {
                 Thresholds (const Thresholds&);
                 bool operator() (const Streamline<>&) const;
               private:
-                size_t max_num_points, min_num_points;
+                float max_length, min_length;
                 float max_weight, min_weight;
+                float step_size;
             } thresholds;
 
             mutable std::vector<bool> include_visited;

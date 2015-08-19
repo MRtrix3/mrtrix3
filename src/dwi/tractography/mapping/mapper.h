@@ -166,6 +166,7 @@ namespace MR {
             // Used by voxelise() and voxelise_precise() to increment the relevant set
             inline void add_to_set (SetVoxel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
             inline void add_to_set (SetVoxelDEC&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
+            inline void add_to_set (SetVoxelDir&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
             inline void add_to_set (SetDixel&   , const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
             inline void add_to_set (SetVoxelTOD&, const Eigen::Vector3i&, const Eigen::Vector3f&, const float) const;
 
@@ -187,7 +188,8 @@ namespace MR {
               vox = round (scanner2voxel * (*i));
               if (check (vox, info)) {
                 const auto dir = (*(i+1) - *prev).normalized();
-                add_to_set (output, vox, dir, 1.0f);
+                if (dir.allFinite())
+                  add_to_set (output, vox, dir, 1.0f);
               }
               prev = i;
             }
@@ -195,7 +197,8 @@ namespace MR {
             vox = round (scanner2voxel * (*last));
             if (check (vox, info)) {
               const auto dir = (*last - *prev).normalized();
-              add_to_set (output, vox, dir, 1.0f);
+              if (dir.allFinite())
+                add_to_set (output, vox, dir, 1.0f);
             }
 
             for (auto& i : output) 
@@ -312,6 +315,10 @@ namespace MR {
           out.insert (v, l);
         }
         inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
+        {
+          out.insert (v, d, l);
+        }
+        inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l) const
         {
           out.insert (v, d, l);
         }

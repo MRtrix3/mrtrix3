@@ -38,6 +38,7 @@ namespace MR
         void display (ProgressInfo& p);
         void done (ProgressInfo& p);
 
+
       }
     }
   }

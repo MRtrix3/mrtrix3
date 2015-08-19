@@ -189,7 +189,7 @@ namespace MR
     void save_vector (const VectorType& V, const std::string& filename) 
     {
       File::OFStream out (filename);
-      for (ssize_t i = 0; i < V.size() - 1; i++)
+      for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10);
     }

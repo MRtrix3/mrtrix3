@@ -34,9 +34,8 @@ namespace MR
 
         void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
-        Base::Base (Window& main_window, Dock* parent) : 
-          QFrame (parent),
-          window (main_window) { 
+        Base::Base (Dock* parent) : 
+          QFrame (parent) {
             QFont f = font();
             //CONF option: MRViewToolFontSize
             //CONF default: 2 points less than the standard system font

@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {
@@ -49,13 +50,13 @@ namespace MR
 
           public:
 
-            ODF (Window& main_window, Dock* parent);
+            ODF (Dock* parent);
             ~ODF();
 
-            void draw (const Projection& projection, bool is_3D, int axis, int slice);
+            void draw (const Projection& projection, bool is_3D, int axis, int slice) override;
 
             static void add_commandline_options (MR::App::OptionList& options);
-            virtual bool process_commandline_option (const MR::App::ParsedOption& opt);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
             void onWindowChange ();
@@ -90,7 +91,7 @@ namespace MR
              QPushButton *show_preview_button, *hide_all_button;
              QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box, *main_grid_box;
              QCheckBox *colour_by_direction_box, *interpolation_box;
-             QSpinBox *lmax_selector, *level_of_detail_selector;
+             SpinBox *lmax_selector, *level_of_detail_selector;
 
              AdjustButton *scale;
 
@@ -101,8 +102,8 @@ namespace MR
              
              void add_images (std::vector<std::string>& list);
 
-             virtual void showEvent (QShowEvent* event);
-             virtual void closeEvent (QCloseEvent* event);
+             virtual void showEvent (QShowEvent* event) override;
+             virtual void closeEvent (QCloseEvent* event) override;
 
              Image* get_image ();
              void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos, const bool interp);

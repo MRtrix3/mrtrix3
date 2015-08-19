@@ -8,6 +8,7 @@
 #include "gui/mrview/tool/vector.h"
 #include "gui/mrview/tool/screen_capture.h"
 #include "gui/mrview/tool/tractography/tractography.h"
+#include "gui/mrview/tool/connectome/connectome.h"
 
 #else
 
@@ -20,8 +21,9 @@ TOOL(View, View options, Adjust view settings)
 TOOL(ROI, ROI editor, View & edit regions of interest)
 TOOL(Overlay, Overlay, Overlay other images over the current image)
 TOOL(Tractography, Tractography, Display tracks over the current image)
-TOOL(ODF, ODF display, Display orientation density functions)
-TOOL(Vector, Vector plot, Plot vector images)
+TOOL(ODF, ODF Display, Display orientation density functions)
+TOOL(Vector, Vector Plot, Plot vector images)
+TOOL(Connectome, Connectome, Plot connectome properties)
 TOOL(Capture, Screen capture, Capture the screen as a png file)
 
 #endif

@@ -68,7 +68,7 @@ namespace MR
             static X& functor (X& job) { return job; }
 
             template <class SingleFunctor>
-              static SingleFunctor& get (X& f, SingleFunctor& functor) {
+              static SingleFunctor& get (X& /*f*/, SingleFunctor& functor) {
                 return functor;
               }
         };
@@ -378,7 +378,7 @@ namespace MR
         }
 
         //! needed for Thread::run_queue()
-        Queue (const T& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
+        Queue (const T& /*item_type*/, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
           buffer (new T* [buffer_size]),
           front (buffer),
           back (buffer),
@@ -550,13 +550,8 @@ namespace MR
         std::vector<std::unique_ptr<T>> items;
         std::string name;
 
-        Queue (const Queue& queue) {
-          assert (0);
-        }
-        Queue& operator= (const Queue& queue) {
-          assert (0);
-          return (*this);
-        }
+        Queue (const Queue&) = delete;
+        Queue& operator= (const Queue&) = delete;
 
         void register_writer ()   {
           std::lock_guard<std::mutex> lock (mutex);

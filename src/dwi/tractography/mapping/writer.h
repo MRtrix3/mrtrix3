@@ -60,17 +60,18 @@ namespace MR {
             //typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
 
           public:
-            MapWriterBase (Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
+            MapWriterBase (const Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
               H (header),
               output_image_name (name),
               direct_dump (false),
               voxel_statistic (s),
-              type (t)
-          {
-            assert (type != UNDEFINED);
-          }
+              type (t) {
+                assert (type != UNDEFINED);
+              }
 
             MapWriterBase (const MapWriterBase&) = delete;
+
+            virtual ~MapWriterBase () { }
 
             // can't do this in destructor since it could potentially throw,
             // and throwing in destructor is most uncool (invokes
@@ -91,7 +92,7 @@ namespace MR {
 
 
           protected:
-            Header& H;
+            const Header& H;
             const std::string output_image_name;
             bool direct_dump;
             const vox_stat_t voxel_statistic;
@@ -120,7 +121,7 @@ namespace MR {
           //typedef typename Mapping::BufferScratchDump<value_type>::voxel_type buffer_voxel_type;
 
           public:
-          MapWriter (Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
+          MapWriter (const Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
             MapWriterBase (header, name, voxel_statistic, type),
             buffer (Image<value_type>::scratch (header, "TWI " + str(writer_dims[type]) + " buffer"))
             //v_buffer (buffer)
@@ -155,7 +156,7 @@ namespace MR {
 
             // With TOD, hijack the counts buffer in voxel statistic min/max mode
             //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-            if ((voxel_statistic == V_MEAN) ||
+            if ((type != DEC && voxel_statistic == V_MEAN) ||
                 (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
                 (type == DEC && voxel_statistic == V_SUM))
             {
@@ -178,7 +179,9 @@ namespace MR {
                   for (auto l = loop (buffer, *counts); l; ++l) {
                     if (counts->value()) {
                       auto value = get_dec();
-                      value *= counts->value() / value.norm();
+                      const float norm = value.norm();
+                      if (norm)
+                        value *= counts->value() / norm;
                       set_dec (value);
                     }
                   }
@@ -200,12 +203,10 @@ namespace MR {
                   }
                 } 
                 else if (type == DEC) {
-                  for (auto l = loop (buffer, *counts); l; ++l) {
+                  for (auto l = loop (buffer); l; ++l) {
                     auto value = get_dec();
-                    if (value.squaredNorm()) {
-                      value /= counts->value();
-                      set_dec (value);
-                    }
+                    if (value.squaredNorm()) 
+                      set_dec (value.normalized());
                   }
                 } 
                 else if (type == TOD) {
@@ -242,7 +243,7 @@ namespace MR {
                 break;
 
               default:
-                throw Exception ("Unknown / unhandled voxel statistic in ~MapWriter()");
+                throw Exception ("Unknown / unhandled voxel statistic in MapWriter::finalise()");
 
             }
 
@@ -260,31 +261,33 @@ namespace MR {
                 std::cerr << "done.\n";
 
             } else {
-
-              image_type out (output_image_name, H);
-              image_voxel_type v_out (out);
-              if (type == DEC) {
-                Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-                for (auto l = loop_out (v_out, v_buffer); l; ++l) {
-                  Point<value_type> value (get_dec());
-                  v_out[3] = 0; v_out.value() = value[0];
-                  v_out[3] = 1; v_out.value() = value[1];
-                  v_out[3] = 2; v_out.value() = value[2];
+              try {
+            
+                image_type out (output_image_name, H);
+                if (type == DEC) {
+                  auto loop_out = Loop (out, "writing image to file...", 0, 3);
+                  for (auto l = loop_out (out, buffer); l; ++l) {
+                    point_type value (get_dec());
+                    out[3] = 0; out.value() = value[0];
+                    out[3] = 1; out.value() = value[1];
+                    out[3] = 2; out.value() = value[2];
+                  }
+                } else if (type == TOD) {
+                  auto loop_out = Loop (out, "writing image to file...", 0, 3);
+                  for (auto l = loop_out (out, buffer); l; ++l) {
+                    Math::Vector<float> value;
+                    get_tod (value);
+                    for (auto l2 = Loop (3)(out); l2; ++l2) 
+                      out.value() = value[size_t(out[3])];
+                  }
+                } else { // Greyscale and Dixel
+                  auto loop_out = Loop (out, "writing image to file...");
+                  for (auto l = loop_out (out, buffer); l; ++l)
+                    out.value() = buffer.value();
                 }
-              } else if (type == TOD) {
-                Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-                for (auto l = loop_out (v_out, v_buffer); l; ++l) {
-                  Math::Vector<float> value;
-                  get_tod (value);
-                  for (v_out[3] = 0; v_out[3] != v_out.dim(3); ++v_out[3])
-                    v_out.value() = value[size_t(v_out[3])];
-                }
-              } else { // Greyscale and Dixel
-                Image::LoopInOrder loop_out (v_out, "writing image to file...");
-                for (auto l = loop_out (v_out, v_buffer); l; ++l) 
-                  v_out.value() = v_buffer.value();
-              }
-
+            
+              } catch (Exception& e) {
+                e.display();
             } */
           }
 

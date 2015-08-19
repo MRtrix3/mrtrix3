@@ -94,24 +94,29 @@ namespace MR
               break;
           }
 
+          if (fixel.use_discard_lower())
+            source += "uniform float lower;\n";
+          if (fixel.use_discard_upper())
+            source += "uniform float upper;\n";
+
           source +=
-               "out vec3 fColour;\n"
-               "flat out float value_out;\n"
+               "flat out vec3 fColour;\n"
                "void main() {\n";
 
-          // Make sure we pass our output parameters before ending the primitive!
+          if (fixel.use_discard_lower())
+            source += "  if (v_fixel_metrics[0].y < lower) return;\n";
+          if (fixel.use_discard_upper())
+            source += "  if (v_fixel_metrics[0].y > upper) return;\n";
+
           switch (length_type) {
             case Unity:
-              source += "   value_out = v_fixel_metrics[0].y;\n"
-                        "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * vec4 (v_dir[0], 0);\n";
               break;
             case Amplitude:
-              source += "   value_out = v_fixel_metrics[0].x;\n"
-                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * v_fixel_metrics[0].x * vec4 (v_dir[0], 0);\n";
               break;
             case LValue:
-              source += "   value_out = v_fixel_metrics[0].y;\n"
-                        "   vec4 line_offset = length_mult * value_out * vec4 (v_dir[0], 0);\n";
+              source += "   vec4 line_offset = length_mult * v_fixel_metrics[0].y * vec4 (v_dir[0], 0);\n";
               break;
           }
 
@@ -125,7 +130,7 @@ namespace MR
               }
               source +=
                 std::string ("    vec3 color;\n") +
-                ColourMap::maps[colourmap].mapping +
+                ColourMap::maps[colourmap].glsl_mapping +
                 "   fColour = color;\n";
               break;
             case Direction:
@@ -157,32 +162,14 @@ namespace MR
         }
 
 
-        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable& fixel)
+        std::string AbstractFixel::Shader::fragment_shader_source (const Displayable&/* fixel*/)
         {
           std::string source =
               "out vec3 outColour;\n"
-              "in vec3 fColour;\n"
-              "flat in float value_out;\n";
-
-          if (fixel.use_discard_lower())
-            source += "uniform float lower;\n";
-          if (fixel.use_discard_upper())
-            source += "uniform float upper;\n";
-
-          source +=
-              "void main(){\n";
-
-
-          if (fixel.use_discard_lower())
-            source += "  if (value_out < lower) discard;\n";
-          if (fixel.use_discard_upper())
-            source += "  if (value_out > upper) discard;\n";
-
-          source +=
-            std::string("  outColour = fColour;\n");
-
-          source += "}\n";
-
+              "flat in vec3 fColour;\n"
+              "void main(){\n"
+              "  outColour = fColour;\n"
+              "}\n";
           return source;
         }
 
@@ -266,9 +253,8 @@ namespace MR
                                                 const MR::Image::Transform &header_transform)
         {
           // Code below "inspired" by ODF::draw
-          const auto& window = fixel_tool.window;
-          Point<> p (window.target());
-          p += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - p));
+          Point<> p (Window::main->target());
+          p += projection.screen_normal() * (projection.screen_normal().dot (Window::main->focus() - p));
           p = header_transform.scanner2voxel (p);
 
           if (fixel_tool.do_lock_to_grid) {
@@ -361,7 +347,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          fixel_tool.window.makeGLcurrent();
+          Window::GrabContext context;
 
           load_image_buffer ();
 

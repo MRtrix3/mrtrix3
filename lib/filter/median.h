@@ -58,11 +58,25 @@ namespace MR
         }
 
         template <class HeaderType>
+          Median (const HeaderType& in, const std::string& message) :
+            Base (in, message),
+            extent (1,3) { 
+              datatype() = DataType::Float32;
+            }
+
+        template <class HeaderType>
         Median (const HeaderType& in, const std::vector<int>& extent) :
             Base (in),
             extent (extent) {
           datatype() = DataType::Float32;
         }
+
+        template <class HeaderType>
+          Median (const HeaderType& in, const std::string& message, const std::vector<int>& extent) :
+            Base (in, message),
+            extent (extent) { 
+              datatype() = DataType::Float32;
+            }
 
         //! Set the extent of median filtering neighbourhood in voxels.
         //! This must be set as a single value for all three dimensions
