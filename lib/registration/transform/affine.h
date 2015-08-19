@@ -61,7 +61,8 @@ namespace MR
           }
 
 
-          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::Matrix<default_type, 3, 12>& jacobian) const {
+          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::MatrixXd& jacobian) const {
+            jacobian.resize (3,12);
             jacobian.setZero();
             Eigen::Vector3 v;
             v[0] = p[0] - this->centre[0];
@@ -79,7 +80,7 @@ namespace MR
           }
 
 
-          void set_parameter_vector (const Math::Vector<default_type>& param_vector) {
+          void set_parameter_vector (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) {
             size_t index = 0;
             for (size_t row = 0; row < 3; ++row) {
               for (size_t col = 0; col < 3; ++col)
@@ -90,8 +91,8 @@ namespace MR
             this->compute_offset();
           }
 
-          void get_parameter_vector (Vector<default_type>& param_vector) const {
-            param_vector.allocate (12);
+          void get_parameter_vector (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) const {
+            param_vector.resize (12);
             size_t index = 0;
             for (size_t row = 0; row < 3; ++row) {
               for (size_t col = 0; col < 3; ++col)

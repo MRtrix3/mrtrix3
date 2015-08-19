@@ -46,16 +46,16 @@ namespace MR
           {
             CONSOLE ("initialising centre of rotation and translation using geometric centre");
             Eigen::Vector3 moving_centre_voxel;
-            moving_centre_voxel[0] = (static_cast<default_type>(moving.dim(0)) / 2.0) - 0.5;
-            moving_centre_voxel[1] = (static_cast<default_type>(moving.dim(1)) / 2.0) - 0.5;
-            moving_centre_voxel[2] = (static_cast<default_type>(moving.dim(2)) / 2.0) - 0.5;
-            Transform moving_transform (moving);
+            moving_centre_voxel[0] = (static_cast<default_type>(moving.size(0)) / 2.0) - 0.5;
+            moving_centre_voxel[1] = (static_cast<default_type>(moving.size(1)) / 2.0) - 0.5;
+            moving_centre_voxel[2] = (static_cast<default_type>(moving.size(2)) / 2.0) - 0.5;
+            MR::Transform moving_transform (moving);
             Eigen::Vector3 moving_centre_scanner  = moving_transform.voxel2scanner * moving_centre_voxel;
 
             Eigen::Vector3 target_centre_voxel;
-            target_centre_voxel[0] = (static_cast<default_type>(target.dim(0)) / 2.0) - 0.5 + 1.0;
-            target_centre_voxel[1] = (static_cast<default_type>(target.dim(1)) / 2.0) - 0.5 + 1.0;
-            target_centre_voxel[2] = (static_cast<default_type>(target.dim(2)) / 2.0) - 0.5 + 1.0;
+            target_centre_voxel[0] = (static_cast<default_type>(target.size(0)) / 2.0) - 0.5 + 1.0;
+            target_centre_voxel[1] = (static_cast<default_type>(target.size(1)) / 2.0) - 0.5 + 1.0;
+            target_centre_voxel[2] = (static_cast<default_type>(target.size(2)) / 2.0) - 0.5 + 1.0;
             Eigen::Vector3 target_centre_scanner = moving_transform.voxel2scanner * target_centre_voxel;
 
             transform.set_centre (target_centre_scanner);
@@ -72,13 +72,12 @@ namespace MR
           {
             CONSOLE ("initialising centre of rotation and translation using centre of mass");
             Eigen::Matrix<typename TransformType::ParameterType, 3, 1> target_centre_of_mass (3);
-            target_centre_of_mass.setZeros();
+            target_centre_of_mass.setZero();
             default_type target_mass = 0;
-            Image::Transform target_transform (target);
+            MR::Transform target_transform (target);
 
             // only use the first volume of a 4D file. This is important for FOD images.
-            Loop target_loop (target, 0, 3);
-            for (auto i = target_loop.run (target); i; ++i) {
+            for (auto i = Loop(0, 3)(target); i; ++i) {
               Eigen::Vector3 voxel_pos ((default_type)target.index(0), (default_type)target.index(1), (default_type)target.index(2));
               Eigen::Vector3 target_scanner = target_transform.voxel2scanner * voxel_pos;
               target_mass += target.value();
@@ -88,11 +87,10 @@ namespace MR
             }
 
             Eigen::Matrix<typename TransformType::ParameterType, 3, 1>  moving_centre_of_mass (3);
-            moving_centre_of_mass.setZeros();
+            moving_centre_of_mass.setZero();
             default_type moving_mass = 0.0;
-            Transform moving_transform (moving);
-            Loop moving_loop (moving);
-            for (auto i = moving_loop.run (moving); i; ++i) {
+            MR::Transform moving_transform (moving);
+            for (auto i = Loop (0, 3)(moving); i; ++i) {
               Eigen::Vector3 voxel_pos ((default_type)moving.index(0), (default_type)moving.index(1), (default_type)moving.index(2));
               Eigen::Vector3 moving_scanner = moving_transform.voxel2scanner * voxel_pos;
               moving_mass += moving.value();

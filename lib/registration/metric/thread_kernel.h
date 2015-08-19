@@ -57,7 +57,7 @@ namespace MR
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, ParamType& parameters, double& overall_cost_function, Eigen::VectorXd& overall_gradient) :
+          ThreadKernel (const MetricType& metric, ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient) :
             metric (metric),
             params (parameters),
             cost_function (0.0),
@@ -76,7 +76,8 @@ namespace MR
           template <class U = MetricType>
           void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
 
-            Eigen::Vector3 template_point = transform.voxel2scanner (iter);
+            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+            Eigen::Vector3 template_point = transform.voxel2scanner * voxel_pos;
             if (params.template_mask_interp) {
               params.template_mask_interp->scanner (template_point);
               if (!params.template_mask_interp->value())
@@ -84,8 +85,10 @@ namespace MR
             }
 
             Eigen::Vector3 moving_point;
-            Eigen::Vector3 param;
-            params.transformation.get_parameter_vector (param);
+//            Eigen::Matrix<default_type, Eigen::Dynamic, 1> param;
+//            params.transformation.get_parameter_vector (param);
+
+
             params.transformation.transform (moving_point, template_point);
             if (params.moving_mask_interp) {
               params.moving_mask_interp->scanner (moving_point);
@@ -108,9 +111,9 @@ namespace MR
             MetricType metric;
             ParamType params;
 
-            double cost_function;
+            default_type cost_function;
             Eigen::VectorXd gradient;
-            double& overall_cost_function;
+            default_type& overall_cost_function;
             Eigen::VectorXd& overall_gradient;
             Transform transform;
       };

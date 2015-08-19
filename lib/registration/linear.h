@@ -78,7 +78,7 @@ namespace MR
           max_iter = maxiter;
         }
 
-        void set_scale_factor (const std::vector<float>& scalefactor) {
+        void set_scale_factor (const std::vector<default_type>& scalefactor) {
           for (size_t level = 0; level < scalefactor.size(); ++level) {
             if (scalefactor[level] <= 0 || scalefactor[level] > 1)
               throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
@@ -176,24 +176,25 @@ namespace MR
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (moving_image, template_image, transform);
 
-            typedef typename MovingMaskType::voxel_type MovingMaskVoxelType;
-            typedef typename TemplateMaskType::voxel_type TemplateMaskVoxelType;
-
             typedef Interp::Linear<Image<float> > MovingImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
                                    Image<float>,
                                    MovingImageInterpolatorType,
                                    Image<float>,
-                                   Interp::Nearest<MovingMaskVoxelType>,
-                                   Interp::Nearest<TemplateMaskVoxelType> > ParamType;
+                                   Interp::Nearest<MovingMaskType>,
+                                   Interp::Nearest<MovingMaskType> > ParamType;
 
-            Eigen::VectorXd<typename TransformType::ParameterType> optimiser_weights;
-            transform.get_optimiser_weights (optimiser_weights);
+            Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
 
               CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
+
+
+              // TODO: When we go symmetric, and change the gradient calculation to use the UniformBSline interpolation on the fly,
+              // lets ditch the resize of moving and "template", and just smooth. We can then get the value of the image as the same time as the gradient for little extra cost.
+              // Note that we will still need to resize the 'halfway' template grid. Maybe we should rename the input images to input1 and input2 to avoid confusion.
 
               Filter::Resize moving_resize_filter (moving_image);
               moving_resize_filter.set_scale_factor (scale_factor[level]);
@@ -225,12 +226,12 @@ namespace MR
               parameters.set_extent (kernel_extent);
 
               if (moving_mask.valid())
-                parameters.moving_mask_interp.reset (new Image::Interp::Nearest<MovingMaskVoxelType> (moving_mask));
-              if (template_mask.valid)
-                parameters.template_mask_interp.reset (new Image::Interp::Nearest<TemplateMaskVoxelType> (template_mask));
+                parameters.moving_mask_interp.reset (new Interp::Nearest<MovingMaskType> (moving_mask));
+              if (template_mask.valid())
+                parameters.template_mask_interp.reset (new Interp::Nearest<TemplateMaskType> (template_mask));
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
-              if (directions.is_set())
+              if (directions.cols())
                 evaluate.set_directions (directions);
 
               Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
@@ -239,7 +240,6 @@ namespace MR
 
               optim.precondition (optimiser_weights);
               optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              std::cerr << std::endl;
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){
@@ -255,10 +255,10 @@ namespace MR
 
       protected:
         std::vector<int> max_iter;
-        std::vector<float> scale_factor;
+        std::vector<default_type> scale_factor;
         std::vector<size_t> kernel_extent;
-        float grad_tolerance;
-        float step_tolerance;
+        default_type grad_tolerance;
+        default_type step_tolerance;
         std::streambuf* log_stream;
         Transform::Init::InitType init_type;
         Eigen::MatrixXd directions;

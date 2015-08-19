@@ -36,8 +36,6 @@ namespace MR
       class Base {
         public:
 
-          typedef double value_type;
-
           Base () :
             gradient_interp (nullptr),
             moving_grad (3) { }
@@ -45,23 +43,19 @@ namespace MR
           template <class MovingImageType>
           void set_moving_image (const MovingImageType& moving) {
             INFO ("Computing moving gradient...");
-            MovingImageType moving_copy (moving_voxel);
+            MovingImageType moving_copy (moving);
             Filter::Gradient gradient_filter (moving_copy);
-            gradient_ptr = std::make_shared<Image<float> >(Image<float>::scratch (gradient_filter.info()));
+            gradient_ptr = std::make_shared<Image<float> >(Image<float>::scratch (gradient_filter));
             gradient_filter (moving_copy, *gradient_ptr);
             gradient_interp.reset (new Interp::Linear<Image<float> > (*gradient_ptr));
           }
 
         protected:
 
-          void compute_moving_gradient (const Point<value_type> moving_point) {
+          // TODO replace this with in the fly gradient calculation
+          void compute_moving_gradient (const Eigen::Vector3 moving_point) {
             gradient_interp->scanner (moving_point);
-            (*gradient_interp)[3] = 0;
-            moving_grad[0] = gradient_interp->value();
-            ++(*gradient_interp)[3];
-            moving_grad[1] = gradient_interp->value();
-            ++(*gradient_interp)[3];
-            moving_grad[2] = gradient_interp->value();
+            moving_grad = gradient_interp->row(3).template cast<default_type>();
           }
 
 

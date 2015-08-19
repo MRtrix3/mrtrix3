@@ -32,10 +32,7 @@
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/SH.h"
-#include "math/LU.h"
 
 
 using namespace MR;
@@ -101,9 +98,9 @@ typedef float value_type;
 
 void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image<value_type> >& image_ptr) {
   auto image = Image<value_type>::open(filename);
-  Image::Header header (filename);
+  auto header = Header::open(filename);
   if (num_vols > 1) {
-    header.dim(3) = num_vols;
+    header.size(3) = num_vols;
     header.stride(0) = 2;
     header.stride(1) = 3;
     header.stride(2) = 4;
@@ -111,8 +108,7 @@ void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image<va
   }
   image_ptr.reset (new Image<float> (Image<value_type>::scratch (header)));
   if (num_vols > 1) {
-    Loop loop (*image_ptr);
-    for (auto i = loop.run (*image_ptr); i; ++i) {
+    for (auto i = Loop ()(*image_ptr); i; ++i) {
       assign_pos_of (*image_ptr).to (image);
         image_ptr->value() = image.value();
     }
@@ -128,10 +124,11 @@ void run ()
   const auto template_header = Header::open (argument[1]);
 
   check_dimensions (moving_header, template_header);
+  // TODO, can probably do away with these pointers
   std::unique_ptr<Image<value_type> > moving_ptr;
   std::unique_ptr<Image<value_type> > template_ptr;
 
-  Options opt = get_options ("noreorientation");
+  auto opt = get_options ("noreorientation");
   bool do_reorientation = true;
   if (opt.size())
     do_reorientation = false;
@@ -147,7 +144,7 @@ void run ()
         int lmax = 4;
         if (Math::SH::LforN(template_header.size(3)) < 4)
           lmax = Math::SH::LforN(template_header.size(3));
-        Options opt = get_options ("lmax");
+        auto opt = get_options ("lmax");
         if (opt.size()) {
           lmax = opt[0][0];
           if (lmax % 2)
@@ -172,9 +169,9 @@ void run ()
   }
 
   opt = get_options ("transformed");
-  std::unique_ptr<Image<value_type> > transformed_ptr;
+  Image<value_type> transformed;
   if (opt.size())
-    transformed_ptr.reset (new Image<value_type> (Image<value_type>::open(opt[0][0], template_header))); // MP: was template_header - DR Changed this back
+    transformed = Image<value_type>::create (opt[0][0], template_header); // MP: was template_header - DR Changed this back. I'm assuming people will want the transformed image in template space...this must be the case for non-linear transform
 
   opt = get_options ("type");
   bool do_rigid  = false;
@@ -240,10 +237,10 @@ void run ()
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
-    Image::Header warp_header (template_header);
+    Header warp_header (template_header);
     warp_header.set_ndim (5); //TODO decide on format
-    warp_header.dim(3) = 3;
-    warp_header.dim(4) = 4;
+    warp_header.size(3) = 3;
+    warp_header.size(4) = 4;
     warp_header.stride(0) = 2;
     warp_header.stride(1) = 3;
     warp_header.stride(2) = 4;
@@ -253,7 +250,7 @@ void run ()
   }
 
   opt = get_options ("rigid_scale");
-  std::vector<value_type> rigid_scale_factors;
+  std::vector<default_type> rigid_scale_factors;
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the rigid multi-resolution scale factors were input when no rigid registration is requested");
@@ -261,7 +258,7 @@ void run ()
   }
 
   opt = get_options ("affine_scale");
-  std::vector<value_type> affine_scale_factors;
+  std::vector<default_type> affine_scale_factors;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the affine multi-resolution scale factors were input when no rigid registration is requested");
@@ -269,7 +266,7 @@ void run ()
   }
 
   opt = get_options ("syn_scale");
-  std::vector<value_type> syn_scale_factors;
+  std::vector<default_type> syn_scale_factors;
   if (opt.size ()) {
     if (!do_syn)
       throw Exception ("the syn multi-resolution scale factors were input when no rigid registration is requested");
@@ -278,14 +275,14 @@ void run ()
 
 
   opt = get_options ("tmask");
-  std::unique_ptr<Image<bool> > tmask_image;
+  Image<bool> tmask_image;
   if (opt.size ())
-    tmask_image.reset (new Image<bool> (Image<bool>::open(opt[0][0])));
+    tmask_image = Image<bool>::open(opt[0][0]);
 
   opt = get_options ("mmask");
-  std::unique_ptr<Image<bool> > mmask_image;
+  Image<bool> mmask_image;
   if (opt.size ())
-    mmask_image.reset (new Image<bool> > (Image<bool>::open(opt[0][0])));
+    mmask_image = Image<bool>::open(opt[0][0]);
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;;
@@ -327,18 +324,18 @@ void run ()
       throw Exception ("the warp field smoothing parameter was input with no SyN registration is requested");
   }
 
-  Image::Registration::Transform::Rigid<double> rigid;
+  Registration::Transform::Rigid rigid;
   opt = get_options ("rigid_init");
   bool init_rigid_set = false;
   if (opt.size()) {
     throw Exception ("initialise with rigid not yet implemented");
     init_rigid_set = true;
-    Math::Matrix<value_type> init_rigid;
-    init_rigid.load (opt[0][0]);
-    //TODO // set rigid
+    transform_type init_rigid = load_transform (opt[0][0]);
+    //TODO // set initial rigid....need to rejig wrt centre. Would be easier to save Versor coefficients and centre of rotation
+    CONSOLE(str(init_rigid.matrix()));
   }
 
-  Image::Registration::Transform::Affine<double> affine;
+  Registration::Transform::Affine affine;
   opt = get_options ("affine_init");
   bool init_affine_set = false;
   if (opt.size()) {
@@ -348,19 +345,19 @@ void run ()
     if (do_rigid)
       throw Exception ("you cannot initialise a rigid registration with an affine transformation");
     init_affine_set = true;
-    Math::Matrix<value_type> init_affine;
-    init_affine.load (opt[0][0]);
-    //TODO // set affine
+    transform_type init_affine = load_transform(opt[0][0]);
+    //TODO // set affine....need to rejig wrt centre
+    CONSOLE(str(init_affine.matrix()));
   }
 
   opt = get_options ("syn_init");
-  std::unique_ptr<Image<value_type> > init_warp_buffer;
+  Image<value_type> init_warp_buffer;
   if (opt.size()) {
     if (init_rigid_set || init_affine_set)
       throw Exception ("you cannot initialise registrations with both a warp and a linear transformation "
                        "(the linear transformation will already be included in the warp)");
     throw Exception ("initialise with affine not yet implemented");
-    init_warp_buffer.reset (new Image::Buffer<value_type> (Image<value_type>::open (opt[0][0])));
+    init_warp_buffer = Image<value_type>::open (opt[0][0]);
   }
 
   opt = get_options ("centre");
@@ -387,7 +384,7 @@ void run ()
     directions_az_el = load_matrix (opt[0][0]);
   else
     directions_az_el = DWI::Directions::electrostatic_repulsion_60();
-  Math::SH::spherical2cartesian (directions_az_el, directions_cartesian);
+  Eigen::MatrixXd directions_cartesian = Math::SH::spherical2cartesian (directions_az_el);
 
 
   if (do_rigid) {
@@ -403,7 +400,7 @@ void run ()
     else
       rigid_registration.set_init_type (init_centre);
 
-    if (template_voxel.ndim() == 4) {
+    if (template_ptr->ndim() == 4) {
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, *moving_ptr, *template_ptr, mmask_image, tmask_image);
     } else {
@@ -412,7 +409,7 @@ void run ()
     }
 
     if (output_rigid)
-      rigid.get_transform().save (rigid_filename);
+      save_transform (rigid.get_transform(), rigid_filename);
   }
 
   if (do_affine) {
@@ -437,17 +434,17 @@ void run ()
       affine_registration.set_directions (directions_cartesian);
 
 
-    if (template_voxel.ndim() == 4) {
+    if (template_ptr->ndim() == 4) {
       Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, *moving_ptr, *template_ptr, mmask_image, tmask_image);
     } else {
       Registration::Metric::MeanSquared metric;
-      affine_registration.run_masked (metric, affine, moving_voxel, template_voxel, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, *moving_ptr, *template_ptr, mmask_image, tmask_image);
     }
 
 
     if (output_affine)
-      affine.get_transform().save (affine_filename);
+      save_transform (affine.get_transform(), affine_filename);
   }
 
   if (do_syn) {
@@ -468,19 +465,19 @@ void run ()
 
   }
 
-  if (transformed_ptr) {
+  if (transformed.valid()) {
     if (do_syn) {
     } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (moving_voxel, *transformed_ptr, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (*moving_ptr, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, *transformed_ptr, *transformed_ptr, affine.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, transformed, affine.get_transform(), directions_cartesian);
       }
     } else {
-      Filter::reslice<Interp::Cubic> (moving_voxel, *transformed_ptr, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (*moving_ptr, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, *transformed_ptr, *transformed_ptr, rigid.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, transformed, rigid.get_transform(), directions_cartesian);
       }
     }
   }

@@ -39,7 +39,7 @@ namespace MR
           public:
 
             typedef typename ParamType::TransformParamType TransformParamType;
-            typedef double value_type;
+            typedef default_type value_type;
 
             Evaluate (const MetricType& metric, ParamType& parameters) :
               metric (metric),
@@ -47,28 +47,28 @@ namespace MR
               iteration (1) { }
 
 
-            double operator() (const Eigen::Vector3& x, Eigen::Vector3& gradient) {
+            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-              double overall_cost_function = 0.0;
+              default_type overall_cost_function = 0.0;
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
               std::unique_ptr<Image<float> > reoriented_moving;
 
-              // TODO isset()
-              if (directions.cols()) {
-                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.moving_image)));
-                Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
-                params.set_moving_iterpolator (*reoriented_moving);
-                metric.set_moving_image (*reoriented_moving);
-              }
+              // TODO I wonder if reorienting within the metric would be quicker since it's only one pass? Means we would need to set current affine to the metric4D before running the thread kernel
+//              if (directions.cols()) {
+//                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.moving_image)));
+//                Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
+//                params.set_moving_iterpolator (*reoriented_moving);
+//                metric.set_moving_image (*reoriented_moving);
+//              }
 
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
                 ThreadedLoop (params.template_image, 0, 3).run (kernel);
               }
               // std::cerr.precision(10);
-              DEBUG("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
+              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
               return overall_cost_function;
             }
 

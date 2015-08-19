@@ -91,7 +91,7 @@ namespace MR
             compute_offset();
           }
 
-          const Eigen::Vector3 get_matrix () const {
+          const Eigen::Matrix<default_type, 3, 3> get_matrix () const {
             return matrix;
           }
 
@@ -118,7 +118,7 @@ namespace MR
           }
 
           void set_optimiser_weights (Eigen::Vector3& weights) {
-            assert(size() == optimiser_weights.size());
+            assert(size() == (size_t)optimiser_weights.size());
               optimiser_weights = weights;
           }
 

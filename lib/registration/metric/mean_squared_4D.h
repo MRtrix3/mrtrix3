@@ -35,39 +35,36 @@ namespace MR
         public:
 
           template <class Params>
-            double operator() (Params& params,
-                               const Eigen::Vector3 target_point,
-                               const Eigen::Vector3 moving_point,
-                               Eigen::Vector3& gradient) {
+            default_type operator() (Params& params,
+                                     const Eigen::Vector3 target_point,
+                                     const Eigen::Vector3 moving_point,
+                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
               assert (params.template_image.ndim() == 4);
 
               params.template_image.index(3) = 0;
-              if (isnan (double (params.template_image.value())))
+              if (isnan (default_type (params.template_image.value())))
                 return 0.0;
 
               params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
 
-              double total_diff = 0.0;
+              default_type total_diff = 0.0;
 
+              // TODO get gradient from image on the fly
               gradient_interp->scanner (moving_point);
 
-              for (params.template_image.index(3) = 0; params.template_image.index(3) < params.template_image.dim(3); ++params.template_image.index(3)) {
+              // TODO interpolate 4th dimension in one go
+              for (params.template_image.index(3) = 0; params.template_image.index(3) < params.template_image.size(3); ++params.template_image.index(3)) {
                 (*gradient_interp).index(4) = params.template_image.index(3);
                 (*params.moving_image_interp).index(3) = params.template_image.index(3);
 
-                (*gradient_interp).index(3) = 0;
-                moving_grad[0] = gradient_interp->value();
-                ++(*gradient_interp).index(3);
-                moving_grad[1] = gradient_interp->value();
-                ++(*gradient_interp).index(3);
-                moving_grad[2] = gradient_interp->value();
+                moving_grad = gradient_interp->row(3).template cast<default_type>();
 
-                double diff = params.moving_image_interp->value() - params.template_image.value();
+                default_type diff = params.moving_image_interp->value() - params.template_image.value();
                 total_diff += (diff * diff);
 
                 for (size_t par = 0; par < gradient.size(); par++) {
-                  double sum = 0.0;
+                  default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++)
                     sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
                   gradient[par] += sum;

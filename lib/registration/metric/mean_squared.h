@@ -36,14 +36,15 @@ namespace MR
 
         public:
           template <class Params>
-            double operator() (Params& params,
-                               const Eigen::Vector3 target_point,
-                               const Eigen::Vector3 moving_point,
-                               Eigen::Vector3& gradient) {
-              if (isnan (double (params.template_image.value())))
+            default_type operator() (Params& params,
+                                     const Eigen::Vector3 target_point,
+                                     const Eigen::Vector3 moving_point,
+                                     Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+              if (isnan (default_type (params.template_image.value())))
                 return 0.0;
 
               params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
+
               if (params.template_image.ndim() == 4) {
                 (*gradient_interp).index(4) = params.template_image.index(4);
                 (*params.moving_image_interp).index(3) = params.template_image.index(3);
@@ -51,9 +52,12 @@ namespace MR
 
               this->compute_moving_gradient (moving_point);
 
-              double diff = params.moving_image_interp->value() - params.template_image.value();
+
+//              CONSOLE(str(moving_point));
+
+              default_type diff = params.moving_image_interp->value() - params.template_image.value();
               for (size_t par = 0; par < gradient.size(); par++) {
-                double sum = 0.0;
+                default_type sum = 0.0;
                 for ( size_t dim = 0; dim < 3; dim++)
                   sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
                 gradient[par] += sum;

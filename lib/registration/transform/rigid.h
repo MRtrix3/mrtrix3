@@ -36,11 +36,38 @@ namespace MR
     {
 
 
+
+      FORCE_INLINE Eigen::Quaterniond compose (const Eigen::Quaterniond& x, const Eigen::Quaterniond& y)
+      {
+        Eigen::Quaterniond q (
+          x.w()*y.w() - x.x()*y.x() - x.y()*y.y() - x.z()*y.z(),
+          x.w()*y.x() + x.x()*y.w() + x.y()*y.z() - x.z()*y.y(),
+          x.w()*y.y() - x.x()*y.z() + x.y()*y.w() + x.z()*y.x(),
+          x.w()*y.z() + x.x()*y.y() - x.y()*y.x() + x.z()*y.w());
+        q.normalize();
+        return q;
+      }
+
+
+      FORCE_INLINE void set_axis (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& axis,
+                                  Eigen::Quaterniond &versor)
+      {
+        const default_type sinangle2 =  axis.norm();
+        if (sinangle2 > 1.0)
+          throw Exception ("trying to set a versor with magnitude greater than 1.");
+        versor.w() = std::sqrt (1.0 - sinangle2 * sinangle2);
+        versor.x() = axis[0];
+        versor.y() = axis[1];
+        versor.z() = axis[2];
+      }
+
+
+
       class VersorUpdate {
         public:
-          inline bool operator() (Eigen::Matrix<default_type, 6, 1>& newx,
-                                  const Eigen::Matrix<default_type, 6, 1>& x,
-                                  const Eigen::Matrix<default_type, 6, 1>& g,
+          inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
+                                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
+                                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& g,
                                   default_type step_size) {
 
             Eigen::Vector3 axis (g[0], g[1], g[2]);
@@ -48,19 +75,25 @@ namespace MR
 
             Eigen::Vector3 right_part (x[0], x[1], x[2]);
             Eigen::Quaterniond current_rotation;
-            //current_rotation.set (right_part); //TODO
+            set_axis (right_part, current_rotation);
 
-            Eigen::Quaterniond new_rotation = current_rotation * gradient_rotation; //check?
+            Eigen::Quaterniond new_rotation = compose (current_rotation, gradient_rotation);
+//            std::cout << current_rotation.w() << " " << current_rotation.x() << " " << current_rotation.y() << " " << current_rotation.z() << std::endl;
+//            std::cout << gradient_rotation.w() << " " << gradient_rotation.x() << " " << gradient_rotation.y() << " " << gradient_rotation.z() << std::endl;
+//            std::cout << new_rotation.w() << " " << new_rotation.x() << " " << new_rotation.y() << " " << new_rotation.z() << std::endl;
+//            Eigen::Quaterniond new_rotation2 = current_rotation * gradient_rotation;
+//            std::cout << new_rotation2.w() << " " << new_rotation2.x() << " " << new_rotation2.y() << " " << new_rotation2.z() << std::endl;
 
-            newx[0] = new_rotation[1];
-            newx[1] = new_rotation[2];
-            newx[2] = new_rotation[3];
+
+            newx[0] = new_rotation.x();
+            newx[1] = new_rotation.y();
+            newx[2] = new_rotation.z();
             newx[3] = x[3] - step_size * g[3];
             newx[4] = x[4] - step_size * g[4];
             newx[5] = x[5] - step_size * g[5];
 
             bool changed = false;
-            for (size_t n = 0; n < x.size(); ++n) {
+            for (size_t n = 0; n < 3; ++n) {
               if (fabs(newx[n] - x[n]) > std::numeric_limits<default_type>::epsilon())
                 changed = true;
             }
@@ -73,9 +106,9 @@ namespace MR
 
       class VersorUpdateTest {
         public:
-          inline bool operator() (Eigen::Matrix<default_type, 6, 1>& newx,
-                                  const Eigen::Matrix<default_type, 6, 1>& x,
-                                  Eigen::Matrix<default_type, 6, 1>& g,
+          inline bool operator() (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& newx,
+                                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x,
+                                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& g,
                                   default_type step_size) {
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> vx (x.head<4>());
             Eigen::Matrix<default_type, Eigen::Dynamic, 1> vg (g.head<4>());
@@ -87,8 +120,8 @@ namespace MR
             if (!Math::LinearUpdate() (newx, x, g, step_size))
               return false;
 
-            Eigen::Matrix<default_type, 4, 1> v (newx.head<4>());
-            v.normalise();
+            Eigen::Matrix<default_type, Eigen::Dynamic, 1> v (newx.head(4));
+            v.colwise().normalize();
             return newx != x;
           }
       };
@@ -112,7 +145,6 @@ namespace MR
       class Rigid: public Base  {
         public:
 
-          typedef typename Base<default_type>::ParameterType ParameterType;
           typedef VersorUpdate UpdateType;
 
           Rigid () : Base (6) {
@@ -122,29 +154,30 @@ namespace MR
               this->optimiser_weights[i] = 1.0;
           }
 
-          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::Matrix<default_type, 3, 6>& jacobian) const {
+          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::MatrixXd& jacobian) const {
 
-            const default_type vw = versor[0];
-            const default_type vx = versor[1];
-            const default_type vy = versor[2];
-            const default_type vz = versor[3];
+            const default_type vw = versor.w();
+            const default_type vx = versor.x();
+            const default_type vy = versor.y();
+            const default_type vz = versor.z();
 
+            jacobian.resize(3, 6);
             jacobian.setZero();
 
-            const double px = p[0] - this->centre[0];
-            const double py = p[1] - this->centre[1];
-            const double pz = p[2] - this->centre[2];
+            const default_type px = p[0] - this->centre[0];
+            const default_type py = p[1] - this->centre[1];
+            const default_type pz = p[2] - this->centre[2];
 
-            const double vxx = vx * vx;
-            const double vyy = vy * vy;
-            const double vzz = vz * vz;
-            const double vww = vw * vw;
-            const double vxy = vx * vy;
-            const double vxz = vx * vz;
-            const double vxw = vx * vw;
-            const double vyz = vy * vz;
-            const double vyw = vy * vw;
-            const double vzw = vz * vw;
+            const default_type vxx = vx * vx;
+            const default_type vyy = vy * vy;
+            const default_type vzz = vz * vz;
+            const default_type vww = vw * vw;
+            const default_type vxy = vx * vy;
+            const default_type vxz = vx * vz;
+            const default_type vxw = vx * vw;
+            const default_type vyz = vy * vz;
+            const default_type vyw = vy * vw;
+            const default_type vzw = vz * vw;
 
             jacobian(0,0) = 2.0 * ( ( vyw + vxz ) * py + ( vzw - vxy ) * pz ) / vw;
             jacobian(1,0) = 2.0 * ( ( vyw - vxz ) * px   - 2 * vxw   * py + ( vxx - vww ) * pz ) / vw;
@@ -161,38 +194,42 @@ namespace MR
           }
 
           void set_rotation (const Eigen::Vector3& axis, default_type angle) {
-            Eigen::Quaterniond tmp (Eigen::AngleAxisd(angle, axis));
+            Eigen::Quaterniond tmp (Eigen::AngleAxisd (angle, axis));
             versor = tmp;
             this->matrix = versor.matrix();
             this->compute_offset();
           }
 
 
-          void set_parameter_vector (const Eigen::Matrix<default_type, 6, 1>& param_vector) {
+          void set_parameter_vector (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) {
             Eigen::Vector3 axis;
-            axis = param_vector.head<3>();
+            axis = param_vector.head(3);
 
-            double norm = param_vector[0] * param_vector[0];
-            norm += param_vector[1] * param_vector[1];
-            norm += param_vector[2] * param_vector[2];
-            if (norm > 0)
-              norm = std::sqrt (norm);
+            default_type norm =  param_vector.head(3).norm();
 
-            double epsilon = 1e-10;
+            default_type epsilon = 1e-10;
             if (norm >= 1.0 - epsilon)
               axis /= (norm + epsilon * norm);
 
-//            versor_.set (axis);  //TODO
+            set_axis (axis, versor);
             this->matrix = versor.matrix();
-            this->translation = param_vector.tail<3>();
+            this->translation = param_vector.tail(3);
             this->compute_offset();
+
+            std::cout << param_vector.transpose() << std::endl;
+            std::cout << versor.w() << " " << versor.x() << " " << versor.y() << " " << versor.z() << std::endl;
+            std::cout << this->matrix << std::endl<< std::endl;
+            std::cout <<this->translation<< std::endl<< std::endl;
+            std::cout <<this->offset<< std::endl<< std::endl << std::endlq;
+
           }
 
-          void get_parameter_vector (Eigen::Matrix<default_type, 6, 1>& param_vector) const {
-            param_vector[0] = versor[1];
-            param_vector[1] = versor[2];
-            param_vector[2] = versor[3];
-            param_vector.tail<3>() = this->translation;
+          void get_parameter_vector (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) const {
+            param_vector.resize(6);
+            param_vector[0] = versor.x();
+            param_vector[1] = versor.y();
+            param_vector[2] = versor.z();
+            param_vector.tail(3) = this->translation;
           }
 
           UpdateType* get_gradient_descent_updator (){
@@ -200,7 +237,6 @@ namespace MR
           }
 
         protected:
-
           Eigen::Quaterniond versor;
           UpdateType gradient_descent_updator;
       };
