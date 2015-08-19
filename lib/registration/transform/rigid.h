@@ -220,7 +220,7 @@ namespace MR
             std::cout << versor.w() << " " << versor.x() << " " << versor.y() << " " << versor.z() << std::endl;
             std::cout << this->matrix << std::endl<< std::endl;
             std::cout <<this->translation<< std::endl<< std::endl;
-            std::cout <<this->offset<< std::endl<< std::endl << std::endlq;
+            std::cout <<this->offset<< std::endl<< std::endl << std::endl;
 
           }
 
