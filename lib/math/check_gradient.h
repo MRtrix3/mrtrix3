@@ -25,8 +25,6 @@
 
 #include "debug.h"
 #include "datatype.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 
 namespace MR {
   namespace Math {
@@ -34,14 +32,14 @@ namespace MR {
     template <class Function>
       void check_function_gradient (
           Function& function, 
-          Math::Vector<typename Function::value_type>& x, 
+          Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1>& x,
           typename Function::value_type increment, 
           bool show_hessian = false,
-          Math::Vector<typename Function::value_type> conditioner = Math::Vector<typename Function::value_type>()) 
+          Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1> conditioner = Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1>())
       {
         typedef typename Function::value_type value_type;
         const size_t N = function.size();
-        Math::Vector<value_type> g (N);
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> g (N);
 
         CONSOLE ("checking gradient for cost function over " + str(N) +
             " parameters of type " + DataType::from<value_type>().specifier());
@@ -50,15 +48,15 @@ namespace MR {
         CONSOLE ("cost function suggests initial position at [ " + str(g) + "]");
 
         CONSOLE ("checking gradient at position [ " + str(x) + "]:");
-        Math::Vector<value_type> g0 (N);
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0 (N);
         value_type f0 = function (x, g0);
         CONSOLE ("  cost function = " + str(f0));
         CONSOLE ("  gradient from cost function         = [ " + str(g0) + "]");
 
-        Math::Vector<value_type> g_fd (N);
-        Math::Matrix<value_type> hessian;
+        Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd (N);
+        Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
         if (show_hessian) {
-          hessian.allocate (N, N);
+          hessian.resize(N, N);
           if (conditioner.size()) 
             for (size_t n = 0; n < N; ++n)
               conditioner[n] = std::sqrt(conditioner[n]);
@@ -75,7 +73,7 @@ namespace MR {
           if (show_hessian) {
             if (conditioner.size())
               g *= conditioner;
-            hessian.column(n) = g;
+            hessian.col(n) = g;
           }
 
           x[n] = old_x - inc;
@@ -85,13 +83,13 @@ namespace MR {
           if (show_hessian) {
             if (conditioner.size())
               g *= conditioner;
-            hessian.column(n) -= g;
+            hessian.col(n) -= g;
           }
 
         }
 
         CONSOLE ("gradient by central finite difference = [ " + str(g_fd) + "]");
-        CONSOLE ("normalised dot product = " + str(Math::dot (g_fd, g0) / Math::norm2 (g_fd)));
+        CONSOLE ("normalised dot product = " + str(g_fd.dot(g0)) / g_fd.squaredNorm());
 
         if (show_hessian) {
           hessian /= 4.0*increment;
