@@ -30,8 +30,8 @@ namespace MR
     enum SplineProcessingType
     {
       Value = 1,
-      Derivative = 2,
-      ValueAndDerivative = Value | Derivative
+      Gradient = 2,
+      ValueAndGradient = Value | Gradient
     };
 
 
@@ -64,8 +64,8 @@ namespace MR
               _internal_set = &CubicSpline::_set_value;
               break;
             // Could be used for partial derviative so we need to calculate both deriv and value weights
-            case SplineProcessingType::Derivative:
-            case SplineProcessingType::ValueAndDerivative:
+            case SplineProcessingType::Gradient:
+            case SplineProcessingType::ValueAndGradient:
               _internal_set = &CubicSpline::_set_value_deriv;
               break;
             default:

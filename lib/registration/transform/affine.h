@@ -61,8 +61,8 @@ namespace MR
           }
 
 
-          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::MatrixXd& jacobian) const {
-            jacobian.resize (3,12);
+          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const {
+            Eigen::MatrixXd jacobian (3, 12);
             jacobian.setZero();
             Eigen::Vector3 v;
             v[0] = p[0] - this->centre[0];
@@ -77,6 +77,7 @@ namespace MR
             for (size_t dim = 0; dim < 3; ++dim) {
               jacobian (dim, blockOffset + dim) = 1.0;
             }
+            return jacobian;
           }
 
 

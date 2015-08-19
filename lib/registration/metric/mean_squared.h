@@ -20,10 +20,8 @@
 
  */
 
-#ifndef __image_registration_metric_mean_squared_h__
-#define __image_registration_metric_mean_squared_h__
-
-#include "registration/metric/base.h"
+#ifndef __registration_metric_mean_squared_h__
+#define __registration_metric_mean_squared_h__
 
 namespace MR
 {
@@ -32,34 +30,28 @@ namespace MR
     namespace Metric
     {
 
-      class MeanSquared : public Base {
+      class MeanSquared {
 
         public:
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3 target_point,
-                                     const Eigen::Vector3 moving_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
               if (isnan (default_type (params.template_image.value())))
                 return 0.0;
 
-              params.transformation.get_jacobian_wrt_params (target_point, this->jacobian);
+              Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (target_point);
 
-              if (params.template_image.ndim() == 4) {
-                (*gradient_interp).index(4) = params.template_image.index(4);
-                (*params.moving_image_interp).index(3) = params.template_image.index(3);
-              }
+              typename Params::MovingValueType moving_value;
+              Eigen::Matrix<typename Params::MovingValueType, 1, 3> moving_grad;
 
-              this->compute_moving_gradient (moving_point);
+              params.moving_image_interp->value_and_gradient (moving_value, moving_grad);
 
-
-//              CONSOLE(str(moving_point));
-
-              default_type diff = params.moving_image_interp->value() - params.template_image.value();
+              default_type diff = moving_value - params.template_image.value();
               for (size_t par = 0; par < gradient.size(); par++) {
                 default_type sum = 0.0;
                 for ( size_t dim = 0; dim < 3; dim++)
-                  sum += 2.0 * diff * this->jacobian (dim, par) * moving_grad[dim];
+                  sum += 2.0 * diff * jacobian (dim, par) * moving_grad[dim];
                 gradient[par] += sum;
               }
               return diff * diff;

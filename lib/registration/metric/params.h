@@ -40,6 +40,7 @@ namespace MR
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
+          typedef typename MovingImageInterpolatorType::value_type MovingValueType;
 
           Params (TransformType& transform,
                   MovingImageType& moving_image,
@@ -48,10 +49,6 @@ namespace MR
                     moving_image (moving_image),
                     template_image (template_image){
                       moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
-          }
-
-          void set_moving_iterpolator (MovingImageType& moving_image) {
-            moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }

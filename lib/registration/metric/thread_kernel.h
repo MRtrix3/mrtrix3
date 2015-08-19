@@ -85,9 +85,6 @@ namespace MR
             }
 
             Eigen::Vector3 moving_point;
-//            Eigen::Matrix<default_type, Eigen::Dynamic, 1> param;
-//            params.transformation.get_parameter_vector (param);
-
 
             params.transformation.transform (moving_point, template_point);
             if (params.moving_mask_interp) {
@@ -99,7 +96,7 @@ namespace MR
             params.moving_image_interp->scanner (moving_point);
             if (!(*params.moving_image_interp))
               return;
-            cost_function += metric (params, template_point, moving_point, gradient);
+            cost_function += metric (params, template_point, gradient);
           }
 
           template <class U = MetricType>

@@ -154,15 +154,15 @@ namespace MR
               this->optimiser_weights[i] = 1.0;
           }
 
-          void get_jacobian_wrt_params (const Eigen::Vector3& p, Eigen::MatrixXd& jacobian) const {
+          Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const
+          {
+            Eigen::MatrixXd jacobian (3, 6);
+            jacobian.setZero();
 
             const default_type vw = versor.w();
             const default_type vx = versor.x();
             const default_type vy = versor.y();
             const default_type vz = versor.z();
-
-            jacobian.resize(3, 6);
-            jacobian.setZero();
 
             const default_type px = p[0] - this->centre[0];
             const default_type py = p[1] - this->centre[1];
@@ -191,9 +191,12 @@ namespace MR
             jacobian(0,3) = 1.0;
             jacobian(1,4) = 1.0;
             jacobian(2,5) = 1.0;
+
+            return jacobian;
           }
 
-          void set_rotation (const Eigen::Vector3& axis, default_type angle) {
+          void set_rotation (const Eigen::Vector3& axis, default_type angle)
+          {
             Eigen::Quaterniond tmp (Eigen::AngleAxisd (angle, axis));
             versor = tmp;
             this->matrix = versor.matrix();
@@ -201,7 +204,8 @@ namespace MR
           }
 
 
-          void set_parameter_vector (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) {
+          void set_parameter_vector (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector)
+          {
             Eigen::Vector3 axis;
             axis = param_vector.head(3);
 

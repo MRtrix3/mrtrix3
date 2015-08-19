@@ -176,12 +176,12 @@ namespace MR
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (moving_image, template_image, transform);
 
-            typedef Interp::Linear<Image<float> > MovingImageInterpolatorType;
+            typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> MovingImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
-                                   Image<float>,
+                                   MovingImageType,
                                    MovingImageInterpolatorType,
-                                   Image<float>,
+                                   TemplateImageType,
                                    Interp::Nearest<MovingMaskType>,
                                    Interp::Nearest<MovingMaskType> > ParamType;
 
@@ -219,7 +219,6 @@ namespace MR
                 template_resize_filter (template_image, template_resized);
                 template_smooth_filter (template_resized, template_resized_smoothed);
               }
-              metric.set_moving_image (moving_resized_smoothed);
               ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));
