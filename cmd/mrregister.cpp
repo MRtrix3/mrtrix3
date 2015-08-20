@@ -96,9 +96,10 @@ void usage ()
 
 typedef float value_type;
 
-void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image<value_type> >& image_ptr) {
-  auto image = Image<value_type>::open(filename);
-  auto header = Header::open(filename);
+void load_image (std::string filename, size_t num_vols, Image<value_type>& image) {
+  std::cout << num_vols << std::endl;
+  auto temp_image = Image<value_type>::open (filename);
+  auto header = Header::open (filename);
   if (num_vols > 1) {
     header.size(3) = num_vols;
     header.stride(0) = 2;
@@ -106,14 +107,14 @@ void load_image (std::string filename, size_t num_vols, std::unique_ptr<Image<va
     header.stride(2) = 4;
     header.stride(3) = 1;
   }
-  image_ptr.reset (new Image<float> (Image<value_type>::scratch (header)));
+  image = Image<value_type>::scratch (header);
   if (num_vols > 1) {
-    for (auto i = Loop ()(*image_ptr); i; ++i) {
-      assign_pos_of (*image_ptr).to (image);
-        image_ptr->value() = image.value();
+    for (auto i = Loop ()(image); i; ++i) {
+      assign_pos_of (image).to (temp_image);
+        image.value() = temp_image.value();
     }
   } else {
-    threaded_copy (image, *image_ptr);
+    threaded_copy (temp_image, image);
   }
 }
 
@@ -124,9 +125,8 @@ void run ()
   const auto template_header = Header::open (argument[1]);
 
   check_dimensions (moving_header, template_header);
-  // TODO, can probably do away with these pointers
-  std::unique_ptr<Image<value_type> > moving_ptr;
-  std::unique_ptr<Image<value_type> > template_ptr;
+  Image<value_type> moving_image;
+  Image<value_type> template_image;
 
   auto opt = get_options ("noreorientation");
   bool do_reorientation = true;
@@ -153,25 +153,26 @@ void run ()
         int num_SH = Math::SH::NforL (lmax);
         if (num_SH > template_header.size(3))
             throw Exception ("not enough SH coefficients within input image for desired lmax");
-        load_image(argument[0], num_SH, moving_ptr);
-        load_image(argument[1], num_SH, template_ptr);
+        load_image (argument[0], num_SH, moving_image);
+        load_image (argument[1], num_SH, template_image);
     }
     else {
       do_reorientation = false;
-      load_image (argument[0], moving_header.size(3), moving_ptr);
-      load_image (argument[1], template_header.size(3), template_ptr);
+      load_image (argument[0], moving_header.size(3), moving_image);
+      load_image (argument[1], template_header.size(3), template_image);
     }
   }
   else {
     do_reorientation = false;
-    load_image (argument[0], 1, moving_ptr);
-    load_image (argument[1], 1, template_ptr);
+    load_image (argument[0], 1, moving_image);
+    load_image (argument[1], 1, template_image);
   }
 
+  // Will currently output whatever lmax was used during registration
   opt = get_options ("transformed");
   Image<value_type> transformed;
   if (opt.size())
-    transformed = Image<value_type>::create (opt[0][0], template_header); // MP: was template_header - DR Changed this back. I'm assuming people will want the transformed image in template space...this must be the case for non-linear transform
+    transformed = Image<value_type>::create (opt[0][0], template_image); // MP: was template_header - DR Changed this back. I'm assuming people will want the transformed image in template space...this must be the case for non-linear transform
 
   opt = get_options ("type");
   bool do_rigid  = false;
@@ -400,12 +401,12 @@ void run ()
     else
       rigid_registration.set_init_type (init_centre);
 
-    if (template_ptr->ndim() == 4) {
+    if (template_image.ndim() == 4) {
       Registration::Metric::MeanSquared4D metric;
-      rigid_registration.run_masked (metric, rigid, *moving_ptr, *template_ptr, mmask_image, tmask_image);
+      rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
     } else {
       Registration::Metric::MeanSquared metric;
-      rigid_registration.run_masked (metric, rigid, *moving_ptr, *template_ptr, mmask_image, tmask_image);
+      rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
     }
 
     if (output_rigid)
@@ -434,12 +435,12 @@ void run ()
       affine_registration.set_directions (directions_cartesian);
 
 
-    if (template_ptr->ndim() == 4) {
+    if (template_image.ndim() == 4) {
       Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, *moving_ptr, *template_ptr, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
     } else {
       Registration::Metric::MeanSquared metric;
-      affine_registration.run_masked (metric, affine, *moving_ptr, *template_ptr, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
     }
 
 
@@ -468,13 +469,13 @@ void run ()
   if (transformed.valid()) {
     if (do_syn) {
     } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (*moving_ptr, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (moving_image, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, transformed, affine.get_transform(), directions_cartesian);
       }
     } else {
-      Filter::reslice<Interp::Cubic> (*moving_ptr, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (moving_image, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, transformed, rigid.get_transform(), directions_cartesian);

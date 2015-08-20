@@ -93,7 +93,7 @@ namespace MR
         + Argument ("file", "a list of directions [az el] generated using the gendir command.").type_file_in ()
 
       + Option ("lmax", "explicitly set the lmax to be used in FOD registration. By default FOD registration will "
-                       "first use lmax 2 until convergence, then add lmax 4 SH coefficients and run till convergence")
+                       "use lmax 4 SH coefficients")
         + Argument ("num").type_integer ()
 
       + Option ("noreorientation", "turn off FOD reorientation. Reorientation is on by default if the number "
