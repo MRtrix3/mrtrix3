@@ -24,7 +24,6 @@
 #include "progressbar.h"
 #include "image.h"
 #include "algo/threaded_copy.h"
-#include "math/matrix.h"
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 
@@ -55,20 +54,20 @@ typedef float value_type;
 
 class DWI2ADC {
   public:
-    DWI2ADC (const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
-      dwi (binv.columns()),
+    DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
+      dwi (binv.cols()),
       adc (2), 
       binv (binv), 
       dwi_axis (dwi_axis) { }
 
     template <class DWIType, class ADCType>
       void operator() (DWIType& dwi_image, ADCType& adc_image) {
-        for (auto l = Loop (dwi_axis, dwi_axis+1) (dwi_image); l; ++l) {
+        for (auto l = Loop (dwi_axis, dwi_axis + 1) (dwi_image); l; ++l) {
           value_type val = dwi_image.value();
-          dwi[dwi_image.index(dwi_axis)] = val ? std::log (val) : 1.0e-12;
+          dwi[dwi_image.index (dwi_axis)] = val ? std::log (val) : 1.0e-12;
         }
 
-        Math::mult (adc, binv, dwi);
+        adc = binv * dwi;
 
         adc_image.index(3) = 0;
         adc_image.value() = std::exp (adc[0]);
@@ -77,8 +76,8 @@ class DWI2ADC {
       }
 
   protected:
-    Math::Vector<value_type> dwi, adc;
-    const Math::Matrix<value_type>& binv;
+    Eigen::VectorXd dwi, adc;
+    const Eigen::MatrixXd& binv;
     const size_t dwi_axis;
 };
 
@@ -87,14 +86,14 @@ class DWI2ADC {
 
 void run () {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme<value_type> (dwi.header());
+  auto grad = DWI::get_valid_DW_scheme (dwi.header());
 
   size_t dwi_axis = 3;
   while (dwi.size (dwi_axis) < 2)
     ++dwi_axis;
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
-  Math::Matrix<value_type> b (grad.rows(), 2);
+  Eigen::MatrixXd b (grad.rows(), 2);
   for (size_t i = 0; i < b.rows(); ++i) {
     b(i,0) = 1.0;
     b(i,1) = -grad (i,3);
