@@ -930,7 +930,7 @@ def update_bash_completion ():
   if os.name != 'posix': return
    
   # Check whether completion generation script exists
-  scripts_dir = os.path.join (mrtrix_dir, 'scripts' )
+  scripts_dir = os.path.join (mrtrix_dir[-1], 'scripts' )
   script_path = os.path.join (scripts_dir, 'generate_mrtrix_cmd_completion.py') 
   completion_path = os.path.join (scripts_dir, 'mrtrix_bash_completion')
   if not os.path.isfile (script_path):
@@ -940,20 +940,19 @@ def update_bash_completion ():
   import re
 
   # Check whether both command files and completion file exist and completion file is newer than commands
-  bin_dir_full= os.path.join (mrtrix_dir, bin_dir)
-  if not os.path.isdir (bin_dir_full):
+  if not os.path.isdir (target_bin_dir):
     return
   else:
     # Only look at relevant executables in bin file
-    commands = [comm for comm in os.listdir (bin_dir_full) if os.access( os.path.join( bin_dir_full, comm ), os.X_OK) and not re.match (r'^\w+__debug', comm)]
+    commands = [comm for comm in os.listdir (target_bin_dir) if os.access( os.path.join( target_bin_dir, comm ), os.X_OK) and not re.match (r'^\w+__debug', comm)]
     if not commands: 
       return
     else:
-      command_freshness_time = max (commands, key = lambda x: time.ctime ( os.path.getmtime( os.path.join( bin_dir_full, x ) ) ) )
+      command_freshness_time = max (commands, key = lambda x: time.ctime ( os.path.getmtime( os.path.join( target_bin_dir, x ) ) ) )
       if os.path.isfile (completion_path) and time.ctime ( os.path.getmtime(completion_path) ) >= command_freshness_time:
         return
 
-  sys.exit (execute ('[SH] ' + completion_path, [ script_path, "-c", completion_path, "-m", bin_dir_full ] ) )
+  sys.exit (execute ('[SH] ' + completion_path, [ script_path, "-c", completion_path, "-m", target_bin_dir ] ) )
 
 ###########################################################################
 #                            START OF PROGRAM
