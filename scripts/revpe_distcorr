@@ -171,11 +171,9 @@ else:
 
   printMessage('Detected diffusion gradient encoding in input file; running eddy')
 
-  # Create the diffusion gradient table in MRtrix format
-  runCommand('mrinfo series.mif -export_grad_mrtrix dwgrad')
-
   # Create the diffusion gradient table in FSL format
-  runCommand('mrinfo series.mif -export_grad_fsl bvecs bvals')
+  # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
+  runCommand('mrconvert series.mif - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
   runCommand('mrconvert series_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
@@ -203,8 +201,9 @@ else:
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
-  #   text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -grad dwgrad')
+  #   text file output and modify them manually, or FMRIB may update eddy itself (this is why bvecs / bvals are
+  #   re-imported here)
+  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
 lib.app.moveFileToDest (result_path, sys.argv[5])
 lib.app.terminate()
