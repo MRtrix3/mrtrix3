@@ -25,11 +25,10 @@ from lib.errorMessage import errorMessage
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
-numArgs = 2
-if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input freesurfer parcellated image> <output image> (options)\n')
-  exit(0)
-lib.app.initialise(numArgs)
+lib.app.initParser('Generate a 5TT image suitable for ACT from a FreeSurfer segmentation')
+lib.app.parser.add_argument('input',  help='The input image series; this should be one of the \'aseg\' images provided by FreeSurfer')
+lib.app.parser.add_argument('output', help='The output 5TT image')
+lib.app.initialise()
 
 config_file_name = 'FreeSurfer2ACT.txt'
 
@@ -46,7 +45,7 @@ if not os.path.isfile(config_path):
   errorMessage('Could not find config file for converting FreeSurfer parcellation output to tissues\n(Expected location: ' + config_path + ')')
 
 # Initial conversion from FreeSurfer parcellation to five principal tissue types
-runCommand('labelconfig ' + sys.argv[1] + ' ' + config_path + ' ' + os.path.join(lib.app.tempDir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut)
+runCommand('labelconfig ' + lib.app.args.input + ' ' + config_path + ' ' + os.path.join(lib.app.tempDir, 'indices_precrop.mif') + ' -lut_freesurfer ' + freesurfer_lut)
 
 lib.app.gotoTempDir()
 
@@ -59,11 +58,11 @@ runCommand('mrcalc indices.mif 2 -eq sgm.mif')
 runCommand('mrcalc indices.mif 3 -eq  wm.mif')
 runCommand('mrcalc indices.mif 4 -eq csf.mif')
 runCommand('mrcalc indices.mif 5 -eq path.mif')
-result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - ' + result_path + ' -datatype float32')
 
 # Move the final result image to where it should be
-lib.app.moveFileToDest(result_path, sys.argv[2])
+lib.app.moveFileToDest(result_path, lib.app.args.output)
 
 lib.app.terminate()
 

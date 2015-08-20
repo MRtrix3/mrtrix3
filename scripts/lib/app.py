@@ -3,36 +3,43 @@
 # * Default is to display command info, but no progress bars etc. (i.e. MRtrix still suppressed with -quiet)
 # * -verbose prints all commands and all command outputs
 
+args = ''
 cleanup = True
 mrtrixQuiet = '-quiet'
 numArgs = 0
+parser = ''
 tempDir = ''
 verbosity = 1
 workingDir = ''
 
-def initialise(n):
-  import os, random, string, sys
+
+
+def initParser(desc):
+  import argparse
+  global parser
+  parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
+  standard_options = parser.add_argument_group('standard options')
+  standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
+  verbosity_group = standard_options.add_mutually_exclusive_group()
+  verbosity_group.add_argument('-quiet',     action='store_true', help='Suppress all console output during script execution')
+  verbosity_group.add_argument('-verbose',   action='store_true', help='Display additional information for every command invoked')
+  
+  
+
+def initialise():
+  import argparse, os, random, string, sys
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global cleanup, mrtrixQuiet, numArgs, tempDir, verbosity, workingDir
-  #if not numArgs:
-  #  sys.stderr.write('Must set numArgs value before calling initialise()\n')
-  #  exit(1)
-  numArgs = n
-  workingDir = os.getcwd()
-  for option in sys.argv[numArgs+1:]:
-    if '-verbose'.startswith(option):
-      verbosity = 2
-      mrtrixQuiet = ''
-    elif '-quiet'.startswith(option):
-      verbosity = 0
-      mrtrixQuiet = '-quiet'
-    elif '-nocleanup'.startswith(option):
-      cleanup = False
-    else:
-      sys.stderr.write('Unknown option: ' + option + '\n')
-      exit(1)
-  # Create the temporary directory
+  global args, cleanup, mrtrixQuiet, tempDir, verbosity, workingDir
+  args = parser.parse_args()
+  if args.nocleanup:
+    cleanup = False
+  if args.quiet:
+    verbosity = 0
+    mrtrixQuiet = '-quiet'
+  if args.verbose:
+    verbosity = 2
+    mrtrixQuiet = ''
   dir_path = readMRtrixConfSetting('TmpFileDir')
   if not dir_path:
     if os.name == 'posix':
@@ -48,7 +55,7 @@ def initialise(n):
     tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
   os.makedirs(tempDir)
   printMessage('Generated temporary directory: ' + tempDir)
-
+  workingDir = os.getcwd()
 
 
 def gotoTempDir():

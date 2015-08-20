@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Script that performs B1 field inhomogeneity correction for a DWI volume
+# Script that performs B1 field inhomogeneity correction for a DWI volume series
 # Bias field is estimated using the mean b=0 image, and subsequently used to correct all volumes
 
 
@@ -12,11 +12,10 @@ from lib.errorMessage  import errorMessage
 from lib.getHeaderInfo import getHeaderInfo
 from lib.runCommand    import runCommand
 
-numArgs = 2
-if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input image> <output image> (options)\n')
-  exit(0)
-lib.app.initialise(numArgs)
+lib.app.initParser('Perform B1 field inhomogeneity correction for a DWI volume series')
+lib.app.parser.add_argument('input',  help='The input image series to be corrected')
+lib.app.parser.add_argument('output', help='The output corrected image series')
+lib.app.initialise()
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -28,7 +27,7 @@ if not binaryInPath(fast_cmd):
   if not binaryInPath(fast_cmd):
     errorMessage('Could not find FSL program fast; please verify FSL install')
 
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'in.mif'))
+runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'in.mif'))
 
 lib.app.gotoTempDir()
 
@@ -45,10 +44,10 @@ else:
 
 runCommand('fast -t 2 -o fast -n 3 -b mean_bzero.nii')
 
-result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrcalc in.mif fast_bias.nii -div ' + result_path)
 
-lib.app.moveFileToDest(result_path, sys.argv[2])
+lib.app.moveFileToDest(result_path, lib.app.args.output)
 
 lib.app.terminate()
 
