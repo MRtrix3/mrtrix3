@@ -303,6 +303,13 @@ namespace MR
             dim_to_ignore[3] = true;
         }
 
+        template <class InfoType>
+        ConnectedComponents (const InfoType& in, const std::string& message) :
+          ConnectedComponents (in)
+        {
+          set_message (message);
+        }
+
 
         template <class InputVoxelType, class OutputVoxelType>
         void operator() (InputVoxelType& in, OutputVoxelType& out) {

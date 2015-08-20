@@ -20,6 +20,7 @@
 
 */
 
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/model.h"
 
 
@@ -40,6 +41,7 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
+            Window::GrabContext context;
             ROI_Item* roi = new ROI_Item (*list[i]);
             roi->load (*list[i]);
             items.push_back (std::unique_ptr<Displayable> (roi));
@@ -50,9 +52,12 @@ namespace MR
         void ROI_Model::create (MR::Image::Header& image)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+1);
-          ROI_Item* roi = new ROI_Item (image);
-          roi->zero ();
-          items.push_back (std::unique_ptr<Displayable> (roi));
+          { 
+            Window::GrabContext context;
+            ROI_Item* roi = new ROI_Item (image);
+            roi->zero ();
+            items.push_back (std::unique_ptr<Displayable> (roi));
+          }
           endInsertRows();
         }
 

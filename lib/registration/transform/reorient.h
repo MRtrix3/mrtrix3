@@ -135,7 +135,7 @@ namespace MR
                 transformed_directions.colwise().normalize();
 
                 Eigen::MatrixXd temp = aPSF_weights_to_FOD_transform (n_SH, transformed_directions);
-                for (size_t i = 0; i < temp.cols(); ++i)
+                for (ssize_t i = 0; i < temp.cols(); ++i)
                   temp.col(i) = temp.col(i) * modulation_factors(0,i);
 
                 transform = temp * FOD_to_aPSF_transform;

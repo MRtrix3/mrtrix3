@@ -59,28 +59,19 @@ namespace MR
         ~__Backend();
 
         static void register_thread () { 
+          std::lock_guard<std::mutex> lock (mutex);
           if (!backend)
             backend = new __Backend;
-          std::lock_guard<std::mutex> lock (get_lock());
           ++backend->refcount; 
         }
         static void unregister_thread () {
-          bool delete_backend;
-          {
-            std::lock_guard<std::mutex> lock (get_lock());
-            --backend->refcount;
-            delete_backend = ( backend->refcount == 0 );
-          }
-          if (delete_backend) {
+          assert (backend);
+          std::lock_guard<std::mutex> lock (mutex);
+          if (!(--backend->refcount)) {
             delete backend;
             backend = nullptr;
           }
         }
-
-        static std::mutex& get_lock () {
-          return backend->mutex;
-        }
-
 
         static void thread_print_func (const std::string& msg);
         static void thread_report_to_user_func (const std::string& msg, int type);
@@ -90,9 +81,9 @@ namespace MR
 
       protected:
         size_t refcount;
-        std::mutex mutex;
 
         static __Backend* backend;
+        static std::mutex mutex;
     };
 
 
@@ -154,8 +145,8 @@ namespace MR
                 threads.push_back (std::async (std::launch::async, &F::execute, &functor));
               }
 
-            __multi_thread (const __multi_thread& m) = delete;
-            __multi_thread (__multi_thread&& m) = default;
+            __multi_thread (const __multi_thread&) = delete;
+            __multi_thread (__multi_thread&&) = default;
 
             void wait () noexcept (false) {
               DEBUG ("waiting for completion of threads \"" + name + "\"...");

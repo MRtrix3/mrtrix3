@@ -51,9 +51,11 @@ namespace MR
           Q_OBJECT
 
           public:
-            Tractogram (Window& parent, Tractography& tool, const std::string& filename);
+            Tractogram (Tractography& tool, const std::string& filename);
 
             ~Tractogram ();
+
+            Window& window () const { return *Window::main; }
 
             void render (const Projection& transform);
 
@@ -88,8 +90,8 @@ namespace MR
                 std::string vertex_shader_source (const Displayable& displayable) override;
                 std::string fragment_shader_source (const Displayable& displayable) override;
                 std::string geometry_shader_source (const Displayable&) override;
-                virtual bool need_update (const Displayable& object) const;
-                virtual void update (const Displayable& object);
+                virtual bool need_update (const Displayable& object) const override;
+                virtual void update (const Displayable& object) override;
               protected:
                 bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
                 TrackColourType color_type;
@@ -101,7 +103,6 @@ namespace MR
 
           private:
             static const int max_sample_stride = 6;
-            Window& window;
             Tractography& tractography_tool;
             std::string filename;
             std::vector<GLuint> vertex_buffers;

@@ -23,42 +23,44 @@
 #ifndef __gui_mrview_mode_lightbox_gui_h__
 #define __gui_mrview_mode_lightbox_gui_h__
 
+#include "gui/mrview/spin_box.h"
+
 namespace MR
 {
-namespace GUI
-{
-namespace MRView
-{
-namespace Mode
-{
-namespace LightBoxViewControls
-{
-
-class LightBoxEditButton : public QSpinBox
-{
-public:
-    LightBoxEditButton(QWidget* parent, const QString &suffix)
-        : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
-
-    LightBoxEditButton(QWidget* parent,
-                       int min = 1, int max = 100, int change_rate = 1,
-                       const QString& suffix = nullptr) :
-        QSpinBox(parent)
+  namespace GUI
+  {
+    namespace MRView
     {
-        setMinimum(min);
-        setMaximum(max);
-        setSingleStep(change_rate);
-        setSuffix(suffix);
+      namespace Mode
+      {
+        namespace LightBoxViewControls
+        {
 
-        setMaximumWidth(80);
+          class LightBoxEditButton : public SpinBox
+          {
+            public:
+              LightBoxEditButton(QWidget* parent, const QString &suffix)
+                : LightBoxEditButton(parent, 1, 100, 1, suffix) {}
+
+              LightBoxEditButton(QWidget* parent,
+                  int min = 1, int max = 100, int change_rate = 1,
+                  const QString& suffix = nullptr) :
+                SpinBox(parent)
+            {
+              setMinimum(min);
+              setMaximum(max);
+              setSingleStep(change_rate);
+              setSuffix(suffix);
+
+              setMaximumWidth(80);
+            }
+          };
+
+        }
+
+      }
     }
-};
-
-}
-
-}
-}
-}
+  }
 }
 
 

@@ -79,7 +79,7 @@ namespace MR
 
           if (color_type == ScalarFile)
             source += "out float v_amp;\n";
-          else if (color_type == Ends)
+          if (color_type == Ends || color_type == ScalarFile)
             source += "out vec3 v_colour;\n";
 
           // Main function
@@ -100,18 +100,20 @@ namespace MR
           else if (color_type == ScalarFile) { // TODO: move to frag shader:
               source += "  v_amp = amp;\n";
               if (!ColourMap::maps[colourmap].special) {
-                source += "   float amplitude = clamp (";
+                source += "  float amplitude = clamp (";
                 if (tractogram.scale_inverted()) source += "1.0 -";
                 source += " scale * (amp - offset), 0.0, 1.0);\n";
               }
               if (!scalarfile_by_direction)
                 source +=
-                  std::string("  vec3 color;\n") +
-                  ColourMap::maps[colourmap].mapping +
+                  std::string("  vec3 color;\n  ") +
+                  ColourMap::maps[colourmap].glsl_mapping +
                   "  v_colour = color;\n";
           }
 
           source += "}\n";
+
+          VAR (source);
 
           return source;
         }
@@ -316,21 +318,20 @@ namespace MR
 
 
 
-        Tractogram::Tractogram (Window& window, Tractography& tool, const std::string& filename) :
+        Tractogram::Tractogram (Tractography& tool, const std::string& filename) :
             Displayable (filename),
             scalarfile_by_direction (false),
             show_colour_bar (true),
             color_type (Direction),
             original_fov (NAN),
             scalar_filename (""),
-            window (window),
             tractography_tool (tool),
             filename (filename),
             sample_stride (0)
         {
           set_allowed_features (true, true, true);
           colourmap = 1;
-          connect (&window, SIGNAL (fieldOfViewChanged()), this, SLOT (on_FOV_changed()));
+          connect (&window(), SIGNAL (fieldOfViewChanged()), this, SLOT (on_FOV_changed()));
           on_FOV_changed ();
         }
 
@@ -365,7 +366,7 @@ namespace MR
             gl::Uniform3f (gl::GetUniformLocation (track_shader, "screen_normal"),
                 transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "crop_var"),
-                window.focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
+                window().focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "slab_width"),
                 tractography_tool.slab_thickness);
           }
@@ -392,14 +393,14 @@ namespace MR
             // set line thickness once upon loading, but don't touch it after that:
             // it shouldn't change when the background image changes
             float dim[] = {
-              window.image()->header().dim (0) * window.image()->header().vox (0),
-              window.image()->header().dim (1) * window.image()->header().vox (1),
-              window.image()->header().dim (2) * window.image()->header().vox (2)
+              window().image()->header().dim (0) * window().image()->header().vox (0),
+              window().image()->header().dim (1) * window().image()->header().vox (1),
+              window().image()->header().dim (2) * window().image()->header().vox (2)
             };
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
 
-          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window.FOV()*transform.width()*transform.height());
+          line_thickness_screenspace = tractography_tool.line_thickness*original_fov*(transform.width()+transform.height()) / ( 2.0*window().FOV()*transform.width()*transform.height());
 
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "line_thickness"), line_thickness_screenspace);
           gl::Uniform1f (gl::GetUniformLocation (track_shader, "scale_x"), transform.width());
@@ -514,7 +515,7 @@ namespace MR
 
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          window.makeGLcurrent();
+          Window::GrabContext context;
 
           while (file (tck)) {
 
@@ -555,7 +556,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          window.makeGLcurrent();
+          Window::GrabContext context;
 
           erase_nontrack_data();
           // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
@@ -595,7 +596,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          window.makeGLcurrent();
+          Window::GrabContext context;
 
           erase_nontrack_data();
           scalar_filename = filename;

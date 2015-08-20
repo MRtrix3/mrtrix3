@@ -2,6 +2,7 @@
 #define __gui_mrview_window_h__
 
 #include "memory.h"
+#include "gui/gui.h"
 #include "gui/mrview/image.h"
 #include "gui/opengl/font.h"
 #include "gui/mrview/colourmap.h"
@@ -103,8 +104,6 @@ namespace MR
           bool show_orientation_labels () const { return show_orientation_labels_action->isChecked(); }
           bool show_colourbar () const { return show_colourbar_action->isChecked(); }
 
-          void makeGLcurrent () { glarea->makeCurrent(); }
-
           void captureGL (std::string filename) {
             QImage image (glarea->grabFramebuffer());
             image.save (filename.c_str());
@@ -114,6 +113,11 @@ namespace MR
           ColourMap::Renderer colourbar_renderer;
 
           static void add_commandline_options (MR::App::OptionList& options);
+          static Window* main;
+
+          struct GrabContext : public App::GrabContext {
+            GrabContext () : App::GrabContext (main->glarea) { }
+          };
 
         signals:
           void focusChanged ();
@@ -189,9 +193,8 @@ namespace MR
               void dragMoveEvent (QDragMoveEvent* event) override;
               void dragLeaveEvent (QDragLeaveEvent* event) override;
               void dropEvent (QDropEvent* event) override;
+              bool event (QEvent* event) override;
             private:
-              Window& main;
-
               void initializeGL () override;
               void paintGL () override;
               void mousePressEvent (QMouseEvent* event) override;
@@ -279,12 +282,13 @@ namespace MR
 
           void paintGL ();
           void initGL ();
-          void keyPressEvent (QKeyEvent* event);
-          void keyReleaseEvent (QKeyEvent* event);
+          void keyPressEvent (QKeyEvent* event) override;
+          void keyReleaseEvent (QKeyEvent* event) override;
           void mousePressEventGL (QMouseEvent* event);
           void mouseMoveEventGL (QMouseEvent* event);
           void mouseReleaseEventGL (QMouseEvent* event);
           void wheelEventGL (QWheelEvent* event);
+          bool gestureEventGL (QGestureEvent* event);
 
           int get_mouse_mode ();
           void set_cursor ();
@@ -292,7 +296,7 @@ namespace MR
           void set_mode_features ();
           void set_image_navigation_menu ();
 
-          void closeEvent (QCloseEvent* event);
+          void closeEvent (QCloseEvent* event) override;
 
           template <class Event> void grab_mouse_state (Event* event);
           template <class Event> void update_mouse_state (Event* event);
@@ -303,7 +307,7 @@ namespace MR
           double best_FPS, best_FPS_time;
           bool show_FPS;
 
-          friend class Image;
+          friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
           friend class Window::GLArea;

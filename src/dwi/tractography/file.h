@@ -354,7 +354,7 @@ namespace MR
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
             WriterUnbuffered<ValueType> (file, properties), 
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (vector_type)),
-            buffer (new vector_type [buffer_capacity+2]),
+            buffer (new vector_type [buffer_capacity]),
             buffer_size (0) { }
 
           Writer (const Writer& W) = delete;
@@ -367,7 +367,7 @@ namespace MR
           //! append track to file
           bool operator() (const Streamline<ValueType>& tck) {
             if (tck.size()) {
-              if (buffer_size + tck.size() > buffer_capacity)
+              if (buffer_size + tck.size() + 2 > buffer_capacity)
                 commit ();
 
               for (const auto& i : tck)

@@ -45,40 +45,38 @@ namespace MR
 
       class Window;
 
-      class Image : public Volume
+      class ImageBase : public Volume
+      {
+        public:
+          ImageBase (const MR::Image::Info&);
+
+          void render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice);
+          void render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth);
+
+          virtual void update_texture2D (const int plane, const int slice) = 0;
+          virtual void update_texture3D() = 0;
+
+          void get_axes (const int plane, int& x, int& y) const;
+
+        protected:
+          GL::Texture texture2D[3];
+          std::vector<ssize_t> position;
+
+      };
+
+      class Image : public ImageBase
       {
         public:
           Image (const MR::Image::Header& image_header);
-          Image (Window& parent, const MR::Image::Header& image_header);
 
           MR::Image::Header& header () { return buffer; }
           const MR::Image::Header& header () const { return buffer; }
 
-          void update_texture2D (int plane, int slice);
-          void update_texture3D ();
-
-          void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
-          void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
+          void update_texture2D (const int plane, const int slice) override;
+          void update_texture3D() override;
 
           void request_render_colourbar(DisplayableVisitor& visitor) override
           { if(show_colour_bar) visitor.render_image_colourbar(*this); }
-
-          void get_axes (int plane, int& x, int& y) {
-            if (plane) {
-              if (plane == 1) {
-                x = 0;
-                y = 2;
-              }
-              else {
-                x = 0;
-                y = 1;
-              }
-            }
-            else {
-              x = 1;
-              y = 2;
-            }
-          }
 
           typedef MR::Image::Buffer<cfloat> BufferType;
           typedef BufferType::voxel_type VoxelType;
@@ -109,10 +107,8 @@ namespace MR
           }
 
         private:
-          GL::Texture texture2D[3];
-          std::vector<ssize_t> position;
-
           bool volume_unchanged ();
+          bool format_unchanged ();
           size_t guess_colourmap () const;
 
           template <typename T> void copy_texture_3D ();

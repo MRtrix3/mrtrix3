@@ -55,7 +55,7 @@ namespace MR
             Q_OBJECT
 
           public:
-            ROI (Window& main_window, Dock* parent);
+            ROI (Dock* parent);
             ~ROI();
 
             void draw (const Projection& projection, bool is_3D, int axis, int slice);
@@ -105,8 +105,8 @@ namespace MR
 
              void update_undo_redo ();
              void updateGL() { 
-               window.get_current_mode()->update_overlays = true;
-               window.updateGL();
+               window().get_current_mode()->update_overlays = true;
+               window().updateGL();
              }
              
              void load (std::vector<std::unique_ptr<MR::Image::Header>>& list); 

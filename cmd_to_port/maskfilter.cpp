@@ -25,9 +25,9 @@
 #include "image/buffer_preload.h"
 #include "image/voxel.h"
 #include "image/filter/base.h"
+#include "image/filter/connected_components.h"
 #include "image/filter/dilate.h"
 #include "image/filter/erode.h"
-#include "image/filter/lcc.h"
 #include "image/filter/median.h"
 
 
@@ -36,8 +36,20 @@ using namespace App;
 
 
 
-const char* filters[] = { "dilate", "erode", "lcc", "median", NULL };
+const char* filters[] = { "connect", "dilate", "erode", "median", nullptr };
 
+
+
+
+const OptionGroup ConnectOption = OptionGroup ("Options for connected-component filter")
+
++ Option ("axes", "specify which axes should be included in the connected components. By default only "
+                  "the first 3 axes are included. The axes should be provided as a comma-separated list of values.")
+  + Argument ("axes").type_sequence_int()
+
++ Option ("largest", "only retain the largest connected component")
+
++ Option ("connectivity", "use 26 neighbourhood connectivity (Default: 6)");
 
 
 
@@ -45,12 +57,6 @@ const OptionGroup DilateErodeOption = OptionGroup ("Options for dilate / erode f
 
   + Option ("npass", "the number of times to repeatedly apply the filter")
     + Argument ("value").type_integer (1, 1, 1e6);
-
-
-
-const OptionGroup LCCOption = OptionGroup ("Options for largest connected-component filter")
-
-  + Option ("neighbour26", "use 26 adjacent voxels for determining connectivity rather than 6");
 
 
 
@@ -65,51 +71,6 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
 
 
-
-
-
-Image::Filter::Base* create_dilate_filter (Image::BufferPreload<bool>::voxel_type& input)
-{
-  Image::Filter::Dilate* filter = new Image::Filter::Dilate (input);
-  Options opt = get_options ("npass");
-  if (opt.size())
-    filter->set_npass (int(opt[0][0]));
-  return filter;
-}
-
-Image::Filter::Base* create_erode_filter (Image::BufferPreload<bool>::voxel_type& input)
-{
-  Image::Filter::Erode* filter = new Image::Filter::Erode (input);
-  Options opt = get_options ("npass");
-  if (opt.size())
-    filter->set_npass (int(opt[0][0]));
-  return filter;
-}
-
-
-
-Image::Filter::Base* create_lcc_filter (Image::BufferPreload<bool>::voxel_type& input)
-{
-  Image::Filter::LargestConnectedComponent* filter = new Image::Filter::LargestConnectedComponent (input);
-  filter->set_large_neighbourhood (get_options ("neighbour26").size());
-  return filter;
-}
-
-
-
-Image::Filter::Base* create_median_filter (Image::BufferPreload<bool>::voxel_type& input)
-{
-  Image::Filter::Median* filter = new Image::Filter::Median (input);
-  Options opt = get_options ("extent");
-  if (opt.size())
-    filter->set_extent (parse_ints (opt[0][0]));
-  return filter;
-}
-
-
-
-
-
 void usage ()
 {
   AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (d.raffelt@brain.org.au) and J-Donald Tournier (jdtournier@gmail.com)";
@@ -117,7 +78,7 @@ void usage ()
   DESCRIPTION
   + "Perform filtering operations on 3D / 4D mask images."
 
-  + "The available filters are: dilate, erode, lcc, median."
+  + "The available filters are: connect, dilate, erode, median."
 
   + "Each filter has its own unique set of optional parameters.";
 
@@ -129,12 +90,11 @@ void usage ()
 
 
   OPTIONS
+  + ConnectOption
   + DilateErodeOption
-  + LCCOption
   + MedianOption
 
   + Image::Stride::StrideOption;
-
 }
 
 
@@ -143,33 +103,97 @@ void run () {
   Image::BufferPreload<bool> input_data (argument[0]);
   auto input_voxel = input_data.voxel();
 
-  const size_t filter_index = argument[1];
+  int filter_index = argument[1];
 
-  Image::Filter::Base* filter = NULL;
-  switch (filter_index) {
-    case 0: filter = create_dilate_filter (input_voxel); break;
-    case 1: filter = create_erode_filter  (input_voxel); break;
-    case 2: filter = create_lcc_filter    (input_voxel); break;
-    case 3: filter = create_median_filter (input_voxel); break;
-    default: assert (0);
+  if (filter_index == 0) { // Connected components
+    Image::Filter::ConnectedComponents filter (input_voxel, std::string("applying connected-component filter to image ") + Path::basename (argument[0]) + "... ");
+    Options opt = get_options ("axes");
+    std::vector<int> axes;
+    if (opt.size()) {
+      axes = opt[0][0];
+      for (size_t d = 0; d < input_data.ndim(); d++)
+        filter.set_ignore_dim (d, true);
+      for (size_t i = 0; i < axes.size(); i++) {
+        if (axes[i] >= static_cast<int> (input_voxel.ndim()) || axes[i] < 0)
+          throw Exception ("axis supplied to option -ignore is out of bounds");
+        filter.set_ignore_dim (axes[i], false);
+      }
+    }
+    bool largest_only = false;
+    opt = get_options ("largest");
+    if (opt.size()) {
+      largest_only = true;
+      filter.set_largest_only (true);
+    }
+    opt = get_options ("connectivity");
+    if (opt.size())
+      filter.set_26_connectivity (true);
+
+    Image::Header header;
+    header.info() = filter.info();
+    Image::Stride::set_from_command_line (header);
+
+    if (largest_only) {
+      header.datatype() = DataType::Bit;
+      Image::Buffer<bool> output_data (argument[2], header);
+      auto output_voxel = output_data.voxel();
+      filter (input_voxel, output_voxel);
+    } else {
+      header.datatype() = DataType::UInt32;
+      header.datatype().set_byte_order_native();
+      Image::Buffer<uint32_t> output_data (argument[2], header);
+      auto output_voxel = output_data.voxel();
+      filter (input_voxel, output_voxel);
+    }
+    return;
   }
 
-  Image::Header header;
-  header.info() = filter->info();
-  Image::Stride::set_from_command_line (header);
+  if (filter_index == 1) { // Dilate
+    Image::Filter::Dilate filter (input_voxel, std::string("applying dilate filter to image ") + Path::basename (argument[0]) + "... ");
+    Options opt = get_options ("npass");
+    if (opt.size())
+      filter.set_npass (int(opt[0][0]));
 
-  Image::Buffer<bool> output_data (argument[2], header);
-  auto output_voxel = output_data.voxel();
+    Image::Header header;
+    header.info() = filter.info();
+    Image::Stride::set_from_command_line (header);
 
-  filter->set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "... ");
-
-  switch (filter_index) {
-    case 0: (*dynamic_cast<Image::Filter::Dilate*>                    (filter)) (input_voxel, output_voxel); break;
-    case 1: (*dynamic_cast<Image::Filter::Erode*>                     (filter)) (input_voxel, output_voxel); break;
-    case 2: (*dynamic_cast<Image::Filter::LargestConnectedComponent*> (filter)) (input_voxel, output_voxel); break;
-    case 3: (*dynamic_cast<Image::Filter::Median*>                    (filter)) (input_voxel, output_voxel); break;
+    Image::Buffer<bool> output_data (argument[2], header);
+    auto output_voxel = output_data.voxel();
+    filter (input_voxel, output_voxel);
+    return;
   }
 
-  delete filter;
+  if (filter_index == 2) { // Erode
+    Image::Filter::Erode filter (input_voxel, std::string("applying erode filter to image ") + Path::basename (argument[0]) + "... ");
+    Options opt = get_options ("npass");
+    if (opt.size())
+      filter.set_npass (int(opt[0][0]));
+
+    Image::Header header;
+    header.info() = filter.info();
+    Image::Stride::set_from_command_line (header);
+
+    Image::Buffer<bool> output_data (argument[2], header);
+    auto output_voxel = output_data.voxel();
+    filter (input_voxel, output_voxel);
+    return;
+  }
+
+  if (filter_index == 3) { // Median
+    Image::Filter::Median filter (input_voxel, std::string("applying median filter to image ") + Path::basename (argument[0]) + "... ");
+    Options opt = get_options ("extent");
+    if (opt.size())
+      filter.set_extent (parse_ints (opt[0][0]));
+
+    Image::Header header;
+    header.info() = filter.info();
+    Image::Stride::set_from_command_line (header);
+
+    Image::Buffer<bool> output_data (argument[2], header);
+    auto output_voxel = output_data.voxel();
+    filter (input_voxel, output_voxel);
+    return;
+  }
 
 }

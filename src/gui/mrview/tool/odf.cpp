@@ -97,10 +97,7 @@ namespace MR
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
                   std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
-                  if (header->ndim() < 4) 
-                    throw Exception ("image \"" + header->name() + "\" is not 4D");
-                  if (header->dim(3) < 6)
-                    throw Exception ("image \"" + header->name() + "\" does not contain enough SH coefficients (too few volumes along 4th axis)");
+                  Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
@@ -143,8 +140,8 @@ namespace MR
 
 
 
-        ODF::ODF (Window& main_window, Dock* parent) :
-          Base (main_window, parent),
+        ODF::ODF (Dock* parent) :
+          Base (parent),
           preview (nullptr),
           renderer (nullptr),
           lighting_dock (nullptr),
@@ -216,7 +213,7 @@ namespace MR
             label = new QLabel ("detail");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 0);
-            level_of_detail_selector = new QSpinBox (this);
+            level_of_detail_selector = new SpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
             level_of_detail_selector->setSingleStep (1);
@@ -227,7 +224,7 @@ namespace MR
             label = new QLabel ("lmax");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 2);
-            lmax_selector = new QSpinBox (this);
+            lmax_selector = new SpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
@@ -313,7 +310,7 @@ namespace MR
           if (!settings)
             return;
 
-          MRView::Image& image (main_grid_box->isChecked() ? *window.image() : settings->image);
+          MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
 
           if (!hide_all_button->isChecked()) {
 
@@ -335,8 +332,8 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
 
-            Point<> pos (window.target());
-            pos += projection.screen_normal() * (projection.screen_normal().dot (window.focus() - window.target()));
+            Point<> pos (window().target());
+            pos += projection.screen_normal() * (projection.screen_normal().dot (window().focus() - window().target()));
             if (lock_to_grid_box->isChecked()) {
               Point<> p = image.interp.scanner2voxel (pos);
               p[0] = std::round (p[0]);
@@ -443,15 +440,15 @@ namespace MR
 
         void ODF::showEvent (QShowEvent*)
         {
-          connect (&window, SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
-          connect (&window, SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (focusChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (targetChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (orientationChanged()), this, SLOT (onWindowChange()));
+          connect (&window(), SIGNAL (planeChanged()), this, SLOT (onWindowChange()));
           onWindowChange();
         }
 
         void ODF::closeEvent (QCloseEvent*) {
-          window.disconnect (this);
+          window().disconnect (this);
         }
 
 
@@ -475,7 +472,7 @@ namespace MR
 
         void ODF::image_open_slot ()
         {
-          std::vector<std::string> list = Dialog::File::get_images (&window, "Select overlay images to open");
+          std::vector<std::string> list = Dialog::File::get_images (&window(), "Select overlay images to open");
           if (list.empty())
             return;
 
@@ -499,7 +496,7 @@ namespace MR
         void ODF::show_preview_slot ()
         {
           if (!preview) {
-            preview = new Preview (window, this);
+            preview = new Preview (this);
             connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
           }
 
@@ -510,7 +507,7 @@ namespace MR
 
         void ODF::hide_all_slot ()
         {
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -575,7 +572,7 @@ namespace MR
         {
           if (!lighting_dock) {
             lighting_dock = new LightingDock("Advanced ODF lighting", *lighting);
-            window.addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
+            window().addDockWidget (Qt::RightDockWidgetArea, lighting_dock);
           }
           lighting_dock->show();
         }
@@ -609,7 +606,7 @@ namespace MR
         void ODF::updateGL () 
         {
           if (!hide_all_button->isChecked())
-            window.updateGL();
+            window().updateGL();
         }
 
         void ODF::update_preview()
@@ -623,7 +620,7 @@ namespace MR
             return;
           MRView::Image& image (settings->image);
           Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
-          get_values (values, image, window.focus(), preview->interpolate());
+          get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
         }
 

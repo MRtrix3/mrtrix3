@@ -29,6 +29,8 @@
 
 #include "file/ofstream.h"
 
+#include "math/median.h"
+
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/weights.h"
@@ -55,7 +57,7 @@ void usage ()
   + Argument ("tracks_in", "the input track file").type_file_in();
 
   OPTIONS
-  + Option ("length_hist", "output a histogram of streamline lengths")
+  + Option ("histogram", "output a histogram of streamline lengths")
     + Argument ("path").type_file_out()
 
   + Option ("dump", "dump the streamlines lengths to a text file")
@@ -66,29 +68,62 @@ void usage ()
 };
 
 
+// Store length and weight of each streamline
+class LW
+{
+  public:
+    LW (const float l, const float w) : length (l), weight (w) { }
+    LW () : length (NAN), weight (NAN) { }
+    bool operator< (const LW& that) const { return length < that.length; }
+    float get_length() const { return length; }
+    float get_weight() const { return weight; }
+  private:
+    float length, weight;
+    friend LW operator+ (const LW&, const LW&);
+    friend LW operator/ (const LW&, const double);
+};
+
+// Necessary for median template function
+LW operator+ (const LW& one, const LW& two)
+{
+  return LW (one.get_length() + two.get_length(), one.get_weight() + two.get_weight());
+}
+
+LW operator/ (const LW& lw, const double div)
+{
+  return LW (lw.get_length() / div, lw.get_weight() / div);
+}
+
 
 void run ()
 {
 
   const bool weights_provided = get_options ("tck_weights_in").size();
 
-  float step_size = 1.0;
+  float step_size = NAN;
   size_t count = 0, header_count = 0;
+  float min_length = std::numeric_limits<float>::infinity();
+  float max_length = 0.0f;
+  double sum_lengths = 0.0, sum_weights = 0.0;
   std::vector<double> histogram;
+  std::vector<LW> all_lengths;
+  all_lengths.reserve (header_count);
 
   {
     Tractography::Properties properties;
     Tractography::Reader reader (argument[0], properties);
 
-    header_count = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
+    if (properties.find ("count") != properties.end())
+      header_count = to<size_t> (properties["count"]);
 
     if (properties.find ("output_step_size") != properties.end())
       step_size = to<float> (properties["output_step_size"]);
     else
       step_size = to<float> (properties["step_size"]);
     if (!std::isfinite (step_size) || !step_size) {
-      WARN ("Streamline step size undefined; setting to unity");
-      step_size = 1.0;
+      WARN ("Streamline step size undefined in header");
+      if (get_options ("histogram").size())
+        WARN ("Histogram will be henerated using a 1mm interval");
     }
 
     std::unique_ptr<File::OFStream> dump;
@@ -100,12 +135,18 @@ void run ()
     Streamline<> tck;
     while (reader (tck)) {
       ++count;
-      const size_t length = tck.size() ? (tck.size()-1) : 0;
-      while (histogram.size() <= length)
+      const float length = std::isfinite (step_size) ? tck.calc_length (step_size) : tck.calc_length();
+      min_length = std::min (min_length, length);
+      max_length = std::max (max_length, length);
+      sum_lengths += tck.weight * length;
+      sum_weights += tck.weight;
+      all_lengths.push_back (LW (length, tck.weight));
+      const size_t index = std::isfinite (step_size) ? std::round (length / step_size) : std::round (length);
+      while (histogram.size() <= index)
         histogram.push_back (0.0);
-      histogram[length] += tck.weight;
+      histogram[index] += tck.weight;
       if (dump)
-        (*dump) << (length * step_size) << "\n";
+        (*dump) << length << "\n";
       ++progress;
     }
   }
@@ -115,29 +156,24 @@ void run ()
   if (count != header_count)
     WARN ("expected " + str(header_count) + " tracks according to header; read " + str(count));
 
-  size_t min = histogram.size();
-  double total = 0.0, mean = 0.0;
-  for (size_t i = 0; i != histogram.size(); ++i) {
-    total += histogram[i];
-    mean += i * histogram[i];
-    if (histogram[i] && min == histogram.size())
-      min = i;
+  const float mean_length = sum_lengths / sum_weights;
+
+  float median_length = 0.0f;
+  if (weights_provided) {
+    // Perform a weighted median calculation
+    std::sort (all_lengths.begin(), all_lengths.end());
+    size_t median_index = 0;
+    double sum = sum_weights - all_lengths[0].get_weight();
+    while (sum > 0.5 * sum_weights) { sum -= all_lengths[++median_index].get_weight(); }
+    median_length = all_lengths[median_index].get_length();
+  } else {
+    median_length = Math::median (all_lengths).get_length();
   }
-  mean /= total;
+
   double stdev = 0.0;
-  for (size_t i = 0; i != histogram.size(); ++i)
-    stdev += histogram[i] * Math::pow2 (i - mean);
-  stdev = std::sqrt(stdev / total);
-  size_t median = 0;
-  double running_sum = 0.0, prev_sum = 0.0;
-  do {
-    prev_sum = running_sum;
-    running_sum += histogram[median++];
-  } while (running_sum < 0.5*total);
-  --median;
-  if (std::abs (prev_sum - (0.5*total)) < std::abs (running_sum - (0.5*total)))
-    --median;
-  const size_t max = histogram.size() - 1;
+  for (std::vector<LW>::const_iterator i = all_lengths.begin(); i != all_lengths.end(); ++i)
+    stdev += i->get_weight() * Math::pow2 (i->get_length() - mean_length);
+  stdev = std::sqrt (stdev / (((count - 1) / float(count)) * sum_weights));
 
   const size_t width = 12;
 
@@ -148,16 +184,18 @@ void run ()
             << " " << std::setw(width) << std::right << "max"
             << " " << std::setw(width) << std::right << "count\n";
 
-  std::cout << " " << std::setw(width) << std::right << (step_size * mean)
-            << " " << std::setw(width) << std::right << (step_size * median)
-            << " " << std::setw(width) << std::right << (step_size * stdev)
-            << " " << std::setw(width) << std::right << (step_size * min)
-            << " " << std::setw(width) << std::right << (step_size * max)
-            << " " << std::setw(width) << std::right << (total) << "\n";
+  std::cout << " " << std::setw(width) << std::right << (mean_length)
+            << " " << std::setw(width) << std::right << (median_length)
+            << " " << std::setw(width) << std::right << (stdev)
+            << " " << std::setw(width) << std::right << (min_length)
+            << " " << std::setw(width) << std::right << (max_length)
+            << " " << std::setw(width) << std::right << (count) << "\n";
 
-  auto opt = get_options ("length_hist");
+  auto opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
+    if (!std::isfinite (step_size))
+      step_size = 1.0f;
     if (weights_provided) {
       out << "Length,Sum_weights\n";
       for (size_t i = 0; i != histogram.size(); ++i)

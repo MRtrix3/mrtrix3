@@ -102,7 +102,7 @@ namespace MR {
             bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
             bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
-            void normalize() const { Voxel::normalize(); colour.normalize(); }
+            void normalize() const { colour.normalize(); Voxel::normalize(); }
             void set_dir (const Eigen::Vector3f& i) { colour = vec2DEC (i); }
             void add (const Eigen::Vector3f& i, const float l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
             void operator+= (const Eigen::Vector3f& i) const { Voxel::operator+= (1.0f); colour += vec2DEC (i); }
@@ -112,6 +112,47 @@ namespace MR {
             mutable Eigen::Vector3f colour;
 
         };
+
+
+        // Temporary fix for fixel stats branch
+        // Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
+        class VoxelDir : public Voxel
+        {
+
+          public:
+            VoxelDir () :
+              Voxel (),
+              dir (0.0f, 0.0f, 0.0f) { }
+
+            VoxelDir (const Eigen::Vector3i& V) :
+              Voxel (V),
+              dir (0.0f, 0.0f, 0.0f) { }
+
+            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3f& d) :
+              Voxel (V),
+              dir (d) { }
+
+            VoxelDir (const Eigen::Vector3i& V, const Eigen::Vector3f& d, const float l) :
+              Voxel (V, l),
+              dir (d) { }
+
+            VoxelDir& operator=  (const VoxelDir& V)   { Voxel::operator= (V); dir = V.dir; return *this; }
+            VoxelDir& operator=  (const Eigen::Vector3i& V) { Voxel::operator= (V); dir = { 0.0f, 0.0f, 0.0f }; return *this; }
+
+            bool      operator== (const VoxelDir& V) const { return Voxel::operator== (V); }
+            bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
+
+            void normalize() const { dir.normalize(); Voxel::normalize(); }
+            void set_dir (const Eigen::Vector3f& i) { dir = i; }
+            void add (const Eigen::Vector3f& i, const float l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }
+            void operator+= (const Eigen::Vector3f& i) const { Voxel::operator+= (1.0f); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }
+            const Eigen::Vector3f& get_dir() const { return dir; }
+
+          private:
+            mutable Eigen::Vector3f dir;
+
+        };
+
 
 
 
@@ -251,6 +292,11 @@ namespace MR {
               insert (temp);
             }
         };
+
+
+
+
+
         class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
         {
           public:
@@ -261,7 +307,7 @@ namespace MR {
               if (existing == std::set<VoxelDEC>::end())
                 std::set<VoxelDEC>::insert (v);
               else
-                (*existing).add (v.get_colour(), v.get_length());
+                existing->add (v.get_colour(), v.get_length());
             }
             inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3f& d)
             {
@@ -274,6 +320,35 @@ namespace MR {
               insert (temp);
             }
         };
+
+
+
+
+        class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
+        {
+          public:
+            typedef VoxelDir VoxType;
+            inline void insert (const VoxelDir& v)
+            {
+              iterator existing = std::set<VoxelDir>::find (v);
+              if (existing == std::set<VoxelDir>::end())
+                std::set<VoxelDir>::insert (v);
+              else
+                existing->add (v.get_dir(), v.get_length());
+            }
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3f& d)
+            {
+              const VoxelDir temp (v, d);
+              insert (temp);
+            }
+            inline void insert (const Eigen::Vector3i& v, const Eigen::Vector3f& d, const float l)
+            {
+              const VoxelDir temp (v, d, l);
+              insert (temp);
+            }
+        };
+
+
         class SetDixel : public std::set<Dixel>, public SetVoxelExtras
         {
           public:
@@ -297,6 +372,11 @@ namespace MR {
               insert (temp);
             }
         };
+
+
+
+
+
         class SetVoxelTOD : public std::set<VoxelTOD>, public SetVoxelExtras
         {
           public:

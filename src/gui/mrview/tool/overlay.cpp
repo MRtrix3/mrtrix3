@@ -21,6 +21,7 @@
 */
 
 #include "mrtrix.h"
+#include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/mrview/tool/overlay.h"
@@ -77,8 +78,8 @@ namespace MR
 
 
 
-        Overlay::Overlay (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+        Overlay::Overlay (Dock* parent) :
+          Base (parent) { 
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
@@ -115,6 +116,21 @@ namespace MR
             image_list_view->setModel (image_list_model);
 
             main_box->addWidget (image_list_view, 1);
+
+            layout = new HBoxLayout;
+            volume_label = new QLabel ("Volume: ");
+            volume_label->setEnabled (false);
+            layout->addWidget (volume_label);
+            volume_selecter = new SpinBox (this);
+            volume_selecter->setMinimum (0);
+            volume_selecter->setMaximum (0);
+            volume_selecter->setValue (0);
+            volume_selecter->setEnabled (false);
+            volume_selecter->setToolTip ("For 4D overlay images, select the 3D volume index");
+            connect (volume_selecter, SIGNAL (valueChanged(int)), this, SLOT(volume_changed(int)));
+            layout->addWidget (volume_selecter);
+
+            main_box->addLayout (layout, 0);
 
             QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
@@ -226,7 +242,6 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
-
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -244,9 +259,9 @@ namespace MR
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
-                window.get_current_mode()->overlays_for_3D.push_back (image);
+                window().get_current_mode()->overlays_for_3D.push_back (image);
               else
-                image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
+                image->render3D (image->slice_shader, projection, projection.depth_of (window().focus()));
             }
           }
 
@@ -301,8 +316,8 @@ namespace MR
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
               cfloat value = image->interpolate() ?
-                image->nearest_neighbour_value(window.focus()) :
-                image->trilinear_value(window.focus());
+                image->nearest_neighbour_value(window().focus()) :
+                image->trilinear_value(window().focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
@@ -387,9 +402,9 @@ namespace MR
                         image.scaling_max_thresholded() :
                         image.scaling_max();
 
-            window.colourbar_renderer.render (image,image.scale_inverted(),
+            window().colourbar_renderer.render (image.colourmap, image.scale_inverted(),
                                        min_value, max_value,
-                                       image.scaling_min(), image.display_range);
+                                       image.scaling_min(), image.display_range, image.colour);
         }
 
 
@@ -406,6 +421,18 @@ namespace MR
             }
           }
           updateGL();
+        }
+
+
+        void Overlay::volume_changed (int)
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) return;
+          Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+          if (overlay->info().ndim() < 4) return;
+          overlay->interp[3] = volume_selecter->value();
+          if (overlay->show)
+            updateGL();
         }
 
 
@@ -488,7 +515,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->alpha = opacity_slider->value() / 1.0e3f;
           }
-          window.updateGL();
+          window().updateGL();
         }
 
         void Overlay::interpolate_changed ()
@@ -498,7 +525,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->set_interpolate (interpolate_check_box->isChecked());
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -512,6 +539,8 @@ namespace MR
         void Overlay::update_selection () 
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          volume_label->setEnabled (false);
+          volume_selecter->setEnabled (false);
           colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
@@ -567,6 +596,19 @@ namespace MR
           lower_threshold_val /= indices.size();
           upper_threshold_val /= indices.size();
           opacity /= indices.size();
+
+          if (indices.size() == 1) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+            if (overlay->info().ndim() == 4 && overlay->info().dim(3) > 1) {
+              volume_label->setEnabled (true);
+              volume_selecter->setMaximum (overlay->info().dim(3)-1);
+              volume_selecter->setValue (overlay->interp[3]);
+              volume_selecter->setEnabled (true);
+            } else {
+              volume_selecter->setMaximum (0);
+              volume_selecter->setValue (0);
+            }
+          }
 
           colourmap_button->set_colourmap_index(colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);

@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
+#include "gui/mrview/spin_box.h"
 #include <deque>
 
 namespace MR
@@ -44,7 +45,7 @@ namespace MR
         {
           Q_OBJECT
           public:
-            Capture (Window& main_window, Dock* parent);
+            Capture (Dock* parent);
             virtual ~Capture() {}
 
             static void add_commandline_options (MR::App::OptionList& options);
@@ -62,24 +63,25 @@ namespace MR
             void on_restore_capture_state ();
 
           private:
-            enum RotationType { World, Eye } rotation_type;
+            enum RotationType { World = 0, Eye, Image } rotation_type;
             QComboBox *rotation_type_combobox;
             AdjustButton *rotation_axis_x;
             AdjustButton *rotation_axis_y;
             AdjustButton *rotation_axis_z;
             AdjustButton *degrees_button;
 
-            enum TranslationType { Voxel, Scanner } translation_type;
+            enum TranslationType { Voxel = 0, Scanner, Camera } translation_type;
+
             QComboBox* translation_type_combobox;
             AdjustButton *translate_x;
             AdjustButton *translate_y;
             AdjustButton *translate_z;
 
-            QSpinBox *target_volume;
+            SpinBox *target_volume;
             AdjustButton *FOV_multipler;
-            QSpinBox *start_index;
-            QSpinBox *frames;
-            QSpinBox *volume_axis;
+            SpinBox *start_index;
+            SpinBox *frames;
+            SpinBox *volume_axis;
             QLineEdit *prefix_textbox;
             QPushButton *folder_button;
             int axis;

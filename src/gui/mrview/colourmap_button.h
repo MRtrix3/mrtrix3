@@ -39,7 +39,7 @@ private:
     void init_core_menu_items(bool create_shortcuts);
     void init_custom_colour_menu_items();
     void init_special_colour_menu_items(bool create_shortcuts);
-    void init_customise_sate_menu_items();
+    void init_customise_state_menu_items();
 
     static const std::vector<ColourMap::Entry> core_colourmaps_entries;
     static const std::vector<ColourMap::Entry> special_colourmaps_entries;

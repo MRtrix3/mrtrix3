@@ -45,23 +45,35 @@ namespace MR
 
         const Entry maps[] = {
           Entry ("Gray", 
-              "color.rgb = vec3 (amplitude);\n"),
+              "color.rgb = vec3 (amplitude);\n",
+              [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
 
           Entry ("Hot", 
-              "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n"),
+              "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
+                                                          std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
+                                                          std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
 
           Entry ("Cool",
-              "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n"),
+              "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
+                                                          std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
 
           Entry ("Jet", 
-              "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
+              "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",
+              Entry::basic_map_fn(),
               NULL, false, true),
 
           Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
+              Entry::basic_map_fn(),
               "length (color.rgb)",
               true),
 
@@ -71,10 +83,11 @@ namespace MR
               "if (phase > 2.0) color.b -= 6.0;\n"
               "if (phase < -2.0) color.r += 6.0;\n"
               "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+              Entry::basic_map_fn(),
               "length (color.rg)",
               true),
 
-          Entry (NULL, NULL, NULL, true)
+          Entry (NULL, NULL, Entry::basic_map_fn(), NULL, true)
         };
 
 
@@ -175,7 +188,7 @@ namespace MR
               "out vec3 color;\n"
               "uniform vec3 colourmap_colour;\n"
               "void main () {\n"
-              "  " + std::string(maps[index].mapping) +
+              "  " + std::string(maps[index].glsl_mapping) +
               "}\n";
 
           GL::Shader::Fragment fragment_shader (shader);
@@ -200,22 +213,25 @@ namespace MR
 
 
 
-        void Renderer::render (const Displayable& object, bool inverted) {
-            render (object, inverted, object.scaling_min (), object.scaling_max (),
-                    object.scaling_min (), object.display_range);
+        void Renderer::render (const Displayable& object, bool inverted)
+        {
+          render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
+                  object.scaling_min (), object.display_range,
+                  Point<float> (object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f));
         }
 
 
 
-        void Renderer::render (const Displayable& object, bool inverted,
+        void Renderer::render (size_t colourmap, bool inverted,
                                float local_min_value, float local_max_value,
-                               float global_min_value, float global_range)
+                               float global_min_value, float global_range,
+                               Point<float> colour)
         {
           if (!current_position) return;
-          if (maps[object.colourmap].special) return;
+          if (maps[colourmap].special) return;
           
-          if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
-            setup (object.colourmap, inverted);
+          if (!program || !frame_program || colourmap != current_index || current_inverted != inverted)
+            setup (colourmap, inverted);
 
           if (!VB || !VAO) {
             VB.gen();
@@ -278,9 +294,8 @@ namespace MR
           program.start();
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / current_projection->width());
           gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / current_projection->height());
-          if (maps[object.colourmap].is_colour)
-            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
-                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
+          if (maps[colourmap].is_colour)
+            gl::Uniform3fv (gl::GetUniformLocation (program, "colourmap_colour"), 1, &colour[0]);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 

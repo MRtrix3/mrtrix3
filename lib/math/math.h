@@ -1,22 +1,22 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+   Copyright 2008 Brain Research Institute, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+   Written by J-Donald Tournier, 27/06/08.
 
-    This file is part of MRtrix.
+   This file is part of MRtrix.
 
-    MRtrix is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+   MRtrix is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
 
-    MRtrix is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+   MRtrix is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
+   You should have received a copy of the GNU General Public License
+   along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
 */
 
@@ -114,7 +114,7 @@ namespace MR
     {
       std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
       std::vector<std::vector<ValueType>> V;
-      std::string sbuf, entry;
+      std::string sbuf;
 
       while (getline (stream, sbuf)) {
         sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
@@ -123,11 +123,9 @@ namespace MR
 
         V.push_back (std::vector<ValueType>());
 
-        std::istringstream line (sbuf);
-        while (line >> entry) 
+        const auto elements = MR::split (sbuf, " ,;\t", true);
+        for (const auto& entry : elements)
           V.back().push_back (to<ValueType> (entry));
-        if (line.bad())
-          throw Exception (strerror (errno));
 
         if (V.size() > 1)
           if (V.back().size() != V[0].size())
@@ -146,7 +144,7 @@ namespace MR
   template <class ValueType = default_type>
     Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> load_matrix (const std::string& filename)
     {
-      std::vector<std::vector<ValueType>> V = load_matrix_2D_vector (filename);
+      auto V = load_matrix_2D_vector<ValueType> (filename);
 
       Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> M (V.size(), V[0].size());
 
@@ -161,7 +159,7 @@ namespace MR
   template <class ValueType = default_type>
     transform_type load_transform (const std::string& filename)
     {
-      std::vector<std::vector<ValueType>> V = load_matrix_2D_vector (filename);
+      auto V = load_matrix_2D_vector<ValueType> (filename);
 
       transform_type M;
 
@@ -172,24 +170,24 @@ namespace MR
       return M;
     }
 
-    //! write the transform \a M to file
-    inline void save_transform (const transform_type& M, const std::string& filename)
-      {
-        File::OFStream out (filename);
-        for (ssize_t i = 0; i < 3; i++) {
-          for (ssize_t j = 0; j < 4; j++)
-            out << str(M(i,j), 10) << " ";
-          out << "\n";
-        }
-        out << "0 0 0 1\n";
-      }
+  //! write the transform \a M to file
+  inline void save_transform (const transform_type& M, const std::string& filename)
+  {
+    File::OFStream out (filename);
+    for (ssize_t i = 0; i < 3; i++) {
+      for (ssize_t j = 0; j < 4; j++)
+        out << str(M(i,j), 10) << " ";
+      out << "\n";
+    }
+    out << "0 0 0 1\n";
+  }
 
-        //! write the vector \a V to file
+  //! write the vector \a V to file
   template <class VectorType>
     void save_vector (const VectorType& V, const std::string& filename) 
     {
       File::OFStream out (filename);
-      for (ssize_t i = 0; i < V.size() - 1; i++)
+      for (decltype(V.size()) i = 0; i < V.size() - 1; i++)
         out << str(V[i], 10) << " ";
       out << str(V[V.size() - 1], 10);
     }
@@ -198,18 +196,12 @@ namespace MR
   template <class ValueType = default_type>
     Eigen::Matrix<ValueType, Eigen::Dynamic, 1> load_vector (const std::string& filename) 
     {
-      std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
-      std::vector<ValueType> vec;
-      std::string entry;
-      while (stream >> entry) 
-        vec.push_back (to<ValueType> (entry));
-      if (stream.bad()) 
-        throw Exception (strerror (errno));
-
-      Eigen::Matrix<ValueType, Eigen::Dynamic, 1> V (vec.size());
-      for (ssize_t n = 0; n < V.size(); n++)
-        V[n] = vec[n];
-      return V;
+      auto vec = load_matrix<ValueType> (filename);
+      if (vec.cols() == 1)
+        return vec.col(0);
+      if (vec.rows() > 1)
+        throw Exception ("file \"" + filename + "\" contains matrix, not vector");
+      return vec.row(0);
     }
 
 

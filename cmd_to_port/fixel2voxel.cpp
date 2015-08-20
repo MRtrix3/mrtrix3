@@ -678,6 +678,7 @@ void run ()
   }
 
   Image::Buffer<float> out_data (argument[2], H_out);
+
   auto out = out_data.voxel();
 
   Options opt = get_options ("weighted");

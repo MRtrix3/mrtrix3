@@ -93,7 +93,8 @@ namespace MR
 
 
         template <class VoxelType>
-        void ROI_Item::save (VoxelType&& vox, GLubyte* data) {
+        void ROI_Item::save (VoxelType&& vox, GLubyte* data) 
+        {
           for (auto l = MR::Image::Loop() (vox); l; ++l)
             vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
           saved = true;

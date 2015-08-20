@@ -263,10 +263,14 @@ namespace MR
                   scaled_contrasts, betas, residuals);
               for (size_t n = 0; n < tvalues.rows(); ++n) {
                 value_type val = tvalues(n,0);
-                if (val > max_stat)
-                  max_stat = val;
-                if (val < min_stat)
-                  min_stat = val;
+                if (std::isfinite (val)) {
+                  if (val > max_stat)
+                    max_stat = val;
+                  if (val < min_stat)
+                    min_stat = val;
+                } else {
+                  val = value_type(0.0);
+                }
                 stats[i+n] = val;
               }
             }
