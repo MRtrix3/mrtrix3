@@ -95,12 +95,6 @@ namespace MR
           kernel_extent = extent;
         }
 
-//          void get_extent (std::vector<size_t>& extent_vector) const {
-//            for (size_t i = 0; i < 3; ++i) {
-//            	extent_vector[i] = this->kernel_extent[i];
-//            }
-//          }
-
         void set_init_type (Transform::Init::InitType type) {
           init_type = type;
         }
@@ -121,41 +115,41 @@ namespace MR
           log_stream = stream;
         }
 
-//        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType>
-//        void run (
-//          MetricType& metric,
-//          TransformType& transform,
-//          MovingImageType& moving_image,
-//          TemplateImageType& template_image) {
-//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-//            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, BogusMaskType >
-//              (metric, transform, moving_image, template_image, nullptr, nullptr);
-//          }
+        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType>
+        void run (
+          MetricType& metric,
+          TransformType& transform,
+          MovingImageType& moving_image,
+          TemplateImageType& template_image) {
+            typedef Image<bool> BogusMaskType;
+            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, BogusMaskType >
+              (metric, transform, moving_image, template_image, nullptr, nullptr);
+          }
 
-//        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class TemplateMaskType>
-//        void run_template_mask (
-//          MetricType& metric,
-//          TransformType& transform,
-//          MovingImageType& moving_image,
-//          TemplateImageType& template_image,
-//          std::unique_ptr<TemplateMaskType>& template_mask) {
-//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-//            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, TemplateMaskType >
-//              (metric, transform, moving_image, template_image, nullptr, template_mask);
-//          }
+        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class TemplateMaskType>
+        void run_template_mask (
+          MetricType& metric,
+          TransformType& transform,
+          MovingImageType& moving_image,
+          TemplateImageType& template_image,
+          std::unique_ptr<TemplateMaskType>& template_mask) {
+            typedef Image<bool> BogusMaskType;
+            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, TemplateMaskType >
+              (metric, transform, moving_image, template_image, nullptr, template_mask);
+          }
 
 
-//        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType>
-//        void run_moving_mask (
-//          MetricType& metric,
-//          TransformType& transform,
-//          MovingImageType& moving_image,
-//          TemplateImageType& template_image,
-//          std::unique_ptr<MovingMaskType>& moving_mask) {
-//            typedef Image::BufferScratch<bool>::voxel_type BogusMaskType;
-//            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, MovingMaskType, BogusMaskType >
-//              (metric, transform, moving_image, template_image, moving_mask, nullptr);
-//          }
+        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType>
+        void run_moving_mask (
+          MetricType& metric,
+          TransformType& transform,
+          MovingImageType& moving_image,
+          TemplateImageType& template_image,
+          std::unique_ptr<MovingMaskType>& moving_mask) {
+            typedef Image<bool> BogusMaskType;
+            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, MovingMaskType, BogusMaskType >
+              (metric, transform, moving_image, template_image, moving_mask, nullptr);
+          }
 
         template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType, class TemplateMaskType>
         void run_masked (
