@@ -127,7 +127,7 @@ namespace MR
             #endif
 
             for (int niter = 1; niter < max_iterations; niter++) {
-              // Math::check_function_gradient (func, x, 0.000001, true, preconditioner_weights);
+              // Math::check_function_gradient (func, x, 0.000001, false, preconditioner_weights);
               bool retval = iterate (verbose);
               {
                 std::string cost = std::to_string(f);

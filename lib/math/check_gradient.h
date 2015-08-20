@@ -40,8 +40,8 @@ namespace MR {
         typedef typename Function::value_type value_type;
         const size_t N = function.size();
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g (N);
-
-        CONSOLE ("checking gradient for cost function over " + str(N) +
+        size_t precision = 10;
+        CONSOLE ("checking gradient for cost function over " + str(N,precision) +
             " parameters of type " + DataType::from<value_type>().specifier());
         value_type step_size = function.init (g);
         CONSOLE ("cost function suggests initial step size = " + str(step_size));
@@ -50,8 +50,8 @@ namespace MR {
         CONSOLE ("checking gradient at position [ " + str(x) + "]:");
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0 (N);
         value_type f0 = function (x, g0);
-        CONSOLE ("  cost function = " + str(f0));
-        CONSOLE ("  gradient from cost function         = [ " + str(g0) + "]");
+        CONSOLE ("  cost function = " + str(f0,precision));
+        CONSOLE ("  gradient from cost function         = [ " + str(g0,precision) + "]");
 
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd (N);
         Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
@@ -88,8 +88,8 @@ namespace MR {
 
         }
 
-        CONSOLE ("gradient by central finite difference = [ " + str(g_fd) + "]");
-        CONSOLE ("normalised dot product = " + str(g_fd.dot(g0)) / g_fd.squaredNorm());
+        CONSOLE ("gradient by central finite difference = [ " + str(g_fd,precision) + "]");
+        CONSOLE ("normalised dot product = " + str(g_fd.dot(g0) / g_fd.squaredNorm()));
 
         if (show_hessian) {
           hessian /= 4.0*increment;

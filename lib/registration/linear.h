@@ -240,9 +240,9 @@ namespace MR
                 log_os << "\n\n"; // two empty lines for gnuplot's index recognition
               }
 
-              //Math::Vector<double> params = optim.state();
-              //VAR(optim.function_evaluations());
-              //Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
+              // auto params = optim.state();
+              // VAR(optim.function_evaluations());
+              // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
             }
           }
 

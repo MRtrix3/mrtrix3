@@ -172,7 +172,7 @@ void run ()
   opt = get_options ("transformed");
   Image<value_type> transformed;
   if (opt.size())
-    transformed = Image<value_type>::create (opt[0][0], template_image); // MP: was template_header - DR Changed this back. I'm assuming people will want the transformed image in template space...this must be the case for non-linear transform
+    transformed = Image<value_type>::create (opt[0][0], template_image); 
 
   opt = get_options ("type");
   bool do_rigid  = false;
