@@ -1,10 +1,6 @@
 language: cpp
-<<<<<<< HEAD
-os: linux
-=======
 os:
   - linux
->>>>>>> master
 compiler:
   - gcc
   - clang
@@ -13,31 +9,20 @@ env:
   - python_version=3
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
-<<<<<<< HEAD
   - sudo apt-get update -qq
   - sudo apt-get -y install zlib1g-dev libgsl0-dev
   - wget http://packages.yade-dem.org/precise/libeigen3-dev_3.2.1-1~precise1_all.deb
   - sudo dpkg -i libeigen3-dev_3.2.1-1~precise1_all.deb
-=======
-  - sudo apt-get update -qq; sudo apt-get -y install libgsl0-dev zlib1g-dev 
->>>>>>> master
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
   - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
   - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
   - if [ ${python_version} = "3" ]; then sudo apt-get install python3; fi
-<<<<<<< HEAD
   - export PATH=`pwd`/release/bin:${PATH}
   - export PATH=`pwd`/testing/release/bin:${PATH}
 install: 
   - (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script:
   - if [ ${python_version} = "3" ]; then python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests); fi
-=======
-install: (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
-script: 
-  - if [ ${python_version} = "3" ]; then python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests); fi
- 
->>>>>>> master
 after_failure: 
   - cat configure.log
   - cat build.log
