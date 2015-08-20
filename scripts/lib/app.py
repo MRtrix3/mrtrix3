@@ -5,6 +5,7 @@
 
 args = ''
 cleanup = True
+lastFile = ''
 mrtrixQuiet = '-quiet'
 numArgs = 0
 parser = ''
@@ -19,6 +20,7 @@ def initParser(desc):
   global parser
   parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
   standard_options = parser.add_argument_group('standard options')
+  standard_options.add_argument('-continue', nargs=2, dest='cont', metavar='<TempDir> <LastFile>', help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
   standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
   verbosity_group = standard_options.add_mutually_exclusive_group()
   verbosity_group.add_argument('-quiet',     action='store_true', help='Suppress all console output during script execution')
@@ -30,7 +32,7 @@ def initialise():
   import argparse, os, random, string, sys
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
-  global args, cleanup, mrtrixQuiet, tempDir, verbosity, workingDir
+  global args, cleanup, lastFile, mrtrixQuiet, tempDir, verbosity, workingDir
   args = parser.parse_args()
   if args.nocleanup:
     cleanup = False
@@ -40,21 +42,25 @@ def initialise():
   if args.verbose:
     verbosity = 2
     mrtrixQuiet = ''
-  dir_path = readMRtrixConfSetting('TmpFileDir')
-  if not dir_path:
-    if os.name == 'posix':
-      dir_path = '/tmp'
-    else:
-      dir_path = '.'
-  prefix = readMRtrixConfSetting('TmpFilePrefix')
-  if not prefix:
-    prefix = os.path.basename(sys.argv[0]) + '-tmp-'
-  tempDir = dir_path
-  while os.path.isdir(tempDir):
-    random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
-    tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
-  os.makedirs(tempDir)
-  printMessage('Generated temporary directory: ' + tempDir)
+  if args.cont:
+    tempDir = os.path.abspath(args.cont[0])
+    lastFile = args.cont[1]
+  else:
+    dir_path = readMRtrixConfSetting('TmpFileDir')
+    if not dir_path:
+      if os.name == 'posix':
+        dir_path = '/tmp'
+      else:
+        dir_path = '.'
+    prefix = readMRtrixConfSetting('TmpFilePrefix')
+    if not prefix:
+      prefix = os.path.basename(sys.argv[0]) + '-tmp-'
+    tempDir = dir_path
+    while os.path.isdir(tempDir):
+      random_string = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(6))
+      tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
+    os.makedirs(tempDir)
+    printMessage('Generated temporary directory: ' + tempDir)
   workingDir = os.getcwd()
 
 
