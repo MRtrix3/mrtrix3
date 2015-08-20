@@ -80,6 +80,10 @@ if mni_mask_dilation:
 else:
   runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
 
+if not os.path.isfile('T1_preBET' + fsl_suffix):
+  warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
+  runCommand('mrconvert T1.nii T1_preBET' + fsl_suffix)
+
 # BET
 runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_bet' + fsl_suffix + ' -f 0.15 -R')
 
