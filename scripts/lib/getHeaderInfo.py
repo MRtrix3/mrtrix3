@@ -8,6 +8,6 @@ def getHeaderInfo(image_path, header_item):
   result = proc.stdout.read()
   result = result.rstrip().decode('utf-8')
   if lib.app.verbosity > 1:
-    printMessage ('Result: ' + result)
+    printMessage('Result: ' + result)
   return result
 

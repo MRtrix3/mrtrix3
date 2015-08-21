@@ -3,6 +3,7 @@ mrtrix_bin_list = [ ]
 def runCommand(cmd):
 
   import lib.app, os, sys
+  from lib.errorMessage import errorMessage
   global mrtrix_bin_list
   
   if not mrtrix_bin_list:
@@ -32,10 +33,9 @@ def runCommand(cmd):
     cmd = ' '.join(cmdsplit)
     
   if lib.app.verbosity:
-  	sys.stdout.write('Command: ' + cmd + '\n')
+    sys.stdout.write(lib.app.colourConsole + 'Command: ' + lib.app.colourClear + cmd + '\n')
   	sys.stdout.flush()
 
   if (os.system(cmd)):
-    sys.stderr.write('Command failed: ' + cmd + '\n')
-    exit(1)
+    errorMessage('Command failed: ' + cmd)
 

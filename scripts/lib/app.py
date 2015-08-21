@@ -13,6 +13,11 @@ tempDir = ''
 verbosity = 1
 workingDir = ''
 
+colourClear = ''
+colourConsole = ''
+colourError = ''
+colourPrint = ''
+colourWarn = ''
 
 
 def initParser(desc):
@@ -34,6 +39,7 @@ def initialise():
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
   global args, cleanup, lastFile, mrtrixQuiet, tempDir, verbosity, workingDir
+  global colourClear, colourConsole, colourError, colourPrint, colourWarn
   workingDir = os.getcwd()
   args = parser.parse_args()
   if args.nocleanup:
@@ -70,6 +76,19 @@ def initialise():
       outfile.write(workingDir + '\n')
     with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
       outfile.write(' '.join(sys.argv) + '\n')
+  use_colour = readMRtrixConfSetting('TerminalColor')
+  if use_colour:
+    use_colour = use_colour.lower() in ('yes', 'true', '1')
+  else:
+    use_colour = not sys.platform.startswith('win')
+  if use_colour:
+    colourClear = '\033[0m'
+    colourConsole = '\033[03;34m'
+    colourError = '\033[01;31m'
+    colourPrint = '\033[03;32m'
+    colourWarn = '\033[00;31m'
+
+
 
 def gotoTempDir():
   import os
