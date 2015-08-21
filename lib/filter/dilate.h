@@ -20,119 +20,104 @@
 
  */
 
-#ifndef __image_filter_dilate_h__
-#define __image_filter_dilate_h__
+#ifndef __filter_dilate_h__
+#define __filter_dilate_h__
 
 #include "memory.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/loop.h"
-#include "image/filter/base.h"
+#include "image.h"
+#include "algo/copy.h"
+#include "algo/loop.h"
+#include "filter/base.h"
 
 
 
 namespace MR
 {
-  namespace Image
+  namespace Filter
   {
-    namespace Filter
+
+    /** \addtogroup Filters
+      @{ */
+
+    //! a filter to dilate a mask
+    /*!
+     * Typical usage:
+     * \code
+     * auto input = Image<bool>::open (argument[0]);
+     *
+     * Filter::Dilate dilate (input);
+     *
+     * Image<bool> output (dilate, argument[1]);
+     * dilate (input, output);
+     *
+     * \endcode
+     */
+    class Dilate : public Base
     {
 
-      /** \addtogroup Filters
-        @{ */
+      public:
+        template <class HeaderType>
+        Dilate (const HeaderType& in) :
+            Base (in),
+            npass (1)
+        {
+          datatype_ = DataType::Bit;
+        }
 
-      //! a filter to dilate a mask
-      /*!
-       * Typical usage:
-       * \code
-       * Buffer<bool> input_data (argument[0]);
-       * auto input_voxel = input_data.voxel();
-       *
-       * Filter::Dilate dilate (input_data);
-       * Header header (input_data);
-       * header.info() = dilate.info();
-       *
-       * Buffer<bool> output_data (header, argument[1]);
-       * auto output_voxel = output_data.voxel();
-       * dilate (input_voxel, output_voxel);
-       *
-       * \endcode
-       */
-      class Dilate : public Base
-      {
+        template <class HeaderType>
+        Dilate (const HeaderType& in, const std::string& message) :
+            Base (in, message),
+            npass (1)
+        {
+          datatype_ = DataType::Bit;
+        }
 
-        public:
-          template <class InfoType>
-          Dilate (const InfoType& in) :
-              Base (in),
-              npass_ (1)
-          {
-            datatype_ = DataType::Bit;
+
+        template <class InputImageType, class OutputImageType>
+        void operator() (InputImageType& input, OutputImageType& output)
+        {
+          std::shared_ptr <Image<bool> > in (new Image<bool> (Image<bool>::scratch (input)));
+          copy (input, *in);
+          std::shared_ptr <Image<bool> > out;
+          std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass + 1) : nullptr);
+
+          for (unsigned int pass = 0; pass < npass; pass++) {
+            out = std::make_shared<Image<bool>> (Image<bool>::scratch (input));
+            for (auto l = Loop (*in) (*in, *out); l; ++l)
+              out->value() = dilate (*in);
+            if (pass < npass - 1)
+              in = out;
+            if (progress)
+              ++(*progress);
           }
-
-          template <class InfoType>
-          Dilate (const InfoType& in, const std::string& message) :
-              Base (in, message),
-              npass_ (1)
-          {
-            datatype_ = DataType::Bit;
-          }
+          copy (*out, output);
+        }
 
 
-          template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& input, OutputVoxelType& output)
-          {
-
-            std::shared_ptr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
-            std::shared_ptr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
-            Image::copy (input, *in);
-
-            std::shared_ptr <BufferScratch<bool> > out_data;
-            std::shared_ptr <BufferScratch<bool>::voxel_type> out;
-
-            std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass_ + 1) : nullptr);
-
-            for (unsigned int pass = 0; pass < npass_; pass++) {
-              out_data.reset (new BufferScratch<bool> (input));
-              out.reset (new BufferScratch<bool>::voxel_type (*out_data));
-              LoopInOrder loop (*in);
-              for (auto l = LoopInOrder(*in) (*in, *out); l; ++l)
-                out->value() = dilate (*in);
-              if (pass < npass_ - 1) {
-                in_data = out_data;
-                in = out;
-              }
-              if (progress)
-                ++(*progress);
-            }
-            Image::copy (*out, output);
-          }
+        void set_npass (unsigned int npass)
+        {
+          npass = npass;
+        }
 
 
-          void set_npass (unsigned int npass) {
-            npass_ = npass;
-          }
+      protected:
 
+        bool dilate (Image<bool>& in)
+        {
+          if (in.value()) return true;
+          bool val;
+          if (in.index(0) > 0) { in.index(0)--; val = in.value(); in.index(0)++; if (val) return true; }
+          if (in.index(1) > 0) { in.index(1)--; val = in.value(); in.index(1)++; if (val) return true; }
+          if (in.index(2) > 0) { in.index(2)--; val = in.value(); in.index(2)++; if (val) return true; }
+          if (in.index(0) < in.size(0)-1) { in.index(0)++; val = in.value(); in.index(0)--; if (val) return true; }
+          if (in.index(1) < in.size(1)-1) { in.index(1)++; val = in.value(); in.index(1)--; if (val) return true; }
+          if (in.index(2) < in.size(2)-1) { in.index(2)++; val = in.value(); in.index(2)--; if (val) return true; }
+          return false;
+        }
 
-        protected:
-
-          bool dilate (BufferScratch<bool>::voxel_type& in)
-          {
-            if (in.value()) return true;
-            bool val;
-            if (in[0] > 0) { in[0]--; val = in.value(); in[0]++; if (val) return true; }
-            if (in[1] > 0) { in[1]--; val = in.value(); in[1]++; if (val) return true; }
-            if (in[2] > 0) { in[2]--; val = in.value(); in[2]++; if (val) return true; }
-            if (in[0] < in.dim(0)-1) { in[0]++; val = in.value(); in[0]--; if (val) return true; }
-            if (in[1] < in.dim(1)-1) { in[1]++; val = in.value(); in[1]--; if (val) return true; }
-            if (in[2] < in.dim(2)-1) { in[2]++; val = in.value(); in[2]--; if (val) return true; }
-            return false;
-          }
-
-          unsigned int npass_;
-      };
-      //! @}
-    }
+        unsigned int npass;
+    };
+    //! @}
   }
 }
 
