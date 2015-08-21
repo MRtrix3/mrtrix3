@@ -23,6 +23,7 @@ import os, sys
 import lib.app
 
 from lib.binaryInPath  import binaryInPath
+from lib.delFile       import delFile
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
@@ -91,6 +92,13 @@ if len(DWI2_dim) != 4:
 if DWI1_dim != DWI1_dim:
   errorMessage ('Dimensions of input image file pair do not match')
   
+# Get the axis strides from one of the input images, so the output image can be modified to match
+stride = getHeaderInfo ('dwi1.mif', 'stride')
+stride_option = ' -stride ' + stride.replace(' ', ',')
+
+# The image transform will be used later
+transform = getHeaderInfo('dwi1.mif', 'transform')
+
 # Eddy refuses to operate if the phase encode axis is 2
 # Therefore, use mrconvert to permute the data onto new axes, enforcing axis 1 as the PE direction;
 #   then re-permute back to the original layout after all the hard work is done
@@ -120,30 +128,33 @@ elif PE_axis == 2:
 if axis_permute_option:
   printMessage ('Permuting axes so PE is axis 1')
   runCommand('mrconvert dwi1.mif dwi1p.mif' + axis_permute_option + vox_permute_option)
+  delFile('dwi1.mif')
   runCommand('mrconvert dwi2.mif dwi2p.mif' + axis_permute_option + vox_permute_option)
+  delFile('dwi2.mif')
 else:
   printMessage ('No axis permutation required; skipping step')
 
 spatial_dims = DWI1_dim[:3]
 num_volumes = DWI1_dim[3]
 
-# Get the axis strides from one of the input images, so the output image can be modified to match
-stride = getHeaderInfo ('dwi1.mif', 'stride')
-stride_option = ' -stride ' + stride.replace(' ', ',')
-
 # Convert the input files as necessary for FSL tools & later commands
-runCommand('mrconvert ' + DWI1_permaxes + ' dwi1.nii -stride +1,+2,+3,+4')
-runCommand('mrconvert ' + DWI2_permaxes + ' dwi2.nii -stride +1,+2,+3,+4')
 runCommand('mrinfo ' + DWI1_permaxes + ' -export_grad_mrtrix grad1.b')
 runCommand('mrinfo ' + DWI2_permaxes + ' -export_grad_mrtrix grad2.b')
-runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3')
 runCommand('dwiextract ' + DWI1_permaxes + ' -bzero dwi1b0.mif')
 runCommand('dwiextract ' + DWI2_permaxes + ' -bzero dwi2b0.mif')
+runCommand('mrconvert ' + DWI1_permaxes + ' dwi1.nii -stride +1,+2,+3,+4')
+delFile(DWI1_permaxes)
+runCommand('mrconvert ' + DWI2_permaxes + ' dwi2.nii -stride +1,+2,+3,+4')
+delFile(DWI2_permaxes)
+runCommand('mrcat dwi1.nii dwi2.nii dwiall.nii -axis 3')
+
 runCommand('mrcat dwi1b0.mif dwi2b0.mif - -axis 3 | mrconvert - b0all.nii -stride +1,+2,+3,+4')
 
 # Find out how many b=0 volumes there are
 DWI1_b0_dims = getHeaderInfo ('dwi1b0.mif', 'dimensions').split()
 DWI2_b0_dims = getHeaderInfo ('dwi2b0.mif', 'dimensions').split()
+delFile('dwi1b0.mif')
+delFile('dwi2b0.mif')
 DWI1_b0_count = int(1)
 if len(DWI1_b0_dims) == 4:
   DWI1_b0_count = int(DWI1_b0_dims[3])
@@ -168,13 +179,17 @@ for axis, axis_dim in enumerate(spatial_dims):
 if crop_option:
   warnMessage('Input images contain at least one non-even dimension; cropping images for topup / eddy compatibility') 
   runCommand('mrcrop b0all.nii b0all_crop.nii' + crop_option)
-  runCommand('mrcrop dwiall.nii dwiall_crop.nii' + crop_option)
-  runCommand('mrcrop dwi1.nii dwi1_crop.nii' + crop_option)
-  runCommand('mrcrop dwi2.nii dwi2_crop.nii' + crop_option)
   topup_imain = 'b0all_crop.nii'
+  delFile('b0all.nii')
+  runCommand('mrcrop dwiall.nii dwiall_crop.nii' + crop_option)
   series_imain = 'dwiall_crop.nii'
+  delFile('dwiall.nii')
+  runCommand('mrcrop dwi1.nii dwi1_crop.nii' + crop_option)
   applytopup_imain_one = 'dwi1_crop.nii'
+  delFile('dwi1.nii')
+  runCommand('mrcrop dwi2.nii dwi2_crop.nii' + crop_option)
   applytopup_imain_two = 'dwi2_crop.nii'
+  delFile('dwi2.nii')
 
 # Construct a configuration file
 printMessage('Creating phase-encoding configuration file')
@@ -189,6 +204,7 @@ config_file.close()
 
 # Perform the field estimation
 runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map' + fsl_suffix + ' --iout=b0_topup.nii --config=' + topup_config_path)
+defFile(topup_imain)
 
 # Concatenate the diffusion gradient tables
 filenames = [ 'grad1.b', 'grad2.b' ]
@@ -200,8 +216,12 @@ with open('grad_combined.b', 'w') as outfile:
 # Generate an initial distortion-corrected volume
 # TODO The string '[ 0 0 0 1 ]' is being written to stdout somewhere here...
 runCommand(applytopup_cmd + ' --imain=' + applytopup_imain_one + ' --datain=config.txt --inindex=1 --topup=field --out=dwi1_topup' + fsl_suffix + ' --method=jac --interp=trilinear')
+delFile(applytopup_imain_one)
 runCommand(applytopup_cmd + ' --imain=' + applytopup_imain_two + ' --datain=config.txt --inindex=' + DWI2_config_index + ' --topup=field --out=dwi2_topup' + fsl_suffix + ' --method=jac --interp=trilinear')
+delFile(applytopup_imain_two)
 runCommand('mrcat dwi1_topup' + fsl_suffix + ' dwi2_topup' + fsl_suffix + ' - -axis 3 | mrconvert - topup_combined.mif -grad grad_combined.b')
+delFile('dwi1_topup' + fsl_suffix)
+delFile('dwi2_topup' + fsl_suffix)
 
 # Produce a brain mask based on this initial correction
 runCommand('dwi2mask topup_combined.mif mask.mif -grad grad_combined.b')
@@ -209,6 +229,8 @@ runCommand('maskfilter mask.mif dilate - | mrconvert - mask_dil.nii -datatype fl
 
 # Create the diffusion gradient table in FSL format
 runCommand('mrinfo topup_combined.mif -export_grad_fsl bvecs bvals')
+
+delFile('topup_combined.mif')
     
 # When producing this config file, it's possible that the first DWI input has more than one b=0 image
 # In that case, all volumes in the second DWI input need to refer to one of the config file lines
@@ -228,6 +250,7 @@ with open('indices.txt', 'w') as index_file:
 # Instead, generate a Jacobian-modulated output image for each volume, get the field image from topup, and
 #   do a manual combination using the equation from Skare and Bammer ISMRM 2010
 runCommand('eddy --imain=' + series_imain + ' --mask=mask_dil.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=eddy_output --resamp=jac')
+delFile(series_imain)
 
 # Derive the weight images
 # To properly get a voxel displacement field, need to scale the field map (which is output in Hz) appropriately
@@ -236,25 +259,30 @@ runCommand('eddy --imain=' + series_imain + ' --mask=mask_dil.nii --index=indice
 # Eddy seems to expect this and operates accordingly; but since we're doing things external to FSL and
 #   voxel-by-voxel, need to do the flip explicitly; also import the transform from the first input image
 #   for the sake of visualisation
-transform = getHeaderInfo('dwi1.mif', 'transform')
 with open( 'dwi1_transform.txt', 'w' ) as f:
   for line in transform:
     f.write (line)
 runCommand('mrtransform field_map' + fsl_suffix + ' - -flip 0 -linear dwi1_transform.txt -replace | mrconvert - field_map_flip.mif' + stride_option)
+delFile('field_map' + fsl_suffix)
 
 # Scaling term for field map is identical to the bandwidth provided in the topup config file
 #   (converts Hz to pixel count; that way a simple image gradient can be used to get the Jacobians)
 # Let mrfilter apply the default 1 voxel size gaussian smoothing filter before calculating the field gradient
 runCommand('mrcalc field_map_flip.mif 0.1 -mult - | mrfilter - gradient - | mrconvert - field_deriv_pe.mif -coord 3 1 -axes 0,1,2')
+delFile('field_map_flip.mif')
 runCommand('mrcalc 1.0 field_deriv_pe.mif -add 0.0 -max jacobian1.mif')
 runCommand('mrcalc 1.0 field_deriv_pe.mif -sub 0.0 -max jacobian2.mif')
+delFile('field_deriv_pe.mif')
 runCommand('mrcalc jacobian1.mif jacobian1.mif -mult weight1.mif')
 runCommand('mrcalc jacobian2.mif jacobian2.mif -mult weight2.mif')
+delFile('jacobian1.mif')
+delFile('jacobian2.mif')
 runCommand('mrcalc weight1.mif weight2.mif -add sum_weights.mif')
 
 # Manually combine corresponding volumes from EDDY output
 runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected1.mif -coord 3 0:' + str(int(num_volumes)-1) + stride_option)
 runCommand('mrconvert eddy_output' + fsl_suffix + ' corrected2.mif -coord 3 ' + num_volumes + ':' + str((int(num_volumes)*2)-1) + stride_option)
+delFile('eddy_output' + fsl_suffix)
 result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - ' + result_path + ' -grad grad1.b' + axis_permute_option + vox_permute_option)
 
