@@ -28,6 +28,7 @@
 #include "image/transform.h"
 #include "image/sparse/fixel_metric.h"
 #include "image/sparse/voxel.h"
+#include "math/math.h"
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/stats/permutation.h"
@@ -172,7 +173,7 @@ void run() {
   opt = get_options ("angle");
   if (opt.size())
     angular_threshold = opt[0][0];
-  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   value_type connectivity_threshold = 0.01;
   opt = get_options ("connectivity");
