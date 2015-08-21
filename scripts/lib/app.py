@@ -20,11 +20,12 @@ def initParser(desc):
   global parser
   parser = argparse.ArgumentParser(description=desc, formatter_class=argparse.RawDescriptionHelpFormatter)
   standard_options = parser.add_argument_group('standard options')
-  standard_options.add_argument('-continue', nargs=2, dest='cont', metavar='<TempDir> <LastFile>', help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
+  standard_options.add_argument('-continue', nargs=2, dest='cont', metavar=('<TempDir>', '<LastFile>'), help='Continue the script from a previous execution; must provide the temporary directory path, and the name of the last successfully-generated file')
   standard_options.add_argument('-nocleanup', action='store_true', help='Do not delete temporary directory at script completion')
+  standard_options.add_argument('-tempdir', metavar='/path/to/tmp/', help='Manually specify the path in which to generate the temporary directory')
   verbosity_group = standard_options.add_mutually_exclusive_group()
-  verbosity_group.add_argument('-quiet',     action='store_true', help='Suppress all console output during script execution')
-  verbosity_group.add_argument('-verbose',   action='store_true', help='Display additional information for every command invoked')
+  verbosity_group.add_argument('-quiet',   action='store_true', help='Suppress all console output during script execution')
+  verbosity_group.add_argument('-verbose', action='store_true', help='Display additional information for every command invoked')
   
   
 
@@ -46,12 +47,15 @@ def initialise():
     tempDir = os.path.abspath(args.cont[0])
     lastFile = args.cont[1]
   else:
-    dir_path = readMRtrixConfSetting('TmpFileDir')
-    if not dir_path:
-      if os.name == 'posix':
-        dir_path = '/tmp'
-      else:
-        dir_path = '.'
+    if args.tempdir:
+      dir_path = args.tempdir
+    else:
+      dir_path = readMRtrixConfSetting('TmpFileDir')
+      if not dir_path:
+        if os.name == 'posix':
+          dir_path = '/tmp'
+        else:
+          dir_path = '.'
     prefix = readMRtrixConfSetting('TmpFilePrefix')
     if not prefix:
       prefix = os.path.basename(sys.argv[0]) + '-tmp-'
