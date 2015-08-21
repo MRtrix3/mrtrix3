@@ -18,7 +18,6 @@ import os, sys
 import lib.app
 
 from lib.binaryInPath  import binaryInPath
-from lib.delFile       import delFile
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
@@ -154,7 +153,6 @@ result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 if not grad:
 
   printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
-  delFile('series.mif')
   runCommand('mrconvert series_topup' + fsl_suffix + ' ' + result_path + stride_option)
   
 else:
@@ -164,7 +162,6 @@ else:
   # Create the diffusion gradient table in FSL format
   # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
   runCommand('mrconvert series.mif - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
-  delFile('series.mif')
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
   runCommand('mrconvert series_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')

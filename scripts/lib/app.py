@@ -34,6 +34,7 @@ def initialise():
   from lib.printMessage          import printMessage
   from lib.readMRtrixConfSetting import readMRtrixConfSetting
   global args, cleanup, lastFile, mrtrixQuiet, tempDir, verbosity, workingDir
+  workingDir = os.getcwd()
   args = parser.parse_args()
   if args.nocleanup:
     cleanup = False
@@ -48,7 +49,7 @@ def initialise():
     lastFile = args.cont[1]
   else:
     if args.tempdir:
-      dir_path = args.tempdir
+      dir_path = os.path.abspath(args.tempdir)
     else:
       dir_path = readMRtrixConfSetting('TmpFileDir')
       if not dir_path:
@@ -65,8 +66,10 @@ def initialise():
       tempDir = os.path.join(dir_path, prefix + random_string) + os.sep
     os.makedirs(tempDir)
     printMessage('Generated temporary directory: ' + tempDir)
-  workingDir = os.getcwd()
-
+    with open(os.path.join(tempDir, 'cwd.txt'), 'w') as outfile:
+      outfile.write(workingDir + '\n')
+    with open(os.path.join(tempDir, 'command.txt'), 'w') as outfile:
+      outfile.write(' '.join(sys.argv) + '\n')
 
 def gotoTempDir():
   import os

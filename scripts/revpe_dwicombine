@@ -203,8 +203,8 @@ for line_count in range(0,DWI2_b0_count):
 config_file.close()
 
 # Perform the field estimation
-runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map' + fsl_suffix + ' --iout=b0_topup.nii --config=' + topup_config_path)
-defFile(topup_imain)
+runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=field --fout=field_map' + fsl_suffix + ' --config=' + topup_config_path)
+delFile(topup_imain)
 
 # Concatenate the diffusion gradient tables
 filenames = [ 'grad1.b', 'grad2.b' ]
