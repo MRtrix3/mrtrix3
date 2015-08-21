@@ -140,7 +140,7 @@ _%s()
 					current_option = words[1]
 					single_dash_options += ' -' + current_option
 					double_dash_options += ' --' + current_option
-				  	current_num_of_option_args = 0
+					current_num_of_option_args = 0
 				elif words[0] == 'ARGUMENT':
 					current_arg = words[1]
 					current_arg_optional = words[2] 
