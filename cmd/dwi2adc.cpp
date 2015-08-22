@@ -62,7 +62,7 @@ class DWI2ADC {
 
     template <class DWIType, class ADCType>
       void operator() (DWIType& dwi_image, ADCType& adc_image) {
-        for (auto l = Loop (dwi_axis, dwi_axis + 1) (dwi_image); l; ++l) {
+        for (auto l = Loop (dwi_axis) (dwi_image); l; ++l) {
           value_type val = dwi_image.value();
           dwi[dwi_image.index (dwi_axis)] = val ? std::log (val) : 1.0e-12;
         }
@@ -94,7 +94,7 @@ void run () {
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
   Eigen::MatrixXd b (grad.rows(), 2);
-  for (size_t i = 0; i < b.rows(); ++i) {
+  for (ssize_t i = 0; i < b.rows(); ++i) {
     b(i,0) = 1.0;
     b(i,1) = -grad (i,3);
   }
