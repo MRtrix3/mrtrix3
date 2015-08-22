@@ -94,9 +94,9 @@ namespace MR
         }
 
 
-        void set_npass (unsigned int npass)
+        void set_npass (unsigned int npasses)
         {
-          npass = npass;
+          npass = npasses;
         }
 
 
