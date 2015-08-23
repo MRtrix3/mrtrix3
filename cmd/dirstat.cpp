@@ -22,9 +22,6 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 #include "dwi/gradient.h"
 
@@ -43,43 +40,35 @@ void usage () {
 }
 
 
-typedef double value_type;
+
+int precision = 6;
 
 
 
 
-
-void report (const std::string& title, const Math::Matrix<value_type>& directions) 
+void report (const std::string& title, const Eigen::MatrixXd& directions) 
 {
-  std::vector<value_type> NN_bipolar (directions.rows(), 0.0);
-  std::vector<value_type> NN_unipolar (directions.rows(), 0.0);
+  std::vector<double> NN_bipolar (directions.rows(), 0.0);
+  std::vector<double> NN_unipolar (directions.rows(), 0.0);
 
-  std::vector<value_type> E_bipolar (directions.rows(), 0.0);
-  std::vector<value_type> E_unipolar (directions.rows(), 0.0);
+  std::vector<double> E_bipolar (directions.rows(), 0.0);
+  std::vector<double> E_unipolar (directions.rows(), 0.0);
 
-  for (size_t i = 0; i < directions.rows()-1; ++i) {
-    for (size_t j = i+1; j < directions.rows(); ++j) {
-      value_type cos_angle = Math::dot (directions.row(i).sub(0,3), directions.row(j).sub(0,3));
+  for (ssize_t i = 0; i < directions.rows()-1; ++i) {
+    for (ssize_t j = i+1; j < directions.rows(); ++j) {
+      double cos_angle = directions.row(i).head(3).dot (directions.row(j).head(3));
       NN_unipolar[i] = std::max (NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max (NN_unipolar[j], cos_angle);
-      cos_angle = std::abs(cos_angle);
+      cos_angle = std::abs (cos_angle);
       NN_bipolar[i] = std::max (NN_bipolar[i], cos_angle);
       NN_bipolar[j] = std::max (NN_bipolar[j], cos_angle);
 
-      value_type E = 
-        Math::pow2 (directions(i,0) - directions(j,0)) + 
-        Math::pow2 (directions(i,1) - directions(j,1)) + 
-        Math::pow2 (directions(i,2) - directions(j,2));
-      E = value_type (1.0) / E;
+      double E = 1.0 / (directions.row(i).head(3) - directions.row(j).head(3)).squaredNorm();
 
       E_unipolar[i] += E;
       E_unipolar[j] += E;
 
-      value_type E2 = 
-        Math::pow2 (directions(i,0) + directions(j,0)) + 
-        Math::pow2 (directions(i,1) + directions(j,1)) + 
-        Math::pow2 (directions(i,2) + directions(j,2));
-      E += value_type (1.0) / E2;
+      E += 1.0 / (directions.row(i).head(3) + directions.row(j).head(3)).squaredNorm();
 
       E_bipolar[i] += E;
       E_bipolar[j] += E;
@@ -90,10 +79,10 @@ void report (const std::string& title, const Math::Matrix<value_type>& direction
 
 
 
-  auto report_NN = [](const std::vector<value_type>& NN) {
-    value_type min = std::numeric_limits<value_type>::max();
-    value_type mean = 0.0;
-    value_type max = 0.0;
+  auto report_NN = [](const std::vector<double>& NN) {
+    double min = std::numeric_limits<double>::max();
+    double mean = 0.0;
+    double max = 0.0;
     for (auto a : NN) {
       a = (180.0/Math::pi) * std::acos (a);
       mean += a;
@@ -102,27 +91,27 @@ void report (const std::string& title, const Math::Matrix<value_type>& direction
     }
     mean /= NN.size();
 
-    print ("    nearest-neighbour angles: mean = " + str(mean) + ", range [ " + str(min) + " - " + str(max) + " ]\n");
+    print ("    nearest-neighbour angles: mean = " + str(mean, precision) + ", range [ " + str(min, precision) + " - " + str(max, precision) + " ]\n");
   };
 
 
 
-  auto report_E = [](const std::vector<value_type>& E) {
-    value_type min = std::numeric_limits<value_type>::max();
-    value_type total = 0.0;
-    value_type max = 0.0;
+  auto report_E = [](const std::vector<double>& E) {
+    double min = std::numeric_limits<double>::max();
+    double total = 0.0;
+    double max = 0.0;
     for (auto e : E) {
       total += e;
       min = std::min (min, e);
       max = std::max (max, e);
     }
-    print ("    energy: total = " + str(total) + ", mean = " + str(total/E.size()) + ", range [ " + str(min) + " - " + str(max) + " ]\n");
+    print ("    energy: total = " + str(total, precision) + ", mean = " + str(total/E.size(), precision) + ", range [ " + str(min, precision) + " - " + str(max, precision) + " ]\n");
   };
 
 
 
 
-  print (title + " [ " + str(directions.rows()) + " directions ]\n\n");
+  print (title + " [ " + str(directions.rows(), precision) + " directions ]\n\n");
 
   print ("  Bipolar electrostatic repulsion model:\n");
   report_NN (NN_bipolar);
@@ -134,9 +123,9 @@ void report (const std::string& title, const Math::Matrix<value_type>& direction
 
   std::string lmax_results;
   for (size_t lmax = 2; lmax <= Math::SH::LforN (directions.rows()); lmax += 2) 
-    lmax_results += " " + str(DWI::condition_number_for_lmax (directions, lmax));
+    lmax_results += " " + str(DWI::condition_number_for_lmax (directions, lmax), precision);
   print ("\n  Spherical Harmonic fit:\n    condition numbers for lmax = " + str(2) + " -> " 
-      + str(Math::SH::LforN (directions.rows())) + ":" + lmax_results + "\n\n");
+      + str(Math::SH::LforN (directions.rows()), precision) + ":" + lmax_results + "\n\n");
 }
 
 
@@ -144,23 +133,23 @@ void report (const std::string& title, const Math::Matrix<value_type>& direction
 void run () 
 {
   try {
-    Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
-    report (str(argument[0]), directions);
+    auto directions = DWI::Directions::load_cartesian (argument[0]);
+    report (argument[0], directions);
   }
   catch (Exception& E) {
-    Math::Matrix<value_type> directions (str(argument[0]));
+    auto directions = load_matrix<double> (argument[0]);
     DWI::normalise_grad (directions);
-    if (directions.columns() < 3) 
+    if (directions.cols() < 3) 
       throw Exception ("unexpected matrix size for DW scheme \"" + str(argument[0]) + "\"");
 
     print (str(argument[0]) + " [ " + str(directions.rows()) + " volumes ]\n");
     DWI::Shells shells (directions);
 
     for (size_t n = 0; n < shells.count(); ++n) {
-      Math::Matrix<value_type> subset (shells[n].count(), 3);
-      for (size_t i = 0; i < subset.rows(); ++i)
-        subset.row(i) = directions.row(shells[n].get_volumes()[i]).sub(0,3);
-      report ("\nb = " + str(shells[n].get_mean()), subset);
+      Eigen::MatrixXd subset (shells[n].count(), 3);
+      for (ssize_t i = 0; i < subset.rows(); ++i)
+        subset.row(i) = directions.row(shells[n].get_volumes()[i]).head(3);
+      report ("\nb = " + str(shells[n].get_mean(), precision), subset);
     }
   }
 }
