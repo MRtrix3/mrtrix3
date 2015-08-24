@@ -28,7 +28,7 @@
 #include <set>
 #include <vector>
 
-#include "math/matrix.h"
+#include "connectome/connectome.h"
 
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/mapped_track.h"
@@ -47,13 +47,8 @@ class Matrix
 
   public:
     Matrix (const node_t max_node_index, const bool vector_output = false) :
-        data   (vector_output ? 1 : (max_node_index + 1), max_node_index + 1),
-        counts (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)
-    {
-      data = 0.0;
-      counts = 0.0;
-    }
-
+        data   (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)),
+        counts (MR::Connectome::matrix_type::Zero (vector_output ? 1 : (max_node_index + 1), max_node_index + 1)) { }
 
     bool operator() (const Mapped_track_nodepair&);
     bool operator() (const Mapped_track_nodelist&);
@@ -64,14 +59,14 @@ class Matrix
 
     void error_check (const std::set<node_t>&);
 
-    void write (const std::string& path) { data.save (path); }
-    void write_assignments (const std::string&);
+    void write (const std::string&) const;
+    void write_assignments (const std::string&) const;
 
     bool is_vector() const { return (data.rows() == 1); }
 
 
   private:
-    Math::Matrix<double> data, counts;
+    MR::Connectome::matrix_type data, counts;
     std::vector<NodePair> assignments_pairs;
     std::vector< std::vector<node_t> > assignments_lists;
 
