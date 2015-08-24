@@ -38,21 +38,21 @@ template <class ImageType, class Nav>
 inline void set_pos (ImageType& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
-      data[axis] = pos[axis];
+      data.index(axis) = pos[axis];
 }
 
 template <class ImageType, class Nav>
 inline void set_pos (ImageType& data, const Nav& pos, const size_t from_axis, const size_t to_axis)
 {
     for (size_t axis = from_axis; axis != to_axis; ++axis)
-      data[axis] = pos[axis];
+      data.index(axis) = pos[axis];
 }
 
 template <class ImageType>
 inline void set_pos (ImageType& data, const Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
-      data[axis] = pos[axis];
+      data.index(axis) = pos[axis];
 }
 
 
@@ -60,14 +60,14 @@ template <class ImageType, class Nav>
 inline void get_pos (const ImageType& data, Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
-      pos[axis] = data[axis];
+      pos[axis] = data.index(axis);
 }
 
 template <class ImageType>
 inline void get_pos (ImageType& data, Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
-      pos[axis] = data[axis];
+      pos[axis] = data.index(axis);
 }
 
 
@@ -75,7 +75,7 @@ template <class ImageType, class Nav>
 inline void step_pos (ImageType& data, const Nav& step)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
-      data[axis] += step[axis];
+      data.index(axis) += step[axis];
 }
 
 
@@ -83,7 +83,7 @@ template <class ImageType>
 inline void step_pos (ImageType& data, const Eigen::Vector3& step)
 {
     for (size_t axis = 0; axis != 3; ++axis)
-      data[axis] += step[axis];
+      data.index(axis) += step[axis];
 }
 
 
@@ -92,7 +92,7 @@ template <class ImageType, class Nav>
 inline typename ImageType::value_type get_value_at_pos (ImageType& data, const Nav& pos)
 {
     for (size_t axis = 0; axis != data.ndim(); ++axis)
-      data[axis] = pos[axis];
+      data.index(axis) = pos[axis];
     return data.value();
 }
 
@@ -100,7 +100,7 @@ template <class ImageType>
 inline typename ImageType::value_type get_value_at_pos (ImageType& data, const Eigen::Vector3& pos)
 {
     for (size_t axis = 0; axis != 3; ++axis)
-      data[axis] = pos[axis];
+      data.index(axis) = pos[axis];
     return data.value();
 }
 
@@ -147,7 +147,7 @@ template <class Nav>
 inline bool within_bounds (const Nav& pos)
 {
     for (size_t axis = 0; axis != pos.ndim(); ++axis)
-      if (pos[axis] < 0 || pos[axis] >= pos.dim (axis))
+      if (pos.index(axis) < 0 || pos.index(axis) >= pos.size(axis))
         return false;
     return true;
 }

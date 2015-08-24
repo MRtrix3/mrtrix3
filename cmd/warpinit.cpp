@@ -54,23 +54,6 @@ void usage ()
 }
 
 
-class write_coordinates {
-  public:
-    template <class HeaderType>
-      write_coordinates (const HeaderType& in) :
-        transform (in) { }
-
-    template <class ImageType>
-      void operator() (ImageType& image) const {
-        Eigen::Vector3 voxel_pos ((default_type)image.index(0), (default_type)image.index(1), (default_type)image.index(2));
-        image.row(3) = (transform.voxel2scanner * voxel_pos).cast<typename ImageType::value_type>();
-      }
-
-  private:
-    const Transform transform;
-};
-
-
 void run ()
 {
   auto header = Header::open (argument[0]);
@@ -82,6 +65,13 @@ void run ()
 
   auto warp = Image<float>::create(argument[1], header);
 
+  Transform transform (header);
+
+  auto func = [&transform](Image<float>& image) {
+    Eigen::Vector3 voxel_pos ((float)image.index(0), (float)image.index(1), (float)image.index(2));
+    image.row(3) = (transform.voxel2scanner * voxel_pos).cast<float>();
+  };
+
   ThreadedLoop ("generating identity warp...", warp, 0, 3)
-    .run (write_coordinates (warp), warp);
+    .run (func, warp);
 }

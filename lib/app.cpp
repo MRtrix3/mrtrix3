@@ -699,7 +699,7 @@ namespace MR
         root = "several matches possible for option \"-" + root + "\": \"-" + candidates[0]->id;
 
         for (size_t i = 1; i < candidates.size(); ++i)
-          root += std::string (", \"-") + candidates[i]->id + "\"";
+          root += std::string ("\", \"-") + candidates[i]->id + "\"";
 
         throw Exception (root);
       }

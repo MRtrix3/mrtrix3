@@ -24,6 +24,7 @@ icons.cpp
 /lib/version.cpp
 /src/project_version.h
 /test/src/project_version.h
+/scripts/mrtrix_bash_completion
 /release/
 /test/bin/
 /dev/

@@ -278,7 +278,6 @@ if 'clean' in targets:
     folders = [ f for f in os.listdir('.') if os.path.exists (os.path.join (f, 'config')) ]
 
   if '.git' in folders: folders.remove ('.git')
-  print (folders)
   for f in folders:
     for root, dirs, files in os.walk(f, topdown=False):
       for name in files:
@@ -287,7 +286,6 @@ if 'clean' in targets:
           print ('delete file:', fname)
           os.remove (fname)
       for name in dirs:
-        print ('delete folder:', os.path.join(root, name))
         os.rmdir (os.path.join(root, name))
 
 
