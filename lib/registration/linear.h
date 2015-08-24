@@ -87,10 +87,9 @@ namespace MR
         }
 
         void set_extent (const std::vector<size_t> extent) {
-         // TODO: check input
           for (size_t d = 0; d < extent.size(); ++d) {
             if (extent[d] < 1)
-          throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
+              throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
           }
           kernel_extent = extent;
         }
@@ -172,14 +171,25 @@ namespace MR
 
             typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> MovingImageInterpolatorType;
 
+            typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> TemplateImageInterpolatorType;
+
+            typedef TemplateImageType MidwayImageType; // TODO 
+
             typedef Metric::Params<TransformType,
                                    MovingImageType,
                                    MovingImageInterpolatorType,
                                    TemplateImageType,
+                                   MidwayImageType,
+                                   TemplateImageInterpolatorType,
                                    Interp::Nearest<MovingMaskType>,
-                                   Interp::Nearest<MovingMaskType> > ParamType;
+                                   Interp::Nearest<TemplateMaskType> > ParamType;
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
+
+            // TODO:
+            // auto midway_image_header = compute_average_header(  );
+            // Image midway_image (midway_image_header); 
+            auto midway_image = template_image; // TODO
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
 
@@ -195,7 +205,6 @@ namespace MR
               moving_resize_filter.set_interp_type (1);
               auto moving_resized = Image<float>::scratch (moving_resize_filter);
               Filter::Smooth moving_smooth_filter (moving_resized);
-
               auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
 
               Filter::Resize template_resize_filter (template_image);
@@ -204,6 +213,11 @@ namespace MR
               auto template_resized = Image<float>::scratch (template_resize_filter);
               Filter::Smooth template_smooth_filter (template_resized);
               auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+              
+              Filter::Resize midway_resize_filter (midway_image);
+              midway_resize_filter.set_scale_factor (scale_factor[level]);
+              midway_resize_filter.set_interp_type (1);
+              auto midway_resized = Image<float>::scratch (midway_resize_filter);
 
               {
                 LogLevelLatch log_level (0);
@@ -213,7 +227,7 @@ namespace MR
                 template_resize_filter (template_image, template_resized);
                 template_smooth_filter (template_resized, template_resized_smoothed);
               }
-              ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed);
+              ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed, midway_resized);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);

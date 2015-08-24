@@ -53,7 +53,8 @@ namespace MR
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
-              std::unique_ptr<Image<float> > reoriented_moving;
+              std::unique_ptr<Image<float> > reoriented_moving; // MP unused
+              std::unique_ptr<Image<float> > reoriented_template; // MP unused
 
               // TODO I wonder if reorienting within the metric would be quicker since it's only one pass? Means we would need to set current affine to the metric4D before running the thread kernel
 //              if (directions.cols()) {
@@ -65,7 +66,8 @@ namespace MR
 
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                ThreadedLoop (params.template_image, 0, 3).run (kernel);
+                // ThreadedLoop (params.template_image, 0, 3).run (kernel);
+                ThreadedLoop (params.midway_image, 0, 3).run (kernel);
               }
               // std::cerr.precision(10);
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));

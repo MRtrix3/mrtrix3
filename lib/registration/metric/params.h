@@ -34,6 +34,8 @@ namespace MR
                 class MovingImageType,
                 class MovingImageInterpolatorType,
                 class TemplateImageType,
+                class MidwayImageType,
+                class TemplateImageInterpolatorType,
                 class MovingMaskInterpolatorType,
                 class TemplateMaskInterpolatorType>
       class Params {
@@ -41,14 +43,18 @@ namespace MR
 
           typedef typename TransformType::ParameterType TransformParamType;
           typedef typename MovingImageInterpolatorType::value_type MovingValueType;
+          typedef typename TemplateImageInterpolatorType::value_type TemplateValueType;
 
           Params (TransformType& transform,
                   MovingImageType& moving_image,
-                  TemplateImageType& template_image) :
+                  TemplateImageType& template_image,
+                  MidwayImageType& midway_image) :
                     transformation (transform),
                     moving_image (moving_image),
-                    template_image (template_image){
+                    template_image (template_image),
+                    midway_image (midway_image){
                       moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
+                      template_image_interp.reset (new TemplateImageInterpolatorType (template_image));
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
@@ -58,9 +64,11 @@ namespace MR
           TransformType& transformation;
           TemplateImageType moving_image;
           TemplateImageType template_image;
+          MidwayImageType midway_image;
           MR::copy_ptr<MovingImageInterpolatorType> moving_image_interp;
-          MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
+          MR::copy_ptr<TemplateImageInterpolatorType> template_image_interp;
           MR::copy_ptr<MovingMaskInterpolatorType> moving_mask_interp;
+          MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
           std::vector<size_t> extent;
       };
     }
