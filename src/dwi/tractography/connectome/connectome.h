@@ -27,9 +27,7 @@
 
 
 #include "app.h"
-#include "args.h"
-
-#include "image/buffer.h"
+#include "image.h"
 
 #include "connectome/connectome.h"
 
@@ -61,10 +59,10 @@ extern const char* modes[];
 
 
 extern const App::OptionGroup AssignmentOption;
-Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>&);
+Tck2nodes_base* load_assignment_mode (Image<node_t>&);
 
 extern const App::OptionGroup MetricOption;
-Metric_base* load_metric (Image::Buffer<node_t>&);
+Metric_base* load_metric (Image<node_t>&);
 
 
 

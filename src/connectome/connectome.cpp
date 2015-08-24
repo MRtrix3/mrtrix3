@@ -24,15 +24,18 @@
 
 #include "connectome/connectome.h"
 
+#include "exception.h"
+#include "mrtrix.h"
+
 
 namespace MR {
 namespace Connectome {
 
 
-void verify_matrix (Math::Matrix<float>& in, const node_t num_nodes)
+void verify_matrix (matrix_type& in, const node_t num_nodes)
 {
-  if (in.rows() != in.columns())
-    throw Exception ("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.columns()) + ")");
+  if (in.rows() != in.cols())
+    throw Exception ("Connectome matrix is not square (" + str(in.rows()) + " x " + str(in.cols()) + ")");
   if (in.rows() != num_nodes)
     throw Exception ("Connectome matrix contains " + str(in.rows()) + " nodes; expected " + str(num_nodes));
 
