@@ -23,6 +23,7 @@
 #ifndef __image_average_space_h__
 #define __image_average_space_h__
 
+#include "transform.h"
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/SVD>
 #include <Eigen/Geometry> // Eigen::Translation
@@ -37,13 +38,14 @@ namespace MR
         size_t rows = mat_in[0].rows();
         size_t cols = mat_in[0].cols();
         size_t N = mat_in.size();
-        // TODO check mat_in dimensions
+        // check input
+        for (const auto &mat: mat_in){
+          assert( cols == (size_t) mat.cols());
+          assert( rows == (size_t) mat.rows());
+          cols = mat.cols(); // TODO hack to remove unused variable compiler warning
+        }
+        
         mat_avg.setIdentity();
-        assert((size_t) mat_avg.cols() == cols);
-        assert((size_t) mat_avg.rows() == rows);
-         // || (size_t) mat_avg.rows() != rows) {
-          // throw Exception("matrix_average: average matrix dimensions mismatch");
-        // }
 
         MatrixType mat_s(rows,cols);  // sum 
         MatrixType mat_l(rows,cols);  
@@ -133,7 +135,9 @@ namespace MR
          // Image::ConstHeader header_in  (*input_headers[iFile]);
 
          // get voxel2scanner transformation
-         auto v2s_trafo = input_headers[iFile].transform();//.voxel2scanner();
+         auto v2s_trafo = (Eigen::Transform< ComputeType, 3, Eigen::Projective>) Transform(input_headers[iFile]).voxel2scanner; // cast to Projective trafo to fill the last row of the matrix
+         // v2s_trafo.makeAffine(); // Sets the last row to [0 ... 0 1] 
+
          if (transform_header_with.size()>iFile)
             v2s_trafo = transform_header_with[iFile] * v2s_trafo;
          transformation_matrices.push_back(v2s_trafo.matrix());
@@ -162,19 +166,24 @@ namespace MR
       DEBUG("vox_scaling: "+ str(vox_scaling.transpose(),10));
 
       // MatrixType4 mat_avg;
-      MatrixType4 mat_avg = MatrixType4::Zero();
-      // INFO(str(mat_avg,10));
-      Math::matrix_average<MatrixArrayType, MatrixType4>(transformation_matrices, mat_avg);
+      MatrixType4 mat_avg = MatrixType4::Zero(4,4);
+      Math::matrix_average<MatrixArrayType, MatrixType4>(transformation_matrices, mat_avg, false);
+      DEBUG("mat_avg: " + str(mat_avg,10));
 
-      //   TransformType average_v2s_trafo = TransformType::Identity();
-      //   average_v2s_trafo.matrix() = mat_avg;
-      //   TransformType average_v2s_trafo_inverse = average_v2s_trafo.inverse(Eigen::Projective);
-      //   // DEBUG("inverse sanity: " + str( (average_v2s_trafo * average_v2s_trafo_inverse).matrix().isApprox(MatrixType::Identity(4,4)) ));
+      auto average_v2s_trafo = TransformType::Identity();
+      // average_v2s_trafo.matrix() = mat_avg;
+      // VAR(average_v2s_trafo.matrix());
 
-      //   // transform all image corners into inverse average space
-      //   MatrixType bounding_box_corners_inv = bounding_box_corners;
+      // TransformType average_s2v_trafo_inverse = average_v2s_trafo.inverse(Eigen::Projective);
+      // VAR(average_s2v_trafo_inverse.matrix());
+
+
+      // DEBUG("inverse sanity: " + str( (average_v2s_trafo * average_s2v_trafo_inverse).matrix().isApprox(MatrixType::Identity(4,4)) ));
+
+      // transform all image corners into inverse average space
+      // MatrixType bounding_box_corners_inv = bounding_box_corners;
       //   for (int i=0; i<bounding_box_corners_inv.rows(); i++){
-      //     bounding_box_corners_inv.transpose().col(i) = (average_v2s_trafo_inverse * bounding_box_corners.transpose().col(i));
+      //     bounding_box_corners_inv.transpose().col(i) = (average_s2v_trafo_inverse * bounding_box_corners.transpose().col(i));
       //   } 
       //   // minimum axis-aligned corners in inverse average space 
       //   VectorType bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
@@ -201,7 +210,7 @@ namespace MR
 
       //   // set translation to first corner (0, 0, 0, 1)
       //   average_v2s_trafo.matrix().col(3).template head<3>() = bounding_box_corners.row(0).template  head<3>();
-      //   // average_v2s_trafo_inverse = average_v2s_trafo.inverse();
+      //   // average_s2v_trafo_inverse = average_v2s_trafo.inverse();
 
       //   // override header transformation
       //   TransformType average_i2s_trafo = TransformType::Identity();

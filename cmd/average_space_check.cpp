@@ -43,7 +43,7 @@ void run ()
 
 	for(auto temp: headers_in){
 		std::cerr << temp << std::endl;
-		auto trafo = temp.transform();
+		auto trafo = (Eigen::Transform<ComputeType, 3, Eigen::Projective>) Transform(temp).voxel2scanner;
 		std::cerr << trafo.matrix() << std::endl;
 		
     	auto bbox = get_bounding_box<ComputeType,decltype(trafo)>(temp, trafo);
