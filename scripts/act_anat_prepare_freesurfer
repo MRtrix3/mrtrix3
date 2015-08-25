@@ -64,6 +64,6 @@ runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert 
 # Move the final result image to where it should be
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 
 

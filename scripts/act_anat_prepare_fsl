@@ -14,6 +14,7 @@ from lib.errorMessage import errorMessage
 from lib.getFSLSuffix import getFSLSuffix
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
+from lib.warnMessage  import warnMessage
 
 lib.app.initParser('Generate a 5TT image suitable for ACT from a T1 image using FSL tools')
 lib.app.parser.add_argument('input',  help='The input T1 image')
@@ -125,5 +126,5 @@ runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5
 
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 

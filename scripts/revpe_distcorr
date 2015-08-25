@@ -21,6 +21,7 @@ from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getPEAxis     import getPEAxis
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
@@ -194,5 +195,5 @@ else:
   runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
 lib.app.moveFileToDest(result_path, lib.app.args.output)
-lib.app.terminate()
+lib.app.complete()
 

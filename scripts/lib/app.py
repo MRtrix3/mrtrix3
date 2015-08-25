@@ -109,8 +109,8 @@ def moveFileToDest(local_path, destination):
   
 
 
-def terminate():
-  import os, shutil
+def complete():
+  import os, shutil, sys
   from lib.printMessage import printMessage
   printMessage('Changing back to original directory (' + workingDir + ')')
   os.chdir(workingDir)
@@ -118,5 +118,7 @@ def terminate():
     printMessage('Deleting temporary directory ' + tempDir)
     shutil.rmtree(tempDir)
   else:
-    printMessage('Contents of temporary directory kept, location: ' + tempDir)
+    # This needs to be printed even if the -quiet option is used
+    sys.stdout.write(os.path.basename(sys.argv[0]) + ': ' + colourPrint + 'Contents of temporary directory kept, location: ' + tempDir + colourClear + '\n')
+    sys.stdout.flush()
 

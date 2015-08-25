@@ -102,5 +102,5 @@ runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + result_path)
 
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 

@@ -287,5 +287,5 @@ result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrcalc corrected1.mif weight1.mif -mult corrected2.mif weight2.mif -mult -add sum_weights.mif -divide 0.0 -max - | mrconvert - ' + result_path + ' -grad grad1.b' + axis_permute_option + vox_permute_option)
 
 lib.app.moveFileToDest(result_path, lib.app.args.output)
-lib.app.terminate()
+lib.app.complete()
 

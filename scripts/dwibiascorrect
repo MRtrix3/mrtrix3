@@ -49,5 +49,5 @@ runCommand('mrcalc in.mif fast_bias.nii -div ' + result_path)
 
 lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 
