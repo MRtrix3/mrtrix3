@@ -1,9 +1,10 @@
 mrtrix_bin_list = [ ]
 
-def runCommand(cmd):
+def runCommand(cmd, exitOnError=True):
 
   import lib.app, os, sys
   from lib.errorMessage import errorMessage
+  from lib.warnMessage  import warnMessage
   global mrtrix_bin_list
   
   if not mrtrix_bin_list:
@@ -40,5 +41,8 @@ def runCommand(cmd):
     sys.stdout.flush()
 
   if (os.system(cmd)):
-    errorMessage('Command failed: ' + cmd)
+    if exitOnError:
+      errorMessage('Command failed: ' + cmd)
+    else:
+      warnMessage('Command failed: ' + cmd)
 

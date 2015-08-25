@@ -75,11 +75,12 @@ else:
   if os.path.exists (mni_mask_path):
     mni_mask_dilation = 2;
 
+# standard_space_roi can sometimes crash; if this happens, try to allow the script to continue
 if mni_mask_dilation:
   runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV', False)
 else:
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
 
 if not os.path.isfile('T1_preBET' + fsl_suffix):
   warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
