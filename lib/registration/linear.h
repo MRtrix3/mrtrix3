@@ -26,6 +26,7 @@
 #include <vector>
 
 #include "image.h"
+#include "image/average_space.h"
 #include "filter/resize.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
