@@ -29,7 +29,7 @@ void run ()
   std::cout << argument[0] << std::endl;
 
   auto input = Image<float>::open (argument[0]); //.with_direct_io (Stride::contiguous_along_axis(3));
-  Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::ValueAndGradient> interp_cubic (input, 0.0, true); // bool: gradient with respecet to scanner 
+  Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::ValueAndGradient> interp_cubic (input, 0.0, true); // bool: gradient with respect to scanner 
 
 
   // Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::Value> interp_cubic_value (input, 0.0);
@@ -44,10 +44,10 @@ void run ()
     input.index(i) = voxel(i);
     // interp_cubic.index(i) = voxel(i);
     // interp_cubic_value.index(i) = voxel(i);
-    interp_linear.index(i) = voxel(i);
+    // interp_linear.index(i) = voxel(i);
   }
 
-  std::cout << input << std::endl;
+  VAR(input);
   std::cout << input.transform().matrix() << std::endl;
   // std::cout << interp_cubic << std::endl;
   // std::cout << interp_linear << std::endl;
@@ -59,12 +59,13 @@ void run ()
   float value = 0;
   Eigen::Matrix<float,1,3> gradient;
   interp_cubic.voxel(voxel);
-  std::cout << interp_cubic << std::endl;
+  VAR(interp_cubic);
   interp_cubic.value_and_gradient(value, gradient);
-  VAR(value);
   interp_cubic.voxel(voxel);
-  std::cout << interp_cubic << std::endl;
+  VAR(interp_cubic);
+  VAR(value);
   VAR(interp_cubic.value());
+  VAR(input.value());
 
   VAR(gradient);
   // VAR(interp_cubic.value());
@@ -76,15 +77,15 @@ void run ()
   // VAR(interp_linear.value());
   // VAR(interp_linear.gradient());
 
- auto output = Image<float>::create ("value_cubic.mif", input.header());
- for (auto i = Loop() (input, output); i ;++i){
-    interp_cubic.index(0) = input.index(0);
-    interp_cubic.index(1) = input.index(1);
-    interp_cubic.index(2) = input.index(2);
-    // if (input.value() != interp_cubic.value())
-      // std::cerr << input << "\n" << interp_cubic << "\n" << interp_cubic.value() << "\n\n";
-    output.value() = interp_cubic.value();
- }
+ // auto output = Image<float>::create ("value_cubic.mif", input.header());
+ // for (auto i = Loop() (input, output); i ;++i){
+ //    interp_cubic.index(0) = input.index(0);
+ //    interp_cubic.index(1) = input.index(1);
+ //    interp_cubic.index(2) = input.index(2);
+ //    // if (input.value() != interp_cubic.value())
+ //      // std::cerr << input << "\n" << interp_cubic << "\n" << interp_cubic.value() << "\n\n";
+ //    output.value() = interp_cubic.value();
+ // }
 
 //  Registration::Transform::compose (linear_transform, input, output);
 
