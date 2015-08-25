@@ -22,13 +22,16 @@ def runCommand(cmd):
 
   binary_name = cmd.split()[0]
 
-  # Automatically add the -quiet flags to any mrtrix command calls, including filling them in around the pipes
+  # Automatically add the relevant flags to any mrtrix command calls, including filling them in around the pipes
   if binary_name in mrtrix_bin_list:
     cmdsplit = cmd.split()
     for index, item in enumerate(cmdsplit):
       if item == '|':
-        cmdsplit[index] = lib.app.mrtrixQuiet + ' |'
-        index += 1
+        if lib.app.mrtrixNThreads:
+          cmdsplit[index] = lib.app.mrtrixNThreads + ' |'
+        if lib.app.mrtrixQuiet:
+          cmdsplit[index] = lib.app.mrtrixQuiet + ' ' + cmdsplit[index]
+    cmdsplit.append(lib.app.mrtrixNThreads)
     cmdsplit.append(lib.app.mrtrixQuiet)
     cmd = ' '.join(cmdsplit)
     
