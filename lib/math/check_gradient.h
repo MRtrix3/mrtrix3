@@ -45,13 +45,13 @@ namespace MR {
             " parameters of type " + DataType::from<value_type>().specifier());
         value_type step_size = function.init (g);
         CONSOLE ("cost function suggests initial step size = " + str(step_size));
-        CONSOLE ("cost function suggests initial position at [ " + str(g) + "]");
+        CONSOLE ("cost function suggests initial position at [ " + str(g.transpose()) + "]");
 
-        CONSOLE ("checking gradient at position [ " + str(x) + "]:");
+        CONSOLE ("checking gradient at position [ " + str(x.transpose()) + "]:");
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g0 (N);
         value_type f0 = function (x, g0);
-        CONSOLE ("  cost function = " + str(f0,precision));
-        CONSOLE ("  gradient from cost function         = [ " + str(g0,precision) + "]");
+        CONSOLE ("cost function = " + str(f0,precision));
+        CONSOLE ("gradient from cost function           = [ " + str(g0.transpose(),precision) + "]");
 
         Eigen::Matrix<value_type, Eigen::Dynamic, 1> g_fd (N);
         Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
@@ -88,7 +88,7 @@ namespace MR {
 
         }
 
-        CONSOLE ("gradient by central finite difference = [ " + str(g_fd,precision) + "]");
+        CONSOLE ("gradient by central finite difference = [ " + str(g_fd.transpose(),precision) + "]");
         CONSOLE ("normalised dot product = " + str(g_fd.dot(g0) / g_fd.squaredNorm()));
 
         if (show_hessian) {
