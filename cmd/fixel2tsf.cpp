@@ -23,6 +23,8 @@
 #include "command.h"
 #include "progressbar.h"
 
+#include "math/math.h"
+
 #include "image/buffer.h"
 #include "image/buffer_sparse.h"
 #include "image/loop.h"
@@ -91,7 +93,7 @@ void run ()
   Options opt = get_options ("angle");
   if (opt.size())
     angular_threshold = opt[0][0];
-  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<int> (properties["count"]);
 

@@ -296,7 +296,7 @@ void run() {
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
   }
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);
