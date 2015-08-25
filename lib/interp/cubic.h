@@ -98,6 +98,10 @@ namespace MR
 
         const value_type out_of_bounds_value;
 
+        value_type value () {
+          throw Exception ("spline interpolation: value() not implemented for this SplineProcessingType");
+        }
+
       protected:
         SplineType H[3];
         Eigen::Vector3d P;

@@ -32,7 +32,7 @@ void run ()
   Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::ValueAndGradient> interp_cubic (input, 0.0, true); // bool: gradient with respect to scanner 
 
 
-  // Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::Value> interp_cubic_value (input, 0.0);
+  Interp::SplineInterp<Image<float>, Math::UniformBSpline<float>, Math::SplineProcessingType::Value> interp_cubic_value (input, 0.0);
   
   Interp::Linear<Image<float>> interp_linear (input, 0.0);
 
@@ -64,7 +64,7 @@ void run ()
   interp_cubic.voxel(voxel);
   VAR(interp_cubic);
   VAR(value);
-  VAR(interp_cubic.value());
+  // VAR(interp_cubic.value());
   VAR(input.value());
 
   VAR(gradient);
@@ -76,6 +76,9 @@ void run ()
   // std::cout << interp_linear << std::endl;
   // VAR(interp_linear.value());
   // VAR(interp_linear.gradient());
+
+ interp_cubic_value.voxel(voxel);
+ VAR(interp_cubic_value.value());
 
  auto output = Image<float>::create ("cubic_value.mif", input.header());
  for (auto i = Loop() (output); i ;++i){
