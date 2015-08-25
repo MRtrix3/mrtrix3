@@ -77,18 +77,22 @@ void run ()
   // VAR(interp_linear.value());
   // VAR(interp_linear.gradient());
 
- // auto output = Image<float>::create ("value_cubic.mif", input.header());
- // for (auto i = Loop() (input, output); i ;++i){
- //    interp_cubic.index(0) = input.index(0);
- //    interp_cubic.index(1) = input.index(1);
- //    interp_cubic.index(2) = input.index(2);
- //    // if (input.value() != interp_cubic.value())
- //      // std::cerr << input << "\n" << interp_cubic << "\n" << interp_cubic.value() << "\n\n";
- //    output.value() = interp_cubic.value();
- // }
+ auto output = Image<float>::create ("cubic_value.mif", input.header());
+ for (auto i = Loop() (output); i ;++i){
+    voxel << output.index(0), output.index(1), output.index(2);
+    // interp_cubic.voxel(voxel);
+    interp_cubic.index(0) = output.index(0);
+    interp_cubic.index(1) = output.index(1);
+    interp_cubic.index(2) = output.index(2);
+    output.value() = interp_cubic.value();
+ }
 
-//  Registration::Transform::compose (linear_transform, input, output);
+ auto output2 = Image<float>::create ("cubic_value_and_gradient.mif", input.header());
+ for (auto i = Loop() (output2); i ;++i){
+    voxel << output2.index(0), output2.index(1), output2.index(2);
+    interp_cubic.voxel(voxel);
+    interp_cubic.value_and_gradient(value, gradient);
+    output2.value() = value; 
+ }
 
-
-//  copy (input, output);
 }
