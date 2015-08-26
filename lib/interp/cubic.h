@@ -574,6 +574,9 @@ namespace MR
     using Cubic = SplineInterp<ImageType, Math::HermiteSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
 
 
+    template <typename ImageType>
+    using CubicUniform = SplineInterp<ImageType, Math::UniformBSpline<typename ImageType::value_type>, Math::SplineProcessingType::Value>;
+
     template <class ImageType, typename... Args>
       inline Cubic<ImageType> make_cubic (const ImageType& parent, Args&&... args) {
         return Cubic<ImageType> (parent, std::forward<Args> (args)...);
