@@ -113,8 +113,6 @@ namespace MR
 
           source += "}\n";
 
-          VAR (source);
-
           return source;
         }
 
