@@ -315,8 +315,7 @@ environ = os.environ.copy()
 environ.update ({ 'PATH': PATH })
 
 target_bin_dir = os.path.join (mrtrix_dir[0], config_name, bin_dir);
-target_lib_dir = os.path.join (mrtrix_dir[-1], config_name,lib_dir)
-bin_dir = os.path.join (mrtrix_dir[0], bin_dir);
+target_lib_dir = os.path.join (mrtrix_dir[-1], config_name, lib_dir)
 lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 
