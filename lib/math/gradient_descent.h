@@ -23,7 +23,7 @@
 #ifndef __math_gradient_descent_h__
 #define __math_gradient_descent_h__
 
-#define GRADIENT_DESCENT_LOG
+//#define GRADIENT_DESCENT_LOG
 
 #include <limits>
 #include <iostream>
@@ -127,7 +127,7 @@ namespace MR
             #endif
 
             for (int niter = 1; niter < max_iterations; niter++) {
-              Math::check_function_gradient (func, x, 0.000001, false, preconditioner_weights);
+              Math::check_function_gradient (func, x, 0.1, false, preconditioner_weights);
               bool retval = iterate (verbose);
               {
                 std::string cost = std::to_string(f);
