@@ -48,15 +48,15 @@ int precision = 6;
 
 void report (const std::string& title, const Eigen::MatrixXd& directions) 
 {
-  std::vector<double> NN_bipolar (directions.rows(), 0.0);
-  std::vector<double> NN_unipolar (directions.rows(), 0.0);
+  std::vector<double> NN_bipolar (directions.rows(), -1.0);
+  std::vector<double> NN_unipolar (directions.rows(), -1.0);
 
   std::vector<double> E_bipolar (directions.rows(), 0.0);
   std::vector<double> E_unipolar (directions.rows(), 0.0);
 
   for (ssize_t i = 0; i < directions.rows()-1; ++i) {
     for (ssize_t j = i+1; j < directions.rows(); ++j) {
-      double cos_angle = directions.row(i).head(3).dot (directions.row(j).head(3));
+      double cos_angle = directions.row(i).head(3).normalized().dot (directions.row(j).head(3).normalized());
       NN_unipolar[i] = std::max (NN_unipolar[i], cos_angle);
       NN_unipolar[j] = std::max (NN_unipolar[j], cos_angle);
       cos_angle = std::abs (cos_angle);
