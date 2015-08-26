@@ -82,7 +82,7 @@ namespace MR
           seed_output ("seeds.tck", Tractography::Properties()),
           test_fixel (0),
 #endif
-          transform (SIFT::ModelBase<Fixel_TD_seed>::header())
+          transform (fod_data.header())
       {
         auto opt = App::get_options ("act");
         if (opt.size())

@@ -128,7 +128,7 @@ namespace MR
         //   list of fixels traversed by each streamline. If this information is necessary, use the Model class (model.h)
 
         template <class Fixel>
-          class ModelBase : public Mapping::Fixel_TD_map<Fixel>
+        class ModelBase : public Mapping::Fixel_TD_map<Fixel>
         {
 
           protected:
@@ -136,25 +136,21 @@ namespace MR
             typedef typename Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
           public:
-            template <class ImageType>
-              ModelBase (ImageType& dwi, const DWI::Directions::FastLookupSet& dirs) :
-                Mapping::Fixel_TD_map<Fixel> (dwi, dirs),
+            ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
+                Mapping::Fixel_TD_map<Fixel> (dwi.header(), dirs),
                 proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
-                H (dwi),
                 FOD_sum (0.0),
                 TD_sum (0.0),
-                have_null_lobes (false) {
-                  SIFT::initialise_processing_mask (dwi, proc_mask, act_5tt);
-                  H.set_ndim (3);
-                }
-            ModelBase (const ModelBase& that) = delete;
+                have_null_lobes (false)
+            {
+              SIFT::initialise_processing_mask (dwi, proc_mask, act_5tt);
+            }
+            ModelBase (const ModelBase&) = delete;
 
             virtual ~ModelBase () { }
 
-
-            template <class ImageType>
-              void perform_FOD_segmentation (ImageType&);
-            void scale_FDs_by_GM ();
+            void perform_FOD_segmentation (Image<float>&);
+            void scale_FDs_by_GM();
 
             void map_streamlines (const std::string&);
 
@@ -164,7 +160,7 @@ namespace MR
             double calc_cost_function() const;
 
             double mu() const { return FOD_sum / TD_sum; }
-            bool have_act_data() const { return bool (act_5tt); }
+            bool have_act_data() const { return act_5tt.valid(); }
 
             void output_proc_mask (const std::string&);
             void output_5tt_image (const std::string&);
@@ -178,9 +174,7 @@ namespace MR
             using Fixel_map<Fixel>::fixels;
             using Mapping::Fixel_TD_map<Fixel>::dirs;
 
-            std::unique_ptr<Image<float>> act_5tt;
-            Image<float> proc_mask;
-            Header H;
+            Image<float> act_5tt, proc_mask;
             double FOD_sum, TD_sum;
             bool have_null_lobes;
 
@@ -204,169 +198,169 @@ namespace MR
 
 
         template <class Fixel>
-          template <class ImageType>
-          void ModelBase<Fixel>::perform_FOD_segmentation (ImageType& data)
-          {
-            DWI::FMLS::FODQueueWriter<decltype(data), decltype(proc_mask)> writer (data, proc_mask);
-            DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.size(3)));
-            fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
-            fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
-            Thread::run_queue (writer, FMLS::SH_coefs(), Thread::multi (fmls), FMLS::FOD_lobes(), *this);
-            have_null_lobes = fmls.get_create_null_lobe();
-          }
+        void ModelBase<Fixel>::perform_FOD_segmentation (Image<float>& data)
+        {
+          Math::SH::check (data);
+          DWI::FMLS::FODQueueWriter writer (data, proc_mask);
+          DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.size(3)));
+          fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
+          fmls.set_create_null_lobe (App::get_options ("make_null_lobes").size());
+          Thread::run_queue (writer, FMLS::SH_coefs(), Thread::multi (fmls), FMLS::FOD_lobes(), *this);
+          have_null_lobes = fmls.get_create_null_lobe();
+        }
 
 
 
 
         template <class Fixel>
-          void ModelBase<Fixel>::scale_FDs_by_GM ()
-          {
-            if (App::get_options("no_fd_scaling").size())
-              return;
-            if (!act_5tt) {
-              INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
-              return;
+        void ModelBase<Fixel>::scale_FDs_by_GM ()
+        {
+          if (App::get_options("no_fd_scaling").size())
+            return;
+          if (!act_5tt.valid()) {
+            INFO ("Cannot scale fibre densities according to GM fraction; no ACT image data provided");
+            return;
+          }
+          // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
+          VoxelAccessor v (accessor());
+          FOD_sum = 0.0;
+          for (auto l = Loop(v) (v, act_5tt); l; ++l) {
+            Tractography::ACT::Tissues tissues (act_5tt);
+            const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
+            for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
+              i().scale_FOD (multiplier);
+              FOD_sum += i().get_weight() * i().get_FOD();
             }
-            // Loop through voxels, getting total GM fraction for each, and scale all fixels in each voxel
-            VoxelAccessor v (accessor());
-            FOD_sum = 0.0;
-            for (auto l = LoopInOrder(v) (v, *act_5tt); l; ++l) {
-              Tractography::ACT::Tissues tissues (*act_5tt);
-              const float multiplier = 1.0 - tissues.get_cgm() - (0.5 * tissues.get_sgm()); // Heuristic
-              for (typename Fixel_map<Fixel>::Iterator i = begin(v); i; ++i) {
-                i().scale_FOD (multiplier);
-                FOD_sum += i().get_weight() * i().get_FOD();
-              }
+          }
+        }
+
+
+
+
+        template <class Fixel>
+        void ModelBase<Fixel>::map_streamlines (const std::string& path)
+        {
+          Tractography::Properties properties;
+          Tractography::Reader file (path, properties);
+
+          const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+
+          Mapping::TrackLoader loader (file, count);
+          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::header(), dirs);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::header(), properties, 0.1));
+          mapper.set_use_precise_mapping (true);
+          Thread::run_queue (
+              loader,
+              Thread::batch (Tractography::Streamline<float>()),
+              Thread::multi (mapper),
+              Thread::batch (Mapping::SetDixel()),
+              *this);
+
+          INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
+        }
+
+
+
+
+        template <class Fixel>
+        bool ModelBase<Fixel>::operator() (const FMLS::FOD_lobes& in)
+        {
+          if (!Fixel_map<Fixel>::operator() (in))
+            return false;
+
+          VoxelAccessor v (accessor());
+          assign_pos_of (in.vox).to (v);
+
+          if (v.value()) {
+            assign_pos_of (in.vox).to (proc_mask);
+            const float mask_value = proc_mask.value();
+
+            for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
+              i().set_weight (mask_value);
+              FOD_sum += i().get_FOD() * mask_value;
             }
           }
+          return true;
+        }
 
 
 
 
         template <class Fixel>
-          void ModelBase<Fixel>::map_streamlines (const std::string& path)
-          {
-            Tractography::Properties properties;
-            Tractography::Reader file (path, properties);
-
-            const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
-
-            Mapping::TrackLoader loader (file, count);
-            Mapping::TrackMapperBase mapper (H, dirs);
-            mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (H, properties, 0.1));
-            mapper.set_use_precise_mapping (true);
-            Thread::run_queue (
-                loader,
-                Thread::batch (Tractography::Streamline<float>()),
-                Thread::multi (mapper),
-                Thread::batch (Mapping::SetDixel()),
-                *this);
-
-            INFO ("Proportionality coefficient after streamline mapping is " + str (mu()));
-          }
-
-
-
-
-        template <class Fixel>
-          bool ModelBase<Fixel>::operator() (const FMLS::FOD_lobes& in)
-          {
-            if (!Fixel_map<Fixel>::operator() (in))
-              return false;
-
-            VoxelAccessor v (accessor());
-            assign_pos_of (in.vox).to (v);
-
-            if (v.value()) {
-              assign_pos_of (in.vox).to (proc_mask);
-              const float mask_value = proc_mask.value();
-
-              for (typename Fixel_map<Fixel>::Iterator i = begin (v); i; ++i) {
-                i().set_weight (mask_value);
-                FOD_sum += i().get_FOD() * mask_value;
-              }
+        bool ModelBase<Fixel>::operator() (const Mapping::SetDixel& in)
+        {
+          float total_contribution = 0.0;
+          for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
+            const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
+            if (fixel_index) {
+              fixels[fixel_index] += i->get_length();
+              total_contribution += fixels[fixel_index].get_weight() * i->get_length();
             }
-            return true;
           }
+          TD_sum += total_contribution;
+          return true;
+        }
 
 
 
 
         template <class Fixel>
-          bool ModelBase<Fixel>::operator() (const Mapping::SetDixel& in)
-          {
-            float total_contribution = 0.0;
-            for (Mapping::SetDixel::const_iterator i = in.begin(); i != in.end(); ++i) {
-              const size_t fixel_index = Mapping::Fixel_TD_map<Fixel>::dixel2fixel (*i);
-              if (fixel_index) {
-                fixels[fixel_index] += i->get_length();
-                total_contribution += fixels[fixel_index].get_weight() * i->get_length();
-              }
-            }
-            TD_sum += total_contribution;
-            return true;
-          }
+        double ModelBase<Fixel>::calc_cost_function() const
+        {
+          const double current_mu = mu();
+          double cost = 0.0;
+          for (auto i = fixels.cbegin()+1; i != fixels.end(); ++i)
+            cost += i->get_cost (current_mu);
+          return cost;
+        }
+
+
+
+        template <class Fixel>
+        void ModelBase<Fixel>::output_proc_mask (const std::string& path)
+        {
+          save (proc_mask, path);
+        }
+
+
+        template <class Fixel>
+        void ModelBase<Fixel>::output_5tt_image (const std::string& path)
+        {
+          if (!have_act_data())
+            throw Exception ("Cannot export 5TT image; no such data present");
+          save (act_5tt, path);
+        }
 
 
 
 
         template <class Fixel>
-          double ModelBase<Fixel>::calc_cost_function() const
-          {
-            const double current_mu = mu();
-            double cost = 0.0;
-            for (auto i = fixels.cbegin()+1; i != fixels.end(); ++i)
-              cost += i->get_cost (current_mu);
-            return cost;
-          }
-
-
-
-        template <class Fixel>
-          void ModelBase<Fixel>::output_proc_mask (const std::string& path)
-          {
-            save (proc_mask, path);
-          }
-
-
-        template <class Fixel>
-          void ModelBase<Fixel>::output_5tt_image (const std::string& path)
-          {
-            if (!have_act_data())
-              throw Exception ("Cannot export 5TT image; no such data present");
-            save (*act_5tt, path);
-          }
-
-
-
-
-        template <class Fixel>
-          void ModelBase<Fixel>::output_all_debug_images (const std::string& prefix) const
-          {
-            output_target_image (prefix + "_target.mif");
+        void ModelBase<Fixel>::output_all_debug_images (const std::string& prefix) const
+        {
+          output_target_image (prefix + "_target.mif");
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-            output_target_image_sh (prefix + "_target_sh.mif");
+          output_target_image_sh (prefix + "_target_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-            output_target_image_fixel (prefix + "_target_fixel.msf");
+          output_target_image_fixel (prefix + "_target_fixel.msf");
 #endif
-            output_tdi (prefix + "_tdi.mif");
-            if (have_null_lobes)
-              output_tdi_null_lobes (prefix + "_tdi_null_lobes.mif");
+          output_tdi (prefix + "_tdi.mif");
+          if (have_null_lobes)
+            output_tdi_null_lobes (prefix + "_tdi_null_lobes.mif");
 #ifdef SIFT_MODEL_OUTPUT_SH_IMAGES
-            output_tdi_sh (prefix + "_tdi_sh.mif");
+          output_tdi_sh (prefix + "_tdi_sh.mif");
 #endif
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-            output_tdi_fixel (prefix + "_tdi_fixel.msf");
+          output_tdi_fixel (prefix + "_tdi_fixel.msf");
 #endif
-            output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
+          output_error_images (prefix + "_max_abs_diff.mif", prefix + "_diff.mif", prefix + "_cost.mif");
 #ifdef SIFT_MODEL_OUTPUT_FIXEL_IMAGES
-            output_error_fixel_images (prefix + "_diff_fixel.msf", prefix + "_cost_fixel.msf");
+          output_error_fixel_images (prefix + "_diff_fixel.msf", prefix + "_cost_fixel.msf");
 #endif
-            output_scatterplot (prefix + "_scatterplot.csv");
-            output_fixel_count_image (prefix + "_fixel_count.mif");
-            output_untracked_fixels (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
-          }
+          output_scatterplot (prefix + "_scatterplot.csv");
+          output_fixel_count_image (prefix + "_fixel_count.mif");
+          output_untracked_fixels (prefix + "_untracked_count.mif", prefix + "_untracked_amps.mif");
+        }
 
 
 
