@@ -32,6 +32,6 @@ void run ()
   default_type sos = 0.0;
   for (auto i = Loop() (input1, input2); i ;++i)
     sos += std::pow (input1.value() - input2.value(), 2);
-  CONSOLE ("MSD: " + str(sos / static_cast<default_type>(input1.size(0) * input1.size(1) * input1.size(2))));
+  std::cout << str(sos / static_cast<default_type>(input1.size(0) * input1.size(1) * input1.size(2))) << std::endl;
 }
 
