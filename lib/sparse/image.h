@@ -26,9 +26,13 @@
 #include <typeinfo>
 
 #include "image.h"
-#include "algo/loop.h"
+#include "header.h"
 #include "image_io/sparse.h"
 #include "sparse/keys.h"
+
+#ifndef __image_h__
+#error File that #includes "sparse/image.h" must explicitly #include "image.h" beforehand
+#endif
 
 
 namespace MR
