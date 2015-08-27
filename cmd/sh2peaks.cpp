@@ -360,7 +360,7 @@ void run ()
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
       npeaks, true_peaks, threshold, ipeaks_data.get());
 
-  Thread::run_queue (loader, Item(), Thread::multi (processor));
+  Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }
 
 
