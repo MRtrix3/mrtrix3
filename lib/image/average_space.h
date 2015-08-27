@@ -115,7 +115,6 @@ namespace MR
     return corners;
   }
 
-
    template<class ComputeType, class TransformType>
    Header  compute_minimum_average_header(
       std::vector<Header> input_headers, 
@@ -124,7 +123,7 @@ namespace MR
       std::vector<TransformType>& transform_header_with){
       // typedef Eigen::Transform< ComputeType, 3, Eigen::Projective> TransformType;
       typedef Eigen::Matrix<ComputeType, Eigen::Dynamic, Eigen::Dynamic> MatrixType;
-      // typedef Eigen::Matrix<ComputeType, Eigen::Dynamic, 1> VectorType;
+      typedef Eigen::Matrix<ComputeType, Eigen::Dynamic, 1> VectorType;
       typedef Eigen::Matrix<ComputeType, 4, 4> MatrixType4;
       typedef std::vector<MatrixType> MatrixArrayType;
 
@@ -143,9 +142,7 @@ namespace MR
          transformation_matrices.push_back(v2s_trafo.matrix());
 
          bounding_box_corners.template block<8,4>(iFile*8,0) = get_bounding_box<ComputeType, decltype(v2s_trafo)>(input_headers[iFile], v2s_trafo);
-      }
-
-      // std::cerr << "bounding_box_corners:\n" << bounding_box_corners << std::endl;    
+      }  
  
       // create average space header
       Header header_out (input_headers[0]);
@@ -172,77 +169,65 @@ namespace MR
 
       auto average_v2s_trafo = Eigen::Transform< ComputeType, 3, Eigen::Projective>::Identity();
       average_v2s_trafo.matrix() = mat_avg;
-      // VAR(average_v2s_trafo.matrix());
 
       Eigen::Transform< ComputeType, 3, Eigen::Projective> average_s2v_trafo = average_v2s_trafo.inverse(Eigen::Projective);
-      // VAR(average_s2v_trafo.matrix());
 
       DEBUG("inverse sanity: " + str( (average_v2s_trafo * average_s2v_trafo).matrix().isApprox(MatrixType::Identity(4,4)) ));
 
       // transform all image corners into inverse average space
       MatrixType bounding_box_corners_inv = bounding_box_corners;
-        // for (int i=0; i<bounding_box_corners_inv.rows(); i++){
-      //     bounding_box_corners_inv.transpose().col(i) = (average_s2v_trafo * bounding_box_corners.transpose().col(i));
-      //   } 
-      //   // minimum axis-aligned corners in inverse average space 
-      //   VectorType bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
-      //   VectorType bounding_box_corners_inv_max = bounding_box_corners_inv.colwise().maxCoeff();
-      //   VectorType bounding_box_corners_inv_width = bounding_box_corners_inv_max - bounding_box_corners_inv_min;
-      //   bounding_box_corners_inv_width += 2.0 * padding;
-      //   bounding_box_corners_inv_width(3) = 1.0;
+      for (int i=0; i<bounding_box_corners_inv.rows(); i++)
+          bounding_box_corners_inv.transpose().col(i) = (average_s2v_trafo * bounding_box_corners.transpose().col(i));
+      // minimum axis-aligned corners in inverse average space 
+      VectorType bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
+      VectorType bounding_box_corners_inv_max = bounding_box_corners_inv.colwise().maxCoeff();
+      VectorType bounding_box_corners_inv_width = bounding_box_corners_inv_max - bounding_box_corners_inv_min;
+      bounding_box_corners_inv_width += 2.0 * padding;
+      bounding_box_corners_inv_width(3) = 1.0;
 
-      //   bounding_box_corners = get_bounding_box<ComputeType>(bounding_box_corners_inv_width);
+      bounding_box_corners = get_bounding_box<ComputeType>(bounding_box_corners_inv_width);
 
-      //   // transform boundary box corners back into scanner space
-      //   for (int i=0; i<bounding_box_corners.rows();i++){
-      //     bounding_box_corners.row(i) += bounding_box_corners_inv_min - padding; 
-      //     bounding_box_corners.row(i)(3) = 1.0;
-      //     bounding_box_corners.row(i) = ( average_v2s_trafo * bounding_box_corners.row(i).transpose()).transpose();
-      //   } 
+      // transform boundary box corners back into scanner space
+      for (int i=0; i<bounding_box_corners.rows();i++){
+        bounding_box_corners.row(i) += bounding_box_corners_inv_min - padding; 
+        bounding_box_corners.row(i)(3) = 1.0;
+        bounding_box_corners.row(i) = ( average_v2s_trafo * bounding_box_corners.row(i).transpose()).transpose();
+      } 
 
-      //   VectorType bounding_box_corners_width = bounding_box_corners.colwise().maxCoeff() - bounding_box_corners.colwise().minCoeff();
-      //   bounding_box_corners_width(3) = 1.0;
-      //   // INFO("average space axis-aligned minimum bounding box:\n"+str( bounding_box_corners ));
-      //   // DEBUG( str(bounding_box_corners.colwise().minCoeff()));
-      //   // DEBUG( str(bounding_box_corners.colwise().maxCoeff()));
-      //   // DEBUG( str(RowVectorType(bounding_box_corners_width)));
+      std::cout << "average space axis-aligned minimum bounding box:\n" << bounding_box_corners << std::endl;
 
-      //   // set translation to first corner (0, 0, 0, 1)
-      //   average_v2s_trafo.matrix().col(3).template head<3>() = bounding_box_corners.row(0).template  head<3>();
-      //   // average_s2v_trafo = average_v2s_trafo.inverse();
+      VectorType bounding_box_corners_width = bounding_box_corners.colwise().maxCoeff() - bounding_box_corners.colwise().minCoeff();
+      bounding_box_corners_width(3) = 1.0;
 
-      //   // override header transformation
-      //   TransformType average_i2s_trafo = TransformType::Identity();
-      //   average_i2s_trafo.matrix() = average_v2s_trafo.matrix();
-      //   average_i2s_trafo.matrix() *= vox_scaling.asDiagonal();
-      //   // set header transformation
-      //   for (size_t i = 0, nRows = 4, nCols = 4; i < nCols; ++i){
-      //     for (size_t j = 0; j < nRows; ++j){
-      //       header_out.transform()(i,j) = average_i2s_trafo.matrix()(i,j);
-      //     }
-      //   }
-      //   header_out.transform()(3,0) = 0.0;
-      //   header_out.transform()(3,1) = 0.0;
-      //   header_out.transform()(3,2) = 0.0;
+      // set translation to first corner (0, 0, 0, 1)
+      average_v2s_trafo.matrix().col(3).template head<3>() = bounding_box_corners.row(0).template  head<3>();
+      // average_s2v_trafo = average_v2s_trafo.inverse();
 
-      //   // get scanner 2 voxel trafo
-      //   Math::Matrix<float> s2v; 
-      //   Image::Transform(header_out).scanner2voxel_matrix(s2v);
-      //   MatrixType average_s2v = MatrixType(4,4);
-      //   Eigen::gslMatrix2eigenMatrix<Math::Matrix<float>,MatrixType>(s2v,average_s2v);
+      // override header transformation
+      Eigen::Transform< ComputeType, 3, Eigen::Projective> average_i2s_trafo = TransformType::Identity();
+      average_i2s_trafo.matrix() = average_v2s_trafo.matrix();
+      average_i2s_trafo.matrix() *= vox_scaling.asDiagonal();
+      header_out.transform().matrix().block(0,0,3,4) = average_i2s_trafo.matrix().block(0,0,3,4);
 
-      //   // set header dimensions according to element 7 in bounding_box_corners:
-      //   VectorType ext = VectorType(4);
-      //   ext = bounding_box_corners.row(6);
-      //   ext(3) = 1.0;
-      //   ext = average_s2v *ext;
-      //   for (size_t i=0;i<3;i++){
-      //     header_out.dim(i) = std::ceil(ext(i)) ; 
-      //   }    
-      //   return header_out;
-      // TODO
-      auto scratch = Header::scratch (input_headers[0], "my buffer").get_image<uint32_t>();
-      return scratch;
+      // get scanner 2 voxel trafo
+      auto average_s2v = (Eigen::Transform< ComputeType, 3, Eigen::Projective>) Transform(header_out).scanner2voxel;
+
+      // set header dimensions according to element 7 in bounding_box_corners:
+      VectorType ext = VectorType(4);
+      ext = bounding_box_corners.row(6);
+      VAR(average_s2v.matrix());
+      VAR(bounding_box_corners);
+      ext(3) = 1.0;
+      ext = average_s2v * ext;
+      VAR(ext);
+      for (size_t i=0;i<3;i++){
+        header_out.size(i) = std::ceil(ext(i)) ; 
+      }    
+      // return header_out;
+      // auto scratch = Header::scratch (input_headers[0], "my buffer").get_image<uint32_t>();
+      std::cout << "average voxel to scanner transformation:\n" << average_v2s_trafo.matrix() <<std::endl;
+      std::cout << "average image to scanner transformation:\n" << average_i2s_trafo.matrix() <<std::endl;
+      return header_out;
       }
 }
 #endif
