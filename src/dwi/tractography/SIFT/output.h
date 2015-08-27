@@ -26,23 +26,21 @@
 #define __dwi_tractography_sift_output_h__
 
 
-#include "dwi/fixel_map.h"
+#include "image.h"
+#include "header.h"
 
+#include "algo/loop.h"
+
+#include "dwi/fixel_map.h"
 #include "dwi/tractography/SIFT/model_base.h"
 
 #include "file/ofstream.h"
 
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/header.h"
-#include "image/loop.h"
-
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
-
 #include "math/SH.h"
-#include "math/vector.h"
+
+#include "sparse/fixel_metric.h"
+#include "sparse/image.h"
+#include "sparse/keys.h"
 
 
 namespace MR
@@ -58,17 +56,16 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_target_image (const std::string& path) const
       {
-        Image::Buffer<float> out (path, H);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
+        VoxelAccessor v (accessor());
+        for (auto l = Loop(out) (out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
               value += i().get_FOD();
-            v_out.value() = value;
+            out.value() = value;
           } else {
-            v_out.value() = NAN;
+            out.value() = NAN;
           }
         }
       }
@@ -79,31 +76,29 @@ namespace MR
         const size_t L = 8;
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
-        Image::Header H_sh (H);
+        Header H_sh (Fixel_map<Fixel>::header());
         H_sh.set_ndim (4);
-        H_sh.dim(3) = N;
+        H_sh.size(3) = N;
         H_sh.stride (3) = 0;
-        Image::Buffer<float> out (path, H_sh);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out, 0, 3);
-        for (auto l = loop (v_out, v); l; ++l) {
+        auto out = Image<float>::create (path, H_sh);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (0, 3) (out, v); l; ++l) {
           if (v.value()) {
-            Math::Vector<float> sum;
+            Eigen::VectorXf sum;
             sum.resize (N, 0.0);
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (i().get_FOD()) {
-                Math::Vector<float> this_lobe;
+                Eigen::VectorXf this_lobe;
                 aPSF (this_lobe, i().get_dir());
                 for (size_t c = 0; c != N; ++c)
                   sum[c] += i().get_FOD() * this_lobe[c];
               }
             }
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = sum[v_out[3]];
+            for (auto l = Loop (3) (out); l; ++l)
+              out.value() = sum[out.index(3)];
           } else {
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = NAN;
+            for (auto l = Loop (3) (out); l; ++l)
+              out.value() = NAN;
           }
         }
       }
@@ -111,22 +106,21 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_target_image_fixel (const std::string& path) const
       {
-        using Image::Sparse::FixelMetric;
-        Image::Header H_fixel (H);
+        using Sparse::FixelMetric;
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
-        Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
+        Sparse::Image<FixelMetric> out (path, H_fixel);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_fixels());
+            out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               FixelMetric fixel (iter().get_dir(), iter().get_FOD(), iter().get_FOD());
-              v_out.value()[index] = fixel;
+              out.value()[index] = fixel;
             }
           }
         }
@@ -136,17 +130,16 @@ namespace MR
       void ModelBase<Fixel>::output_tdi (const std::string& path) const
       {
         const double current_mu = mu();
-        Image::Buffer<float> out (path, H);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i)
               value += i().get_TD();
-            v_out.value() = value * current_mu;
+            out.value() = value * current_mu;
           } else {
-            v_out.value() = NAN;
+            out.value() = NAN;
           }
         }
       }
@@ -155,19 +148,18 @@ namespace MR
       void ModelBase<Fixel>::output_tdi_null_lobes (const std::string& path) const
       {
         const double current_mu = mu();
-        Image::Buffer<float> out (path, H);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        auto out = Image<float>::create (path, Fixel_map<Fixel>::header());
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
             float value = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (!i().get_FOD())
                 value += i().get_TD();
             }
-            v_out.value() = value * current_mu;
+            out.value() = value * current_mu;
           } else {
-            v_out.value() = NAN;
+            out.value() = NAN;
           }
         }
       }
@@ -179,31 +171,29 @@ namespace MR
         const size_t L = 8;
         const size_t N = Math::SH::NforL (L);
         Math::SH::aPSF<float> aPSF (L);
-        Image::Header H_sh (H);
+        Header H_sh (Fixel_map<Fixel>::header());
         H_sh.set_ndim (4);
-        H_sh.dim(3) = N;
+        H_sh.size(3) = N;
         H_sh.stride (3) = 0;
-        Image::Buffer<float> out (path, H_sh);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out, 0, 3);
-        for (auto l = loop (v_out, v); l; ++l) {
+        auto out = Image<float>::create (path, H_sh);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
-            Math::Vector<float> sum;
+            Eigen::VectorXf sum;
             sum.resize (N, 0.0);
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
               if (i().get_FOD()) {
-                Math::Vector<float> this_lobe;
+                Eigen::VectorXf this_lobe;
                 aPSF (this_lobe, i().get_dir());
                 for (size_t c = 0; c != N; ++c)
                   sum[c] += i().get_TD() * this_lobe[c];
               }
-              for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-                v_out.value() = sum[v_out[3]] * current_mu;
+              for (auto l = Loop (3) (out); l; ++l)
+                out.value() = sum[out.index(3)] * current_mu;
             }
           } else {
-            for (v_out[3] = 0; v_out[3] != (int)N; ++v_out[3])
-              v_out.value() = NAN;
+            for (auto l = Loop (3) (out); l; ++l)
+              out.value() = NAN;
           }
         }
       }
@@ -211,23 +201,22 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_tdi_fixel (const std::string& path) const
       {
-        using Image::Sparse::FixelMetric;
+        using Sparse::FixelMetric;
         const double current_mu = mu();
-        Image::Header H_fixel (H);
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
-        Image::BufferSparse<FixelMetric> out (path, H_fixel);
-        auto v_out = out.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
+        Sparse::Image<FixelMetric> out (path, H_fixel);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (out) (out, v); l; ++l) {
           if (v.value()) {
-            v_out.value().set_size ((*v.value()).num_fixels());
+            out.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               FixelMetric fixel (iter().get_dir(), iter().get_FOD(), current_mu * iter().get_TD());
-              v_out.value()[index] = fixel;
+              out.value()[index] = fixel;
             }
           }
         }
@@ -237,15 +226,11 @@ namespace MR
       void ModelBase<Fixel>::output_error_images (const std::string& max_abs_diff_path, const std::string& diff_path, const std::string& cost_path) const
       {
         const double current_mu = mu();
-        Image::Buffer<float> max_abs_diff (max_abs_diff_path, H), diff (diff_path, H), cost (cost_path, H);
-        auto v_max_abs_diff = max_abs_diff.voxel();
-        auto v_diff = diff.voxel();
-        auto v_cost = cost.voxel();
-        VoxelAccessor v (accessor);
-        for (auto l = Image::LoopInOrder(v) (v); l; ++l) {
-          v_max_abs_diff[2] = v_diff[2] = v_cost[2] = v[2];
-          v_max_abs_diff[1] = v_diff[1] = v_cost[1] = v[1];
-          v_max_abs_diff[0] = v_diff[0] = v_cost[0] = v[0];
+        auto out_max_abs_diff = Image<float>::create (max_abs_diff_path, Fixel_map<Fixel>::header());
+        auto out_diff = Image<float>::create (diff_path, Fixel_map<Fixel>::header());
+        auto out_cost = Image<float>::create (cost_path, Fixel_map<Fixel>::header());
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (v) (v, out_max_abs_diff, out_diff, out_cost); l; ++l) {
           if (v.value()) {
             double max_abs_diff = 0.0, diff = 0.0, cost = 0.0;
             for (typename Fixel_map<Fixel>::ConstIterator i = begin (v); i; ++i) {
@@ -254,13 +239,13 @@ namespace MR
               diff += this_diff;
               cost += i().get_cost (current_mu) * i().get_weight();
             }
-            v_max_abs_diff.value() = max_abs_diff;
-            v_diff.value() = diff;
-            v_cost.value() = cost;
+            out_max_abs_diff.value() = max_abs_diff;
+            out_diff.value() = diff;
+            out_cost.value() = cost;
           } else {
-            v_max_abs_diff.value() = NAN;
-            v_diff.value() = NAN;
-            v_cost.value() = NAN;
+            out_max_abs_diff.value() = NAN;
+            out_diff.value() = NAN;
+            out_cost.value() = NAN;
           }
         }
       }
@@ -268,29 +253,26 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_error_fixel_images (const std::string& diff_path, const std::string& cost_path) const
       {
-        using Image::Sparse::FixelMetric;
+        using Sparse::FixelMetric;
         const double current_mu = mu();
-        Image::Header H_fixel (H);
+        Header H_fixel (Fixel_map<Fixel>::header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
-        H_fixel[Image::Sparse::name_key] = str(typeid(FixelMetric).name());
-        H_fixel[Image::Sparse::size_key] = str(sizeof(FixelMetric));
-        Image::BufferSparse<FixelMetric> out_diff (diff_path, H_fixel);
-        auto v_diff = out_diff.voxel();
-        Image::BufferSparse<FixelMetric> out_cost (cost_path, H_fixel);
-        auto v_cost = out_cost.voxel();
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_diff);
-        for (auto l = loop (v, v_diff, v_cost); l; ++l) {
+        H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());
+        H_fixel.keyval()[Sparse::size_key] = str(sizeof(FixelMetric));
+        Sparse::Image<FixelMetric> out_diff (diff_path, H_fixel);
+        Sparse::Image<FixelMetric> out_cost (cost_path, H_fixel);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (v) (v, out_diff, out_cost); l; ++l) {
           if (v.value()) {
-            v_diff.value().set_size ((*v.value()).num_fixels());
-            v_cost.value().set_size ((*v.value()).num_fixels());
+            out_diff.value().set_size ((*v.value()).num_fixels());
+            out_cost.value().set_size ((*v.value()).num_fixels());
             size_t index = 0;
             for (typename Fixel_map<Fixel>::ConstIterator iter = begin (v); iter; ++iter, ++index) {
               FixelMetric fixel_diff (iter().get_dir(), iter().get_FOD(), iter().get_diff (current_mu));
-              v_diff.value()[index] = fixel_diff;
+              out_diff.value()[index] = fixel_diff;
               FixelMetric fixel_cost (iter().get_dir(), iter().get_FOD(), iter().get_cost (current_mu));
-              v_cost.value()[index] = fixel_cost;
+              out_cost.value()[index] = fixel_cost;
             }
           }
         }
@@ -310,32 +292,27 @@ namespace MR
       template <class Fixel>
       void ModelBase<Fixel>::output_fixel_count_image (const std::string& path) const
       {
-        Image::Header H_out (H);
+        Header H_out (Fixel_map<Fixel>::header());
         H_out.datatype() = DataType::UInt8;
-        Image::Buffer<uint8_t> image (path, H_out);
-        auto v_out = image.voxel();
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out);
-        for (auto l = Image::LoopInOrder(v_out) (v_out, v); l; ++l) {
+        auto out = Image<uint8_t>::create (path, H_out);
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (v) (v, out); l; ++l) {
           if (v.value())
-            v_out.value() = (*v.value()).num_fixels();
+            out.value() = (*v.value()).num_fixels();
           else
-            v_out.value() = 0;
+            out.value() = 0;
         }
       }
 
       template <class Fixel>
       void ModelBase<Fixel>::output_untracked_fixels (const std::string& path_count, const std::string& path_amps) const
       {
-        Image::Header H_uint8_t (H);
+        Header H_uint8_t (Fixel_map<Fixel>::header());
         H_uint8_t.datatype() = DataType::UInt8;
-        Image::Buffer<uint8_t> out_count (path_count, H_uint8_t);
-        Image::Buffer<float>   out_amps (path_amps, H);
-        auto v_out_count = out_count.voxel();
-        auto v_out_amps = out_amps.voxel();
-        VoxelAccessor v (accessor);
-        Image::LoopInOrder loop (v_out_count);
-        for (auto l = loop (v_out_count, v_out_amps, v); l; ++l) {
+        auto out_count = Image<uint8_t>::create (path_count, H_uint8_t);
+        auto out_amps = Image<float>::create (path_amps, Fixel_map<Fixel>::header());
+        VoxelAccessor v (accessor());
+        for (auto l = Loop (v) (v, out_count, out_amps, v); l; ++l) {
           if (v.value()) {
             uint8_t count = 0;
             float sum = 0.0;
@@ -345,11 +322,11 @@ namespace MR
                 sum += i().get_FOD();
               }
             }
-            v_out_count.value() = count;
-            v_out_amps .value() = sum;
+            out_count.value() = count;
+            out_amps .value() = sum;
           } else {
-            v_out_count.value() = 0;
-            v_out_amps .value() = NAN;
+            out_count.value() = 0;
+            out_amps .value() = NAN;
           }
         }
       }

@@ -25,9 +25,10 @@
 #ifndef __connectome_connectome_h__
 #define __connectome_connectome_h__
 
-#include "exception.h"
 
-#include "math/matrix.h"
+#include <stdint.h>
+
+#include <Eigen/Dense>
 
 
 namespace MR {
@@ -36,8 +37,10 @@ namespace Connectome {
 
 typedef uint32_t node_t;
 
+typedef Eigen::MatrixXd matrix_type;
 
-void verify_matrix (Math::Matrix<float>& in, const node_t num_nodes);
+
+void verify_matrix (matrix_type& in, const node_t num_nodes);
 
 
 }

@@ -26,9 +26,13 @@
 #include <typeinfo>
 
 #include "image.h"
-#include "algo/loop.h"
+#include "header.h"
 #include "image_io/sparse.h"
 #include "sparse/keys.h"
+
+#ifndef __image_h__
+#error File that #includes "sparse/image.h" must explicitly #include "image.h" beforehand
+#endif
 
 
 namespace MR
@@ -125,9 +129,9 @@ namespace MR
 
         void check()
         {
-          if (!buffer() || !buffer()->get_io())
+          if (!buffer || !buffer->get_io())
             throw Exception ("cannot create sparse image for image with no handler");
-          if (typeid (*buffer()->get_io()) != typeid (ImageIO::Sparse))
+          if (typeid (*buffer->get_io()) != typeid (ImageIO::Sparse))
             throw Exception ("cannot create sparse image to access non-sparse data");
           // Use the header information rather than trying to access this from the handler
           std::map<std::string, std::string>::const_iterator name_it = header().keyval().find (Sparse::name_key);
@@ -137,12 +141,12 @@ namespace MR
           if (str(typeid(DataType).name()) != class_name)
             throw Exception ("class type of sparse image buffer does not match that in image header");
           std::map<std::string, std::string>::const_iterator size_it = header().keyval().find (Sparse::size_key);
-          if (size_it == header().keys().end())
+          if (size_it == header().keyval().end())
             throw Exception ("cannot create sparse image without knowledge of underlying class size in the image header");
           const size_t class_size = to<size_t>(size_it->second);
           if (sizeof(DataType) != class_size)
             throw Exception ("class size of sparse image does not match that in image header");
-          io = reinterpret_cast<ImageIO::Sparse*> (buffer()->get_io());
+          io = reinterpret_cast<ImageIO::Sparse*> (buffer->get_io());
           DEBUG ("Sparse image verified for accessing " + name() + " using type " + str(typeid(DataType).name()));
         }
 

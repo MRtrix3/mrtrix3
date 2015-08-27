@@ -1,10 +1,11 @@
 
 #include "dwi/tractography/SIFT/sifter.h"
 
-#include "point.h"
 #include "progressbar.h"
 #include "memory.h"
 #include "timer.h"
+
+#include "algo/loop.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -15,17 +16,11 @@
 #include "dwi/tractography/mapping/mapper.h"
 #include "dwi/tractography/mapping/mapping.h"
 
-#include "math/rng.h"
-
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-
 #include "file/ofstream.h"
 
+#include "math/rng.h"
 
-
-
+#include "sparse/image.h"
 
 
 
@@ -202,7 +197,7 @@ namespace MR
               const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
               const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
 
-              if (this_actual_cf_change < minvalue (required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity)) {
+              if (this_actual_cf_change < std::min (required_cf_change_ratio, std::min (required_cf_change_quantisation, this_nonlinearity))) {
 
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
@@ -299,14 +294,13 @@ namespace MR
       void SIFTer::output_filtered_tracks (const std::string& input_path, const std::string& output_path) const
       {
         Tractography::Properties p;
-        Tractography::Reader<float> reader (input_path, p);
-        // "count" and "total_count" should be dealt with by the writer
+        Tractography::Reader reader (input_path, p);
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;
-        Tractography::Streamline<float> tck;
+        Tractography::Streamline<> tck;
         ProgressBar progress ("Writing filtered tracks output file...", contributions.size());
-        std::vector< Point<float> > empty_tck;
+        Tractography::Streamline<> empty_tck;
         while (reader (tck) && tck_counter < contributions.size()) {
           if (contributions[tck_counter++])
             writer (tck);

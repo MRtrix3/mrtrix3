@@ -39,11 +39,11 @@ namespace Connectome {
 
 
 
-class Streamline_nodepair : public Tractography::Streamline<float>
+class Streamline_nodepair : public Tractography::Streamline<>
 {
   public:
-    Streamline_nodepair() : Tractography::Streamline<float>(), nodes (std::make_pair (0, 0)) { }
-    Streamline_nodepair (const size_t i) : Tractography::Streamline<float> (i), nodes (std::make_pair (0, 0)) { }
+    Streamline_nodepair() : Tractography::Streamline<>(), nodes (std::make_pair (0, 0)) { }
+    Streamline_nodepair (const size_t i) : Tractography::Streamline<> (i), nodes (std::make_pair (0, 0)) { }
 
     void set_nodes (const NodePair& i) { nodes = i; }
     const NodePair& get_nodes() const { return nodes; }
@@ -54,11 +54,11 @@ class Streamline_nodepair : public Tractography::Streamline<float>
 
 
 
-class Streamline_nodelist : public Tractography::Streamline<float>
+class Streamline_nodelist : public Tractography::Streamline<>
 {
   public:
-    Streamline_nodelist() : Tractography::Streamline<float>(), nodes () { }
-    Streamline_nodelist (const size_t i) : Tractography::Streamline<float> (i), nodes () { }
+    Streamline_nodelist() : Tractography::Streamline<>(), nodes () { }
+    Streamline_nodelist (const size_t i) : Tractography::Streamline<> (i), nodes () { }
 
     void set_nodes (const std::vector<node_t>& i) { nodes = i; }
     const std::vector<node_t>& get_nodes() const { return nodes; }

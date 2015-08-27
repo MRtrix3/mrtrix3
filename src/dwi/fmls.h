@@ -52,9 +52,12 @@
 
 
 
-namespace MR {
-  namespace DWI {
-    namespace FMLS {
+namespace MR
+{
+  namespace DWI
+  {
+    namespace FMLS
+    {
 
 
       using DWI::Directions::Mask;
@@ -72,28 +75,28 @@ namespace MR {
 
         public:
           FOD_lobe (const DWI::Directions::Set& dirs, const dir_t seed, const float value) :
-            mask (dirs),
-            values (dirs.size(), 0.0),
-            peak_dir_bin (seed),
-            peak_value (std::abs (value)),
-            peak_dir (dirs.get_dir (seed)),
-            mean_dir (peak_dir * value),
-            integral (std::abs (value)),
-            neg (value <= 0.0)
-        {
-          mask[seed] = true;
-          values[seed] = value;
-        }
+              mask (dirs),
+              values (dirs.size(), 0.0),
+              peak_dir_bin (seed),
+              peak_value (std::abs (value)),
+              peak_dir (dirs.get_dir (seed)),
+              mean_dir (peak_dir * value),
+              integral (std::abs (value)),
+              neg (value <= 0.0)
+          {
+            mask[seed] = true;
+            values[seed] = value;
+          }
 
           // This is used for creating a `null lobe' i.e. an FOD lobe with zero size, containing all directions not
           //   assigned to any other lobe in the voxel
           FOD_lobe (const Mask& i) :
-            mask (i),
-            values (i.size(), 0.0),
-            peak_dir_bin (i.size()),
-            peak_value (0.0),
-            integral (0.0),
-            neg (false) { }
+              mask (i),
+              values (i.size(), 0.0),
+              peak_dir_bin (i.size()),
+              peak_value (0.0),
+              integral (0.0),
+              neg (false) { }
 
 
           void add (const dir_t bin, const float value)
@@ -172,7 +175,7 @@ namespace MR {
 
       class FOD_lobes : public std::vector<FOD_lobe> {
         public:
-          Eigen::Vector3i vox;
+          Eigen::Array3i vox;
           std::vector<uint8_t> lut;
       };
 
@@ -180,61 +183,50 @@ namespace MR {
       class SH_coefs : public Eigen::VectorXf {
         public:
           SH_coefs() :
-            vox (-1, -1, -1) { }
+              vox (-1, -1, -1) { }
           SH_coefs (const Eigen::VectorXf& that) :
-            Eigen::VectorXf (that),
-            vox (-1, -1, -1) { }
-          Eigen::Vector3i vox;
+              Eigen::VectorXf (that),
+              vox (-1, -1, -1) { }
+          Eigen::Array3i vox;
       };
 
-      template <class FODImageType, class MaskImageType = Image<bool>>
-        class FODQueueWriter
-        {
+      class FODQueueWriter
+      {
 
-          public:
+          typedef Image<float> FODImageType;
+          typedef Image<float> MaskImageType;
 
-            FODQueueWriter (const FODImageType& fod) :
-              fod (fod),
-              loop (Loop ("Segmenting FODs...", 0, 3)(fod)) {
-              }
+        public:
+          FODQueueWriter (const FODImageType& fod_image, const MaskImageType& mask_image = MaskImageType()) :
+              fod (fod_image),
+              mask (mask_image),
+              loop (Loop("Segmenting FODs... ", 0, 3) (fod)) { }
 
-            FODQueueWriter (const FODImageType& fod, const MaskImageType& mask) :
-              fod (fod),
-              mask (mask),
-              loop (Loop ("Segmenting FODs...", 0, 3)(fod)) {
-              }
-
-            void set_mask (const MaskImageType& mask_vox) {
-              mask = mask_vox;
+          bool operator() (SH_coefs& out)
+          {
+            if (!loop)
+              return false;
+            if (mask.valid()) {
+              do {
+                assign_pos_of (fod, 0, 3).to (mask);
+                if (!mask.value())
+                  ++loop;
+              } while (loop && !mask.value());
             }
+            assign_pos_of (fod).to (out.vox);
+            out.resize (fod.size (3));
+            for (auto l = Loop (3) (fod); l; ++l)
+              out[fod.index(3)] = fod.value();
+            ++loop;
+            return true;
+          }
 
+        private:
+          FODImageType fod;
+          MaskImageType mask;
+          decltype(Loop("text", 0, 3) (FODImageType&)) loop;
 
-            bool operator () (SH_coefs& out)
-            {
-              if (!loop)
-                return false;
-              if (mask.valid()) {
-                do {
-                  assign_pos_of (fod, 0, 3).to (mask);
-                  if (!mask.value())
-                    ++loop;
-                } while (loop && !mask.value());
-              }
-              out.vox[0] = fod.index(0); out.vox[1] = fod.index(1); out.vox[2] = fod.index(2);
-              out.resize (fod.size (3));
-              for (auto l = Loop (3) (fod); l; ++l) 
-                out[fod.index(3)] = fod.value();
-              ++loop;
-              return true;
-            }
-
-
-          private:
-            FODImageType fod;
-            MaskImageType mask;
-            decltype(Loop("text", 0,3)(fod)) loop;
-
-        };
+      };
 
 
 

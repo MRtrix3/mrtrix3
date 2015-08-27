@@ -27,8 +27,6 @@
 
 #include <mutex>
 
-#include "point.h"
-
 #include "dwi/tractography/streamline.h"
 #include "dwi/tractography/connectome/connectome.h"
 #include "dwi/tractography/connectome/streamline.h"
@@ -45,8 +43,9 @@ namespace Connectome {
 class Exemplar : private Tractography::Streamline<float>
 {
   public:
-    Exemplar (const size_t length, const NodePair& nodes, const std::pair< Point<float>, Point<float> >& COMs) :
-        Tractography::Streamline<float> (length, Point<float> (0.0f, 0.0f, 0.0f)),
+    using Tractography::Streamline<float>::point_type;
+    Exemplar (const size_t length, const NodePair& nodes, const std::pair<point_type, point_type>& COMs) :
+        Tractography::Streamline<float> (length, { 0.0f, 0.0f, 0.0f }),
         nodes (nodes),
         node_COMs (COMs),
         is_finalized (false)
@@ -83,7 +82,7 @@ class Exemplar : private Tractography::Streamline<float>
   private:
     std::mutex mutex;
     NodePair nodes;
-    std::pair< Point<float>, Point<float> > node_COMs;
+    std::pair<point_type, point_type> node_COMs;
     bool is_finalized;
 
     void add (const Tractography::Streamline<float>&, const bool is_reversed);

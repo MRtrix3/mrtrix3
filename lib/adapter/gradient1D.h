@@ -38,14 +38,14 @@ namespace MR
 
         Gradient1D (const ImageType& parent,
                     size_t axis = 0,
-                    bool wrt_scanner = false) :
+                    bool wrt_spacing = false) :
           Base<ImageType> (parent),
           axis (axis),
-          wrt_scanner (wrt_scanner),
+          wrt_spacing (wrt_spacing),
           derivative_weights (3, 1.0),
           half_derivative_weights (3, 0.5)  
           {
-            if (wrt_scanner) {
+            if (wrt_spacing) {
               for (size_t dim = 0; dim < 3; ++dim) {
                 derivative_weights[dim] /= spacing(dim);
                 half_derivative_weights[dim] /= spacing(dim);
@@ -90,7 +90,7 @@ namespace MR
       protected:
         size_t axis;
         value_type result;
-        const bool wrt_scanner;
+        const bool wrt_spacing;
         std::vector<value_type> derivative_weights;
         std::vector<value_type> half_derivative_weights;
       };

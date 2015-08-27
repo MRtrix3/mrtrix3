@@ -63,10 +63,25 @@ namespace MR
 
 
 
+  template <typename X, typename ReturnType = int>
+    struct max_digits {
+      static constexpr int value () { return std::numeric_limits<X>::max_digits10; }
+    };
+
+  template <typename X>
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::Scalar>::value, int>::type> {
+      static constexpr int value () { return std::numeric_limits<typename X::Scalar>::max_digits10; }
+    };
+
+  template <typename X>
+    struct max_digits<X, typename std::enable_if<std::is_fundamental<typename X::value_type>::value, int>::type> {
+      static constexpr int value () { return std::numeric_limits<typename X::value_type>::max_digits10; }
+    };
+
   template <class T> inline std::string str (const T& value, int precision = 0)
   {
     std::ostringstream stream;
-    stream.precision (precision ? precision : std::numeric_limits<T>::max_digits10);
+    stream.precision (precision ? precision : max_digits<T>::value());
     stream << value;
     if (stream.fail())
       throw Exception ("error converting value to string");

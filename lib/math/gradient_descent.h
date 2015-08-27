@@ -43,22 +43,24 @@ namespace MR
     // @{
 
 
-    class LinearUpdate {
-      public:
-        template <typename ValueType>
-          inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
-              const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
-            bool changed = false;
-            for (size_t n = 0; n < x.size(); ++n) {
-              newx[n] = x[n] - step_size * g[n];
-              if (newx[n] != x[n])
-                changed = true;
+    namespace {
+
+      class LinearUpdate {
+        public:
+          template <typename ValueType>
+            inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
+                const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
+              bool changed = false;
+              for (ssize_t n = 0; n < x.size(); ++n) {
+                newx[n] = x[n] - step_size * g[n];
+                if (newx[n] != x[n])
+                  changed = true;
+              }
+              return changed;
             }
-            return changed;
-          }
     };
 
-
+  }
     //! Computes the minimum of a function using a gradient descent approach.
     template <class Function, class UpdateFunctor=LinearUpdate>
       class GradientDescent
@@ -81,6 +83,7 @@ namespace MR
           value_type value () const throw () { return f; }
           const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& state () const throw () { return x; }
           const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& gradient () const throw ()  { return g; }
+          value_type step_size () const { return dt; }
           value_type gradient_norm () const throw () { return normg; }
           int function_evaluations () const throw () { return nfeval; }
 
@@ -242,6 +245,9 @@ namespace MR
               if (quadratic_minimum >= 1.0)
                 quadratic_minimum = 0.5;
               dt *= quadratic_minimum;
+
+              if (dt <= 0.0)
+                return false;
             }
           }
 
@@ -274,9 +280,9 @@ namespace MR
             if (preconditioner_weights.size()) {
               value_type g_projected = 0.0;
               step_unscaled = 0.0;
-              for (size_t n = 0; n < g.size(); ++n) {
-                step_unscaled += std::pow (g[n], 2);
-                g_projected += preconditioner_weights[n] * std::pow (g[n], 2);
+              for (ssize_t n = 0; n < g.size(); ++n) {
+                step_unscaled += std::pow(g[n], 2);
+                g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
                 g[n] *= preconditioner_weights[n];
               }
               normg = g_projected / normg;
