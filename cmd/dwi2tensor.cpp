@@ -32,7 +32,7 @@ using namespace MR;
 using namespace App;
 using namespace std;
 
-typedef double value_type;
+typedef float value_type;
 constexpr int default_iter = 2;
 
 void usage ()
@@ -92,7 +92,7 @@ class Processor
           dwi[dwi_image.index(3)] = dwi_image.value();
         
         /* avoid issues with dwi < 1 */
-        value_type scale = 1000000.0/dwi.maxCoeff(); // avoid issues with DWI images with ranges < 1
+        double scale = 1000000.0/dwi.maxCoeff(); // avoid issues with DWI images with ranges < 1
         dwi = dwi*scale;
         for (int i = 0; i < dwi.rows(); i++)
           if (dwi[i] < 1)
@@ -136,7 +136,7 @@ void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
   auto grad = DWI::get_valid_DW_scheme (dwi.header());
-  Eigen::MatrixXd b = -DWI::grad2bmatrix<value_type> (grad);
+  Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad);
 
   auto mask = Image<bool>();
   auto opt = get_options ("mask");
