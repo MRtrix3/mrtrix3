@@ -67,7 +67,7 @@ class SConvFunctor {
       if (image_mask.valid()) {
         assign_pos_of(in).to(image_mask);
         if (!image_mask.value())
-          return;
+          out.row(3) = Eigen::Matrix<value_type, Eigen::Dynamic, 1>::Zero (in.size(3));
       }
       out.row(3) = Math::SH::sconv (SH_out, response, in.row(3));
     }
