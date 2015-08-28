@@ -91,12 +91,11 @@ class Processor
         for (auto l = Loop (3) (dwi_image); l; ++l)
           dwi[dwi_image.index(3)] = dwi_image.value();
         
-        /* avoid issues with dwi < 1 */
-        double scale = 1000000.0/dwi.maxCoeff(); // avoid issues with DWI images with ranges < 1
-        dwi = dwi*scale;
+        /* avoid issues with dwi <= 0.0 */
+        double small_intensity = 1.0e-6 * dwi.maxCoeff(); 
         for (int i = 0; i < dwi.rows(); i++)
-          if (dwi[i] < 1)
-            dwi[i] = 1;
+          if (dwi[i] < small_intensity)
+            dwi[i] = small_intensity;
         
         /* log dwi fit */
         logdwi = dwi.array().log().matrix();
@@ -111,15 +110,11 @@ class Processor
         
         /* output b0 */
         if (b0_image.valid())
-          b0_image.value() = exp(p[6])/scale;
+          b0_image.value() = exp(p[6]);
         
         /* output dt */
-        dt_image.index(3) = 0; dt_image.value() = p[0];
-        dt_image.index(3) = 1; dt_image.value() = p[1];
-        dt_image.index(3) = 2; dt_image.value() = p[2];
-        dt_image.index(3) = 3; dt_image.value() = p[3];
-        dt_image.index(3) = 4; dt_image.value() = p[4];
-        dt_image.index(3) = 5; dt_image.value() = p[5];
+        for (auto l = Loop(3)(dt_image); l; ++l)
+          dt_image.value() = p[dt_image.index(3)];
       }
 
   private:
