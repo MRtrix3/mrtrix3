@@ -26,9 +26,7 @@
 #define __connectome_connectome_h__
 
 
-#include <stdint.h>
-
-#include <Eigen/Dense>
+#include "types.h"
 
 
 namespace MR {
