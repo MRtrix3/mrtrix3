@@ -41,13 +41,13 @@ void usage ()
   + Argument ("dt", "the output dt image.").type_image_out ();
 
   OPTIONS 
-  + DWI::GradImportOptions()
-  + Option ("iter","number of iterative reweightings")
+  + Option ("iter","number of iterative reweightings (default: 2); set to 0 for ordinary linear least squares.")
   + Argument ("iter").type_integer (0, default_iter, 10)
   + Option ("b0", "the output b0 image.")
   + Argument ("image").type_image_out()
   + Option ("mask", "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in();
+  + Argument ("image").type_image_in()
+  + DWI::GradImportOptions();
   
   AUTHOR = "Ben Jeurissen (ben.jeurissen@uantwerpen.be)";
   
@@ -56,11 +56,11 @@ void usage ()
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
   
   DESCRIPTION
-  + "Diffusion tensor estimation using iteratively reweighted linear least squares estimator";
+  + "Diffusion tensor estimation using iteratively reweighted linear least squares estimator.";
   
   REFERENCES 
   + "Veraart, J.; Sijbers, J.; Sunaert, S.; Leemans, A. & Jeurissen, B. "
-    "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls."
+    "Weighted linear least squares estimation of diffusion MRI parameters: strengths, limitations, and pitfalls. "
     "NeuroImage, 2013, 81, 335-346";
 }
 
