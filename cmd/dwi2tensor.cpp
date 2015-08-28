@@ -26,6 +26,7 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
+#include "adapter/allow_empty.h"
 
 using namespace MR;
 using namespace App;
@@ -75,8 +76,8 @@ class Processor
       b(b),
       maxit(iter) { }
 
-    template <class DWIType, class MASKType, class DTType>
-      void operator() (DWIType& dwi_image, MASKType& mask_image, DTType& b0_image, DTType& dt_image)
+    template <class DWIType, class MASKType, class B0Type, class DTType>
+      void operator() (DWIType& dwi_image, MASKType& mask_image, B0Type& b0_image, DTType& dt_image)
       {
         /* check mask */ 
         if (mask_image.valid())
@@ -168,5 +169,5 @@ void run ()
   }
   
   // TODO: fix crash if mask or b0 are not valid() (i.e. when those options are not supplied)
-  ThreadedLoop("computing tensors...", dwi, 0, 3).run (Processor(b,iter), dwi, mask, b0, dt);
+  ThreadedLoop("computing tensors...", dwi, 0, 3).run (Processor(b,iter), dwi, Adapter::allow_empty (mask), Adapter::allow_empty (b0), dt);
 }
