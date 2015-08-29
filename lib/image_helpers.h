@@ -424,7 +424,7 @@ namespace MR
     template <class ImageType>
       class Index {
         public:
-          FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { /*assert (!image.valid() || axis < image.ndim());*/ }
+          FORCE_INLINE Index (ImageType& image, size_t axis) : image (image), axis (axis) { assert (axis < image.ndim()); }
           Index () = delete;
           Index (const Index&) = delete;
           FORCE_INLINE Index (Index&&) = default;

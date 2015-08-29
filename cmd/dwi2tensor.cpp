@@ -26,7 +26,6 @@
 #include "algo/threaded_copy.h"
 #include "dwi/gradient.h"
 #include "dwi/tensor.h"
-#include "adapter/allow_empty.h"
 
 using namespace MR;
 using namespace App;
@@ -65,10 +64,13 @@ void usage ()
     "NeuroImage, 2013, 81, 335-346";
 }
 
+template <class MASKType, class B0Type>
 class Processor
 {
   public:
-    Processor (const Eigen::MatrixXd& b, const int& iter) :
+    Processor (const Eigen::MatrixXd& b, const int& iter, MASKType* mask_image, B0Type* b0_image) :
+      mask_image (mask_image),
+      b0_image (b0_image),
       dwi(b.rows()),
       logdwi(b.rows()),
       p(7),
@@ -76,14 +78,13 @@ class Processor
       b(b),
       maxit(iter) { }
 
-    template <class DWIType, class MASKType, class B0Type, class DTType>
-      void operator() (DWIType& dwi_image, MASKType& mask_image, B0Type& b0_image, DTType& dt_image)
+    template <class DWIType, class DTType>
+      void operator() (DWIType& dwi_image, DTType& dt_image)
       {
         /* check mask */ 
-        if (mask_image.valid())
-        {
-          assign_pos_of(dwi_image, 0, 3).to(mask_image);
-          if (!mask_image.value())
+        if (mask_image) {
+          assign_pos_of (dwi_image, 0, 3).to (*mask_image);
+          if (!mask_image->value())
             return;
         }
         
@@ -102,15 +103,16 @@ class Processor
         p = b.colPivHouseholderQr().solve(logdwi);
         
         /* weighted linear least squares fit with iterative weights */
-        for (int it = 0; it < maxit; it++)
-        {
+        for (int it = 0; it < maxit; it++) {
           w = (b*p).array().exp().matrix().asDiagonal();
           p = (w*b).colPivHouseholderQr().solve(w*logdwi);
         }
         
         /* output b0 */
-        if (b0_image.valid())
-          b0_image.value() = exp(p[6]);
+        if (b0_image) {
+          assign_pos_of (dwi_image, 0, 3).to (*b0_image);
+          b0_image->value() = exp(p[6]);
+        }
         
         /* output dt */
         for (auto l = Loop(3)(dt_image); l; ++l)
@@ -118,6 +120,8 @@ class Processor
       }
 
   private:
+    copy_ptr<MASKType> mask_image;
+    copy_ptr<B0Type> b0_image;
     Eigen::VectorXd dwi;
     Eigen::VectorXd logdwi;
     Eigen::VectorXd p;
@@ -127,26 +131,31 @@ class Processor
 };
 
 
+template <class MASKType, class B0Type> 
+inline Processor<MASKType, B0Type> processor (const Eigen::MatrixXd& b, const int& iter, MASKType* mask_image, B0Type* b0_image) {
+  return { b, iter, mask_image, b0_image };
+}
+
+
+
+
 void run ()
 {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
   auto grad = DWI::get_valid_DW_scheme (dwi.header());
   Eigen::MatrixXd b = -DWI::grad2bmatrix<double> (grad);
 
-  auto mask = Image<bool>();
+  Image<bool>* mask = nullptr;
   auto opt = get_options ("mask");
-  if (opt.size())
-  {
-    mask = Header::open (opt[0][0]).get_image<bool>();
-    check_dimensions (dwi, mask, 0, 3);
+  if (opt.size()) {
+    mask = new Image<bool> (Image<bool>::open (opt[0][0]));
+    check_dimensions (dwi, *mask, 0, 3);
   }
   
   auto iter = default_iter;
   opt = get_options ("iter");
   if (opt.size())
-  {
     iter = opt[0][0];
-  }
 
   auto header = dwi.header();
   header.datatype() = DataType::Float32;
@@ -155,14 +164,14 @@ void run ()
   auto dt = Header::create (argument[1], header).get_image<value_type>();
 
   
-  auto b0 = Image<value_type>();
+  Image<value_type>* b0 = nullptr;
   opt = get_options ("b0");
-  if (opt.size())
-  {
+  if (opt.size()) {
     header.set_ndim (3);
-    b0 = Header::create (opt[0][0], header).get_image<value_type>();
+    b0 = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
   }
   
   // TODO: fix crash if mask or b0 are not valid() (i.e. when those options are not supplied)
-  ThreadedLoop("computing tensors...", dwi, 0, 3).run (Processor(b,iter), dwi, Adapter::allow_empty (mask), Adapter::allow_empty (b0), dt);
+  ThreadedLoop("computing tensors...", dwi, 0, 3).run (processor (b, iter, mask, b0), dwi, dt);
 }
+
