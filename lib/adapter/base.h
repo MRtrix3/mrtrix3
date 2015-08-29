@@ -45,7 +45,6 @@ namespace MR
             }
 
           typedef typename ImageType::value_type value_type;
-          typedef Base voxel_type; // TODO why is this needed...?
 
           template <class U> 
             const Base& operator= (const U& V) { return parent_ = V; }
