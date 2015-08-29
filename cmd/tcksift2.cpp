@@ -23,9 +23,8 @@
 
 #include "command.h"
 #include "exception.h"
-
-#include "image/buffer.h"
-#include "image/header.h"
+#include "image.h"
+#include "header.h"
 
 #include "dwi/directions/set.h"
 
@@ -146,7 +145,7 @@ void run ()
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception ("Options -max_factor and -max_coeff are mutually exclusive");
 
-  Image::Buffer<float> in_dwi (argument[1]);
+  auto in_dwi = Image<float>::open (argument[1]);
 
   DWI::Directions::FastLookupSet dirs (1281);
 
@@ -164,7 +163,7 @@ void run ()
 
   tckfactor.store_orig_TDs();
 
-  Options opt = get_options ("min_td_frac");
+  auto opt = get_options ("min_td_frac");
   const float min_td_frac = opt.size() ? to<float>(opt[0][0]) : SIFT2_MIN_TD_FRAC_DEFAULT;
   tckfactor.remove_excluded_fixels (min_td_frac);
 
