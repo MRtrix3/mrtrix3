@@ -32,12 +32,9 @@
 #include "progressbar.h"
 #include "memory.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/header.h"
-#include "image/loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "image.h"
+#include "algo/loop.h"
 
 #include "math/SH.h"
 
@@ -115,37 +112,34 @@ std::pair<float, float> get_regression (const std::vector<float>& ratios)
 
 
 template <typename value_type>
-void check_and_update (Image::Header& H, const conv_t conversion)
+void check_and_update (Header& H, const conv_t conversion)
 {
 
-  const size_t lmax = Math::SH::LforN (H.dim(3));
+  const size_t N = H.size(3);
+  const size_t lmax = Math::SH::LforN (N);
 
   // Flag which volumes are m==0 and which are not
-  const ssize_t N = H.dim(3);
   BitSet mzero_terms (N, false);
   for (size_t l = 2; l <= lmax; l += 2)
     mzero_terms[Math::SH::index (l, 0)] = true;
 
   // Open in read-write mode if there's a chance of modification
-  typename Image::Buffer<value_type> buffer (H, (conversion != NONE));
-  auto v = buffer.voxel();
+  auto image = H.get_image<value_type>();
 
   // Need to mask out voxels where the DC term is zero
-  Image::Info info_mask (H);
-  info_mask.set_ndim (3);
-  info_mask.datatype() = DataType::Bit;
-  Image::BufferScratch<bool> mask (info_mask);
-  auto v_mask = mask.voxel();
+  Header header_mask (H);
+  header_mask.set_ndim (3);
+  header_mask.datatype() = DataType::Bit;
+  auto mask = Image<bool>::scratch (header_mask);
   size_t voxel_count = 0;
   {
-    Image::LoopInOrder loop (v, "Masking image based on DC term...", 0, 3);
-    for (auto i = loop (v, v_mask); i; ++i) {
-      const value_type value = v.value();
+    for (auto i = Loop ("Masking image based on DC term...", image, 0, 3) (image, mask); i; ++i) {
+      const value_type value = image.value();
       if (value && std::isfinite (value)) {
-        v_mask.value() = true;
+        mask.value() = true;
         ++voxel_count;
       } else {
-        v_mask.value() = false;
+        mask.value() = false;
       }
     }
   }
@@ -164,26 +158,25 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   for (size_t l = 2; l <= lmax; l += 2) {
 
     double mzero_sum = 0.0, mnonzero_sum = 0.0;
-    Image::LoopInOrder loop (v, 0, 3);
-    for (v[3] = ssize_t (Math::SH::NforL(l-2)); v[3] != ssize_t (Math::SH::NforL(l)); ++v[3]) {
+    for (image.index(3) = ssize_t (Math::SH::NforL(l-2)); image.index(3) != ssize_t (Math::SH::NforL(l)); ++image.index(3)) {
       double sum = 0.0;
-      for (auto i = loop (v, v_mask); i; ++i) {
-        if (v_mask.value())
-          sum += Math::pow2 (value_type(v.value()));
+      for (auto i = Loop (image, 0, 3) (image, mask); i; ++i) {
+        if (mask.value())
+          sum += Math::pow2 (value_type(image.value()));
       }
-      if (mzero_terms[v[3]]) {
+      if (mzero_terms[image.index(3)]) {
         mzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m==0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m==0, sum " + str(sum));
       } else {
         mnonzero_sum += sum;
-        DEBUG ("Volume " + str(v[3]) + ", m!=0, sum " + str(sum));
+        DEBUG ("Volume " + str(image.index(3)) + ", m!=0, sum " + str(sum));
       }
       if (progress)
       ++*progress;
     }
 
     const double mnonzero_MSoS = mnonzero_sum / (2.0 * l);
-    const float power_ratio = mnonzero_MSoS/mzero_sum;
+    const float power_ratio = mnonzero_MSoS / mzero_sum;
     ratios.push_back (power_ratio);
 
     INFO ("SH order " + str(l) + ", ratio of m!=0 to m==0 power: " + str(power_ratio) +
@@ -298,12 +291,11 @@ void check_and_update (Image::Header& H, const conv_t conversion)
   // Adjust the image data in-place if necessary
   if (multiplier && (multiplier != 1.0)) {
 
-    Image::LoopInOrder loop (v, 0, 3);
     ProgressBar progress ("Modifying SH basis of image \"" + H.name() + "\"...", N-1);
-    for (v[3] = 1; v[3] != N; ++v[3]) {
-      if (!mzero_terms[v[3]]) {
-        for (auto i = loop (v); i; ++i) 
-          v.value() *= multiplier;
+    for (image.index(3) = 1; image.index(3) != ssize_t(N); ++image.index(3)) {
+      if (!mzero_terms[image.index(3)]) {
+        for (auto i = Loop (image, 0, 3) (image); i; ++i)
+          image.value() *= multiplier;
       }
       ++progress;
     }
@@ -325,7 +317,7 @@ void check_and_update (Image::Header& H, const conv_t conversion)
 void run ()
 {
   conv_t conversion = NONE;
-  Options opt = get_options ("convert");
+  auto opt = get_options ("convert");
   if (opt.size()) {
     switch (int(opt[0][0])) {
       case 0: conversion = OLD; break;
@@ -346,7 +338,7 @@ void run ()
   for (std::vector<ParsedArgument>::const_iterator i = argument.begin(); i != argument.end(); ++i) {
 
     const std::string path = *i;
-    Image::Header H (path);
+    Header H = Header::open (path);
     try {
       Math::SH::check (H);
     }
