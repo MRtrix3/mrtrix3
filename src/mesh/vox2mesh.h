@@ -26,10 +26,7 @@
 #include <array>
 #include <map>
 
-#include "point.h"
 #include "progressbar.h"
-
-#include "image/nav.h"
 
 #include "mesh/mesh.h"
 
@@ -44,16 +41,16 @@ namespace MR
     // Function to convert a binary image into a mesh
     // Note that this produces a 'hard mesh' that follows the voxel boundaries exactly;
     //   it therefore appears very 'blocky'
-    template <class VoxelType>
-    void vox2mesh (const VoxelType& in, Mesh& out)
+    template <class ImageType>
+    void vox2mesh (const ImageType& input_image, Mesh& out)
     {
 
-        static const Point<int> steps[6] = { Point<int> ( 0,  0, -1),
-                                             Point<int> ( 0, -1,  0),
-                                             Point<int> (-1,  0,  0),
-                                             Point<int> ( 0,  0,  1),
-                                             Point<int> ( 0,  1,  0),
-                                             Point<int> ( 1,  0,  0) };
+        static const Vox steps[6] = { Vox ( 0,  0, -1),
+                                      Vox ( 0, -1,  0),
+                                      Vox (-1,  0,  0),
+                                      Vox ( 0,  0,  1),
+                                      Vox ( 0,  1,  0),
+                                      Vox ( 1,  0,  0) };
 
         static const int plane_axes[6][2] = { {0, 1},
                                               {0, 2},
@@ -62,13 +59,13 @@ namespace MR
                                               {0, 2},
                                               {1, 2} };
 
-        if (in.ndim() != 3)
+        if (input_image.ndim() != 3)
           throw Exception ("Voxel-to-mesh conversion only works for 3D images");
 
-        VoxelType vox (in), neighbour (in);
+        ImageType in (input_image), neighbour (input_image);
         VertexList vertices;
         TriangleList polygons;
-        std::map< Point<int>, size_t > pos2vertindex;
+        std::map< Vox, size_t > vox2vertindex;
 
         // Perform all initial calculations in voxel space;
         //   only after the data has been written to a Mesh class will the conversion to
@@ -78,18 +75,20 @@ namespace MR
         //   refers to the lower corner of the voxel; that way searches for existing
         //   vertices can be done using a simple map
 
-        Image::LoopInOrder loop (vox);
-        for (loop.start (vox); loop.ok(); loop.next (vox)) {
-          if (vox.value()) {
+        Vox pos;
+        for (auto loop = Loop(in) (in); loop; ++loop) {
+          if (in.value()) {
+
+            assign_pos_of (in).to (pos);
 
             for (size_t adj = 0; adj != 6; ++adj) {
-              Image::Nav::set_pos  (neighbour, vox);
-              Image::Nav::step_pos (neighbour, steps[adj]);
+
+              assign_pos_of (pos + steps[adj]).to (neighbour);
 
               // May get an overflow here; can't guarantee order of an or operation
               //if (!Image::Nav::within_bounds (neighbour) || !neighbour.value()) {
 
-              bool is_interface = !Image::Nav::within_bounds (neighbour);
+              bool is_interface = is_out_of_bounds (neighbour);
               if (!is_interface)
                 is_interface = !neighbour.value();
               if (is_interface) {
@@ -100,14 +99,14 @@ namespace MR
                 //   direction to the empty neighbour voxel
                 // Remember: integer locations map to the lower corner of the voxel
 
-                Point<int> p (vox[0], vox[1], vox[2]);
-                if (steps[adj].dot (Point<int> (1, 1, 1)) > 0)
+                Vox p (pos);
+                if (steps[adj][0] + steps[adj][1] + steps[adj][2] > 0)
                   p += steps[adj];
 
                 // Break this voxel face into two triangles
 
                 // Get the integer positions of the four vertices
-                std::vector< Point<int> > voxels (4, p);
+                std::vector<Vox> voxels (4, p);
                 voxels[1][plane_axes[adj][0]]++;
                 voxels[2][plane_axes[adj][0]]++; voxels[2][plane_axes[adj][1]]++;
                 voxels[3][plane_axes[adj][1]]++;
@@ -120,8 +119,8 @@ namespace MR
                   // Triangle 0 uses vertices (0, 1, 2); triangle 1 uses vertices (0, 2, 3)
                   for (size_t out_vertex = 0; out_vertex != 3; ++out_vertex) {
                     const size_t in_vertex = out_vertex + (tri_index && out_vertex ? 1 : 0);
-                    const auto existing = pos2vertindex.find (voxels[in_vertex]);
-                    if (existing == pos2vertindex.end()) {
+                    const auto existing = vox2vertindex.find (voxels[in_vertex]);
+                    if (existing == vox2vertindex.end()) {
                       triangle_vertices[out_vertex] = vertices.size();
                       vertices.push_back (Vertex (float(voxels[in_vertex][0]) - 0.5f, float(voxels[in_vertex][1]) - 0.5f, float(voxels[in_vertex][2]) - 0.5f));
                     } else {
@@ -144,17 +143,17 @@ namespace MR
 
 
     // vox2mesh function using the Marching Cubes algorithm
-    template <class VoxelType>
-    void vox2mesh_mc (const VoxelType& input_image, const float threshold, Mesh& out)
+    template <class ImageType>
+    void vox2mesh_mc (const ImageType& input_image, const float threshold, Mesh& out)
     {
-      static const Point<int> neighbour_offsets[] = { Point<int> (0, 0, 0),
-                                                      Point<int> (1, 0, 0),
-                                                      Point<int> (1, 1, 0),
-                                                      Point<int> (0, 1, 0),
-                                                      Point<int> (0, 0, 1),
-                                                      Point<int> (1, 0, 1),
-                                                      Point<int> (1, 1, 1),
-                                                      Point<int> (0, 1, 1) };
+      static const Vox neighbour_offsets[] = { Vox (0, 0, 0),
+                                               Vox (1, 0, 0),
+                                               Vox (1, 1, 0),
+                                               Vox (0, 1, 0),
+                                               Vox (0, 0, 1),
+                                               Vox (1, 0, 1),
+                                               Vox (1, 1, 1),
+                                               Vox (0, 1, 1) };
 
       static const uint32_t cube_edge_flags[256] = {
           0x000, 0x109, 0x203, 0x30a, 0x406, 0x50f, 0x605, 0x70c, 0x80c, 0x905, 0xa0f, 0xb06, 0xc0a, 0xd03, 0xe09, 0xf00,
@@ -440,21 +439,20 @@ namespace MR
       VertexList vertices;
       TriangleList polygons;
 
-      VoxelType voxel (input_image);
+      ImageType voxel (input_image);
       float in_vertex_values[8];
-      std::map< Point<int>, std::map<Point<int>, size_t> > input_vertex_pair_to_output_vertex_index_map;
-      Point<int> lower_corner;
-      for (lower_corner[2] = -1; lower_corner[2] != voxel.dim(2); ++lower_corner[2]) {
-        for (lower_corner[1] = -1; lower_corner[1] != voxel.dim(1); ++lower_corner[1]) {
-          for (lower_corner[0] = -1; lower_corner[0] != voxel.dim(0); ++lower_corner[0]) {
+      std::map< Vox, std::map<Vox, size_t> > input_vertex_pair_to_output_vertex_index_map;
+      Vox lower_corner;
+      for (lower_corner[2] = -1; lower_corner[2] != voxel.size(2); ++lower_corner[2]) {
+        for (lower_corner[1] = -1; lower_corner[1] != voxel.size(1); ++lower_corner[1]) {
+          for (lower_corner[0] = -1; lower_corner[0] != voxel.size(0); ++lower_corner[0]) {
 
             // This is our lower corner for our region of 8 voxels
             uint8_t code = 0x00;
             for (size_t neighbour_index = 0; neighbour_index != 8; ++neighbour_index) {
-              Image::Nav::set_pos (voxel, lower_corner);
-              Image::Nav::step_pos (voxel, neighbour_offsets[neighbour_index]);
+              assign_pos_of (lower_corner + neighbour_offsets[neighbour_index]).to (voxel);
               in_vertex_values[neighbour_index] = 0.0f;
-              if (Image::Nav::within_bounds (voxel))
+              if (!is_out_of_bounds (voxel))
                 in_vertex_values[neighbour_index] = voxel.value();
               if (in_vertex_values[neighbour_index] > threshold)
                 code |= (1 << neighbour_index);
@@ -474,7 +472,7 @@ namespace MR
                 // Therefore, need to do a lookup
                 // Remember: we have the lower corner position, and 8 offsets from that
                 std::array<uint8_t, 2> vertex_indices;
-                std::array<Point<int>, 2> vertex_positions;
+                std::array<Vox,     2> vertex_positions;
 
                 for (size_t i = 0; i != 2; ++i) {
                   const uint8_t vertex_index = edge_vertices[edge_index][i];
@@ -484,10 +482,10 @@ namespace MR
                 // Has a vertex already been generated somewhere along this edge?
                 auto lookup_zero_it = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions[0]);
                 if (lookup_zero_it == input_vertex_pair_to_output_vertex_index_map.end())
-                  lookup_zero_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[0], std::map<Point<int>, size_t>())).first;
+                  lookup_zero_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[0], std::map<Vox, size_t>())).first;
                 auto lookup_one_it = input_vertex_pair_to_output_vertex_index_map.find (vertex_positions[1]);
                 if (lookup_one_it == input_vertex_pair_to_output_vertex_index_map.end())
-                  lookup_one_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[1], std::map<Point<int>, size_t>())).first;
+                  lookup_one_it = input_vertex_pair_to_output_vertex_index_map.insert (std::make_pair (vertex_positions[1], std::map<Vox, size_t>())).first;
                 auto& lookup_zero = lookup_zero_it->second;
                 auto& lookup_one  = lookup_one_it ->second;
                 auto existing_zero = lookup_zero.find (vertex_positions[1]);
@@ -498,7 +496,7 @@ namespace MR
                   // Calculate the precise position of this vertex, based on the
                   //   image intensities in the two relevant voxels
                   const float alpha = (threshold - in_vertex_values[vertex_indices[0]]) / (in_vertex_values[vertex_indices[1]] - in_vertex_values[vertex_indices[0]]);
-                  const Vertex pos = Point<float>(vertex_positions[0]) + (1.0f - alpha) * Point<float>(vertex_positions[1] - vertex_positions[0]);
+                  const Vertex pos = vertex_positions[0].cast<default_type>() + ((1.0f - alpha) * (vertex_positions[1] - vertex_positions[0]).cast<default_type>());
                   vertices.push_back (pos);
                 } else {
                   edge_to_output_vertex[edge_index] = existing_zero->second;

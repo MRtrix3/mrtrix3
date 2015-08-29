@@ -22,8 +22,8 @@
 
 #include "command.h"
 
-#include "image/buffer.h"
-#include "image/filter/optimal_threshold.h"
+#include "image.h"
+#include "filter/optimal_threshold.h"
 #include "mesh/mesh.h"
 #include "mesh/vox2mesh.h"
 
@@ -64,21 +64,19 @@ void run ()
 
   if (get_options ("blocky").size()) {
 
-    Image::Buffer<bool> input_data (argument[0]);
-    auto input_voxel = input_data.voxel();
-    Mesh::vox2mesh (input_voxel, mesh);
+    auto input = Image<bool>::open (argument[0]);
+    Mesh::vox2mesh (input, mesh);
 
   } else {
 
-    Image::Buffer<float> input_data (argument[0]);
-    auto input_voxel = input_data.voxel();
+    auto input = Image<float>::open (argument[0]);
     float threshold;
-    Options opt = get_options ("threshold");
+    auto opt = get_options ("threshold");
     if (opt.size())
       threshold = opt[0][0];
     else
-      threshold = Image::Filter::estimate_optimal_threshold (input_voxel);
-    Mesh::vox2mesh_mc (input_voxel, threshold, mesh);
+      threshold = Filter::estimate_optimal_threshold (input);
+    Mesh::vox2mesh_mc (input, threshold, mesh);
 
   }
 

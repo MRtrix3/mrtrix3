@@ -28,20 +28,12 @@
 #include <vector>
 #include <stdint.h>
 
-#include "point.h"
+#include "header.h"
+#include "image.h"
+#include "transform.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/header.h"
-#include "image/info.h"
-#include "image/loop.h"
-#include "image/nav.h"
-#include "image/transform.h"
-#include "image/voxel.h"
-
-
-#include "math/matrix.h"
+#include "algo/copy.h"
+#include "algo/loop.h"
 
 
 
@@ -51,8 +43,18 @@ namespace MR
   {
 
 
-    typedef Point<float> Vertex;
+    typedef Eigen::Vector3 Vertex;
     typedef std::vector<Vertex> VertexList;
+
+    class Vox : public Eigen::Array3i
+    {
+      public:
+        using Eigen::Array3i::Array3i;
+        bool operator< (const Vox& i) const
+        {
+          return ((*this)[2] == i[2] ? (((*this)[1] == i[1]) ? ((*this)[0] < i[0]) : ((*this)[1] < i[1])) : ((*this)[2] < i[2]));
+        }
+    };
 
 
     template <uint32_t vertices = 3>
@@ -167,13 +169,13 @@ namespace MR
         }
 
 
-        void transform_first_to_realspace (const Image::Info&);
-        void transform_voxel_to_realspace (const Image::Info&);
-        void transform_realspace_to_voxel (const Image::Info&);
+        void transform_first_to_realspace (const Header&);
+        void transform_voxel_to_realspace (const Header&);
+        void transform_realspace_to_voxel (const Header&);
 
         void save (const std::string&, const bool binary = false) const;
 
-        void output_pve_image (const Image::Header&, const std::string&);
+        void output_pve_image (const Header&, const std::string&);
 
         void smooth (const float, const float);
 
@@ -216,8 +218,8 @@ namespace MR
         void load_triangle_vertices (VertexList&, const size_t) const;
         void load_quad_vertices     (VertexList&, const size_t) const;
 
-        Point<float> calc_normal (const Triangle&) const;
-        Point<float> calc_normal (const Quad&) const;
+        Eigen::Vector3 calc_normal (const Triangle&) const;
+        Eigen::Vector3 calc_normal (const Quad&) const;
 
         float calc_area (const Triangle&) const;
         float calc_area (const Quad&) const;

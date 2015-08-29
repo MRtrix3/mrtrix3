@@ -23,19 +23,17 @@
 #ifndef __image_min_max_h__
 #define __image_min_max_h__
 
-#include "image/threaded_loop.h"
+#include "algo/threaded_loop.h"
 
 namespace MR
 {
-  namespace Image
-  {
 
     //! \cond skip
     namespace {
-      template <class VoxelType> 
+      template <class ImageType>
       class __MinMax {
         public:
-          typedef typename VoxelType::value_type value_type;
+          typedef typename ImageType::value_type value_type;
 
           __MinMax (value_type& overal_min, value_type& overal_max) :
             overal_min (overal_min), overal_max (overal_max),
@@ -45,11 +43,12 @@ namespace MR
               overal_max = max;
             }
           ~__MinMax () {
+            std::lock_guard<std::mutex> lock (mutex);
             overal_min = std::min (overal_min, min);
             overal_max = std::max (overal_max, max);
           }
 
-          void operator() (VoxelType& vox) {
+          void operator() (ImageType& vox) {
             value_type val = vox.value();
             if (std::isfinite (val)) {
               if (val < min) min = val;
@@ -60,23 +59,25 @@ namespace MR
           value_type& overal_min;
           value_type& overal_max;
           value_type min, max;
+
+          static std::mutex mutex;
       };
+      template <class ImageType> std::mutex __MinMax<ImageType>::mutex;
     }
     //! \endcond
 
-    template <class InputVoxelType>
+    template <class ImageType>
       inline void min_max (
-          InputVoxelType& in, 
-          typename InputVoxelType::value_type& min, 
-          typename InputVoxelType::value_type& max, 
+          ImageType& in,
+          typename ImageType::value_type& min,
+          typename ImageType::value_type& max,
           size_t from_axis = 0, 
           size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      Image::ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"...", in)
-        .run (__MinMax<InputVoxelType> (min, max), in);
+      ThreadedLoop ("finding min/max of \"" + shorten (in.name()) + "\"...", in)
+        .run (__MinMax<ImageType> (min, max), in);
     }
 
-  }
 }
 
 #endif

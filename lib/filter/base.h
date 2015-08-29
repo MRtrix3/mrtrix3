@@ -20,8 +20,8 @@
 
  */
 
-#ifndef __image_filter_base_h__
-#define __image_filter_base_h__
+#ifndef __filter_base_h__
+#define __filter_base_h__
 
 #include "progressbar.h" // May be needed for any derived classes that make use of the message string
 #include "header.h"
@@ -70,7 +70,7 @@ namespace MR
         template <class InputImageType, class OutputImageType>
         void operator() (InputImageType& in, OutputImageType& out)
         {
-            throw Exception ("Running empty function Image::Filter::Base::operator()");
+            throw Exception ("Running empty function Filter::Base::operator()");
         }
 
       protected:
