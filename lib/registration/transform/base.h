@@ -46,21 +46,49 @@ namespace MR
         public:
 
           typedef default_type ParameterType;
-
-          Base (size_t number_of_parameters) :
+          #ifdef NONSYMREGISTRATION
+            Base (size_t number_of_parameters) :
             number_of_parameters(number_of_parameters),
             optimiser_weights (number_of_parameters) {
               matrix.setIdentity();
               translation.setZero();
               centre.setZero();
               offset.setZero();
-          }
+            }
+          #else
+            Base (size_t number_of_parameters) :
+              number_of_parameters(number_of_parameters),
+              optimiser_weights (number_of_parameters) {
+                matrix.setIdentity();
+                matrix_half.setIdentity();
+                matrix_half_inverse.setIdentity();
+                translation.setZero();
+                centre.setZero();
+                offset.setZero();
+                offset_half.setZero();
+                offset_half_inverse.setZero();
+            }
+          #endif
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
             out[0] = matrix(0,0)*in[0] + matrix(0,1)*in[1] + matrix(0,2)*in[2] + offset[0];
             out[1] = matrix(1,0)*in[0] + matrix(1,1)*in[1] + matrix(1,2)*in[2] + offset[1];
             out[2] = matrix(2,0)*in[0] + matrix(2,1)*in[1] + matrix(2,2)*in[2] + offset[2];
+          }
+
+          template <class OutPointType, class InPointType>
+          inline void transform_half (OutPointType& out, const InPointType& in) const {
+            out[0] = matrix_half(0,0)*in[0] + matrix_half(0,1)*in[1] + matrix_half(0,2)*in[2] + offset_half[0];
+            out[1] = matrix_half(1,0)*in[0] + matrix_half(1,1)*in[1] + matrix_half(1,2)*in[2] + offset_half[1];
+            out[2] = matrix_half(2,0)*in[0] + matrix_half(2,1)*in[1] + matrix_half(2,2)*in[2] + offset_half[2];
+          }
+
+          template <class OutPointType, class InPointType>
+          inline void transform_half_inverse (OutPointType& out, const InPointType& in) const {
+            out[0] = matrix_half_inverse(0,0)*in[0] + matrix_half_inverse(0,1)*in[1] + matrix_half_inverse(0,2)*in[2] + offset_half_inverse[0];
+            out[1] = matrix_half_inverse(1,0)*in[0] + matrix_half_inverse(1,1)*in[1] + matrix_half_inverse(1,2)*in[2] + offset_half_inverse[1];
+            out[2] = matrix_half_inverse(2,0)*in[0] + matrix_half_inverse(2,1)*in[1] + matrix_half_inverse(2,2)*in[2] + offset_half_inverse[2];
           }
 
           void set_transform (transform_type& transform) {
@@ -70,6 +98,7 @@ namespace MR
               translation[row] = transform(row, 3);
             }
             compute_offset();
+            calculate_halfspace_transformations();
           }
 
           transform_type get_transform () const {
@@ -83,12 +112,35 @@ namespace MR
           }
 
 
+          transform_type get_transform_half () const {
+            transform_type transform;
+            for (size_t row = 0; row < 3; row++) {
+              for (size_t col = 0; col < 3; col++)
+                transform(row,col) = matrix_half(row,col);
+              transform(row, 3) = offset_half[row];
+            }
+            return transform;
+          }
+
+
+          transform_type get_transform_half_inverse () const {
+            transform_type transform;
+            for (size_t row = 0; row < 3; row++) {
+              for (size_t col = 0; col < 3; col++)
+                transform(row,col) = matrix_half_inverse(row,col);
+              transform(row, 3) = offset_half_inverse[row];
+            }
+            return transform;
+          }
+
+
           void set_matrix (const Eigen::Matrix<default_type, 3, 3>& mat) {
             for (size_t row = 0; row < 3; row++) {
               for (size_t col = 0; col < 3; col++)
                  matrix(row, col) = mat (row, col);
             }
             compute_offset();
+            calculate_halfspace_transformations();
           }
 
           const Eigen::Matrix<default_type, 3, 3> get_matrix () const {
@@ -129,27 +181,62 @@ namespace MR
           Eigen::Vector3 get_offset () const {
             return offset;
           }
-
-          void set_offset (const Eigen::Vector3& offset_in) {
-            offset = offset_in;
-          }
+          #ifdef NONSYMREGISTRATION
+            void set_offset (const Eigen::Vector3& offset_in) {
+              offset = offset_in;
+            }
+          #else
+            void set_offset (const Eigen::Vector3& offset_in,
+                const Eigen::Vector3& offset_in_half,
+                const Eigen::Vector3& offset_in_half_inverse) {
+              offset = offset_in;
+              offset_half = offset_in_half;
+              offset_half_inverse = offset_in_half_inverse;
+            }
+          #endif
 
 
         protected:
 
-          void compute_offset () {
-            for( size_t i = 0; i < 3; i++ ) {
-              offset[i] = translation[i] + centre[i];
-              for( size_t j = 0; j < 3; j++ )
-                offset[i] -= matrix(i, j) * centre[j];
+          #ifdef NONSYMREGISTRATION
+            void compute_offset () {
+              for( size_t i = 0; i < 3; i++ ) {
+                offset[i] = translation[i] + centre[i];
+                for( size_t j = 0; j < 3; j++ )
+                  offset[i] -= matrix(i, j) * centre[j];
+              }
             }
-          }
+          #else
+            void compute_offset () {
+              for( size_t i = 0; i < 3; i++ ) {
+                offset[i] = translation[i] + centre[i];
+                offset_half[i] = 0.5 * translation[i] + centre[i];
+                offset_half_inverse[i] = - 0.5 * translation[i] + centre[i];
+                for( size_t j = 0; j < 3; j++ ){
+                  offset[i] -= matrix(i, j) * centre[j];
+                  offset_half[i] -= matrix_half(i, j) * centre[j];
+                  offset_half_inverse[i] -= matrix_half_inverse(i, j) * centre[j];
+                }
+              }
+            }
+          #endif
+
+          void calculate_halfspace_transformations(){
+            #ifdef NONSYMREGISTRATION
+              matrix_half  = matrix.sqrt();
+              matrix_half_inverse  = matrix_half.inverse();
+            #endif
+            }
 
           size_t number_of_parameters;
           Eigen::Matrix<default_type, 3, 3> matrix;
+          Eigen::Matrix<default_type, 3, 3> matrix_half;
+          Eigen::Matrix<default_type, 3, 3> matrix_half_inverse;
           Eigen::Vector3 translation;
           Eigen::Vector3 centre;
           Eigen::Vector3 offset;
+          Eigen::Vector3 offset_half;
+          Eigen::Vector3 offset_half_inverse;
           Eigen::VectorXd optimiser_weights;
 
       };

@@ -71,6 +71,8 @@ namespace MR
               }
               // std::cerr.precision(10);
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
+              DEBUG ("  x: " + str(x.transpose()));
+              DEBUG ("  gradient: " + str(gradient.transpose()));
               return overall_cost_function;
             }
 

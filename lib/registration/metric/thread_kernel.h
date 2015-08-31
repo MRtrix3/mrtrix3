@@ -64,7 +64,11 @@ namespace MR
             gradient (overall_gradient.size()),
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
-            transform (params.template_image) {
+            #ifdef NONSYMREGISTRATION
+              transform (params.template_image) {
+            #else
+              transform (params.midway_image) {
+            #endif
               gradient.setZero();
           }
 
@@ -73,31 +77,69 @@ namespace MR
             overall_gradient += gradient;
           }
 
-          template <class U = MetricType>
-          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+          #ifdef NONSYMREGISTRATION
+            template <class U = MetricType>
+            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+              Eigen::Vector3 template_point = transform.voxel2scanner * voxel_pos;
+              if (params.template_mask_interp) {
+                params.template_mask_interp->scanner (template_point);
+                if (!params.template_mask_interp->value())
+                  return;
+              }
 
-            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-            Eigen::Vector3 template_point = transform.voxel2scanner * voxel_pos;
-            if (params.template_mask_interp) {
-              params.template_mask_interp->scanner (template_point);
-              if (!params.template_mask_interp->value())
+              Eigen::Vector3 moving_point;
+
+              params.transformation.transform (moving_point, template_point);
+              if (params.moving_mask_interp) {
+                params.moving_mask_interp->scanner (moving_point);
+                if (!params.moving_mask_interp->value())
+                  return;
+              }
+              assign_pos_of (iter).to (params.template_image);
+              params.moving_image_interp->scanner (moving_point);
+              if (!(*params.moving_image_interp))
                 return;
+              cost_function += metric (params, template_point, gradient);
             }
+          #else
+            template <class U = MetricType>
+            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
-            Eigen::Vector3 moving_point;
+              Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
 
-            params.transformation.transform (moving_point, template_point);
-            if (params.moving_mask_interp) {
-              params.moving_mask_interp->scanner (moving_point);
-              if (!params.moving_mask_interp->value())
+
+              Eigen::Vector3 template_point;
+              params.transformation.transform_half_inverse (template_point, midway_point);
+              if (params.template_mask_interp) {
+                params.template_mask_interp->scanner (template_point);
+                if (!params.template_mask_interp->value())
+                  return;
+              }
+
+              Eigen::Vector3 moving_point;
+              params.transformation.transform_half (moving_point, midway_point);
+              if (params.moving_mask_interp) {
+                params.moving_mask_interp->scanner (moving_point);
+                if (!params.moving_mask_interp->value())
+                  return;
+              }
+
+              assign_pos_of (iter).to (params.template_image); // TODO still makes sense if template not resized?
+              assign_pos_of (iter).to (params.moving_image); // TODO still makes sense if moving not resized?
+              
+              params.moving_image_interp->scanner (moving_point);
+              if (!(*params.moving_image_interp))
                 return;
+              
+              params.template_image_interp->scanner (template_point);
+              if (!(*params.template_image_interp))
+                return;
+
+              cost_function += metric (params, template_point, moving_point, gradient);
             }
-            assign_pos_of (iter).to (params.template_image);
-            params.moving_image_interp->scanner (moving_point);
-            if (!(*params.moving_image_interp))
-              return;
-            cost_function += metric (params, template_point, gradient);
-          }
+          #endif
 
           template <class U = MetricType>
             void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {

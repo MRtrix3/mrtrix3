@@ -194,7 +194,7 @@ namespace MR
         bounding_box_corners.row(i) = ( average_v2s_trafo * bounding_box_corners.row(i).transpose()).transpose();
       } 
 
-      std::cout << "average space axis-aligned minimum bounding box:\n" << bounding_box_corners << std::endl;
+      // std::cout << "average space axis-aligned minimum bounding box:\n" << bounding_box_corners << std::endl;
 
       VectorType bounding_box_corners_width = bounding_box_corners.colwise().maxCoeff() - bounding_box_corners.colwise().minCoeff();
       bounding_box_corners_width(3) = 1.0;
@@ -215,18 +215,18 @@ namespace MR
       // set header dimensions according to element 7 in bounding_box_corners:
       VectorType ext = VectorType(4);
       ext = bounding_box_corners.row(6);
-      VAR(average_s2v.matrix());
-      VAR(bounding_box_corners);
+      // VAR(average_s2v.matrix());
+      // VAR(bounding_box_corners);
       ext(3) = 1.0;
       ext = average_s2v * ext;
-      VAR(ext);
+      // VAR(ext);
       for (size_t i=0;i<3;i++){
         header_out.size(i) = std::ceil(ext(i)) ; 
       }    
       // return header_out;
       // auto scratch = Header::scratch (input_headers[0], "my buffer").get_image<uint32_t>();
-      std::cout << "average voxel to scanner transformation:\n" << average_v2s_trafo.matrix() <<std::endl;
-      std::cout << "average image to scanner transformation:\n" << average_i2s_trafo.matrix() <<std::endl;
+      // std::cout << "average voxel to scanner transformation:\n" << average_v2s_trafo.matrix() <<std::endl;
+      // std::cout << "average image to scanner transformation:\n" << average_i2s_trafo.matrix() <<std::endl;
       return header_out;
       }
 }

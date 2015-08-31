@@ -23,6 +23,7 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
+#define NONSYMREGISTRATION
 #include <vector>
 
 #include "image.h"
@@ -38,6 +39,7 @@
 #include "math/rng.h"
 
 #include <iostream>     // std::streambuf
+
 
 namespace MR
 {
@@ -165,16 +167,17 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
 
+            std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (moving_image, template_image, transform);
+              Transform::Init::initialise_using_image_mass (moving_image, template_image, transform); 
             else if (init_type == Transform::Init::geometric)
-              Transform::Init::initialise_using_image_centres (moving_image, template_image, transform);
+              Transform::Init::initialise_using_image_centres (moving_image, template_image, transform); 
 
             typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> MovingImageInterpolatorType;
 
             typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> TemplateImageInterpolatorType;
 
-            typedef TemplateImageType MidwayImageType; // TODO 
+            typedef Image<float> MidwayImageType; 
 
             typedef Metric::Params<TransformType,
                                    MovingImageType,
@@ -187,10 +190,20 @@ namespace MR
 
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
-            // TODO:
-            // auto midway_image_header = compute_average_header(  );
-            // Image midway_image (midway_image_header); 
-            auto midway_image = template_image; // TODO
+            // get midway (affine average) space
+            #ifdef NONSYMREGISTRATION
+              auto midway_image = moving_image;
+              CONSOLE("non-symmetric metric");
+            #else
+              CONSOLE("symmetric metric");
+              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+              default_type template_res = 1.0;
+              std::vector<Header> headers;
+              headers.push_back(template_image.header());
+              headers.push_back(moving_image.header());
+              auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, template_res, padding, init_transforms);
+              auto midway_image = Header::scratch (midway_image_header).get_image<float>();
+            #endif
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
 
@@ -201,33 +214,65 @@ namespace MR
               // lets ditch the resize of moving and "template", and just smooth. We can then get the value of the image as the same time as the gradient for little extra cost.
               // Note that we will still need to resize the 'halfway' template grid. Maybe we should rename the input images to input1 and input2 to avoid confusion.
 
-              Filter::Resize moving_resize_filter (moving_image);
-              moving_resize_filter.set_scale_factor (scale_factor[level]);
-              moving_resize_filter.set_interp_type (1);
-              auto moving_resized = Image<float>::scratch (moving_resize_filter);
-              Filter::Smooth moving_smooth_filter (moving_resized);
-              auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
+              #ifdef NONSYMREGISTRATION
+                Filter::Resize moving_resize_filter (moving_image);
+                moving_resize_filter.set_scale_factor (scale_factor[level]);
+                moving_resize_filter.set_interp_type (1);
+                auto moving_resized = Image<float>::scratch (moving_resize_filter);
+                Filter::Smooth moving_smooth_filter (moving_resized);
+                auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
+              #else
+                Filter::Smooth moving_smooth_filter (moving_image);
+                moving_smooth_filter.set_stdev(1.0 / (2.0 * scale_factor[level]));
+                auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
+              #endif
 
-              Filter::Resize template_resize_filter (template_image);
-              template_resize_filter.set_scale_factor (scale_factor[level]);
-              template_resize_filter.set_interp_type (1);
-              auto template_resized = Image<float>::scratch (template_resize_filter);
-              Filter::Smooth template_smooth_filter (template_resized);
-              auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+              #ifdef NONSYMREGISTRATION
+                Filter::Resize template_resize_filter (template_image);
+                template_resize_filter.set_scale_factor (scale_factor[level]);
+                template_resize_filter.set_interp_type (1);
+                auto template_resized = Image<float>::scratch (template_resize_filter);
+                Filter::Smooth template_smooth_filter (template_resized);
+                auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+              #else
+                Filter::Smooth template_smooth_filter (template_image);
+                template_smooth_filter.set_stdev(1.0 / (2.0 * scale_factor[level])) ;
+                auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+              #endif
               
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
-              auto midway_resized = Image<float>::scratch (midway_resize_filter);
+              auto midway_resized = Image<float>::scratch (midway_resize_filter); //.get_image<uint32_t>();
+
+              midway_resize_filter(midway_image,midway_resized);
+              // display<Image<float>>(midway_resized);
+              
+              // auto midway_resized2 = Image<float>::scratch (midway_resize_filter); //.get_image<uint32_t>();
+              // midway_resize_filter(midway_image,midway_resized2);
+              // midway_resized2.header().datatype() =  DataType::Float32;
+              // save(midway_resized2,"midway_image.mif"); // , resize_filter);
 
               {
                 LogLevelLatch log_level (0);
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
-                moving_resize_filter (moving_image, moving_resized);
-                moving_smooth_filter (moving_resized, moving_resized_smoothed);
-                template_resize_filter (template_image, template_resized);
-                template_smooth_filter (template_resized, template_resized_smoothed);
+                #ifdef NONSYMREGISTRATION
+                  moving_resize_filter (moving_image, moving_resized);
+                  moving_smooth_filter (moving_resized, moving_resized_smoothed);
+                  template_resize_filter (template_image, template_resized);
+                  template_smooth_filter (template_resized, template_resized_smoothed);
+                #else
+                  moving_smooth_filter (moving_image, moving_resized_smoothed); // TODO change name
+                  template_smooth_filter (template_image, template_resized_smoothed); // TODO change name
+                #endif             
               }
+              // std::string filename = save(moving_image, "moving_resized.mif");
+              // CONSOLE ("image written to " + filename + "\"");
+              // save<Image<float>>(template_resized_smoothed, "template_resized.mif");
+              // save<Image<float>>(moving_resized_smoothed, "moving_resized.mif");
+              // display<Image<float>>(moving_resized_smoothed);
+              // display<Image<float>>(template_resized_smoothed);
+
               ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed, midway_resized);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));

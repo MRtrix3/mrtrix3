@@ -57,7 +57,6 @@ namespace MR
               this->optimiser_weights[i] = 0.003;
             for (size_t i = 9; i < 12; ++i)
               this->optimiser_weights[i] = 1.0;
-            DEBUG("non-symmetric affine transformation");
           }
 
 
@@ -90,6 +89,7 @@ namespace MR
             for (size_t dim = 0; dim < 3; ++dim)
               this->translation [dim] = param_vector[index++];
             this->compute_offset();
+            this->calculate_halfspace_transformations();
           }
 
           void get_parameter_vector (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) const {

@@ -32,7 +32,7 @@ namespace MR
     {
       class MeanSquared4D {
         public:
-
+          #ifdef NONSYMREGISTRATION
           template <class Params>
             default_type operator() (Params& params,
                                      const Eigen::Vector3 target_point,
@@ -69,6 +69,18 @@ namespace MR
               }
               return total_diff;
           }
+          #else
+            // TODO: symmetric
+            template <class Params>
+              default_type operator() (Params& params,
+                                       const Eigen::Vector3 target_point,
+                                       const Eigen::Vector3 moving_point,
+                                       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+
+                throw Exception ("symmetric 4D MSQ not implemented yet"); // TODO
+                return 0.0;
+            }
+          #endif
 
       };
     }
