@@ -23,6 +23,9 @@ namespace MR
                                "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
 
+      + Option ("rigid_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
+        + Argument ("num").type_float (0.0, 1.0, std::numeric_limits<float>::infinity())
+
       + Option ("rigid_cc", "metric: use cross correlation. default: least squares");
 
 
@@ -39,6 +42,9 @@ namespace MR
       + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
                                 "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
+
+      + Option ("affine_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
+        + Argument ("num").type_float (0.0, 1.0, std::numeric_limits<float>::infinity())
 
       + Option ("affine_cc", "metric: use cross correlation. default: least squares");
 

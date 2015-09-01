@@ -99,7 +99,7 @@ namespace MR
                   for (size_t par = 0; par < gradient.size(); par++) {
                     default_type sum = 0.0;
                     for ( size_t dim = 0; dim < 3; dim++)
-                      sum += 2.0 * diff * jacobian (dim, par) * (moving_grad[dim] + template_grad[dim]);
+                      sum += diff * jacobian (dim, par) * (moving_grad[dim] + template_grad[dim]);
                     gradient[par] += sum;
                   }
                   return diff * diff;

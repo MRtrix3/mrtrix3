@@ -62,6 +62,7 @@ namespace MR
         Linear () :
           max_iter (1, 300),
           scale_factor (2),
+          smooth_factor (1.0),
           kernel_extent(3),
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
@@ -87,6 +88,12 @@ namespace MR
               throw Exception ("the scale factor for each multi-resolution level must be between 0 and 1");
           }
           scale_factor = scalefactor;
+        }
+
+        void set_smoothing_factor (const default_type& smoothing_factor) {
+          if (smoothing_factor < 0)
+            throw Exception ("the smoothing factor must be non-negative");
+          smooth_factor = smoothing_factor;
         }
 
         void set_extent (const std::vector<size_t> extent) {
@@ -231,7 +238,8 @@ namespace MR
                 auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
               #else
                 Filter::Smooth moving_smooth_filter (moving_image);
-                moving_smooth_filter.set_stdev(1.0 / (2.0 * scale_factor[level]));
+                moving_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
+                WARN("smooth_factor " + str(smooth_factor));
                 auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
               #endif
 
@@ -244,7 +252,7 @@ namespace MR
                 auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
               #else
                 Filter::Smooth template_smooth_filter (template_image);
-                template_smooth_filter.set_stdev(1.0 / (2.0 * scale_factor[level])) ;
+                template_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
                 auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
               #endif
               
@@ -253,16 +261,11 @@ namespace MR
               midway_resize_filter.set_interp_type (1);
               auto midway_resized = Image<float>::scratch (midway_resize_filter); //.get_image<uint32_t>();
 
-              midway_resize_filter(midway_image,midway_resized);
-              // display<Image<float>>(midway_resized);
-              
-              // auto midway_resized2 = Image<float>::scratch (midway_resize_filter); //.get_image<uint32_t>();
-              // midway_resize_filter(midway_image,midway_resized2);
-              // midway_resized2.header().datatype() =  DataType::Float32;
-              // save(midway_resized2,"midway_image.mif"); // , resize_filter);
-
               {
                 LogLevelLatch log_level (0);
+                midway_resize_filter(midway_image,midway_resized);
+                // display<Image<float>>(midway_resized);
+
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
                 #ifdef NONSYMREGISTRATION
                   moving_resize_filter (moving_image, moving_resized);
@@ -317,6 +320,7 @@ namespace MR
       protected:
         std::vector<int> max_iter;
         std::vector<default_type> scale_factor;
+        default_type smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;

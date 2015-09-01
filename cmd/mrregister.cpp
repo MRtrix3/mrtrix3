@@ -262,15 +262,31 @@ void run ()
   std::vector<default_type> affine_scale_factors;
   if (opt.size ()) {
     if (!do_affine)
-      throw Exception ("the affine multi-resolution scale factors were input when no rigid registration is requested");
+      throw Exception ("the affine multi-resolution scale factors were input when no affine registration is requested");
     affine_scale_factors = parse_floats (opt[0][0]);
+  }
+
+  opt = get_options ("rigid_smooth_factor");
+  default_type rigid_smooth_factor = 1.0;
+  if (opt.size ()) {
+    if (!do_rigid)
+      throw Exception ("the rigid smooth factor was input when no rigid registration is requested");
+    rigid_smooth_factor = default_type (opt[0][0]);
+  }
+
+  opt = get_options ("affine_smooth_factor");
+  default_type affine_smooth_factor = 1.0;
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine smooth factor was input when no affine registration is requested");
+    affine_smooth_factor = default_type (opt[0][0]);
   }
 
   opt = get_options ("syn_scale");
   std::vector<default_type> syn_scale_factors;
   if (opt.size ()) {
     if (!do_syn)
-      throw Exception ("the syn multi-resolution scale factors were input when no rigid registration is requested");
+      throw Exception ("the syn multi-resolution scale factors were input when no syn registration is requested");
     syn_scale_factors = parse_floats (opt[0][0]);
   }
 
@@ -393,7 +409,8 @@ void run ()
     Registration::Linear rigid_registration;
 
     if (rigid_scale_factors.size())
-      rigid_registration.set_scale_factor (rigid_scale_factors);
+    rigid_registration.set_scale_factor (rigid_scale_factors);
+    rigid_registration.set_smoothing_factor (rigid_smooth_factor);
     if (rigid_niter.size())
       rigid_registration.set_max_iter (rigid_niter);
     if (init_rigid_set)
@@ -415,10 +432,12 @@ void run ()
 
   if (do_affine) {
     CONSOLE ("running affine registration");
+    WARN("smooth_factor:" + str(affine_smooth_factor));
     Registration::Linear affine_registration;
 
     if (affine_scale_factors.size())
       affine_registration.set_scale_factor (affine_scale_factors);
+    affine_registration.set_smoothing_factor (affine_smooth_factor);
     if (affine_niter.size())
       affine_registration.set_max_iter (affine_niter);
     if (do_rigid) {
