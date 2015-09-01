@@ -195,6 +195,18 @@ namespace MR
             }
           #endif
 
+        #ifndef NONSYMREGISTRATION
+          void debug(){ 
+              CONSOLE("\n"+str(matrix));
+              CONSOLE("\n"+str(matrix_half));
+              CONSOLE("\n"+str(matrix_half_inverse));
+              CONSOLE("\n"+str(centre.transpose()));
+              CONSOLE("\n"+str(offset.transpose()));
+              CONSOLE("\n"+str(offset_half.transpose()));
+              CONSOLE("\n"+str(offset_half_inverse.transpose()));
+          }
+        #endif
+
 
         protected:
 
@@ -222,7 +234,7 @@ namespace MR
           #endif
 
           void calculate_halfspace_transformations(){
-            #ifdef NONSYMREGISTRATION
+            #ifndef NONSYMREGISTRATION
               matrix_half  = matrix.sqrt();
               matrix_half_inverse  = matrix_half.inverse();
             #endif

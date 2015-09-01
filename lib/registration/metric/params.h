@@ -62,7 +62,7 @@ namespace MR
           const std::vector<size_t>& get_extent() const { return extent; }
 
           TransformType& transformation;
-          TemplateImageType moving_image;
+          MovingImageType moving_image;
           TemplateImageType template_image;
           MidwayImageType midway_image;
           MR::copy_ptr<MovingImageInterpolatorType> moving_image_interp;

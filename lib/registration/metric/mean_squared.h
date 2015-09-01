@@ -69,11 +69,12 @@ namespace MR
               default_type operator() (Params& params,
                                        const Eigen::Vector3 target_point,
                                        const Eigen::Vector3 moving_point,
+                                       const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
                 if (isnan (default_type (params.template_image.value())))
                   return 0.0;
 
-                Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (target_point);
+                Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
 
                 typename Params::MovingValueType moving_value;
                 typename Params::TemplateValueType template_value;

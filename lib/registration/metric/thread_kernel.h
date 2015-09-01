@@ -137,7 +137,7 @@ namespace MR
               if (!(*params.template_image_interp))
                 return;
 
-              cost_function += metric (params, template_point, moving_point, gradient);
+              cost_function += metric (params, template_point, moving_point, midway_point, gradient);
             }
           #endif
 

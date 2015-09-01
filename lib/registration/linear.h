@@ -23,7 +23,7 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
-#define NONSYMREGISTRATION
+// #define NONSYMREGISTRATION
 #include <vector>
 
 #include "image.h"
@@ -172,10 +172,18 @@ namespace MR
               Transform::Init::initialise_using_image_mass (moving_image, template_image, transform); 
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (moving_image, template_image, transform); 
-
+            #ifndef NONSYMREGISTRATION
+              // define transfomations that will be applied to the image header when the common space is calculated
+              {
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_t = transform.get_transform_half();
+                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_m = transform.get_transform_half_inverse();
+                init_transforms.push_back(init_trafo_t);
+                init_transforms.push_back(init_trafo_m);
+              }
+            #endif
             typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> MovingImageInterpolatorType;
 
-            typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> TemplateImageInterpolatorType;
+            typedef Interp::SplineInterp<TemplateImageType, Math::UniformBSpline<typename TemplateImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> TemplateImageInterpolatorType;
 
             typedef Image<float> MidwayImageType; 
 

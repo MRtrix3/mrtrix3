@@ -75,6 +75,7 @@ namespace MR
               default_type operator() (Params& params,
                                        const Eigen::Vector3 target_point,
                                        const Eigen::Vector3 moving_point,
+                                       const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
                 throw Exception ("symmetric 4D MSQ not implemented yet"); // TODO
