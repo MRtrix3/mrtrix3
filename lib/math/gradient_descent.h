@@ -150,7 +150,7 @@ namespace MR
              }
               if (verbose){
                 CONSOLE ("iteration " + str (niter) + ": f = " + str (f) + ", |g| = " + str (normg) + ":");
-                CONSOLE ("  x = [ " + str(x) + "]");
+                CONSOLE ("  x = [ " + str(x.transpose()) + "]");
               }
                // std::cerr << std::endl;
                // std::cerr << std::fixed << App::NAME << ":   "<< "Gradient descent iteration: " << niter << "; cost: " << f << std::endl;
