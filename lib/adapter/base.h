@@ -45,30 +45,31 @@ namespace MR
             }
 
           typedef typename ImageType::value_type value_type;
-          typedef Base voxel_type; // TODO why is this needed...?
 
           template <class U> 
             const Base& operator= (const U& V) { return parent_ = V; }
 
-          const Header& header () const { return parent_.header(); }
-          ImageType& parent () { return parent_; }
-          const ImageType& parent () const { return parent_; }
-          const std::string& name () const { return parent_.name(); }
-          size_t ndim () const { return parent_.ndim(); }
-          ssize_t size (size_t axis) const { return parent_.size (axis); }
-          default_type spacing (size_t axis) const { return parent_.spacing (axis); }
-          ssize_t stride (size_t axis) const { return parent_.stride (axis); }
-          const transform_type& transform () const { return parent_.transform(); }
+          FORCE_INLINE const Header& header () const { return parent_.header(); }
+          FORCE_INLINE ImageType& parent () { return parent_; }
+          FORCE_INLINE bool valid () const { return parent_.valid(); }
+          FORCE_INLINE bool operator! () const { return !valid(); }
+          FORCE_INLINE const ImageType& parent () const { return parent_; }
+          FORCE_INLINE const std::string& name () const { return parent_.name(); }
+          FORCE_INLINE size_t ndim () const { return parent_.ndim(); }
+          FORCE_INLINE ssize_t size (size_t axis) const { return parent_.size (axis); }
+          FORCE_INLINE default_type spacing (size_t axis) const { return parent_.spacing (axis); }
+          FORCE_INLINE ssize_t stride (size_t axis) const { return parent_.stride (axis); }
+          FORCE_INLINE const transform_type& transform () const { return parent_.transform(); }
 
-          ssize_t index (size_t axis) const { return parent_.index (axis); }
-          auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
-          void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
+          FORCE_INLINE ssize_t index (size_t axis) const { return parent_.index (axis); }
+          FORCE_INLINE auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
+          FORCE_INLINE void move_index (size_t axis, ssize_t increment) { parent_.index (axis) += increment; }
 
-          value_type value () const { return parent_.value(); } 
-          auto value () -> decltype(Helper::value(*this)) { return { *this }; }
-          void set_value (value_type val) { parent_.value() = val; } 
+          FORCE_INLINE value_type value () const { return parent_.value(); } 
+          FORCE_INLINE auto value () -> decltype(Helper::value(*this)) { return { *this }; }
+          FORCE_INLINE void set_value (value_type val) { parent_.value() = val; } 
 
-          void reset () { parent_.reset(); }
+          FORCE_INLINE void reset () { parent_.reset(); }
 
           friend std::ostream& operator<< (std::ostream& stream, const Base& V) {
             stream << "image adapter \"" << V.name() << "\", datatype " << MR::DataType::from<value_type>().specifier() << ", position [ ";

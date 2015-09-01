@@ -20,24 +20,22 @@
 
  */
 
-#ifndef __image_filter_optimal_threshold_h__
-#define __image_filter_optimal_threshold_h__
+#ifndef __filter_optimal_threshold_h__
+#define __filter_optimal_threshold_h__
 
 #include "memory.h"
-#include "image/buffer_scratch.h"
-#include "image/threaded_loop.h"
-#include "image/min_max.h"
-#include "image/adapter/replicate.h"
-#include "image/filter/base.h"
+#include "image.h"
+#include "algo/threaded_loop.h"
+#include "algo/min_max.h"
+#include "adapter/replicate.h"
+#include "filter/base.h"
 #include "math/golden_section_search.h"
 
 
 namespace MR
 {
-  namespace Image
+  namespace Filter
   {
-    namespace Filter
-    {
 
       //! \cond skip
       namespace {
@@ -49,13 +47,14 @@ namespace MR
                 sum (0.0), sum_sqr (0.0), count (0) { }
 
               ~MeanStdFunctor () {
+                std::lock_guard<std::mutex> lock (mutex);
                 overall_sum += sum;
                 overall_sum_sqr += sum_sqr;
                 overall_count += count;
               }
 
-              template <class VoxelType, class MaskVoxelType>
-              void operator() (VoxelType vox, MaskVoxelType mask) {
+              template <class ImageType, class MaskType>
+              void operator() (ImageType& vox, MaskType& mask) {
                 if (mask.value()) {
                   double in = vox.value();
                   if (std::isfinite(in)) {
@@ -66,8 +65,8 @@ namespace MR
                 }
               }
 
-              template <class VoxelType>
-              void operator() (VoxelType vox) {
+              template <class ImageType>
+              void operator() (ImageType& vox) {
                   double in = vox.value();
                   if (std::isfinite(in)) {
                     sum += in;
@@ -81,7 +80,10 @@ namespace MR
               size_t& overall_count;
               double sum, sum_sqr;
               size_t count;
+
+              static std::mutex mutex;
           };
+          std::mutex MeanStdFunctor::mutex;
 
           class CorrelationFunctor {
             public:
@@ -90,12 +92,13 @@ namespace MR
                 sum (0), mean_xy (0.0) { }
 
               ~CorrelationFunctor () {
+                std::lock_guard<std::mutex> lock (mutex);
                 overall_sum += sum;
                 overall_mean_xy += mean_xy;
               }
 
-              template <class VoxelType>
-              void operator() (VoxelType& vox) {
+              template <class ImageType>
+              void operator() (ImageType& vox) {
                 double in = vox.value();
                 if (std::isfinite(in)) {
                   if (in > threshold) {
@@ -105,8 +108,8 @@ namespace MR
                 }
               }
 
-              template <class VoxelType, class MaskVoxelType>
-              void operator() (VoxelType& vox, MaskVoxelType& mask) {
+              template <class ImageType, class MaskType>
+              void operator() (ImageType& vox, MaskType& mask) {
                 if (mask.value()) {
                   double in = vox.value();
                   if (std::isfinite(in)) {
@@ -123,32 +126,34 @@ namespace MR
               double& overall_mean_xy;
               double sum;
               double mean_xy;
+
+              static std::mutex mutex;
           };
+          std::mutex CorrelationFunctor::mutex;
 
       }
       //! \endcond
 
 
-      template <class InputVoxelType, class MaskVoxelType>
+      template <class ImageType, class MaskType>
         class ImageCorrelationCostFunction {
 
           public:
-            typedef typename InputVoxelType::value_type value_type;
-            typedef typename MaskVoxelType::value_type mask_value_type;
+            typedef typename ImageType::value_type value_type;
+            typedef typename MaskType::value_type mask_value_type;
 
-            ImageCorrelationCostFunction (InputVoxelType& input, MaskVoxelType* mask = NULL) :
+            ImageCorrelationCostFunction (ImageType& input, MaskType* mask = NULL) :
               input (input),
               mask (mask) {
                 double sum_sqr = 0.0, sum = 0.0;
                 count = 0;
 
-                Image::ThreadedLoop loop (input);
                 if (mask) {
-                  Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run (MeanStdFunctor (sum, sum_sqr, count), input, replicated_mask);
+                  Adapter::Replicate<MaskType> replicated_mask (*mask, input);
+                  ThreadedLoop (input).run (MeanStdFunctor (sum, sum_sqr, count), input, replicated_mask);
                 }
                 else {
-                  loop.run (MeanStdFunctor (sum, sum_sqr, count), input);
+                  ThreadedLoop (input).run (MeanStdFunctor (sum, sum_sqr, count), input);
                 }
 
                 input_image_mean = sum / count;
@@ -159,13 +164,12 @@ namespace MR
               double sum = 0;
               double mean_xy = 0.0;
 
-              Image::ThreadedLoop loop (input);
               if (mask) {
-                  Adapter::Replicate<MaskVoxelType> replicated_mask (*mask, input);
-                  loop.run (CorrelationFunctor (threshold, sum, mean_xy), input, replicated_mask);
+                Adapter::Replicate<MaskType> replicated_mask (*mask, input);
+                ThreadedLoop (input).run (CorrelationFunctor (threshold, sum, mean_xy), input, replicated_mask);
               }
               else
-                loop.run (CorrelationFunctor (threshold, sum, mean_xy), input);
+                ThreadedLoop (input).run (CorrelationFunctor (threshold, sum, mean_xy), input);
 
               mean_xy /= count;
               double covariance = mean_xy - (sum / count) * input_image_mean;
@@ -175,25 +179,25 @@ namespace MR
             }
 
           private:
-            InputVoxelType& input;
-            MaskVoxelType* mask;
+            ImageType& input;
+            MaskType* mask;
             size_t count;
             double input_image_mean;
             double input_image_stdev;
         };
 
 
-      template <class InputVoxelType, class MaskVoxelType> 
-        typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input, MaskVoxelType* mask)
+      template <class ImageType, class MaskType>
+        typename ImageType::value_type estimate_optimal_threshold (ImageType& input, MaskType* mask)
         {
-          typedef typename InputVoxelType::value_type input_value_type;
+          typedef typename ImageType::value_type input_value_type;
 
           input_value_type min, max;
-          Image::min_max (input, min, max);
+          min_max (input, min, max);
 
           input_value_type optimal_threshold = 0.0;
           {
-            ImageCorrelationCostFunction<InputVoxelType, MaskVoxelType> cost_function (input, mask);
+            ImageCorrelationCostFunction<ImageType, MaskType> cost_function (input, mask);
             optimal_threshold = Math::golden_section_search (cost_function, "optimising threshold...", 
                 min + 0.001*(max-min), (min+max)/2.0 , max-0.001*(max-min));
           }
@@ -204,10 +208,10 @@ namespace MR
 
 
 
-      template <class InputVoxelType> 
-        inline typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input)
+      template <class ImageType>
+        inline typename ImageType::value_type estimate_optimal_threshold (ImageType& input)
         {
-          return estimate_optimal_threshold (input, (Image::BufferScratch<bool>::voxel_type*)nullptr);
+          return estimate_optimal_threshold (input, (Image<bool>*)nullptr);
         }
 
       /** \addtogroup Filters
@@ -236,30 +240,28 @@ namespace MR
       class OptimalThreshold : public Base
       {
         public:
-          template <class InfoType>
-          OptimalThreshold (const InfoType& info) :
-              Base (info)
+          OptimalThreshold (const Header& H) :
+              Base (H)
           {
             datatype_ = DataType::Bit;
           }
 
 
-          template <class InputVoxelType, class OutputVoxelType, class MaskVoxelType = Image::BufferScratch<bool>::voxel_type>
-            void operator() (InputVoxelType& input, OutputVoxelType& output, MaskVoxelType* mask = nullptr) 
+          template <class InputImageType, class OutputImageType, class MaskType = Image<bool>>
+            void operator() (InputImageType& input, OutputImageType& output, MaskType* mask = nullptr)
             {
               axes_.resize (4);
-              typedef typename InputVoxelType::value_type input_value_type;
+              typedef typename InputImageType::value_type input_value_type;
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               
               auto f = [&](decltype(input) in, decltype(output) out) {
                 input_value_type val = in.value();
                 out.value() = ( std::isfinite (val) && val > optimal_threshold ) ? 1 : 0;
               };
-              Image::ThreadedLoop ("thresholding...", input) .run (f, input, output);
+              ThreadedLoop ("thresholding...", input) .run (f, input, output);
             }
       };
       //! @}
-    }
   }
 }
 

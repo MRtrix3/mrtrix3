@@ -224,7 +224,7 @@ namespace MR
         private:
           FODImageType fod;
           MaskImageType mask;
-          decltype(Loop("text", 0, 3) (FODImageType&)) loop;
+          decltype(Loop("text", 0, 3) (fod)) loop;
 
       };
 

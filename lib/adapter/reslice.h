@@ -131,6 +131,7 @@ namespace MR
 
 
         size_t ndim () const { return interp.ndim(); }
+        bool valid () const { return interp.valid(); }
         int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
         default_type spacing (size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing (axis); }
         const transform_type& transform () const { return transform_; }

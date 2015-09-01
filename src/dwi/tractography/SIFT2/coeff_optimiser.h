@@ -56,7 +56,7 @@ namespace MR {
       class CoefficientOptimiserBase
       {
         public:
-          CoefficientOptimiserBase (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserBase (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserBase (const CoefficientOptimiserBase&);
           virtual ~CoefficientOptimiserBase();
 
@@ -66,9 +66,8 @@ namespace MR {
         protected:
           TckFactor& master;
           const double mu;
-          //const std::vector<float>& projected_steps;
 
-          virtual float get_coeff_change (const SIFT::track_t) const = 0;
+          virtual double get_coeff_change (const SIFT::track_t) const = 0;
 
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
@@ -91,7 +90,7 @@ namespace MR {
           mutable double local_sum_costs;
 
         private:
-          float do_fixel_exclusion (const SIFT::track_t);
+          double do_fixel_exclusion (const SIFT::track_t);
 
       };
 
@@ -107,12 +106,12 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserGSS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserGSS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserGSS (const CoefficientOptimiserGSS&);
           ~CoefficientOptimiserGSS() { }
 
         private:
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -127,14 +126,14 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserQLS (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserQLS (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserQLS (const CoefficientOptimiserQLS&);
           ~CoefficientOptimiserQLS() { }
 
         private:
           Math::QuadraticLineSearch<double> qls;
 
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
       };
 
@@ -147,12 +146,12 @@ namespace MR {
       {
 
         public:
-          CoefficientOptimiserIterative (TckFactor&, /*const std::vector<float>&,*/ StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
+          CoefficientOptimiserIterative (TckFactor&, StreamlineStats&, StreamlineStats&, unsigned int&, BitSet&, double&);
           CoefficientOptimiserIterative (const CoefficientOptimiserIterative&);
           ~CoefficientOptimiserIterative();
 
         private:
-          float get_coeff_change (const SIFT::track_t) const;
+          double get_coeff_change (const SIFT::track_t) const;
 
 #ifdef SIFT2_COEFF_OPTIMISER_DEBUG
           mutable uint64_t iter_count;

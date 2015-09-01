@@ -255,6 +255,7 @@ namespace MR
         const Stride::List& strides;
         size_t offset;
 
+        bool valid () const { return true; }
         const std::string name () const { return "direct IO buffer"; }
         FORCE_INLINE size_t ndim () const { return b.ndim(); }
         FORCE_INLINE ssize_t size (size_t axis) const { return b.size(axis); }

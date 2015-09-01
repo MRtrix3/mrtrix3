@@ -45,13 +45,13 @@ namespace MR {
           StreamlineStats();
           StreamlineStats (const StreamlineStats&);
 
-          StreamlineStats& operator+= (const float i);
+          StreamlineStats& operator+= (const double);
           StreamlineStats& operator+= (const StreamlineStats&);
 
           void normalise();
 
-          float  get_min()      const { return min; }
-          float  get_max()      const { return max; }
+          double get_min()      const { return min; }
+          double get_max()      const { return max; }
           double get_mean()     const { return mean; }
           double get_mean_abs() const { return mean_abs; }
           double get_var()      const { return var; }
@@ -60,7 +60,7 @@ namespace MR {
           unsigned int get_nonzero() const { return nonzero; }
 
         private:
-          float min, max;
+          double min, max;
           double mean, mean_abs, var;
           unsigned int count, nonzero;
 

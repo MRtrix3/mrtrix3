@@ -235,9 +235,9 @@ namespace MR
 
   template <class ImageType>
     FORCE_INLINE bool is_out_of_bounds (const ImageType& image, 
-        ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
+        size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(image.ndim())); ++n)
+      for (size_t n = from_axis; n < std::min (to_axis, image.ndim()); ++n)
         if (image.index(n) < 0 || image.index(n) >= image.size(n))
           return true;
       return false;
@@ -245,9 +245,9 @@ namespace MR
 
   template <class HeaderType, class VectorType>
     FORCE_INLINE bool is_out_of_bounds (const HeaderType& header, const VectorType& pos,
-        ssize_t from_axis = 0, ssize_t to_axis = std::numeric_limits<size_t>::max()) 
+        size_t from_axis = 0, size_t to_axis = std::numeric_limits<size_t>::max())
     {
-      for (ssize_t n = from_axis; n < std::min (to_axis, ssize_t(header.ndim())); ++n)
+      for (size_t n = from_axis; n < std::min (to_axis, header.ndim()); ++n)
         if (pos[n] < 0 || pos[n] >= header.size(n))
           return true;
       return false;

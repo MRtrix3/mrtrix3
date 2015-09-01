@@ -39,7 +39,7 @@ namespace MR
       namespace SIFT
       {
 
-
+        
 
         const App::OptionGroup SIFTModelProcMaskOption = App::OptionGroup ("Options for setting the processing mask for the SIFT fixel-streamlines comparison model")
 
@@ -94,7 +94,7 @@ namespace MR
             } else {
 
               auto f = [] (Image<float>& dwi, Image<float>& mask) {
-                mask.value() = (dwi.value() && std::isfinite (dwi.value())) ? 1.0 : 0.0;
+                mask.value() = (dwi.value() && std::isfinite ((float) dwi.value())) ? 1.0 : 0.0;
               };
               ThreadedLoop ("Creating homogeneous processing mask...", in_dwi, 0, 3).run (f, in_dwi, out_mask);
 
@@ -128,7 +128,7 @@ namespace MR
         void ResampleFunctor::operator() (const Iterator& pos)
         {
           assign_pos_of (pos).to (dwi, out);
-          if (dwi.value() && std::isfinite (dwi.value())) {
+          if (dwi.value() && std::isfinite ((float) dwi.value())) {
             const ACT::Tissues tissues = ACT2pve (pos);
             out.index (3) = 0; out.value() = tissues.get_cgm();
             out.index (3) = 1; out.value() = tissues.get_sgm();

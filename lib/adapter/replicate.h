@@ -20,67 +20,63 @@
 
 */
 
-#ifndef __image_adapter_replicate_h__
-#define __image_adapter_replicate_h__
+#ifndef __adapter_replicate_h__
+#define __adapter_replicate_h__
 
-#include "math/matrix.h"
-#include "image/info.h"
-#include "image/position.h"
-#include "image/voxel.h"
-#include "image/adapter/voxel.h"
+#include "header.h"
+#include "image_helpers.h"
+#include "adapter/base.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    namespace Adapter {
+    namespace Adapter
+    {
 
-    template <class VoxelType>
-      class Replicate : public Voxel<VoxelType>
+    template <class ImageType>
+      class Replicate : public Base<ImageType>
     {
       public:
-        typedef typename VoxelType::value_type value_type;
+        typedef typename ImageType::value_type value_type;
 
-        using Voxel<VoxelType>::name;
-        using Voxel<VoxelType>::ndim;
-        using Voxel<VoxelType>::vox;
+        using Base<ImageType>::name;
+        using Base<ImageType>::ndim;
+        using Base<ImageType>::spacing;
 
-        template <class InfoType>
-          Replicate (VoxelType& original, const InfoType& replication_template) :
-            Voxel<VoxelType> (original),
-            info_ (replication_template),
+          Replicate (ImageType& original, const Header& replication_template) :
+            Base<ImageType> (original),
+            header_ (replication_template),
             pos_ (ndim(), 0)
           {
-            for (size_t n = 0; n < std::min (parent_vox.ndim(), info_.ndim()); ++n) {
-              if (parent_vox.dim(n) > 1 && parent_vox.dim(n) != info_.dim(n))
+            for (size_t n = 0; n < std::min (parent().ndim(), header_.ndim()); ++n) {
+              if (parent().size(n) > 1 && parent().size(n) != header_.size(n))
                 throw Exception ("cannot replicate over non-singleton dimensions");
             }
           }
 
-        const Image::Info& info() const {
-          return info_;
+        const Header& header() const {
+          return header_;
         }
 
         size_t ndim () const {
-          return info_.ndim();
+          return header_.ndim();
         }
-        ssize_t dim (size_t axis) const {
-          return info_.dim (axis);
+        ssize_t size (size_t axis) const {
+          return header_.size (axis);
         }
-        float vox (size_t axis) const {
-          return info_.vox(axis);
+        float spacing (size_t axis) const {
+          return header_.spacing(axis);
         }
         ssize_t stride (size_t axis) const {
-          return axis < parent_vox.ndim() ? parent_vox.stride (axis) : 0;
+          return axis < parent().ndim() ? parent().stride (axis) : 0;
         }
 
-        Position<Replicate<VoxelType> > operator[] (size_t axis) {
-          return (Position<Replicate<VoxelType> > (*this, axis));
+        Helper::Index<Replicate<ImageType> > operator[] (size_t axis) {
+          return (Helper::Index<Replicate<ImageType> > (*this, axis));
         }
 
       protected:
-        using Voxel<VoxelType>::parent_vox;
-        Image::Info info_;
+        using Base<ImageType>::parent;
+        Header header_;
         std::vector<ssize_t> pos_;
 
         ssize_t get_pos (size_t axis) const {
@@ -88,22 +84,21 @@ namespace MR
         }
         void set_pos (size_t axis, ssize_t position) {
           pos_[axis] = position;
-          if (axis < parent_vox.ndim())
-            if (parent_vox.dim(axis) > 1)
-              parent_vox[axis] = position;
+          if (axis < parent().ndim())
+            if (parent().dim(axis) > 1)
+              parent()[axis] = position;
         }
         void move_pos (size_t axis, ssize_t increment) {
           pos_[axis] += increment;
-          if (axis < parent_vox.ndim())
-            if (parent_vox.dim(axis) > 1)
-              parent_vox[axis] += increment;
+          if (axis < parent().ndim())
+            if (parent().dim(axis) > 1)
+              parent()[axis] += increment;
         }
 
-        friend class Position<Replicate<VoxelType> >;
+        friend class Helper::Index<Replicate<ImageType> >;
     };
 
     }
-  }
 }
 
 #endif
