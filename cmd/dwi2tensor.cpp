@@ -152,10 +152,7 @@ void run ()
     check_dimensions (dwi, *mask, 0, 3);
   }
   
-  auto iter = default_iter;
-  opt = get_options ("iter");
-  if (opt.size())
-    iter = opt[0][0];
+  int iter = get_option_value ("iter", default_iter);
 
   auto header = dwi.header();
   header.datatype() = DataType::Float32;

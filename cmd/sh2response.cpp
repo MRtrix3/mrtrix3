@@ -76,10 +76,7 @@ void run ()
   auto mask = Image<bool>::open(argument[1]);
   auto dir = Image<value_type>::open(argument[2]).with_direct_io();
 
-  int lmax = Math::SH::LforN (SH.size(3));
-  auto opt = get_options ("lmax");
-  if (opt.size())
-    lmax = opt[0][0];
+  int lmax = get_option_value ("lmax", Math::SH::LforN (SH.size(3)));
 
   check_dimensions (SH, mask, 0, 3);
   check_dimensions (SH, dir, 0, 3);

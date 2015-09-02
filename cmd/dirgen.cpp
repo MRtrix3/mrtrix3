@@ -154,23 +154,10 @@ class Energy {
 
 
 void run () {
-  size_t niter = 10000;
-  int target_power = 2;
-  bool bipolar = true;
-
-  auto opt = get_options ("power");
-  if (opt.size())
-    target_power = opt[0][0];
-
-  opt = get_options ("niter");
-  if (opt.size())
-    niter = opt[0][0];
-
+  size_t niter = get_option_value ("niter", 10000);
+  int target_power = get_option_value ("power", 2);
+  bool bipolar = !(get_options ("unipolar").size());
   int ndirs = to<int> (argument[0]);
-
-  if (get_options ("unipolar").size())
-    bipolar = false;
-
 
   Eigen::VectorXd directions (3*ndirs);
 
