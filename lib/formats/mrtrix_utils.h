@@ -170,7 +170,9 @@ namespace MR
         for (size_t n = 1; n < H.ndim(); ++n)
           out << "," << (stride[n] >0 ? "+" : "-") << std::abs (stride[n])-1;
 
-        out << "\ndatatype: " << H.datatype().specifier();
+        DataType dt = H.datatype();
+        dt.set_byte_order_native();
+        out << "\ndatatype: " << dt.specifier();
 
         out << "\ntransform: " << H.transform()(0,0) << "," <<  H.transform()(0,1) << "," << H.transform()(0,2) << "," << H.transform()(0,3);
         out << "\ntransform: " << H.transform()(1,0) << "," <<  H.transform()(1,1) << "," << H.transform()(1,2) << "," << H.transform()(1,3);

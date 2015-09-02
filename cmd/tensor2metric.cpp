@@ -118,7 +118,7 @@ class Processor
           adc_image->value() = DWI::tensor2ADC(dt);
         }
 
-        double fa;
+        double fa = 0.0;
         if (fa_image || (vector_image && (modulate == 1)))
           fa = DWI::tensor2FA(dt);
  
