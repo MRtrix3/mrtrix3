@@ -157,6 +157,7 @@ namespace MR
               if (dt <= 0.0)
                 return false;
             }
+            return false;
           }
 
         protected:
