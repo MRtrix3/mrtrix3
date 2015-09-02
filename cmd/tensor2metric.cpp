@@ -233,8 +233,11 @@ void run ()
   Image<value_type>* value = nullptr;
   opt = get_options ("value");
   if (opt.size()) {
-    header.set_ndim (4);
-    header.size (3) = vals.size();
+    header.set_ndim (3);
+    if (vals.size()>1) {
+      header.set_ndim (4);
+      header.size (3) = vals.size();
+    }
     value = new Image<value_type> (Image<value_type>::create (opt[0][0], header));
   }
   
