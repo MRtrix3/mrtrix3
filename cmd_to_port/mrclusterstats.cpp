@@ -102,39 +102,14 @@ typedef Stats::TFCE::value_type value_type;
 
 void run() {
 
-  Options opt = get_options ("threshold");
-  value_type cluster_forming_threshold = NAN;
-  if (opt.size())
-    cluster_forming_threshold = opt[0][0];
-
-  opt = get_options ("tfce_dh");
-  value_type tfce_dh = 0.1;
-  if (opt.size())
-    tfce_dh = opt[0][0];
-
-  opt = get_options ("tfce_h");
-  value_type tfce_H = 2.0;
-  if (opt.size())
-    tfce_H = opt[0][0];
-
-  opt = get_options ("tfce_e");
-  value_type tfce_E = 0.5;
-  if (opt.size())
-    tfce_E = opt[0][0];
-
-  opt = get_options ("nperms");
-  int num_perms = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
-  opt = get_options ("nperms_nonstationary");
-  int nperms_nonstationary = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
-
+  value_type cluster_forming_threshold = get_option_value ("threshold", NAN);
+  value_type tfce_dh = get_option_value ("tfce_dh", 0.1);
+  value_type tfce_H = get_option_value ("tfce_h", 2.0);
+  value_type tfce_E = get_option_value ("tfce_e", 0.5);
+  int num_perms = get_option_value ("nperms", 5000);
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", 5000);
+  
   bool do_26_connectivity = get_options("connectivity").size();
-
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
   // Read filenames

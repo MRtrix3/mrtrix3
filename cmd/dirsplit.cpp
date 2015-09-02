@@ -176,10 +176,7 @@ void run ()
 
   size_t num_subsets = argument.size() - 1;
 
-  size_t num_permutations = 1e8;
-  auto opt = get_options ("permutations");
-  if (opt.size())
-    num_permutations = opt[0][0];
+  size_t num_permutations = get_option_value ("permutations", 1e8);
 
   std::vector<std::vector<size_t>> best;
   {
