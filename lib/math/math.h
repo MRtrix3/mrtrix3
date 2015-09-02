@@ -174,12 +174,9 @@ namespace MR
   inline void save_transform (const transform_type& M, const std::string& filename)
   {
     File::OFStream out (filename);
-    for (ssize_t i = 0; i < 3; i++) {
-      for (ssize_t j = 0; j < 4; j++)
-        out << str(M(i,j), 10) << " ";
-      out << "\n";
-    }
-    out << "0 0 0 1\n";
+    Eigen::IOFormat fmt(Eigen::FullPrecision, Eigen::DontAlignCols, " ", "\n", "", "", "", "");
+    out << M.matrix().format(fmt);
+    out << "\n0 0 0 1\n";
   }
 
   //! write the vector \a V to file
