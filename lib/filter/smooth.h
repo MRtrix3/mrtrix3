@@ -134,7 +134,7 @@ namespace MR
             progress.reset (new ProgressBar (message, axes_to_smooth + 1));
           }
 
-          for (size_t dim = 0; dim < this->ndim(); dim++) {
+          for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
               out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input));
               Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim]);

@@ -21,10 +21,8 @@
 
 #include "command.h"
 #include "file/path.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
+#include "algo/loop.h"
+#include "image.h"
 #include "math/SH.h"
 #include "dwi/directions/predefined.h"
 #include "timer.h"

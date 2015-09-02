@@ -23,9 +23,6 @@
 
 #include <gsl/gsl_linalg.h>
 
-#include "math/vector.h"
-#include "math/matrix.h"
-
 #define GLM_BATCH_SIZE 1024
 
 namespace MR
@@ -38,11 +35,11 @@ namespace MR
       typedef float value_type;
 
 
-      inline void SVD_invert (Math::Matrix<double>& I, const Math::Matrix<double>& M, double precision = 1.0e-10)
+      inline void SVD_invert (Eigen::MatrixXd& I, const Eigen::MatrixXd& M, double precision = 1.0e-10)
       {
         size_t N = std::min (M.rows(), M.columns());
-        Math::Matrix<double> U (M), V (N,N);
-        Math::Vector<double> S (N), work (N);
+        Eigen::MatrixXd U (M), V (N,N);
+        Eigen::MatrixXd S (N), work (N);
         gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
         for (size_t n = 0; n < N; ++n) {
           double sv = S[n] < precision ? 0.0 : 1.0/S[n];
@@ -53,11 +50,11 @@ namespace MR
       }
 
 
-      inline size_t rank (const Math::Matrix<double>& M)
+      inline size_t rank (const Eigen::MatrixXd& M)
       {
         size_t N = std::min (M.rows(), M.columns());
-        Math::Matrix<double> U (M), V (N,N);
-        Math::Vector<double> S (N), work (N);
+        Eigen::MatrixXd U (M), V (N,N);
+        Eigen::VectorXd S (N), work (N);
         gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
         for (size_t n = 0; n < N; ++n)
           if (S[n] < 1.0e-10)
@@ -72,29 +69,31 @@ namespace MR
         //! scale contrasts for use in t-test
         /*! Note each row of the contrast matrix will be treated as an independent contrast. */
         template <typename ValueType>
-          inline Math::Matrix<ValueType> scale_contrasts (const Math::Matrix<ValueType>& contrasts, const Math::Matrix<ValueType>& design, size_t degrees_of_freedom)
+          inline Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> scale_contrasts (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& contrasts,
+                                                                                           const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
+                                                                                           size_t degrees_of_freedom)
           {
-            Math::Matrix<ValueType> XtX;
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> XtX;
             Math::mult (XtX, ValueType(1.0), CblasTrans, design, CblasNoTrans, design);
             {
-              Math::Matrix<double> d_XtX = XtX;
-              Math::Matrix<double> d_pinv_XtX;
+              Eigen::MatrixXd d_XtX = XtX;
+              Eigen::MatrixXd d_pinv_XtX;
               SVD_invert (d_pinv_XtX, d_XtX);
               XtX = d_pinv_XtX;
             }
 
             // make sure contrast is a column vector:
-            Math::Matrix<ValueType> scaled_contrasts (contrasts);
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> scaled_contrasts (contrasts);
             if (scaled_contrasts.columns() > 1 && scaled_contrasts.rows() > 1)
               throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
             if (scaled_contrasts.rows() > 1)
-              scaled_contrasts = Math::transpose (scaled_contrasts);
-            scaled_contrasts.resize (scaled_contrasts.rows(), design.columns());
+              scaled_contrasts = scaled_contrasts.transpose();
+            scaled_contrasts.resize (scaled_contrasts.rows(), design.cols());
 
             for (size_t n = 0; n < contrasts.rows(); ++n) {
-              Math::Vector<ValueType> pinv_XtX_c;
-              Math::mult (pinv_XtX_c, XtX, contrasts.row(n));
-              scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / Math::dot (contrasts.row(n), pinv_XtX_c));
+              Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c;
+              pinv_XtX_c = XtX * contrasts.row(n);
+              scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / contrasts.row(n).dot(pinv_XtX_c));
             }
 
             return scaled_contrasts;
@@ -105,14 +104,14 @@ namespace MR
         //! generic GLM t-test
         /*! note that the data, effects, and residual matrices are transposed.
          * This is to take advantage of the GSL's convention of storing
-         * matrices in column-major format.
+         * matrices in column-major format.  TODO check Eigen default stride
          *
          * Note also that the contrast matrix should already have been scaled
          * using the GLM::scale_contrasts() function. */
         template <typename ValueType>
           inline void ttest (
               Math::Matrix<ValueType>& tvalues,
-              const Math::Matrix<ValueType>& design,
+              const Math::Matrix<ValueType>& design,  //TODO check Eigen default template parameteres
               const Math::Matrix<ValueType>& pinv_design,
               const Math::Matrix<ValueType>& measurements,
               const Math::Matrix<ValueType>& scaled_contrasts,
