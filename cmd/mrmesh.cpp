@@ -70,12 +70,7 @@ void run ()
   } else {
 
     auto input = Image<float>::open (argument[0]);
-    float threshold;
-    auto opt = get_options ("threshold");
-    if (opt.size())
-      threshold = opt[0][0];
-    else
-      threshold = Filter::estimate_optimal_threshold (input);
+    float threshold = get_option_value ("threshold", Filter::estimate_optimal_threshold (input));
     Mesh::vox2mesh_mc (input, threshold, mesh);
 
   }

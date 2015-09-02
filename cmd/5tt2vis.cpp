@@ -93,13 +93,12 @@ void run ()
   Header H (input.header());
   H.set_ndim (3);
 
-  auto
-  opt = get_options ("bg");   const float bg_multiplier   = opt.size() ? opt[0][0] : VALUE_DEFAULT_BG;
-  opt = get_options ("cgm");  const float cgm_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_CGM;
-  opt = get_options ("sgm");  const float sgm_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_SGM;
-  opt = get_options ("wm");   const float wm_multiplier   = opt.size() ? opt[0][0] : VALUE_DEFAULT_WM;
-  opt = get_options ("csf");  const float csf_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_CSF;
-  opt = get_options ("path"); const float path_multiplier = opt.size() ? opt[0][0] : VALUE_DEFAULT_PATH;
+  const float bg_multiplier   = get_option_value ("bg", VALUE_DEFAULT_BG);
+  const float cgm_multiplier  = get_option_value ("cgm", VALUE_DEFAULT_CGM);
+  const float sgm_multiplier  = get_option_value ("sgm", VALUE_DEFAULT_SGM);
+  const float wm_multiplier   = get_option_value ("wm", VALUE_DEFAULT_WM);
+  const float csf_multiplier  = get_option_value ("csf", VALUE_DEFAULT_CSF);
+  const float path_multiplier = get_option_value ("path", VALUE_DEFAULT_PATH);
 
   auto output = Image<float>::create (argument[1], H);
 

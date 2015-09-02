@@ -193,20 +193,26 @@ namespace MR
             nfeval = 0;
             f = evaluate_func (x, g, verbose);
             compute_normg_and_step_unscaled ();
+            assert(std::isfinite(g.norm()));
+            assert(!std::isnan(g.norm()));
             dt /= g.norm();
             if (verbose) {
               CONSOLE ("initialise: f = " + str (f) + ", |g| = " + str (normg) + ":");
-              CONSOLE ("  x = [ " + str(x) + "]");
+              CONSOLE ("  x = [ " + str(x.transpose()) + "]");
             }
             assert (std::isfinite (f));
+            assert (!std::isnan(f));
             assert (std::isfinite (normg));
+            assert (!std::isnan(normg));
           }
 
 
           bool iterate (bool verbose = false) {
-            assert (normg != 0.0);
+            // assert (normg != 0.0);
+            assert (std::isfinite (normg));
+            
 
-            while (true) {
+            while (normg != 0.0) {
               if (!update_func (x2, x, g, dt))
                 return false;
 
@@ -277,17 +283,21 @@ namespace MR
 
           void compute_normg_and_step_unscaled () {
             normg = step_unscaled = g.norm();
-            if (preconditioner_weights.size()) {
-              value_type g_projected = 0.0;
-              step_unscaled = 0.0;
-              for (ssize_t n = 0; n < g.size(); ++n) {
-                step_unscaled += std::pow(g[n], 2);
-                g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
-                g[n] *= preconditioner_weights[n];
+            assert(std::isfinite(normg));
+            if (normg > 0.0){
+              if (preconditioner_weights.size()) {
+                value_type g_projected = 0.0;
+                step_unscaled = 0.0;
+                for (ssize_t n = 0; n < g.size(); ++n) {
+                  step_unscaled += std::pow(g[n], 2);
+                  g_projected += preconditioner_weights[n] * std::pow(g[n], 2);
+                  g[n] *= preconditioner_weights[n];
+                }
+                normg = g_projected / normg;
+                assert(std::isfinite(normg));
+                step_unscaled = std::sqrt (step_unscaled);
               }
-              normg = g_projected / normg;
-              step_unscaled = std::sqrt (step_unscaled);
-            }
+            } 
           }
 
       };

@@ -60,11 +60,7 @@ typedef float value_type;
 
 
 void run () {
-  int axis = -1;
-
-  auto opt = get_options ("axis");
-  if (opt.size())
-    axis = opt[0][0];
+  int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
   std::vector<std::unique_ptr<Image<value_type>>> in (num_images);

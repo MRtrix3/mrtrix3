@@ -158,10 +158,7 @@ void run ()
 {
   auto directions = DWI::Directions::load_cartesian (argument[0]);
 
-  size_t num_permutations = 1e8;
-  auto opt = get_options ("permutations");
-  if (opt.size())
-    num_permutations = opt[0][0];
+  size_t num_permutations = get_option_value ("permutations", 1e8);
 
   Shared eddy_shared (directions, num_permutations);
   Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");

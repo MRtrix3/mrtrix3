@@ -143,54 +143,21 @@ void run() {
   Options opt = get_options ("negative");
   bool compute_negative_contrast = opt.size() ? true : false;
 
-  opt = get_options ("cfe_dh");
-  value_type cfe_dh = 0.1;
-  if (opt.size())
-    cfe_dh = opt[0][0];
-
-  opt = get_options ("cfe_h");
-  value_type cfe_h = 3.0;
-  if (opt.size())
-    cfe_h = opt[0][0];
-
-  opt = get_options ("cfe_e");
-  value_type cfe_e = 2.0;
-  if (opt.size())
-    cfe_e = opt[0][0];
-
-  opt = get_options ("cfe_c");
-  value_type cfe_c = 0.5;
-  if (opt.size())
-    cfe_c = opt[0][0];
-
-  opt = get_options ("nperms");
-  int num_perms = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
-  value_type angular_threshold = 30.0;
-  opt = get_options ("angle");
-  if (opt.size())
-    angular_threshold = opt[0][0];
+  value_type cfe_dh = get_option_value ("cfe_dh", 0.1);
+  value_type cfe_h = get_option_value ("cfe_h", 3.0);
+  value_type cfe_e = get_option_value ("cfe_e", 2.0);
+  value_type cfe_c = get_option_value ("cfe_c", 0.5);
+  int num_perms = get_option_value ("nperms", 5000);
+  value_type angular_threshold = get_option_value ("angle", 30.0);
   const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
 
-  value_type connectivity_threshold = 0.01;
-  opt = get_options ("connectivity");
-  if (opt.size())
-    connectivity_threshold = opt[0][0];
-
-  value_type smooth_std_dev = 10.0 / 2.3548;
-  opt = get_options ("smooth");
-  if (opt.size())
-    smooth_std_dev = value_type(opt[0][0]) / 2.3548;
+  value_type connectivity_threshold = get_option_value ("connectivity", 0.01);
+  value_type smooth_std_dev = get_option_value ("smooth", 10.0) / 2.3548;
 
   bool do_nonstationary_adjustment = get_options ("nonstationary").size();
 
-  opt = get_options ("nperms_nonstationary");
-  int nperms_nonstationary = 5000;
-  if (opt.size())
-    num_perms = opt[0][0];
-
+  int nperms_nonstationary = get_option_value ("nperms_nonstationary", 5000);
+  
   // Read filenames
   std::vector<std::string> filenames;
   {

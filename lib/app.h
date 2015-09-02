@@ -365,8 +365,26 @@ namespace MR
      * }
      * \endcode */
     const std::vector<ParsedOption> get_options (const std::string& name);
-
-
+    
+    
+    //! Returns the option value if set, and the default otherwise.
+    /*! Returns the value of (the first occurence of) option \c name
+     *  or the default value provided as second argument.
+     * 
+     * Use:
+     * \code
+     *  float arg1 = get_option_value("myopt", arg1_default);
+     *  int arg2 = get_option_value("myotheropt", arg2_default);
+     * \endcode
+     */
+    template <typename T>
+    inline T get_option_value (const std::string& name, const T default_value)
+    {
+      auto opt = get_options(name);
+      T r = (opt.size()) ? opt[0][0] : default_value;
+      return r;
+    }
+    
 
     //! convenience function provided mostly to ease writing Exception strings
     inline std::string operator+ (const char* left, const App::ParsedArgument& right)

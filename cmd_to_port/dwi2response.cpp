@@ -213,22 +213,17 @@ void run ()
   INFO ("Initial response function is [" + str(response, 2) + "]");
 
   // Algorithm termination options
-  opt = get_options ("max_iters");
-  const size_t max_iters = opt.size() ? int(opt[0][0]) : DWI2RESPONSE_DEFAULT_MAX_ITERS;
-  opt = get_options ("max_change");
-  const float max_change = 0.01 * (opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_MAX_CHANGE);
+  const size_t max_iters = get_option_value ("max_iters", DWI2RESPONSE_DEFAULT_MAX_ITERS);
+  const float max_change = 0.01 * get_option_value ("max_change", DWI2RESPONSE_DEFAULT_MAX_CHANGE);
 
   // Should all voxels (potentially within a user-specified mask) be tested at every iteration?
   opt = get_options ("test_all");
   const bool reset_mask = opt.size();
 
   // Single-fibre voxel selection options
-  opt = get_options ("volume_ratio");
-  const float volume_ratio = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_VOLUME_RATIO;
-  opt = get_options ("dispersion_multiplier");
-  const float dispersion_multiplier = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER;
-  opt = get_options ("integral_multiplier");
-  const float integral_multiplier = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER;
+  const float volume_ratio = get_option_value ("volume_ratio", DWI2RESPONSE_DEFAULT_VOLUME_RATIO);
+  const float dispersion_multiplier = get_option_value ("dispersion_multiplier", DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER);
+  const float integral_multiplier = get_option_value ("integral_multiplier", DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER);
 
   SFThresholds thresholds (volume_ratio); // Only threshold the lobe volume ratio for now; other two are not yet used
 

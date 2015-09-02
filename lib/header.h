@@ -53,9 +53,9 @@ namespace MR
       class Axis;
 
       Header () :
+        transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
         offset_ (0.0),
         scale_ (1.0) {
-          transform_.setIdentity();
         }
 
       explicit Header (Header&& H) noexcept :
