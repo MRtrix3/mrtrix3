@@ -67,7 +67,7 @@ namespace MR {
             Point<value_type> d;
             for (typename std::set<Point<value_type> >::iterator it = lockcentres.begin(); it != lockcentres.end(); ++it) {
               d = *it - pos;
-              if ((abs(d[0]) < _tx) && (abs(d[1]) < _ty) && (abs(d[2]) < _tz))
+              if ((std::abs(d[0]) < _tx) && (std::abs(d[1]) < _ty) && (std::abs(d[2]) < _tz))
                 return false;
             }
             lockcentres.insert(pos);
