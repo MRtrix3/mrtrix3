@@ -273,17 +273,17 @@ namespace MR {
         
         bool MHSampler::inMask(const Point_t p) const
         {
-//          if ((p[0] <= -0.5) || (p[0] >= dims[0]-0.5) || 
-//              (p[1] <= -0.5) || (p[1] >= dims[1]-0.5) ||
-//              (p[2] <= -0.5) || (p[2] >= dims[2]-0.5))
-          if ((p[0] <= 0.0) || (p[0] >= dims[0]-1.0) || 
-              (p[1] <= 0.0) || (p[1] >= dims[1]-1.0) ||
-              (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
+          if ((p[0] <= -0.5) || (p[0] >= dims[0]-0.5) || 
+              (p[1] <= -0.5) || (p[1] >= dims[1]-0.5) ||
+              (p[2] <= -0.5) || (p[2] >= dims[2]-0.5))
+//          if ((p[0] <= 0.0) || (p[0] >= dims[0]-1.0) || 
+//              (p[1] <= 0.0) || (p[1] >= dims[1]-1.0) ||
+//              (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
             return false;
           if (mask) {
-            (*mask)[0] = std::round<size_t>(p[0]);
-            (*mask)[1] = std::round<size_t>(p[1]);
-            (*mask)[2] = std::round<size_t>(p[2]);
+            (*mask)[0] = Math::round<size_t>(p[0]);
+            (*mask)[1] = Math::round<size_t>(p[1]);
+            (*mask)[2] = Math::round<size_t>(p[2]);
             return mask->value();
           }
           return true;
