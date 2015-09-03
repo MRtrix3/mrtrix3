@@ -446,16 +446,28 @@ except:
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure''')
+     CXX=/usr/bin/g++-4.8 ./configure''')
 
 try:
-  compile ('int main() { return (0); }', cpp_flags, ld_flags)
+  compile ('''
+struct Base {
+    Base (int);
+};
+struct Derived : Base {
+    using Base::Base;
+};
+
+int main() { 
+  Derived D (int); // check for contructor inheritance
+  return (0); 
+}
+''', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler test failed!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure
+     CXX=/usr/bin/g++-4.8 ./configure
 
 You can also use the CXX_ARGS to set the arguments expected by the 
 compiler, in case this differs from gcc, as follows:
@@ -465,7 +477,7 @@ except (LinkError, RuntimeError):
   error ('''linking error!
 
 Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.2 ./configure''')
+     LD=/usr/bin/g++-4.8 ./configure''')
 except:
   raise
 
