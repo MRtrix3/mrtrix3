@@ -22,7 +22,7 @@ before_install:
 install: 
   - (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script:
-  - if [ ${python_version} = "3" ]; then python3 ./configure -build && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -build && ./build -disablethreading && (cd testing; ./run_tests); fi
+  - if [ ${python_version} = "3" ]; then python3 ./configure -debug && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -debug && ./build -disablethreading && (cd testing; ./run_tests); fi
 after_failure: 
   - cat configure.log
   - cat build.log
