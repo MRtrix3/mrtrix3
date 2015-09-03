@@ -61,12 +61,12 @@ void usage ()
             "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
             "can be specified as a number sequence. For example, '1,3' specifies the "
             "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
-  + Argument ("image")
+  + Argument ("sequence").type_sequence_int()
 
   + Option ("modulate",
             "specify how to modulate the magnitude of the eigenvectors. Valid choices "
             "are: none, FA, eigval (default = FA).")
-  + Argument ("spec").type_choice (modulate_choices)
+  + Argument ("choice").type_choice (modulate_choices)
  
   + Option ("mask",
             "only perform computation within the specified binary brain mask image.")
@@ -96,7 +96,7 @@ class Processor
       vector_image (vector_image),
       vals (vals),
       modulate (modulate) { }
-
+    
     template <class DTType>
       void operator() (DTType& dt_image)
       {
@@ -117,19 +117,19 @@ class Processor
           assign_pos_of (dt_image, 0, 3).to (*adc_image);
           adc_image->value() = DWI::tensor2ADC(dt);
         }
-
+        
         double fa = 0.0;
         if (fa_image || (vector_image && (modulate == 1)))
           fa = DWI::tensor2FA(dt);
- 
+        
         /* output fa */
         if (fa_image) {
           assign_pos_of (dt_image, 0, 3).to (*fa_image);
           fa_image->value() = fa;
         }
-    
+        
         Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
-	if (value_image || vector_image) {
+        if (value_image || vector_image) {
           Eigen::Matrix3d M;
           M (0,0) = dt[0];
           M (1,1) = dt[1];
@@ -139,7 +139,7 @@ class Processor
           M (1,2) = M (2,1) = dt[5];
           es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, vector_image ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
         }
-
+        
         Eigen::Vector3d eigval;
         if (value_image || (vector_image && (modulate == 2)))
           eigval = es.eigenvalues();
@@ -147,12 +147,16 @@ class Processor
         /* output value */
         if (value_image) {
           assign_pos_of (dt_image, 0, 3).to (*value_image);
-          auto l = Loop(3)(*value_image);
-          for (int i = 0; i < vals.size(); i++) {
-            value_image->value() = eigval(3-vals[i]); l++;
+          if (vals.size() > 1) {
+            auto l = Loop(3)(*value_image);
+            for (int i = 0; i < vals.size(); i++) {
+              value_image->value() = eigval(3-vals[i]); l++;
+            }
+          } else {
+            value_image->value() = eigval(3-vals[0]);
           }
         }
-     
+        
         /* output vector */
         if (vector_image) {
           Eigen::Matrix3d eigvec = es.eigenvectors();
@@ -170,7 +174,7 @@ class Processor
           }
         }                   
       }
-
+    
   private:
     copy_ptr<MASKType> mask_image;
     copy_ptr<ADCType> adc_image;
