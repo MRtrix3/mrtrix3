@@ -96,11 +96,15 @@ void run ()
     Math::Matrix<float> scanner_to_transformed_dest_flirt;
     Math::mult (scanner_to_transformed_dest_flirt, transform, scanner_to_src_flirt);
 
-    Math::mult (transform, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
+    Math::Matrix<float> forward_transform;
+    Math::mult (forward_transform, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
+
+    transform = Math::LU::inv (forward_transform);
   }
 
   cleanup_4x4_transform (transform);
 
   transform.save (argument[1]);
 }
+
 
