@@ -652,13 +652,13 @@ namespace MR
                 tck_scalar.assign (track_lengths[index], value);
 
                 // Pre padding to coincide with tracks buffer
-                for (size_t i = 1; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < max_sample_stride; ++i)
                   buffer.push_back(tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
-                for (size_t i = 1; i < max_sample_stride; ++i)
+                for (size_t i = 0; i < max_sample_stride; ++i)
                   buffer.push_back(tck_scalar.back());
 
                 value_max = std::max(value_max, value);
