@@ -24,7 +24,7 @@ void usage ()
 
   ARGUMENTS
   + Argument ("image1", "the first input image.").type_image_in ()
-  + Argument ("image2", "the second input image.").type_image_out ();
+  + Argument ("image2", "the second input image.").type_image_in ();
 
   OPTIONS
   + Option ("space", 
