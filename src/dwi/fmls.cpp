@@ -204,9 +204,21 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
         for (size_t j = 1; j != adj_lobes.size(); ++j)
           out[adj_lobes[0]].merge (out[adj_lobes[j]]);
         for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
+          bool modified = false;
           for (size_t k = 1; k != adj_lobes.size(); ++k) {
-            if (j->second == adj_lobes[k])
+            if (j->second == adj_lobes[k]) {
               j->second = adj_lobes[0];
+              modified = true;
+            }
+          }
+          if (!modified) {
+            // Compensate for impending deletion of elements from the vector
+            dir_t bin = j->first;
+            for (size_t k = 1; k != adj_lobes.size(); ++k) {
+              if (adj_lobes[k] < bin)
+                --bin;
+            }
+            j->first = bin;
           }
         }
         for (size_t j = adj_lobes.size() - 1; j; --j) {
