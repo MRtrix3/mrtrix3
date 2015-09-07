@@ -23,6 +23,7 @@
 #ifndef __registration_metric_evaluate_h__
 #define __registration_metric_evaluate_h__
 
+#include "algo/stochastic_threaded_loop.h"
 #include "registration/metric/thread_kernel.h"
 #include "algo/threaded_loop.h"
 #include "registration/transform/reorient.h"
@@ -66,10 +67,13 @@ namespace MR
 
               {
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                // ThreadedLoop (params.template_image, 0, 3).run (kernel);
-                ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+                if (params.sparsity != 0.0){ 
+                  DEBUG("STOCHASTIC ThreadedLoop, sparsity: "+ str(params.sparsity));
+                  StochasticThreadedLoop (params.midway_image, 0, 3, 1.5).run (kernel, params.sparsity);
+                }
+                else
+                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
               }
-              // std::cerr.precision(10);
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));

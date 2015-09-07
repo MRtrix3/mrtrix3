@@ -52,7 +52,8 @@ namespace MR
                     transformation (transform),
                     moving_image (moving_image),
                     template_image (template_image),
-                    midway_image (midway_image){
+                    midway_image (midway_image),
+                    sparsity(static_cast<double> (0.0)){
                       moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
                       template_image_interp.reset (new TemplateImageInterpolatorType (template_image));
           }
@@ -69,6 +70,7 @@ namespace MR
           MR::copy_ptr<TemplateImageInterpolatorType> template_image_interp;
           MR::copy_ptr<MovingMaskInterpolatorType> moving_mask_interp;
           MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
+          double sparsity;
           std::vector<size_t> extent;
       };
     }
