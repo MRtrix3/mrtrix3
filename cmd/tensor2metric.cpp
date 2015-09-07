@@ -83,6 +83,9 @@ void usage ()
 }
 
 
+
+
+
 typedef float value_type;
 
 class ImagePair
