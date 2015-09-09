@@ -72,6 +72,14 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
+  + Option ("scaling",
+            "specify the data scaling parameters used to rescale the intensity values. "
+            "These take the form of a comma-separated 2-vector of floating-point values, "
+            "corresponding to offset & scale, with final intensity values being given by "
+            "offset + scale * stored_value. By default, the values in the original header "
+            "are preserved.")
+  + Argument ("values").type_sequence_float()
+
   + Image::Stride::StrideOption
 
   + DataType::options()
@@ -91,10 +99,19 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
   header.info() = input.info();
   header.datatype() = datatype;
 
+  Options opt = get_options ("scaling");
+  if (opt.size()) {
+    std::vector<float> scaling = opt[0][0];
+    if (scaling.size() != 2) 
+      throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
+    header.intensity_offset() = scaling[0];
+    header.intensity_scale() = scaling[1];
+  }
+
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     header.DW_scheme() = DWI::get_DW_scheme<float> (header);
 
-  Options opt = get_options ("axes");
+  opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
