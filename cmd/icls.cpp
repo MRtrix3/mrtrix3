@@ -22,6 +22,7 @@
 
 #include "command.h"
 #include "timer.h"
+#include "debug.h"
 
 #define MRTRIX_ICLS_DEBUG
 #include "math/constrained_least_squares.h"
@@ -52,24 +53,22 @@ void usage ()
 
 void run ()
 {
-  Math::Matrix<double> H (argument[0]);
-  Math::Matrix<double> A (argument[1]);
-  Math::Vector<double> b;
-  b.load (argument[2]);
+  auto H = load_matrix<double> (argument[0]);
+  auto A = load_matrix<double> (argument[1]);
+  auto b = load_vector<double> (argument[2]);
 
   Math::ICLS::Problem<double> icls_problem (H, A, 0.0, 1e-10);//, 1.0e-10, 1.0e-6);
   Math::ICLS::Solver<double> icls_solver (icls_problem);
 
-  Math::Vector<double> x;
+  Eigen::VectorXd x;
   Timer timer;
   size_t niter = icls_solver (x, b);
   VAR (timer.elapsed());
   if (niter > icls_problem.max_niter) 
     WARN ("failed to converge");
-  Math::Vector<double> c;
-  Math::mult (c, A, x);
-  VAR (Math::min(c));
+  Eigen::VectorXd c = A * x;
+  VAR (c.minCoeff());
   VAR (niter);
-  std::cout << x << std::endl;
+  std::cout << x.transpose() << std::endl;
 }
 
