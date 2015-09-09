@@ -46,6 +46,8 @@
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/types.h"
 
+#include "file/path.h"
+
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
@@ -266,6 +268,8 @@ namespace MR
         Tractography::Reader<float> file (path, properties);
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        if (!count)
+          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperBase mapper (H, dirs);

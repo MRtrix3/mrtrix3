@@ -21,6 +21,7 @@
 #ifndef __stats_cfe_h__
 #define __stats_cfe_h__
 
+#include "math/math.h"
 #include "image/buffer_scratch.h"
 #include "dwi/tractography/mapping/mapper.h"
 
@@ -63,7 +64,7 @@ namespace MR
                           fixel_directions (fixel_directions),
                           fixel_TDI (fixel_TDI),
                           connectivity_matrix (connectivity_matrix) {
-            angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+            angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
           }
 
           bool operator () (SetVoxelDir& in)

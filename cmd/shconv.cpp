@@ -69,6 +69,7 @@ class SDeconvFunctor {
                     response (response) { } 
 
     void operator() (const Image::Iterator& pos) {
+      Image::voxel_assign (output_vox, pos);
       if (mask_vox_ptr) {
         Image::voxel_assign (*mask_vox_ptr, pos);
         if (!mask_vox_ptr->value()) {
@@ -82,10 +83,8 @@ class SDeconvFunctor {
       Math::Vector<value_type> input (input_vox.address(), input_vox.dim(3));
       Math::Vector<value_type> output (output_vox.dim(3));
       Math::SH::sconv (output, response, input);
-      Image::voxel_assign (output_vox, pos);
       for (output_vox[3] = 0; output_vox[3] < output_vox.dim(3); ++output_vox[3])
         output_vox.value() = output[output_vox[3]];
-
     }
 
   protected:

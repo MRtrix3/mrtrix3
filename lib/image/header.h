@@ -204,6 +204,9 @@ namespace MR
         ConstHeader (const Header& H) : Header (H) { 
           set_intensity_scaling (H);
         }
+        ConstHeader (const ConstHeader& H) : Header (H) { 
+          set_intensity_scaling (H);
+        }
 
         //! constructor to open an image file.
         ConstHeader (const std::string& image_name) :

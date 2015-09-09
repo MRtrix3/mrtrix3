@@ -439,7 +439,19 @@ Use CXX environment variable to set path to compiler, as follows:
      CXX=/usr/bin/g++-4.2 ./configure''')
 
 try:
-  compile ('int main() { return (0); }', cpp_flags, ld_flags)
+  compile ('''
+struct Base {
+    Base (int);
+};
+struct Derived : Base {
+    using Base::Base;
+};
+
+int main() { 
+  Derived D (int); // check for contructor inheritance
+  return (0); 
+}
+''', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler test failed!
