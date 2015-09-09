@@ -129,23 +129,19 @@ class DataLoader
 
     bool operator() (Item& item) {
       if (loop.ok()) {
-        if (mask) {
-          while (!mask->value()) {
-            loop.next (*mask, sh);
-            if (!loop.ok())
-              return false;
-          }
-        }
-
+        item.data.allocate (sh.dim(3));
         item.pos[0] = sh[0];
         item.pos[1] = sh[1];
         item.pos[2] = sh[2];
 
-        item.data.allocate (sh.dim(3));
-
-        // iterates over SH coefficients
-        for (auto l = Image::Loop(3) (sh); l; ++l)
-          item.data[sh[3]] = sh.value();
+        if (mask && !mask->value()) {
+          for (auto l = Image::Loop(3) (sh); l; ++l)
+            item.data[sh[3]] = NAN;
+        } else {
+          // iterates over SH coefficients
+          for (auto l = Image::Loop(3) (sh); l; ++l)
+            item.data[sh[3]] = sh.value();
+        }
 
         if (mask)
           loop.next (*mask, sh);
@@ -364,7 +360,7 @@ void run ()
   Processor processor (peaks_data, dirs, Math::SH::LforN (SH_data.dim (3)),
       npeaks, true_peaks, threshold, ipeaks_data.get());
 
-  Thread::run_queue (loader, Item(), Thread::multi (processor));
+  Thread::run_queue (loader, Thread::batch (Item()), Thread::multi (processor));
 }
 
 

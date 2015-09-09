@@ -173,9 +173,9 @@ namespace MR
         Tractography::Properties properties;
         Tractography::Reader file (path, properties);
 
-        if (properties.find ("count") == properties.end())
-          throw Exception ("Input .tck file does not specify number of streamlines (run tckfixcount on your .tck file!)");
-        const track_t count = to<track_t>(properties["count"]);
+        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        if (!count)
+          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
         contributions.assign (count, nullptr);
 

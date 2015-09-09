@@ -171,8 +171,6 @@ namespace MR {
 
         std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
 
-        std::map<uint32_t, uint32_t> lobes_to_merge;
-
         for (const auto& i : data_in_order) {
 
           std::vector<uint32_t> adj_lobes;
@@ -196,11 +194,37 @@ namespace MR {
 
           } else {
 
+            // Changed handling of lobe merges
+            // Merge lobes as they appear to be merged, but update the
+            //   contents of retrospective_assignments accordingly
             if (std::abs (i.first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
 
-              if (lobes_to_merge.find (adj_lobes.back()) == lobes_to_merge.end())
-                lobes_to_merge.insert (std::make_pair (adj_lobes.back(), adj_lobes.front()));
-              out[adj_lobes.front()].add (i.second, i.first);
+              std::sort (adj_lobes.begin(), adj_lobes.end());
+              for (size_t j = 1; j != adj_lobes.size(); ++j)
+                out[adj_lobes[0]].merge (out[adj_lobes[j]]);
+              for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
+                bool modified = false;
+                for (size_t k = 1; k != adj_lobes.size(); ++k) {
+                  if (j->second == adj_lobes[k]) {
+                    j->second = adj_lobes[0];
+                    modified = true;
+                  }
+                }
+                if (!modified) {
+                  // Compensate for impending deletion of elements from the vector
+                  dir_t bin = j->first;
+                  for (size_t k = 1; k != adj_lobes.size(); ++k) {
+                    if (adj_lobes[k] < bin)
+                      --bin;
+                  }
+                  j->first = bin;
+                }
+              }
+              for (size_t j = adj_lobes.size() - 1; j; --j) {
+                std::vector<FOD_lobe>::iterator ptr = out.begin();
+                advance (ptr, adj_lobes[j]);
+                out.erase (ptr);
+              }
 
             } else {
 
@@ -215,17 +239,9 @@ namespace MR {
         for (const auto& i : retrospective_assignments)
           out[i.second].add (i.first, values[i.first]);
 
-        for (auto i = lobes_to_merge.crbegin(); i != lobes_to_merge.crend(); ++i) {
-          out[i->second].merge (out[i->first]);
-          std::vector<FOD_lobe>::iterator ptr = out.begin();
-          advance (ptr, i->first);
-          out.erase (ptr);
-        }
-
-
         float mean_neg_peak = 0.0, max_neg_integral = 0.0;
         uint32_t neg_lobe_count = 0;
-        for (const auto& i : out) { 
+        for (const auto& i : out) {
           if (i.is_negative()) {
             mean_neg_peak += i.get_peak_value();
             ++neg_lobe_count;

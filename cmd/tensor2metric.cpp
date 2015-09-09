@@ -149,7 +149,7 @@ class Processor
           assign_pos_of (dt_image, 0, 3).to (*value_image);
           if (vals.size() > 1) {
             auto l = Loop(3)(*value_image);
-            for (int i = 0; i < vals.size(); i++) {
+            for (size_t i = 0; i < vals.size(); i++) {
               value_image->value() = eigval(3-vals[i]); l++;
             }
           } else {
@@ -162,7 +162,7 @@ class Processor
           Eigen::Matrix3d eigvec = es.eigenvectors();
           assign_pos_of (dt_image, 0, 3).to (*vector_image);
           auto l = Loop(3)(*vector_image);
-          for (int i = 0; i < vals.size(); i++) {
+          for (size_t i = 0; i < vals.size(); i++) {
             double fact = 1.0;
             if (modulate == 1)
               fact = fa;
