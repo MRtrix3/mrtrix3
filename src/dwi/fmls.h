@@ -25,7 +25,9 @@
 #ifndef __dwi_fmls_h__
 #define __dwi_fmls_h__
 
+#include <map> // Used for sorting FOD samples
 
+#include "memory.h"
 #include "math/SH.h"
 #include "math/vector.h"
 #include "point.h"
@@ -37,7 +39,6 @@
 #include "image/loop.h"
 
 
-#include <map> // Used for sorting FOD samples
 
 
 #define FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT 0.0
@@ -216,7 +217,7 @@ class FODQueueWriter
 
     template <class MaskVoxelOrBufferType>
       void set_mask (MaskVoxelOrBufferType& mask_vox) {
-        mask_vox_ptr = new MaskVoxelType (mask_vox);
+        mask_vox_ptr.reset (new MaskVoxelType (mask_vox));
       }
 
 
@@ -243,7 +244,7 @@ class FODQueueWriter
   private:
     FODVoxelType fod_vox;
     Image::Loop loop;
-    Ptr<MaskVoxelType> mask_vox_ptr;
+    std::unique_ptr<MaskVoxelType> mask_vox_ptr;
 
 };
 
@@ -280,8 +281,8 @@ class Segmenter {
 
     const size_t lmax;
 
-    RefPtr< Math::SH::Transform<float> > transform;
-    RefPtr< Math::SH::PrecomputedAL<float> > precomputer;
+    std::shared_ptr< Math::SH::Transform<float> > transform;
+    std::shared_ptr< Math::SH::PrecomputedAL<float> > precomputer;
 
     float ratio_to_negative_lobe_integral; // Integral of positive lobe must be at least this ratio larger than the largest negative lobe integral
     float ratio_to_negative_lobe_mean_peak; // Peak value of positive lobe must be at least this ratio larger than the mean negative lobe peak

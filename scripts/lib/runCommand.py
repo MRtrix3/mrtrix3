@@ -2,7 +2,7 @@ mrtrix_bin_list = [ ]
 
 def runCommand(cmd):
 
-  import app, os, sys
+  import lib.app, os, sys
   global mrtrix_bin_list
   
   if not mrtrix_bin_list:
@@ -16,12 +16,12 @@ def runCommand(cmd):
     cmdsplit = cmd.split()
     for index, item in enumerate(cmdsplit):
       if item == '|':
-        cmdsplit[index] = app.mrtrixQuiet + ' |'
+        cmdsplit[index] = lib.app.mrtrixQuiet + ' |'
         index += 1
-    cmdsplit.append(app.mrtrixQuiet)
+    cmdsplit.append(lib.app.mrtrixQuiet)
     cmd = ' '.join(cmdsplit)
     
-  if app.verbosity:
+  if lib.app.verbosity:
   	sys.stdout.write('Command: ' + cmd + '\n')
   	sys.stdout.flush()
 

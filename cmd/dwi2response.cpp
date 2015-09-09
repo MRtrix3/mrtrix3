@@ -175,19 +175,9 @@ void run ()
 
   DWI::CSDeconv<float>::Shared shared (H);
 
-  const size_t max_lmax = Math::SH::LforN (shared.dwis.size());
-  if (max_lmax < 4)
-    throw Exception ("Selected b-value shell does not have an adequate number of directions (" + str(shared.dwis.size()) + ") to run dwi2response (need at least 15 for lmax=4)");
-  size_t lmax = std::min (size_t(8), max_lmax);
-  opt = get_options ("lmax");
-  if (opt.size()) {
-    const size_t desired_lmax = int(opt[0][0]);
-    if (desired_lmax % 2)
-      throw Exception ("lmax must be an even number");
-    if (desired_lmax > max_lmax)
-      throw Exception ("Image data do not support estimating response function above an lmax of " + str(max_lmax));
-    lmax = desired_lmax;
-  }
+  const size_t lmax = DWI::lmax_for_directions (shared.DW_dirs);
+  if (lmax < 4)
+    throw Exception ("Cannot run dwi2response with lmax less than 4");
   shared.lmax = lmax;
 
   Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
@@ -248,7 +238,7 @@ void run ()
   {
     bool iterate = true;
     size_t iter = 0;
-    ProgressBar progress ("optimising response function.. ");
+    ProgressBar progress ("optimising response function... ");
     do {
 
       ++iter;
@@ -292,7 +282,7 @@ void run ()
       {
         SFSelector selector (seg_results, thresholds, mask);
         ResponseEstimator estimator (dwi, shared, lmax, output);
-        Thread::run_queue (selector, FODSegResult(), Thread::multi (estimator));
+        Thread::run_queue (selector, Thread::batch (FODSegResult()), Thread::multi (estimator));
       }
       if (!output.get_count())
         throw Exception ("Cannot estimate response function; all voxels have been excluded from selection");
@@ -342,7 +332,7 @@ void run ()
 
   }
 
-  INFO ("final response function: [" + str(response, 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
+  CONSOLE ("final response function: [" + str(response, 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
   response.save (argument[1]);
 
   opt = get_options ("sf");

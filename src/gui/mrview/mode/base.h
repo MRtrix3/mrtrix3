@@ -27,7 +27,6 @@
 #include "gui/opengl/transformation.h"
 #include "gui/projection.h"
 #include "gui/mrview/window.h"
-#include "gui/projection.h"
 #include "gui/mrview/tool/base.h"
 
 #define ROTATION_INC 0.002
@@ -77,13 +76,13 @@ namespace MR
         class Base : public QObject
         {
           public:
-            Base (Window& parent, int flags = FocusContrast | MoveTarget);
+            Base (int flags = FocusContrast | MoveTarget);
             virtual ~Base ();
 
-            Window& window;
+            Window& window () const { return *Window::main; }
             Projection projection;
             const int features;
-            QList<Image*> overlays_for_3D;
+            QList<ImageBase*> overlays_for_3D;
             bool update_overlays;
 
             virtual void paint (Projection& projection);
@@ -105,33 +104,34 @@ namespace MR
 
             void paintGL ();
 
-            const Image* image () const { return window.image(); }
-            const Point<>& focus () const { return window.focus(); }
-            const Point<>& target () const { return window.target(); }
-            float FOV () const { return window.FOV(); }
-            int plane () const { return window.plane(); }
+            const Image* image () const { return window().image(); }
+            const Point<>& focus () const { return window().focus(); }
+            const Point<>& target () const { return window().target(); }
+            float FOV () const { return window().FOV(); }
+            int plane () const { return window().plane(); }
             Math::Versor<float> orientation () const { 
               if (snap_to_image()) 
                 return Math::Versor<float>(1.0f, 0.0f, 0.0f, 0.0f);
-              return window.orientation(); 
+              return window().orientation(); 
             }
 
             int width () const { return glarea()->width(); }
             int height () const { return glarea()->height(); }
-            bool snap_to_image () const { return window.snap_to_image(); }
+            bool snap_to_image () const { return window().snap_to_image(); }
 
-            Image* image () { return window.image(); }
+            Image* image () { return window().image(); }
 
             void move_target_to_focus_plane (const Projection& projection) {
               Point<> in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
             }
-            void set_focus (const Point<>& p) { window.set_focus (p); }
-            void set_target (const Point<>& p) { window.set_target (p); }
-            void set_FOV (float value) { window.set_FOV (value); }
-            void set_plane (int p) { window.set_plane (p); }
-            void set_orientation (const Math::Versor<float>& Q) { window.set_orientation (Q); }
+            void set_visible (bool v) { if(visible != v) { visible = v; updateGL(); } }
+            void set_focus (const Point<>& p) { window().set_focus (p); }
+            void set_target (const Point<>& p) { window().set_target (p); }
+            void set_FOV (float value) { window().set_FOV (value); }
+            void set_plane (int p) { window().set_plane (p); }
+            void set_orientation (const Math::Versor<float>& Q) { window().set_orientation (Q); }
             void reset_orientation () { 
               Math::Versor<float> orient;
               if (image()) 
@@ -140,7 +140,7 @@ namespace MR
             }
 
             QGLWidget* glarea () const {
-              return reinterpret_cast <QGLWidget*> (window.glarea);
+              return reinterpret_cast <QGLWidget*> (window().glarea);
             }
 
             Point<> move_in_out_displacement (float distance, const Projection& projection) const {
@@ -161,7 +161,7 @@ namespace MR
             }
 
             void render_tools (const Projection& projection, bool is_3D = false, int axis = 0, int slice = 0) {
-              QList<QAction*> tools = window.tools()->actions();
+              QList<QAction*> tools = window().tools()->actions();
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock)
@@ -178,20 +178,19 @@ namespace MR
             }
 
             void draw_crosshairs (const Projection& with_projection) const {
-              if (window.show_crosshairs())
+              if (window().show_crosshairs())
                 with_projection.render_crosshairs (focus());
             }
 
             void draw_orientation_labels (const Projection& with_projection) const {
-              if (window.show_orientation_labels())
+              if (window().show_orientation_labels())
                 with_projection.draw_orientation_labels();
             }
 
             int slice (int axis) const { return std::round (voxel_at (focus())[axis]); }
             int slice () const { return slice (plane()); }
 
-            bool in_paint () const { return painting; } 
-            void updateGL () { window.updateGL(); } 
+            void updateGL () { window().updateGL(); } 
 
           protected:
 
@@ -202,7 +201,7 @@ namespace MR
 
             void reset_view ();
 
-            bool painting;
+            bool visible;
         };
 
 
@@ -222,7 +221,7 @@ namespace MR
               setStatusTip (tr (description));
             }
 
-            virtual Base* create (Window& parent) const = 0;
+            virtual Base* create() const = 0;
         };
         //! \endcond
 
@@ -237,8 +236,8 @@ namespace MR
                     int index) :
               __Action__ (parent, name, description, index) { }
 
-            virtual Base* create (Window& parent) const {
-              return new T (parent);
+            virtual Base* create() const {
+              return new T;
             }
         };
 

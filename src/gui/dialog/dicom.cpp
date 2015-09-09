@@ -38,16 +38,16 @@ namespace MR
         {
           public:
             Item () : parentItem (NULL) { }
-            Item (Item* parent, const RefPtr<Patient>& p) :
+            Item (Item* parent, const std::shared_ptr<Patient>& p) :
               parentItem (parent) {
               itemData = (p->name + " " + format_ID (p->ID) + " " + format_date (p->DOB)).c_str();
             }
-            Item (Item* parent, const RefPtr<Study>& p) :
+            Item (Item* parent, const std::shared_ptr<Study>& p) :
               parentItem (parent) {
               itemData = ( (p->name.size() ? p->name : std::string ("unnamed")) + " " +
                            format_ID (p->ID) + " " + format_date (p->date) + " " + format_time (p->time)).c_str();
             }
-            Item (Item* parent, const RefPtr<Series>& p) :
+            Item (Item* parent, const std::shared_ptr<Series>& p) :
               parentItem (parent), dicom_series (p) {
               itemData = (str (p->size()) + " " + (p->modality.size() ? p->modality : std::string()) + " images " +
                           format_time (p->time) + " " + (p->name.size() ? p->name : std::string ("unnamed")) + " (" +
@@ -76,7 +76,7 @@ namespace MR
             Item* parent ()  {
               return (parentItem);
             }
-            const RefPtr<Series>& series () const {
+            const std::shared_ptr<Series>& series () const {
               return (dicom_series);
             }
 
@@ -84,7 +84,7 @@ namespace MR
             QList<Item*> childItems;
             QVariant itemData;
             Item* parentItem;
-            RefPtr<Series> dicom_series;
+            std::shared_ptr<Series> dicom_series;
         };
 
 
@@ -199,9 +199,9 @@ namespace MR
 
 
 
-      std::vector< RefPtr<Series> > select_dicom (const Tree& tree)
+      std::vector<std::shared_ptr<Series>> select_dicom (const Tree& tree)
       {
-        std::vector<RefPtr<Series> > ret;
+        std::vector<std::shared_ptr<Series> > ret;
         if (tree.size() == 1) {
           if (tree[0]->size() == 1) {
             if ((*tree[0])[0]->size() == 1) {

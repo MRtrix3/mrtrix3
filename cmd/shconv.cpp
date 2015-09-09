@@ -21,7 +21,7 @@
 */
 
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
 #include "image/voxel.h"
@@ -61,16 +61,15 @@ class SDeconvFunctor {
   public:
   SDeconvFunctor (Image::BufferPreload<value_type>& in,
                   Image::Buffer<value_type>& out,
-                  Ptr<Image::Buffer<bool> >& mask,
+                  std::unique_ptr<Image::Buffer<bool> >& mask,
                   const Math::Vector<value_type>& response) :
                     input_vox (in),
                     output_vox (out),
-                    response (response) {
-                      if (mask)
-                        mask_vox_ptr = new Image::Buffer<bool>::voxel_type (*mask);
-    }
+                    mask_vox_ptr (mask ? new Image::Buffer<bool>::voxel_type (*mask) : nullptr),
+                    response (response) { } 
 
     void operator() (const Image::Iterator& pos) {
+      Image::voxel_assign (output_vox, pos);
       if (mask_vox_ptr) {
         Image::voxel_assign (*mask_vox_ptr, pos);
         if (!mask_vox_ptr->value()) {
@@ -84,16 +83,14 @@ class SDeconvFunctor {
       Math::Vector<value_type> input (input_vox.address(), input_vox.dim(3));
       Math::Vector<value_type> output (output_vox.dim(3));
       Math::SH::sconv (output, response, input);
-      Image::voxel_assign (output_vox, pos);
       for (output_vox[3] = 0; output_vox[3] < output_vox.dim(3); ++output_vox[3])
         output_vox.value() = output[output_vox[3]];
-
     }
 
   protected:
     Image::BufferPreload<value_type>::voxel_type input_vox;
     Image::Buffer<value_type>::voxel_type output_vox;
-    Ptr<Image::Buffer<bool>::voxel_type> mask_vox_ptr;
+    copy_ptr<Image::Buffer<bool>::voxel_type> mask_vox_ptr;
     Math::Vector<value_type> response;
 };
 
@@ -109,10 +106,10 @@ void run() {
   Math::Vector<value_type> responseRH;
   Math::SH::SH2RH (responseRH, responseSH);
 
-  Ptr<Image::Buffer<bool> > mask_buf;
+  std::unique_ptr<Image::Buffer<bool> > mask_buf;
   Options opt = get_options ("mask");
   if (opt.size()) {
-    mask_buf = new Image::Buffer<bool> (opt[0][0]);
+    mask_buf.reset (new Image::Buffer<bool> (opt[0][0]));
     Image::check_dimensions (*mask_buf, input_buf, 0, 3);
   }
 

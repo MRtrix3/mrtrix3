@@ -53,6 +53,12 @@ namespace MR
           SharedBase (diff_path, property_set),
           num_vec (source_buffer.dim(3)/3) {
 
+          if (source_buffer.datatype().is_complex() || source_buffer.datatype().is_integer())
+            throw Exception ("Input direction image for FACT algorithm should be floating-point");
+
+          if (source_buffer.dim(3) % 3)
+            throw Exception ("Number of volumes in FACT algorithm input image should be a multiple of 3");
+
           if (is_act() && act().backtrack())
             throw Exception ("Backtracking not valid for deterministic algorithms");
 
@@ -96,10 +102,11 @@ namespace MR
         if (!get_data (source)) return false;
         if (!S.init_dir) {
           if (!dir.valid())
-            dir.set (rng.normal(), rng.normal(), rng.normal());
-        } else {
+            dir = random_direction();
+        } 
+        else 
           dir = S.init_dir;
-        }
+        
         return do_next (dir) >= S.threshold;
       }
 

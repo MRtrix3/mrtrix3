@@ -23,7 +23,8 @@
 #ifndef __file_dicom_image_h__
 #define __file_dicom_image_h__
 
-#include "ptr.h"
+#include <memory>
+
 #include "datatype.h"
 #include "math/vector.h"
 #include "math/matrix.h"
@@ -137,7 +138,7 @@ namespace MR {
           bool is_BE, in_frames;
 
           std::vector<uint32_t> frame_dim;
-          std::vector< RefPtr<Frame> > frames;
+          std::vector<std::shared_ptr<Frame>> frames;
 
           void read ();
           void parse_item (Element& item, const std::string& dirname = "");

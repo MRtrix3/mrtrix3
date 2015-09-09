@@ -25,7 +25,7 @@
 
 #include <cassert>
 #include <vector>
-#include "ptr.h"
+#include "memory.h"
 #include "math/matrix.h"
 #include "image/info.h"
 

@@ -35,7 +35,7 @@ namespace MR
       class OpenGL : public QDialog
       {
         public:
-          OpenGL (QWidget* parent, const QGLFormat& format);
+          OpenGL (QWidget* parent, const GL::Format& format);
       };
 
     }

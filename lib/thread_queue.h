@@ -27,7 +27,7 @@
 #include <stack>
 #include <condition_variable>
 
-#include "ptr.h"
+#include "memory.h"
 #include "thread.h"
 
 #define MRTRIX_QUEUE_DEFAULT_CAPACITY 128
@@ -68,7 +68,7 @@ namespace MR
             static X& functor (X& job) { return job; }
 
             template <class SingleFunctor>
-              static SingleFunctor& get (X& f, SingleFunctor& functor) {
+              static SingleFunctor& get (X& /*f*/, SingleFunctor& functor) {
                 return functor;
               }
         };
@@ -378,7 +378,7 @@ namespace MR
         }
 
         //! needed for Thread::run_queue()
-        Queue (const T& item_type, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
+        Queue (const T& /*item_type*/, const std::string& description = "unnamed", size_t buffer_size = MRTRIX_QUEUE_DEFAULT_CAPACITY) :
           buffer (new T* [buffer_size]),
           front (buffer),
           back (buffer),
@@ -547,16 +547,11 @@ namespace MR
         size_t capacity;
         size_t writer_count, reader_count;
         std::stack<T*,std::vector<T*> > item_stack;
-        VecPtr<T> items;
+        std::vector<std::unique_ptr<T>> items;
         std::string name;
 
-        Queue (const Queue& queue) {
-          assert (0);
-        }
-        Queue& operator= (const Queue& queue) {
-          assert (0);
-          return (*this);
-        }
+        Queue (const Queue&) = delete;
+        Queue& operator= (const Queue&) = delete;
 
         void register_writer ()   {
           std::lock_guard<std::mutex> lock (mutex);
@@ -607,8 +602,8 @@ namespace MR
 
         T* get_item () {
           std::lock_guard<std::mutex> lock (mutex);
-          T* item = new T;
-          items.push_back (item);
+          T* item (new T);
+          items.push_back (std::unique_ptr<T> (item));
           return item;
         }
 
@@ -621,7 +616,7 @@ namespace MR
             back = inc (back);
             if (item_stack.empty()) {
               item = new T;
-              items.push_back (item);
+              items.push_back (std::unique_ptr<T> (item));
             }
             else {
               item = item_stack.top();

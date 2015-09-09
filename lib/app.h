@@ -192,6 +192,7 @@ namespace MR
           throw Exception (e, msg);
         }
 
+        friend class ParsedOption;
         friend class Options;
         friend class Options::Opt;
         friend void  MR::App::init (int argc, char** argv);
@@ -212,6 +213,11 @@ namespace MR
         const Option* opt;
         //! pointer into \c argv corresponding to the option's first argument
         const char* const* args;
+
+        const ParsedArgument operator[] (size_t num) const {
+          assert (num < opt->size());
+          return ParsedArgument (opt, & (*opt) [num], args[num]);
+        }
 
         //! check whether this option matches the name supplied
         bool operator== (const char* match) const {

@@ -25,7 +25,7 @@
 #include <cmath>
 
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 
 namespace MR
 {
@@ -59,43 +59,41 @@ namespace MR
                                        ValueType max_bound,
                                        ValueType tolerance = 0.01)	{
 
-     Ptr<ProgressBar> progress;
-     if (message.size())
-       progress = new ProgressBar (message);
+        std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
 
-     const ValueType g1 = 0.61803399, g2 = 1 - g1;
-     ValueType x0 = min_bound, x1, x2, x3 = max_bound;
+        const ValueType g1 = 0.61803399, g2 = 1 - g1;
+        ValueType x0 = min_bound, x1, x2, x3 = max_bound;
 
-      if (std::abs(max_bound - init_estimate) > std::abs(init_estimate - min_bound)) {
-        x1 = init_estimate;
-        x2 = init_estimate + g2 * (max_bound - init_estimate);
-      } else {
-        x2 = init_estimate;
-        x1 = init_estimate - g2 * (init_estimate - min_bound);
-      }
-
-     ValueType f1 = function(x1);
-     ValueType f2 = function(x2);
-
-      while (tolerance * (std::abs(x1) + std::abs(x2)) < std::abs(x3 - x0)) {
-        if (f2 < f1) {
-          x0 = x1;
-          x1 = x2;
-          x2 = g1 * x1 + g2 * x3;
-          f1 = f2, f2 = function(x2);
+        if (std::abs(max_bound - init_estimate) > std::abs(init_estimate - min_bound)) {
+          x1 = init_estimate;
+          x2 = init_estimate + g2 * (max_bound - init_estimate);
         } else {
-          x3 = x2;
-          x2 = x1;
-          x1 = g1 * x2 + g2 * x0;
-          f2 = f1, f1 = function(x1);
+          x2 = init_estimate;
+          x1 = init_estimate - g2 * (init_estimate - min_bound);
         }
-        if (progress)
-          ++*progress;
+
+        ValueType f1 = function(x1);
+        ValueType f2 = function(x2);
+
+        while (tolerance * (std::abs(x1) + std::abs(x2)) < std::abs(x3 - x0)) {
+          if (f2 < f1) {
+            x0 = x1;
+            x1 = x2;
+            x2 = g1 * x1 + g2 * x3;
+            f1 = f2, f2 = function(x2);
+          } else {
+            x3 = x2;
+            x2 = x1;
+            x1 = g1 * x2 + g2 * x0;
+            f2 = f1, f1 = function(x1);
+          }
+          if (progress)
+            ++*progress;
+        }
+        return f1 < f2 ? x1 : x2;
       }
-      return f1 < f2 ? x1 : x2;
-    }
   }
-}
+  }
 
 #endif
 

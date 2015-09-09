@@ -55,21 +55,16 @@ namespace MR
                 niter (50)
             {
               grad = DWI::get_valid_DW_scheme<value_type> (dwi_header);
-              DWI::Shells shells (grad);
               // Discard b=0 (b=0 normalisation not supported in this version)
               // Only allow selection of one non-zero shell from command line
-              shells.select_shells (false, true);
-              dwis = shells.largest().get_volumes();
+              dwis = DWI::Shells (grad).select_shells (false, true).largest().get_volumes();
               DW_dirs = DWI::gen_direction_matrix (grad, dwis);
 
-              lmax = lmax_data = Math::SH::LforN (dwis.size());
+              lmax_data = Math::SH::LforN (dwis.size()); 
+              lmax = std::min (8, lmax_data);
+              lmax_response = 0;
 
               DWI::Directions::electrostatic_repulsion_300 (HR_dirs);
-
-              init_filter.allocate (lmax/2 + 1);
-              init_filter.zero();
-              for (size_t i = 0; i < std::min (size_t(3), init_filter.size()); ++i)
-                init_filter[i] = 1.0;
             }
 
 
@@ -105,25 +100,26 @@ namespace MR
               INFO ("loading response function from file \"" + path + "\"");
               response.load (path);
 
-              lmax_data = 2*(response.size()-1);
+              lmax_response = 2*(response.size()-1);
               INFO ("setting response function using even SH coefficients: " + str (response));
             }
 
             void set_response (const Math::Vector<float>& in)
             {
               response = in;
-              lmax_data = 2*(response.size()-1);
+              lmax_response = 2*(response.size()-1);
             }
 
 
             void init ()
             {
               assert (response.size());
-              if (lmax_data > lmax) lmax_data = lmax;
-              INFO ("calculating even spherical harmonic components up to order " + str (lmax_data) + " for initialisation");
+              lmax_response = std::min (lmax_response, std::min (lmax_data, lmax));
+              INFO ("calculating even spherical harmonic components up to order " + str (lmax_response) + " for initialisation");
 
-              if (init_filter.size() < size_t (lmax_data/2) +1)
-                throw Exception ("not enough initial filter coefficients supplied for lmax = " + str (lmax_data));
+              if (!init_filter.size())
+                init_filter.resize (3, 1.0);
+              init_filter.resize (size_t (lmax_response/2)+1, 0.0);
 
               Math::Vector<value_type> RH;
               Math::SH::SH2RH (RH, response);
@@ -131,7 +127,7 @@ namespace MR
 
               // inverse sdeconv for initialisation:
               Math::Matrix<value_type> fconv;
-              Math::SH::init_transform (fconv, DW_dirs, lmax_data);
+              Math::SH::init_transform (fconv, DW_dirs, lmax_response);
               rconv.allocate (fconv.columns(), fconv.rows());
               fconv.diagonal() += 1.0e-2;
               //fconv.save ("fconv.txt");
@@ -149,6 +145,7 @@ namespace MR
 
               // forward sconv for iteration, using all response function
               // coefficients up to the requested lmax:
+              INFO ("calculating even spherical harmonic components up to order " + str (lmax) + " for output");
               Math::SH::init_transform (fconv, DW_dirs, lmax);
               l = 0;
               nl = 1;
@@ -177,7 +174,7 @@ namespace MR
               Mt_M.allocate (M.columns(), M.columns());
               rankN_update (Mt_M, M, CblasTrans, CblasLower, value_type (1.0), value_type (0.0));
 
-              INFO ("constrained spherical deconvolution initiated successfully");
+              INFO ("constrained spherical deconvolution initialised successfully");
             }
 
             size_t nSH () const {
@@ -190,7 +187,7 @@ namespace MR
             Math::Matrix<value_type> rconv, HR_trans, M, Mt_M;
             value_type neg_lambda, norm_lambda, threshold;
             std::vector<size_t> dwis;
-            int lmax_data, lmax;
+            int lmax_response, lmax_data, lmax;
             size_t niter;
         };
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 
 # Script that receives as argument a T1-weighted image, and outputs a five-tissue-type (5TT) segmented image
 # in a format appropriate for ACT
@@ -77,15 +77,15 @@ else:
 
 if mni_mask_dilation:
   runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -maskMASK mni_mask.nii -roiFOV')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV')
 else:
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET.nii -b')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
 
 # BET
-runCommand(bet_cmd + ' T1_preBET.' + fsl_suffix + ' T1_bet.' + fsl_suffix + ' -f 0.15 -R')
+runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_bet' + fsl_suffix + ' -f 0.15 -R')
 
 # FAST
-runCommand(fast_cmd + ' T1_bet.' + fsl_suffix)
+runCommand(fast_cmd + ' T1_bet' + fsl_suffix)
 
 # FIRST
 runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first')
@@ -94,10 +94,12 @@ runCommand(first_cmd + ' -s ' + ','.join(sgm_structures) + ' -i T1.nii -o first'
 pve_image_list = [ ]
 for struct in sgm_structures:
   pve_image_path = 'mesh2pve_' + struct + '.nii'
-  vtk_path = 'first-' + struct + '_first.vtk'
-  if not os.path.exists(vtk_path):
+  vtk_in_path = 'first-' + struct + '_first.vtk'
+  vtk_temp_path = struct + '.vtk'
+  if not os.path.exists(vtk_in_path):
     errorMessage('Missing .vtk file for structure ' + struct + '; run_first_all must have failed')
-  runCommand('mesh2pve ' + vtk_path + ' T1_preBET.' + fsl_suffix + ' ' + pve_image_path + ' -first T1.nii')
+  runCommand('meshconvert ' + vtk_in_path + ' ' + vtk_temp_path + ' -transform_first2real T1.nii')
+  runCommand('mesh2pve ' + vtk_temp_path + ' T1_preBET' + fsl_suffix + ' ' + pve_image_path)
   pve_image_list.append(pve_image_path)
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
@@ -108,11 +110,14 @@ runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
 if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
-  fast_suffix = 'nii.gz'
-runCommand('5ttgen T1_bet_pve_0.' + fast_suffix + ' T1_bet_pve_1.' + fast_suffix + ' T1_bet_pve_2.' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
+  fast_suffix = '.nii.gz'
+runCommand('5ttgen T1_bet_pve_0' + fast_suffix + ' T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
-result_path = 'result' + os.path.splitext(sys.argv[2])[1]
+root,ext = os.path.splitext(sys.argv[2])
+if ext.lower() == '.gz':
+  ext = os.path.splitext(root)[1] + ext
+result_path = 'result' + ext
 runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif ' + result_path + ' -mask -')
 
 lib.app.moveFileToDest(result_path, sys.argv[2])

@@ -65,8 +65,18 @@ namespace MR
               extent_ (1,3) { }
 
           template <class InfoType>
+          Median (const InfoType& in, const std::string& message) :
+              Base (in, message),
+              extent_ (1,3) { }
+
+          template <class InfoType>
           Median (const InfoType& in, const std::vector<int>& extent) :
               Base (in),
+              extent_ (extent) { }
+
+          template <class InfoType>
+          Median (const InfoType& in, const std::string& message, const std::vector<int>& extent) :
+              Base (in, message),
               extent_ (extent) { }
 
           //! Set the extent of median filtering neighbourhood in voxels.

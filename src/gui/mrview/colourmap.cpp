@@ -34,30 +34,46 @@ namespace MR
     {
       namespace ColourMap
       {
-
+        //CONF option: MRViewMaxNumColourmapRows
+        //CONF default: 3
+        //CONF The maximal number of rows used to layout a collection of rendered colourbars
+        //CONF Note, that all tool-specific colourbars will form a single collection.
+        size_t Renderer::max_n_rows = File::Config::get_int ("MRViewMaxNumColourBarRows", 3);
         const char* Entry::default_amplitude = "color.r";
 
 
 
         const Entry maps[] = {
           Entry ("Gray", 
-              "color.rgb = vec3 (amplitude);\n"),
+              "color.rgb = vec3 (amplitude);\n",
+              [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
 
           Entry ("Hot", 
-              "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n"),
+              "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
+                                                          std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
+                                                          std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
 
           Entry ("Cool",
-              "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n"),
+              "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
+                                                          std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
 
           Entry ("Jet", 
-              "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n"),
+              "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
+              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
+                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
 
           Entry ("Colour", 
-              "color.rgb = 2.7213 * amplitude * colourmap_colour;\n",
+              "color.rgb = amplitude * colourmap_colour;\n",
+              Entry::basic_map_fn(),
               NULL, false, true),
 
           Entry ("RGB",
               "color.rgb = scale * (abs(color.rgb) - offset);\n",
+              Entry::basic_map_fn(),
               "length (color.rgb)",
               true),
 
@@ -67,10 +83,11 @@ namespace MR
               "if (phase > 2.0) color.b -= 6.0;\n"
               "if (phase < -2.0) color.r += 6.0;\n"
               "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+              Entry::basic_map_fn(),
               "length (color.rg)",
               true),
 
-          Entry (NULL, NULL, NULL, true)
+          Entry (NULL, NULL, Entry::basic_map_fn(), NULL, true)
         };
 
 
@@ -131,7 +148,14 @@ namespace MR
           //CONF default: 10
           //CONF How far away from the colourbar to place the associated text,
           //CONF in pixels.
-          text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)) { } 
+          text_offset (MR::File::Config::get_float ("MRViewColourBarTextOffset", 10.0f)),
+          //CONF option: MRViewColourHorizontalPadding
+          //CONF default: 100
+          //CONF The width in pixels between horizontally adjacent colour bars
+          colourbar_padding (MR::File::Config::get_float ("MRViewColourBarHorizontalPadding", 100.0f))
+          {
+            end_render_colourbars ();
+          }
 
 
 
@@ -164,7 +188,7 @@ namespace MR
               "out vec3 color;\n"
               "uniform vec3 colourmap_colour;\n"
               "void main () {\n"
-              "  " + std::string(maps[index].mapping) +
+              "  " + std::string(maps[index].glsl_mapping) +
               "}\n";
 
           GL::Shader::Fragment fragment_shader (shader);
@@ -189,22 +213,25 @@ namespace MR
 
 
 
-
-
-
-
-
-
-
-
-
-        void Renderer::render (const Projection& projection, const Displayable& object, int position, bool inverted)
+        void Renderer::render (const Displayable& object, bool inverted)
         {
-          if (!position) return;
-          if (maps[object.colourmap].special) return;
+          render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
+                  object.scaling_min (), object.display_range,
+                  Point<float> (object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f));
+        }
+
+
+
+        void Renderer::render (size_t colourmap, bool inverted,
+                               float local_min_value, float local_max_value,
+                               float global_min_value, float global_range,
+                               Point<float> colour)
+        {
+          if (!current_position) return;
+          if (maps[colourmap].special) return;
           
-          if (!program || !frame_program || object.colourmap != current_index || current_inverted != inverted)
-            setup (object.colourmap, inverted);
+          if (!program || !frame_program || colourmap != current_index || current_inverted != inverted)
+            setup (colourmap, inverted);
 
           if (!VB || !VAO) {
             VB.gen();
@@ -221,22 +248,36 @@ namespace MR
             VAO.bind();
           }
 
+          // Clamp the min/max fractions
+          float max_frac = std::min(std::max(0.0f, (local_max_value - global_min_value) / global_range), 1.0f);
+          float min_frac = std::min(std::max(0.0f, (local_min_value - global_min_value) / global_range), max_frac);
+
+          int max_bars_per_row = std::max((int)std::ceil((float)(current_ncolourbars) / max_n_rows), 1);
+          int ncols = (int)std::ceil((float)current_ncolourbars / max_bars_per_row);
+          int column_index = current_colourbar_index % max_bars_per_row;
+          int row_index = current_colourbar_index / max_bars_per_row;
+          float scaled_width = width / max_bars_per_row;
+          float scaled_height = height / ncols;
 
           GLfloat data[] = {
-            0.0f,   0.0f,  0.0f,
-            0.0f,   height, 1.0f,
-            width, height, 1.0f,
-            width, 0.0f,  0.0f
+            0.0f,   0.0f,  min_frac,
+            0.0f,   scaled_height, max_frac,
+            scaled_width, scaled_height, max_frac,
+            scaled_width, 0.0f,  min_frac
           };
-          float x_offset = inset;
-          float y_offset = inset;
+          float x_offset = 0.0f, y_offset = 0.0f;
           int halign = -1;
-          if (position == 2 || position == 4) {
-            x_offset = projection.width() - width - inset;
+
+          if (current_position & Position::Right) {
+            x_offset = current_projection->width() - (max_bars_per_row - column_index) * (scaled_width + inset + colourbar_padding)
+                     + colourbar_padding;
             halign = 1;
-          }
-          if (position == 3 || position == 4) 
-            y_offset = projection.height() - height - inset;
+          } else if (current_position & Position::Left)
+            x_offset = column_index * (scaled_width + inset + colourbar_padding) + inset;
+          if (current_position & Position::Top)
+            y_offset = current_projection->height() - (row_index + 1) * (scaled_height + inset * 2) + inset;
+          else
+            y_offset = row_index * (scaled_height + inset * 2) + inset;
 
           data[0] += x_offset; data[1] += y_offset;
           data[3] += x_offset; data[4] += y_offset;
@@ -251,28 +292,28 @@ namespace MR
           gl::Disable (gl::DEPTH_TEST);
 
           program.start();
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / projection.height());
-          if (maps[object.colourmap].is_colour)
-            gl::Uniform3f (gl::GetUniformLocation (program, "colourmap_colour"), 
-                object.colour[0]/255.0f, object.colour[1]/255.0f, object.colour[2]/255.0f);
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_x"), 2.0f / current_projection->width());
+          gl::Uniform1f (gl::GetUniformLocation (program, "scale_y"), 2.0f / current_projection->height());
+          if (maps[colourmap].is_colour)
+            gl::Uniform3fv (gl::GetUniformLocation (program, "colourmap_colour"), 1, &colour[0]);
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
           program.stop();
 
           frame_program.start();
-          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / projection.width());
-          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / projection.height());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_x"), 2.0f / current_projection->width());
+          gl::Uniform1f (gl::GetUniformLocation (frame_program, "scale_y"), 2.0f / current_projection->height());
           gl::DrawArrays (gl::LINE_LOOP, 0, 4);
           frame_program.stop();
 
-          projection.setup_render_text();
+          current_projection->setup_render_text();
           int x = halign > 0 ? data[0] - text_offset : data[6] + text_offset;
-          projection.render_text_align (x, data[1], str(object.scaling_min()), halign, 0);
-          projection.render_text_align (x, data[4], str(object.scaling_max()), halign, 0);
-          projection.done_render_text();
+          current_projection->render_text_align (x, data[1], str(local_min_value), halign, 0);
+          current_projection->render_text_align (x, data[4], str(local_max_value), halign, 0);
+          current_projection->done_render_text();
 
           gl::DepthMask (gl::TRUE_);
 
+          current_colourbar_index++;
         }
 
 

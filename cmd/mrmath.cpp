@@ -22,7 +22,7 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer.h"
 #include "image/buffer_preload.h"
 #include "image/buffer_scratch.h"
@@ -31,6 +31,7 @@
 #include "image/utils.h"
 #include "image/voxel.h"
 #include "math/math.h"
+#include "math/median.h"
 
 #include <limits>
 #include <vector>
@@ -41,6 +42,7 @@ using namespace App;
 
 const char* operations[] = {
   "mean",
+  "median",
   "sum",
   "product",
   "rms",
@@ -59,14 +61,14 @@ void usage ()
     + "compute summary statistic on image intensities either across images, "
     "or along a specified axis for a single image. Supported operations are:"
 
-    + "mean, sum, product, rms (root-mean-square value), var (unbiased variance), "
+    + "mean, median, sum, product, rms (root-mean-square value), var (unbiased variance), "
     "std (unbiased standard deviation), min, max, absmax (maximum absolute value), "
     "magmax (value with maximum absolute value, preserving its sign)."
 
     + "See also 'mrcalc' to compute per-voxel operations.";
 
   ARGUMENTS
-  + Argument ("input", "the input image.").type_image_in ().allow_multiple()
+  + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("operation", "the operation to apply, one of: " + join(operations, ", ") + ".").type_choice (operations)
   + Argument ("output", "the output image.").type_image_out ();
 
@@ -105,6 +107,18 @@ class Mean {
     size_t count;
 };
 
+class Median {
+  public:
+    Median () { }
+    void operator() (value_type val) { 
+      if (!std::isnan (val))
+        values.push_back(val);
+    }
+    value_type result () { 
+      return Math::median(values);
+    }
+    std::vector<value_type> values; 
+};
 
 class Sum {
   public:
@@ -351,16 +365,17 @@ void run ()
     Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);
 
     switch (op) {
-      case 0: loop.run (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
-      case 1: loop.run (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
-      case 2: loop.run (AxisKernel<Product>(axis), vox_in, vox_out); return;
-      case 3: loop.run (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
-      case 4: loop.run (AxisKernel<Var>    (axis), vox_in, vox_out); return;
-      case 5: loop.run (AxisKernel<Std>    (axis), vox_in, vox_out); return;
-      case 6: loop.run (AxisKernel<Min>    (axis), vox_in, vox_out); return;
-      case 7: loop.run (AxisKernel<Max>    (axis), vox_in, vox_out); return;
-      case 8: loop.run (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
-      case 9: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
+      case 0: loop.run  (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
+      case 1: loop.run  (AxisKernel<Median> (axis), vox_in, vox_out); return;
+      case 2: loop.run  (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
+      case 3: loop.run  (AxisKernel<Product>(axis), vox_in, vox_out); return;
+      case 4: loop.run  (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
+      case 5: loop.run  (AxisKernel<Var>    (axis), vox_in, vox_out); return;
+      case 6: loop.run  (AxisKernel<Std>    (axis), vox_in, vox_out); return;
+      case 7: loop.run  (AxisKernel<Min>    (axis), vox_in, vox_out); return;
+      case 8: loop.run  (AxisKernel<Max>    (axis), vox_in, vox_out); return;
+      case 9: loop.run  (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
+      case 10: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
       default: assert (0);
     }
 
@@ -370,11 +385,12 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    VecPtr<Image::Header> headers_in;
+    std::vector<std::unique_ptr<Image::Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (new Image::Header (argument[0]));
+    headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
     Image::Header header (*headers_in[0]);
+    header.datatype() = DataType::Float32;
 
     // Wipe any excess unary-dimensional axes
     while (header.dim (header.ndim() - 1) == 1)
@@ -383,7 +399,7 @@ void run ()
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (new Image::Header (path));
+      headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (path)));
       const Image::Header& temp (*headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
@@ -398,18 +414,19 @@ void run ()
     }
 
     // Instantiate a kernel depending on the operation requested
-    Ptr<ImageKernelBase> kernel;
+    std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0: kernel = new ImageKernel<Mean>    (header, output_path); break;
-      case 1: kernel = new ImageKernel<Sum>     (header, output_path); break;
-      case 2: kernel = new ImageKernel<Product> (header, output_path); break;
-      case 3: kernel = new ImageKernel<RMS>     (header, output_path); break;
-      case 4: kernel = new ImageKernel<Var>     (header, output_path); break;
-      case 5: kernel = new ImageKernel<Std>     (header, output_path); break;
-      case 6: kernel = new ImageKernel<Min>     (header, output_path); break;
-      case 7: kernel = new ImageKernel<Max>     (header, output_path); break;
-      case 8: kernel = new ImageKernel<AbsMax>  (header, output_path); break;
-      case 9: kernel = new ImageKernel<MagMax>  (header, output_path); break;
+      case 0:  kernel.reset (new ImageKernel<Mean>    (header, output_path)); break;
+      case 1:  kernel.reset (new ImageKernel<Median>  (header, output_path)); break;
+      case 2:  kernel.reset (new ImageKernel<Sum>     (header, output_path)); break;
+      case 3:  kernel.reset (new ImageKernel<Product> (header, output_path)); break;
+      case 4:  kernel.reset (new ImageKernel<RMS>     (header, output_path)); break;
+      case 5:  kernel.reset (new ImageKernel<Var>     (header, output_path)); break;
+      case 6:  kernel.reset (new ImageKernel<Std>     (header, output_path)); break;
+      case 7:  kernel.reset (new ImageKernel<Min>     (header, output_path)); break;
+      case 8:  kernel.reset (new ImageKernel<Max>     (header, output_path)); break;
+      case 9:  kernel.reset (new ImageKernel<AbsMax>  (header, output_path)); break;
+      case 10: kernel.reset (new ImageKernel<MagMax>  (header, output_path)); break;
       default: assert (0);
     }
 

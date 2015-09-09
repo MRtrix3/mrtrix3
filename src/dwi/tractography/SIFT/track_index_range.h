@@ -25,12 +25,8 @@
 #ifndef __dwi_tractography_sift_track_index_range_h__
 #define __dwi_tractography_sift_track_index_range_h__
 
-
 #include "progressbar.h"
-#include "ptr.h"
-
 #include "dwi/tractography/SIFT/types.h"
-
 
 namespace MR
 {
@@ -67,7 +63,7 @@ namespace MR
         private:
           const track_t size, end;
           track_t start;
-          Ptr<ProgressBar> progress;
+          std::unique_ptr<ProgressBar> progress;
 
       };
 

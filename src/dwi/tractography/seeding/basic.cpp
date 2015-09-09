@@ -39,7 +39,7 @@ namespace MR
         bool Sphere::get_seed (Point<float>& p)
         {
           do {
-            p.set (2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0, 2.0*rng.uniform()-1.0);
+            p.set (2.0*rng()-1.0, 2.0*rng()-1.0, 2.0*rng()-1.0);
           } while (p.norm2() > 1.0);
           p = pos + rad*p;
           return true;
@@ -59,24 +59,17 @@ namespace MR
         {
           auto seed = mask->voxel();
           do {
-            seed[0] = rng.uniform_int (mask->dim(0));
-            seed[1] = rng.uniform_int (mask->dim(1));
-            seed[2] = rng.uniform_int (mask->dim(2));
+            seed[0] = std::uniform_int_distribution<int>(0, mask->dim(0)-1)(rng.rng);
+            seed[1] = std::uniform_int_distribution<int>(0, mask->dim(1)-1)(rng.rng);
+            seed[2] = std::uniform_int_distribution<int>(0, mask->dim(2)-1)(rng.rng);
           } while (!seed.value());
-          p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
+          p.set (seed[0]+rng()-0.5, seed[1]+rng()-0.5, seed[2]+rng()-0.5);
           p = mask->transform.voxel2scanner (p);
           return true;
         }
 
 
 
-
-
-        Random_per_voxel::~Random_per_voxel()
-        {
-          delete mask;
-          mask = nullptr;
-        }
 
 
         bool Random_per_voxel::get_seed (Point<float>& p)
@@ -89,27 +82,24 @@ namespace MR
 
           if (vox[2] < 0 || ++inc == num) {
             inc = 0;
-            auto v = mask->voxel();
-            Image::Nav::set_pos (v, vox);
 
             do {
-              if (++v[2] == v.dim(2)) {
-                v[2] = 0;
-                if (++v[1] == v.dim(1)) {
-                  v[1] = 0;
-                  ++v[0];
+              if (++vox[2] == vox.dim(2)) {
+                vox[2] = 0;
+                if (++vox[1] == vox.dim(1)) {
+                  vox[1] = 0;
+                  ++vox[0];
                 }
               }
-            } while (v[0] != v.dim(0) && !v.value());
+            } while (vox[0] != vox.dim(0) && !vox.value());
 
-            if (v[0] == v.dim(0)) {
+            if (vox[0] == vox.dim(0)) {
               expired = true;
               return false;
             }
-            vox[0] = v[0]; vox[1] = v[1], vox[2] = v[2];
           }
 
-          p.set (vox[0]+rng.uniform()-0.5, vox[1]+rng.uniform()-0.5, vox[2]+rng.uniform()-0.5);
+          p.set (vox[0]+rng()-0.5, vox[1]+rng()-0.5, vox[2]+rng()-0.5);
           p = mask->transform.voxel2scanner (p);
           return true;
 
@@ -120,12 +110,6 @@ namespace MR
 
 
 
-
-        Grid_per_voxel::~Grid_per_voxel()
-        {
-          delete mask;
-          mask = nullptr;
-        }
 
         bool Grid_per_voxel::get_seed (Point<float>& p)
         {
@@ -142,23 +126,19 @@ namespace MR
               if (++pos[0] >= os) {
                 pos[0] = 0;
 
-                auto v = mask->voxel();
-                Image::Nav::set_pos (v, vox);
-
                 do {
-                  if (++v[2] == v.dim(2)) {
-                    v[2] = 0;
-                    if (++v[1] == v.dim(1)) {
-                      v[1] = 0;
-                      ++v[0];
+                  if (++vox[2] == vox.dim(2)) {
+                    vox[2] = 0;
+                    if (++vox[1] == vox.dim(1)) {
+                      vox[1] = 0;
+                      ++vox[0];
                     }
                   }
-                } while (v[0] != v.dim(0) && !v.value());
-                if (v[0] == v.dim(0)) {
+                } while (vox[0] != vox.dim(0) && !vox.value());
+                if (vox[0] == vox.dim(0)) {
                   expired = true;
                   return false;
                 }
-                vox[0] = v[0]; vox[1] = v[1]; vox[2] = v[2];
               }
             }
           }
@@ -170,8 +150,8 @@ namespace MR
         }
 
 
-        Rejection::Rejection (const std::string& in, const Math::RNG& rng) :
-          Base (in, rng, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
+        Rejection::Rejection (const std::string& in) :
+          Base (in, "rejection sampling", MAX_TRACKING_SEED_ATTEMPTS_RANDOM),
           max (0.0)
         {
 
@@ -207,16 +187,12 @@ namespace MR
           top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
           top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
 
-          Image::Info new_info (data);
-          for (size_t axis = 0; axis != 3; ++axis) {
-            new_info.dim(axis) = top[axis];
-            for (size_t i = 0; i < 3; ++i)
-              new_info.transform()(i,3) += bottom[axis] * new_info.vox(axis) * new_info.transform()(i,axis);
-          }
-
           Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
+          Image::Info info (sub.info());
+          if (info.ndim() > 3)
+            info.set_ndim (3);
 
-          image = new FloatImage (sub, new_info, in);
+          image.reset (new FloatImage (sub, info, in));
 
           volume *= image->dim(0) * image->dim(1) * image->dim(2);
 
@@ -230,9 +206,9 @@ namespace MR
           Point<float> pos;
           float selector;
           do {
-            pos[0] = rng.uniform() * (image->dim(0)-1);
-            pos[1] = rng.uniform() * (image->dim(1)-1);
-            pos[2] = rng.uniform() * (image->dim(2)-1);
+            pos[0] = rng() * (image->dim(0)-1);
+            pos[1] = rng() * (image->dim(1)-1);
+            pos[2] = rng() * (image->dim(2)-1);
             interp.voxel (pos);
             selector = rng.uniform() * max;
           } while (interp.value() < selector);
@@ -241,12 +217,12 @@ namespace MR
           auto seed = image->voxel();
           float selector;
           do {
-            seed[0] = rng.uniform_int (image->dim(0));
-            seed[1] = rng.uniform_int (image->dim(1));
-            seed[2] = rng.uniform_int (image->dim(2));
-            selector = rng.uniform() * max;
+            seed[0] = std::uniform_int_distribution<int> (0, image->dim(0)-1) (rng.rng);
+            seed[1] = std::uniform_int_distribution<int> (0, image->dim(1)-1) (rng.rng);
+            seed[2] = std::uniform_int_distribution<int> (0, image->dim(2)-1) (rng.rng);
+            selector = rng() * max;
           } while (seed.value() < selector);
-          p.set (seed[0]+rng.uniform()-0.5, seed[1]+rng.uniform()-0.5, seed[2]+rng.uniform()-0.5);
+          p.set (seed[0]+rng()-0.5, seed[1]+rng()-0.5, seed[2]+rng()-0.5);
           p = image->transform.voxel2scanner (p);
 #endif
           return true;

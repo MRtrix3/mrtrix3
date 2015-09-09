@@ -52,7 +52,7 @@ namespace MR {
 
 
   BitSet::~BitSet() {
-    delete[] data; data = NULL;
+    delete[] data; data = nullptr;
   }
 
 
@@ -66,20 +66,24 @@ namespace MR {
     new_bits = new_size;
     const size_t new_bytes = (new_bits + 7) / 8;
     uint8_t* new_data = new uint8_t[new_bytes];
-    if (new_bytes > bytes) {
-      memcpy (new_data, data, bytes);
-      memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
-      const size_t excess_bits = bits - (8 * (bytes - 1));
-      const uint8_t mask = 0xFF << excess_bits;
-      data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+    if (bytes) {
+      if (new_bytes > bytes) {
+        memcpy (new_data, data, bytes);
+        memset (new_data + bytes, (allocator ? 0xFF : 0x00), new_bytes - bytes);
+        const size_t excess_bits = bits - (8 * (bytes - 1));
+        const uint8_t mask = 0xFF << excess_bits;
+        data[bytes - 1] = allocator ? (data[bytes - 1] | mask) : (data[bytes - 1] & ~mask);
+      } else {
+        memcpy (new_data, data, new_bytes);
+      }
     } else {
-      memcpy (new_data, data, new_bytes);
+      memset (new_data, (allocator ? 0xFF : 0x00), new_bytes);
     }
     delete[] data;
     bits = new_bits;
     bytes = new_bytes;
     data = new_data;
-    new_data = NULL;
+    new_data = nullptr;
 
   }
 

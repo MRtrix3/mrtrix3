@@ -110,13 +110,13 @@ class TrackMapperBase
     void create_dixel_plugin (const DWI::Directions::FastLookupSet& dirs)
     {
       assert (!dixel_plugin && !tod_plugin);
-      dixel_plugin = new DixelMappingPlugin (dirs);
+      dixel_plugin.reset (new DixelMappingPlugin (dirs));
     }
 
     void create_tod_plugin (const size_t N)
     {
       assert (!dixel_plugin && !tod_plugin);
-      tod_plugin = new TODMappingPlugin (N);
+      tod_plugin.reset (new TODMappingPlugin (N));
     }
 
 
@@ -150,8 +150,8 @@ class TrackMapperBase
     bool precise;
     bool ends_only;
 
-    RefPtr<DixelMappingPlugin> dixel_plugin;
-    RefPtr<TODMappingPlugin>   tod_plugin;
+    std::shared_ptr<DixelMappingPlugin> dixel_plugin;
+    std::shared_ptr<TODMappingPlugin>   tod_plugin;
 
 
     // Specialist version of voxelise() is provided for the SetVoxel container:
@@ -173,6 +173,7 @@ class TrackMapperBase
     // Used by voxelise() and voxelise_precise() to increment the relevant set
     inline void add_to_set (SetVoxel&   , const Point<int>&, const Point<float>&, const float) const;
     inline void add_to_set (SetVoxelDEC&, const Point<int>&, const Point<float>&, const float) const;
+    inline void add_to_set (SetVoxelDir&, const Point<int>&, const Point<float>&, const float) const;    
     inline void add_to_set (SetDixel&   , const Point<int>&, const Point<float>&, const float) const;
     inline void add_to_set (SetVoxelTOD&, const Point<int>&, const Point<float>&, const float) const;
 
@@ -194,7 +195,8 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, Cont& output) const
     vox = round (transform.scanner2voxel (*i));
     if (check (vox, info)) {
       const Point<float> dir ((*(i+1) - *prev).normalise());
-      add_to_set (output, vox, dir, 1.0f);
+      if (dir.valid())
+        add_to_set (output, vox, dir, 1.0f);
     }
     prev = i;
   }
@@ -202,7 +204,8 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, Cont& output) const
   vox = round (transform.scanner2voxel (*last));
   if (check (vox, info)) {
     const Point<float> dir ((*last - *prev).normalise());
-    add_to_set (output, vox, dir, 1.0f);
+    if (dir.valid())
+      add_to_set (output, vox, dir, 1.0f);
   }
 
   for (typename Cont::iterator i = output.begin(); i != output.end(); ++i)
@@ -317,6 +320,10 @@ inline void TrackMapperBase::add_to_set (SetVoxel&    out, const Point<int>& v, 
   out.insert (v, l);
 }
 inline void TrackMapperBase::add_to_set (SetVoxelDEC& out, const Point<int>& v, const Point<float>& d, const float l) const
+{
+  out.insert (v, d, l);
+}
+inline void TrackMapperBase::add_to_set (SetVoxelDir& out, const Point<int>& v, const Point<float>& d, const float l) const
 {
   out.insert (v, d, l);
 }

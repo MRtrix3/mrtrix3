@@ -8,7 +8,7 @@ folder=$(mktemp -d)
   cd $folder
   echo Using temporary folder $folder
 
-  git clone git@github.com:jdtournier/mrtrix3.git mrtrix3
+  git clone git@github.com:MRtrix3/mrtrix3.git mrtrix3
   
   ( 
     cd mrtrix3
@@ -17,7 +17,7 @@ folder=$(mktemp -d)
     ./build 2>/dev/null
   )
 
-  git clone git@github.com:jdtournier/mrtrix3-dev-doc.git 
+  git clone git@github.com:MRtrix3/mrtrix3-dev-doc.git 
   ( 
     set -e 
     cd mrtrix3-dev-doc 
@@ -30,7 +30,7 @@ folder=$(mktemp -d)
   
   
   
-  git clone git@github.com:jdtournier/mrtrix3.wiki.git
+  git clone git@github.com:MRtrix3/mrtrix3.wiki.git
   
   rm -rf mrtrix3.wiki/commands/list
   mkdir -p mrtrix3.wiki/commands/list

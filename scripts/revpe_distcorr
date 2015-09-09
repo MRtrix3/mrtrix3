@@ -1,15 +1,16 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 
 # Script for performing EPI distortion correction using FSL 5.0 tools eddy / topup / applytopup
 
-# This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field (phase encode A>>P then P>>A), which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using A>>P phase-encode direction. If your acquisition is different or more complex, you will need to modify this script accordingly or make your own.
+# This script is only for the specific case where a single pair of reversed-phase-encode images have been acquired for estimating the inhomogeneity field, which is to be used subsequently to correct a volume series (DWI / fMRI) that has been acquired using a fixed phase-encode direction.
 
 # Unlike the previous version of this script, this now uses FSL's eddy tool to perform motion & eddy current correction as well as susceptibility distortion correction for DWI. Therefore the input images to this script should be the images as they are received from the scanner i.e. it is no longer necessary to perform DWI motion correction before running this script. However, if it is an fMRI time series that is being processed, eddy is not applicable, so motion correction will need to be applied prior to this script, and this script is only responsible for the susceptibility distortion correction. (Perhaps down the track FMRIB will modify mcflirt to use the field output from topup...?)
 
 # Order of input arguments is:
-# * Anterior-posterior image from reverse phase-encode pair
-# * Posterior-anterior image from reverse phase-encode pair
-# * Image series to be corrected
+# * Phase encode direction: This can be an axis number (0-2), or one of the following: lr, rl, ap, pa, is, si
+# * First image from reverse phase-encode pair
+# * Second image from reverse phase-encode pair
+# * Image series to be corrected; note that this must have the same phase-encode direction as the FIRST image of the reversed phase-encode pair
 # * Name of output corrected image series
 
 
@@ -24,9 +25,9 @@ from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
-numArgs = 4
+numArgs = 5
 if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <AP image> <PA image> <Input image series> <Output image series> (options)\n')
+  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <PE direction> <Reversed-PE Image 1> <Reversed-PE Image 2> <Input image series> <Output image series> (options)\n')
   exit(0)
 lib.app.initialise(numArgs)
 
@@ -58,32 +59,58 @@ if not binaryInPath(eddy_cmd):
 
 fsl_suffix = getFSLSuffix()
 
+# Figure out the phase encode axis
+PE_axis = sys.argv[1]
+if PE_axis.isdigit():
+  PE_axis = int(PE_axis)
+  if PE_axis < 0 or PE_axis > 2:
+    errorMessage ('Phase encode axis must be either 0, 1 or 2')
+else:
+  PE_axis = PE_axis.lower()
+  if PE_axis == 'lr' or PE_axis == 'rl':
+    PE_axis = 0
+  elif PE_axis == 'ap' or PE_axis == 'pa':
+    PE_axis = 1
+  elif PE_axis == 'is' or PE_axis == 'si':
+    PE_axis = 2
+  else:
+    errorMessage ('Unrecognized phase encode direction specifier')
+
 # Convert all input images into MRtrix format and store in temprary directory first;
 #   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'AP.mif'))
-runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(lib.app.tempDir, 'PA.mif'))
-runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(lib.app.tempDir, 'series.mif'))
+runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(lib.app.tempDir, 'pair1.mif'))
+runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(lib.app.tempDir, 'pair2.mif'))
+runCommand('mrconvert ' + sys.argv[4] + ' ' + os.path.join(lib.app.tempDir, 'series.mif'))
 
 lib.app.gotoTempDir()
 
 # Verify that input images are valid
-AP_dim     = getHeaderInfo ('AP.mif',     'dimensions').split()
-PA_dim     = getHeaderInfo ('PA.mif',     'dimensions').split()
+Pair1_dim  = getHeaderInfo ('pair1.mif',  'dimensions').split()
+Pair2_dim  = getHeaderInfo ('pair2.mif',  'dimensions').split()
 series_dim = getHeaderInfo ('series.mif', 'dimensions').split()
 
-if len(AP_dim) != 3:
-  if not (len(AP_dim) == 4 and AP_dim[3] == 1):
-    errorMessage ('First image of reversed phase-encode pair must be a 3D image')
-if len(PA_dim) != 3:
-  if not (len(PA_dim) == 4 and PA_dim[3] == 1):
-    errorMessage ('Second image of reversed phase-encode pair must be a 3D image')
-if AP_dim != PA_dim:
+# Check the number of b=0 images
+Pair1_bzero_count = 1
+if len(Pair1_dim) == 4:
+  Pair1_bzero_count = int(Pair1_dim[3])
+elif len(Pair1_dim) != 3:
+  errorMessage ('First image of reversed phase-encode pair must be a 3D or 4D image')
+Pair2_bzero_count = 1
+if len(Pair2_dim) == 4:
+  Pair2_bzero_count = int(Pair2_dim[3])
+elif len(Pair2_dim) != 3:
+  errorMessage ('Second image of reversed phase-encode pair must be a 3D or 4D image')
+
+# Do other verifications on inputs
+if Pair1_dim[:3] != Pair2_dim[:3]:
   errorMessage ('Dimensions of reversed phase-encode image pair do not match')
-if series_dim[:3] != AP_dim:
+if Pair1_bzero_count != Pair2_bzero_count:
+  warnMessage ('Inequal number of b=0 volumes in pair; registration may be biased')
+if series_dim[:3] != Pair1_dim[:3]:
   errorMessage ('Spatial dimensions of volume series does not match reversed-PE pair')
 if len(series_dim) != 4:
   errorMessage ('Third input image should be a 4D volume series')
-  
+
 # Get the axis strides from the input series, so the output image can be modified to match
 stride = getHeaderInfo ('series.mif', 'stride')
 stride_option = ' -stride ' + stride.replace(' ', ',')
@@ -92,7 +119,7 @@ stride_option = ' -stride ' + stride.replace(' ', ',')
 grad = getHeaderInfo ('series.mif', 'dwgrad')
 
 # Convert the input files as necessary for FSL tools
-runCommand('mrcat AP.mif PA.mif - -axis 3 | mrconvert - pair.nii -stride +1,+2,+3,+4')
+runCommand('mrcat pair1.mif pair2.mif - -axis 3 | mrconvert - pair.nii -stride +1,+2,+3,+4')
 runCommand('mrconvert series.mif series_before.nii -stride +1,+2,+3,+4')
 
 # If no axes need to be cropped, use the original 4D volume with the image pair
@@ -102,7 +129,7 @@ series_imain = 'series_before.nii'
 
 # For any non-even dimensions, crop the first voxel along that dimension
 crop_option = ''        
-for axis, axis_dim in enumerate(AP_dim):
+for axis, axis_dim in enumerate(Pair1_dim[:3]):
   if int(axis_dim)%2:
     crop_option += ' -axis ' + str(axis) + ' 1 ' + str(int(axis_dim)-1) 
 
@@ -116,7 +143,13 @@ if crop_option:
 # Construct a configuration file
 printMessage('Creating phase-encoding configuration file')
 config_file = open('config.txt', 'w')
-config_file.write('0  1 0 0.1\n0 -1 0 0.1\n')
+config_line = [ '0', '0', '0', '0.1' ]
+config_line[PE_axis] = '1'
+for AP_lines in range(0, Pair1_bzero_count):
+  config_file.write (' '.join (config_line) + '\n')
+config_line[PE_axis] = '-1'
+for PA_lines in range(0, Pair2_bzero_count):
+  config_file.write (' '.join (config_line) + '\n')
 config_file.close()
 
 # Perform the field estimation
@@ -124,24 +157,26 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 
 # Apply the warp field to the image series
 # Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
-runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup.' + fsl_suffix + ' --method=jac')
+runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup' + fsl_suffix + ' --method=jac')
+
+result_path = 'result' + os.path.splitext(sys.argv[5])[1]
 
 # Need to split depending on whether DW information is available
-result_path = 'result' + os.path.splitext(sys.argv[4])[1]
 if not grad:
 
   printMessage('No diffusion gradient encoding found in input file; using output from applytopup')
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' ' + result_path + stride_option)
+  runCommand('mrconvert series_topup' + fsl_suffix + ' ' + result_path + stride_option)
   
 else:
 
   printMessage('Detected diffusion gradient encoding in input file; running eddy')
-    
+
   # Create the diffusion gradient table in FSL format
-  runCommand('mrinfo series.mif -export_grad_fsl bvecs bvals')
+  # Make sure the strides are identical to the image actually being passed to eddy before exporting the gradient table
+  runCommand('mrconvert series.mif - -stride +1,+2,+3,+4 | mrinfo - -export_grad_fsl bvecs bvals')
     
   # Use the initial corrected image series from applytopup to derive a processing mask for eddy
-  runCommand('mrconvert series_topup.' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
+  runCommand('mrconvert series_topup' + fsl_suffix + ' -fslgrad bvecs bvals - | dwi2mask - - | maskfilter - dilate - | mrconvert - mask.nii -datatype float32')
   
   # Generate configuration file for eddy - index referring to PE and bandwidth for each volume
   # In this particular use case, we assume that every volume in the series has the same imaging parameters as the first of the reversed-PE pair
@@ -161,14 +196,15 @@ else:
     index_file.write(indices);
   
   # Run eddy
-  runCommand('eddy --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after')
+  runCommand(eddy_cmd + ' --imain=' + series_imain + ' --mask=mask.nii --index=indices.txt --acqp=config.txt --bvecs=bvecs --bvals=bvals --topup=field --out=series_after')
   
   # Convert the resulting volume to the output image, and re-insert the diffusion encoding
   # Note that currently the script uses the diffusion encoding from the original DWI volumes, i.e. no reorientation of diffusion
   #   gradient vectors is performed. It should be possible to get the motion parameters from the eddy 
-  #   text file output and modify them manually, or FMRIB may update eddy itself.
-  runCommand('mrconvert series_after.' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
+  #   text file output and modify them manually, or FMRIB may update eddy itself (this is why bvecs / bvals are
+  #   re-imported here)
+  runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
-lib.app.moveFileToDest (result_path, sys.argv[4])
+lib.app.moveFileToDest (result_path, sys.argv[5])
 lib.app.terminate()
 

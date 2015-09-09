@@ -43,12 +43,23 @@
 # undef foreach
 #endif
 
-#ifdef GL_DEBUG
-# undef GL_DEBUG
+// uncomment to trace texture/VAO/VBO/FBO operations:
+//#define GL_SHOW_DEBUG_MESSAGE
+
+#ifdef GL_SHOW_DEBUG_MESSAGE
 # define GL_DEBUG(msg) DEBUG(msg)
-#else
+#else 
 # define GL_DEBUG(msg) (void)0
 #endif
+
+#ifdef NDEBUG
+# define GL_CHECK_ERROR
+#else 
+# define GL_CHECK_ERROR ::MR::GUI::GL::check_error (__FILE__, __LINE__)
+#endif
+
+#define GLGETBOOL(x,n) { GLboolean __v[n]; gl::GetBooleanv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
+#define GLGETINT(x,n) { GLint __v[n]; gl::GetIntegerv (x, __v); std::cerr << #x " = "; for (auto i : __v) std::cerr << int(i) << " "; std::cerr << "\n"; }
 
 namespace MR
 {
@@ -57,9 +68,30 @@ namespace MR
     namespace GL
     {
 
+#if QT_VERSION >= 0x050400
+      typedef QOpenGLWidget Area;
+      typedef QSurfaceFormat Format;
+#else
+      class Area : public QGLWidget {
+        public:
+          using QGLWidget::QGLWidget;
+          QImage grabFramebuffer () { return QGLWidget::grabFrameBuffer(); }
+      };
+      typedef QGLFormat Format;
+#endif
+ 
       void init ();
+      void set_default_context ();
 
       const char* ErrorString (GLenum errorcode);
+
+      inline void check_error (const char* filename, int line) {
+        GLenum err = gl::GetError();
+        while (err) {
+          FAIL (std::string ("[") + filename + ": " + str(line) + "] OpenGL error: " + ErrorString (err));
+          err = gl::GetError();
+        }
+      }
 
 
       class Texture {
@@ -70,7 +102,7 @@ namespace MR
           Texture (Texture&& t) : id (t.id) { t.id = 0; }
           Texture& operator= (Texture&& t) { clear(); id = t.id; t.id = 0; return *this; }
           operator GLuint () const { return id; }
-          void gen (GLenum target) { 
+          void gen (GLenum target, GLint interp_type = gl::LINEAR) {
             if (!id) {
               tex_type = target;
               gl::GenTextures (1, &id);
@@ -78,8 +110,8 @@ namespace MR
               bind();
               gl::TexParameteri (tex_type, gl::TEXTURE_BASE_LEVEL, 0);
               gl::TexParameteri (tex_type, gl::TEXTURE_MAX_LEVEL, 0);
-              gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, gl::LINEAR);
-              gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, gl::LINEAR);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MAG_FILTER, interp_type);
+              gl::TexParameteri (tex_type, gl::TEXTURE_MIN_FILTER, interp_type);
               gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_S, gl::CLAMP_TO_EDGE);
               gl::TexParameteri (tex_type, gl::TEXTURE_WRAP_T, gl::CLAMP_TO_EDGE);
               if (tex_type == gl::TEXTURE_3D)
@@ -172,6 +204,37 @@ namespace MR
       };
 
 
+      class IndexBuffer {
+        public:
+          IndexBuffer () : id (0) { }
+          ~IndexBuffer () { clear(); }
+          IndexBuffer (const IndexBuffer&) : id (0) { }
+          IndexBuffer (IndexBuffer&& t) : id (t.id) { t.id = 0; }
+          IndexBuffer& operator= (IndexBuffer&& t) { clear(); id = t.id; t.id = 0; return *this; }
+          operator GLuint () const { return id; }
+          void gen () {
+            if (!id) {
+              gl::GenBuffers (1, &id);
+              GL_DEBUG ("created OpenGL index buffer ID " + str(id));
+            }
+          }
+          void clear () {
+            if (id) {
+              GL_DEBUG ("deleting OpenGL index buffer ID " + str(id));
+              gl::DeleteBuffers (1, &id);
+              id = 0;
+            }
+          }
+          void bind () const {
+            assert (id);
+            GL_DEBUG ("binding OpenGL index buffer ID " + str(id));
+            gl::BindBuffer (gl::ELEMENT_ARRAY_BUFFER, id);
+          }
+        protected:
+          GLuint id;
+      };
+
+
 
       class FrameBuffer {
         public:
@@ -202,8 +265,13 @@ namespace MR
           }
           void unbind () const {
             GL_DEBUG ("binding default OpenGL framebuffer");
+#if QT_VERSION >= 0x050400
+            gl::BindFramebuffer (gl::FRAMEBUFFER, QOpenGLContext::currentContext()->defaultFramebufferObject()); 
+#else
             gl::BindFramebuffer (gl::FRAMEBUFFER, 0); 
+#endif
           }
+
 
           void attach_color (Texture& tex, size_t attachment) const {
             assert (id);
@@ -230,7 +298,6 @@ namespace MR
       };
 
 
-      QGLFormat core_format ();
 
     }
   }

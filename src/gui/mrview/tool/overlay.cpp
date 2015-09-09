@@ -21,6 +21,7 @@
 */
 
 #include "mrtrix.h"
+#include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
 #include "gui/mrview/tool/overlay.h"
@@ -51,15 +52,15 @@ namespace MR
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (VecPtr<MR::Image::Header>& list);
+            void add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
-              return dynamic_cast<Item*>(items[index.row()]);
+              return dynamic_cast<Item*>(items[index.row()].get());
             }
         };
 
 
-        void Overlay::Model::add_items (VecPtr<MR::Image::Header>& list)
+        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
@@ -69,7 +70,7 @@ namespace MR
               overlay->colourmap = 1;
             overlay->alpha = 1.0f;
             overlay->set_use_transparency (true);
-            items.push_back (overlay);
+            items.push_back (std::unique_ptr<Displayable> (overlay));
           }
           endInsertRows();
         }
@@ -77,27 +78,27 @@ namespace MR
 
 
 
-        Overlay::Overlay (Window& main_window, Dock* parent) :
-          Base (main_window, parent) { 
+        Overlay::Overlay (Dock* parent) :
+          Base (parent) { 
             VBoxLayout* main_box = new VBoxLayout (this);
             HBoxLayout* layout = new HBoxLayout;
             layout->setContentsMargins (0, 0, 0, 0);
             layout->setSpacing (0);
 
             QPushButton* button = new QPushButton (this);
-            button->setToolTip (tr ("Open Image"));
+            button->setToolTip (tr ("Open overlay image"));
             button->setIcon (QIcon (":/open.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_open_slot ()));
             layout->addWidget (button, 1);
 
             button = new QPushButton (this);
-            button->setToolTip (tr ("Close Image"));
+            button->setToolTip (tr ("Close overlay image"));
             button->setIcon (QIcon (":/close.svg"));
             connect (button, SIGNAL (clicked()), this, SLOT (image_close_slot ()));
             layout->addWidget (button, 1);
 
             hide_all_button = new QPushButton (this);
-            hide_all_button->setToolTip (tr ("Hide All"));
+            hide_all_button->setToolTip (tr ("Hide all overlays"));
             hide_all_button->setIcon (QIcon (":/hide.svg"));
             hide_all_button->setCheckable (true);
             connect (hide_all_button, SIGNAL (clicked()), this, SLOT (hide_all_slot ()));
@@ -115,6 +116,21 @@ namespace MR
             image_list_view->setModel (image_list_model);
 
             main_box->addWidget (image_list_view, 1);
+
+            layout = new HBoxLayout;
+            volume_label = new QLabel ("Volume: ");
+            volume_label->setEnabled (false);
+            layout->addWidget (volume_label);
+            volume_selecter = new SpinBox (this);
+            volume_selecter->setMinimum (0);
+            volume_selecter->setMaximum (0);
+            volume_selecter->setValue (0);
+            volume_selecter->setEnabled (false);
+            volume_selecter->setToolTip ("For 4D overlay images, select the 3D volume index");
+            connect (volume_selecter, SIGNAL (valueChanged(int)), this, SLOT(volume_changed(int)));
+            layout->addWidget (volume_selecter);
+
+            main_box->addLayout (layout, 0);
 
             QGroupBox* group_box = new QGroupBox (tr("Colour map and scaling"));
             main_box->addWidget (group_box);
@@ -184,9 +200,9 @@ namespace MR
           std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
           if (overlay_names.empty())
             return;
-          VecPtr<MR::Image::Header> list;
+          std::vector<std::unique_ptr<MR::Image::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (new MR::Image::Header (overlay_names[n]));
+            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (overlay_names[n])));
 
           add_images (list);
         }
@@ -195,7 +211,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (VecPtr<MR::Image::Header>& list) 
+        void Overlay::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -226,7 +242,6 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
-
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -240,13 +255,13 @@ namespace MR
           bool need_to_update = false;
           for (int i = 0; i < image_list_model->rowCount(); ++i) {
             if (image_list_model->items[i]->show && !hide_all_button->isChecked()) {
-              Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i]);
+              Overlay::Item* image = dynamic_cast<Overlay::Item*>(image_list_model->items[i].get());
               need_to_update |= !std::isfinite (image->intensity_min());
               image->transparent_intensity = image->opaque_intensity = image->intensity_min();
               if (is_3D) 
-                window.get_current_mode()->overlays_for_3D.push_back (image);
+                window().get_current_mode()->overlays_for_3D.push_back (image);
               else
-                image->render3D (image->slice_shader, projection, projection.depth_of (window.focus()));
+                image->render3D (image->slice_shader, projection, projection.depth_of (window().focus()));
             }
           }
 
@@ -262,17 +277,56 @@ namespace MR
         }
 
 
-        void Overlay::drawOverlays (const Projection& transform)
+        size_t Overlay::visible_number_colourbars () {
+           size_t total_visible(0);
+
+           if(!hide_all_button->isChecked()) {
+             for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
+               Image* image  = dynamic_cast<Image*>(image_list_model->items[i].get());
+               if (image && image->show && !ColourMap::maps[image->colourmap].special)
+                 total_visible += 1;
+             }
+           }
+
+           return total_visible;
+        }
+
+
+        void Overlay::draw_colourbars ()
         {
-          if(hide_all_button->isChecked()) return;
+          if(hide_all_button->isChecked())
+            return;
 
           for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
-            // Only render the first visible colourbar
-            if (image_list_model->items[i]->show) {
-              image_list_model->items[i]->request_render_colourbar(*this, transform);
-              break;
+            if (image_list_model->items[i]->show)
+              image_list_model->items[i]->request_render_colourbar(*this);
+          }
+        }
+
+
+        int Overlay::draw_tool_labels (int position, int start_line_num, const Projection& transform) const
+        {
+          if(hide_all_button->isChecked()) return 0;
+
+          int num_of_new_lines = 0;
+
+          for (size_t i = 0, N = image_list_model->rowCount(); i < N; ++i) {
+
+            Image* image = dynamic_cast<Image*>(image_list_model->items[i].get());
+            if (image && image->show) {
+              std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
+              cfloat value = image->interpolate() ?
+                image->nearest_neighbour_value(window().focus()) :
+                image->trilinear_value(window().focus());
+              if(std::isnan(std::abs(value)))
+                value_str += "?";
+              else value_str += str(value);
+              transform.render_text (value_str, position, start_line_num + num_of_new_lines);
+              num_of_new_lines += 1;
             }
           }
+
+          return num_of_new_lines;
         }
 
 
@@ -322,17 +376,35 @@ namespace MR
         void Overlay::reset_colourmap(const ColourMapButton&)
         {
             QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+            Image* overlay = nullptr;
             for (size_t i = 0, N = indices.size(); i < N; ++i) {
-              Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
+              overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
               overlay->reset_windowing();
             }
+
+            // Reset the min/max adjust button fields of last selected overlay
+            if(overlay) {
+             min_value->setValue(overlay->intensity_min());
+             max_value->setValue(overlay->intensity_max());
+            }
+
             updateGL();
         }
 
 
-        void Overlay::render_image_colourbar (const Image& image, const Projection& transform)
+        void Overlay::render_image_colourbar (const Image& image)
         {
-            colourbar_renderer.render (transform, image, 4, image.scale_inverted());
+            float min_value = image.use_discard_lower() ?
+                        image.scaling_min_thresholded() :
+                        image.scaling_min();
+
+            float max_value = image.use_discard_upper() ?
+                        image.scaling_max_thresholded() :
+                        image.scaling_max();
+
+            window().colourbar_renderer.render (image.colourmap, image.scale_inverted(),
+                                       min_value, max_value,
+                                       image.scaling_min(), image.display_range, image.colour);
         }
 
 
@@ -349,6 +421,18 @@ namespace MR
             }
           }
           updateGL();
+        }
+
+
+        void Overlay::volume_changed (int)
+        {
+          QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          if (indices.size() != 1) return;
+          Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+          if (overlay->info().ndim() < 4) return;
+          overlay->interp[3] = volume_selecter->value();
+          if (overlay->show)
+            updateGL();
         }
 
 
@@ -431,7 +515,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->alpha = opacity_slider->value() / 1.0e3f;
           }
-          window.updateGL();
+          window().updateGL();
         }
 
         void Overlay::interpolate_changed ()
@@ -441,7 +525,7 @@ namespace MR
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[i]));
             overlay->set_interpolate (interpolate_check_box->isChecked());
           }
-          window.updateGL();
+          window().updateGL();
         }
 
 
@@ -455,6 +539,8 @@ namespace MR
         void Overlay::update_selection () 
         {
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
+          volume_label->setEnabled (false);
+          volume_selecter->setEnabled (false);
           colourmap_button->setEnabled (indices.size());
           max_value->setEnabled (indices.size());
           min_value->setEnabled (indices.size());
@@ -511,6 +597,19 @@ namespace MR
           upper_threshold_val /= indices.size();
           opacity /= indices.size();
 
+          if (indices.size() == 1) {
+            Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
+            if (overlay->info().ndim() == 4 && overlay->info().dim(3) > 1) {
+              volume_label->setEnabled (true);
+              volume_selecter->setMaximum (overlay->info().dim(3)-1);
+              volume_selecter->setValue (overlay->interp[3]);
+              volume_selecter->setEnabled (true);
+            } else {
+              volume_selecter->setMaximum (0);
+              volume_selecter->setValue (0);
+            }
+          }
+
           colourmap_button->set_colourmap_index(colourmap_index);
           opacity_slider->setValue (1.0e3f * opacity);
           if (num_interp == 0)
@@ -545,37 +644,47 @@ namespace MR
 
 
 
+        void Overlay::add_commandline_options (MR::App::OptionList& options) 
+        { 
+          using namespace MR::App;
+          options
+            + OptionGroup ("Overlay tool options")
 
+            + Option ("overlay.load", "Loads the specified image on the overlay tool.").allow_multiple()
+            +   Argument ("image").type_image_in()
 
+            + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
+            +   Argument ("value").type_float (0.0, 1.0, 1.0)
 
-        bool Overlay::process_batch_command (const std::string& cmd, const std::string& args)
+            + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
+            +   Argument ("index").type_integer();
+            
+        }
+
+        bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
-
-          // BATCH_COMMAND overlay.load path # Loads the specified image on the overlay tool.
-          if (cmd == "overlay.load") {
-            VecPtr<MR::Image::Header> list;
-            try { list.push_back (new MR::Image::Header (args)); }
+          if (opt.opt->is ("overlay.load")) {
+            std::vector<std::unique_ptr<MR::Image::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;
           }
 
-          // BATCH_COMMAND overlay.opacity value # Sets the overlay opacity to floating value [0-1].
-          else if (cmd == "overlay.opacity") {
+          if (opt.opt->is ("overlay.opacity")) {
             try {
-              float n = to<float> (args);
-              opacity_slider->setSliderPosition(int(1.e3f*n));
+              float value = opt[0];
+              opacity_slider->setSliderPosition(int(1.e3f*value));
             }
             catch (Exception& e) { e.display(); }
             return true;
           }
 
-          // BATCH_COMMAND overlay.colourmap index # Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.
-          else if (cmd == "overlay.colourmap") {
+          if (opt.opt->is ("overlay.colourmap")) {
             try {
-              int n = to<int> (args);
+              int n = opt[0];
               if (n < 0 || !ColourMap::maps[n].name)
-                throw Exception ("invalid overlay colourmap index \"" + args + "\" requested in batch command");
+                throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -overlay.colourmap option");
               colourmap_button->set_colourmap_index(n);
             }
             catch (Exception& e) { e.display(); }
@@ -584,6 +693,8 @@ namespace MR
 
           return false;
         }
+
+
 
 
       }

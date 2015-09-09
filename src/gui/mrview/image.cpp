@@ -37,66 +37,25 @@ namespace MR
 
 
 
-      Image::Image (const MR::Image::Header& image_header) :
-        Volume (image_header),
-        buffer (image_header),
-        interp (buffer),        
-        position (image_header.ndim())
+      ImageBase::ImageBase (const MR::Image::Info& image_info) :
+        Volume (image_info),
+        position (image_info.ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (guess_colourmap ());
-      }
-
-
-
-      Image::Image (Window& window, const MR::Image::Header& image_header) :
-        Volume (window, image_header),
-        buffer (image_header),
-        interp (buffer),        
-        position (image_header.ndim())
-      {
-        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
-        set_colourmap (guess_colourmap ());
-        setCheckable (true);
-        setToolTip (header().name().c_str());
-        setStatusTip (header().name().c_str());
-        window.image_group->addAction (this);
-        window.image_menu->addAction (this);
-        connect (this, SIGNAL(scalingChanged()), &window, SLOT(on_scaling_changed()));
       }
 
 
 
 
-            
-      size_t Image::guess_colourmap () const 
-      {
-        std::string map = "Gray";
-        if (header().datatype().is_complex()) 
-          map = "Complex";
-        else if (header().ndim() == 4) {
-          if (header().dim(3) == 3)
-            map = "RGB";
-        }
-        for (size_t n = 0; ColourMap::maps[n].name; ++n) 
-          if (ColourMap::maps[n].name == map) 
-            return n;
-        return 0;
-      }
-
-
-
-
-
-      void Image::render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice)
+      void ImageBase::render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice)
       {
         update_texture2D (plane, slice);
 
         int x, y;
         get_axes (plane, x, y);
-        float xdim = header().dim (x)-0.5, ydim = header().dim (y)-0.5;
+        float xdim = info().dim (x)-0.5, ydim = info().dim (y)-0.5;
 
-        Point<> p, q;
+        Point<> p;
         p[plane] = slice;
 
         p[x] = -0.5;
@@ -119,22 +78,68 @@ namespace MR
         vertices[6] = _transform.voxel2scanner (p);
         vertices[7].set (1.0, 0.0, 0.0);
 
-
         start (shader_program);
         projection.set (shader_program);
         draw_vertices ();
         stop (shader_program);
       }
 
-
-
-      void Image::render3D (Displayable::Shader& shader_program, const Projection& projection, float depth) 
+      void ImageBase::render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth)
       {
         update_texture3D();
         Volume::render (shader_program, projection, depth);
       }
 
+      void ImageBase::get_axes (const int plane, int& x, int& y) const {
+        if (plane) {
+          if (plane == 1) {
+            x = 0;
+            y = 2;
+          }
+          else {
+            x = 0;
+            y = 1;
+          }
+        }
+        else {
+          x = 1;
+          y = 2;
+        }
+      }
 
+
+
+
+
+
+
+
+
+
+      Image::Image (const MR::Image::Header& image_header) :
+        ImageBase (image_header),
+        buffer (image_header),
+        interp (buffer)
+      {
+        set_colourmap (guess_colourmap ());
+      }
+
+
+
+      size_t Image::guess_colourmap () const
+      {
+        std::string map = "Gray";
+        if (header().datatype().is_complex())
+          map = "Complex";
+        else if (header().ndim() == 4) {
+          if (header().dim(3) == 3)
+            map = "RGB";
+        }
+        for (size_t n = 0; ColourMap::maps[n].name; ++n)
+          if (ColourMap::maps[n].name == map)
+            return n;
+        return 0;
+      }
 
 
 
@@ -149,7 +154,7 @@ namespace MR
         gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
         texture2D[plane].set_interp (interpolation);
 
-        if (position[plane] == slice && volume_unchanged())
+        if (position[plane] == slice && volume_unchanged () && format_unchanged ())
           return;
 
         position[plane] = slice;
@@ -296,13 +301,13 @@ namespace MR
 
           switch (header().datatype() ()) {
             case DataType::Bit:
-            case DataType::Int8:
-              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
-              type = gl::BYTE;
-              break;
             case DataType::UInt8:
               internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
               type = gl::UNSIGNED_BYTE;
+              break;
+            case DataType::Int8:
+              internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
+              type = gl::BYTE;
               break;
             case DataType::UInt16LE:
             case DataType::UInt16BE:
@@ -379,6 +384,7 @@ namespace MR
         inline ValueType abs_if_signed (ValueType x, typename std::enable_if<std::is_unsigned<ValueType>::value>::type* = nullptr) { return x; }
 
 
+
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
@@ -392,59 +398,62 @@ namespace MR
           for (size_t n = 3; n < V.ndim(); ++n) 
             V[n] = position[n];
 
-        for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
+          for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
 
-          if (format == gl::RED) {
-            auto p = data.begin();
+            if (format == gl::RED) {
+              auto p = data.begin();
 
-            for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
-              for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
-                ValueType val = *p = V.value();
-                if (std::isfinite (val)) {
-                  if (val < value_min) value_min = val;
-                  if (val > value_max) value_max = val;
-                }
-                ++p;
-              }
-            }
-
-          }
-          else {
-
-            for (auto& d : data) d = 0.0f;
-
-            for (size_t n = 0; n < 3; ++n) {
-              if (V.ndim() > 3) {
-                if (V.dim(3) > int(position[3] + n))
-                  V[3] = position[3] + n;
-                else break;
-              }
-
-              auto p = data.begin() + n;
-              for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
-                for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-                  ValueType val = *p = abs_if_signed (ValueType (V.value()));
+              for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
+                for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
+                  ValueType val = *p = V.value();
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
                   }
-                  p += 3;
+                  ++p;
                 }
               }
 
-              if (V.ndim() <= 3) 
-                break;
             }
-            if (V.ndim() > 3) 
-              V[3] = position[3];
+            else {
 
+              for (auto& d : data) d = 0.0f;
+
+              for (size_t n = 0; n < 3; ++n) {
+                if (V.ndim() > 3) {
+                  if (V.dim(3) > int(position[3] + n))
+                    V[3] = position[3] + n;
+                  else break;
+                }
+
+                auto p = data.begin() + n;
+                for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
+                  for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
+                    ValueType val = *p = abs_if_signed (ValueType (V.value()));
+                    if (std::isfinite (val)) {
+                      if (val < value_min) value_min = val;
+                      if (val > value_max) value_max = val;
+                    }
+#ifndef NDEBUG
+                    if (std::distance (p, data.end()) > 3)
+#endif
+                    p += 3;
+                  }
+                }
+
+                if (V.ndim() <= 3) 
+                  break;
+              }
+              if (V.ndim() > 3) 
+                V[3] = position[3];
+
+            }
+
+            upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+            ++progress;
           }
 
-          upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
-          ++progress;
         }
-
-      }
 
 
 
@@ -495,6 +504,21 @@ namespace MR
           position[0] = position[1] = position[2] = -1;
 
         return is_unchanged;
+      }
+
+
+      inline bool Image::format_unchanged ()
+      {
+        std::string cmap_name = ColourMap::maps[colourmap].name;
+
+        if (cmap_name == "RGB" && format != gl::RGB)
+          return false;
+        else if (cmap_name == "Complex" && format != gl::RG)
+          return false;
+        else if (format != gl::RED)
+          return false;
+
+        return true;
       }
 
 

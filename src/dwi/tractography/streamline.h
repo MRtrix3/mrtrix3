@@ -49,15 +49,45 @@ namespace MR
             index (-1),
             weight (value_type (1.0)) { }
 
+          Streamline (size_t size, const Point<float>& fill) :
+            std::vector< Point<value_type> > (size, fill),
+            index (-1),
+            weight (value_type (1.0)) { }
+
           Streamline (const Streamline& that) :
             std::vector< Point<value_type> > (that),
             index (that.index),
             weight (that.weight) { }
 
+          Streamline (Streamline&& that) :
+            std::vector< Point<value_type> > (std::move (that)),
+            index (that.index),
+            weight (that.weight)
+          {
+            that.index = -1;
+            that.weight = 1.0f;
+          }
+
           Streamline (const std::vector< Point<value_type> >& tck) :
             std::vector< Point<value_type> > (tck),
             index (-1),
             weight (1.0) { }
+
+          Streamline& operator= (Streamline&& that)
+          {
+            std::vector< Point<T> >::operator= (std::move (that));
+            index = that.index; that.index = -1;
+            weight = that.weight; that.weight = 1.0f;
+            return *this;
+          }
+
+          Streamline& operator= (const Streamline& that)
+          {
+            std::vector< Point<float> >::operator= (that);
+            index = that.index;
+            weight = that.weight;
+            return *this;
+          }
 
           void clear()
           {
@@ -66,9 +96,44 @@ namespace MR
             weight = 1.0;
           }
 
+          float calc_length() const;
+          float calc_length (const float step_size) const;
+
           size_t index;
           value_type weight;
       };
+
+
+
+
+      template <typename T>
+      float Streamline<T>::calc_length() const
+      {
+        switch (Streamline<T>::size()) {
+          case 0: return NAN;
+          case 1: return 0.0;
+          case 2: return dist ((*this)[0], (*this)[1]);
+          case 3: return (dist ((*this)[1], (*this)[0]) + dist ((*this)[2], (*this)[1]));
+          default: break;
+        }
+        const size_t midpoint = Streamline<T>::size() / 2;
+        const float step_size = dist ((*this)[midpoint-1], (*this)[midpoint]);
+        return calc_length (step_size);
+      }
+
+      template <typename T>
+      float Streamline<T>::calc_length (const float step_size) const
+      {
+        switch (Streamline<T>::size()) {
+          case 0: return NAN;
+          case 1: return 0.0;
+          case 2: return dist ((*this)[0], (*this)[1]);
+          case 3: return (dist ((*this)[1], (*this)[0]) + dist ((*this)[2], (*this)[1]));
+          default: break;
+        }
+        const size_t size = Streamline<T>::size();
+        return (((size-3) * step_size) + dist ((*this)[1], (*this)[0]) + dist ((*this)[size-1], (*this)[size-2]));
+      }
 
 
 

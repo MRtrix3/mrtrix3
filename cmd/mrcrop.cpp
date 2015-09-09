@@ -81,6 +81,7 @@ void run ()
   if (opt.size()) {
 
     Image::Buffer<bool> data_mask (opt[0][0]);
+
     Image::check_dimensions (data_in, data_mask, 0, 3);
     auto voxel_mask = data_mask.voxel();
 

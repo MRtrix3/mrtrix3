@@ -23,7 +23,7 @@
 #ifndef __image_filter_optimal_threshold_h__
 #define __image_filter_optimal_threshold_h__
 
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/threaded_loop.h"
 #include "image/min_max.h"
@@ -207,7 +207,7 @@ namespace MR
       template <class InputVoxelType> 
         inline typename InputVoxelType::value_type estimate_optimal_threshold (InputVoxelType& input)
         {
-          return estimate_optimal_threshold (input, nullptr);
+          return estimate_optimal_threshold (input, (Image::BufferScratch<bool>::voxel_type*)nullptr);
         }
 
       /** \addtogroup Filters

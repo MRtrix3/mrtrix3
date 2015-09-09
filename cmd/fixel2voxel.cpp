@@ -58,7 +58,9 @@ const char* operations[] = {
   "sf",
   "dec_unit",
   "dec_scaled",
-  "split",
+  "split_size",
+  "split_value",
+  "split_dir",
   NULL
 };
 
@@ -73,7 +75,8 @@ void usage ()
     "- The number of fixels in each voxel: count\n"
     "- Some measure of crossing-fibre organisation: complexity, sf ('single-fibre')\n"
     "- A 4D directionally-encoded colour image: dec_unit, dec_scaled\n"
-    "- A 4D scalar image with one 3D volume per fixel value: split";
+    "- A 4D scalar image with one 3D volume per fixel: split_size, split_value\n"
+    "- A 4D image with three 3D volumes per fixel direction: split_dir";
 
   REFERENCES 
     + "Reference for 'complexity' operation:\n"
@@ -564,16 +567,39 @@ class DEC_scaled : public OpBase
     float sum_volume, sum_value;
 };
 
-class Split : public OpBase
+class SplitSize : public OpBase
 {
   public:
-    Split (const bool weighted) :
+    SplitSize (const bool weighted) :
         OpBase (weighted)
     {
       if (weighted)
-        WARN ("Option -weighted has no meaningful interpretation for split operation; ignoring");
+        WARN ("Option -weighted has no meaningful interpretation for split_amp operation; ignoring");
     }
-    Split (const Split& that) :
+    SplitSize (const SplitSize& that) :
+        OpBase (that) { }
+    bool operator() (in_vox_type& in, out_vox_type& out)
+    {
+      for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
+        if (out[3] < in.value().size())
+          out.value() = in.value()[out[3]].size;
+        else
+          out.value() = 0.0;
+      }
+      return true;
+    }
+};
+
+class SplitValue : public OpBase
+{
+  public:
+    SplitValue (const bool weighted) :
+        OpBase (weighted)
+    {
+      if (weighted)
+        WARN ("Option -weighted has no meaningful interpretation for split_value operation; ignoring");
+    }
+    SplitValue (const SplitValue& that) :
         OpBase (that) { }
     bool operator() (in_vox_type& in, out_vox_type& out)
     {
@@ -583,6 +609,32 @@ class Split : public OpBase
         else
           out.value() = 0.0;
       }
+      return true;
+    }
+};
+
+class SplitDir : public OpBase
+{
+  public:
+    SplitDir (const bool weighted) :
+        OpBase (weighted)
+    {
+      if (weighted)
+        WARN ("Option -weighted has no meaningful interpretation for split_dir operation; ignoring");
+    }
+    SplitDir (const SplitDir& that) :
+        OpBase (that) { }
+    bool operator() (in_vox_type& in, out_vox_type& out)
+    {
+      size_t index;
+      for (index = 0; index != in.value().size(); ++index) {
+        for (size_t axis = 0; axis != 3; ++axis) {
+          out[3] = (3*index) + axis;
+          out.value() = in.value()[index].dir[axis];
+        }
+      }
+      for (++out[3]; out[3] != out.dim (3); ++out[3])
+        out.value() = NAN;
       return true;
     }
 };
@@ -612,7 +664,7 @@ void run ()
   } else if (op == 13 || op == 14) { // dec
     H_out.set_ndim (4);
     H_out.dim (3) = 3;
-  } else if (op == 15) { // split
+  } else if (op == 15 || op == 16 || op == 17) { // split_*
     H_out.set_ndim (4);
     uint32_t max_count = 0;
     Image::BufferSparse<FixelMetric>::voxel_type voxel (fixel_data);
@@ -621,10 +673,12 @@ void run ()
       max_count = std::max (max_count, voxel.value().size());
     if (max_count == 0)
       throw Exception ("fixel image is empty");
-    H_out.dim(3) = max_count;
+    // 3 volumes per fixel if performing split_dir
+    H_out.dim(3) = (op == 17) ? (3 * max_count) : max_count;
   }
 
   Image::Buffer<float> out_data (argument[2], H_out);
+
   auto out = out_data.voxel();
 
   Options opt = get_options ("weighted");
@@ -648,7 +702,9 @@ void run ()
     case 12: loop.run (SF         (weighted), voxel, out); break;
     case 13: loop.run (DEC_unit   (weighted), voxel, out); break;
     case 14: loop.run (DEC_scaled (weighted), voxel, out); break;
-    case 15: loop.run (Split      (weighted), voxel, out); break;
+    case 15: loop.run (SplitSize  (weighted), voxel, out); break;
+    case 16: loop.run (SplitValue (weighted), voxel, out); break;
+    case 17: loop.run (SplitDir   (weighted), voxel, out); break;
   }
 
 }

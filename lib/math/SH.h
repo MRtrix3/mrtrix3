@@ -708,38 +708,71 @@ namespace MR
             switch (lmax) {
               case 2:
                 RH.allocate (2);
-                RH[0] = ValueType(1.0040911);
-                RH[1] = ValueType(0.9852451);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.41939279);
                 break;
               case 4:
                 RH.allocate (3);
-                RH[0] = ValueType(1.0228266);
-                RH[1] = ValueType(0.9794163);
-                RH[2] = ValueType(0.6336874);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.63608543);
+                RH[2] = ValueType(0.18487087);
                 break;
               case 6:
                 RH.allocate (4);
-                RH[0] = ValueType(1.0317389);
-                RH[1] = ValueType(0.9838425);
-                RH[2] = ValueType(0.6271851);
-                RH[3] = ValueType(0.2485668);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.75490341);
+                RH[2] = ValueType(0.37126442);
+                RH[3] = ValueType(0.09614699);
                 break;
               case 8:
                 RH.allocate (5);
-                RH[0] = ValueType(1.04341398);
-                RH[1] = ValueType(0.97096530);
-                RH[2] = ValueType(0.67339320);
-                RH[3] = ValueType(0.35029476);
-                RH[4] = ValueType(0.12145668);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.82384816);
+                RH[2] = ValueType(0.51261696);
+                RH[3] = ValueType(0.22440563);
+                RH[4] = ValueType(0.05593079);
                 break;
               case 10:
                 RH.allocate (6);
-                RH[0] = ValueType(1.04457094);
-                RH[1] = ValueType(0.96687914);
-                RH[2] = ValueType(0.73278211);
-                RH[3] = ValueType(0.46071924);
-                RH[4] = ValueType(0.22854642);
-                RH[5] = ValueType(0.07630424);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.86725945);
+                RH[2] = ValueType(0.61519436);
+                RH[3] = ValueType(0.34570667);
+                RH[4] = ValueType(0.14300355);
+                RH[5] = ValueType(0.03548062);
+                break;
+              case 12:
+                RH.allocate (7);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.89737759);
+                RH[2] = ValueType(0.69278503);
+                RH[3] = ValueType(0.45249879);
+                RH[4] = ValueType(0.24169922);
+                RH[5] = ValueType(0.09826171);
+                RH[6] = ValueType(0.02502481);
+                break;
+              case 14:
+                RH.allocate (8);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.91717853);
+                RH[2] = ValueType(0.74685644);
+                RH[3] = ValueType(0.53467773);
+                RH[4] = ValueType(0.33031863);
+                RH[5] = ValueType(0.17013825);
+                RH[6] = ValueType(0.06810155);
+                RH[7] = ValueType(0.01754930);
+                break;
+              case 16:
+                RH.allocate (9);
+                RH[0] = ValueType(1.00000000);
+                RH[1] = ValueType(0.93261196);
+                RH[2] = ValueType(0.79064858);
+                RH[3] = ValueType(0.60562880);
+                RH[4] = ValueType(0.41454703);
+                RH[5] = ValueType(0.24880754);
+                RH[6] = ValueType(0.12661242);
+                RH[7] = ValueType(0.05106681);
+                RH[8] = ValueType(0.01365433);
                 break;
               default:
                 throw Exception ("No aPSF RH data for lmax " + str(lmax));

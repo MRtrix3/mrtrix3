@@ -1,6 +1,6 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex, re
+import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
 debug = False
@@ -151,7 +151,7 @@ config_report = ''
 
 def log (message):
   global logfile
-  logfile.write (message.encode ('utf-8', 'ignore'))
+  logfile.write (message.encode (errors='ignore'))
   if (verbose): 
     sys.stdout.write (message)
     sys.stdout.flush()
@@ -161,11 +161,11 @@ def report (message):
   config_report += message
   sys.stdout.write (message)
   sys.stdout.flush()
-  logfile.write (('\nREPORT: ' + message.rstrip() + '\n').encode ('utf-8', 'ignore'))
+  logfile.write (('\nREPORT: ' + message.rstrip() + '\n').encode (errors='ignore'))
 
 def error (message):
   global logfile
-  logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode ('utf-8', 'ignore'))
+  logfile.write (('\nERROR: ' + message.rstrip() + '\n\n').encode (errors='ignore'))
   sys.stderr.write ('\nERROR: ' + message.rstrip() + '\n\n')
   sys.exit (1)
 
@@ -187,7 +187,6 @@ cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
-ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
@@ -298,9 +297,9 @@ def execute (cmd, exception, raise_on_non_zero_exit_code = True, cwd = None):
     ( stdout, stderr ) = process.communicate()
 
     log ('EXIT: ' + str(process.returncode) + '\n')
-    stdout = stdout.decode('utf-8', 'ignore').rstrip()
+    stdout = stdout.decode(errors='ignore').rstrip()
     if len (stdout): log ('STDOUT:\n' + stdout + '\n')
-    stderr = stderr.decode('utf-8', 'ignore').rstrip()
+    stderr = stderr.decode(errors='ignore').rstrip()
     if len (stderr): log ('STDERR:\n' + stderr + '\n')
     log ('>>\n\n')
   
@@ -345,6 +344,15 @@ def compile (source, compiler_flags = [], linker_flags = []):
   return ret[1]
 
 
+def compare_version (needed, observed):
+  needed = [ float(n) for n in needed.split()[0].split('.') ]
+  observed = [ float(n) for n in observed.split()[0].split('.') ]
+  for n in zip (needed, observed):
+    if n[0] > n[1]:
+      return False
+  return True
+
+
 
 
 
@@ -375,7 +383,6 @@ elif system == 'windows':
   runpath = ''
 elif system == 'darwin':
   cxx = [ 'clang++' ]
-  ld = [ 'clang++' ]
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
   ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
@@ -399,6 +406,7 @@ else:
 
 if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
 if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
+ld = copy.copy(cxx)
 if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
 if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
 if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
@@ -431,7 +439,19 @@ Use CXX environment variable to set path to compiler, as follows:
      CXX=/usr/bin/g++-4.2 ./configure''')
 
 try:
-  compile ('int main() { return (0); }', cpp_flags, ld_flags)
+  compile ('''
+struct Base {
+    Base (int);
+};
+struct Derived : Base {
+    using Base::Base;
+};
+
+int main() { 
+  Derived D (int); // check for contructor inheritance
+  return (0); 
+}
+''', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler test failed!
@@ -937,7 +957,7 @@ int main() { Foo f; }
       log ('\nexecuting "' + cmd + '"...\n')
       process = subprocess.Popen (cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
       if process.wait() != 0: raise LinkError('process not terminated properly')
-      report (process.stdout.read().decode('utf-8', 'ignore').strip() + '\n')
+      report (process.stdout.read().decode(errors='ignore').strip() + '\n')
 
     
   except QMakeError:
@@ -966,56 +986,7 @@ use the MOC environment variable to specify the Qt moc command''')
 
 
 
-  report ('Checking for OpenGL: ')
-  try:
-    gl_test = compile ('''
-#include <QtGui>
-#include <QtOpenGL>
-#include <QApplication>
-#include <QGLWidget>
-#include <iostream>
 
-QGLFormat core_format () {
-  QGLFormat f;
-  f.setVersion (3,3);
-  f.setProfile (QGLFormat::CoreProfile);
-  return f;
-}
-
-class GLWidget : public QGLWidget {
-  public:
-    GLWidget () : QGLWidget (core_format()) { }
-    ~GLWidget() { }
-  protected:
-    void initializeGL () { 
-      std::cout << glGetString (GL_VERSION) << "\\n";
-    }
-
-    void paintGL () { qApp->quit(); }
-    void resizeGL (int, int) { }
-};
-
-int main (int argc, char *argv[]) {
-  QApplication app (argc, argv);
-  GLWidget window;
-  window.show();
-  return app.exec();
-}
-''', cpp_flags + qt_cflags, ld_flags + qt_ldflags)
-    report (gl_test.strip() + '\n')
-    if 'NOT SUPPORTED' in gl_test:
-      report ('''
-WARNING: not all required OpenGL extensions are supported (see above).
-         Some of the graphical user interface components may not be stable on
-         this system.
-''')
-  except:
-    report ('''not found
-
-WARNING: no OpenGL implementation found.
-         Some of the graphical user interface components may not be stable on
-         this system.
-''')
   if system == "darwin":
     if '-Wall' in qt_cflags: qt_cflags.remove ('-Wall')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')

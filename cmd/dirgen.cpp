@@ -127,11 +127,12 @@ void run () {
     bipolar = false;
 
   Math::RNG    rng;
+  std::uniform_real_distribution<double> uniform (0.0, 1.0);
   Math::Vector<double> v (2*ndirs);
 
   for (size_t n = 0; n < 2*ndirs; n+=2) {
-    v[n] =  Math::pi * (2.0 * rng.uniform() - 1.0);
-    v[n+1] = std::asin (2.0 * rng.uniform() - 1.0);
+    v[n] =  Math::pi * (2.0 * uniform(rng) - 1.0);
+    v[n+1] = std::asin (2.0 * uniform(rng) - 1.0);
   }
 
   gsl_multimin_function_fdf fdf;

@@ -33,12 +33,11 @@ namespace MR
       namespace Mode
       {
 
-        Base::Base (Window& parent, int flags) :
-          window (parent),
-          projection (window.glarea, window.font),
+        Base::Base (int flags) :
+          projection (window().glarea, window().font),
           features (flags),
           update_overlays (false),
-          painting (false) { } 
+          visible (true) { }
 
 
         Base::~Base ()
@@ -50,10 +49,11 @@ namespace MR
 
         void Base::paintGL ()
         {
-          painting = true;
+          GL_CHECK_ERROR;
 
-          projection.set_viewport (window, 0, 0, width(), height());
+          projection.set_viewport (window(), 0, 0, width(), height());
 
+          GL_CHECK_ERROR;
           gl::Clear (gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
           if (!image()) {
             projection.setup_render_text();
@@ -62,17 +62,20 @@ namespace MR
             goto done_painting;
           }
 
+          GL_CHECK_ERROR;
           if (!focus() || !target()) 
             reset_view();
 
           {
+            GL_CHECK_ERROR;
             // call mode's draw method:
             paint (projection);
 
             gl::Disable (gl::MULTISAMPLE);
+            GL_CHECK_ERROR;
 
             projection.setup_render_text();
-            if (window.show_voxel_info()) {
+            if (window().show_voxel_info()) {
               Point<> voxel (image()->interp.scanner2voxel (focus()));
               Image::VoxelType& imvox (image()->voxel());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
@@ -84,42 +87,66 @@ namespace MR
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
-              std::string value;
-              if (vox[0] >= 0 && vox[0] < imvox.dim (0) &&
-                  vox[1] >= 0 && vox[1] < imvox.dim (1) &&
-                  vox[2] >= 0 && vox[2] < imvox.dim (2)) {
-                imvox[0] = vox[0];
-                imvox[1] = vox[1];
-                imvox[2] = vox[2];
-                cfloat val = imvox.value();
-                value = "value: " + str (val);
-              }
-              else value = "value: ?";
-              projection.render_text (value, LeftEdge | BottomEdge, 2);
-            }
+              std::string value_str = "value: ";
+              cfloat value = image()->interpolate() ?
+                image()->trilinear_value(window().focus()) :
+                image()->nearest_neighbour_value(window().focus());
+              if(std::isnan(std::abs(value)))
+                value_str += "?";
+              else value_str += str(value);
+              projection.render_text (value_str, LeftEdge | BottomEdge, 2);
 
-            if (window.show_comments()) {
+              // Draw additional labels from tools
+              QList<QAction*> tools = window().tools()->actions();
+              for (size_t i = 0, line_num = 3, N = tools.size(); i < N; ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  line_num += dock->tool->draw_tool_labels (LeftEdge | BottomEdge, line_num, projection);
+              }
+            }
+            GL_CHECK_ERROR;
+
+            if (window().show_comments()) {
               for (size_t i = 0; i < image()->header().comments().size(); ++i)
                 projection.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
             }
 
             projection.done_render_text();
 
-            if (window.show_colourbar()) {
-              window.colourbar_renderer.render (projection, *image(), window.colourbar_position_index, image()->scale_inverted());
+            GL_CHECK_ERROR;
+            if (window().show_colourbar()) {
 
-              QList<QAction*> tools = window.tools()->actions();
-              for (int i = 0; i < tools.size(); ++i) {
+              auto &colourbar_renderer = window().colourbar_renderer;
+
+              colourbar_renderer.begin_render_colourbars (&projection, window().colourbar_position, 1);
+              colourbar_renderer.render (*image(), image()->scale_inverted());
+              colourbar_renderer.end_render_colourbars ();
+
+              QList<QAction*> tools = window().tools()->actions();
+              size_t num_tool_colourbars = 0;
+              for (size_t i = 0, N = tools.size(); i < N; ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
                 if (dock)
-                  dock->tool->drawOverlays (projection);
+                  num_tool_colourbars += dock->tool->visible_number_colourbars ();
               }
+
+
+              colourbar_renderer.begin_render_colourbars (&projection, window().tools_colourbar_position, num_tool_colourbars);
+
+              for (size_t i = 0, N = tools.size(); i < N; ++i) {
+                Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
+                if (dock)
+                  dock->tool->draw_colourbars ();
+              }
+
+              colourbar_renderer.end_render_colourbars ();
+
             }
+            GL_CHECK_ERROR;
 
           }
 
 done_painting:
-          painting = false;
           update_overlays = false;
         }
 
@@ -132,7 +159,11 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out (x * std::min (std::min (image()->header().vox(0), image()->header().vox(1)), image()->header().vox(2)), *proj);
+          const auto &header = image()->header();
+          float increment = snap_to_image() ?
+            x * header.vox(plane()) :
+            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+          move_in_out (increment, *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
         }
@@ -144,7 +175,7 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          set_focus (proj->screen_to_model (window.mouse_position(), focus()));
+          set_focus (proj->screen_to_model (window().mouse_position(), focus()));
           updateGL();
         }
 
@@ -153,8 +184,8 @@ done_painting:
 
         void Base::contrast_event ()
         {
-          image()->adjust_windowing (window.mouse_displacement());
-          window.on_scaling_changed();
+          image()->adjust_windowing (window().mouse_displacement());
+          window().on_scaling_changed();
           updateGL();
         }
 
@@ -164,7 +195,7 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          set_target (target() - proj->screen_to_model_direction (window.mouse_displacement(), target()));
+          set_target (target() - proj->screen_to_model_direction (window().mouse_displacement(), target()));
           updateGL();
         }
 
@@ -174,7 +205,7 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          move_in_out_FOV (window.mouse_displacement().y(), *proj);
+          move_in_out_FOV (window().mouse_displacement().y(), *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
         }
@@ -193,7 +224,7 @@ done_painting:
             return rot;
           }
 
-          QPoint dpos = window.mouse_displacement();
+          QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0) {
             rot.invalidate();
             return rot;
@@ -224,12 +255,12 @@ done_painting:
           if (!proj) 
             return rot;
 
-          QPoint dpos = window.mouse_displacement();
+          QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0) 
             return rot;
 
-          Point<> x1 (window.mouse_position().x() - proj->x_position() - proj->width()/2,
-              window.mouse_position().y() - proj->y_position() - proj->height()/2,
+          Point<> x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
+              window().mouse_position().y() - proj->y_position() - proj->height()/2,
               0.0);
 
           if (x1.norm() < 16.0f) 
@@ -255,7 +286,7 @@ done_painting:
         void Base::tilt_event ()
         {
           if (snap_to_image()) 
-            window.set_snap_to_image (false);
+            window().set_snap_to_image (false);
 
           Math::Versor<float> rot = get_tilt_rotation();
           if (!rot) 
@@ -273,7 +304,7 @@ done_painting:
         void Base::rotate_event ()
         {
           if (snap_to_image()) 
-            window.set_snap_to_image (false);
+            window().set_snap_to_image (false);
 
           Math::Versor<float> rot = get_rotate_rotation();
           if (!rot) 

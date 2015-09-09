@@ -117,7 +117,8 @@ class Processor {
   public:
     Processor (Shared& shared) :
       shared (shared),
-      signs (shared.get_init_signs()) { }
+      signs (shared.get_init_signs()),
+      uniform (0, signs.size()-1) { }
 
     void execute () {
       while (eval()); 
@@ -126,7 +127,7 @@ class Processor {
 
     void next_permutation ()
     {
-      signs[rng.uniform_int (signs.size())] *= -1;
+      signs[uniform(rng)] *= -1;
     }
 
     bool eval ()
@@ -145,6 +146,7 @@ class Processor {
     Shared& shared;
     std::vector<int> signs;
     Math::RNG rng;
+    std::uniform_int_distribution<int> uniform;
 };
 
 

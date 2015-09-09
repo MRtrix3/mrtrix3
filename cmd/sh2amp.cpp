@@ -47,7 +47,7 @@ void usage ()
                 "coefficients.").type_image_in ()
     + Argument ("directions",
                 "the list of directions along which the SH functions will "
-                "be sampled, generated using the gendir command").type_file_in ()
+                "be sampled, generated using the dirgen command").type_file_in ()
     + Argument ("output",
                 "the output image consisting of the amplitude of the SH "
                 "functions along the specified directions.").type_image_out ();

@@ -43,7 +43,7 @@ namespace MR
         {
           public:
             Object () : index_ (0) { }
-            Object (const std::string& source) : index_ (0) { compile (source); }
+            Object (const std::string& source) : index_ (0) { if(!source.empty()) compile (source); }
             ~Object () {
               if (index_) {
                 GL_DEBUG ("deleting OpenGL shader ID " + str(index_));
@@ -70,7 +70,7 @@ namespace MR
                 throw Exception ("error compiling OpenGL " + this->type() + " shader ID " + str (index_));
               }
             }
-            static const std::string type() { return TYPE == gl::VERTEX_SHADER ? "vertex" : "fragment"; }
+            static const std::string type() { return TYPE == gl::VERTEX_SHADER ? "vertex" : ( TYPE == gl::FRAGMENT_SHADER ? "fragment" : "geometry" ); }
 
             void debug () {
               assert (index_);
@@ -83,6 +83,7 @@ namespace MR
         };
 
         typedef Object<gl::VERTEX_SHADER> Vertex;
+        typedef Object<gl::GEOMETRY_SHADER> Geometry;
         typedef Object<gl::FRAGMENT_SHADER> Fragment;
 
 

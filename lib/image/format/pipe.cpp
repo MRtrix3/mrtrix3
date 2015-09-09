@@ -33,7 +33,7 @@ namespace MR
     namespace Format
     {
 
-      RefPtr<Handler::Base> Pipe::read (Header& H) const
+      std::shared_ptr<Handler::Base> Pipe::read (Header& H) const
       {
         if (H.name() == "-") {
           std::string name;
@@ -42,7 +42,7 @@ namespace MR
         }
         else {
           if (!File::is_tempfile (H.name())) 
-            return RefPtr<Handler::Base>();
+            return std::shared_ptr<Handler::Base>();
         }
 
         if (H.name().empty())
@@ -51,8 +51,8 @@ namespace MR
         if (!Path::has_suffix (H.name(), ".mif"))
           throw Exception ("MRtrix only supports the .mif format for command-line piping");
 
-        RefPtr<Handler::Base> original_handler (mrtrix_handler.read (H));
-        RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        std::shared_ptr<Handler::Base> original_handler (mrtrix_handler.read (H));
+        std::shared_ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
         return handler;
       }
 
@@ -73,10 +73,10 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> Pipe::create (Header& H) const
+      std::shared_ptr<Handler::Base> Pipe::create (Header& H) const
       {
-        RefPtr<Handler::Base> original_handler (mrtrix_handler.create (H));
-        RefPtr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
+        std::shared_ptr<Handler::Base> original_handler (mrtrix_handler.create (H));
+        std::shared_ptr<Handler::Pipe> handler (new Handler::Pipe (*original_handler));
         return handler;
       }
 

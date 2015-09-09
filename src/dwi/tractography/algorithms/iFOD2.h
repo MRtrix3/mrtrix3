@@ -201,12 +201,7 @@ namespace MR
                 const Point<float> init_dir (dir);
 
                 for (size_t n = 0; n < S.max_seed_attempts; n++) {
-                  if (init_dir.valid()) {
-                    dir = rand_dir (init_dir);
-                  } else {
-                    dir.set (rng.normal(), rng.normal(), rng.normal());
-                    dir.normalise();
-                  }
+                  dir = init_dir.valid() ? rand_dir (init_dir) : random_direction();
                   half_log_prob0 = FOD (dir);
                   if (std::isfinite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
                     goto end_init;
@@ -273,7 +268,7 @@ end_init:
                     max_truncation = val/max_val;
                 }
 
-                if (rng.uniform() < val/max_val) {
+                if (uniform_rng() < val/max_val) {
                   mean_sample_num += n;
                   half_log_prob0 = last_half_log_probN;
                   pos = positions[0];

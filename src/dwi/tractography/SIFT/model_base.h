@@ -27,7 +27,6 @@
 
 #include "app.h"
 #include "point.h"
-#include "ptr.h"
 
 #include "dwi/fixel_map.h"
 #include "dwi/fmls.h"
@@ -46,6 +45,8 @@
 
 #include "dwi/tractography/SIFT/proc_mask.h"
 #include "dwi/tractography/SIFT/types.h"
+
+#include "file/path.h"
 
 #include "image/buffer.h"
 #include "image/buffer_scratch.h"
@@ -161,6 +162,7 @@ namespace MR
             H.info() = dwi.info();
             H.set_ndim (3);
           }
+          ModelBase (const ModelBase& that) = delete;
 
           virtual ~ModelBase () { }
 
@@ -177,7 +179,7 @@ namespace MR
           double calc_cost_function() const;
 
           double mu() const { return FOD_sum / TD_sum; }
-          bool have_act_data() const { return act_5tt; }
+          bool have_act_data() const { return bool (act_5tt); }
 
           void output_proc_mask (const std::string&);
           void output_5tt_image (const std::string&);
@@ -191,7 +193,7 @@ namespace MR
           using Fixel_map<Fixel>::fixels;
           using Mapping::Fixel_TD_map<Fixel>::dirs;
 
-          Ptr< Image::BufferScratch<float> > act_5tt;
+          std::unique_ptr< Image::BufferScratch<float> > act_5tt;
           Image::BufferScratch<float> proc_mask_buffer;
           Image::BufferScratch<float>::voxel_type proc_mask;
           Image::Header H;
@@ -211,11 +213,6 @@ namespace MR
           void output_scatterplot (const std::string&) const;
           void output_fixel_count_image (const std::string&) const;
           void output_untracked_fixels (const std::string&, const std::string&) const;
-
-
-          ModelBase (const ModelBase& that) : 
-            Mapping::Fixel_TD_map<Fixel> (that), act_5tt (NULL), proc_mask_buffer (that.proc_mask.info()), 
-            proc_mask (proc_mask_buffer), FOD_sum (0.0), TD_sum (0.0), have_null_lobes (false) { assert (0); }
 
       };
 
@@ -271,6 +268,8 @@ namespace MR
         Tractography::Reader<float> file (path, properties);
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        if (!count)
+          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
         Mapping::TrackLoader loader (file, count);
         Mapping::TrackMapperBase mapper (H, dirs);

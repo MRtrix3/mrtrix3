@@ -103,14 +103,54 @@ class VoxelDEC : public Voxel
     bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
     bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
-    void normalise() const { Voxel::normalise(); colour.normalise(); }
-    void set_dir (const Point<float>& i) { colour =  vec2DEC (i); }
+    void normalise() const { colour.normalise(); Voxel::normalise(); }
+    void set_dir (const Point<float>& i) { colour = vec2DEC (i); }
     void add (const Point<float>& i, const float l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
     void operator+= (const Point<float>& i) const { Voxel::operator+= (1.0f); colour += vec2DEC (i); }
     const Point<float>& get_colour() const { return colour; }
 
   private:
     mutable Point<float> colour;
+
+};
+
+
+// Temporary fix for fixel stats branch
+// Stores precise direction through voxel rather than mapping to a DEC colour or a dixel
+class VoxelDir : public Voxel
+{
+
+  public:
+    VoxelDir () :
+        Voxel (),
+        dir (Point<float> (0.0f, 0.0f, 0.0f)) { }
+
+    VoxelDir (const Point<int>& V) :
+        Voxel (V),
+        dir (Point<float> (0.0f, 0.0f, 0.0f)) { }
+
+    VoxelDir (const Point<int>& V, const Point<float>& d) :
+        Voxel (V),
+        dir (d) { }
+
+    VoxelDir (const Point<int>& V, const Point<float>& d, const float l) :
+        Voxel (V, l),
+        dir (d) { }
+
+    VoxelDir& operator=  (const VoxelDir& V)   { Voxel::operator= (V); dir = V.dir; return (*this); }
+    VoxelDir& operator=  (const Point<int>& V) { Voxel::operator= (V); dir = Point<float> (0.0f, 0.0f, 0.0f); return (*this); }
+
+    bool      operator== (const VoxelDir& V) const { return Voxel::operator== (V); }
+    bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
+
+    void normalise() const { dir.normalise(); Voxel::normalise(); }
+    void set_dir (const Point<float>& i) { dir = i; }
+    void add (const Point<float>& i, const float l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }
+    void operator+= (const Point<float>& i) const { Voxel::operator+= (1.0f); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }
+    const Point<float>& get_dir() const { return dir; }
+
+  private:
+    mutable Point<float> dir;
 
 };
 
@@ -272,6 +312,29 @@ class SetVoxelDEC : public std::set<VoxelDEC>, public SetVoxelExtras
     inline void insert (const Point<int>& v, const Point<float>& d, const float l)
     {
       const VoxelDEC temp (v, d, l);
+      insert (temp);
+    }
+};
+class SetVoxelDir : public std::set<VoxelDir>, public SetVoxelExtras
+{
+  public:
+    typedef VoxelDir VoxType;
+    inline void insert (const VoxelDir& v)
+    {
+      iterator existing = std::set<VoxelDir>::find (v);
+      if (existing == std::set<VoxelDir>::end())
+        std::set<VoxelDir>::insert (v);
+      else
+        (*existing).add (v.get_dir(), v.get_length());
+    }
+    inline void insert (const Point<int>& v, const Point<float>& d)
+    {
+      const VoxelDir temp (v, d);
+      insert (temp);
+    }
+    inline void insert (const Point<int>& v, const Point<float>& d, const float l)
+    {
+      const VoxelDir temp (v, d, l);
       insert (temp);
     }
 };

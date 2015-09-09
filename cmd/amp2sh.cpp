@@ -43,7 +43,7 @@ void usage ()
     "calculated by least-squares linear fitting."
 
   + "The directions can be defined either as a DW gradient scheme (for example to compute "
-    "the SH representation of the DW signal) or a set of [az el] pairs as output by the gendir "
+    "the SH representation of the DW signal) or a set of [az el] pairs as output by the dirgen "
     "command. The DW gradient scheme or direction set can be supplied within the input "
     "image header or using the -gradient or -directions option. Note that if a direction set "
     "and DW gradient scheme can be found, the direction set will be used by default."
@@ -78,7 +78,7 @@ void usage ()
   + Option ("directions", "the directions corresponding to the input amplitude image used to sample AFD. "
                           "By default this option is not required providing the direction set is supplied "
                           "in the amplitude image. This should be supplied as a list of directions [az el], "
-                          "as generated using the gendir command")
+                          "as generated using the dirgen command")
   +   Argument ("file").type_file_in()
 
   + Option ("rician", "correct for Rician noise induced bias, using noise map supplied")
@@ -246,7 +246,7 @@ void run ()
     }
   }
 
-  Math::Matrix<value_type> sh2amp = DWI::compute_SH2amp_mapping (dirs);
+  Math::Matrix<value_type> sh2amp = DWI::compute_SH2amp_mapping (dirs, true, 8);
 
 
   bool normalise = get_options ("normalise").size();

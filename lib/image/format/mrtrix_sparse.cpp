@@ -53,11 +53,11 @@ namespace MR
       // msh: MRtrix Sparse image Header
       // msf: MRtrix Sparse image File
 
-      RefPtr<Handler::Base> MRtrix_sparse::read (Header& H) const
+      std::shared_ptr<Handler::Base> MRtrix_sparse::read (Header& H) const
       {
 
         if (!Path::has_suffix (H.name(), ".msh") && !Path::has_suffix (H.name(), ".msf"))
-          return RefPtr<Handler::Base>();
+          return std::shared_ptr<Handler::Base>();
 
         File::KeyValue kv (H.name(), "mrtrix sparse image");
 
@@ -98,7 +98,7 @@ namespace MR
         for (size_t n = 0; n < image_list.size(); ++n)
           base_handler.files.push_back (File::Entry (image_list[n].name(), image_offset));
 
-        RefPtr<Handler::Base> handler (new Handler::Sparse (base_handler, name_it->second, to<size_t>(size_it->second), File::Entry (sparse_fname, sparse_offset)));
+        std::shared_ptr<Handler::Base> handler (new Handler::Sparse (base_handler, name_it->second, to<size_t>(size_it->second), File::Entry (sparse_fname, sparse_offset)));
 
         return handler;
       }
@@ -130,7 +130,7 @@ namespace MR
 
 
 
-      RefPtr<Handler::Base> MRtrix_sparse::create (Header& H) const
+      std::shared_ptr<Handler::Base> MRtrix_sparse::create (Header& H) const
       {
 
         Header::const_iterator name_it = H.find (Image::Sparse::name_key);
@@ -181,7 +181,7 @@ namespace MR
         Handler::Default base_handler (H);
         base_handler.files.push_back (File::Entry (image_path, image_offset));
 
-        RefPtr<Handler::Base> handler (new Handler::Sparse (base_handler, name_it->second, to<size_t>(size_it->second), File::Entry (sparse_path, sparse_offset)));
+        std::shared_ptr<Handler::Base> handler (new Handler::Sparse (base_handler, name_it->second, to<size_t>(size_it->second), File::Entry (sparse_path, sparse_offset)));
 
         return handler;
       }
