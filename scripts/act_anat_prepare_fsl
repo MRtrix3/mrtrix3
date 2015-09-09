@@ -104,14 +104,25 @@ for struct in sgm_structures:
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
 
-# Combine all tissue types using the 5ttgen command
 # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
 # Will have to wait and see whether this changes, and update the script accordingly
 if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
   fast_suffix = '.nii.gz'
-runCommand('5ttgen T1_bet_pve_0' + fast_suffix + ' T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
+
+# Combine the tissue images into the 5TT format within the script itself
+# Step 1: Run LCC on the WM image
+runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connected wm_mask.mif -largest')
+# Step 2: Generate the images in the same fashion as the 5ttgen command
+runCommand('mrconvert T1_bet_pve_0' + fast_suffix + ' csf.mif')
+runCommand('mrcalc 1 csf.mif -sub all_sgms.nii -min sgm.mif')
+runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' -add -div multiplier.mif')
+runCommand('mrcalc multiplier.mif -finite multiplier.mif -mult multiplier_noNAN.mif')
+runCommand('mrcalc T1_bet_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')
+runCommand('mrcalc T1_bet_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult wm.mif')
+runCommand('mrcalc 0 wm.mif -min path.mif')
+runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
 root,ext = os.path.splitext(sys.argv[2])

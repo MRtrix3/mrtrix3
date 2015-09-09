@@ -39,7 +39,7 @@ namespace MR
             if (complete())
               return false;
             if (tck.size() && seeds) {
-              const Point<float>& p = tck[tck.get_seed_index()];
+              const auto& p = tck[tck.get_seed_index()];
               (*seeds) << str(writer.count) << "," << str(tck.get_seed_index()) << "," << str(p[0]) << "," << str(p[1]) << "," << str(p[2]) << ",\n";
             }
             writer (tck);

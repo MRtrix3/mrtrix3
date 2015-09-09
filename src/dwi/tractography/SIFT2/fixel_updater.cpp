@@ -39,10 +39,10 @@ namespace MR {
 
 
       FixelUpdater::FixelUpdater (TckFactor& tckfactor) :
-        master (tckfactor),
-        fixel_coeff_sums (tckfactor.fixels.size(), 0.0),
-        fixel_TDs        (tckfactor.fixels.size(), 0.0),
-        fixel_counts     (tckfactor.fixels.size(), 0) { }
+          master (tckfactor),
+          fixel_coeff_sums (tckfactor.fixels.size(), 0.0),
+          fixel_TDs        (tckfactor.fixels.size(), 0.0),
+          fixel_counts     (tckfactor.fixels.size(), 0) { }
 
 
 
@@ -60,9 +60,9 @@ namespace MR {
       bool FixelUpdater::operator() (const SIFT::TrackIndexRange& range)
       {
         for (SIFT::track_t track_index = range.first; track_index != range.second; ++track_index) {
-          const float coefficient = master.coefficients[track_index];
+          const double coefficient = master.coefficients[track_index];
           const SIFT::TrackContribution& this_contribution (*(master.contributions[track_index]));
-          const float weighting_factor = (coefficient > master.min_coeff) ? std::exp (coefficient) : 0.0;
+          const double weighting_factor = (coefficient > master.min_coeff) ? std::exp (coefficient) : 0.0;
           for (size_t j = 0; j != this_contribution.dim(); ++j) {
             const size_t fixel_index = this_contribution[j].get_fixel_index();
             const float length = this_contribution[j].get_length();

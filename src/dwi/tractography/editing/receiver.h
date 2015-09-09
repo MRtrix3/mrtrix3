@@ -47,7 +47,7 @@ namespace MR {
 
           public:
 
-            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t n, const size_t s, const bool e) :
+            Receiver (const std::string& path, const Properties& properties, const size_t n, const size_t s, const bool e) :
               writer (path, properties),
               number (n),
               skip (s),
@@ -65,19 +65,19 @@ namespace MR {
             }
 
 
-            bool operator() (const Tractography::Streamline<>&);
+            bool operator() (const Streamline<>&);
 
 
           private:
 
-            Tractography::Writer<> writer;
+            Writer<> writer;
             const uint64_t number;
             uint64_t skip;
             const bool ends_only;
             uint64_t count, total_count;
             ProgressBar progress;
 
-            void output (const Tractography::Streamline<>&);
+            void output (const Streamline<>&);
 
         };
 

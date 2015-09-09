@@ -23,8 +23,7 @@
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
-#include "image/adapter/subset.h"
-#include "image/copy.h"
+#include "adapter/subset.h"
 
 
 namespace MR {
@@ -62,7 +61,7 @@ namespace MR {
 
       void load_rois (Properties& properties)
       {
-        Options opt = get_options ("include");
+        auto opt = get_options ("include");
         for (size_t i = 0; i < opt.size(); ++i)
           properties.include.add (ROI (opt[i][0]));
 
@@ -80,24 +79,23 @@ namespace MR {
 
 
 
-      Mask* get_mask (const std::string& name)
+      Image<bool> Mask::__get_mask (const std::string& name)
       {
-        Image::Buffer<bool> data (name);
-        auto vox = data.voxel();
-        std::vector<size_t> bottom (vox.ndim(), 0), top (vox.ndim(), 0);
+        auto data = Image<bool>::open (name);
+        std::vector<size_t> bottom (data.ndim(), 0), top (data.ndim(), 0);
         std::fill_n (bottom.begin(), 3, std::numeric_limits<size_t>::max());
 
         size_t sum = 0;
 
-        for (auto l = Image::Loop (0,3) (vox); l; ++l) {
-          if (vox.value()) {
+        for (auto l = Loop (0,3) (data); l; ++l) {
+          if (data.value()) {
             ++sum;
-            if (size_t(vox[0]) < bottom[0]) bottom[0] = vox[0];
-            if (size_t(vox[0]) > top[0])    top[0]    = vox[0];
-            if (size_t(vox[1]) < bottom[1]) bottom[1] = vox[1];
-            if (size_t(vox[1]) > top[1])    top[1]    = vox[1];
-            if (size_t(vox[2]) < bottom[2]) bottom[2] = vox[2];
-            if (size_t(vox[2]) > top[2])    top[2]    = vox[2];
+            if (size_t(data.index(0)) < bottom[0]) bottom[0] = data.index(0);
+            if (size_t(data.index(0)) > top[0])    top[0]    = data.index(0);
+            if (size_t(data.index(1)) < bottom[1]) bottom[1] = data.index(1);
+            if (size_t(data.index(1)) > top[1])    top[1]    = data.index(1);
+            if (size_t(data.index(2)) < bottom[2]) bottom[2] = data.index(2);
+            if (size_t(data.index(2)) > top[2])    top[2]    = data.index(2);
           } 
         }
 
@@ -108,17 +106,16 @@ namespace MR {
         if (bottom[1]) --bottom[1];
         if (bottom[2]) --bottom[2];
 
-        top[0] = std::min (size_t (data.dim(0)-bottom[0]), top[0]+2-bottom[0]);
-        top[1] = std::min (size_t (data.dim(1)-bottom[1]), top[1]+2-bottom[1]);
-        top[2] = std::min (size_t (data.dim(2)-bottom[2]), top[2]+2-bottom[2]);
+        top[0] = std::min (size_t (data.size(0)-bottom[0]), top[0]+2-bottom[0]);
+        top[1] = std::min (size_t (data.size(1)-bottom[1]), top[1]+2-bottom[1]);
+        top[2] = std::min (size_t (data.size(2)-bottom[2]), top[2]+2-bottom[2]);
 
-        Image::Adapter::Subset<decltype(vox)> sub (vox, bottom, top);
-        Image::Info info (sub.info());
-        if (info.ndim() > 3)
-          info.set_ndim (3);
-        
-        return new Mask (sub, info, data.name());
-
+        auto sub = Adapter::make<Adapter::Subset> (data, bottom, top);
+        Header mask_header (sub);
+        mask_header.set_ndim (3);
+        auto mask = Image<bool>::scratch (mask_header, data.name());
+        threaded_copy (sub, mask, 0, 3);
+        return mask;
       }
 
 

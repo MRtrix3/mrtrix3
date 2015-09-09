@@ -31,11 +31,9 @@
 
 namespace MR {
 
-  namespace Image { 
-    class Header; 
-    namespace Handler {
-      class Base;
-    }
+  class Header; 
+  namespace ImageIO {
+    class Base;
   }
 
   namespace File {
@@ -43,7 +41,7 @@ namespace MR {
 
       class Series;
 
-      std::shared_ptr<MR::Image::Handler::Base> dicom_to_mapper (MR::Image::Header& H, std::vector<std::shared_ptr<Series>>& series);
+      std::unique_ptr<MR::ImageIO::Base> dicom_to_mapper (MR::Header& H, std::vector<std::shared_ptr<Series>>& series);
       
     }
   }

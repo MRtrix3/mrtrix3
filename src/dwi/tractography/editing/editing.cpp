@@ -99,7 +99,7 @@ void load_properties (Tractography::Properties& properties)
 {
 
   // ROIOption
-  Options opt = get_options ("include");
+  auto opt = get_options ("include");
   for (size_t i = 0; i < opt.size(); ++i)
     properties.include.add (ROI (opt[i][0]));
 

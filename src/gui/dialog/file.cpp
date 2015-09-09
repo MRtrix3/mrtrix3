@@ -24,7 +24,7 @@
 
 #include "app.h"
 #include "gui/dialog/file.h"
-#include "image/format/list.h"
+#include "formats/list.h"
 
 #ifdef MRTRIX_MACOSX
 # define FILE_DIALOG_OPTIONS QFileDialog::DontUseNativeDialog
@@ -41,7 +41,7 @@ namespace MR
       namespace File 
       {
       
-        const std::string image_filter_string = "Medical Images (*" + join (MR::Image::Format::known_extensions, " *") + ")";
+        const std::string image_filter_string = "Medical Images (*" + join (MR::Formats::known_extensions, " *") + ")";
 
 
 

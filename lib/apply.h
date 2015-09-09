@@ -32,7 +32,7 @@ namespace MR {
     template<size_t N>
       struct Apply {
         template<typename F, typename T>
-          static inline void apply (F && f, T && t)
+          static FORCE_INLINE void apply (F && f, T && t)
           {
             Apply<N-1>::apply (::std::forward<F>(f), ::std::forward<T>(t));
             ::std::forward<F>(f) (::std::get<N> (::std::forward<T>(t)));
@@ -42,7 +42,7 @@ namespace MR {
     template<>
       struct Apply<0> {
         template<typename F, typename T>
-          static inline void apply (F && f, T && t)
+          static FORCE_INLINE void apply (F && f, T && t)
           {
             ::std::forward<F>(f) (::std::get<0> (::std::forward<T>(t)));
           }
@@ -54,7 +54,7 @@ namespace MR {
     template<size_t N>
       struct Unpack {
         template<typename F, typename T, typename... A>
-          static inline auto unpack (F && f, T && t, A &&... a)
+          static FORCE_INLINE auto unpack (F && f, T && t, A &&... a)
           -> decltype(Unpack<N-1>::unpack (
                 ::std::forward<F>(f), ::std::forward<T>(t),
                 ::std::get<N-1>(::std::forward<T>(t)), ::std::forward<A>(a)...
@@ -69,7 +69,7 @@ namespace MR {
     template<>
       struct Unpack<0> {
         template<typename F, typename T, typename... A>
-          static inline auto unpack (F && f, T &&, A &&... a)
+          static FORCE_INLINE auto unpack (F && f, T &&, A &&... a)
           -> decltype(::std::forward<F>(f)(::std::forward<A>(a)...))
           {
             return ::std::forward<F>(f)(::std::forward<A>(a)...);
@@ -83,7 +83,7 @@ namespace MR {
 
   //! invoke \c f(x) for each entry in \c t
   template <class F, class T>
-    inline void apply (F && f, T && t) 
+    FORCE_INLINE void apply (F && f, T && t) 
     {
       Apply< ::std::tuple_size<
         typename ::std::decay<T>::type
@@ -92,7 +92,7 @@ namespace MR {
 
   //! if \c t is a tuple of elements \c a..., invoke \c f(a...)
   template<typename F, typename T>
-    inline auto unpack (F && f, T && t)
+    FORCE_INLINE auto unpack (F && f, T && t)
     -> decltype(Unpack< ::std::tuple_size<
         typename ::std::decay<T>::type
         >::value>::unpack (::std::forward<F>(f), ::std::forward<T>(t)))

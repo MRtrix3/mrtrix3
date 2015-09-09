@@ -23,14 +23,14 @@
 #include "dwi/tractography/seeding/dynamic.h"
 
 #include "app.h"
-#include "image/nav.h"
 #include "dwi/fmls.h"
 #include "math/SH.h"
+#include "dwi/tractography/rng.h"
+#include "dwi/tractography/seeding/dynamic.h"
 
-#include "image/buffer_sparse.h"
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 
 
 
@@ -46,13 +46,13 @@ namespace MR
 
 
 
-      bool Dynamic_ACT_additions::check_seed (Point<float>& p)
+      bool Dynamic_ACT_additions::check_seed (Eigen::Vector3f& p)
       {
 
         // Needs to be thread-safe
-        Interp interp (interp_template);
+        auto interp = interp_template;
 
-        interp.scanner (p);
+        interp.scanner (p.cast<double>());
         const ACT::Tissues tissues (interp);
 
         if (tissues.get_csf() > tissues.get_wm() + tissues.get_gm())
@@ -64,12 +64,14 @@ namespace MR
         // Detrimental to remove this in all cases tested
         return gmwmi_finder.find_interface (p, interp);
 
+        //auto retval = gmwmi_finder.find_interface (p);
+        //return retval;
       }
 
 
 
 
-      Dynamic::Dynamic (const std::string& in, Image::Buffer<float>& fod_data, const size_t num, const DWI::Directions::FastLookupSet& dirs) :
+      Dynamic::Dynamic (const std::string& in, Image<float>& fod_data, const size_t num, const DWI::Directions::FastLookupSet& dirs) :
           Base (in, "dynamic", MAX_TRACKING_SEED_ATTEMPTS_DYNAMIC),
           SIFT::ModelBase<Fixel_TD_seed> (fod_data, dirs),
           target_trackcount (num),
@@ -80,18 +82,18 @@ namespace MR
           seed_output ("seeds.tck", Tractography::Properties()),
           test_fixel (0),
 #endif
-          transform (SIFT::ModelBase<Fixel_TD_seed>::info())
+          transform (fod_data.header())
       {
-        App::Options opt = App::get_options ("act");
+        auto opt = App::get_options ("act");
         if (opt.size())
           act.reset (new Dynamic_ACT_additions (opt[0][0]));
 
         perform_FOD_segmentation (fod_data);
 
         // Have to set a volume so that Seeding::List works correctly
-        for (std::vector<Fixel>::const_iterator i = fixels.begin(); i != fixels.end(); ++i)
-          volume += i->get_weight();
-        volume *= (fod_data.vox(0) * fod_data.vox(1) * fod_data.vox(2));
+        for (const auto& i : fixels)
+          volume += i.get_weight();
+        volume *= fod_data.spacing(0) * fod_data.spacing(1) * fod_data.spacing(2);
 
         // Prevent divide-by-zero at commencement
         SIFT::ModelBase<Fixel_TD_seed>::TD_sum = DYNAMIC_SEED_INITIAL_TD_SUM;
@@ -170,8 +172,9 @@ namespace MR
 
 
 
+      bool Dynamic::get_seed (Eigen::Vector3f&) const { return false; }
 
-      bool Dynamic::get_seed (Point<float>& p, Point<float>& d)
+      bool Dynamic::get_seed (Eigen::Vector3f& p, Eigen::Vector3f& d) 
       {
 
         uint64_t this_attempts = 0;
@@ -181,7 +184,7 @@ namespace MR
         while (1) {
 
           ++this_attempts;
-          const size_t fixel_index = 1 + uniform_int (rng.rng);
+          const size_t fixel_index = 1 + uniform_int (*rng);
           Fixel& fixel = fixels[fixel_index];
           float seed_prob;
           if (fixel.can_update()) {
@@ -217,19 +220,19 @@ namespace MR
             seed_prob = fixel.get_old_prob();
           }
 
-          if (seed_prob > uniform_float (rng.rng)) {
+          if (seed_prob > uniform_float (*rng)) {
 
-            const Point<int>& v (fixel.get_voxel());
-            const Point<float> vp (v[0]+rng()-0.5, v[1]+rng()-0.5, v[2]+rng()-0.5);
-            p = transform.voxel2scanner (vp);
+            const Eigen::Vector3i& v (fixel.get_voxel());
+            const Eigen::Vector3f vp (v[0]+uniform_float(*rng)-0.5, v[1]+uniform_float(*rng)-0.5, v[2]+uniform_float(*rng)-0.5);
+            p = transform.voxel2scanner.cast<float>() * vp;
 
             bool good_seed = !act;
             if (!good_seed) {
 
               if (act->check_seed (p)) {
                 // Make sure that the seed point has not left the intended voxel
-                const Point<float> new_v_float (transform.scanner2voxel (p));
-                const Point<int> new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
+                const Eigen::Vector3f new_v_float (transform.scanner2voxel.cast<float>() * p);
+                const Eigen::Vector3i new_v (std::round (new_v_float[0]), std::round (new_v_float[1]), std::round (new_v_float[2]));
                 good_seed = (new_v == v);
               }
             }
@@ -260,8 +263,8 @@ namespace MR
       {
         if (!SIFT::ModelBase<Fixel_TD_seed>::operator() (in))
           return false;
-        VoxelAccessor v (accessor);
-        Image::Nav::set_pos (v, in.vox);
+        VoxelAccessor v (accessor());
+        assign_pos_of (in.vox).to (v);
         if (v.value()) {
           for (DWI::Fixel_map<Fixel>::Iterator i = begin (v); i; ++i)
             i().set_voxel (in.vox);
@@ -273,11 +276,11 @@ namespace MR
 
 
 #ifdef DYNAMIC_SEED_DEBUGGING
-      void Dynamic::write_seed (const Point<float>& p)
+      void Dynamic::write_seed (const Eigen::Vector3f& p)
       {
         static std::mutex mutex;
         std::lock_guard<std::mutex> lock (mutex);
-        std::vector< Point<float> > tck;
+        std::vector< Eigen::Vector3f > tck;
         tck.push_back (p);
         seed_output (tck);
       }

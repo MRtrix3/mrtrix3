@@ -32,6 +32,8 @@ using namespace App;
 
 void usage ()
 {
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+
   DESCRIPTION
   + "print out information about track scalar file";
 
@@ -56,7 +58,7 @@ void usage ()
 void run ()
 {
 
-  Options opt = get_options ("ascii");
+  auto opt = get_options ("ascii");
   bool actual_count = get_options ("count").size();
 
   for (size_t i = 0; i < argument.size(); ++i) {

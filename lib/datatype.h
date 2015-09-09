@@ -23,8 +23,7 @@
 #ifndef __data_type_h__
 #define __data_type_h__
 
-#include "args.h"
-#include "mrtrix.h"
+#include "cmdline_option.h"
 
 #ifdef Complex
 # undef Complex
@@ -36,9 +35,13 @@ namespace MR
   class DataType
   {
     public:
-      DataType () : dt (DataType::Native) { }
-      DataType (uint8_t type) : dt (type) { }
-      DataType (const DataType& DT) : dt (DT.dt) { }
+      DataType () noexcept : dt (DataType::Native) { }
+      DataType (uint8_t type) noexcept : dt (type) { }
+      DataType (const DataType&) noexcept = default;
+      DataType (DataType&&) noexcept = default;
+      DataType& operator= (const DataType&) noexcept = default;
+      DataType& operator= (DataType&&) noexcept = default;
+
       bool undefined () const {
         return dt == Undefined;
       }
@@ -59,10 +62,6 @@ namespace MR
       }
       bool operator!= (const DataType DT) const {
         return dt != DT.dt;
-      }
-      const DataType& operator= (const DataType DT) {
-        dt = DT.dt;
-        return *this;
       }
 
       bool is (uint8_t type) const {
@@ -185,31 +184,11 @@ namespace MR
         return stream;
       }
 
-      template <typename ValueType> static inline ValueType default_out_of_bounds_value () {
-        return ValueType(0);
-      }
-
     protected:
       uint8_t dt;
 
   };
 
-  template <> inline float DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline double DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<double>::quiet_NaN();
-  }
-  template <> inline cfloat DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<float>::quiet_NaN();
-  }
-  template <> inline cdouble DataType::default_out_of_bounds_value ()
-  {
-    return std::numeric_limits<cdouble>::quiet_NaN();
-  }
 
 
   template <> inline DataType DataType::from<bool> ()

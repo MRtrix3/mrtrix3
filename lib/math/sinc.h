@@ -45,8 +45,8 @@ namespace MR
           assert (w % 2);
         }
 
-        template <class Set>
-        void set (const Set& set, const size_t axis, const value_type position) {
+        template <class ImageType>
+        void set (const ImageType& image, const size_t axis, const value_type position) {
 
           if (position == current_pos)
             return;
@@ -59,8 +59,8 @@ namespace MR
             const int voxel = kernel_centre - max_offset_from_kernel_centre + i;
             if (voxel < 0)
               indices[i] = -voxel - 1;
-            else if (voxel >= set.dim (axis))
-              indices[i] = (2 * int(set.dim (axis))) - voxel - 1;
+            else if (voxel >= image.size (axis))
+              indices[i] = (2 * int(image.size (axis))) - voxel - 1;
             else
               indices[i] = voxel;
 
@@ -97,16 +97,16 @@ namespace MR
 
         size_t index (const size_t i) const { return indices[i]; }
 
-        template <class Set>
-        value_type value (Set& set, const size_t axis) const {
+        template <class ImageType>
+        value_type value (ImageType& image, const size_t axis) const {
           assert (current_pos != NAN);
-          const size_t init_pos = set[axis];
+          const size_t init_pos = image.index(axis);
           value_type sum = 0.0;
           for (size_t i = 0; i != window_size; ++i) {
-            set[axis] = indices[i];
-            sum += set.value() * weights[i];
+            image.index(axis) = indices[i];
+            sum += image.value() * weights[i];
           }
-          set[axis] = init_pos;
+          image.index(axis) = init_pos;
           return sum;
         }
 

@@ -23,8 +23,18 @@
 #ifndef __mrtrix_types_h__
 #define __mrtrix_types_h__
 
+#define EIGEN_DONT_PARALLELIZE
+
 #include <stdint.h>
 #include <complex>
+#include <iostream>
+#include <vector>
+
+// These lines are to silence deprecation warnings with Eigen & GCC v5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#include <Eigen/Geometry>
+#pragma GCC diagnostic pop
 
 /*! \defgroup VLA Variable-length array macros
  *
@@ -99,6 +109,12 @@
 
 //! \}
 
+#ifdef NDEBUG
+# define FORCE_INLINE inline __attribute__((always_inline))
+#else // don't force inlining in debug mode, so we can get more informative backtraces
+# define FORCE_INLINE inline
+#endif
+
 namespace MR
 {
 
@@ -114,14 +130,61 @@ namespace MR
         T (x.begin(), x.end()) { }
     };
 
+  //! the default type used throughout MRtrix
+  typedef double default_type;
+
+  constexpr default_type NaN = std::numeric_limits<default_type>::quiet_NaN();
+  constexpr default_type Inf = std::numeric_limits<default_type>::infinity();
+
+  //! the type for the affine transform of an image:
+  typedef Eigen::Transform<default_type, 3, Eigen::AffineCompact> transform_type;
+
+
+  //! check whether type is complex:
+  template <class ValueType> struct is_complex : std::false_type { };
+  template <class ValueType> struct is_complex<std::complex<ValueType>> : std::true_type { };
+
+
+  //! check whether type is compatible with MRtrix3's file IO backend:
+  template <class ValueType> 
+    struct is_data_type : 
+      std::integral_constant<bool, std::is_arithmetic<ValueType>::value || is_complex<ValueType>::value> { };
+
 
 }
 
 namespace std 
 {
+  // these are not defined in the standard, but are needed 
+  // for use in generic templates:
   inline uint8_t abs (uint8_t x) { return x; }
   inline uint16_t abs (uint16_t x) { return x; }
   inline uint32_t abs (uint32_t x) { return x; }
+
+
+  template <class T> inline ostream& operator<< (ostream& stream, const vector<T>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < V.size(); n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
+  template <class T, std::size_t N> inline ostream& operator<< (ostream& stream, const array<T,N>& V)
+  {
+    stream << "[ ";
+    for (size_t n = 0; n < N; n++) 
+      stream << V[n] << " ";
+    stream << "]";
+    return stream;
+  }
+
+}
+
+namespace Eigen {
+  typedef Matrix<MR::default_type,3,1> Vector3;
+  typedef Matrix<MR::default_type,4,1> Vector4;
 }
 
 #endif

@@ -38,6 +38,14 @@ namespace MR
         Entry (const std::string& fname, int64_t offset = 0) :
           name (fname), start (offset) { }
 
+        Entry (const Entry&) = default;
+        Entry (Entry&&) noexcept = default;
+        Entry& operator=(Entry&& E) noexcept {
+          name = std::move (E.name);
+          start = E.start;
+          return *this;
+        }
+
         std::string name;
         int64_t start;
     };

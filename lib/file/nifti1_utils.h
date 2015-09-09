@@ -24,27 +24,24 @@
 #define __file_nifti1_utils_h__
 
 #include "file/nifti1.h"
-#include "math/matrix.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    class Header;
-  }
+  class Header;
+
   namespace File
   {
     namespace NIfTI
     {
 
-      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& order);
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& order);
 
-      void check (Image::Header& H, bool single_file);
+      void check (Header& H, bool single_file);
       //! \todo add straight Analyse support
-      size_t read (Image::Header& H, const nifti_1_header& NH);
-      void check (Image::Header& H, bool single_file);
+      size_t read (Header& H, const nifti_1_header& NH);
+      void check (Header& H, bool single_file);
       //! \todo need to double-check new transform handling code
-      void write (nifti_1_header& NH, const Image::Header& H, bool single_file);
+      void write (nifti_1_header& NH, const Header& H, bool single_file);
 
     }
   }

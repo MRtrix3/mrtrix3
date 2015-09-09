@@ -48,25 +48,24 @@ namespace MR {
             Loader (const std::vector<std::string>& files) :
               file_list (files),
               dummy_properties (),
-              reader (new Tractography::Reader<> (file_list[0], dummy_properties)),
+              reader (new Reader (file_list[0], dummy_properties)),
               file_index (0) { }
 
-            bool operator() (Tractography::Streamline<>&);
+            bool operator() (Streamline<>&);
 
 
           private:
             const std::vector<std::string>& file_list;
-            Tractography::Properties dummy_properties;
-            std::unique_ptr<Tractography::Reader<>> reader;
+            Properties dummy_properties;
+            std::unique_ptr<Reader> reader;
             size_t file_index;
 
         };
 
 
 
-        bool Loader::operator() (Tractography::Streamline<>& out)
+        bool Loader::operator() (Streamline<>& out)
         {
-
           out.clear();
 
           if ((*reader) (out))
@@ -74,7 +73,7 @@ namespace MR {
 
           while (++file_index != file_list.size()) {
             dummy_properties.clear();
-            reader.reset (new Tractography::Reader<> (file_list[file_index], dummy_properties));
+            reader.reset (new Reader (file_list[file_index], dummy_properties));
             if ((*reader) (out))
               return true;
           }

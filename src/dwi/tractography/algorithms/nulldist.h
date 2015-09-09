@@ -23,7 +23,6 @@
 #ifndef __dwi_tractography_algorithms_nulldist_h__
 #define __dwi_tractography_algorithms_nulldist_h__
 
-#include "point.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
 #include "dwi/tractography/tracking/types.h"
@@ -53,19 +52,19 @@ namespace MR
           sin_max_angle = std::sin (max_angle);
           properties["method"] = "Nulldist";
         }
-        value_type sin_max_angle;
+        float sin_max_angle;
       };
 
       NullDist (const Shared& shared) :
         MethodBase (shared),
         S (shared),
-        source (S.source_voxel) { }
+        source (S.source) { }
 
 
       bool init() {
         if (!get_data (source))
           return false;
-        dir = S.init_dir.valid() ? S.init_dir : random_direction();
+        dir = S.init_dir.allFinite() ? S.init_dir : random_direction();
         return true;
       }
 
@@ -73,19 +72,19 @@ namespace MR
         if (!get_data (source))
           return EXIT_IMAGE;
         dir = rand_dir (dir);
-        dir.normalise();
+        dir.normalize();
         pos += S.step_size * dir;
         return CONTINUE;
       }
 
-      float get_metric() { return uniform_rng(); }
+      float get_metric() { return uniform(*rng); }
 
 
       protected:
       const Shared& S;
-      Interpolator<SourceBufferType::voxel_type>::type source;
+      Interpolator<Image<float>>::type source;
 
-      Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+      Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
     };
 

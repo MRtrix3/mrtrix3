@@ -24,7 +24,6 @@
 #include <vector>
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
 #include "memory.h"
 
@@ -49,7 +48,7 @@ using namespace MR::DWI::Tractography;
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "calculate statistics on streamlines length.";
@@ -112,7 +111,7 @@ void run ()
 
   {
     Tractography::Properties properties;
-    Tractography::Reader<float> reader (argument[0], properties);
+    Tractography::Reader reader (argument[0], properties);
 
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);
@@ -128,12 +127,12 @@ void run ()
     }
 
     std::unique_ptr<File::OFStream> dump;
-    Options opt = get_options ("dump");
+    auto opt = get_options ("dump");
     if (opt.size())
       dump.reset (new File::OFStream (std::string(opt[0][0]), std::ios_base::out | std::ios_base::trunc));
 
     ProgressBar progress ("Reading track file... ", header_count);
-    Tractography::Streamline<> tck;
+    Streamline<> tck;
     while (reader (tck)) {
       ++count;
       const float length = std::isfinite (step_size) ? tck.calc_length (step_size) : tck.calc_length();
@@ -192,7 +191,7 @@ void run ()
             << " " << std::setw(width) << std::right << (max_length)
             << " " << std::setw(width) << std::right << (count) << "\n";
 
-  Options opt = get_options ("histogram");
+  auto opt = get_options ("histogram");
   if (opt.size()) {
     File::OFStream out (opt[0][0], std::ios_base::out | std::ios_base::trunc);
     if (!std::isfinite (step_size))
@@ -207,7 +206,6 @@ void run ()
         out << str(i * step_size) << "," << str<size_t>(histogram[i]) << "\n";
     }
     out << "\n";
-    out.close();
   }
 
 }

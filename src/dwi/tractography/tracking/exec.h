@@ -25,11 +25,9 @@
 
 
 #include "thread_queue.h"
-
 #include "dwi/directions/set.h"
-
 #include "dwi/tractography/streamline.h"
-
+#include "dwi/tractography/rng.h"
 #include "dwi/tractography/tracking/generated_track.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -85,7 +83,7 @@ namespace MR
                 typedef Seeding::WriteKernelDynamic Writer;
 
                 DWI::Directions::FastLookupSet dirs (1281);
-                Image::Buffer<float> fod_data (fod_path);
+                auto fod_data = Image<float>::open (fod_path);
                 Math::SH::check (fod_data);
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, num_tracks, dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
@@ -103,7 +101,7 @@ namespace MR
                     Thread::multi (tracker), 
                     GeneratedTrack(), 
                     writer, 
-                    Streamline<value_type>(), 
+                    Streamline<>(), 
                     Thread::multi (mapper), 
                     SetDixel(), 
                     *seeder);
@@ -122,6 +120,7 @@ namespace MR
 
 
             bool operator() (GeneratedTrack& item) {
+              rng = &thread_local_RNG;
               if (!gen_track (item))
                 return false;
               if (track_rejected (item))
@@ -134,6 +133,7 @@ namespace MR
           private:
 
             const typename Method::Shared& S;
+            Math::RNG thread_local_RNG;
             Method method;
             bool track_excluded;
             std::vector<bool> track_included;
@@ -177,7 +177,7 @@ namespace MR
               tck.clear();
               track_excluded = false;
               track_included.assign (track_included.size(), false);
-              method.dir.invalidate();
+              method.dir = { NaN, NaN, NaN };
 
               bool unidirectional = S.unidirectional;
 
@@ -196,7 +196,7 @@ namespace MR
                   if (S.properties.seeds.get_seed (method.pos, method.dir) && method.check_seed() && method.init())
                     break;
                 }
-                if (!method.pos.valid()) {
+                if (!method.pos.allFinite()) {
                   FAIL ("Failed to find suitable seed point after " + str (MAX_NUM_SEED_ATTEMPTS) + " attempts - aborting");
                   return false;
                 }
@@ -208,7 +208,7 @@ namespace MR
 
               S.properties.include.contains (method.pos, track_included);
 
-              const Point<value_type> seed_dir (method.dir);
+              const Eigen::Vector3f seed_dir (method.dir);
               tck.push_back (method.pos);
 
               gen_track_unidir (tck);
@@ -252,7 +252,7 @@ namespace MR
                         track_excluded = false;
                         termination = CONTINUE;
                         method.pos = tck.back();
-                        method.dir = (tck.back() - tck[tck.size() - 2]).normalise();
+                        method.dir = (tck.back() - tck[tck.size() - 2]).normalized();
                       }
                     }
                   } else if (tck.size() >= S.max_num_points) {
@@ -359,7 +359,7 @@ namespace MR
 
 
 
-            bool track_rejected (const std::vector< Point<float> >& tck)
+            bool track_rejected (const std::vector<Eigen::Vector3f>& tck)
             {
 
               if (track_excluded)
@@ -378,8 +378,8 @@ namespace MR
                 }
 
                 if (S.act().backtrack()) {
-                  for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i)
-                    S.properties.include.contains (*i, track_included);
+                  for (const auto& i : tck) 
+                    S.properties.include.contains (i, track_included);
                 }
 
               }
@@ -405,7 +405,7 @@ namespace MR
 
 
 
-            bool satisfy_wm_requirement (const std::vector< Point<float> >& tck)
+            bool satisfy_wm_requirement (const std::vector<Eigen::Vector3f>& tck)
             {
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
@@ -415,10 +415,10 @@ namespace MR
               if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)
                 return true;
               float integral = 0.0, max_value = 0.0;
-              for (std::vector< Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-                if (method.act().fetch_tissue_data (*i)) {
+              for (const auto& i : tck) { 
+                if (method.act().fetch_tissue_data (i)) {
                   const float wm = method.act().tissues().get_wm();
-                  max_value = MAX (max_value, wm);
+                  max_value = std::max (max_value, wm);
                   if (((integral += (Math::pow2 (wm) * S.internal_step_size())) > ACT_WM_INT_REQ) && (max_value > ACT_WM_ABS_REQ))
                     return true;
                 }
@@ -428,10 +428,10 @@ namespace MR
 
 
 
-            void truncate_exit_sgm (std::vector< Point<float> >& tck)
+            void truncate_exit_sgm (std::vector<Eigen::Vector3f>& tck)
             {
 
-              Interpolator<SourceBufferType::voxel_type>::type source (S.source_voxel);
+              Interpolator<Image<float>>::type source (S.source);
 
               const size_t sgm_start = tck.size() - method.act().sgm_depth;
               assert (sgm_start >= 0 && sgm_start < tck.size());
@@ -440,7 +440,7 @@ namespace MR
               for (size_t i = sgm_start; i != tck.size(); ++i) {
                 method.pos = tck[i];
                 method.get_data (source);
-                method.dir = (tck[i] - tck[i-1]).normalise();
+                method.dir = (tck[i] - tck[i-1]).normalized();
                 const float this_value = method.get_metric();
                 if (this_value < min_value) {
                   min_value = this_value;
@@ -456,30 +456,30 @@ namespace MR
             term_t next_rk4()
             {
               term_t termination = CONTINUE;
-              const Point<value_type> init_pos (method.pos);
-              const Point<value_type> init_dir (method.dir);
+              const Eigen::Vector3f init_pos (method.pos);
+              const Eigen::Vector3f init_dir (method.dir);
               if ((termination = method.next()))
                 return termination;
-              const Point<value_type> dir_rk1 (method.dir);
+              const Eigen::Vector3f dir_rk1 (method.dir);
               method.pos = init_pos + (dir_rk1 * (0.5 * S.step_size));
               method.dir = init_dir;
               if ((termination = method.next()))
                 return termination;
-              const Point<value_type> dir_rk2 (method.dir);
+              const Eigen::Vector3f dir_rk2 (method.dir);
               method.pos = init_pos + (dir_rk2 * (0.5 * S.step_size));
               method.dir = init_dir;
               if ((termination = method.next()))
                 return termination;
-              const Point<value_type> dir_rk3 (method.dir);
+              const Eigen::Vector3f dir_rk3 (method.dir);
               method.pos = init_pos + (dir_rk3 * S.step_size);
-              method.dir = (dir_rk2 + dir_rk3).normalise();
+              method.dir = (dir_rk2 + dir_rk3).normalized();
               if ((termination = method.next()))
                 return termination;
-              const Point<value_type> dir_rk4 (method.dir);
-              method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalise();
+              const Eigen::Vector3f dir_rk4 (method.dir);
+              method.dir = (dir_rk1 + (dir_rk2 * 2.0) + (dir_rk3 * 2.0) + dir_rk4).normalized();
               method.pos = init_pos + (method.dir * S.step_size);
-              const Point<value_type> final_pos (method.pos);
-              const Point<value_type> final_dir (method.dir);
+              const Eigen::Vector3f final_pos (method.pos);
+              const Eigen::Vector3f final_dir (method.dir);
               if ((termination = method.next()))
                 return termination;
               if (dir_rk1.dot (method.dir) < S.cos_max_angle_rk4)

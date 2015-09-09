@@ -25,7 +25,6 @@
 
 #include <algorithm>
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -53,7 +52,7 @@ namespace MR
               public:
                 Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
                   SharedBase (diff_path, property_set),
-                  lmax (Math::SH::LforN (source_buffer.dim(3))),
+                  lmax (Math::SH::LforN (source.size(3))),
                   num_samples (4),
                   max_trials (MAX_TRIALS),
                   sin_max_angle (std::sin (max_angle)),
@@ -62,7 +61,7 @@ namespace MR
                   max_max_truncation (0.0),
                   num_proc (0)
               {
-                if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
+                if (source.size(3) != int (Math::SH::NforL (Math::SH::LforN (source.size(3))))) 
                   throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
 
                 if (rk4)
@@ -88,9 +87,9 @@ namespace MR
                 INFO ("iFOD2 internal step size = " + str (internal_step_size()) + " mm");
 
                 // Have to modify length criteria, as they are enforced in points, not mm
-                const value_type min_dist = to<value_type> (properties["min_dist"]);
-                min_num_points = std::max (2, round (min_dist/internal_step_size()) + 1);
-                const value_type max_dist = to<value_type> (properties["max_dist"]);
+                const float min_dist = to<float> (properties["min_dist"]);
+                min_num_points = std::max (2, Math::round<int> (min_dist/internal_step_size()) + 1);
+                const float max_dist = to<float> (properties["max_dist"]);
                 max_num_points = round (max_dist/internal_step_size()) + 1;
 
                 // iFOD2 by default downsamples after track propagation back to the desired 'step size'
@@ -128,8 +127,8 @@ namespace MR
                 float internal_step_size() const { return step_size / float(num_samples); }
 
                 size_t lmax, num_samples, max_trials;
-                value_type sin_max_angle, fod_power;
-                Math::SH::PrecomputedAL<value_type> precomputer;
+                float sin_max_angle, fod_power;
+                Math::SH::PrecomputedAL<float> precomputer;
 
               private:
                 mutable double mean_samples, mean_truncations, max_max_truncation;
@@ -147,7 +146,7 @@ namespace MR
             iFOD2 (const Shared& shared) :
               MethodBase (shared),
               S (shared),
-              source (S.source_voxel),
+              source (S.source),
               mean_sample_num (0),
               num_sample_runs (0),
               num_truncations (0),
@@ -164,7 +163,7 @@ namespace MR
             iFOD2 (const iFOD2& that) :
               MethodBase (that.S),
               S (that.S),
-              source (S.source_voxel),
+              source (S.source),
               calibrate_ratio (that.calibrate_ratio),
               mean_sample_num (0),
               num_sample_runs (0),
@@ -183,8 +182,8 @@ namespace MR
 
             ~iFOD2 ()
             {
-              S.update_stats (calibrate_list.size() + value_type(mean_sample_num)/value_type(num_sample_runs),
-                  value_type(num_truncations) / value_type(num_sample_runs),
+              S.update_stats (calibrate_list.size() + float(mean_sample_num)/float(num_sample_runs),
+                  float(num_truncations) / float(num_sample_runs),
                   max_truncation);
             }
 
@@ -196,12 +195,12 @@ namespace MR
               if (!get_data (source))
                 return false;
 
-              if (!S.init_dir) {
+              if (!S.init_dir.allFinite()) {
 
-                const Point<float> init_dir (dir);
+                const Eigen::Vector3f init_dir (dir);
 
                 for (size_t n = 0; n < S.max_seed_attempts; n++) {
-                  dir = init_dir.valid() ? rand_dir (init_dir) : random_direction();
+                  dir = init_dir.allFinite() ? rand_dir (init_dir) : random_direction();
                   half_log_prob0 = FOD (dir);
                   if (std::isfinite (half_log_prob0) && (half_log_prob0 > S.init_threshold))
                     goto end_init;
@@ -235,13 +234,13 @@ end_init:
                 return CONTINUE;
               }
 
-              Point<value_type> next_pos, next_dir;
+              Eigen::Vector3f next_pos, next_dir;
 
-              value_type max_val = 0.0;
+              float max_val = 0.0;
               size_t nan_count = 0;
               for (size_t i = 0; i < calibrate_list.size(); ++i) {
                 get_path (calib_positions, calib_tangents, rotate_direction (dir, calibrate_list[i]));
-                value_type val = path_prob (calib_positions, calib_tangents);
+                float val = path_prob (calib_positions, calib_tangents);
                 if (std::isnan (val))
                   ++nan_count;
                 else if (val > max_val)
@@ -259,7 +258,7 @@ end_init:
               num_sample_runs++;
 
               for (size_t n = 0; n < S.max_trials; n++) {
-                value_type val = rand_path_prob ();
+                float val = rand_path_prob ();
 
                 if (val > max_val) {
                   DEBUG ("max_val exceeded!!! (val = " + str(val) + ", max_val = " + str (max_val) + ")");
@@ -268,7 +267,7 @@ end_init:
                     max_truncation = val/max_val;
                 }
 
-                if (uniform_rng() < val/max_val) {
+                if (uniform(*rng) < val/max_val) {
                   mean_sample_num += n;
                   half_log_prob0 = last_half_log_probN;
                   pos = positions[0];
@@ -296,7 +295,7 @@ end_init:
             }
 
 
-            void truncate_track (std::vector< Point<value_type> >& tck, const int revert_step)
+            void truncate_track (std::vector<Eigen::Vector3f>& tck, const int revert_step)
             {
               // Need to be able to get an estimate of the tangent at the new endpoint
               // Removing start of current arc (counts as 1 if it exists) plus 1 arclength for each remaining revert_step
@@ -304,11 +303,11 @@ end_init:
               const int new_end_idx = (int)tck.size() - 1 - points_to_remove;
               if (new_end_idx <= 1) {
                 tck.clear();
-                pos.invalidate();
-                dir.invalidate();
+                pos = { NaN, NaN, NaN };
+                dir = { NaN, NaN, NaN };
                 return;
               }
-              dir = (tck[new_end_idx + 1] - tck[new_end_idx - 1]).normalise();
+              dir = (tck[new_end_idx + 1] - tck[new_end_idx - 1]).normalized();
 
               // Erase the track up to the correct point
               tck.erase (tck.begin() + new_end_idx + 1, tck.end());
@@ -322,22 +321,22 @@ end_init:
               sample_idx = S.num_samples;
 
               // Need to update sgm_depth appropriately, remembering that it is tracked by exec
-              act().sgm_depth = MAX (0, act().sgm_depth - points_to_remove);
+              act().sgm_depth = std::max (0, act().sgm_depth - points_to_remove);
             }
 
 
 
           private:
             const Shared& S;
-            Interpolator<SourceBufferType::voxel_type>::type source;
-            value_type calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
+            Interpolator<Image<float>>::type source;
+            float calibrate_ratio, half_log_prob0, last_half_log_probN, half_log_prob0_seed;
             size_t mean_sample_num, num_sample_runs, num_truncations;
-            value_type max_truncation;
-            std::vector< Point<value_type> > calibrate_list;
+            float max_truncation;
+            std::vector<Eigen::Vector3f> calibrate_list;
 
             // Store list of points in the currently-calculated arc
-            std::vector< Point<value_type> > positions, calib_positions;
-            std::vector< Point<value_type> > tangents, calib_tangents;
+            std::vector<Eigen::Vector3f> positions, calib_positions;
+            std::vector<Eigen::Vector3f> tangents, calib_tangents;
 
             // Generate an arc only when required, and on the majority of next() calls, simply return the next point
             //   in the arc - more dense structural image sampling
@@ -345,7 +344,7 @@ end_init:
 
 
 
-            value_type FOD (const Point<value_type>& direction) const
+            float FOD (const Eigen::Vector3f& direction) const
             {
               return (S.precomputer ?
                   S.precomputer.value (values, direction) :
@@ -353,17 +352,17 @@ end_init:
                   );
             }
 
-            value_type FOD (const Point<value_type>& position, const Point<value_type>& direction)
+            float FOD (const Eigen::Vector3f& position, const Eigen::Vector3f& direction)
             {
               if (!get_data (source, position))
-                return NAN;
+                return NaN;
               return FOD (direction);
             }
 
 
 
 
-            value_type rand_path_prob ()
+            float rand_path_prob ()
             {
               get_path (positions, tangents, rand_dir (dir));
               return path_prob (positions, tangents);
@@ -371,23 +370,23 @@ end_init:
 
 
 
-            value_type path_prob (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents)
+            float path_prob (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents)
             {
 
               // Early exit for ACT when path is not sensible
               if (S.is_act()) {
                 if (!act().fetch_tissue_data (positions[S.num_samples - 1]))
-                  return (NAN);
+                  return (NaN);
                 if (act().tissues().get_csf() >= 0.5)
                   return 0.0;
               }
 
-              value_type log_prob = half_log_prob0;
+              float log_prob = half_log_prob0;
               for (size_t i = 0; i < S.num_samples; ++i) {
 
-                value_type fod_amp = FOD (positions[i], tangents[i]);
+                float fod_amp = FOD (positions[i], tangents[i]);
                 if (std::isnan (fod_amp))
-                  return (NAN);
+                  return NaN;
                 if (fod_amp < S.threshold)
                   return 0.0;
                 fod_amp = std::log (fod_amp);
@@ -404,32 +403,32 @@ end_init:
 
 
 
-            void get_path (std::vector< Point<value_type> >& positions, std::vector< Point<value_type> >& tangents, const Point<value_type>& end_dir) const
+            void get_path (std::vector<Eigen::Vector3f>& positions, std::vector<Eigen::Vector3f>& tangents, const Eigen::Vector3f& end_dir) const
             {
-              value_type cos_theta = end_dir.dot (dir);
-              cos_theta = std::min (cos_theta, value_type(1.0));
-              value_type theta = std::acos (cos_theta);
+              float cos_theta = end_dir.dot (dir);
+              cos_theta = std::min (cos_theta, float(1.0));
+              float theta = std::acos (cos_theta);
 
               if (theta) {
 
-                Point<value_type> curv = end_dir - cos_theta * dir;
-                curv.normalise();
-                value_type R = S.step_size / theta;
+                Eigen::Vector3f curv = end_dir - cos_theta * dir;
+                curv.normalize();
+                float R = S.step_size / theta;
 
                 for (size_t i = 0; i < S.num_samples-1; ++i) {
-                  value_type a = (theta * (i+1)) / S.num_samples;
-                  value_type cos_a = std::cos (a);
-                  value_type sin_a = std::sin (a);
-                  positions[i] = pos + R * (sin_a * dir + (value_type(1.0) - cos_a) * curv);
+                  float a = (theta * (i+1)) / S.num_samples;
+                  float cos_a = std::cos (a);
+                  float sin_a = std::sin (a);
+                  positions[i] = pos + R * (sin_a * dir + (float(1.0) - cos_a) * curv);
                   tangents[i] = cos_a * dir + sin_a * curv;
                 }
-                positions[S.num_samples-1] = pos + R * (std::sin (theta) * dir + (value_type(1.0)-cos_theta) * curv);
+                positions[S.num_samples-1] = pos + R * (std::sin (theta) * dir + (float(1.0)-cos_theta) * curv);
                 tangents[S.num_samples-1]  = end_dir;
 
               } else { // straight on:
 
                 for (size_t i = 0; i < S.num_samples; ++i) {
-                  value_type f = (i+1) * (S.step_size / S.num_samples);
+                  float f = (i+1) * (S.step_size / S.num_samples);
                   positions[i] = pos + f * dir;
                   tangents[i]  = dir;
                 }
@@ -439,7 +438,7 @@ end_init:
 
 
 
-            Point<value_type> rand_dir (const Point<value_type>& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
+            Eigen::Vector3f rand_dir (const Eigen::Vector3f& d) { return (random_direction (d, S.max_angle, S.sin_max_angle)); }
 
 
 
@@ -449,21 +448,20 @@ end_init:
               public:
                 Calibrate (iFOD2& method) :
                   P (method),
-                  fod (&P.values[0], P.source.dim(3)),
+                  fod (P.values),
                   positions (P.S.num_samples),
-                  tangents (P.S.num_samples)
-              {
-                Math::SH::delta (fod, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax);
-                init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Point<value_type> (0.0, 0.0, 1.0), P.S.lmax));
-              }
+                  tangents (P.S.num_samples) {
+                    Math::SH::delta (fod, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax);
+                    init_log_prob = 0.5 * std::log (Math::SH::value (P.values, Eigen::Vector3f (0.0, 0.0, 1.0), P.S.lmax));
+                  }
 
-                value_type operator() (value_type el)
+                float operator() (float el)
                 {
-                  P.get_path (positions, tangents, Point<value_type> (std::sin (el), 0.0, std::cos(el)));
+                  P.get_path (positions, tangents, Eigen::Vector3f (std::sin (el), 0.0, std::cos(el)));
 
-                  value_type log_prob = init_log_prob;
+                  float log_prob = init_log_prob;
                   for (size_t i = 0; i < P.S.num_samples; ++i) {
-                    value_type prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
+                    float prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
                     if (prob <= 0.0)
                       return 0.0;
                     prob = std::log (prob);
@@ -478,9 +476,9 @@ end_init:
 
               private:
                 iFOD2& P;
-                Math::Vector<value_type> fod;
-                value_type init_log_prob;
-                std::vector< Point<value_type> > positions, tangents;
+                Eigen::VectorXf& fod;
+                float init_log_prob;
+                std::vector<Eigen::Vector3f> positions, tangents;
             };
 
             friend void calibrate<iFOD2> (iFOD2& method);

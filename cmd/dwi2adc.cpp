@@ -22,10 +22,8 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/threaded_copy.h"
-#include "math/matrix.h"
+#include "image.h"
+#include "algo/threaded_copy.h"
 #include "math/least_squares.h"
 #include "dwi/gradient.h"
 
@@ -51,37 +49,35 @@ void usage ()
 
 
 typedef float value_type;
-typedef Image::BufferPreload<value_type> InputBufferType;
-typedef Image::Buffer<value_type> OutputBufferType;
 
 
 
 class DWI2ADC {
   public:
-    DWI2ADC (InputBufferType::voxel_type&& dwi_vox, OutputBufferType::voxel_type&& adc_vox, const Math::Matrix<value_type>& binv, size_t dwi_axis) : 
-      dwi_vox (dwi_vox), adc_vox (adc_vox), dwi (dwi_vox.dim(dwi_axis)), adc (2), binv (binv), dwi_axis (dwi_axis) { }
+    DWI2ADC (const Eigen::MatrixXd& binv, size_t dwi_axis) :
+      dwi (binv.cols()),
+      adc (2), 
+      binv (binv), 
+      dwi_axis (dwi_axis) { }
 
-    void operator() (const Image::Iterator& pos) {
-      Image::voxel_assign (dwi_vox, pos);
-      Image::voxel_assign (adc_vox, pos);
-      for (dwi_vox[dwi_axis] = 0; dwi_vox[dwi_axis] < dwi_vox.dim(dwi_axis); ++dwi_vox[dwi_axis]) {
-        value_type val = dwi_vox.value();
-        dwi[dwi_vox[dwi_axis]] = val ? std::log (val) : 1.0e-12;
+    template <class DWIType, class ADCType>
+      void operator() (DWIType& dwi_image, ADCType& adc_image) {
+        for (auto l = Loop (dwi_axis) (dwi_image); l; ++l) {
+          value_type val = dwi_image.value();
+          dwi[dwi_image.index (dwi_axis)] = val ? std::log (val) : 1.0e-12;
+        }
+
+        adc = binv * dwi;
+
+        adc_image.index(3) = 0;
+        adc_image.value() = std::exp (adc[0]);
+        adc_image.index(3) = 1;
+        adc_image.value() = adc[1];
       }
 
-      Math::mult (adc, binv, dwi);
-
-      adc_vox[3] = 0;
-      adc_vox.value() = std::exp (adc[0]);
-      adc_vox[3] = 1;
-      adc_vox.value() = adc[1];
-    }
-
   protected:
-    std::remove_reference<InputBufferType::voxel_type>::type dwi_vox;
-    std::remove_reference<OutputBufferType::voxel_type>::type adc_vox;
-    Math::Vector<value_type> dwi, adc;
-    const Math::Matrix<value_type>& binv;
+    Eigen::VectorXd dwi, adc;
+    const Eigen::MatrixXd& binv;
     const size_t dwi_axis;
 };
 
@@ -89,30 +85,31 @@ class DWI2ADC {
 
 
 void run () {
-  InputBufferType dwi_buffer (argument[0]);
-  Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_buffer);
+  auto dwi = Header::open (argument[0]).get_image<value_type>();
+  auto grad = DWI::get_valid_DW_scheme (dwi.header());
 
   size_t dwi_axis = 3;
-  while (dwi_buffer.dim (dwi_axis) < 2) ++dwi_axis;
+  while (dwi.size (dwi_axis) < 2)
+    ++dwi_axis;
   INFO ("assuming DW images are stored along axis " + str (dwi_axis));
 
-  Math::Matrix<value_type> b (grad.rows(), 2);
-  for (size_t i = 0; i < b.rows(); ++i) {
+  Eigen::MatrixXd b (grad.rows(), 2);
+  for (ssize_t i = 0; i < b.rows(); ++i) {
     b(i,0) = 1.0;
     b(i,1) = -grad (i,3);
   }
 
-  Math::Matrix<float> binv = Math::pinv (b);
+  auto binv = Math::pinv (b);
 
-  Image::Header header (dwi_buffer);
+  auto header = dwi.header();
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
-  header.dim(3) = 2;
+  header.size(3) = 2;
 
-  OutputBufferType adc_buffer (argument[1], header);
+  auto adc = Header::create (argument[1], header).get_image<value_type>();
 
-  Image::ThreadedLoop ("computing ADC values...", dwi_buffer, 0, 3)
-    .run (DWI2ADC (dwi_buffer.voxel(), adc_buffer.voxel(), binv, dwi_axis));
+  ThreadedLoop ("computing ADC values...", dwi, 0, 3)
+    .run (DWI2ADC (binv, dwi_axis), dwi, adc);
 }
 
 

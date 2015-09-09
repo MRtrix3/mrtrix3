@@ -28,6 +28,8 @@
 
 #include "math/math.h"
 
+#include "types.h"
+
 namespace MR
 {
   namespace Math

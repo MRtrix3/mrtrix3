@@ -46,7 +46,7 @@ namespace MR
     {
       if (__number_of_threads)
         return __number_of_threads;
-      const App::Options opt = App::get_options ("nthreads");
+      auto opt = App::get_options ("nthreads");
       __number_of_threads = opt.size() ? opt[0][0] : File::Config::get_int ("NumberOfThreads", std::thread::hardware_concurrency());
       return __number_of_threads;
     }

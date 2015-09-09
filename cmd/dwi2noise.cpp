@@ -21,12 +21,9 @@
 */
 
 #include "command.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/threaded_loop.h"
-#include "image/adapter/extract.h"
+#include "image.h"
+#include "adapter/extract.h"
 #include "dwi/gradient.h"
-#include "math/matrix.h"
 #include "math/least_squares.h"
 #include "math/SH.h"
 
@@ -69,29 +66,25 @@ typedef float value_type;
 
 void run ()
 {
-  Image::Buffer<value_type> dwi_buffer (argument[0]);
-  DWI::NoiseEstimator estimator (dwi_buffer);
+  auto dwi_in = Image<value_type>::open (argument[0]);
 
-  Image::Header header (dwi_buffer);
-  header.info() =  estimator.info();
+  auto header = Header (dwi_in);
+  header.set_ndim (3);
   header.datatype() = DataType::Float32;
-  Image::Buffer<value_type> noise_buffer (argument[1], header);
+  auto noise = Image<value_type>::create (argument[1], header);
 
   std::vector<size_t> dwis;
-  Math::Matrix<value_type> mapping;
+  Eigen::MatrixXd mapping;
   {
-    Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_buffer);
+    auto grad = DWI::get_valid_DW_scheme (dwi_in.header());
     dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
     auto dirs = DWI::gen_direction_matrix (grad, dwis);
     mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
+  auto dwi = Adapter::make <Adapter::Extract1D> (dwi_in, 3, container_cast<std::vector<int>> (dwis));
 
-  auto dwi_voxel = dwi_buffer.voxel();
-  Image::Adapter::Extract1D<decltype(dwi_voxel)> dwi (dwi_voxel, 3, container_cast< std::vector<int> > (dwis));
-  auto noise = noise_buffer.voxel();
-
-  estimator (dwi, noise, mapping);
+  DWI::estimate_noise (dwi, noise, mapping);
 }
 
 

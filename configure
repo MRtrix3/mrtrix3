@@ -40,18 +40,21 @@ In most cases, a simple invocation should work:
 
    $ ./configure
 
-If a name is provided, the configuration will be written to a different file, 
-which can then be used by the build script. For example:
+By default, this creates a target folder named 'release', and a 'config' file
+within that folder. If a name is provided, the configuration will be written to
+a different folder, which can then be used by the build script. For example:
 
    $ ./configure testing -debug
 
-will generate the file 'config.testing', which can be used with the build
-script as follows:
+will generate the folder 'testing' and a config file with debugging symbols
+enabled, which can be used with the build script as follows:
 
    $ ./build testing
 
-Note that all intermediate files will be named according to the name of the
-configuration to avoid conflict with any other configuration.
+By default, the build script will compile the 'release' folder. 
+
+All intermediate files will be placed within the target folder to avoid
+conflict with any other configurations.
 
 
 OPTIONS:
@@ -141,7 +144,14 @@ PATH            Set the path to use during the configure process.
   
 
 if not profile_name:
-  profile_name = 'default'
+  profile_name = 'release'
+
+
+try: 
+  os.makedirs (profile_name)
+except OSError:
+  if not os.path.isdir (profile_name):
+    raise
 
 
 global logfile, config_report
@@ -436,7 +446,7 @@ except:
   error ('''compiler not found!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure''')
+     CXX=/usr/bin/g++-4.8 ./configure''')
 
 try:
   compile ('''
@@ -457,7 +467,7 @@ except CompileError:
   error ('''compiler test failed!
 
 Use CXX environment variable to set path to compiler, as follows:
-     CXX=/usr/bin/g++-4.2 ./configure
+     CXX=/usr/bin/g++-4.8 ./configure
 
 You can also use the CXX_ARGS to set the arguments expected by the 
 compiler, in case this differs from gcc, as follows:
@@ -467,7 +477,7 @@ except (LinkError, RuntimeError):
   error ('''linking error!
 
 Use LD environment variable to set path to compiler, as follows:
-     LD=/usr/bin/g++-4.2 ./configure''')
+     LD=/usr/bin/g++-4.8 ./configure''')
 except:
   raise
 
@@ -591,6 +601,53 @@ cpp_flags += zlib_cflags
 ld_flags += zlib_ldflags
 ld_lib_flags += zlib_ldflags
 
+
+
+
+
+# Eigen3 flags:
+
+report('checking for Eigen 3 library: ')
+if 'EIGEN_CFLAGS' in os.environ.keys(): 
+  eigen_cflags = shlex.split (os.environ['EIGEN_CFLAGS'])
+else:
+  try:
+    eigen_cflags = shlex.split (execute ([ 'pkg-config', '--cflags', 'eigen3' ], RuntimeError)[1])
+  except:
+    log('error running on pkg-config --cflags eigen3\n\n')
+
+try:
+  eigen_version = compile ('''
+#include <Eigen/Core>
+#include <iostream>
+
+int main (int argc, char* argv[]) {
+  std::cout << EIGEN_WORLD_VERSION << "." << EIGEN_MAJOR_VERSION << "." << EIGEN_MINOR_VERSION << "\\n";
+  return 0;
+}
+''', cpp_flags + eigen_cflags, ld_flags)
+
+  cpp_flags += eigen_cflags
+  report (eigen_version + '\n')
+except CompileError:
+  error ('''compiler error!
+
+Use the EIGEN_CFLAGS environment variable to set the path to
+the Eigen3 include files and to set any required flags
+For example:
+     EIGEN_CFLAGS=-I/usr/include/eigen3 ./configure''')
+except LinkError:
+  error ('''linker error!
+
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
+except RuntimeError:
+  error ('''runtime error!
+
+This shouldn't happen! Please report this to the MRtrix3 dev team.
+''')
+except:
+  error ('Eigen3 implementation not found!')
 
 
 
@@ -992,7 +1049,6 @@ use the MOC environment variable to specify the Qt moc command''')
     if '-W' in qt_cflags: qt_cflags.remove ('-W')
 
 
-
 # output R module:
 if R_module:
 
@@ -1079,8 +1135,7 @@ if sh_basis_def is not None:
 
 
 # write out configuration:
-
-cache_filename = os.path.join (os.path.dirname(sys.argv[0]), 'config.' + profile_name)
+cache_filename = os.path.join (os.path.dirname(sys.argv[0]), profile_name, 'config')
 
 sys.stdout.write ('\nwriting configuration to file \'' + cache_filename + '\': ')
 

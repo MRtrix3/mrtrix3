@@ -22,7 +22,7 @@
 
 
 #include "command.h"
-#include "image/voxel.h"
+#include "image.h"
 
 #include "dwi/tractography/properties.h"
 #include "dwi/tractography/roi.h"
@@ -52,7 +52,7 @@ using namespace App;
 
 
 
-const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "tensor_det", "tensor_prob", NULL };
+const char* algorithms[] = { "fact", "ifod1", "ifod2", "nulldist", "sd_stream", "seedtest", "tensor_det", "tensor_prob", nullptr };
 
 
 void usage ()
@@ -158,7 +158,7 @@ void run ()
   Properties properties;
 
   int algorithm = 2; // default = ifod2
-  Options opt = get_options ("algorithm");
+  auto opt = get_options ("algorithm");
   if (opt.size()) algorithm = opt[0][0];
 
   load_rois (properties);

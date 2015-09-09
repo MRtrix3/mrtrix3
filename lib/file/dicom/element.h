@@ -27,7 +27,7 @@
 
 #include "memory.h"
 #include "hash_map.h"
-#include "get_set.h"
+#include "raw.h"
 #include "file/mmap.h"
 #include "file/dicom/definitions.h"
 

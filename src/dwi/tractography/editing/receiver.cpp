@@ -33,7 +33,7 @@ namespace MR {
 
 
 
-        bool Receiver::operator() (const Tractography::Streamline<>& in)
+        bool Receiver::operator() (const Streamline<>& in)
         {
           auto display_func = [&](){ return printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count); };
 
@@ -48,7 +48,7 @@ namespace MR {
             return true;
           }
 
-          if (in[0].valid()) {
+          if (in[0].allFinite()) {
 
             if (skip) {
               --skip;
@@ -61,12 +61,12 @@ namespace MR {
 
             // Explicitly handle case where the streamline has been cropped into multiple components
             // Worker class separates track segments using invalid points as delimiters
-            Tractography::Streamline<> temp;
+            Streamline<> temp;
             temp.index = in.index;
             temp.weight = in.weight;
-            for (Tractography::Streamline<>::const_iterator p = in.begin(); p != in.end(); ++p) {
-              if (p->valid()) {
-                temp.push_back (*p);
+            for (const auto& p : in) {
+              if (p.allFinite()) {
+                temp.push_back (p);
               } else if (temp.size()) {
                 output (temp);
                 temp.clear();
@@ -83,10 +83,10 @@ namespace MR {
 
 
 
-        void Receiver::output (const Tractography::Streamline<>& in)
+        void Receiver::output (const Streamline<>& in)
         {
           if (ends_only) {
-            Tractography::Streamline<> temp;
+            Streamline<> temp;
             temp.push_back (in.front());
             temp.push_back (in.back());
             writer (temp);

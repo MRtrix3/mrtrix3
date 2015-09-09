@@ -20,14 +20,11 @@
 
 */
 
+#include "header.h"
+#include "raw.h"
 #include "file/ofstream.h"
-#include "image/stride.h"
-#include "datatype.h"
-#include "get_set.h"
 #include "file/mgh_utils.h"
 #include "file/nifti1_utils.h"
-#include "image/header.h"
-#include "math/vector.h"
 
 namespace MR
 {
@@ -37,33 +34,32 @@ namespace MR
     {
 
 
-      bool read_header (Image::Header& H, const mgh_header& MGHH)
+      bool read_header (Header& H, const mgh_header& MGHH)
       {
-
         bool is_BE = false;
-        if (get<int32_t> (&MGHH.version, is_BE) != 1) {
+        if (Raw::fetch<int32_t> (&MGHH.version, is_BE) != 1) {
           is_BE = true;
-          if (get<int32_t> (&MGHH.version, is_BE) != 1)
+          if (Raw::fetch<int32_t> (&MGHH.version, is_BE) != 1)
             throw Exception ("image \"" + H.name() + "\" is not in MGH format (version != 1)");
         }
 
-        const size_t ndim = (get<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
+        const size_t ndim = (Raw::fetch<int32_t> (&MGHH.nframes, is_BE) > 1) ? 4 : 3;
         H.set_ndim (ndim);
-        H.dim (0) = get<int32_t> (&MGHH.width, is_BE);
-        H.dim (1) = get<int32_t> (&MGHH.height, is_BE);
-        H.dim (2) = get<int32_t> (&MGHH.depth, is_BE);
+        H.size (0) = Raw::fetch<int32_t> (&MGHH.width, is_BE);
+        H.size (1) = Raw::fetch<int32_t> (&MGHH.height, is_BE);
+        H.size (2) = Raw::fetch<int32_t> (&MGHH.depth, is_BE);
         if (ndim == 4)
-          H.dim (3) = get<int32_t> (&MGHH.nframes, is_BE);
+          H.size (3) = Raw::fetch<int32_t> (&MGHH.nframes, is_BE);
 
-        H.vox (0) = get<float> (&MGHH.spacing_x, is_BE);
-        H.vox (1) = get<float> (&MGHH.spacing_y, is_BE);
-        H.vox (2) = get<float> (&MGHH.spacing_z, is_BE);
+        H.spacing (0) = Raw::fetch<float> (&MGHH.spacing_x, is_BE);
+        H.spacing (1) = Raw::fetch<float> (&MGHH.spacing_y, is_BE);
+        H.spacing (2) = Raw::fetch<float> (&MGHH.spacing_z, is_BE);
 
         for (size_t i = 0; i != ndim; ++i)
           H.stride (i) = i + 1;
 
         DataType dtype;
-        int32_t type = get<int32_t> (&MGHH.type, is_BE);
+        int32_t type = Raw::fetch<int32_t> (&MGHH.type, is_BE);
         switch (type) {
           case MGH_TYPE_UCHAR: dtype = DataType::UInt8;   break;
           case MGH_TYPE_SHORT: dtype = DataType::Int16;   break;
@@ -78,38 +74,41 @@ namespace MR
             dtype.set_flag (DataType::LittleEndian);
         }
         H.datatype() = dtype;
+        H.reset_intensity_scaling();
 
-        H.intensity_offset() = 0.0;
-        H.intensity_scale() = 1.0;
+        transform_type& M (H.transform());
 
-        Math::Matrix<float>& M (H.transform());
-        M.allocate (4,4);
-
-        const int16_t RAS = get<int16_t> (&MGHH.goodRASFlag, is_BE);
+        const int16_t RAS = Raw::fetch<int16_t> (&MGHH.goodRASFlag, is_BE);
         if (RAS) {
 
-          M (0,0) = get <float> (&MGHH.x_r, is_BE); M (0,1) = get <float> (&MGHH.y_r, is_BE); M (0,2) = get <float> (&MGHH.z_r, is_BE);
-          M (1,0) = get <float> (&MGHH.x_a, is_BE); M (1,1) = get <float> (&MGHH.y_a, is_BE); M (1,2) = get <float> (&MGHH.z_a, is_BE);
-          M (2,0) = get <float> (&MGHH.x_s, is_BE); M (2,1) = get <float> (&MGHH.y_s, is_BE); M (2,2) = get <float> (&MGHH.z_s, is_BE);
+          M(0,0) = Raw::fetch <float> (&MGHH.x_r, is_BE); 
+          M(0,1) = Raw::fetch <float> (&MGHH.y_r, is_BE); 
+          M(0,2) = Raw::fetch <float> (&MGHH.z_r, is_BE);
 
-          M (0,3) = get <float> (&MGHH.c_r, is_BE);
-          M (1,3) = get <float> (&MGHH.c_a, is_BE);
-          M (2,3) = get <float> (&MGHH.c_s, is_BE);
+          M(1,0) = Raw::fetch <float> (&MGHH.x_a, is_BE); 
+          M(1,1) = Raw::fetch <float> (&MGHH.y_a, is_BE); 
+          M(1,2) = Raw::fetch <float> (&MGHH.z_a, is_BE);
+
+          M(2,0) = Raw::fetch <float> (&MGHH.x_s, is_BE); 
+          M(2,1) = Raw::fetch <float> (&MGHH.y_s, is_BE); 
+          M(2,2) = Raw::fetch <float> (&MGHH.z_s, is_BE);
+
+          M(0,3) = Raw::fetch <float> (&MGHH.c_r, is_BE);
+          M(1,3) = Raw::fetch <float> (&MGHH.c_a, is_BE);
+          M(2,3) = Raw::fetch <float> (&MGHH.c_s, is_BE);
+
           for (size_t i = 0; i < 3; ++i) {
             for (size_t j = 0; j < 3; ++j)
-              M (i,3) -= 0.5 * H.dim(j) * H.vox(j) * M(i,j);
+              M(i,3) -= 0.5 * H.size(j) * H.spacing(j) * M(i,j);
           }
 
-          M (3,0) = M (3,1) = M (3,2) = 0.0;
-          M (3,3) = 1.0;
 
         } else {
 
           // Default transformation matrix, assumes coronal orientation
-          M (0,0) = -1.0; M (0,1) =  0.0; M (0,2) =  0.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) =  0.0; M (0,2) = -1.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) = +1.0; M (0,2) =  0.0; M (0,3) = 0.0;
-          M (0,0) =  0.0; M (0,1) =  0.0; M (0,2) =  0.0; M (0,3) = 1.0;
+          M(0,0) = -1.0; M(0,1) =  0.0; M(0,2) =  0.0; M(0,3) = 0.0;
+          M(1,0) =  0.0; M(1,1) =  0.0; M(1,2) = -1.0; M(1,3) = 0.0;
+          M(2,0) =  0.0; M(2,1) = +1.0; M(2,2) =  0.0; M(2,3) = 0.0;
 
         }
 
@@ -119,21 +118,21 @@ namespace MR
 
 
 
-      void read_other (Image::Header& H, const mgh_other& MGHO, const bool is_BE) {
+      void read_other (Header& H, const mgh_other& MGHO, const bool is_BE) {
 
-        if (get<float> (&MGHO.tr, is_BE) != 0.0f)
-          H.comments().push_back ("TR: "   + str (get<float> (&MGHO.tr, is_BE)) + "ms");
-        if (get<float> (&MGHO.flip_angle, is_BE) != 0.0f)
-          H.comments().push_back ("Flip: " + str (get<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
-        if (get<float> (&MGHO.te, is_BE) != 0.0f)
-          H.comments().push_back ("TE: "   + str (get<float> (&MGHO.te, is_BE)) + "ms");
-        if (get<float> (&MGHO.ti, is_BE) != 0.0f)
-          H.comments().push_back ("TI: "   + str (get<float> (&MGHO.ti, is_BE)) + "ms");
+        if (Raw::fetch<float> (&MGHO.tr, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TR: "   + str (Raw::fetch<float> (&MGHO.tr, is_BE)) + "ms");
+        if (Raw::fetch<float> (&MGHO.flip_angle, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "Flip: " + str (Raw::fetch<float> (&MGHO.flip_angle, is_BE) * 180.0 / Math::pi) + "deg");
+        if (Raw::fetch<float> (&MGHO.te, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TE: "   + str (Raw::fetch<float> (&MGHO.te, is_BE)) + "ms");
+        if (Raw::fetch<float> (&MGHO.ti, is_BE) != 0.0f)
+          add_line (H.keyval()["comments"], "TI: "   + str (Raw::fetch<float> (&MGHO.ti, is_BE)) + "ms");
 
         // Ignore FoV field
 
-        for (std::vector<std::string>::const_iterator i = MGHO.tags.begin(); i != MGHO.tags.end(); ++i)
-          H.comments().push_back (*i);
+        for (const auto i : MGHO.tags) 
+          add_line (H.keyval()["comments"], i);
 
       }
 
@@ -141,9 +140,8 @@ namespace MR
 
 
 
-      void write_header (mgh_header& MGHH, const Image::Header& H)
+      void write_header (mgh_header& MGHH, const Header& H)
       {
-
         bool is_BE = H.datatype().is_big_endian();
 
         const size_t ndim = H.ndim();
@@ -151,13 +149,13 @@ namespace MR
           throw Exception ("MGH file format does not support images of more than 4 dimensions");
 
         std::vector<size_t> axes;
-        Math::Matrix<float> M = File::NIfTI::adjust_transform (H, axes);
+        auto M = File::NIfTI::adjust_transform (H, axes);
 
-        put<int32_t> (1, &MGHH.version, is_BE);
-        put<int32_t> (H.dim (axes[0]), &MGHH.width, is_BE);
-        put<int32_t> ((ndim > 1) ? H.dim (axes[1]) : 1, &MGHH.height, is_BE);
-        put<int32_t> ((ndim > 2) ? H.dim (axes[2]) : 1, &MGHH.depth, is_BE);
-        put<int32_t> ((ndim > 3) ? H.dim (3) : 1, &MGHH.nframes, is_BE);
+        Raw::store<int32_t> (1, &MGHH.version, is_BE);
+        Raw::store<int32_t> (H.size (axes[0]), &MGHH.width, is_BE);
+        Raw::store<int32_t> ((ndim > 1) ? H.size (axes[1]) : 1, &MGHH.height, is_BE);
+        Raw::store<int32_t> ((ndim > 2) ? H.size (axes[2]) : 1, &MGHH.depth, is_BE);
+        Raw::store<int32_t> ((ndim > 3) ? H.size (3) : 1, &MGHH.nframes, is_BE);
 
         const DataType& dt = H.datatype();
         if (dt.is_complex())
@@ -182,27 +180,35 @@ namespace MR
           case DataType::Float32: case DataType::Float32BE: case DataType::Float32LE: type = MGH_TYPE_FLOAT; break;
           default: throw Exception ("Error in MGH file format data type parsing");
         }
-        put<int32_t> (type, &MGHH.type, is_BE);
+        Raw::store<int32_t> (type, &MGHH.type, is_BE);
 
-        put<int32_t> (0, &MGHH.dof, is_BE);
-        put<int16_t> (1, &MGHH.goodRASFlag, is_BE);
-        put<float> (H.vox (axes[0]), &MGHH.spacing_x, is_BE);
-        put<float> (H.vox (axes[1]), &MGHH.spacing_y, is_BE);
-        put<float> (H.vox (axes[2]), &MGHH.spacing_z, is_BE);
+        Raw::store<int32_t> (0, &MGHH.dof, is_BE);
+        Raw::store<int16_t> (1, &MGHH.goodRASFlag, is_BE);
+        Raw::store<float> (H.spacing (axes[0]), &MGHH.spacing_x, is_BE);
+        Raw::store<float> (H.spacing (axes[1]), &MGHH.spacing_y, is_BE);
+        Raw::store<float> (H.spacing (axes[2]), &MGHH.spacing_z, is_BE);
 
         //const Math::Matrix<float>& M (H.transform());
-        put<float> (M (0,0), &MGHH.x_r, is_BE); put<float> (M (0,1), &MGHH.y_r, is_BE); put<float> (M (0,2), &MGHH.z_r, is_BE);
-        put<float> (M (1,0), &MGHH.x_a, is_BE); put<float> (M (1,1), &MGHH.y_a, is_BE); put<float> (M (1,2), &MGHH.z_a, is_BE);
-        put<float> (M (2,0), &MGHH.x_s, is_BE); put<float> (M (2,1), &MGHH.y_s, is_BE); put<float> (M (2,2), &MGHH.z_s, is_BE);
+        Raw::store<float> (M(0,0), &MGHH.x_r, is_BE); 
+        Raw::store<float> (M(0,1), &MGHH.y_r, is_BE); 
+        Raw::store<float> (M(0,2), &MGHH.z_r, is_BE);
+
+        Raw::store<float> (M(1,0), &MGHH.x_a, is_BE); 
+        Raw::store<float> (M(1,1), &MGHH.y_a, is_BE); 
+        Raw::store<float> (M(1,2), &MGHH.z_a, is_BE);
+        
+        Raw::store<float> (M(2,0), &MGHH.x_s, is_BE); 
+        Raw::store<float> (M(2,1), &MGHH.y_s, is_BE); 
+        Raw::store<float> (M(2,2), &MGHH.z_s, is_BE);
 
         for (size_t i = 0; i != 3; ++i) {
-          float offset = M (i, 3);
+          default_type offset = M(i, 3);
           for (size_t j = 0; j != 3; ++j)
-            offset += 0.5 * H.dim(axes[j]) * H.vox(axes[j]) * M (i,j);
+            offset += 0.5 * H.size(axes[j]) * H.spacing(axes[j]) * M(i,j);
           switch (i) {
-            case 0: put<float> (offset, &MGHH.c_r, is_BE); break;
-            case 1: put<float> (offset, &MGHH.c_a, is_BE); break;
-            case 2: put<float> (offset, &MGHH.c_s, is_BE); break;
+            case 0: Raw::store<float> (offset, &MGHH.c_r, is_BE); break;
+            case 1: Raw::store<float> (offset, &MGHH.c_a, is_BE); break;
+            case 2: Raw::store<float> (offset, &MGHH.c_s, is_BE); break;
           }
         }
 
@@ -211,25 +217,28 @@ namespace MR
 
 
 
-      void write_other (mgh_other& MGHO, const Image::Header& H)
+      void write_other (mgh_other& MGHO, const Header& H)
       {
 
         bool is_BE = H.datatype().is_big_endian();
 
-        for (std::vector<std::string>::const_iterator i = H.comments().begin(); i != H.comments().end(); ++i) {
-          const std::string key = i->substr (0, i->find_first_of (':'));
-          if (key == "TR")
-            put<float> (to<float> (i->substr (3)), &MGHO.tr, is_BE);
-          else if (key == "Flip")
-            put<float> (to<float> (i->substr (5)), &MGHO.flip_angle, is_BE);
-          else if (key == "TE")
-            put<float> (to<float> (i->substr (3)), &MGHO.te, is_BE);
-          else if (key == "TI")
-            put<float> (to<float> (i->substr (3)), &MGHO.ti, is_BE);
-          else
-            MGHO.tags.push_back (*i);
+        const auto comments = H.keyval().find("comments");
+        if (comments != H.keyval().end()) {
+          for (const auto i : split_lines (comments->second)) {
+            const std::string key = i.substr (0, i.find_first_of (':'));
+            if (key == "TR")
+              Raw::store<float> (to<float> (i.substr (3)), &MGHO.tr, is_BE);
+            else if (key == "Flip")
+              Raw::store<float> (to<float> (i.substr (5)), &MGHO.flip_angle, is_BE);
+            else if (key == "TE")
+              Raw::store<float> (to<float> (i.substr (3)), &MGHO.te, is_BE);
+            else if (key == "TI")
+              Raw::store<float> (to<float> (i.substr (3)), &MGHO.ti, is_BE);
+            else
+              MGHO.tags.push_back (i);
+          }
         }
-        put<float> (0.0, &MGHO.fov, is_BE);
+        Raw::store<float> (0.0, &MGHO.fov, is_BE);
 
       }
 

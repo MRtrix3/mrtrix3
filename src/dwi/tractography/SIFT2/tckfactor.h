@@ -30,8 +30,7 @@
 #include <limits>
 #include <mutex>
 
-#include "image/buffer.h"
-#include "math/vector.h"
+#include "image.h"
 
 #include "dwi/directions/set.h"
 
@@ -69,7 +68,7 @@ namespace MR {
 
         public:
 
-          TckFactor (Image::Buffer<float>& fod_image, const DWI::Directions::FastLookupSet& dirs) :
+          TckFactor (Image<float>& fod_image, const DWI::Directions::FastLookupSet& dirs) :
               SIFT::Model<Fixel> (fod_image, dirs),
               reg_multiplier_tikhonov (0.0),
               reg_multiplier_tv (0.0),
@@ -82,15 +81,15 @@ namespace MR {
               data_scale_term (0.0) { }
 
 
-          void set_reg_lambdas     (const float, const float);
-          void set_min_iters       (const int   i) { min_iters = i; }
-          void set_max_iters       (const int   i) { max_iters = i; }
-          void set_min_factor      (const float i) { min_coeff = i ? std::log(i) : -std::numeric_limits<float>::max(); }
-          void set_min_coeff       (const float i) { min_coeff = i; }
-          void set_max_factor      (const float i) { max_coeff = std::log(i); }
-          void set_max_coeff       (const float i) { max_coeff = i; }
-          void set_max_coeff_step  (const float i) { max_coeff_step = i; }
-          void set_min_cf_decrease (const float i) { min_cf_decrease_percentage = i; }
+          void set_reg_lambdas     (const double, const double);
+          void set_min_iters       (const int    i) { min_iters = i; }
+          void set_max_iters       (const int    i) { max_iters = i; }
+          void set_min_factor      (const double i) { min_coeff = i ? std::log(i) : -std::numeric_limits<double>::max(); }
+          void set_min_coeff       (const double i) { min_coeff = i; }
+          void set_max_factor      (const double i) { max_coeff = std::log(i); }
+          void set_max_coeff       (const double i) { max_coeff = i; }
+          void set_max_coeff_step  (const double i) { max_coeff_step = i; }
+          void set_min_cf_decrease (const double i) { min_cf_decrease_percentage = i; }
 
           void set_csv_path (const std::string& i) { csv_path = i; }
 
@@ -117,11 +116,11 @@ namespace MR {
 
 
         private:
-          Math::Vector<float> coefficients;
+          Eigen::VectorXd coefficients;
 
-          float reg_multiplier_tikhonov, reg_multiplier_tv;
+          double reg_multiplier_tikhonov, reg_multiplier_tv;
           size_t min_iters, max_iters;
-          float min_coeff, max_coeff, max_coeff_step, min_cf_decrease_percentage;
+          double min_coeff, max_coeff, max_coeff_step, min_cf_decrease_percentage;
           std::string csv_path;
 
           double data_scale_term;
