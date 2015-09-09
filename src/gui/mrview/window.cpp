@@ -1315,7 +1315,7 @@ namespace MR
         // otherwise we get transparent windows...
 #if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true); 
-        gl::Clear (GL_COLOR_BUFFER_BIT);
+        gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
