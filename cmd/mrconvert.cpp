@@ -77,10 +77,11 @@ void usage ()
             "These take the form of a comma-separated 2-vector of floating-point values, "
             "corresponding to offset & scale, with final intensity values being given by "
             "offset + scale * stored_value. "
-            "By default, the values in the input image header are preserved when writing to "
-            "an integer image; when writing to a floating-point image, any scaling present "
-            "in the input image header is applied to the raw image data, such that the "
-            "output image header contains standard (non-influential) scaling only.")
+            "By default, the values in the input image header are passed through to the "
+            "output image header when writing to an integer image; when writing to a "
+            "floating-point image, these values are reset to 0,1 (no scaling). To force "
+            "mrconvert to preserve the input image's scaling parameters even for "
+            "floating-point outputs, use '-scaling preserve'")
   + Argument ("values").type_sequence_float()
 
   + Image::Stride::StrideOption
@@ -238,13 +239,19 @@ void run ()
 
   opt = get_options ("scaling");
   if (opt.size()) {
-    std::vector<float> scaling = opt[0][0];
-    if (scaling.size() != 2) 
-      throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
-    header_out.intensity_offset() = scaling[0];
-    header_out.intensity_scale() = scaling[1];
+    if (lowercase (opt[0][0]) == "preserve")
+      header_out.set_intensity_scaling (header_in);
+    else {
+      std::vector<float> scaling = opt[0][0];
+      if (scaling.size() != 2) 
+        throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
+      header_out.intensity_offset() = scaling[0];
+      header_out.intensity_scale() = scaling[1];
+    }
   }
 
+  if (!std::isfinite (header_out.intensity_offset()) || !std::isfinite (header_out.intensity_scale()) || header_out.intensity_scale() == 0.0)
+    WARN ("invalid scaling parameters (offset: " + str(header_out.intensity_offset()) + ", scale: " + str(header_out.intensity_scale()) + ")");
 
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
