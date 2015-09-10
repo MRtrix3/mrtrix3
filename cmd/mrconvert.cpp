@@ -191,7 +191,8 @@ void run ()
 
   Image::Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
-  header_out.set_intensity_scaling (header_in);
+  if (!header_out.datatype().is_floating_point())
+    header_out.set_intensity_scaling (header_in);
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
