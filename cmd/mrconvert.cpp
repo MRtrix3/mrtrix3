@@ -99,19 +99,10 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
   header.info() = input.info();
   header.datatype() = datatype;
 
-  Options opt = get_options ("scaling");
-  if (opt.size()) {
-    std::vector<float> scaling = opt[0][0];
-    if (scaling.size() != 2) 
-      throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
-    header.intensity_offset() = scaling[0];
-    header.intensity_scale() = scaling[1];
-  }
-
   if (get_options ("grad").size() || get_options ("fslgrad").size())
     header.DW_scheme() = DWI::get_DW_scheme<float> (header);
 
-  opt = get_options ("axes");
+  auto opt = get_options ("axes");
   std::vector<int> axes;
   if (opt.size()) {
     axes = opt[0][0];
@@ -240,30 +231,44 @@ void run ()
     }
   }
 
-  switch (header_out.datatype()() & DataType::Type) {
-    case DataType::Undefined: throw Exception ("Undefined output image data type"); break;
-    case DataType::Bit:
-    case DataType::UInt8:
-    case DataType::UInt16:
-    case DataType::UInt32:
-      if (header_out.datatype().is_signed())
-        copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
-      break;
-    case DataType::UInt64:
-      if (header_out.datatype().is_signed())
-        copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
-      break;
-    case DataType::Float32:
-    case DataType::Float64:
-      if (header_out.datatype().is_complex())
-        copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<double> (header_in, header_out, pos, argument[1]);
-      break;
+
+  opt = get_options ("scaling");
+  if (opt.size()) {
+    std::vector<float> scaling = opt[0][0];
+    if (scaling.size() != 2) 
+      throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
+    header_out.intensity_offset() = scaling[0];
+    header_out.intensity_scale() = scaling[1];
+  }
+
+
+
+  if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
+    switch (header_out.datatype()() & DataType::Type) {
+      case DataType::Bit:
+      case DataType::UInt8:
+      case DataType::UInt16:
+      case DataType::UInt32:
+        if (header_out.datatype().is_signed())
+          copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
+        else
+          copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
+        break;
+      case DataType::UInt64:
+        if (header_out.datatype().is_signed())
+          copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
+        else
+          copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
+        break;
+      case DataType::Undefined: throw Exception ("invalid output image data type"); break;
+
+    }
+  }
+  else {
+    if (header_out.datatype().is_complex())
+      copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
+    else
+      copy_permute<double> (header_in, header_out, pos, argument[1]);
   }
 
 }
