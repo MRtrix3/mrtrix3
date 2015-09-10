@@ -76,8 +76,11 @@ void usage ()
             "specify the data scaling parameters used to rescale the intensity values. "
             "These take the form of a comma-separated 2-vector of floating-point values, "
             "corresponding to offset & scale, with final intensity values being given by "
-            "offset + scale * stored_value. By default, the values in the original header "
-            "are preserved.")
+            "offset + scale * stored_value. "
+            "By default, the values in the input image header are preserved when writing to "
+            "an integer image; when writing to a floating-point image, any scaling present "
+            "in the input image header is applied to the raw image data, such that the "
+            "output image header contains standard (non-influential) scaling only.")
   + Argument ("values").type_sequence_float()
 
   + Image::Stride::StrideOption
