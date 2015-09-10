@@ -732,8 +732,8 @@ namespace MR
 
           Edge::set_streamtube_LOD (3);
 
-          glGetIntegerv (GL_ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
-          glGetIntegerv (GL_SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
+          glGetIntegerv (gl::ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
+          glGetIntegerv (gl::SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
           GL_CHECK_ERROR;
 
           enable_all (false);
@@ -2416,7 +2416,7 @@ namespace MR
             }
 
             if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
-              gl::Enable (GL_LINE_SMOOTH);
+              gl::Enable (gl::LINE_SMOOTH);
 
             GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
             if (edge_geometry == edge_geometry_t::CYLINDER) {
@@ -2518,7 +2518,7 @@ namespace MR
             if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) {
               gl::LineWidth (1.0f);
               if (edge_geometry_line_smooth_checkbox->isChecked())
-                gl::Disable (GL_LINE_SMOOTH);
+                gl::Disable (gl::LINE_SMOOTH);
             }
 
             edge_shader.stop();
