@@ -71,8 +71,10 @@ namespace MR
                                        const Eigen::Vector3 moving_point,
                                        const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-                if (isnan (default_type (params.template_image.value())))
-                  return 0.0;
+                // if (isnan (default_type (params.template_image.value()))) // SEGFAULT here
+                //   return 0.0;
+                // if (isnan (default_type (params.moving_image.value())))
+                //   return 0.0;
 
                 Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
 
@@ -82,28 +84,20 @@ namespace MR
                 Eigen::Matrix<typename Params::TemplateValueType, 1, 3> template_grad;
 
                 params.moving_image_interp->value_and_gradient (moving_value, moving_grad);
-                
-                #ifdef NONSYMREGISTRATION
-                  default_type diff = moving_value - params.template_image.value();
-                  for (size_t par = 0; par < gradient.size(); par++) {
-                    default_type sum = 0.0;
-                    for ( size_t dim = 0; dim < 3; dim++)
-                      sum += 2.0 * diff * jacobian (dim, par) * moving_grad[dim];
-                    gradient[par] += sum;
-                  }
-                  return diff * diff;
-                #else
-                  params.template_image_interp->value_and_gradient (template_value, template_grad);
+                if (isnan (default_type (moving_value)))
+                  return 0.0;
+                params.template_image_interp->value_and_gradient (template_value, template_grad);
+                if (isnan (default_type (template_value)))
+                  return 0.0;
 
-                  default_type diff = moving_value - template_value;
-                  for (size_t par = 0; par < gradient.size(); par++) {
-                    default_type sum = 0.0;
-                    for ( size_t dim = 0; dim < 3; dim++)
-                      sum += diff * jacobian (dim, par) * (moving_grad[dim] + template_grad[dim]);
-                    gradient[par] += sum;
-                  }
-                  return diff * diff;
-                #endif
+                default_type diff = moving_value - template_value;
+                for (size_t par = 0; par < gradient.size(); par++) {
+                  default_type sum = 0.0;
+                  for ( size_t dim = 0; dim < 3; dim++)
+                    sum += diff * jacobian (dim, par) * (moving_grad[dim] + template_grad[dim]);
+                  gradient[par] += sum;
+                }
+                return diff * diff;
             }
 
         };
