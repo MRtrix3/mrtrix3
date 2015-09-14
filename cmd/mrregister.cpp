@@ -100,6 +100,7 @@ void load_image (std::string filename, size_t num_vols, Image<value_type>& image
   std::cout << num_vols << std::endl;
   auto temp_image = Image<value_type>::open (filename);
   auto header = Header::open (filename);
+  header.datatype() = DataType::from_command_line (DataType::Float32);
   if (num_vols > 1) {
     header.size(3) = num_vols;
     header.stride(0) = 2;
@@ -171,8 +172,10 @@ void run ()
   // Will currently output whatever lmax was used during registration
   opt = get_options ("transformed");
   Image<value_type> transformed;
-  if (opt.size())
+  if (opt.size()){
     transformed = Image<value_type>::create (opt[0][0], template_image); 
+    transformed.header().datatype() = DataType::from_command_line (DataType::Float32);
+  }
 
   opt = get_options ("type");
   bool do_rigid  = false;
