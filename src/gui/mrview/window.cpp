@@ -675,8 +675,14 @@ namespace MR
 
       Window::~Window ()
       {
-        mode = nullptr;
-        delete glarea;
+        glarea->makeCurrent();
+        QList<QAction*> tools = tool_group->actions();
+        for (QAction* action : tools) 
+          delete action;
+        mode.reset();
+        QList<QAction*> images = image_group->actions();
+        for (QAction* action : images) 
+          delete action;
       }
 
 
@@ -796,6 +802,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
+        glarea->makeCurrent();
         mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create());
         mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
