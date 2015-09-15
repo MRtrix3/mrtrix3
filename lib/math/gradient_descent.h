@@ -43,24 +43,22 @@ namespace MR
     // @{
 
 
-    namespace {
 
-      class LinearUpdate {
-        public:
-          template <typename ValueType>
-            inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
-                const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
-              bool changed = false;
-              for (ssize_t n = 0; n < x.size(); ++n) {
-                newx[n] = x[n] - step_size * g[n];
-                if (newx[n] != x[n])
-                  changed = true;
-              }
-              return changed;
+    class LinearUpdate {
+      public:
+        template <typename ValueType>
+          inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
+            bool changed = false;
+            for (ssize_t n = 0; n < x.size(); ++n) {
+              newx[n] = x[n] - step_size * g[n];
+              if (newx[n] != x[n])
+                changed = true;
             }
-    };
+            return changed;
+          }
+  };
 
-  }
     //! Computes the minimum of a function using a gradient descent approach.
     template <class Function, class UpdateFunctor=LinearUpdate>
       class GradientDescent
