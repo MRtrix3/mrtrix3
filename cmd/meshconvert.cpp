@@ -21,9 +21,8 @@
 */
 
 
-#include "args.h"
 #include "command.h"
-#include "image/header.h"
+#include "header.h"
 #include "mesh/mesh.h"
 
 
@@ -83,9 +82,9 @@ void run ()
 
   bool have_transformed = false;
 
-  Options opt = get_options ("transform_first2real");
+  auto opt = get_options ("transform_first2real");
   if (opt.size()) {
-    Image::Header H (opt[0][0]);
+    Header H = Header::open (opt[0][0]);
     for (auto i = meshes.begin(); i != meshes.end(); ++i)
       i->transform_first_to_realspace (H);
     have_transformed = true;
@@ -95,7 +94,7 @@ void run ()
   if (opt.size()) {
     if (have_transformed)
       throw Exception ("meshconvert can only perform one spatial transformation per call");
-    Image::Header H (opt[0][0]);
+    Header H = Header::open (opt[0][0]);
     for (auto i = meshes.begin(); i != meshes.end(); ++i)
       i->transform_voxel_to_realspace (H);
     have_transformed = true;
@@ -105,7 +104,7 @@ void run ()
   if (opt.size()) {
     if (have_transformed)
       throw Exception ("meshconvert can only perform one spatial transformation per call");
-    Image::Header H (opt[0][0]);
+    Header H = Header::open (opt[0][0]);
     for (auto i = meshes.begin(); i != meshes.end(); ++i)
       i->transform_realspace_to_voxel (H);
     have_transformed = true;

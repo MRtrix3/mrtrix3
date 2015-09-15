@@ -21,7 +21,6 @@
 */
 
 
-#include "args.h"
 #include "command.h"
 #include "progressbar.h"
 #include "thread_queue.h"
@@ -90,7 +89,7 @@ void run ()
   int filter = argument[1];
   if (filter == 0) {
 
-    const float spatial = get_option_value ("smooth_spatial", SMOOTH_SPATIAL_DEFAULT);
+    const float spatial   = get_option_value ("smooth_spatial",  SMOOTH_SPATIAL_DEFAULT);
     const float influence = get_option_value ("smooth_inluence", SMOOTH_INFLUENCE_DEFAULT);
 
     if (meshes.size() == 1) {
