@@ -97,7 +97,6 @@ void usage ()
 typedef float value_type;
 
 void load_image (std::string filename, size_t num_vols, Image<value_type>& image) {
-  std::cout << num_vols << std::endl;
   auto temp_image = Image<value_type>::open (filename);
   auto header = Header::open (filename);
   header.datatype() = DataType::from_command_line (DataType::Float32);
@@ -305,7 +304,7 @@ void run ()
     mmask_image = Image<bool>::open(opt[0][0]);
 
   opt = get_options ("rigid_niter");
-  std::vector<int> rigid_niter;;
+  std::vector<int> rigid_niter;
   if (opt.size ()) {
     rigid_niter = parse_ints (opt[0][0]);
     if (!do_rigid)
