@@ -27,8 +27,6 @@
 
 
 #include "app.h"
-#include "args.h"
-#include "point.h"
 
 #include "connectome/connectome.h"
 
@@ -50,6 +48,8 @@ extern const App::OptionGroup LookupTableOption;
 class Node_map;
 void load_lut_from_cmdline (Node_map&);
 
+typedef Eigen::Array<uint8_t, 3, 1> RGB;
+
 
 
 // Class for storing any useful information regarding a parcellation node that
@@ -60,33 +60,33 @@ class Node_info
   public:
     Node_info (const std::string& n) :
       name (n),
-      colour (Point<uint8_t> (0, 0, 0)),
+      colour (0, 0, 0),
       alpha (255) { }
 
     Node_info (const std::string& n, const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) :
       name (n),
-      colour (Point<uint8_t> (r, g, b)),
+      colour (r, g, b),
       alpha (a) { }
 
-    Node_info (const std::string& n, const Point<uint8_t>& rgb, const uint8_t a = 255) :
+    Node_info (const std::string& n, const RGB& rgb, const uint8_t a = 255) :
       name (n),
       colour (rgb),
       alpha (a) { }
 
 
-    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = Point<uint8_t> (r,g,b); }
-    void set_colour (const Point<uint8_t> rgb) { colour = rgb; }
+    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB (r,g,b); }
+    void set_colour (const RGB& rgb) { colour = rgb; }
     void set_alpha  (const uint8_t a) { alpha = a; }
 
 
-    const std::string&    get_name()   const { return name; }
-    const Point<uint8_t>& get_colour() const { return colour; }
-    uint8_t               get_alpha()  const { return alpha; }
+    const std::string& get_name()   const { return name; }
+    const RGB&         get_colour() const { return colour; }
+    uint8_t            get_alpha()  const { return alpha; }
 
 
   private:
     std::string name;
-    Point<uint8_t> colour;
+    RGB colour;
     uint8_t alpha;
 
 };
