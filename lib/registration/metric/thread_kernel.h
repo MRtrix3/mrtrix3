@@ -125,9 +125,6 @@ namespace MR
                 if (!params.moving_mask_interp->value())
                   return;
               }
-
-              // assign_pos_of (iter).to (params.template_image); // TODO still makes sense if template not resized? Not necessary if .value() call metric is removed?
-              // assign_pos_of (iter).to (params.moving_image); // TODO still makes sense if moving not resized?
               
               params.moving_image_interp->scanner (moving_point);
               if (!(*params.moving_image_interp))

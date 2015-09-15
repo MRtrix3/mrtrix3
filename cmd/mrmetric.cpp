@@ -4,7 +4,7 @@
 
 #include "image/average_space.h"
 // #include "interp/linear.h"
-// #include "interp/nearest.h"
+#include "interp/nearest.h"
 #include "interp/cubic.h"
 // #include "interp/sinc.h"
 #include "filter/reslice.h"
@@ -14,6 +14,11 @@ using namespace App;
 
 const char* interp_choices[] = { "nearest", "linear", "cubic", "sinc", NULL }; // TODO
 const char* space_choices[] = { "voxel", "image1", "image2", "average", NULL };
+
+template <class ValueType>
+inline void meansquared(const ValueType& value1, const ValueType& value2, ValueType& cost){
+  cost += std::pow (value1 - value2, 2);
+}
 
 void usage ()
 {
@@ -38,12 +43,19 @@ void usage ()
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
+    + Option ("mask1", "mask for image 1")
+    + Argument ("image").type_image_in ()
+
+    + Option ("mask2", "mask for image 2")
+    + Argument ("image").type_image_in ()
+
     + Option ("nonormalisation",
         "do not normalise the dissimilarity metric to the number of voxels.");
 
 }
 
 typedef double value_type;
+typedef Image<bool> MaskType;
 
 void run ()
 {
@@ -54,6 +66,16 @@ void run ()
   auto opt = get_options ("space");
   if (opt.size())
     space = opt[0][0];
+
+  MaskType mask1;
+  bool use_mask1 = get_options ("mask1").size()==1;
+  if (use_mask1)
+    mask1 = Image<bool>::open(get_options ("mask1")[0][0]);
+
+  MaskType mask2;
+  bool use_mask2 = get_options ("mask2").size()==1;
+  if (use_mask2)
+    mask2 = Image<bool>::open(get_options ("mask2")[0][0]);
 
   bool nonormalisation = false;
   if (get_options ("nonormalisation").size())
@@ -66,9 +88,30 @@ void run ()
   if (space==0){
     DEBUG("per-voxel");
     check_dimensions (input1, input2);
-
-    for (auto i = Loop() (input1, input2); i ;++i)
-      sos += std::pow (input1.value() - input2.value(), 2);
+    if (use_mask1 or use_mask2)
+      n_voxels = 0;
+    if (use_mask1 and use_mask2){
+      for (auto i = Loop() (input1, input2, mask1, mask2); i ;++i)
+        if (mask1.value() and mask2.value()){
+          n_voxels += 1;
+          meansquared<value_type>(input1.value(), input2.value(), sos);
+        }
+    } else if (use_mask1){
+      for (auto i = Loop() (input1, input2, mask1); i ;++i)
+        if (mask1.value()){
+          n_voxels += 1;
+          meansquared<value_type>(input1.value(), input2.value(), sos);
+        }
+    } else if (use_mask2){
+      for (auto i = Loop() (input1, input2, mask2); i ;++i)
+        if (mask2.value()){
+          n_voxels += 1;
+          meansquared<value_type>(input1.value(), input2.value(), sos);
+        }
+    } else {
+      for (auto i = Loop() (input1, input2); i ;++i)
+        meansquared<value_type>(input1.value(), input2.value(), sos);
+    }
   } else {
     DEBUG("scanner space");
     int interp = 2;  // cubic
@@ -79,23 +122,34 @@ void run ()
     auto output1 = Header::scratch(input1.header(),"-").get_image<value_type>();
     auto output2 = Header::scratch(input2.header(),"-").get_image<value_type>();
 
+    MaskType output1mask;
+    MaskType output2mask;
+
     if (interp == 2) {
       if (space == 1){
         DEBUG("image 1");
         output1 = input1;
+        output1mask = mask1;
         output2 = Header::scratch(input1.header(),"-").get_image<value_type>();
+        output2mask = Header::scratch(input1.header(),"-").get_image<bool>();
         {
           LogLevelLatch log_level (0);
           Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          if (use_mask2)
+            Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
       }
       if (space == 2) {
         DEBUG("image 2");
         output1 = Header::scratch(input2.header(),"-").get_image<value_type>();
+        output1mask = Header::scratch(input2.header(),"-").get_image<bool>();
         output2 = input2;
+        output2mask = mask2;
         {
           LogLevelLatch log_level (0);
           Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          if (use_mask1)
+            Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
         n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
       }
@@ -112,19 +166,51 @@ void run ()
 
         output1 = Header::scratch(template_header,"-").get_image<value_type>();
         output2 = Header::scratch(template_header,"-").get_image<value_type>();
+        output1mask = Header::scratch(template_header,"-").get_image<bool>();
+        output2mask = Header::scratch(template_header,"-").get_image<bool>();
         { 
           LogLevelLatch log_level (0);
           Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform,Adapter::AutoOverSample, out_of_bounds_value);
           Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          if (use_mask1)
+            Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+          if (use_mask2)
+            Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
         n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
       }
     } else throw Exception ("Other than cubic interpolation not implemented yet.");
 
-    for (auto i = Loop() (output1, output2); i ;++i)
-      sos += std::pow (output1.value() - output2.value(), 2);
+    if (use_mask1 or use_mask2)
+      n_voxels = 0;
+    if (use_mask1 and use_mask2){
+      for (auto i = Loop() (output1, output2, output1mask, output2mask); i ;++i)
+        if (output1mask.value() and output2mask.value()){
+          n_voxels += 1;
+          meansquared<value_type>(output1.value(), output2.value(), sos);
+        }
+    } else if (use_mask1){
+      for (auto i = Loop() (output1, output2, output1mask); i ;++i)
+        if (output1mask.value()){
+          n_voxels += 1;
+          meansquared<value_type>(output1.value(), output2.value(), sos);
+        }
+    } else if (use_mask2){
+      for (auto i = Loop() (output1, output2, output2mask); i ;++i)
+        if (output2mask.value()){
+          n_voxels += 1;
+          meansquared<value_type>(output1.value(), output2.value(), sos);
+        }
+    } else {
+      for (auto i = Loop() (output1, output2); i ;++i)
+        meansquared<value_type>(output1.value(), output2.value(), sos);
+    }
 
   }
+  DEBUG ("n_voxels:" + str(n_voxels));
+  if (n_voxels==0)
+    WARN("number of overlapping voxels is zero");
+
   if (!nonormalisation)
     sos /= static_cast<value_type>(n_voxels);
   std::cout << str(sos) << std::endl;
