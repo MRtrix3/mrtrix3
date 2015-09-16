@@ -28,6 +28,7 @@
 #include "registration/linear.h"
 #include "registration/syn.h"
 #include "registration/metric/mean_squared.h"
+#include "registration/metric/cross_correlation.h"
 #include "registration/metric/mean_squared_4D.h"
 #include "registration/transform/affine.h"
 #include "registration/transform/rigid.h"
@@ -91,7 +92,9 @@ void usage ()
 
   + Registration::initialisation_options
 
-  + Registration::fod_options;
+  + Registration::fod_options
+
+  + DataType::options();
 }
 
 typedef float value_type;
@@ -284,6 +287,9 @@ void run ()
     affine_smooth_factor = default_type (opt[0][0]);
   }
 
+  bool rigid_cc = get_options ("rigid_cc").size() == 1;
+  bool affine_cc = get_options ("affine_cc").size() == 1;
+
   opt = get_options ("syn_scale");
   std::vector<default_type> syn_scale_factors;
   if (opt.size ()) {
@@ -420,12 +426,24 @@ void run ()
     else
       rigid_registration.set_init_type (init_centre);
 
+      
     if (template_image.ndim() == 4) {
+      if (rigid_cc)
+        throw Exception ("rigid cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
     } else {
-      Registration::Metric::MeanSquared metric;
-      rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+      if (rigid_cc){
+        std::vector<size_t> extent(3);
+        std::fill(extent.begin(), extent.end(), 5);
+        rigid_registration.set_extent(extent);
+        Registration::Metric::CrossCorrelation metric;
+        rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+      }
+      else {
+        Registration::Metric::MeanSquared metric;
+        rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+      }
     }
 
     if (output_rigid)
@@ -457,11 +475,22 @@ void run ()
 
 
     if (template_image.ndim() == 4) {
+      if (affine_cc)
+        throw Exception ("affine cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
     } else {
-      Registration::Metric::MeanSquared metric;
-      affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+      if (affine_cc){
+        Registration::Metric::CrossCorrelation metric;
+        std::vector<size_t> extent(3);
+        std::fill(extent.begin(), extent.end(), 5);
+        affine_registration.set_extent(extent);
+        affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+      }
+      else {
+        Registration::Metric::MeanSquared metric;
+        affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+      }
     }
 
 
