@@ -56,7 +56,7 @@ namespace MR {
             _tx = _ty = _tz = t;
           }
           
-          void setThreshold(const value_type tx, const value_type ty, float tz) {
+          void setThreshold(const value_type tx, const value_type ty, const value_type tz) {
             _tx = tx;
             _ty = ty;
             _tz = tz;
@@ -67,7 +67,7 @@ namespace MR {
             Point<value_type> d;
             for (typename std::set<Point<value_type> >::iterator it = lockcentres.begin(); it != lockcentres.end(); ++it) {
               d = *it - pos;
-              if ((std::abs(d[0]) < _tx) && (std::abs(d[1]) < _ty) && (std::abs(d[2]) < _tz))
+              if ((std::fabs(d[0]) < _tx) && (std::fabs(d[1]) < _ty) && (std::fabs(d[2]) < _tz))
                 return false;
             }
             lockcentres.insert(pos);
