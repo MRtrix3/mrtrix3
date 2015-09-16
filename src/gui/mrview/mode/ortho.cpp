@@ -70,7 +70,6 @@ namespace MR
           projection.set (MV, P);
 
           gl::Disable (gl::DEPTH_TEST);
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
