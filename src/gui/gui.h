@@ -90,6 +90,7 @@ namespace MR
         }
 #else
         static std::pair<int,int> currentContext () { return { 0, 0 }; }
+        static std::pair<int,int> getContext (QWidget*) { return { 0, 0 }; }
         static std::pair<int,int> makeContextCurrent (QWidget*) { return { 0, 0 }; }
         static void restoreContext (std::pair<int,int>) { }
 #endif
