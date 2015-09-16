@@ -164,10 +164,6 @@ void usage ()
 };
 
 
-void launch_MHS(DWI::Tractography::GT::MHSampler& mhs) {
-  Thread::run (Thread::multi(mhs), "MH sampler");
-}
-
 
 void run ()
 {
@@ -332,7 +328,8 @@ void run ()
   
   MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
     
-  launch_MHS(mhs);
+  auto t = Thread::run (Thread::multi(mhs), "MH sampler");
+  t.wait();
   
   VAR(pgrid.getTotalCount());
   

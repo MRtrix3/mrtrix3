@@ -164,7 +164,7 @@ namespace MR {
           double R = exp(-dE);
           if (R > rng.uniform()) {
             E->acceptChanges();
-            pGrid.shift(idx, pos, dir);
+            pGrid.shift(par, pos, dir);
             stats.incNa('r');
           }
           else {
@@ -201,7 +201,7 @@ namespace MR {
           double R = exp(-dE) * props.p_shift * p_prop / (props.p_shift * p_prop + props.p_optshift);
           if (R > rng.uniform()) {
             E->acceptChanges();
-            pGrid.shift(idx, pos, dir);
+            pGrid.shift(par, pos, dir);
             stats.incNa('o');
           }
           else {

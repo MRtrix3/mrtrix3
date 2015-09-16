@@ -54,9 +54,8 @@ namespace MR {
           list.push_back(p);
         }
         
-        void ParticleGrid::shift(const unsigned int idx, const Point_t& pos, const Point_t& dir)
+        void ParticleGrid::shift(Particle *p, const Point_t& pos, const Point_t& dir)
         {
-          Particle* p = list[idx];
           unsigned int gidx0 = pos2idx(p->getPosition());
           unsigned int gidx1 = pos2idx(pos);
           for (ParticleVectorType::iterator it = grid[gidx0].begin(); it != grid[gidx0].end(); ++it) {
@@ -72,6 +71,7 @@ namespace MR {
         
         void ParticleGrid::remove(const unsigned int idx)
         {
+          std::lock_guard<std::mutex> lock (mutex);
           Particle* p = list[idx];
           unsigned int gidx0 = pos2idx(p->getPosition());
           for (ParticleVectorType::iterator it = grid[gidx0].begin(); it != grid[gidx0].end(); ++it) {
@@ -80,9 +80,9 @@ namespace MR {
               break;
             }
           }
-          std::lock_guard<std::mutex> lock (mutex);
-          list[idx] = list.back();    // FIXME Not thread safe if last element is in use !  May corrupt datastructure,
-          list.pop_back();            // but program won't crash. Ignore for now.
+          list[idx] = list.back();    // FIXME Not thread safe if last element is in use by another _delete_ proposal!  
+          list.pop_back();            // May corrupt datastructure, but program won't crash. Ignore for now.
+          pool.destroy(p);
         }
         
         void ParticleGrid::clear()

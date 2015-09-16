@@ -69,7 +69,7 @@ namespace MR {
           
           void add(const Point_t& pos, const Point_t& dir);
           
-          void shift(const unsigned int idx, const Point_t& pos, const Point_t& dir);
+          void shift(Particle* p, const Point_t& pos, const Point_t& dir);
           
           void remove(const unsigned int idx);
           
