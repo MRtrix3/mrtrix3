@@ -689,6 +689,7 @@ namespace MR
         
         void Tractogram::erase_nontrack_data()
         {
+          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (colour_buffers.size()) {
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);

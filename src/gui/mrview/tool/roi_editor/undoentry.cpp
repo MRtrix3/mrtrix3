@@ -360,6 +360,7 @@ namespace MR
 
         void ROI_UndoEntry::redo (ROI_Item& roi) 
         {
+          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
