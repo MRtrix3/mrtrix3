@@ -219,11 +219,13 @@ namespace MR
 
         void Tractography::draw (const Projection& transform, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < tractogram_list_model->rowCount(); ++i) {
             if (tractogram_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<Tractogram*>(tractogram_list_model->items[i].get())->render (transform);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -284,7 +286,8 @@ namespace MR
         }
 
 
-        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) {
+        void Tractography::toggle_shown_slot (const QModelIndex& index, const QModelIndex& index2) 
+        {
           if (index.row() == index2.row()) {
             tractogram_list_view->setCurrentIndex(index);
           } else {

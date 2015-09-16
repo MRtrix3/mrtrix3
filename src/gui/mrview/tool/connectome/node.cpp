@@ -20,6 +20,7 @@
 
 */
 
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/node.h"
 
 #include <vector>
@@ -79,6 +80,7 @@ namespace MR
         Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
             count (3 * in.num_triangles())
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           std::vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
@@ -122,6 +124,7 @@ namespace MR
           index_buffer.bind();
           if (indices.size())
             gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size() * sizeof (unsigned int), &indices[0], gl::STATIC_DRAW);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         Node::Mesh::Mesh (Mesh&& that) :
@@ -150,11 +153,13 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           index_buffer.bind();
           gl::DrawElements (gl::TRIANGLES, count, gl::UNSIGNED_INT, (void*)0);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

@@ -39,6 +39,7 @@ namespace MR
 
         void Ortho::paint (Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -113,6 +114,7 @@ namespace MR
           frame_program.stop();
 
           gl::Enable (gl::DEPTH_TEST);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

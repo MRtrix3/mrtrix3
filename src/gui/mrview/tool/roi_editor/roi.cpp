@@ -317,9 +317,11 @@ namespace MR
           std::vector<GLubyte> data (roi->info().dim(0) * roi->info().dim(1) * roi->info().dim(2));
           { 
             Window::GrabContext context; 
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
             gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
             gl::GetTexImage (gl::TEXTURE_3D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*) (&data[0]));
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           }
 
           try {
@@ -521,6 +523,7 @@ namespace MR
 
         void ROI::draw (const Projection& projection, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (is_3D) return;
 
           if (!is_3D) {
@@ -549,6 +552,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

@@ -335,6 +335,7 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           GL_CHECK_ERROR;
           // info for projection:
           int w = width(), h = height();
@@ -550,6 +551,8 @@ namespace MR
 
           GL_CHECK_ERROR;
           draw_orientation_labels (projection);
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         inline Tool::View* Volume::get_view_tool () const

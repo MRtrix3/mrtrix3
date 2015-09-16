@@ -20,6 +20,7 @@
 
 */
 
+#include "gui/mrview/window.h"
 #include "gui/mrview/tool/connectome/shaders.h"
 
 #include "gui/mrview/tool/connectome/connectome.h"
@@ -38,6 +39,7 @@ namespace MR
 
         void ShaderBase::recompile (const Connectome& parent)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (*this != 0)
             clear();
           update (parent);
@@ -49,6 +51,7 @@ namespace MR
             attach (geometry_shader);
           attach (fragment_shader);
           link();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

@@ -57,6 +57,7 @@ namespace MR
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!copy_program) {
             GL::Shader::Vertex vertex_shader (
                 "layout(location = 0) in ivec3 vertpos;\n"
@@ -141,6 +142,7 @@ namespace MR
           gl::GetTexImage (gl::TEXTURE_2D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*)(&before[0]));
           after = before;
           GL_CHECK_ERROR;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -178,8 +180,10 @@ namespace MR
           } while (v != final_vox);
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -222,8 +226,10 @@ namespace MR
           } } }
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -255,8 +261,10 @@ namespace MR
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -286,8 +294,10 @@ namespace MR
                 after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -329,8 +339,10 @@ namespace MR
             }
           }
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -340,22 +352,28 @@ namespace MR
         void ROI_UndoEntry::undo (ROI_Item& roi) 
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&before[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void ROI_UndoEntry::redo (ROI_Item& roi) 
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           after = source.before;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

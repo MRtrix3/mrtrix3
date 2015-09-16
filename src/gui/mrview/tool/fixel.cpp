@@ -197,6 +197,7 @@ namespace MR
 
         void AbstractFixel::render (const Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           start (fixel_shader);
           projection.set (fixel_shader);
 
@@ -245,6 +246,7 @@ namespace MR
           }
 
           stop (fixel_shader);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -252,6 +254,7 @@ namespace MR
                                                 const MR::Image::ConstHeader &fixel_header,
                                                 const MR::Image::Transform &header_transform)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Code below "inspired" by ODF::draw
           Point<> p (Window::main->target());
           p += projection.screen_normal() * (projection.screen_normal().dot (Window::main->focus() - p));
@@ -340,6 +343,7 @@ namespace MR
                           &regular_grid_buffer_val[0], gl::DYNAMIC_DRAW);
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -348,6 +352,7 @@ namespace MR
           // Make sure to set graphics context!
           // We're setting up vertex array objects
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           load_image_buffer ();
 
@@ -382,6 +387,8 @@ namespace MR
           gl::BufferData (gl::ARRAY_BUFFER, buffer_val.size() * sizeof(float), &buffer_val[0], gl::STATIC_DRAW);
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 2, gl::FLOAT, gl::FALSE_, 0, (void*)0);
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

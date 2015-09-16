@@ -242,6 +242,7 @@ namespace MR
 
         void Overlay::draw (const Projection& projection, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!is_3D) {
             // set up OpenGL environment:
             gl::Enable (gl::BLEND);
@@ -274,6 +275,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

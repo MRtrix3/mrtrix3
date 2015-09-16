@@ -139,8 +139,8 @@ namespace MR
               set_orientation (orient);
             }
 
-            QGLWidget* glarea () const {
-              return reinterpret_cast <QGLWidget*> (window().glarea);
+            GL::Area* glarea () const {
+              return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
             Point<> move_in_out_displacement (float distance, const Projection& projection) const {
@@ -164,8 +164,11 @@ namespace MR
               QList<QAction*> tools = window().tools()->actions();
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
-                if (dock)
+                if (dock) {
+                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
                   dock->tool->draw (projection, is_3D, axis, slice);
+                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                }
               }
             }
 

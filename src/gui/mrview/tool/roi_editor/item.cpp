@@ -85,8 +85,10 @@ namespace MR
           filename = name.str();
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           allocate();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -94,10 +96,12 @@ namespace MR
         void ROI_Item::zero () 
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           std::vector<GLubyte> data (info().dim(0)*info().dim(1));
           for (int n = 0; n < info().dim(2); ++n)
             upload_data ({ { 0, 0, n } }, { { info().dim(0), info().dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -105,6 +109,7 @@ namespace MR
         void ROI_Item::load (const MR::Image::Header& header) 
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           bind();
           MR::Image::Buffer<bool> buffer (header);
           auto vox = buffer.voxel();
@@ -118,6 +123,7 @@ namespace MR
             ++progress;
           }
           filename = header.name();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

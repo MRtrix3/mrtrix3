@@ -1242,8 +1242,8 @@ namespace MR
 
       void Window::OpenGL_slot ()
       {
-        Dialog::OpenGL gl (this, glarea->format());
-        gl.exec();
+        Dialog::OpenGL glinfo (this, glarea->format());
+        glinfo.exec();
       }
 
 
@@ -1277,6 +1277,7 @@ namespace MR
 
       void Window::paintGL ()
       {
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL_CHECK_ERROR;
         gl::ClearColor (background_colour[0], background_colour[1], background_colour[2], 1.0);
 
@@ -1285,7 +1286,9 @@ namespace MR
 
         GL_CHECK_ERROR;
 
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         mode->paintGL();
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL_CHECK_ERROR;
 
         if (show_FPS) {
@@ -1326,11 +1329,13 @@ namespace MR
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
 
 
       void Window::initGL ()
       {
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         GL::init ();
 
         font.initGL();
@@ -1345,6 +1350,7 @@ namespace MR
 
         if (MR::App::option.size()) 
           QTimer::singleShot (0, this, SLOT (process_commandline_options()));
+        ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
       }
 
 
