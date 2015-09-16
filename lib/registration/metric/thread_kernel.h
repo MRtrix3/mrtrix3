@@ -25,6 +25,7 @@
 
 #include "image.h"
 #include "algo/iterator.h"
+#include "algo/neighbourhooditerator.h"
 #include "transform.h"
 
 namespace MR
@@ -140,8 +141,81 @@ namespace MR
 
           template <class U = MetricType>
             void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
-              cost_function += metric (params, iter);
-          }
+              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+
+              typedef Eigen::Matrix< default_type, 3, Eigen::Dynamic > NeighbhType1;
+              typedef Eigen::Matrix< default_type, 3, Eigen::Dynamic > NeighbhType2;
+
+              NeighbhType1 neighbh1;
+              NeighbhType2 neighbh2;
+              
+              // mat * Map<Matrix<float, 3, Dynamic> >(data,3,N).colwise().homogeneous()
+
+              Eigen::Vector3 midway_point, moving_point, template_point;
+              midway_point = transform.voxel2scanner * voxel_pos;
+              params.transformation.transform_half_inverse (template_point, midway_point);
+              params.transformation.transform_half (moving_point, midway_point);
+              
+              params.moving_image_interp->scanner (moving_point);
+              if (!(*params.moving_image_interp))
+                return;
+              
+              params.template_image_interp->scanner (template_point);
+              if (!(*params.template_image_interp))
+                return;
+
+              if (params.moving_mask_interp) {
+                params.moving_mask_interp->scanner (moving_point);
+                if (!params.moving_mask_interp->value())
+                  return;
+              }
+
+              if (params.template_mask_interp) {
+                params.template_mask_interp->scanner (template_point);
+                if (!params.template_mask_interp->value())
+                  return;
+              }
+
+              Eigen::Vector3 mid_point, point1, point2;
+              auto extent = params.get_extent();
+              auto niter = NeighbourhoodIterator(iter, extent);
+              size_t actual_size = 0;
+              size_t anticipated_size = 0;
+              while(niter.loop()){
+                // std::cerr << niter << std::endl;
+                anticipated_size = niter.extent(0) * niter.extent(1) * niter.extent(2);
+                neighbh1.resize(3,anticipated_size);
+                neighbh2.resize(3,anticipated_size);
+                Eigen::Vector3 vox ((default_type)niter.index(0), (default_type)niter.index(1), (default_type)niter.index(2));
+
+                midway_point = transform.voxel2scanner * vox;
+
+                params.transformation.transform_half_inverse (point1, mid_point);
+                if (params.template_mask_interp) {
+                  params.template_mask_interp->scanner (point1);
+                  if (!params.template_mask_interp->value())
+                    continue;
+                }
+
+                params.transformation.transform_half (point2, mid_point);
+                if (params.moving_mask_interp) {
+                  params.moving_mask_interp->scanner (point2);
+                  if (!params.moving_mask_interp->value())
+                    continue;
+                }
+
+                neighbh1.col(actual_size) = point1;
+                neighbh2.col(actual_size) = point2;
+                actual_size += 1;
+              }
+
+              if (anticipated_size != actual_size){
+                neighbh1.conservativeResize(neighbh1.rows(), actual_size);
+                neighbh2.conservativeResize(neighbh2.rows(), actual_size);
+              }
+
+              cost_function += metric (params, neighbh1, neighbh2, template_point, moving_point, mid_point, gradient);
+            }
 
           protected:
             MetricType metric;

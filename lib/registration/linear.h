@@ -24,6 +24,7 @@
 #define __registration_linear_h__
 
 // #define NONSYMREGISTRATION
+// #define DEBUGSYMMETRY
 #include <vector>
 
 #include "image.h"
@@ -37,6 +38,7 @@
 #include "math/gradient_descent.h"
 #include "math/check_gradient.h"
 #include "math/rng.h"
+#include "math/math.h"
 
 #include <iostream>     // std::streambuf
 
@@ -229,6 +231,7 @@ namespace MR
               // lets ditch the resize of moving and "template", and just smooth. We can then get the value of the image as the same time as the gradient for little extra cost.
               // Note that we will still need to resize the 'halfway' template grid. Maybe we should rename the input images to input1 and input2 to avoid confusion.
 
+
               #ifdef NONSYMREGISTRATION
                 Filter::Resize moving_resize_filter (moving_image);
                 moving_resize_filter.set_scale_factor (scale_factor[level]);
@@ -239,7 +242,7 @@ namespace MR
               #else
                 Filter::Smooth moving_smooth_filter (moving_image);
                 moving_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
-                WARN("smooth_factor " + str(smooth_factor));
+                INFO("smooth_factor " + str(smooth_factor));
                 auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
               #endif
 
@@ -294,16 +297,26 @@ namespace MR
               if (template_mask.valid())
                 parameters.template_mask_interp.reset (new Interp::Nearest<TemplateMaskType> (template_mask));
 
+              #ifdef STOCHASTICLOOP
+                if (scale_factor[level]==1.0)
+                  parameters.sparsity = 0.0;
+                else
+                  parameters.sparsity = 0.2;
+                INFO(str(parameters.sparsity));
+              #endif
+
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.cols())
                 evaluate.set_directions (directions);
+
 
               Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
                                     typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_descent_updator());
               // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
 
               optim.precondition (optimiser_weights);
-              optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
+              // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
+              optim.run (500, 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){
@@ -315,6 +328,17 @@ namespace MR
               // VAR(optim.function_evaluations());
               // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
             }
+            #ifdef DEBUGSYMMETRY
+              auto t_forw = transform.get_transform_half();
+              save_matrix(t_forw.matrix(),"/tmp/t_forw.txt");
+              t_forw = t_forw * t_forw;
+              save_matrix(t_forw.matrix(),"/tmp/t_forw_squared.txt");
+              auto t_back = transform.get_transform_half_inverse();
+              save_matrix(t_back.matrix(),"/tmp/t_back.txt");
+              t_back = t_back * t_back;
+              save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
+            #endif
+            // TODO: update midway_image after to increase speed of next iteration
           }
 
       protected:

@@ -434,8 +434,7 @@ void run ()
       rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
     } else {
       if (rigid_cc){
-        std::vector<size_t> extent(3);
-        std::fill(extent.begin(), extent.end(), 5);
+        std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
         rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
@@ -482,8 +481,7 @@ void run ()
     } else {
       if (affine_cc){
         Registration::Metric::CrossCorrelation metric;
-        std::vector<size_t> extent(3);
-        std::fill(extent.begin(), extent.end(), 5);
+        std::vector<size_t> extent(3,3);
         affine_registration.set_extent(extent);
         affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
       }
