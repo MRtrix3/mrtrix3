@@ -78,10 +78,9 @@ void usage ()
             "corresponding to offset & scale, with final intensity values being given by "
             "offset + scale * stored_value. "
             "By default, the values in the input image header are passed through to the "
-            "output image header when writing to an integer image; when writing to a "
-            "floating-point image, these values are reset to 0,1 (no scaling). To force "
-            "mrconvert to preserve the input image's scaling parameters even for "
-            "floating-point outputs, use '-scaling preserve'")
+            "output image header when writing to an integer image, and reset to 0,1 (no "
+            "scaling) for floating-point and binary images. Note that his option has no "
+            "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
 
   + Image::Stride::StrideOption
@@ -237,15 +236,15 @@ void run ()
 
   opt = get_options ("scaling");
   if (opt.size()) {
-    if (lowercase (opt[0][0]) == "preserve")
-      header_out.set_intensity_scaling (header_in);
-    else {
+    if (header_out.datatype().is_integer()) {
       std::vector<float> scaling = opt[0][0];
       if (scaling.size() != 2) 
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
       header_out.intensity_scale() = scaling[1];
     }
+    else
+      WARN ("-scaling option has no effect for floating-point or binary images");
   }
 
 
