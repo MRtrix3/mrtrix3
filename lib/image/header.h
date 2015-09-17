@@ -73,7 +73,10 @@ namespace MR
           DW_scheme_ (H.DW_scheme_),
           offset_ (0.0),
           scale_ (1.0),
-          comments_ (H.comments_) { }
+          comments_ (H.comments_) { 
+            if (datatype().is_integer())
+              set_intensity_scaling (H);
+          }
 
         Header& operator= (const Header& H) {
           Info::operator= (H);
@@ -84,6 +87,8 @@ namespace MR
           scale_ = 1.0;
           DW_scheme_ = H.DW_scheme_;
           handler_ = NULL;
+          if (datatype().is_integer())
+            set_intensity_scaling (H);
           return *this;
         }
 
@@ -94,6 +99,31 @@ namespace MR
         Info& info() {
           return *this;
         }
+
+        class DataTypeProxy : public DataType {
+          public:
+            DataTypeProxy (Header& H) : DataType (dynamic_cast<Info&> (H).datatype()), H (H) { }
+            DataTypeProxy (DataTypeProxy&&) = default;
+            DataTypeProxy (const DataTypeProxy&) = delete;
+            DataTypeProxy& operator=(DataTypeProxy&&) = default;
+            DataTypeProxy& operator=(const DataTypeProxy&) = delete;
+
+            const uint8_t& operator()() const { return DataType::operator()(); }
+            const DataType& operator= (const DataType& DT) { DataType::operator= (DT); set(); return *this; }
+            void set_flag (uint8_t flag) { DataType::set_flag (flag); set(); }
+            void unset_flag (uint8_t flag) { DataType::unset_flag (flag); set(); } 
+            void set_byte_order_native () { DataType::set_byte_order_native(); set(); }
+          private:
+            Header& H;
+            void set () { 
+              dynamic_cast<Info&> (H).datatype() = *this; 
+              if (!is_integer())
+                H.reset_intensity_scaling();
+            }
+        };
+
+        DataTypeProxy datatype () { return { *this }; }
+        const DataType& datatype () const { return Info::datatype(); }
 
         const std::vector<std::string>& comments () const {
           return comments_;
@@ -124,8 +154,11 @@ namespace MR
         void apply_intensity_scaling (float scaling, float bias = 0.0) {
           scale_ *= scaling;
           offset_ = scaling * offset_ + bias;
+          set_intensity_scaling (scale_, offset_);
         }
         void set_intensity_scaling (float scaling = 1.0, float bias = 0.0) {
+          if (!std::isfinite (scaling) || !std::isfinite (bias) || scaling == 0.0)
+            WARN ("invalid scaling parameters (offset: " + str(bias) + ", scale: " + str(scaling) + ")");
           scale_ = scaling;
           offset_ = bias;
         }
@@ -218,7 +251,6 @@ namespace MR
           return *this;
         }
 
-
         const Info& info () const {
           return *this;
         }
@@ -227,8 +259,8 @@ namespace MR
           return Header::name();
         }
 
-        DataType datatype () const {
-          return Header::datatype();
+        const DataType& datatype () const {
+          return Info::datatype();
         }
 
         size_t ndim () const {

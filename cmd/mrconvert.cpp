@@ -99,7 +99,7 @@ template <class InfoType>
 inline std::vector<int> set_header (Image::Header& header, const InfoType& input)
 {
   // need to preserve dataype, already parsed from command-line:
-  auto datatype = header.datatype();
+  DataType datatype = header.datatype();
   header.info() = input.info();
   header.datatype() = datatype;
 
@@ -195,8 +195,6 @@ void run ()
 
   Image::Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
-  if (!header_out.datatype().is_floating_point())
-    header_out.set_intensity_scaling (header_in);
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
@@ -249,9 +247,6 @@ void run ()
       header_out.intensity_scale() = scaling[1];
     }
   }
-
-  if (!std::isfinite (header_out.intensity_offset()) || !std::isfinite (header_out.intensity_scale()) || header_out.intensity_scale() == 0.0)
-    WARN ("invalid scaling parameters (offset: " + str(header_out.intensity_offset()) + ", scale: " + str(header_out.intensity_scale()) + ")");
 
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
