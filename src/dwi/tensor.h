@@ -31,23 +31,37 @@ namespace MR
   {
 
     template <typename T, class MatrixType> 
-      inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad)
+      inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
-      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(),7);
+      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(),dki ? 22 : 7);
       for (ssize_t i = 0; i < grad.rows(); ++i) {
-        bmat (i,0) = grad (i,3) * grad (i,0) *grad (i,0);
-        bmat (i,1) = grad (i,3) * grad (i,1) *grad (i,1);
-        bmat (i,2) = grad (i,3) * grad (i,2) *grad (i,2);
-        bmat (i,3) = grad (i,3) * 2*grad (i,0) *grad (i,1);
-        bmat (i,4) = grad (i,3) * 2*grad (i,0) *grad (i,2);
-        bmat (i,5) = grad (i,3) * 2*grad (i,1) *grad (i,2);
-        bmat (i,6) = -1.0;
+        bmat (i,0)  = grad(i,3) *  grad(i,0) * grad(i,0);
+        bmat (i,1)  = grad(i,3) *  grad(i,1) * grad(i,1);
+        bmat (i,2)  = grad(i,3) *  grad(i,2) * grad(i,2);
+        bmat (i,3)  = grad(i,3) *  grad(i,0) * grad(i,1) * 2;
+        bmat (i,4)  = grad(i,3) *  grad(i,0) * grad(i,2) * 2;
+        bmat (i,5)  = grad(i,3) *  grad(i,1) * grad(i,2) * 2;
+        bmat (i,6)  = -1.0;
+        if (dki) {
+          bmat (i,7)  = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,0) * 1/6;
+          bmat (i,8)  = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,1) * 1/6;
+          bmat (i,9)  = -grad(i,3) * grad(i,3) * grad(i,2) * grad(i,2) * grad(i,2) * grad(i,2) * 1/6;
+          bmat (i,10) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,1) * 2/3;
+          bmat (i,11) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,0) * grad(i,2) * 2/3;
+          bmat (i,12) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,1) * 2/3;
+          bmat (i,13) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,2) * grad(i,2) * grad(i,2) * 2/3;
+          bmat (i,14) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,1) * grad(i,2) * 2/3;
+          bmat (i,15) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,2) * grad(i,2) * grad(i,2) * 2/3;
+          bmat (i,16) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,1);
+          bmat (i,17) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,2) * grad(i,2);
+          bmat (i,18) = -grad(i,3) * grad(i,3) * grad(i,1) * grad(i,1) * grad(i,2) * grad(i,2);
+          bmat (i,19) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,0) * grad(i,1) * grad(i,2) * 2;
+          bmat (i,20) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,1) * grad(i,2) * 2;
+          bmat (i,21) = -grad(i,3) * grad(i,3) * grad(i,0) * grad(i,1) * grad(i,2) * grad(i,2) * 2;
+        }
       }
       return bmat;
     }
-
-
-
 
     template <class MatrixType, class VectorTypeOut, class VectorTypeIn>
       inline void dwi2tensor (VectorTypeOut& dt, const MatrixType& binv, VectorTypeIn& dwi)
