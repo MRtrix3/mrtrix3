@@ -33,7 +33,7 @@ namespace MR
     template <typename T, class MatrixType> 
       inline Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> grad2bmatrix (const MatrixType& grad, bool dki = false)
     {
-      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(),dki ? 22 : 7);
+      Eigen::Matrix<T,Eigen::Dynamic,Eigen::Dynamic> bmat (grad.rows(), (dki ? 22 : 7));
       for (ssize_t i = 0; i < grad.rows(); ++i) {
         bmat (i,0)  = grad(i,3) *  grad(i,0) * grad(i,0);
         bmat (i,1)  = grad(i,3) *  grad(i,1) * grad(i,1);
