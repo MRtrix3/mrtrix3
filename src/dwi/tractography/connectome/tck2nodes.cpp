@@ -39,6 +39,8 @@ node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<float>&
   const Point<float>& p (end ? tck.back() : tck.front());
   const Point<float> v_float = transform.scanner2voxel (p);
   const Point<int> v (std::round (v_float[0]), std::round (v_float[1]), std::round (v_float[2]));
+  if (!Image::Nav::within_bounds (voxel, v))
+    return 0;
   return Image::Nav::get_value_at_pos (voxel, v);
 
 }
