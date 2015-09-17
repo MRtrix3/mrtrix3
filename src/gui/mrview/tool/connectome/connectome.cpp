@@ -22,8 +22,6 @@
 
 #include "gui/mrview/tool/connectome/connectome.h"
 
-//#include "thread_queue.h"
-
 #include "file/path.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/colourmap.h"
@@ -131,62 +129,6 @@ namespace MR
           hlayout->addWidget (hide_all_button, 1);
           vlayout->addLayout (hlayout);
 
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          hlayout->addWidget (new QLabel ("Config: "));
-          config_button = new QPushButton (this);
-          config_button->setToolTip (tr ("Open connectome config file\n"
-                                         "Provide the connectome config file used at the labelconfig\n"
-                                         "step to access the proper node names in the node list."));
-          config_button->setText ("(none)");
-          connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
-          hlayout->addWidget (config_button, 1);
-          vlayout->addLayout (hlayout);
-
-          group_box = new QGroupBox ("General display options");
-          main_box->addWidget (group_box);
-          GridLayout* gridlayout = new GridLayout();
-          group_box->setLayout (gridlayout);
-
-          lighting_checkbox = new QCheckBox ("Lighting");
-          lighting_checkbox->setTristate (false);
-          lighting_checkbox->setChecked (true);
-          lighting_checkbox->setToolTip (tr ("Toggle whether lighting should be applied to compatible elements"));
-          connect (lighting_checkbox, SIGNAL (stateChanged (int)), this, SLOT (lighting_change_slot (int)));
-          gridlayout->addWidget (lighting_checkbox, 0, 0);
-          lighting_settings_button = new QPushButton ("Settings...");
-          lighting_settings_button->setToolTip (tr ("Advanced lighting configuration"));
-          connect (lighting_settings_button, SIGNAL (clicked()), this, SLOT (lighting_settings_slot()));
-          gridlayout->addWidget (lighting_settings_button, 0, 1);
-          connect (&lighting, SIGNAL (changed()), SLOT (lighting_parameter_slot()));
-
-          crop_to_slab_checkbox = new QCheckBox ("Crop to slab");
-          crop_to_slab_checkbox->setTristate (false);
-          connect (crop_to_slab_checkbox, SIGNAL (stateChanged(int)), this, SLOT (crop_to_slab_toggle_slot (int)));
-          gridlayout->addWidget (crop_to_slab_checkbox, 1, 0);
-          hlayout = new HBoxLayout;
-          hlayout->setContentsMargins (0, 0, 0, 0);
-          hlayout->setSpacing (0);
-          crop_to_slab_label = new QLabel ("Thickness: ");
-          crop_to_slab_label->setEnabled (false);
-          hlayout->addWidget (crop_to_slab_label);
-          crop_to_slab_button = new AdjustButton (this);
-          crop_to_slab_button->setValue (0.0f);
-          crop_to_slab_button->setMin (0.0f);
-          crop_to_slab_button->setRate (0.1f);
-          crop_to_slab_button->setEnabled (false);
-          connect (crop_to_slab_button, SIGNAL (valueChanged()), this, SLOT (crop_to_slab_parameter_slot()));
-          hlayout->addWidget (crop_to_slab_button);
-          gridlayout->addLayout (hlayout, 1, 1);
-
-          show_node_list_label = new QLabel ("Node selection: ");
-          gridlayout->addWidget (show_node_list_label, 2, 0);
-          show_node_list_button = new QPushButton ("Show list");
-          show_node_list_button->setToolTip (tr ("Open window that displays list of nodes and enables their selection"));
-          connect (show_node_list_button, SIGNAL (clicked()), this, SLOT (show_node_list_slot()));
-          gridlayout->addWidget (show_node_list_button, 2, 1);
-
           group_box = new QGroupBox ("Connectome matrices");
           main_box->addWidget (group_box);
           vlayout = new VBoxLayout;
@@ -220,7 +162,7 @@ namespace MR
 
           group_box = new QGroupBox ("Node visualisation");
           main_box->addWidget (group_box);
-          gridlayout = new GridLayout();
+          GridLayout* gridlayout = new GridLayout();
           group_box->setLayout (gridlayout);
 
           QLabel* label = new QLabel ("Visibility: ");
@@ -356,19 +298,6 @@ namespace MR
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
-          lut_label = new QLabel ("LUT file: ");
-          lut_label->setVisible (false);
-          hlayout->addWidget (lut_label);
-          lut_combobox = new QComboBox (this);
-          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
-                                        "If the primary parcellation image has come from an atlas that\n"
-                                        "provides a look-up table, select that file here so that MRview \n"
-                                        "can access the appropriate node colours."));
-          for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
-            lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
-          lut_combobox->setVisible (false);
-          connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
-          hlayout->addWidget (lut_combobox);
           node_colour_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_colour_range_label);
           node_colour_lower_button = new AdjustButton (this);
@@ -720,6 +649,69 @@ namespace MR
           edge_alpha_invert_checkbox->setVisible (false);
           gridlayout->addLayout (hlayout, 8, 1, 1, 4);
 
+          group_box = new QGroupBox ("Miscellaneous options");
+          main_box->addWidget (group_box);
+          gridlayout = new GridLayout();
+          group_box->setLayout (gridlayout);
+
+          gridlayout->addWidget (new QLabel ("Config: "), 0, 0);
+          config_button = new QPushButton (this);
+          config_button->setToolTip (tr ("Open connectome config file\n"
+                                         "Provide the connectome config file used at the labelconfig\n"
+                                         "step to access the proper node names in the node list."));
+          config_button->setText ("(none)");
+          connect (config_button, SIGNAL (clicked()), this, SLOT (config_open_slot ()));
+          gridlayout->addWidget (config_button, 0, 1);
+
+          gridlayout->addWidget (new QLabel ("LUT file: "), 1, 0);
+          lut_combobox = new QComboBox (this);
+          lut_combobox->setToolTip (tr ("Open lookup table file (must select appropriate format)\n"
+                                        "If the primary parcellation image has come from an atlas that\n"
+                                        "provides a look-up table, select that file here so that MRview \n"
+                                        "can access the appropriate node colours."));
+          for (size_t index = 0; MR::Connectome::lut_format_strings[index]; ++index)
+            lut_combobox->insertItem (index, MR::Connectome::lut_format_strings[index]);
+          connect (lut_combobox, SIGNAL (activated(int)), this, SLOT (lut_open_slot (int)));
+          gridlayout->addWidget (lut_combobox, 1, 1);
+
+          lighting_checkbox = new QCheckBox ("Lighting");
+          lighting_checkbox->setTristate (false);
+          lighting_checkbox->setChecked (true);
+          lighting_checkbox->setToolTip (tr ("Toggle whether lighting should be applied to compatible elements"));
+          connect (lighting_checkbox, SIGNAL (stateChanged (int)), this, SLOT (lighting_change_slot (int)));
+          gridlayout->addWidget (lighting_checkbox, 2, 0);
+          lighting_settings_button = new QPushButton ("Settings...");
+          lighting_settings_button->setToolTip (tr ("Advanced lighting configuration"));
+          connect (lighting_settings_button, SIGNAL (clicked()), this, SLOT (lighting_settings_slot()));
+          gridlayout->addWidget (lighting_settings_button, 2, 1);
+          connect (&lighting, SIGNAL (changed()), SLOT (lighting_parameter_slot()));
+
+          crop_to_slab_checkbox = new QCheckBox ("Crop to slab");
+          crop_to_slab_checkbox->setTristate (false);
+          connect (crop_to_slab_checkbox, SIGNAL (stateChanged(int)), this, SLOT (crop_to_slab_toggle_slot (int)));
+          gridlayout->addWidget (crop_to_slab_checkbox, 3, 0);
+          hlayout = new HBoxLayout;
+          hlayout->setContentsMargins (0, 0, 0, 0);
+          hlayout->setSpacing (0);
+          crop_to_slab_label = new QLabel ("Thickness: ");
+          crop_to_slab_label->setEnabled (false);
+          hlayout->addWidget (crop_to_slab_label);
+          crop_to_slab_button = new AdjustButton (this);
+          crop_to_slab_button->setValue (0.0f);
+          crop_to_slab_button->setMin (0.0f);
+          crop_to_slab_button->setRate (0.1f);
+          crop_to_slab_button->setEnabled (false);
+          connect (crop_to_slab_button, SIGNAL (valueChanged()), this, SLOT (crop_to_slab_parameter_slot()));
+          hlayout->addWidget (crop_to_slab_button);
+          gridlayout->addLayout (hlayout, 3, 1);
+
+          show_node_list_label = new QLabel ("Node selection: ");
+          gridlayout->addWidget (show_node_list_label, 4, 0);
+          show_node_list_button = new QPushButton ("Show list");
+          show_node_list_button->setToolTip (tr ("Open window that displays list of nodes and enables their selection"));
+          connect (show_node_list_button, SIGNAL (clicked()), this, SLOT (show_node_list_slot()));
+          gridlayout->addWidget (show_node_list_button, 4, 1);
+
           main_box->addWidget (node_list);
 
           main_box->addStretch ();
@@ -865,7 +857,6 @@ namespace MR
           return false;
         }
 
-
         void Connectome::image_open_slot()
         {
           const std::string path = Dialog::File::get_image (this, "Select connectome parcellation image");
@@ -886,75 +877,10 @@ namespace MR
         }
 
 
-        void Connectome::config_open_slot()
-        {
-          const std::string path = Dialog::File::get_file (this, "Select connectome configuration file", "Text files (*.txt)");
-          if (path.empty())
-            return;
-          config.clear();
-          lut_mapping.clear();
-          config_button->setText ("(none)");
-          try {
-            MR::Connectome::load_config (path, config);
-            config_button->setText (QString::fromStdString (Path::basename (path)));
-          } catch (Exception& e) {
-            e.display();
-            config.clear();
-          }
-          load_properties();
-          window().updateGL();
-        }
-
         void Connectome::hide_all_slot()
         {
           window().updateGL();
         }
-
-
-
-
-
-
-        void Connectome::lighting_change_slot (int /*value*/)
-        {
-          window().updateGL();
-        }
-        void Connectome::lighting_settings_slot()
-        {
-          if (!lighting_dock)
-            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting, false));
-          lighting_dock->show();
-        }
-        void Connectome::lighting_parameter_slot()
-        {
-          if (use_lighting())
-            window().updateGL();
-        }
-        void Connectome::crop_to_slab_toggle_slot (int /*value*/)
-        {
-          crop_to_slab = crop_to_slab_checkbox->isChecked();
-          is_3D = !(crop_to_slab && !slab_thickness);
-          crop_to_slab_label->setEnabled (crop_to_slab);
-          crop_to_slab_button->setEnabled (crop_to_slab);
-          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
-          window().updateGL();
-        }
-        void Connectome::crop_to_slab_parameter_slot()
-        {
-          slab_thickness = crop_to_slab_button->value();
-          is_3D = !(crop_to_slab && !slab_thickness);
-          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
-          window().updateGL();
-        }
-        void Connectome::show_node_list_slot()
-        {
-          node_list->show();
-        }
-        void Connectome::node_selection_settings_changed_slot()
-        {
-          window().updateGL();
-        }
-
 
 
 
@@ -1248,8 +1174,6 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              lut_label->setVisible (false);
-              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1261,8 +1185,6 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              lut_label->setVisible (false);
-              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1274,8 +1196,6 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              lut_label->setVisible (true);
-              lut_combobox->setVisible (true);
               node_colour_range_label->setVisible (false);
               node_colour_lower_button->setVisible (false);
               node_colour_upper_button->setVisible (false);
@@ -1302,8 +1222,6 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
-              lut_label->setVisible (false);
-              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1337,8 +1255,6 @@ namespace MR
                 node_colour_combobox->setItemText (6, node_values_from_file_colour.get_name());
               node_colour_combobox->setCurrentIndex (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              lut_label->setVisible (false);
-              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1379,8 +1295,6 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
-              lut_label->setVisible (false);
-              lut_combobox->setVisible (false);
               node_colour_range_label->setVisible (true);
               node_colour_lower_button->setVisible (true);
               node_colour_upper_button->setVisible (true);
@@ -1693,45 +1607,6 @@ namespace MR
           QColor c = node_colour_fixedcolour_button->color();
           node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
           node_visibility_warning_icon->setVisible (node_visibility == node_visibility_t::NONE);
-          calculate_node_colours();
-          window().updateGL();
-        }
-        void Connectome::lut_open_slot (int index)
-        {
-          if (index == 5)
-            return; // Selected currently-open LUT; nothing to do
-          if (!index) {
-            lut.clear();
-            lut_mapping.clear();
-            lut_combobox->removeItem (5);
-          } else {
-            const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", "Text files (*.txt)");
-            if (path.empty()) {
-              if (lut_combobox->count() == 6) {
-                lut_combobox->setCurrentIndex (5);
-              } else {
-                lut.clear();
-                lut_mapping.clear();
-                lut_combobox->setCurrentIndex (0);
-              }
-            } else {
-              lut.clear();
-              lut_mapping.clear();
-              lut_combobox->removeItem (5);
-              try {
-                switch (index) {
-                  case 1: lut.load (path, MR::Connectome::LUT_BASIC);      break;
-                  case 2: lut.load (path, MR::Connectome::LUT_FREESURFER); break;
-                  case 3: lut.load (path, MR::Connectome::LUT_AAL);        break;
-                  case 4: lut.load (path, MR::Connectome::LUT_ITKSNAP);    break;
-                  default: assert (0);
-                }
-                lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
-                lut_combobox->setCurrentIndex (5);
-              } catch (Exception& e) { e.display(); lut.clear(); lut_mapping.clear(); lut_combobox->setCurrentIndex (0); return; }
-            }
-          }
-          load_properties();
           calculate_node_colours();
           window().updateGL();
         }
@@ -2193,6 +2068,110 @@ namespace MR
         void Connectome::edge_alpha_parameter_slot()
         {
           calculate_edge_alphas();
+          window().updateGL();
+        }
+
+
+
+
+
+
+
+
+        void Connectome::config_open_slot()
+        {
+          const std::string path = Dialog::File::get_file (this, "Select connectome configuration file", "Text files (*.txt)");
+          if (path.empty())
+            return;
+          config.clear();
+          lut_mapping.clear();
+          config_button->setText ("(none)");
+          try {
+            MR::Connectome::load_config (path, config);
+            config_button->setText (QString::fromStdString (Path::basename (path)));
+          } catch (Exception& e) {
+            e.display();
+            config.clear();
+          }
+          load_properties();
+          window().updateGL();
+        }
+        void Connectome::lut_open_slot (int index)
+        {
+          if (index == 5)
+            return; // Selected currently-open LUT; nothing to do
+          if (!index) {
+            lut.clear();
+            lut_mapping.clear();
+            lut_combobox->removeItem (5);
+          } else {
+            const std::string path = Dialog::File::get_file (this, std::string("Select lookup table file (in ") + MR::Connectome::lut_format_strings[index] + " format)", "Text files (*.txt)");
+            if (path.empty()) {
+              if (lut_combobox->count() == 6) {
+                lut_combobox->setCurrentIndex (5);
+              } else {
+                lut.clear();
+                lut_mapping.clear();
+                lut_combobox->setCurrentIndex (0);
+              }
+            } else {
+              lut.clear();
+              lut_mapping.clear();
+              lut_combobox->removeItem (5);
+              try {
+                switch (index) {
+                  case 1: lut.load (path, MR::Connectome::LUT_BASIC);      break;
+                  case 2: lut.load (path, MR::Connectome::LUT_FREESURFER); break;
+                  case 3: lut.load (path, MR::Connectome::LUT_AAL);        break;
+                  case 4: lut.load (path, MR::Connectome::LUT_ITKSNAP);    break;
+                  default: assert (0);
+                }
+                lut_combobox->insertItem (5, QString::fromStdString (Path::basename (path)));
+                lut_combobox->setCurrentIndex (5);
+              } catch (Exception& e) { e.display(); lut.clear(); lut_mapping.clear(); lut_combobox->setCurrentIndex (0); return; }
+            }
+          }
+          load_properties();
+          calculate_node_colours();
+          window().updateGL();
+        }
+        void Connectome::lighting_change_slot (int /*value*/)
+        {
+          window().updateGL();
+        }
+        void Connectome::lighting_settings_slot()
+        {
+          if (!lighting_dock)
+            lighting_dock.reset (new LightingDock ("Connectome lighting", lighting, false));
+          lighting_dock->show();
+        }
+        void Connectome::lighting_parameter_slot()
+        {
+          if (use_lighting())
+            window().updateGL();
+        }
+        void Connectome::crop_to_slab_toggle_slot (int /*value*/)
+        {
+          crop_to_slab = crop_to_slab_checkbox->isChecked();
+          is_3D = !(crop_to_slab && !slab_thickness);
+          crop_to_slab_label->setEnabled (crop_to_slab);
+          crop_to_slab_button->setEnabled (crop_to_slab);
+          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
+          window().updateGL();
+        }
+        void Connectome::crop_to_slab_parameter_slot()
+        {
+          slab_thickness = crop_to_slab_button->value();
+          is_3D = !(crop_to_slab && !slab_thickness);
+          node_geometry_overlay_3D_warning_icon->setVisible (node_geometry == node_geometry_t::OVERLAY && is_3D);
+          window().updateGL();
+        }
+        void Connectome::show_node_list_slot()
+        {
+          node_list->show();
+        }
+        void Connectome::node_selection_settings_changed_slot()
+        {
           window().updateGL();
         }
 

@@ -100,17 +100,9 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
-            void image_open_slot();
-            void config_open_slot();
-            void hide_all_slot();
 
-            void lighting_change_slot (int);
-            void lighting_settings_slot();
-            void lighting_parameter_slot();
-            void crop_to_slab_toggle_slot (int);
-            void crop_to_slab_parameter_slot();
-            void show_node_list_slot();
-            void node_selection_settings_changed_slot();
+            void image_open_slot();
+            void hide_all_slot();
 
             void matrix_open_slot();
             void matrix_close_slot();
@@ -128,7 +120,6 @@ namespace MR
             void overlay_interp_slot (int);
             void node_colour_matrix_operator_slot (int);
             void node_fixed_colour_change_slot();
-            void lut_open_slot (int);
             void node_colour_parameter_slot();
             void node_size_matrix_operator_slot (int);
             void node_size_value_slot();
@@ -152,18 +143,19 @@ namespace MR
             void edge_alpha_value_slot (int);
             void edge_alpha_parameter_slot();
 
+            void config_open_slot();
+            void lut_open_slot (int);
+            void lighting_change_slot (int);
+            void lighting_settings_slot();
+            void lighting_parameter_slot();
+            void crop_to_slab_toggle_slot (int);
+            void crop_to_slab_parameter_slot();
+            void show_node_list_slot();
+            void node_selection_settings_changed_slot();
+
           protected:
 
             QPushButton *image_button, *hide_all_button;
-            QPushButton *config_button;
-
-            QCheckBox *lighting_checkbox;
-            QPushButton *lighting_settings_button;
-            QCheckBox *crop_to_slab_checkbox;
-            QLabel *crop_to_slab_label;
-            AdjustButton *crop_to_slab_button;
-            QLabel *show_node_list_label;
-            QPushButton *show_node_list_button;
 
             QPushButton *matrix_open_button, *matrix_close_button;
             QListView *matrix_list_view;
@@ -185,8 +177,7 @@ namespace MR
             QComboBox *node_colour_matrix_operator_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
-            QLabel *lut_label;
-            QComboBox *lut_combobox;
+
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
@@ -232,6 +223,16 @@ namespace MR
             QLabel *edge_alpha_range_label;
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
             QCheckBox *edge_alpha_invert_checkbox;
+
+            QPushButton *config_button;
+            QComboBox *lut_combobox;
+            QCheckBox *lighting_checkbox;
+            QPushButton *lighting_settings_button;
+            QCheckBox *crop_to_slab_checkbox;
+            QLabel *crop_to_slab_label;
+            AdjustButton *crop_to_slab_button;
+            QLabel *show_node_list_label;
+            QPushButton *show_node_list_button;
 
           private:
 
