@@ -72,6 +72,10 @@ namespace MR
           MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
           double sparsity;
           std::vector<size_t> extent;
+          MovingImageType im1_processed;
+          TemplateImageType im2_processed;
+          MR::copy_ptr<MovingImageInterpolatorType> im1_processed_interp;
+          MR::copy_ptr<TemplateImageInterpolatorType> im2_processed_interp;
       };
     }
   }

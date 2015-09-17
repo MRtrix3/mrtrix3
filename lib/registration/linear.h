@@ -29,10 +29,12 @@
 
 #include "image.h"
 #include "image/average_space.h"
+#include "filter/normalise.h"
 #include "filter/resize.h"
 #include "interp/linear.h"
 #include "interp/nearest.h"
 #include "registration/metric/params.h"
+#include "registration/metric/cross_correlation.h"
 #include "registration/metric/evaluate.h"
 #include "registration/transform/initialiser.h"
 #include "math/gradient_descent.h"
@@ -238,12 +240,12 @@ namespace MR
                 moving_resize_filter.set_interp_type (1);
                 auto moving_resized = Image<float>::scratch (moving_resize_filter);
                 Filter::Smooth moving_smooth_filter (moving_resized);
-                auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
+                auto moving__smoothed = Image<float>::scratch (moving_smooth_filter);
               #else
                 Filter::Smooth moving_smooth_filter (moving_image);
                 moving_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
                 INFO("smooth_factor " + str(smooth_factor));
-                auto moving_resized_smoothed = Image<float>::scratch (moving_smooth_filter);
+                auto moving__smoothed = Image<float>::scratch (moving_smooth_filter);
               #endif
 
               #ifdef NONSYMREGISTRATION
@@ -252,11 +254,11 @@ namespace MR
                 template_resize_filter.set_interp_type (1);
                 auto template_resized = Image<float>::scratch (template_resize_filter);
                 Filter::Smooth template_smooth_filter (template_resized);
-                auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+                auto template__smoothed = Image<float>::scratch (template_smooth_filter);
               #else
                 Filter::Smooth template_smooth_filter (template_image);
                 template_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
-                auto template_resized_smoothed = Image<float>::scratch (template_smooth_filter);
+                auto template__smoothed = Image<float>::scratch (template_smooth_filter);
               #endif
               
               Filter::Resize midway_resize_filter (midway_image);
@@ -272,22 +274,22 @@ namespace MR
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
                 #ifdef NONSYMREGISTRATION
                   moving_resize_filter (moving_image, moving_resized);
-                  moving_smooth_filter (moving_resized, moving_resized_smoothed);
+                  moving_smooth_filter (moving_resized, moving__smoothed);
                   template_resize_filter (template_image, template_resized);
-                  template_smooth_filter (template_resized, template_resized_smoothed);
+                  template_smooth_filter (template_resized, template__smoothed);
                 #else
-                  moving_smooth_filter (moving_image, moving_resized_smoothed); // TODO change name
-                  template_smooth_filter (template_image, template_resized_smoothed); // TODO change name
+                  moving_smooth_filter (moving_image, moving__smoothed); // TODO change name
+                  template_smooth_filter (template_image, template__smoothed); // TODO change name
                 #endif             
               }
               // std::string filename = save(moving_image, "moving_resized.mif");
               // CONSOLE ("image written to " + filename + "\"");
-              // save<Image<float>>(template_resized_smoothed, "template_resized.mif");
-              // save<Image<float>>(moving_resized_smoothed, "moving_resized.mif");
-              // display<Image<float>>(moving_resized_smoothed);
-              // display<Image<float>>(template_resized_smoothed);
+              // save<Image<float>>(template__smoothed, "template_resized.mif");
+              // save<Image<float>>(moving__smoothed, "moving_resized.mif");
+              // display<Image<float>>(moving__smoothed);
+              // display<Image<float>>(template__smoothed);
 
-              ParamType parameters (transform, moving_resized_smoothed, template_resized_smoothed, midway_resized);
+              ParamType parameters (transform, moving__smoothed, template__smoothed, midway_resized);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
@@ -297,13 +299,43 @@ namespace MR
               if (template_mask.valid())
                 parameters.template_mask_interp.reset (new Interp::Nearest<TemplateMaskType> (template_mask));
 
-              #ifdef STOCHASTICLOOP
+#ifdef STOCHASTICLOOP
                 if (scale_factor[level]==1.0)
                   parameters.sparsity = 0.0;
                 else
                   parameters.sparsity = 0.2;
                 INFO(str(parameters.sparsity));
-              #endif
+#endif
+
+
+              if (typeid(metric) == typeid(Metric::CrossCorrelation)){
+                typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> InterpType;
+                INFO("pre-computing normalised images");
+                Filter::Resize im1_resize_filter (moving__smoothed);
+                im1_resize_filter.set_scale_factor (scale_factor[level]);
+                im1_resize_filter.set_interp_type (1);
+                auto im1_resized = Image<float>::scratch (im1_resize_filter);
+                Filter::Normalise im1_normalise_filter (im1_resized);
+                auto im1_resized_normalised = Image<float>::scratch (im1_normalise_filter);
+
+                Filter::Resize im2_resize_filter (template__smoothed);
+                im2_resize_filter.set_scale_factor (scale_factor[level]);
+                im2_resize_filter.set_interp_type (1);
+                auto im2_resized = Image<float>::scratch (im2_resize_filter);
+                Filter::Normalise im2_normalise_filter (im2_resized);
+                auto im2_resized_normalised = Image<float>::scratch (im2_normalise_filter);
+                {
+                  LogLevelLatch log_level (0);
+                  im1_resize_filter (moving__smoothed, im1_resized);
+                  im1_normalise_filter (im1_resized, im1_resized_normalised);
+                  im2_resize_filter (template__smoothed, im2_resized);
+                  im2_normalise_filter (im2_resized, im2_resized_normalised);
+                }
+                parameters.im1_processed = im1_resized_normalised;
+                parameters.im1_processed_interp.reset (new InterpType (parameters.im1_processed));
+                parameters.im2_processed = im2_resized_normalised;
+                parameters.im2_processed_interp.reset (new InterpType (parameters.im2_processed));
+              }
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.cols())
@@ -328,7 +360,7 @@ namespace MR
               // VAR(optim.function_evaluations());
               // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
             }
-            #ifdef DEBUGSYMMETRY
+#ifdef DEBUGSYMMETRY
               auto t_forw = transform.get_transform_half();
               save_matrix(t_forw.matrix(),"/tmp/t_forw.txt");
               t_forw = t_forw * t_forw;
@@ -337,7 +369,7 @@ namespace MR
               save_matrix(t_back.matrix(),"/tmp/t_back.txt");
               t_back = t_back * t_back;
               save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
-            #endif
+#endif
             // TODO: update midway_image after to increase speed of next iteration
           }
 

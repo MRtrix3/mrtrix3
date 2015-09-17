@@ -177,6 +177,9 @@ namespace MR
               }
 
               Eigen::Vector3 mid_point, point1, point2;
+              mid_point.setZero(); // avoid compiler warning [-Wmaybe-uninitialized]
+              point1.setZero();
+              point2.setZero();
               auto extent = params.get_extent();
               auto niter = NeighbourhoodIterator(iter, extent);
               size_t actual_size = 0;
@@ -186,21 +189,27 @@ namespace MR
                 anticipated_size = niter.extent(0) * niter.extent(1) * niter.extent(2);
                 neighbh1.resize(3,anticipated_size);
                 neighbh2.resize(3,anticipated_size);
+
                 Eigen::Vector3 vox ((default_type)niter.index(0), (default_type)niter.index(1), (default_type)niter.index(2));
-
-                midway_point = transform.voxel2scanner * vox;
-
-                params.transformation.transform_half_inverse (point1, mid_point);
-                if (params.template_mask_interp) {
-                  params.template_mask_interp->scanner (point1);
-                  if (!params.template_mask_interp->value())
+                mid_point = transform.voxel2scanner * vox;
+                
+                params.transformation.transform_half (point1, mid_point);
+                params.moving_image_interp->scanner (point1);
+                if (!(*params.moving_image_interp))
+                  continue;
+                if (params.moving_mask_interp) {
+                  params.moving_mask_interp->scanner (point1);
+                  if (!params.moving_mask_interp->value())
                     continue;
                 }
 
-                params.transformation.transform_half (point2, mid_point);
-                if (params.moving_mask_interp) {
-                  params.moving_mask_interp->scanner (point2);
-                  if (!params.moving_mask_interp->value())
+                params.transformation.transform_half_inverse (point2, mid_point);
+                params.template_image_interp->scanner (point2);
+                if (!(*params.template_image_interp))
+                  continue;
+                if (params.template_mask_interp) {
+                  params.template_mask_interp->scanner (point2);
+                  if (!params.template_mask_interp->value())
                     continue;
                 }
 
@@ -208,6 +217,9 @@ namespace MR
                 neighbh2.col(actual_size) = point2;
                 actual_size += 1;
               }
+
+              if (actual_size == 0)
+                throw Exception ("neighbourhood does not include centre");
 
               if (anticipated_size != actual_size){
                 neighbh1.conservativeResize(neighbh1.rows(), actual_size);
