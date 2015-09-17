@@ -289,6 +289,10 @@ namespace MR
             delete renderer;
             renderer = nullptr;
           }
+          if (preview) {
+            delete preview;
+            preview = nullptr;
+          }
           if (lighting_dock) {
             delete lighting_dock;
             lighting_dock = nullptr;

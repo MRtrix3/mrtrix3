@@ -230,7 +230,7 @@ namespace MR
 #if QT_VERSION >= 0x050400
         gl::ClearColor (0.0, 0.0, 0.0, 1.0);
         gl::ColorMask (false, false, false, true); 
-        gl::Clear (GL_COLOR_BUFFER_BIT);
+        gl::Clear (gl::COLOR_BUFFER_BIT);
 #endif
 
         if (OS > 0) snapshot();
