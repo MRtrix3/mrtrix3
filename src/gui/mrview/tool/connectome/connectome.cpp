@@ -193,7 +193,8 @@ namespace MR
           connect (node_visibility_matrix_operator_combobox, SIGNAL (activated(int)), this, SLOT (node_visibility_matrix_operator_slot (int)));
           hlayout->addWidget (node_visibility_matrix_operator_combobox);
           node_visibility_warning_icon = new QLabel();
-          node_visibility_warning_icon->setPixmap (warning_icon.pixmap (node_visibility_combobox->height()));
+          node_visibility_warning_icon->setPixmap (warning_icon.pixmap (node_visibility_combobox->height(), Qt::KeepAspectRatio));
+          node_visibility_warning_icon->setScaledContents (true);
           node_visibility_warning_icon->setToolTip ("Changes to node visualisation will have no apparent effect if node visibility is set to \'none\'");
           node_visibility_warning_icon->setVisible (false);
           hlayout->addWidget (node_visibility_warning_icon);
@@ -249,7 +250,8 @@ namespace MR
           connect (node_geometry_overlay_interp_checkbox, SIGNAL (stateChanged(int)), this, SLOT(overlay_interp_slot(int)));
           hlayout->addWidget (node_geometry_overlay_interp_checkbox, 1);
           node_geometry_overlay_3D_warning_icon = new QLabel();
-          node_geometry_overlay_3D_warning_icon->setPixmap (warning_icon.pixmap (node_geometry_combobox->height()));
+          node_geometry_overlay_3D_warning_icon->setPixmap (warning_icon.pixmap (node_geometry_combobox->height(), Qt::KeepAspectRatio));
+          node_geometry_overlay_3D_warning_icon->setScaledContents (true);
           node_geometry_overlay_3D_warning_icon->setToolTip ("The node overlay image can only be displayed in pure 2D mode (slab thickness of zero)");
           node_geometry_overlay_3D_warning_icon->setVisible (false);
           hlayout->addWidget (node_geometry_overlay_3D_warning_icon, 1);
@@ -458,7 +460,8 @@ namespace MR
           connect (edge_visibility_combobox, SIGNAL (activated(int)), this, SLOT (edge_visibility_selection_slot (int)));
           gridlayout->addWidget (edge_visibility_combobox, 0, 2);
           edge_visibility_warning_icon = new QLabel();
-          edge_visibility_warning_icon->setPixmap (warning_icon.pixmap (edge_visibility_combobox->height()));
+          edge_visibility_warning_icon->setPixmap (warning_icon.pixmap (edge_visibility_combobox->height(), Qt::KeepAspectRatio));
+          edge_visibility_warning_icon->setScaledContents (true);
           edge_visibility_warning_icon->setToolTip ("Changes to edge visualisation will have no apparent effect if edge visibility is set to \'none\'");
           edge_visibility_warning_icon->setVisible (false);
           gridlayout->addWidget (edge_visibility_warning_icon, 0, 3);
@@ -723,6 +726,15 @@ namespace MR
           node_list->setFeatures (QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
           window().addDockWidget (Qt::RightDockWidgetArea, node_list);
           connect (&node_selection_settings, SIGNAL(dataChanged()), this, SLOT (node_selection_settings_changed_slot()));
+
+          const int height = node_visibility_combobox->sizeHint().height();
+          node_visibility_warning_icon         ->setFixedSize   (height, height);
+          node_geometry_overlay_3D_warning_icon->setFixedSize   (height, height);
+          node_colour_fixedcolour_button       ->setFixedHeight (height);
+          node_colour_colourmap_button         ->setFixedHeight (height);
+          edge_visibility_warning_icon         ->setFixedSize   (height, height);
+          edge_colour_fixedcolour_button       ->setFixedHeight (height);
+          edge_colour_colourmap_button         ->setFixedHeight (height);
 
           Window::GrabContext context;
 
