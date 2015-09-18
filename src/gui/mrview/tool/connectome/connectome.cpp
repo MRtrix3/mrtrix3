@@ -1561,8 +1561,12 @@ namespace MR
         }
         void Connectome::node_colour_parameter_slot()
         {
+          node_colour_lower_button->blockSignals (true);
+          node_colour_upper_button->blockSignals (true);
           node_colour_lower_button->setMax (node_colour_upper_button->value());
           node_colour_upper_button->setMin (node_colour_lower_button->value());
+          node_colour_lower_button->blockSignals (false);
+          node_colour_upper_button->blockSignals (false);
           calculate_node_colours();
           window().updateGL();
         }
@@ -1585,8 +1589,12 @@ namespace MR
         }
         void Connectome::node_size_parameter_slot()
         {
+          node_size_lower_button->blockSignals (true);
+          node_size_upper_button->blockSignals (true);
           node_size_lower_button->setMax (node_size_upper_button->value());
           node_size_upper_button->setMin (node_size_lower_button->value());
+          node_size_lower_button->blockSignals (false);
+          node_size_upper_button->blockSignals (false);
           calculate_node_sizes();
           window().updateGL();
         }
@@ -1611,8 +1619,12 @@ namespace MR
         }
         void Connectome::node_alpha_parameter_slot()
         {
+          node_alpha_lower_button->blockSignals (true);
+          node_alpha_upper_button->blockSignals (true);
           node_alpha_lower_button->setMax (node_alpha_upper_button->value());
           node_alpha_upper_button->setMin (node_alpha_lower_button->value());
+          node_alpha_lower_button->blockSignals (false);
+          node_alpha_upper_button->blockSignals (false);
           calculate_node_alphas();
           window().updateGL();
         }
@@ -1960,6 +1972,12 @@ namespace MR
         }
         void Connectome::edge_colour_parameter_slot()
         {
+          edge_colour_lower_button->blockSignals (true);
+          edge_colour_upper_button->blockSignals (true);
+          edge_colour_lower_button->setMax (edge_colour_upper_button->value());
+          edge_colour_upper_button->setMin (edge_colour_lower_button->value());
+          edge_colour_lower_button->blockSignals (false);
+          edge_colour_upper_button->blockSignals (false);
           calculate_edge_colours();
           window().updateGL();
         }
@@ -1970,6 +1988,12 @@ namespace MR
         }
         void Connectome::edge_size_parameter_slot()
         {
+          edge_size_lower_button->blockSignals (true);
+          edge_size_upper_button->blockSignals (true);
+          edge_size_lower_button->setMax (edge_size_upper_button->value());
+          edge_size_upper_button->setMin (edge_size_lower_button->value());
+          edge_size_lower_button->blockSignals (false);
+          edge_size_upper_button->blockSignals (false);
           calculate_edge_sizes();
           window().updateGL();
         }
@@ -1980,6 +2004,12 @@ namespace MR
         }
         void Connectome::edge_alpha_parameter_slot()
         {
+          edge_alpha_lower_button->blockSignals (true);
+          edge_alpha_upper_button->blockSignals (true);
+          edge_alpha_lower_button->setMax (edge_alpha_upper_button->value());
+          edge_alpha_upper_button->setMin (edge_alpha_lower_button->value());
+          edge_alpha_lower_button->blockSignals (false);
+          edge_alpha_upper_button->blockSignals (false);
           calculate_edge_alphas();
           window().updateGL();
         }
