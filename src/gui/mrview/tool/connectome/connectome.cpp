@@ -199,9 +199,11 @@ namespace MR
           hlayout->addWidget (node_visibility_warning_icon);
           gridlayout->addLayout (hlayout, 0, 3, 1, 2);
 
+          node_visibility_threshold_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          node_visibility_threshold_controls->setLayout (hlayout);
           node_visibility_threshold_label = new QLabel ("Threshold: ");
           hlayout->addWidget (node_visibility_threshold_label);
           node_visibility_threshold_button = new AdjustButton (this);
@@ -214,10 +216,8 @@ namespace MR
           node_visibility_threshold_invert_checkbox->setTristate (false);
           connect (node_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_visibility_parameter_slot()));
           hlayout->addWidget (node_visibility_threshold_invert_checkbox);
-          node_visibility_threshold_label->setVisible (false);
-          node_visibility_threshold_button->setVisible (false);
-          node_visibility_threshold_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 1, 1, 1, 4);
+          node_visibility_threshold_controls->setVisible (false);
+          gridlayout->addWidget (node_visibility_threshold_controls, 1, 1, 1, 4);
 
           label = new QLabel ("Geometry: ");
           gridlayout->addWidget (label, 2, 0, 1, 2);
@@ -295,9 +295,11 @@ namespace MR
           hlayout->addWidget (node_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
+          node_colour_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          node_colour_range_controls->setLayout (hlayout);
           node_colour_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_colour_range_label);
           node_colour_lower_button = new AdjustButton (this);
@@ -312,10 +314,8 @@ namespace MR
           node_colour_upper_button->setMax (std::numeric_limits<float>::max());
           connect (node_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (node_colour_parameter_slot()));
           hlayout->addWidget (node_colour_upper_button);
-          node_colour_range_label->setVisible (false);
-          node_colour_lower_button->setVisible (false);
-          node_colour_upper_button->setVisible (false);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
+          node_colour_range_controls->setVisible (false);
+          gridlayout->addWidget (node_colour_range_controls, 4, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 5, 0, 1, 2);
@@ -353,9 +353,11 @@ namespace MR
           hlayout->addWidget (node_size_button, 1);
           gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
+          node_size_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          node_size_range_controls->setLayout (hlayout);
           node_size_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_size_range_label);
           node_size_lower_button = new AdjustButton (this);
@@ -374,11 +376,8 @@ namespace MR
           node_size_invert_checkbox->setTristate (false);
           connect (node_size_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_size_parameter_slot()));
           hlayout->addWidget (node_size_invert_checkbox);
-          node_size_range_label->setVisible (false);
-          node_size_lower_button->setVisible (false);
-          node_size_upper_button->setVisible (false);
-          node_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
+          node_size_range_controls->setVisible (false);
+          gridlayout->addWidget (node_size_range_controls, 6, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
           gridlayout->addWidget (label, 7, 0, 1, 2);
@@ -415,9 +414,11 @@ namespace MR
           hlayout->addWidget (node_alpha_slider, 1);
           gridlayout->addLayout (hlayout, 7, 3, 1, 2);
 
+          node_alpha_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          node_alpha_range_controls->setLayout (hlayout);
           node_alpha_range_label = new QLabel ("Range: ");
           hlayout->addWidget (node_alpha_range_label);
           node_alpha_lower_button = new AdjustButton (this);
@@ -436,11 +437,8 @@ namespace MR
           node_alpha_invert_checkbox->setTristate (false);
           connect (node_alpha_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (node_alpha_parameter_slot()));
           hlayout->addWidget (node_alpha_invert_checkbox);
-          node_alpha_range_label->setVisible (false);
-          node_alpha_lower_button->setVisible (false);
-          node_alpha_upper_button->setVisible (false);
-          node_alpha_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 8, 1, 1, 4);
+          node_alpha_range_controls->setVisible (false);
+          gridlayout->addWidget (node_alpha_range_controls, 8, 1, 1, 4);
 
           group_box = new QGroupBox ("Edge visualisation");
           main_box->addWidget (group_box);
@@ -465,9 +463,11 @@ namespace MR
           edge_visibility_warning_icon->setVisible (false);
           gridlayout->addWidget (edge_visibility_warning_icon, 0, 3);
 
+          edge_visibility_threshold_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          edge_visibility_threshold_controls->setLayout (hlayout);
           edge_visibility_threshold_label = new QLabel ("Threshold: ");
           hlayout->addWidget (edge_visibility_threshold_label);
           edge_visibility_threshold_button = new AdjustButton (this);
@@ -480,7 +480,7 @@ namespace MR
           edge_visibility_threshold_invert_checkbox->setTristate (false);
           connect (edge_visibility_threshold_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_visibility_parameter_slot()));
           hlayout->addWidget (edge_visibility_threshold_invert_checkbox);
-          gridlayout->addLayout (hlayout, 1, 1, 1, 4);
+          gridlayout->addWidget (edge_visibility_threshold_controls, 1, 1, 1, 4);
 
           label = new QLabel ("Geometry: ");
           gridlayout->addWidget (label, 2, 0, 1, 2);
@@ -538,9 +538,11 @@ namespace MR
           hlayout->addWidget (edge_colour_colourmap_button, 1);
           gridlayout->addLayout (hlayout, 3, 3, 1, 2);
 
+          edge_colour_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          edge_colour_range_controls->setLayout (hlayout);
           edge_colour_range_label = new QLabel ("Range: ");
           hlayout->addWidget (edge_colour_range_label);
           edge_colour_lower_button = new AdjustButton (this);
@@ -555,7 +557,7 @@ namespace MR
           edge_colour_upper_button->setMax (std::numeric_limits<float>::max());
           connect (edge_colour_upper_button, SIGNAL (valueChanged()), this, SLOT (edge_colour_parameter_slot()));
           hlayout->addWidget (edge_colour_upper_button);
-          gridlayout->addLayout (hlayout, 4, 1, 1, 4);
+          gridlayout->addWidget (edge_colour_range_controls, 4, 1, 1, 4);
 
           label = new QLabel ("Size scaling: ");
           gridlayout->addWidget (label, 5, 0, 1, 2);
@@ -576,9 +578,11 @@ namespace MR
           hlayout->addWidget (edge_size_button, 1);
           gridlayout->addLayout (hlayout, 5, 3, 1, 2);
 
+          edge_size_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          edge_size_range_controls->setLayout (hlayout);
           edge_size_range_label = new QLabel ("Range: ");
           hlayout->addWidget (edge_size_range_label);
           edge_size_lower_button = new AdjustButton (this);
@@ -597,11 +601,8 @@ namespace MR
           edge_size_invert_checkbox->setTristate (false);
           connect (edge_size_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_size_parameter_slot()));
           hlayout->addWidget (edge_size_invert_checkbox);
-          edge_size_range_label->setVisible (false);
-          edge_size_lower_button->setVisible (false);
-          edge_size_upper_button->setVisible (false);
-          edge_size_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 6, 1, 1, 4);
+          edge_size_range_controls->setVisible (false);
+          gridlayout->addWidget (edge_size_range_controls, 6, 1, 1, 4);
 
           label = new QLabel ("Transparency: ");
           gridlayout->addWidget (label, 7, 0, 1, 2);
@@ -622,9 +623,11 @@ namespace MR
           hlayout->addWidget (edge_alpha_slider, 1);
           gridlayout->addLayout (hlayout, 7, 3, 1, 2);
 
+          edge_alpha_range_controls = new QWidget (this);
           hlayout = new HBoxLayout;
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
+          edge_alpha_range_controls->setLayout (hlayout);
           edge_alpha_range_label = new QLabel ("Range: ");
           hlayout->addWidget (edge_alpha_range_label);
           edge_alpha_lower_button = new AdjustButton (this);
@@ -643,11 +646,8 @@ namespace MR
           edge_alpha_invert_checkbox->setTristate (false);
           connect (edge_alpha_invert_checkbox, SIGNAL (stateChanged(int)), this, SLOT (edge_alpha_parameter_slot()));
           hlayout->addWidget (edge_alpha_invert_checkbox);
-          edge_alpha_range_label->setVisible (false);
-          edge_alpha_lower_button->setVisible (false);
-          edge_alpha_upper_button->setVisible (false);
-          edge_alpha_invert_checkbox->setVisible (false);
-          gridlayout->addLayout (hlayout, 8, 1, 1, 4);
+          edge_alpha_range_controls->setVisible (false);
+          gridlayout->addWidget (edge_alpha_range_controls, 8, 1, 1, 4);
 
           group_box = new QGroupBox ("Miscellaneous options");
           main_box->addWidget (group_box);
@@ -942,18 +942,14 @@ namespace MR
               node_visibility = node_visibility_t::ALL;
               node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
+              node_visibility_threshold_controls->setVisible (false);
               break;
             case 1:
               if (node_visibility == node_visibility_t::NONE) return;
               node_visibility = node_visibility_t::NONE;
               node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
+              node_visibility_threshold_controls->setVisible (false);
               break;
             case 2:
               if (node_visibility == node_visibility_t::DEGREE) return;
@@ -970,9 +966,7 @@ namespace MR
               }
               node_visibility_combobox->removeItem (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
-              node_visibility_threshold_label->setVisible (false);
-              node_visibility_threshold_button->setVisible (false);
-              node_visibility_threshold_invert_checkbox->setVisible (false);
+              node_visibility_threshold_controls->setVisible (false);
               break;
             case 3:
               if (node_visibility == node_visibility_t::CONNECTOME) return;
@@ -992,9 +986,7 @@ namespace MR
                 node_visibility_matrix_operator_combobox->setCurrentIndex (2);
                 node_visibility_matrix_operator_combobox->setEnabled (false);
               }
-              node_visibility_threshold_label->setVisible (true);
-              node_visibility_threshold_button->setVisible (true);
-              node_visibility_threshold_invert_checkbox->setVisible (true);
+              node_visibility_threshold_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1023,9 +1015,7 @@ namespace MR
                 node_visibility_combobox->setItemText (6, node_values_from_file_visibility.get_name());
               node_visibility_combobox->setCurrentIndex (6);
               node_visibility_matrix_operator_combobox->setVisible (false);
-              node_visibility_threshold_label->setVisible (true);
-              node_visibility_threshold_button->setVisible (true);
-              node_visibility_threshold_invert_checkbox->setVisible (true);
+              node_visibility_threshold_controls->setVisible (true);
               update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_mean(), node_values_from_file_visibility.get_max());
               break;
             case 5:
@@ -1059,9 +1049,7 @@ namespace MR
                 node_visibility_matrix_operator_combobox->setCurrentIndex (2);
                 node_visibility_matrix_operator_combobox->setEnabled (false);
               }
-              node_visibility_threshold_label->setVisible (true);
-              node_visibility_threshold_button->setVisible (true);
-              node_visibility_threshold_invert_checkbox->setVisible (true);
+              node_visibility_threshold_controls->setVisible (true);
               update_controls_node_visibility (node_values_from_file_visibility.get_min(), node_values_from_file_visibility.get_mean(), node_values_from_file_visibility.get_max());
               break;
             case 6:
@@ -1174,9 +1162,7 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (true);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              node_colour_range_label->setVisible (false);
-              node_colour_lower_button->setVisible (false);
-              node_colour_upper_button->setVisible (false);
+              node_colour_range_controls->setVisible (false);
               break;
             case 1:
               // Regenerate random colours on repeat selection
@@ -1185,9 +1171,7 @@ namespace MR
               node_colour_fixedcolour_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              node_colour_range_label->setVisible (false);
-              node_colour_lower_button->setVisible (false);
-              node_colour_upper_button->setVisible (false);
+              node_colour_range_controls->setVisible (false);
               break;
             case 2:
               if (node_colour == node_colour_t::FROM_LUT) return;
@@ -1196,9 +1180,7 @@ namespace MR
               node_colour_colourmap_button->setVisible (false);
               node_colour_combobox->removeItem (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              node_colour_range_label->setVisible (false);
-              node_colour_lower_button->setVisible (false);
-              node_colour_upper_button->setVisible (false);
+              node_colour_range_controls->setVisible (false);
               break;
             case 3:
               if (node_colour == node_colour_t::CONNECTOME) return;
@@ -1222,9 +1204,7 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
-              node_colour_range_label->setVisible (true);
-              node_colour_lower_button->setVisible (true);
-              node_colour_upper_button->setVisible (true);
+              node_colour_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1255,9 +1235,7 @@ namespace MR
                 node_colour_combobox->setItemText (6, node_values_from_file_colour.get_name());
               node_colour_combobox->setCurrentIndex (6);
               node_colour_matrix_operator_combobox->setVisible (false);
-              node_colour_range_label->setVisible (true);
-              node_colour_lower_button->setVisible (true);
-              node_colour_upper_button->setVisible (true);
+              node_colour_range_controls->setVisible (true);
               update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_mean(), node_values_from_file_colour.get_max());
               break;
             case 5:
@@ -1295,9 +1273,7 @@ namespace MR
                 node_colour_matrix_operator_combobox->setCurrentIndex (4);
                 node_colour_matrix_operator_combobox->setEnabled (false);
               }
-              node_colour_range_label->setVisible (true);
-              node_colour_lower_button->setVisible (true);
-              node_colour_upper_button->setVisible (true);
+              node_colour_range_controls->setVisible (true);
               update_controls_node_colour (node_values_from_file_colour.get_min(), node_values_from_file_colour.get_mean(), node_values_from_file_colour.get_max());
               break;
             case 6:
@@ -1319,20 +1295,14 @@ namespace MR
               node_size = node_size_t::FIXED;
               node_size_combobox->removeItem (5);
               node_size_matrix_operator_combobox->setVisible (false);
-              node_size_range_label->setVisible (false);
-              node_size_lower_button->setVisible (false);
-              node_size_upper_button->setVisible (false);
-              node_size_invert_checkbox->setVisible (false);
+              node_size_range_controls->setVisible (false);
               break;
             case 1:
               if (node_size == node_size_t::NODE_VOLUME) return;
               node_size = node_size_t::NODE_VOLUME;
               node_size_combobox->removeItem (5);
               node_size_matrix_operator_combobox->setVisible (false);
-              node_size_range_label->setVisible (false);
-              node_size_lower_button->setVisible (false);
-              node_size_upper_button->setVisible (false);
-              node_size_invert_checkbox->setVisible (false);
+              node_size_range_controls->setVisible (false);
               break;
             case 2:
               if (node_size == node_size_t::CONNECTOME) return;
@@ -1354,10 +1324,7 @@ namespace MR
                 node_size_matrix_operator_combobox->setCurrentIndex (4);
                 node_size_matrix_operator_combobox->setEnabled (false);
               }
-              node_size_range_label->setVisible (true);
-              node_size_lower_button->setVisible (true);
-              node_size_upper_button->setVisible (true);
-              node_size_invert_checkbox->setVisible (true);
+              node_size_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1386,10 +1353,7 @@ namespace MR
                 node_size_combobox->setItemText (5, node_values_from_file_size.get_name());
               node_size_combobox->setCurrentIndex (5);
               node_size_matrix_operator_combobox->setVisible (false);
-              node_size_range_label->setVisible (true);
-              node_size_lower_button->setVisible (true);
-              node_size_upper_button->setVisible (true);
-              node_size_invert_checkbox->setVisible (true);
+              node_size_range_controls->setVisible (true);
               update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_mean(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
@@ -1425,10 +1389,7 @@ namespace MR
                 node_size_matrix_operator_combobox->setCurrentIndex (4);
                 node_size_matrix_operator_combobox->setEnabled (false);
               }
-              node_size_range_label->setVisible (true);
-              node_size_lower_button->setVisible (true);
-              node_size_upper_button->setVisible (true);
-              node_size_invert_checkbox->setVisible (true);
+              node_size_range_controls->setVisible (true);
               update_controls_node_size (node_values_from_file_size.get_min(), node_values_from_file_size.get_mean(), node_values_from_file_size.get_max());
               node_size_invert_checkbox->setChecked (false);
               break;
@@ -1450,10 +1411,7 @@ namespace MR
               node_alpha = node_alpha_t::FIXED;
               node_alpha_combobox->removeItem (4);
               node_alpha_matrix_operator_combobox->setVisible (false);
-              node_alpha_range_label->setVisible (false);
-              node_alpha_lower_button->setVisible (false);
-              node_alpha_upper_button->setVisible (false);
-              node_alpha_invert_checkbox->setVisible (false);
+              node_alpha_range_controls->setVisible (false);
               break;
             case 1:
               if (node_alpha == node_alpha_t::CONNECTOME) return;
@@ -1475,10 +1433,7 @@ namespace MR
                 node_alpha_matrix_operator_combobox->setCurrentIndex (4);
                 node_alpha_matrix_operator_combobox->setEnabled (false);
               }
-              node_alpha_range_label->setVisible (true);
-              node_alpha_lower_button->setVisible (true);
-              node_alpha_upper_button->setVisible (true);
-              node_alpha_invert_checkbox->setVisible (true);
+              node_alpha_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1506,10 +1461,7 @@ namespace MR
                 node_alpha_combobox->setItemText (4, node_values_from_file_alpha.get_name());
               node_alpha_combobox->setCurrentIndex (4);
               node_alpha_matrix_operator_combobox->setVisible (false);
-              node_alpha_range_label->setVisible (true);
-              node_alpha_lower_button->setVisible (true);
-              node_alpha_upper_button->setVisible (true);
-              node_alpha_invert_checkbox->setVisible (true);
+              node_alpha_range_controls->setVisible (true);
               update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
@@ -1544,10 +1496,7 @@ namespace MR
                 node_alpha_matrix_operator_combobox->setCurrentIndex (4);
                 node_alpha_matrix_operator_combobox->setEnabled (false);
               }
-              node_alpha_range_label->setVisible (true);
-              node_alpha_lower_button->setVisible (true);
-              node_alpha_upper_button->setVisible (true);
-              node_alpha_invert_checkbox->setVisible (true);
+              node_alpha_range_controls->setVisible (true);
               update_controls_node_alpha (node_values_from_file_alpha.get_min(), node_values_from_file_alpha.get_mean(), node_values_from_file_alpha.get_max());
               node_alpha_invert_checkbox->setChecked (false);
               break;
@@ -1682,17 +1631,13 @@ namespace MR
               if (edge_visibility == edge_visibility_t::ALL) return;
               edge_visibility = edge_visibility_t::ALL;
               edge_visibility_combobox->removeItem (5);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              edge_visibility_threshold_controls->setVisible (false);
               break;
             case 1:
               if (edge_visibility == edge_visibility_t::NONE) return;
               edge_visibility = edge_visibility_t::NONE;
               edge_visibility_combobox->removeItem (5);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              edge_visibility_threshold_controls->setVisible (false);
               break;
             case 2:
               if (edge_visibility == edge_visibility_t::VISIBLE_NODES) return;
@@ -1708,17 +1653,13 @@ namespace MR
                 edge_visibility = edge_visibility_t::VISIBLE_NODES;
               }
               edge_visibility_combobox->removeItem (5);
-              edge_visibility_threshold_label->setVisible (false);
-              edge_visibility_threshold_button->setVisible (false);
-              edge_visibility_threshold_invert_checkbox->setVisible (false);
+              edge_visibility_threshold_controls->setVisible (false);
               break;
             case 3:
               if (edge_visibility == edge_visibility_t::CONNECTOME) return;
               edge_visibility = edge_visibility_t::CONNECTOME;
               edge_visibility_combobox->removeItem (5);
-              edge_visibility_threshold_label->setVisible (true);
-              edge_visibility_threshold_button->setVisible (true);
-              edge_visibility_threshold_invert_checkbox->setVisible (true);
+              edge_visibility_threshold_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1745,9 +1686,7 @@ namespace MR
               else
                 edge_visibility_combobox->setItemText (5, edge_values_from_file_visibility.get_name());
               edge_visibility_combobox->setCurrentIndex (5);
-              edge_visibility_threshold_label->setVisible (true);
-              edge_visibility_threshold_button->setVisible (true);
-              edge_visibility_threshold_invert_checkbox->setVisible (true);
+              edge_visibility_threshold_controls->setVisible (true);
               update_controls_edge_visibility (edge_values_from_file_visibility.get_min(), edge_values_from_file_visibility.get_mean(), edge_values_from_file_visibility.get_max());
               break;
             case 5:
@@ -1837,9 +1776,7 @@ namespace MR
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (true);
               edge_colour_combobox->removeItem (4);
-              edge_colour_range_label->setVisible (false);
-              edge_colour_lower_button->setVisible (false);
-              edge_colour_upper_button->setVisible (false);
+              edge_colour_range_controls->setVisible (false);
               break;
             case 1:
               if (edge_colour == edge_colour_t::DIRECTION) return;
@@ -1847,9 +1784,7 @@ namespace MR
               edge_colour_colourmap_button->setVisible (false);
               edge_colour_fixedcolour_button->setVisible (false);
               edge_colour_combobox->removeItem (4);
-              edge_colour_range_label->setVisible (false);
-              edge_colour_lower_button->setVisible (false);
-              edge_colour_upper_button->setVisible (false);
+              edge_colour_range_controls->setVisible (false);
               break;
             case 2:
               if (edge_colour == edge_colour_t::CONNECTOME) return;
@@ -1857,9 +1792,7 @@ namespace MR
               edge_colour_colourmap_button->setVisible (true);
               edge_colour_fixedcolour_button->setVisible (false);
               edge_colour_combobox->removeItem (4);
-              edge_colour_range_label->setVisible (true);
-              edge_colour_lower_button->setVisible (true);
-              edge_colour_upper_button->setVisible (true);
+              edge_colour_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1887,9 +1820,7 @@ namespace MR
               else
                 edge_colour_combobox->setItemText (4, edge_values_from_file_colour.get_name());
               edge_colour_combobox->setCurrentIndex (4);
-              edge_colour_range_label->setVisible (true);
-              edge_colour_lower_button->setVisible (true);
-              edge_colour_upper_button->setVisible (true);
+              edge_colour_range_controls->setVisible (true);
               update_controls_edge_colour (edge_values_from_file_colour.get_min(), edge_values_from_file_colour.get_mean(), edge_values_from_file_colour.get_max());
               break;
             case 4:
@@ -1909,19 +1840,13 @@ namespace MR
               if (edge_size == edge_size_t::FIXED) return;
               edge_size = edge_size_t::FIXED;
               edge_size_combobox->removeItem (3);
-              edge_size_range_label->setVisible (false);
-              edge_size_lower_button->setVisible (false);
-              edge_size_upper_button->setVisible (false);
-              edge_size_invert_checkbox->setVisible (false);
+              edge_size_range_controls->setVisible (false);
               break;
             case 1:
               if (edge_size == edge_size_t::CONNECTOME) return;
               edge_size = edge_size_t::CONNECTOME;
               edge_size_combobox->removeItem (3);
-              edge_size_range_label->setVisible (true);
-              edge_size_lower_button->setVisible (true);
-              edge_size_upper_button->setVisible (true);
-              edge_size_invert_checkbox->setVisible (true);
+              edge_size_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -1946,10 +1871,7 @@ namespace MR
               else
                 edge_size_combobox->setItemText (3, edge_values_from_file_size.get_name());
               edge_size_combobox->setCurrentIndex (3);
-              edge_size_range_label->setVisible (true);
-              edge_size_lower_button->setVisible (true);
-              edge_size_upper_button->setVisible (true);
-              edge_size_invert_checkbox->setVisible (true);
+              edge_size_range_controls->setVisible (true);
               update_controls_edge_size (edge_values_from_file_size.get_min(), edge_values_from_file_size.get_mean(), edge_values_from_file_size.get_max());
               break;
             case 3:
@@ -1969,19 +1891,13 @@ namespace MR
               if (edge_alpha == edge_alpha_t::FIXED) return;
               edge_alpha = edge_alpha_t::FIXED;
               edge_alpha_combobox->removeItem (3);
-              edge_alpha_range_label->setVisible (false);
-              edge_alpha_lower_button->setVisible (false);
-              edge_alpha_upper_button->setVisible (false);
-              edge_alpha_invert_checkbox->setVisible (false);
+              edge_alpha_range_controls->setVisible (false);
               break;
             case 1:
               if (edge_alpha == edge_alpha_t::CONNECTOME) return;
               edge_alpha = edge_alpha_t::CONNECTOME;
               edge_alpha_combobox->removeItem (3);
-              edge_alpha_range_label->setVisible (true);
-              edge_alpha_lower_button->setVisible (true);
-              edge_alpha_upper_button->setVisible (true);
-              edge_alpha_invert_checkbox->setVisible (true);
+              edge_alpha_range_controls->setVisible (true);
               {
                 float min = 0.0f, mean = 0.0f, max = 0.0f;
                 QModelIndexList list = matrix_list_view->selectionModel()->selectedRows();
@@ -2006,10 +1922,7 @@ namespace MR
               else
                 edge_alpha_combobox->setItemText (3, edge_values_from_file_alpha.get_name());
               edge_alpha_combobox->setCurrentIndex (3);
-              edge_alpha_range_label->setVisible (true);
-              edge_alpha_lower_button->setVisible (true);
-              edge_alpha_upper_button->setVisible (true);
-              edge_alpha_invert_checkbox->setVisible (true);
+              edge_alpha_range_controls->setVisible (true);
               update_controls_edge_alpha (edge_values_from_file_alpha.get_min(), edge_values_from_file_alpha.get_mean(), edge_values_from_file_alpha.get_max());
               edge_alpha_invert_checkbox->setChecked (false);
               break;

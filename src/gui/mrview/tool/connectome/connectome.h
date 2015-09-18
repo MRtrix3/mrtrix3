@@ -163,6 +163,7 @@ namespace MR
             QComboBox *node_visibility_combobox;
             QComboBox *node_visibility_matrix_operator_combobox;
             QLabel *node_visibility_warning_icon;
+            QWidget *node_visibility_threshold_controls;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
             QCheckBox *node_visibility_threshold_invert_checkbox;
@@ -177,13 +178,14 @@ namespace MR
             QComboBox *node_colour_matrix_operator_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
-
+            QWidget *node_colour_range_controls;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
             QComboBox *node_size_matrix_operator_combobox;
             AdjustButton *node_size_button;
+            QWidget *node_size_range_controls;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
@@ -191,12 +193,14 @@ namespace MR
             QComboBox *node_alpha_combobox;
             QComboBox *node_alpha_matrix_operator_combobox;
             QSlider *node_alpha_slider;
+            QWidget *node_alpha_range_controls;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
 
             QComboBox *edge_visibility_combobox;
             QLabel *edge_visibility_warning_icon;
+            QWidget *edge_visibility_threshold_controls;
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
@@ -209,17 +213,20 @@ namespace MR
             QComboBox *edge_colour_combobox;
             QColorButton *edge_colour_fixedcolour_button;
             ColourMapButton *edge_colour_colourmap_button;
+            QWidget *edge_colour_range_controls;
             QLabel *edge_colour_range_label;
             AdjustButton *edge_colour_lower_button, *edge_colour_upper_button;
 
             QComboBox *edge_size_combobox;
             AdjustButton *edge_size_button;
+            QWidget *edge_size_range_controls;
             QLabel *edge_size_range_label;
             AdjustButton *edge_size_lower_button, *edge_size_upper_button;
             QCheckBox *edge_size_invert_checkbox;
 
             QComboBox *edge_alpha_combobox;
             QSlider *edge_alpha_slider;
+            QWidget *edge_alpha_range_controls;
             QLabel *edge_alpha_range_label;
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
             QCheckBox *edge_alpha_invert_checkbox;
