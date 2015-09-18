@@ -56,14 +56,15 @@ namespace MR
           const QString& get_name() const { return name; }
           void set_name (const std::string& s) { name = s.c_str(); }
 
-          float get_min() const { return min; }
-          float get_max() const { return max; }
+          float get_min()  const { return min; }
+          float get_mean() const { return mean; }
+          float get_max()  const { return max; }
 
-          void calc_minmax();
+          void calc_stats();
 
         private:
           QString name;
-          float min, max;
+          float min, mean, max;
 
       };
 
