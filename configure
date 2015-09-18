@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import subprocess, sys, os, platform, tempfile, shutil, shlex, re
+import subprocess, sys, os, platform, tempfile, shutil, shlex, re, copy
 
 
 debug = False
@@ -187,7 +187,6 @@ cxx = [ 'g++' ]
 cxx_args = '-c CFLAGS SRC -o OBJECT'.split()
 cpp_flags = [ '-std=c++11' ]
 
-ld = [ 'g++' ]
 ld_args = 'OBJECTS LDFLAGS -o EXECUTABLE'.split()
 ld_flags = [ ]
 
@@ -367,6 +366,8 @@ exe_suffix = ''
 lib_prefix = 'lib'
 
 system = platform.system().lower()
+if system.startswith('mingw'):
+  system = 'windows'
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
@@ -384,7 +385,6 @@ elif system == 'windows':
   runpath = ''
 elif system == 'darwin':
   cxx = [ 'clang++' ]
-  ld = [ 'clang++' ]
   cpp_flags += [ '-DMRTRIX_MACOSX', '-fPIC' ]
   ld_lib_flags += [ '-dynamiclib', '-install_name', '@rpath/LIBNAME' ]
   runpath = '-Wl,-rpath,@loader_path/'
@@ -408,6 +408,7 @@ else:
 
 if 'CXX' in os.environ.keys(): cxx = shlex.split (os.environ['CXX'])
 if 'CXX_ARGS' in os.environ.keys(): cxx_args = shlex.split (os.environ['CXX_ARGS'])
+ld = copy.copy(cxx)
 if 'LD' in os.environ.keys(): ld = shlex.split (os.environ['LD'])
 if 'LD_ARGS' in os.environ.keys(): ld_args = shlex.split (os.environ['LD_ARGS'])
 if 'LDLIB_ARGS' in os.environ.keys(): ld_lib_args = shlex.split (os.environ['LDLIB_ARGS'])
@@ -440,7 +441,19 @@ Use CXX environment variable to set path to compiler, as follows:
      CXX=/usr/bin/g++-4.2 ./configure''')
 
 try:
-  compile ('int main() { return (0); }', cpp_flags, ld_flags)
+  compile ('''
+struct Base {
+    Base (int);
+};
+struct Derived : Base {
+    using Base::Base;
+};
+
+int main() { 
+  Derived D (int); // check for contructor inheritance
+  return (0); 
+}
+''', cpp_flags, ld_flags)
   report (' - tested ok\n')
 except CompileError:
   error ('''compiler test failed!
@@ -865,8 +878,6 @@ int main() { Foo f; }
       f.close();
 
       qmake_cmd = [ qmake ]
-      if system == 'windows':
-        qmake_cmd += [ '-spec', 'win32-g++' ]
 
       try: 
          (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
@@ -903,6 +914,9 @@ int main() { Foo f; }
         elif line.startswith ('LFLAGS'):
           qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
 
+      for index, entry in enumerate(qt_includes):
+        if entry[2:].startswith('..'):
+          qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
       
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []

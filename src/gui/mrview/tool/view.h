@@ -25,6 +25,7 @@
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {
@@ -57,6 +58,8 @@ namespace MR
 
             std::vector< std::pair<GL::vec4,bool> > get_active_clip_planes () const;
             std::vector<GL::vec4*> get_clip_planes_to_be_edited () const;
+            bool get_cliphighlightstate () const;
+            bool get_clipintersectionmodestate () const;
 
             void update_lightbox_mode_gui(const Mode::LightBox &mode) override;
 
@@ -87,6 +90,8 @@ namespace MR
             void clip_planes_right_click_menu_slot (const QPoint& pos);
             void clip_planes_selection_changed_slot ();
             void clip_planes_toggle_shown_slot();
+            void clip_planes_toggle_highlight_slot();
+            void clip_planes_toggle_intersectionmode_slot();
 
             void clip_planes_add_axial_slot ();
             void clip_planes_add_sagittal_slot ();
@@ -106,11 +111,11 @@ namespace MR
             QPushButton *hide_button;
             AdjustButton *focus_x, *focus_y, *focus_z;
             AdjustButton *voxel_x, *voxel_y, *voxel_z;
-            QSpinBox *vol_index, *vol_group;
+            SpinBox *vol_index, *vol_group;
             AdjustButton *max_entry, *min_entry, *fov;
             AdjustButton *transparent_intensity, *opaque_intensity;
             AdjustButton *lower_threshold, *upper_threshold;
-            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;
+            QCheckBox *lower_threshold_check_box, *upper_threshold_check_box, *clip_highlight_check_box, *clip_intersectionmode_check_box;
             QComboBox *plane_combobox;
             QGroupBox *volume_box, *transparency_box, *threshold_box, *clip_box, *lightbox_box;
             QSlider *opacity;
@@ -119,7 +124,7 @@ namespace MR
             QAction *clip_planes_reset_axial_action, *clip_planes_reset_sagittal_action, *clip_planes_reset_coronal_action;
             QAction *clip_planes_invert_action, *clip_planes_remove_action, *clip_planes_clear_action;
             AdjustButton* light_box_slice_inc;
-            QSpinBox *light_box_rows, *light_box_cols;
+            SpinBox *light_box_rows, *light_box_cols;
             QCheckBox *light_box_show_grid;
 
             class ClipPlaneModel;

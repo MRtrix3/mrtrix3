@@ -28,6 +28,7 @@
 #include "image/transform.h"
 #include "image/sparse/fixel_metric.h"
 #include "image/sparse/voxel.h"
+#include "math/math.h"
 #include "math/vector.h"
 #include "math/matrix.h"
 #include "math/stats/permutation.h"
@@ -88,11 +89,11 @@ void usage ()
   + Option ("cfe_e", "cfe extent exponent (default: 2.0)")
   + Argument ("value").type_float (0.0, 2.0, 100000)
 
-  + Option ("cfe_h", "cfe height exponent (default: 1.0)")
-  + Argument ("value").type_float (0.0, 1.0, 100000)
+  + Option ("cfe_h", "cfe height exponent (default: 3.0)")
+  + Argument ("value").type_float (0.0, 3.0, 100000)
 
-  + Option ("cfe_c", "cfe connectivity exponent (default: 0.1)")
-  + Argument ("value").type_float (0.0, 0.1, 100000)
+  + Option ("cfe_c", "cfe connectivity exponent (default: 0.5)")
+  + Argument ("value").type_float (0.0, 0.5, 100000)
 
   + Option ("angle", "the max angle threshold for computing inter-subject fixel correspondence (Default: 30)")
   + Argument ("value").type_float (0.0, 30, 90)
@@ -149,17 +150,17 @@ void run() {
     cfe_dh = opt[0][0];
 
   opt = get_options ("cfe_h");
-  value_type cfe_h = 2.0;
+  value_type cfe_h = 3.0;
   if (opt.size())
     cfe_h = opt[0][0];
 
   opt = get_options ("cfe_e");
-  value_type cfe_e = 1.0;
+  value_type cfe_e = 2.0;
   if (opt.size())
     cfe_e = opt[0][0];
 
   opt = get_options ("cfe_c");
-  value_type cfe_c = 0.1;
+  value_type cfe_c = 0.5;
   if (opt.size())
     cfe_c = opt[0][0];
 
@@ -172,7 +173,7 @@ void run() {
   opt = get_options ("angle");
   if (opt.size())
     angular_threshold = opt[0][0];
-  const float angular_threshold_dp = cos (angular_threshold * (M_PI/180.0));
+  const float angular_threshold_dp = cos (angular_threshold * (Math::pi/180.0));
 
   value_type connectivity_threshold = 0.01;
   opt = get_options ("connectivity");
@@ -295,7 +296,7 @@ void run() {
   value_type gaussian_const1 = 1.0;
   if (smooth_std_dev > 0.0) {
     do_smoothing = true;
-    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * M_PI));
+    gaussian_const1 = 1.0 / (smooth_std_dev *  std::sqrt (2.0 * Math::pi));
   }
   {
     ProgressBar progress ("normalising and thresholding fixel-fixel connectivity matrix...", num_fixels);

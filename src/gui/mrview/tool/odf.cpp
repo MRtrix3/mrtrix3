@@ -97,10 +97,7 @@ namespace MR
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
                   std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
-                  if (header->ndim() < 4) 
-                    throw Exception ("image \"" + header->name() + "\" is not 4D");
-                  if (header->dim(3) < 6)
-                    throw Exception ("image \"" + header->name() + "\" does not contain enough SH coefficients (too few volumes along 4th axis)");
+                  Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
@@ -216,7 +213,7 @@ namespace MR
             label = new QLabel ("detail");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 0);
-            level_of_detail_selector = new QSpinBox (this);
+            level_of_detail_selector = new SpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
             level_of_detail_selector->setSingleStep (1);
@@ -227,7 +224,7 @@ namespace MR
             label = new QLabel ("lmax");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 1, 2);
-            lmax_selector = new QSpinBox (this);
+            lmax_selector = new SpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
             lmax_selector->setSingleStep (2);
@@ -291,6 +288,10 @@ namespace MR
           if (renderer) {
             delete renderer;
             renderer = nullptr;
+          }
+          if (preview) {
+            delete preview;
+            preview = nullptr;
           }
           if (lighting_dock) {
             delete lighting_dock;

@@ -122,7 +122,7 @@ void load_fmls_thresholds (Segmenter& segmenter)
 Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
       dirs                             (directions),
       lmax                             (l),
-      transform                        (NULL),
+      transform                        (nullptr),
       precomputer                      (new Math::SH::PrecomputedAL<float> (lmax, 2 * dirs.size())),
       ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
       ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
@@ -172,8 +172,6 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   std::vector< std::pair<dir_t, uint32_t> > retrospective_assignments;
 
-  std::map<uint32_t, uint32_t> lobes_to_merge;
-
   for (map_type::const_iterator i = data_in_order.begin(); i != data_in_order.end(); ++i) {
 
     std::vector<uint32_t> adj_lobes;
@@ -197,11 +195,37 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
     } else {
 
+      // Changed handling of lobe merges
+      // Merge lobes as they appear to be merged, but update the
+      //   contents of retrospective_assignments accordingly
       if (std::abs (i->first) / out[adj_lobes.back()].get_peak_value() > ratio_of_peak_value_to_merge) {
 
-        if (lobes_to_merge.find (adj_lobes.back()) == lobes_to_merge.end())
-          lobes_to_merge.insert (std::make_pair (adj_lobes.back(), adj_lobes.front()));
-        out[adj_lobes.front()].add (i->second, i->first);
+        std::sort (adj_lobes.begin(), adj_lobes.end());
+        for (size_t j = 1; j != adj_lobes.size(); ++j)
+          out[adj_lobes[0]].merge (out[adj_lobes[j]]);
+        for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
+          bool modified = false;
+          for (size_t k = 1; k != adj_lobes.size(); ++k) {
+            if (j->second == adj_lobes[k]) {
+              j->second = adj_lobes[0];
+              modified = true;
+            }
+          }
+          if (!modified) {
+            // Compensate for impending deletion of elements from the vector
+            dir_t bin = j->first;
+            for (size_t k = 1; k != adj_lobes.size(); ++k) {
+              if (adj_lobes[k] < bin)
+                --bin;
+            }
+            j->first = bin;
+          }
+        }
+        for (size_t j = adj_lobes.size() - 1; j; --j) {
+          std::vector<FOD_lobe>::iterator ptr = out.begin();
+          advance (ptr, adj_lobes[j]);
+          out.erase (ptr);
+        }
 
       } else {
 
@@ -215,14 +239,6 @@ bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
 
   for (std::vector< std::pair<dir_t, uint32_t> >::const_iterator i = retrospective_assignments.begin(); i != retrospective_assignments.end(); ++i)
     out[i->second].add (i->first, values[i->first]);
-
-  for (std::map<uint32_t, uint32_t>::const_reverse_iterator i = lobes_to_merge.rbegin(); i != lobes_to_merge.rend(); ++i) {
-    out[i->second].merge (out[i->first]);
-    std::vector<FOD_lobe>::iterator ptr = out.begin();
-    advance (ptr, i->first);
-    out.erase (ptr);
-  }
-
 
   float mean_neg_peak = 0.0, max_neg_integral = 0.0;
   uint32_t neg_lobe_count = 0;

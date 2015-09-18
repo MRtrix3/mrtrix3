@@ -27,6 +27,7 @@
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
+#include "gui/mrview/spin_box.h"
 
 namespace MR
 {
@@ -97,7 +98,7 @@ namespace MR
              Model* image_list_model;
              QListView* image_list_view;
              QLabel* volume_label;
-             QSpinBox* volume_selecter;
+             SpinBox* volume_selecter;
              ColourMapButton* colourmap_button;
              AdjustButton *min_value, *max_value, *lower_threshold, *upper_threshold;
              QCheckBox *lower_threshold_check_box, *upper_threshold_check_box;

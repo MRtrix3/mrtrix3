@@ -103,8 +103,8 @@ class VoxelDEC : public Voxel
     bool      operator== (const VoxelDEC& V) const { return Voxel::operator== (V); }
     bool      operator<  (const VoxelDEC& V) const { return Voxel::operator< (V); }
 
-    void normalise() const { colour.normalise(); }
-    void set_dir (const Point<float>& i) { colour =  vec2DEC (i); }
+    void normalise() const { colour.normalise(); Voxel::normalise(); }
+    void set_dir (const Point<float>& i) { colour = vec2DEC (i); }
     void add (const Point<float>& i, const float l) const { Voxel::operator+= (l); colour += vec2DEC (i); }
     void operator+= (const Point<float>& i) const { Voxel::operator+= (1.0f); colour += vec2DEC (i); }
     const Point<float>& get_colour() const { return colour; }
@@ -143,7 +143,7 @@ class VoxelDir : public Voxel
     bool      operator== (const VoxelDir& V) const { return Voxel::operator== (V); }
     bool      operator<  (const VoxelDir& V) const { return Voxel::operator< (V); }
 
-    void normalise() const { dir.normalise(); }
+    void normalise() const { dir.normalise(); Voxel::normalise(); }
     void set_dir (const Point<float>& i) { dir = i; }
     void add (const Point<float>& i, const float l) const { Voxel::operator+= (l); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }
     void operator+= (const Point<float>& i) const { Voxel::operator+= (1.0f); dir += i * (dir.dot(i) < 0.0f ? -1.0f : 1.0f); }

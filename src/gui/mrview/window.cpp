@@ -675,8 +675,14 @@ namespace MR
 
       Window::~Window ()
       {
-        mode = nullptr;
-        delete glarea;
+        glarea->makeCurrent();
+        QList<QAction*> tools = tool_group->actions();
+        for (QAction* action : tools) 
+          delete action;
+        mode.reset();
+        QList<QAction*> images = image_group->actions();
+        for (QAction* action : images) 
+          delete action;
       }
 
 
@@ -796,6 +802,7 @@ namespace MR
 
       void Window::select_mode_slot (QAction* action)
       {
+        glarea->makeCurrent();
         mode.reset (dynamic_cast<GUI::MRView::Mode::__Action__*> (action)->create());
         mode->set_visible(! image_hide_action->isChecked());
         set_mode_features();
@@ -1315,7 +1322,7 @@ namespace MR
         // otherwise we get transparent windows...
 #if QT_VERSION >= 0x050400
         gl::ColorMask (false, false, false, true); 
-        gl::Clear (GL_COLOR_BUFFER_BIT);
+        gl::Clear (gl::COLOR_BUFFER_BIT);
         glColorMask (true, true, true, true);
 #endif
         GL_CHECK_ERROR;

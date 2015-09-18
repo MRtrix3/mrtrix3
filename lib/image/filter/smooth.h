@@ -147,7 +147,7 @@ namespace MR
               progress.reset (new ProgressBar (message, axes_to_smooth + 1));
             }
 
-            for (size_t dim = 0; dim < this->ndim(); dim++) {
+            for (size_t dim = 0; dim < 3; dim++) {
               if (stdev[dim] > 0) {
                 out_data.reset (new BufferScratch<ValueType> (input));
                 out.reset (new typename BufferScratch<ValueType>::voxel_type (*out_data));

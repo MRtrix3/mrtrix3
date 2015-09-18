@@ -121,7 +121,7 @@ namespace MR
             volume_label = new QLabel ("Volume: ");
             volume_label->setEnabled (false);
             layout->addWidget (volume_label);
-            volume_selecter = new QSpinBox (this);
+            volume_selecter = new SpinBox (this);
             volume_selecter->setMinimum (0);
             volume_selecter->setMaximum (0);
             volume_selecter->setValue (0);

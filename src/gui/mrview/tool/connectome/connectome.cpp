@@ -235,7 +235,7 @@ namespace MR
           hlayout->setSpacing (0);
           node_geometry_sphere_lod_label = new QLabel ("LOD: ");
           hlayout->addWidget (node_geometry_sphere_lod_label, 1);
-          node_geometry_sphere_lod_spinbox = new QSpinBox (this);
+          node_geometry_sphere_lod_spinbox = new SpinBox (this);
           node_geometry_sphere_lod_spinbox->setToolTip (tr ("Level of Detail for drawing spheres"));
           node_geometry_sphere_lod_spinbox->setMinimum (1);
           node_geometry_sphere_lod_spinbox->setMaximum (7);
@@ -501,7 +501,7 @@ namespace MR
           edge_geometry_cylinder_lod_label = new QLabel ("LOD: ");
           edge_geometry_cylinder_lod_label->setVisible (false);
           hlayout->addWidget (edge_geometry_cylinder_lod_label, 1);
-          edge_geometry_cylinder_lod_spinbox = new QSpinBox (this);
+          edge_geometry_cylinder_lod_spinbox = new SpinBox (this);
           edge_geometry_cylinder_lod_spinbox->setToolTip (tr ("Level of Detail for drawing cylinders / streamtubes"));
           edge_geometry_cylinder_lod_spinbox->setMinimum (1);
           edge_geometry_cylinder_lod_spinbox->setMaximum (7);
@@ -767,8 +767,8 @@ namespace MR
 
           Edge::set_streamtube_LOD (3);
 
-          glGetIntegerv (GL_ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
-          glGetIntegerv (GL_SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
+          glGetIntegerv (gl::ALIASED_LINE_WIDTH_RANGE, line_thickness_range_aliased);
+          glGetIntegerv (gl::SMOOTH_LINE_WIDTH_RANGE, line_thickness_range_smooth);
           GL_CHECK_ERROR;
 
           enable_all (false);
@@ -2631,7 +2631,7 @@ namespace MR
             }
 
             if ((edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) && edge_geometry_line_smooth_checkbox->isChecked())
-              gl::Enable (GL_LINE_SMOOTH);
+              gl::Enable (gl::LINE_SMOOTH);
 
             GLuint node_centre_one_ID = 0, node_centre_two_ID = 0, rot_matrix_ID = 0;
             if (edge_geometry == edge_geometry_t::CYLINDER) {
@@ -2733,7 +2733,7 @@ namespace MR
             if (edge_geometry == edge_geometry_t::LINE || edge_geometry == edge_geometry_t::STREAMLINE) {
               gl::LineWidth (1.0f);
               if (edge_geometry_line_smooth_checkbox->isChecked())
-                gl::Disable (GL_LINE_SMOOTH);
+                gl::Disable (gl::LINE_SMOOTH);
             }
 
             edge_shader.stop();
