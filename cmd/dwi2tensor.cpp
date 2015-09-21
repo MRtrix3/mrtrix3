@@ -116,7 +116,6 @@ class Processor
           b0_image->value() = exp(p[6]);
         }
         
-        assign_pos_of (dwi_image, 0, 3).to (dt_image);
         for (auto l = Loop(3)(dt_image); l; ++l) {
           dt_image.value() = p[dt_image.index(3)];
         }
