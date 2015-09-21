@@ -76,7 +76,6 @@ class SH2Amp
       transformer.SH2A(r, in.row(3));
       if (nonnegative)
         r = r.cwiseMax(value_type(0.0));
-      assign_pos_of(in).to(out);
       out.row(3) = r;
     }
 
