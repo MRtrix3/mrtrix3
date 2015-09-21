@@ -10,7 +10,7 @@ env:
 before_install:
   - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
   - sudo apt-get update -qq
-  - sudo apt-get -y install zlib1g-dev libgsl0-dev
+  - sudo apt-get -y install zlib1g-dev libgsl0-dev libqt4-opengl-dev
   - wget http://packages.yade-dem.org/precise/libeigen3-dev_3.2.1-1~precise1_all.deb
   - sudo dpkg -i libeigen3-dev_3.2.1-1~precise1_all.deb
   - if [ "$CXX" = "clang++" ]; then sudo apt-get install -qq libstdc++-4.8-dev; fi
@@ -22,7 +22,7 @@ before_install:
 install: 
   - (git clone https://github.com/MRtrix3/testing.git; cd testing; ln -s ../build;)
 script:
-  - if [ ${python_version} = "3" ]; then python3 ./configure -nogui && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -nogui && ./build -disablethreading && (cd testing; ./run_tests); fi
+  - if [ ${python_version} = "3" ]; then python3 ./configure -debug && python3 ./build -disablethreading && (cd testing; ./run_tests);else ./configure -debug && ./build -disablethreading && (cd testing; ./run_tests); fi
 after_failure: 
   - cat configure.log
   - cat build.log

@@ -98,9 +98,6 @@ namespace MR
 
 
     // A convenience class for wrapping access to sparse images
-    // Main reason for having this class is to clarify the code responsible for accessing sparse images
-    // Also: Any attempt to unify this concept of image data storage will likely also involve
-    //   generalisation of the other Buffer offshoot classes (BufferPreload, BufferScratch)
     template <typename DataType>
       class Image : public ::MR::Image<uint64_t>
     {

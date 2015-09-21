@@ -203,7 +203,7 @@ namespace MR
           slice_copy_group->setEnabled (false);
           connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
 
-          layout->addWidget (new QLabel ("Copy slice: "), 0, Qt::AlignRight);
+          layout->addWidget (new QLabel ("Copy from slice: "), 0, Qt::AlignRight);
 
           copy_from_above_button = new QToolButton (this);
           copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
