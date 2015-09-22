@@ -452,6 +452,7 @@ end_init:
                 Calibrate (iFOD2& method) :
                   P (method),
                   fod (&P.values[0], P.source.dim(3)),
+                  vox (P.S.vox()),
                   positions (P.S.num_samples),
                   tangents (P.S.num_samples)
               {
@@ -461,11 +462,12 @@ end_init:
 
                 value_type operator() (value_type el)
                 {
+                  P.pos.set (0.0f, 0.0f, 0.0f);
                   P.get_path (positions, tangents, Point<value_type> (std::sin (el), 0.0, std::cos(el)));
 
                   value_type log_prob = init_log_prob;
                   for (size_t i = 0; i < P.S.num_samples; ++i) {
-                    value_type prob = Math::SH::value (P.values, tangents[i], P.S.lmax);
+                    value_type prob = Math::SH::value (P.values, tangents[i], P.S.lmax) * (1.0 - (positions[i][0] / vox));
                     if (prob <= 0.0)
                       return 0.0;
                     prob = std::log (prob);
@@ -481,6 +483,7 @@ end_init:
               private:
                 iFOD2& P;
                 Math::Vector<value_type> fod;
+                const value_type vox;
                 value_type init_log_prob;
                 std::vector< Point<value_type> > positions, tangents;
             };
