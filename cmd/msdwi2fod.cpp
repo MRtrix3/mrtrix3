@@ -71,6 +71,12 @@ void usage ()
     "NeuroImage, 2014, 103, 411-426";
 }
 
+
+
+
+
+
+
 class Shared {
   public:
     Shared (std::vector<int>& lmax_, std::vector<Eigen::MatrixXd>& response_, Eigen::MatrixXd& grad_, Eigen::MatrixXd& HR_dirs) :
@@ -97,9 +103,9 @@ class Shared {
     
     Eigen::MatrixXd directions = DWI::gen_direction_matrix (grad, dwilist);
     Eigen::MatrixXd SHT = Math::SH::init_transform (directions, maxlmax);
-    for (size_t i = 0; i < SHT.rows(); i++)
-      for (size_t j = 0; j < SHT.cols(); j++)
-        if (isnan(SHT(i,j)))
+    for (ssize_t i = 0; i < SHT.rows(); i++)
+      for (ssize_t j = 0; j < SHT.cols(); j++)
+        if (std::isnan(SHT(i,j)))
           SHT(i,j) = 0;
     
     Eigen::MatrixXd delta(1,2); delta << 0, 0;
@@ -107,7 +113,7 @@ class Shared {
     Eigen::VectorXd DSH_ = DSH__.row(0);
     Eigen::VectorXd DSH(maxlmax/2+1);
     size_t j = 0;
-    for (size_t i = 0; i < DSH_.size(); i++)
+    for (ssize_t i = 0; i < DSH_.size(); i++)
       if (DSH_[i] != 0) {
         DSH[j] = DSH_[i];
         j++;
@@ -173,6 +179,12 @@ class Shared {
     Math::ICLS::Problem<value_type> problem;
 };
 
+
+
+
+
+
+
 template <class MASKType, class ODFType> 
 class Processor
 {
@@ -220,10 +232,17 @@ class Processor
 };
 
 
+
+
 template <class MASKType, class ODFType> 
 inline Processor<MASKType, ODFType>  processor (const Shared& shared, MASKType* mask_image, std::vector<ODFType> odf_images) {
   return { shared, mask_image, odf_images };
 }
+
+
+
+
+
 
 void run ()
 {
@@ -237,7 +256,7 @@ void run ()
   std::vector<Eigen::MatrixXd> response;
   for (size_t i = 0; i < (argument.size()-1)/2; i++) {
     Eigen::MatrixXd r = load_matrix<> (argument[i*2+1]);
-    if (r.rows() != nbvals)
+    if (size_t(r.rows()) != nbvals)
       throw Exception ("number of rows in response function text file should match number of shells in dwi");
     response.push_back(r);
     lmax.push_back((r.cols()-1)*2);
