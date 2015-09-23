@@ -253,7 +253,6 @@ void run ()
 
   File::OFStream out (argument[2]);
 
-  std::unique_ptr< Image<value_type> > warp_image;
   std::unique_ptr< Interp::Linear< Image<value_type> > > warp;
 
   Resampler< Interp::Linear< Image<value_type> > > resample;
@@ -272,12 +271,11 @@ void run ()
 
     opt = get_options ("warp");
     if (opt.size()) {
-      warp_image.reset (new Image<value_type>(Image<value_type>::open(opt[0][0])));
-      if (warp_image->ndim() < 4)
+      warp.reset (new Interp::Linear< Image<value_type> >(Image<value_type>::open(opt[0][0]) ));
+      if (warp->ndim() < 4)
         throw Exception ("warp image should contain at least 4 dimensions");
-      if (warp_image->size(3) < 3)
+      if (warp->size(3) < 3)
         throw Exception ("4th dimension of warp image should have length 3");
-      warp.reset (new Interp::Linear< Image<value_type> > (*warp_image));
       resample.warp = warp.get();
     }
 
