@@ -116,15 +116,7 @@ class DataLoader
     DataLoader (Image<value_type>& sh_data,
                 Image<bool>* mask_data) :
       sh (sh_data),
-      loop ("estimating peak directions...", 0, 3) {
-      if (mask_data) {
-        check_dimensions (*mask_data, sh, 0, 3);
-        mask.reset (new Image<bool> (*mask_data));
-        loop(*mask, sh);
-      }
-      else
-        loop(sh);
-      }
+      loop (Loop("estimating peak directions...", 0, 3) (sh)) { }
 
     bool operator() (Item& item) {
       if (loop) {
@@ -133,9 +125,12 @@ class DataLoader
         item.pos[1] = sh.index(1);
         item.pos[2] = sh.index(2);
 
-        if (mask && !mask->value()) {
-          for (auto l = Loop(3) (sh); l; ++l)
-            item.data[sh.index(3)] = NAN;
+        if (mask) {
+          assign_pos_of(sh).to(*mask);
+          if (!mask->value()) {
+            for (auto l = Loop(3) (sh); l; ++l)
+              item.data[sh.index(3)] = NAN;
+          }
         } else {
           // iterates over SH coefficients
           for (auto l = Loop(3) (sh); l; ++l)
@@ -152,7 +147,7 @@ class DataLoader
   private:
     Image<value_type>  sh;
     std::unique_ptr<Image<bool> > mask;
-    LoopAlongAxisRangeProgress loop;
+    LoopAlongAxisRangeProgress::Run<Image<value_type> > loop;
 };
 
 
