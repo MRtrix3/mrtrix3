@@ -88,6 +88,22 @@ namespace MR
       }
     }
 
+    void Mesh::transform_realspace_to_first (const Image::Info& info)
+    {
+      Image::Transform transform (info);
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+        *v = transform.scanner2image (*v);
+        (*v)[0] = ((info.dim(0)-1) * info.vox(0)) - (*v)[0];
+      }
+      if (normals.size()) {
+        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
+          *n = transform.scanner2image_dir (*n);
+          (*n)[0] = -(*n)[0];
+
+        }
+      }
+    }
+
     void Mesh::transform_voxel_to_realspace (const Image::Info& info)
     {
       Image::Transform transform (info);
