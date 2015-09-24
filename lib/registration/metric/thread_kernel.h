@@ -218,14 +218,15 @@ namespace MR
                 actual_size += 1;
               }
 
-              assert (actual_size > 0);
+              if (actual_size == 0)
+                throw Exception ("neighbourhood does not include centre");
 
               if (anticipated_size != actual_size){
                 neighbh1.conservativeResize(neighbh1.rows(), actual_size);
                 neighbh2.conservativeResize(neighbh2.rows(), actual_size);
               }
 
-              cost_function += metric (params, neighbh1, neighbh2, moving_point, template_point, mid_point, gradient);
+              cost_function += metric (params, neighbh1, neighbh2, template_point, moving_point, mid_point, gradient);
             }
 
           protected:
