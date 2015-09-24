@@ -238,7 +238,7 @@ inline Eigen::Vector3f get_pos (const std::vector<default_type>& s)
 {
   if (s.size() != 3)
     throw Exception ("position expected as a comma-seperated list of 3 values");
-  return { s[0], s[1], s[2] };
+  return { float(s[0]), float(s[1]), float(s[2]) };
 }
 
 

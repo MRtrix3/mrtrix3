@@ -186,7 +186,7 @@ class Processor
 
       std::vector<Direction> all_peaks;
 
-      for (size_t i = 0; i < dirs.rows(); i++) {
+      for (size_t i = 0; i < size_t(dirs.rows()); i++) {
         Direction p (dirs (i,0), dirs (i,1));
         p.a = Math::SH::get_peak (item.data, lmax, p.v);
         if (std::isfinite (p.a)) {
@@ -274,7 +274,7 @@ class Processor
       }
 
       bool no_peaks = true;
-      for (size_t i = 0; i < item.data.size(); i++) {
+      for (size_t i = 0; i < size_t(item.data.size()); i++) {
         if (std::isnan (item.data[i]))
           return true;
         if (no_peaks)
