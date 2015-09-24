@@ -733,8 +733,9 @@ namespace MR
 
       char init[6];
       in.get (init, 6);
+      init[5] = '\0';
 
-      if (strncmp (init, "solid ", 6)) {
+      if (strncmp (init, "solid", 5)) {
 
         // File is stored as binary
         in.close();
@@ -777,23 +778,25 @@ namespace MR
 
         std::string line;
         size_t vertex_index = 0;
-        bool inside_facet = false, inside_loop = false;
+        bool inside_solid = true, inside_facet = false, inside_loop = false;
         while (std::getline (in, line)) {
           // Strip leading whitespace
           line = line.substr (line.find_first_not_of (' '), line.npos);
-          if (line.substr(12) == "facet normal") {
+          if (line.substr(0, 12) == "facet normal") {
+            if (!inside_solid)
+              throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet outside solid");
             if (inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested facets");
             inside_facet = true;
             line = line.substr (12);
             sscanf (line.c_str(), "%f %f %f", &normal[0], &normal[1], &normal[2]);
-          } else if (line.substr(10) == "outer loop") {
+          } else if (line.substr(0, 10) == "outer loop") {
             if (inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested loops");
             if (!inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop outside facet");
             inside_loop = true;
-          } else if (line.substr(6) == "vertex") {
+          } else if (line.substr(0, 6) == "vertex") {
             if (!inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": vertex outside loop");
             if (!inside_facet)
@@ -802,13 +805,13 @@ namespace MR
             sscanf (line.c_str(), "%f %f %f", &vertex[0], &vertex[1], &vertex[2]);
             vertices.push_back (vertex);
             ++vertex_index;
-          } else if (line.substr() == "endloop") {
+          } else if (line.substr(0, 7) == "endloop") {
             if (!inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop ending without start");
             if (!inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop ending outside facet");
             inside_loop = false;
-          } else if (line.substr() == "endfacet") {
+          } else if (line.substr(0, 8) == "endfacet") {
             if (inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ending inside loop");
             if (!inside_facet)
@@ -823,10 +826,18 @@ namespace MR
               warn_right_hand_rule = true;
             if (std::abs (computed_normal.dot (normal)) < 0.99)
               warn_nonstandard_normals = true;
+          } else if (line.substr(0, 8) == "endsolid") {
+            if (inside_facet)
+              throw Exception ("Error parsing STL file " + Path::basename (path) + ": solid ending inside facet");
+            inside_solid = false;
+          } else if (line.substr(0, 5) == "solid") {
+            throw Exception ("Error parsing STL file " + Path::basename (path) + ": multiple solids in file");
           } else {
             throw Exception ("Error parsing STL file " + Path::basename (path) + ": unknown key (" + line + ")");
           }
         }
+        if (inside_solid)
+          throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to close solid");
         if (inside_facet)
           throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to close facet");
         if (inside_loop)
