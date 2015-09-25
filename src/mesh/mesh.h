@@ -168,6 +168,7 @@ namespace MR
 
 
         void transform_first_to_realspace (const Image::Info&);
+        void transform_realspace_to_first (const Image::Info&);
         void transform_voxel_to_realspace (const Image::Info&);
         void transform_realspace_to_voxel (const Image::Info&);
 
