@@ -39,6 +39,9 @@ const OptionGroup transform_options = OptionGroup ("Options for applying spatial
   + Option ("transform_first2real", "transform vertices from FSL FIRST's native corrdinate space to real space")
     + Argument ("image").type_image_in()
 
+  + Option ("transform_real2first", "transform vertices from FSL real space to FIRST's native corrdinate space")
+    + Argument ("image").type_image_in()
+
   + Option ("transform_voxel2real", "transform vertices from voxel space to real space")
     + Argument ("image").type_image_in()
 
@@ -88,6 +91,16 @@ void run ()
     Image::Header H (opt[0][0]);
     for (auto i = meshes.begin(); i != meshes.end(); ++i)
       i->transform_first_to_realspace (H);
+    have_transformed = true;
+  }
+
+  opt = get_options ("transform_real2first");
+  if (opt.size()) {
+    if (have_transformed)
+      throw Exception ("meshconvert can only perform one spatial transformation per call");
+    Image::Header H (opt[0][0]);
+    for (auto i = meshes.begin(); i != meshes.end(); ++i)
+      i->transform_realspace_to_first (H);
     have_transformed = true;
   }
 
