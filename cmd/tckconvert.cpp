@@ -50,7 +50,12 @@ void usage ()
   + Option ("scanner2voxel",
       "if specified, the properties of this image will be used to convert "
       "track point positions from real (scanner) coordinates into voxel coordinates.")
-    + Argument ("reference").type_image_in ();
+    + Argument ("reference").type_image_in ()
+
+  + Option ("scanner2image",
+      "if specified, the properties of this image will be used to convert "
+      "track point positions from real (scanner) coordinates into image coordinates (in mm).")
+  +    Argument ("reference").type_image_in ();
 
 }
 
@@ -121,9 +126,34 @@ void run ()
 
     VTKWriter write (argument[1]);
 
+    // Tranform matrix
+    transform_type T;
+    T.setIdentity();
+    size_t nopts = 0;
+    auto opt = get_options("scanner2voxel");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).scanner2voxel;
+        nopts++;
+    }
+    opt = get_options("scanner2image");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).scanner2image;
+        nopts++;
+    }
+    if (nopts > 1) {
+        throw Exception("Transform options are mutually exclusive.");
+    }
+
     Streamline<float> tck;
     while (read(tck))
     {
+        for (auto& pos : tck) {
+            Eigen::Vector3 x {pos[0], pos[1], pos[2]};
+            auto y = T * x;
+            pos = {y[0], y[1], y[2]};
+        }
         write(tck);
     }
 
