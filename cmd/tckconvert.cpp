@@ -81,6 +81,7 @@ public:
         for (auto pos : tck) {
           VTKout << pos[0] << " " << pos[1] << " " << pos[2] << "\n";
         }
+        return true;
     }
 
     ~VTKWriter() {
