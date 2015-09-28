@@ -23,15 +23,11 @@
 #include "command.h"
 #include "point.h"
 #include "progressbar.h"
-
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
+#include "algo/loop.h"
+#include "image.h"
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 
 
 using namespace MR;
@@ -43,7 +39,7 @@ using Image::Sparse::FixelMetric;
 void usage ()
 {
 
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "map the scalar value in each voxel to all fixels within that voxel"

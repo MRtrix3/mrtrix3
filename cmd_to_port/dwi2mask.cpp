@@ -33,7 +33,7 @@ using namespace MR;
 using namespace App;
 
 void usage () {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
 DESCRIPTION
   + "Generates an whole brain mask from a DWI image."

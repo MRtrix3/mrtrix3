@@ -71,7 +71,7 @@ const OptionGroup MedianOption = OptionGroup ("Options for median filter")
 
 void usage ()
 {
-  AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (d.raffelt@brain.org.au) and J-Donald Tournier (jdtournier@gmail.com)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au), David Raffelt (david.raffelt@florey.edu.au) and J-Donald Tournier (jdtournier@gmail.com)";
 
   DESCRIPTION
   + "Perform filtering operations on 3D / 4D mask images."
