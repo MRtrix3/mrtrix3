@@ -70,7 +70,7 @@ void run ()
     output_vox.value().set_size (input_vox1.value().size());
     for (size_t fixel = 0; fixel != input_vox1.value().size(); ++fixel) {
       output_vox.value()[fixel] = input_vox1.value()[fixel];
-      output_vox.value()[fixel].value = -input_vox1.value()[fixel].value / input_vox2.value()[fixel].value;
+      output_vox.value()[fixel].value = input_vox1.value()[fixel].value / input_vox2.value()[fixel].value;
     }
   }
 }
