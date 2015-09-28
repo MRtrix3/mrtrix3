@@ -150,9 +150,7 @@ void run ()
     while (read(tck))
     {
         for (auto& pos : tck) {
-            Eigen::Vector3 x {pos[0], pos[1], pos[2]};
-            auto y = T * x;
-            pos = y.cast<float>();
+            pos = T.cast<float>() * pos;
         }
         write(tck);
     }
