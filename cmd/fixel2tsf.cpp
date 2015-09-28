@@ -22,14 +22,12 @@
 
 #include "command.h"
 #include "progressbar.h"
+#include "algo/loop.h"
 
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/voxel.h"
+#include "image.h"
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/scalar_file.h"
@@ -43,7 +41,7 @@ using namespace App;
 
 
 
-using Image::Sparse::FixelMetric;
+using Sparse::FixelMetric;
 
 
 
@@ -59,7 +57,7 @@ void usage ()
   ARGUMENTS
   + Argument ("fixel_in", "the input fixel image").type_image_in ()
   + Argument ("tracks",   "the input track file ").type_file_in ()
-  + Argument ("tsf",   "the output track file ").type_file_out ();
+  + Argument ("tsf",      "the output track file").type_file_out ();
 
 
   OPTIONS
@@ -75,15 +73,13 @@ void run ()
 {
   DWI::Tractography::Properties properties;
 
-  Image::Header input_header (argument[0]);
-  Image::BufferSparse<FixelMetric> input_data (input_header);
-  Image::BufferSparse<FixelMetric>::voxel_type input_fixel (input_data);
+  auto input_header = Header::open (argument[0]);
+  Sparse::Image<FixelMetric> input_fixel (argument[0]);
 
-  DWI::Tractography::Reader<float> reader (argument[1], properties);
+  DWI::Tractography::Reader reader (argument[1], properties);
   properties.comments.push_back ("Created using fixel2tsf");
   properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
   properties.comments.push_back ("Source track file: " + Path::basename (argument[1]));
-
 
   DWI::Tractography::ScalarWriter<float> tsf_writer (argument[2], properties);
 
@@ -98,20 +94,20 @@ void run ()
   ProgressBar progress ("mapping fixel values to streamline points...", num_tracks);
   DWI::Tractography::Streamline<float> tck;
 
-  Image::Transform transform (input_fixel);
-  Point<float> voxel_pos;
+  Transform transform (input_fixel);
+  Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {
     SetVoxelDir dixels;
     mapper (tck, dixels);
     std::vector<float> scalars (tck.size(), 0.0);
     for (size_t p = 0; p < tck.size(); ++p) {
-      transform.scanner2voxel (tck[p], voxel_pos);
+      voxel_pos = transform.scanner2voxel * tck[p].cast<default_type> ();
       for (SetVoxelDir::const_iterator d = dixels.begin(); d != dixels.end(); ++d) {
         if ((int)round(voxel_pos[0]) == (*d)[0] && (int)round(voxel_pos[1]) == (*d)[1] && (int)round(voxel_pos[2]) == (*d)[2]) {
-          Image::Nav::set_pos (input_fixel, (*d));
-          Point<float> dir (d->get_dir());
-          dir.normalise();
+          assign_pos_of (*d).to (input_fixel);
+          Eigen::Vector3f dir = d->get_dir();
+          dir.normalize();
           float largest_dp = 0.0;
           int32_t closest_fixel_index = -1;
           for (size_t f = 0; f != input_fixel.value().size(); ++f) {
