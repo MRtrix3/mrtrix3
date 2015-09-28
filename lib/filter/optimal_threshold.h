@@ -248,12 +248,20 @@ namespace MR
             datatype_ = DataType::Bit;
           }
 
+          template <class InputImageType, class OutputImageType>
+            void operator() (InputImageType& input, OutputImageType& output)
+            {
+              auto mask = Image<bool>();
+              operator() (input, output, mask);
+            }
 
-          template <class InputImageType, class OutputImageType, class MaskType = Image<bool>>
+
+          template <class InputImageType, class OutputImageType, class MaskType>
             void operator() (InputImageType& input, OutputImageType& output, MaskType& mask)
             {
               axes_.resize (4);
               typedef typename InputImageType::value_type input_value_type;
+
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               
               auto f = [&](decltype(input) in, decltype(output) out) {

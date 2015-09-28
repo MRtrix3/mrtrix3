@@ -21,11 +21,8 @@
 */
 
 #include "command.h"
-#include "point.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-#include "image/filter/dwi_brain_mask.h"
+#include "image.h"
+#include "filter/dwi_brain_mask.h"
 
 
 
@@ -55,19 +52,10 @@ OPTIONS
 
 
 void run () {
-  Image::BufferPreload<float> input_data (argument[0], Image::Stride::contiguous_along_axis (3));
-  Image::BufferPreload<float>::voxel_type input_voxel (input_data);
-
-  Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
-
-  Image::Filter::DWIBrainMask dwi_brain_mask_filter (input_voxel, grad);
+  auto input = Image<float>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
+  auto grad = DWI::get_DW_scheme (input);
+  Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
   dwi_brain_mask_filter.set_message ("computing dwi brain mask... ");
-
-  Image::Header output_header (input_data);
-  output_header.info() = dwi_brain_mask_filter.info();
-  output_header.datatype() = DataType::Bit;
-  Image::Buffer<bool> mask_data (argument[1], output_header);
-  Image::Buffer<bool>::voxel_type mask_voxel (mask_data);
-
-  dwi_brain_mask_filter (input_voxel, mask_voxel);
+  auto output = Image<bool>::create (argument[1], dwi_brain_mask_filter);
+  dwi_brain_mask_filter (input, output);
 }
