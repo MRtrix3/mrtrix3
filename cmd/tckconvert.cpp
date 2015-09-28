@@ -152,7 +152,7 @@ void run ()
         for (auto& pos : tck) {
             Eigen::Vector3 x {pos[0], pos[1], pos[2]};
             auto y = T * x;
-            pos = {y[0], y[1], y[2]};
+            pos = y.cast<float>();
         }
         write(tck);
     }
