@@ -24,12 +24,12 @@
 #include <vector>
 
 #include "command.h"
-#include "point.h"
+#include "datatype.h"
+#include "image.h"
+#include "image_helpers.h"
 #include "memory.h"
+#include "algo/loop.h"
 #include "file/ofstream.h"
-#include "image/voxel.h"
-#include "image/buffer.h"
-#include "image/loop.h"
 #include "math/median.h"
 
 
@@ -90,7 +90,7 @@ typedef cfloat complex_type;
 class CalibrateHistogram
 {
   public:
-    CalibrateHistogram (int nbins) : min (INFINITY), max (-INFINITY), width (0.0), bins (nbins) { }
+    CalibrateHistogram (int nbins) : min (std::numeric_limits<value_type>::infinity()), max (-std::numeric_limits<value_type>::infinity()), width (0.0), bins (nbins) { }
 
     value_type min, max, width;
     int bins;
@@ -198,7 +198,7 @@ class Stats
         std::string s = "[ ";
         if (ima.ndim() > 3) 
           for (size_t n = 3; n < ima.ndim(); n++)
-            s += str (ima[n]) + " ";
+            s += str (ima.index(n)) + " ";
         else 
           s += "0 ";
         s += "] ";
@@ -246,18 +246,19 @@ void print_header (bool is_complex)
 }
 
 
-void run () {
-  Image::Buffer<complex_type> data (argument[0]);
-  auto vox = data.voxel();
+void run ()
+{
+  auto data = Image<complex_type>::open (argument[0]);
+  const bool is_complex = data.header().datatype().is_complex();
 
-  Image::Loop inner_loop (0, 3);
-  Image::Loop outer_loop (3);
+  auto inner_loop = Loop(0, 3);
+  auto outer_loop = Loop(3);
 
   std::unique_ptr<File::OFStream> dumpstream, hist_stream, position_stream;
 
-  Options opt = get_options ("histogram");
+  auto opt = get_options ("histogram");
   if (opt.size()) {
-    if (data.datatype().is_complex())
+    if (is_complex)
       throw Exception ("histogram generation not supported for complex data types");
     hist_stream.reset (new File::OFStream (opt[0][0]));
   }
@@ -267,7 +268,6 @@ void run () {
   if (opt.size())
     nbins = opt[0][0];
   CalibrateHistogram calibrate (nbins);
-
 
   opt = get_options ("dump");
   if (opt.size())
@@ -284,7 +284,7 @@ void run () {
 
   bool header_shown (!App::log_level || fields.size());
 
-  Options voxels = get_options ("voxel");
+  auto voxels = get_options ("voxel");
 
   opt = get_options ("mask");
   if (opt.size()) { // within mask:
@@ -292,24 +292,23 @@ void run () {
     if (voxels.size())
       throw Exception ("cannot use mask with -voxel option");
 
-    Image::Buffer<bool> mask_data (opt[0][0]);
-    check_dimensions (mask_data, data, 0, 3);
-    auto mask = mask_data.voxel();
+    auto mask = Image<bool>::open (opt[0][0]);
+    check_dimensions (mask, data, 0, 3);
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
-      for (auto i = outer_loop (vox); i; ++i) {
-        for (auto j = inner_loop (mask, vox); j; ++j) {
+      ProgressBar progress ("calibrating histogram...", voxel_count (data));
+      for (auto i = outer_loop (data); i; ++i) {
+        for (auto j = inner_loop (mask, data); j; ++j) {
           if (mask.value())
-            calibrate (complex_type(vox.value()).real());
+            calibrate (complex_type(data.value()).real());
           ++progress;
         }
       }
       calibrate.init (*hist_stream);
     }
 
-    for (auto i = outer_loop (vox); i; ++i) {
-      Stats stats (vox.datatype().is_complex());
+    for (auto i = outer_loop (data); i; ++i) {
+      Stats stats (is_complex);
 
       if (dumpstream)
         stats.dump_to (*dumpstream);
@@ -317,22 +316,22 @@ void run () {
       if (hist_stream)
         stats.generate_histogram (calibrate);
 
-      for (auto j = inner_loop (mask, vox); j; ++j) {
+      for (auto j = inner_loop (mask, data); j; ++j) {
         if (mask.value() > 0.5) {
-          stats (vox.value());
+          stats (data.value());
           if (position_stream) {
-            for (size_t i = 0; i < vox.ndim(); ++i)
-              *position_stream << vox[i] << " ";
+            for (size_t i = 0; i < data.ndim(); ++i)
+              *position_stream << data.index(i) << " ";
             *position_stream << "\n";
           }
         }
       }
 
       if (!header_shown)
-        print_header (vox.datatype().is_complex());
+        print_header (is_complex);
       header_shown = true;
 
-      stats.print (vox, fields);
+      stats.print (data, fields);
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -347,18 +346,18 @@ void run () {
   if (!voxels.size()) { // whole data set:
 
     if (hist_stream) {
-      ProgressBar progress ("calibrating histogram...", Image::voxel_count (vox));
-      for (auto i = outer_loop (vox); i; ++i) {
-        for (auto j = inner_loop (vox); j; ++j) {
-          calibrate (complex_type(vox.value()).real());
+      ProgressBar progress ("calibrating histogram...", voxel_count (data));
+      for (auto i = outer_loop (data); i; ++i) {
+        for (auto j = inner_loop (data); j; ++j) {
+          calibrate (complex_type(data.value()).real());
           ++progress;
         }
       }
       calibrate.init (*hist_stream);
     }
 
-    for (auto l = outer_loop (vox); l; ++l) {
-      Stats stats (vox.datatype().is_complex());
+    for (auto l = outer_loop (data); l; ++l) {
+      Stats stats (is_complex);
 
       if (dumpstream)
         stats.dump_to (*dumpstream);
@@ -366,20 +365,20 @@ void run () {
       if (hist_stream)
         stats.generate_histogram (calibrate);
 
-      for (auto j = inner_loop (vox); j; ++j) {
-        stats (vox.value());
+      for (auto j = inner_loop (data); j; ++j) {
+        stats (data.value());
         if (position_stream) {
-          for (size_t i = 0; i < vox.ndim(); ++i)
-            *position_stream << vox[i] << " ";
+          for (size_t i = 0; i < data.ndim(); ++i)
+            *position_stream << data.index(i) << " ";
           *position_stream << "\n";
         }
       }
 
       if (!header_shown)
-        print_header (vox.datatype().is_complex());
+        print_header (is_complex);
       header_shown = true;
 
-      stats.print (vox, fields);
+      stats.print (data, fields);
 
       if (hist_stream)
         stats.write_histogram (*hist_stream);
@@ -393,35 +392,35 @@ void run () {
 
   // voxels:
 
-  std::vector<Point<ssize_t> > voxel (voxels.size());
+  std::vector<Eigen::Array3i> voxel (voxels.size());
   for (size_t i = 0; i < voxels.size(); ++i) {
     std::vector<int> x = parse_ints (voxels[i][0]);
     if (x.size() != 3)
       throw Exception ("vector positions must be supplied as x,y,z");
-    if (x[0] < 0 || x[0] >= vox.dim (0) ||
-        x[1] < 0 || x[1] >= vox.dim (1) ||
-        x[2] < 0 || x[2] >= vox.dim (2))
+    if (x[0] < 0 || x[0] >= data.size (0) ||
+        x[1] < 0 || x[1] >= data.size (1) ||
+        x[2] < 0 || x[2] >= data.size (2))
       throw Exception ("voxel at [ " + str (x[0]) + " " + str (x[1])
                        + " " + str (x[2]) + " ] is out of bounds");
-    voxel[i].set (x[0], x[1], x[2]);
+    voxel[i] = { x[0], x[1], x[2] };
   }
 
   if (hist_stream) {
     ProgressBar progress ("calibrating histogram...", voxel.size());
-    for (auto i = outer_loop (vox); i; ++i) {
+    for (auto i = outer_loop (data); i; ++i) {
       for (size_t i = 0; i < voxel.size(); ++i) {
-        vox[0] = voxel[i][0];
-        vox[1] = voxel[i][1];
-        vox[2] = voxel[i][2];
-        calibrate (complex_type(vox.value()).real());
+        data.index(0) = voxel[i][0];
+        data.index(1) = voxel[i][1];
+        data.index(2) = voxel[i][2];
+        calibrate (complex_type(data.value()).real());
         ++progress;
       }
     }
     calibrate.init (*hist_stream);
   }
 
-  for (auto i = outer_loop (vox); i; ++i) {
-    Stats stats (vox.datatype().is_complex());
+  for (auto i = outer_loop (data); i; ++i) {
+    Stats stats (is_complex);
 
     if (dumpstream)
       stats.dump_to (*dumpstream);
@@ -430,22 +429,22 @@ void run () {
       stats.generate_histogram (calibrate);
 
     for (size_t i = 0; i < voxel.size(); ++i) {
-      vox[0] = voxel[i][0];
-      vox[1] = voxel[i][1];
-      vox[2] = voxel[i][2];
-      stats (vox.value());
+      data.index(0) = voxel[i][0];
+      data.index(1) = voxel[i][1];
+      data.index(2) = voxel[i][2];
+      stats (data.value());
       if (position_stream) {
-        for (size_t i = 0; i < vox.ndim(); ++i)
-          *position_stream << vox[i] << " ";
+        for (size_t i = 0; i < data.ndim(); ++i)
+          *position_stream << data.index(i) << " ";
         *position_stream << "\n";
       }
     }
 
     if (!header_shown)
-      print_header (vox.datatype().is_complex());
+      print_header (is_complex);
     header_shown = true;
 
-    stats.print (vox, fields);
+    stats.print (data, fields);
 
     if (hist_stream)
       stats.write_histogram (*hist_stream);

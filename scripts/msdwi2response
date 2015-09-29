@@ -1,0 +1,61 @@
+#!/bin/bash
+if [ "$#" -ne 4 ]; then
+    cat <<EOD
+usage: 
+  
+   msdwi2response <dwi> <mask> <lmaxes> <response>
+
+     dwi:      the raw DWI images (note this needs to be in mif or 
+               mih format and contains the DW gradient table).
+  
+     mask:     the mask of voxels from which to estimate that 
+               particular response
+  
+     lmaxes:   the maximum harmonic order per shell, as a comma-
+               separated list of integers
+  
+     response: the output per-shell response
+
+For example:
+
+$ msdwi2response dwi.mif mask_single_fibre.mif 0,4,6,8 response_WM.txt
+$ msdwi2response dwi.mif mask_GM.mif  0,0,0,0 response_GM.txt
+$ msdwi2response dwi.mif mask_CSF.mif 0,0,0,0 response_CSF.txt
+   
+EOD
+	exit 0
+fi
+dwi=$1
+mask=$2
+response=$4
+shell=($(mrinfo -shells ${dwi})) || { echo "could not extract shells from dwi"; exit 1; }
+nshell=${#shell[@]}
+IFS=',' read -a lmax <<< "$3"
+nlmax=${#lmax[@]}
+maxlmax=0
+for l in "${lmax[@]}"; do
+    ((l > maxlmax)) && maxlmax=$l
+done
+maxn=$(expr ${maxlmax} / 2 + 1)
+if [ "${nlmax}" -ne "${nshell}" ]; then
+    echo "number of shells in dwi does not match number of lmaxes"; exit 1
+fi
+
+fe=$(dwi2tensor -mask ${mask} ${dwi} - | MRTRIX_TMPFILE_PREFIX=directions- tensor2metric --mask ${mask} - -vector - -modulate none)  || { echo "could not determine first eigenvectors from dwi"; rm ${fe}; exit 1; }
+>| ${response}
+for index in "${!shell[@]}"; do
+	tmp_response=$(mktemp 2>/dev/null || mktemp /tmp/tmp.XXXXXX)
+	num_response_coef=$(expr ${lmax[index]} / 2 + 1)
+	num_zero_coef=$(expr ${maxn} - ${num_response_coef})
+	amp2sh --lmax ${lmax[index]} -shell ${shell[index]} ${dwi} - | \
+		sh2response -force --lmax ${lmax[index]} - ${mask} ${fe} ${tmp_response}  || \
+                { echo "could not determine responses for shell ${index}"; rm ${tmp_response}; rm ${fe}; exit 1; }
+        resp=($(<${tmp_response}))
+	for ((i=num_response_coef;i<=num_response_coef+num_zero_coef-1;i++)); do
+		resp[i]=0
+	done
+	echo "${resp[@]}" >> ${response}
+	rm ${tmp_response}
+done
+rm ${fe}
+exit 0

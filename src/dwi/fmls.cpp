@@ -81,7 +81,7 @@ namespace MR {
           if (no_thresholds) {
             WARN ("Option -fmls_ratio_integral_to_neg ignored: -fmls_no_thresholds overrides this");
           } else {
-            segmenter.set_ratio_to_negative_lobe_integral (float(opt[0][0]));
+            segmenter.set_ratio_to_negative_lobe_integral (default_type(opt[0][0]));
           }
         }
 
@@ -90,7 +90,7 @@ namespace MR {
           if (no_thresholds) {
             WARN ("Option -fmls_ratio_peak_to_mean_neg ignored: -fmls_no_thresholds overrides this");
           } else {
-            segmenter.set_ratio_to_negative_lobe_mean_peak (float(opt[0][0]));
+            segmenter.set_ratio_to_negative_lobe_mean_peak (default_type(opt[0][0]));
           }
         }
 
@@ -99,13 +99,13 @@ namespace MR {
           if (no_thresholds) {
             WARN ("Option -fmls_peak_value ignored: -fmls_no_thresholds overrides this");
           } else {
-            segmenter.set_peak_value_threshold (float(opt[0][0]));
+            segmenter.set_peak_value_threshold (default_type(opt[0][0]));
           }
         }
 
         opt = get_options ("fmls_peak_ratio_to_merge");
         if (opt.size())
-          segmenter.set_ratio_of_peak_value_to_merge (float(opt[0][0]));
+          segmenter.set_ratio_of_peak_value_to_merge (default_type(opt[0][0]));
 
       }
 
@@ -119,25 +119,25 @@ namespace MR {
 
 
       Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
-        dirs                             (directions),
-        lmax                             (l),
-        transform                        (NULL),
-        precomputer                      (new Math::SH::PrecomputedAL<float> (lmax, 2 * dirs.size())),
-        ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
-        ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
-        peak_value_threshold             (FMLS_PEAK_VALUE_THRESHOLD),
-        ratio_of_peak_value_to_merge     (FMLS_RATIO_TO_PEAK_VALUE_DEFAULT),
-        create_null_lobe                 (false),
-        create_lookup_table              (true),
-        dilate_lookup_table              (false)
+          dirs                             (directions),
+          lmax                             (l),
+          transform                        (NULL),
+          precomputer                      (new Math::SH::PrecomputedAL<default_type> (lmax, 2 * dirs.size())),
+          ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
+          ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),
+          peak_value_threshold             (FMLS_PEAK_VALUE_THRESHOLD),
+          ratio_of_peak_value_to_merge     (FMLS_RATIO_TO_PEAK_VALUE_DEFAULT),
+          create_null_lobe                 (false),
+          create_lookup_table              (true),
+          dilate_lookup_table              (false)
       {
-        Eigen::MatrixXf az_el_pairs (dirs.size(), 2);
+        Eigen::Matrix<default_type, Eigen::Dynamic, 2> az_el_pairs (dirs.size(), 2);
         for (size_t row = 0; row != dirs.size(); ++row) {
           const auto d = dirs.get_dir (row);
           az_el_pairs (row, 0) = std::atan2 (d[1], d[0]);
           az_el_pairs (row, 1) = std::acos  (d[2]);
         }
-        transform.reset (new Math::SH::Transform<float> (az_el_pairs, lmax));
+        transform.reset (new Math::SH::Transform<default_type> (az_el_pairs, lmax));
       }
 
 
@@ -145,7 +145,7 @@ namespace MR {
 
       class Max_abs {
         public:
-          bool operator() (const float& a, const float& b) const { return (std::abs (a) > std::abs (b)); }
+          bool operator() (const default_type& a, const default_type& b) const { return (std::abs (a) > std::abs (b)); }
       };
 
       bool Segmenter::operator() (const SH_coefs& in, FOD_lobes& out) const {
@@ -158,12 +158,12 @@ namespace MR {
         if (in[0] <= 0.0 || !std::isfinite (in[0]))
           return true;
 
-        Eigen::VectorXf values (dirs.size());
+        Eigen::Matrix<default_type, Eigen::Dynamic, 1> values (dirs.size());
         transform->SH2A (values, in);
 
-        typedef std::multimap<float, dir_t, Max_abs> map_type;
+        typedef std::multimap<default_type, dir_t, Max_abs> map_type;
         map_type data_in_order;
-        for (ssize_t i = 0; i != values.size(); ++i)
+        for (size_t i = 0; i != size_t(values.size()); ++i)
           data_in_order.insert (std::make_pair (values[i], i));
 
         if (data_in_order.begin()->first <= 0.0)
@@ -239,18 +239,18 @@ namespace MR {
         for (const auto& i : retrospective_assignments)
           out[i.second].add (i.first, values[i.first]);
 
-        float mean_neg_peak = 0.0, max_neg_integral = 0.0;
+        default_type mean_neg_peak = 0.0, max_neg_integral = 0.0;
         uint32_t neg_lobe_count = 0;
         for (const auto& i : out) {
           if (i.is_negative()) {
             mean_neg_peak += i.get_peak_value();
             ++neg_lobe_count;
-            max_neg_integral = std::max (max_neg_integral, i.get_integral());
+            max_neg_integral = std::max (max_neg_integral, default_type(i.get_integral()));
           }
         }
 
-        const float min_peak_amp = ratio_to_negative_lobe_mean_peak * (mean_neg_peak / float(neg_lobe_count));
-        const float min_integral = ratio_to_negative_lobe_integral  * max_neg_integral;
+        const default_type min_peak_amp = ratio_to_negative_lobe_mean_peak * (mean_neg_peak / default_type(neg_lobe_count));
+        const default_type min_integral = ratio_to_negative_lobe_integral  * max_neg_integral;
 
         for (auto i = out.begin(); i != out.end();) { // Empty increment
 
@@ -310,7 +310,7 @@ namespace MR {
                 } else if (new_assignments[dir].size() > 1) {
 
                   uint32_t best_lobe = 0;
-                  float max_integral = 0.0;
+                  default_type max_integral = 0.0;
                   for (std::vector<uint32_t>::const_iterator lobe_no = new_assignments[dir].begin(); lobe_no != new_assignments[dir].end(); ++lobe_no) {
                     if (out[*lobe_no].get_integral() > max_integral) {
                       best_lobe = *lobe_no;

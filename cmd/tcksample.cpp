@@ -22,10 +22,7 @@
 
 #include "command.h"
 #include "math/math.h"
-
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
-
+#include "image.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -78,7 +75,7 @@ void usage ()
 };
 
 
-
+typedef float value_type;
 
 
 template <class Interp>
@@ -86,7 +83,7 @@ class Resampler {
   private:
     class Plane {
       public:
-        Plane (const Eigen::Vector3f& pos, const Eigen::Vector3f& dir) : n (dir) { n.normalise(); d = n.dot (pos); }
+        Plane (const Eigen::Vector3f& pos, const Eigen::Vector3f& dir) : n (dir) { n.normalize(); d = n.dot (pos); }
         value_type dist (const Eigen::Vector3f& pos) { return n.dot (pos) - d; }
       private:
         Eigen::Vector3f n;
@@ -105,8 +102,8 @@ class Resampler {
       warp->scanner (p);
       Eigen::Vector3f ret;
       if (!(*warp)) return ret;
-      for ((*warp)[3] = 0; (*warp)[3] < 3; ++(*warp)[3])
-        ret[size_t ((*warp)[3])] = warp->value();
+      for (warp->index(3) = 0; warp->index(3) < 3; warp->index(3)++)
+        ret[size_t (warp->index(3))] = warp->value();
       return ret;
     }
 
@@ -158,7 +155,7 @@ class Resampler {
 
     void init (const Eigen::Vector3f& waypoint) {
 
-      Math::Matrix<value_type> M (3,3);
+      Eigen::Matrix3f M;
 
       M(0,0) = start[0] - waypoint[0];
       M(0,1) = start[1] - waypoint[1];
@@ -173,15 +170,12 @@ class Resampler {
       M(2,1) = n[1];
       M(2,2) = n[2];
 
-      Math::Vector<value_type> centre, a(3);
+      Eigen::Vector3f a;
       a[0] = 0.5 * (start+waypoint).dot(start-waypoint);
       a[1] = 0.5 * (end+waypoint).dot(end-waypoint);
       a[2] = start.dot(n);
-      // TODO check whether this line is actually needed at all:
-      Math::mult (centre, M, a);
 
-      Math::LU::solve (a, M);
-      Eigen::Vector3f c (a[0], a[1], a[2]);
+      Eigen::Vector3f c = M.fullPivLu().solve(a);
 
       Eigen::Vector3f x (start-c);
       value_type R = x.norm();
@@ -240,11 +234,11 @@ inline void sample (File::OFStream& out, Interp& interp, const Streamline& tck)
   out << "\n";
 }
 
-inline Eigen::Vector3f get_pos (const std::vector<float>& s)
+inline Eigen::Vector3f get_pos (const std::vector<default_type>& s)
 {
   if (s.size() != 3)
     throw Exception ("position expected as a comma-seperated list of 3 values");
-  return { s[0], s[1], s[2] };
+  return { float(s[0]), float(s[1]), float(s[2]) };
 }
 
 
@@ -252,47 +246,42 @@ inline Eigen::Vector3f get_pos (const std::vector<float>& s)
 void run ()
 {
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader<value_type> read (argument[0], properties);
+  DWI::Tractography::Reader read (argument[0], properties);
 
-  Image::BufferPreload<value_type> image_buffer (argument[1]);
-  auto vox = image_buffer.voxel();
-  interp = Interp::make_linear (vox);
+  auto image = Image<value_type>::open (argument[1]);
+  auto interp = Interp::Linear< decltype(image) > (image);
 
   File::OFStream out (argument[2]);
 
-  std::unique_ptr<Image::BufferPreload<value_type>> warp_buffer;
-  std::unique_ptr<decltype(warp_buffer)::element_type::voxel_type> warp_vox;
-  std::unique_ptr<Image::Interp::Linear<decltype(warp_vox)::element_type>> warp;
+  std::unique_ptr< Interp::Linear< Image<value_type> > > warp;
 
-  Resampler<decltype(warp)::element_type> resample;
+  Resampler< Interp::Linear< Image<value_type> > > resample;
 
   auto opt = get_options ("resample");
   bool resampling = opt.size();
   if (resampling) {
     resample.nsamples = opt[0][0];
-    resample.start = get_pos (opt[0][1]);
-    resample.end = get_pos (opt[0][2]);
+    resample.start = get_pos (opt[0][1].as_sequence_float());
+    resample.end = get_pos (opt[0][2].as_sequence_float());
 
     resample.start_dir = resample.end - resample.start;
-    resample.start_dir.normalise();
+    resample.start_dir.normalize();
     resample.mid_dir = resample.end_dir = resample.start_dir;
     resample.mid = 0.5f * (resample.start + resample.end);
 
     opt = get_options ("warp");
     if (opt.size()) {
-      warp_buffer.reset (new decltype(warp_buffer)::element_type (opt[0][0]));
-      if (warp_buffer->ndim() < 4) 
+      warp.reset (new Interp::Linear< Image<value_type> >(Image<value_type>::open(opt[0][0]) ));
+      if (warp->ndim() < 4)
         throw Exception ("warp image should contain at least 4 dimensions");
-      if (warp_buffer->dim(3) < 3) 
+      if (warp->size(3) < 3)
         throw Exception ("4th dimension of warp image should have length 3");
-      warp_vox.reset (new decltype(warp_vox)::element_type (*warp_buffer));
-      warp.reset (new decltype(warp)::element_type (*warp_vox));
       resample.warp = warp.get();
     }
 
     opt = get_options ("waypoint");
     if (opt.size()) 
-      resample.init (get_pos (opt[0][0]));
+      resample.init (get_pos (opt[0][0].as_sequence_float()));
     else 
       resample.init ();
   }
