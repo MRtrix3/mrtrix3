@@ -526,7 +526,7 @@ namespace MR
 
           Eigen::Matrix<value_type, 1, 4> grad_and_value (coeff_vec * weights_matrix);
           if (gradient_wrt_scanner)
-            gradient = grad_and_value.head(3) * wrt_scanner_transform;
+            gradient.noalias() = grad_and_value.head(3) * wrt_scanner_transform;
           else
             gradient = grad_and_value.head(3);
           value = grad_and_value[3];
