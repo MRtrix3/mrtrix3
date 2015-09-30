@@ -43,6 +43,14 @@ namespace MR
   {
     namespace Tractography
     {
+      
+      template <class ValueType>
+      class WriterInterface
+      {
+        public:
+          virtual bool operator() (const Streamline<ValueType>&) = 0;
+          virtual ~WriterInterface() { }
+      };
 
 
 
@@ -193,7 +201,7 @@ namespace MR
        * written at a time), the Writer class is more appropriate.
        * */
       template <class ValueType = float>
-        class WriterUnbuffered : public __WriterBase__<ValueType>
+        class WriterUnbuffered : public __WriterBase__<ValueType>, public WriterInterface<ValueType>
       {
         public:
           using __WriterBase__<ValueType>::count;
