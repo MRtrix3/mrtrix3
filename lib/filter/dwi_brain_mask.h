@@ -20,156 +20,138 @@
 
  */
 
-#ifndef __image_filter_dwi_brain_mask_h__
-#define __image_filter_dwi_brain_mask_h__
+#ifndef __filter_dwi_brain_mask_h__
+#define __filter_dwi_brain_mask_h__
 
 #include "memory.h"
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/voxel.h"
-#include "image/filter/base.h"
-#include "image/filter/connected_components.h"
-#include "image/filter/median.h"
-#include "image/filter/optimal_threshold.h"
-#include "image/histogram.h"
-#include "image/copy.h"
-#include "image/loop.h"
+#include "image.h"
+#include "filter/base.h"
+#include "filter/connected_components.h"
+#include "filter/median.h"
+#include "filter/optimal_threshold.h"
+#include "algo/histogram.h"
+#include "algo/copy.h"
+#include "algo/loop.h"
 #include "dwi/gradient.h"
 #include "progressbar.h"
 
 namespace MR
 {
-  namespace Image
+  namespace Filter
   {
-    namespace Filter
+
+
+    /** \addtogroup Filters
+      @{ */
+
+    //! a filter to compute a whole brain mask from a DWI image.
+    /*! Both diffusion weighted and b=0 volumes are required to
+     *  obtain a mask that includes both brain tissue and CSF.
+     *
+     * Typical usage:
+     * \code
+     * auto input = Image<value_type>::open (argument[0]);
+     * auto grad = DWI::get_DW_scheme (input);
+     * Filter::DWIBrainMask dwi_brain_mask_filter (input, grad);
+     * auto output = Image<bool>::create (argument[1], dwi_brain_mask_filter);
+     * dwi_brain_mask_filter (input, output);
+     *
+     * \endcode
+     */
+    class DWIBrainMask : public Base
     {
 
+      public:
 
-      /** \addtogroup Filters
-        @{ */
-
-      //! a filter to compute a whole brain mask from a DWI image.
-      /*! Both diffusion weighted and b=0 volumes are required to
-       *  obtain a mask that includes both brain tissue and CSF.
-       *
-       * Typical usage:
-       * \code
-       * Buffer<value_type> input_data (argument[0]);
-       * auto input_voxel = input_data.voxel();
-       *
-       * Math::Matrix<float> grad = DWI::get_valid_DW_scheme<float> (input_data);
-       *
-       * Filter::DWIBrainMask filter (input_data, grad);
-       * Header mask_header (input_data);
-       * mask_header.info() = filter.info();
-       *
-       * Buffer<bool> mask_data (mask_header, argument[1]);
-       * auto mask_voxel = mask_data.voxel();
-       *
-       * filter(input_voxel, mask_voxel);
-       *
-       * \endcode
-       */
-      class DWIBrainMask : public Base
-      {
-
-        public:
-
-          template <class InfoType>
-          DWIBrainMask (const InfoType& input, const Math::Matrix<float>& grad) :
-              Base (input),
-              grad (grad)
-          {
-            axes_.resize(3);
-            datatype_ = DataType::Bit;
-          }
+        template <class HeaderType>
+        DWIBrainMask (const HeaderType& input, const Eigen::MatrixXd& grad) :
+            Base (input),
+            grad (grad)
+        {
+          axes_.resize(3);
+          datatype_ = DataType::Bit;
+        }
 
 
-          template <class InputVoxelType, class OutputVoxelType>
-          void operator() (InputVoxelType& input, OutputVoxelType& output) {
-              typedef typename InputVoxelType::value_type value_type;
+        template <class InputImageType, class OutputImageType>
+        void operator() (InputImageType& input, OutputImageType& output) {
+            typedef typename InputImageType::value_type value_type;
 
-              Info info (input);
-              info.set_ndim (3);
-              LoopInOrder loop (info, 0, 3);
+            Header header (input);
+            header.set_ndim (3);
 
-              // Generate a 'master' scratch buffer mask, to which all shells will contribute
-              BufferScratch<bool> mask_data (info, "DWI mask");
-              auto mask_voxel = mask_data.voxel();
+            // Generate a 'master' scratch buffer mask, to which all shells will contribute
+            auto mask_image = Image<bool>::scratch (header, "DWI mask");
 
-              std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
+            std::unique_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message) : nullptr);
 
-              // Loop over each shell, including b=0, in turn
-              DWI::Shells shells (grad);
-              for (size_t s = 0; s != shells.count(); ++s) {
-                const DWI::Shell shell (shells[s]);
+            // Loop over each shell, including b=0, in turn
+            DWI::Shells shells (grad);
+            for (size_t s = 0; s != shells.count(); ++s) {
+              const DWI::Shell shell (shells[s]);
 
-                BufferScratch<value_type> shell_data (info, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
-                auto shell_voxel = shell_data.voxel();
+              auto shell_image = Image<value_type>::scratch (header, "mean b=" + str(size_t(std::round(shell.get_mean()))) + " image");
 
-                for (auto l = loop (input, shell_voxel); l; ++l) {
-                  value_type mean = 0;
-                  for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
-                    input[3] = *v;
-                    mean += input.value();
-                  }
-                  shell_voxel.value() = mean / value_type(shell.count());
+              for (auto l = Loop (0, 3) (input, shell_image); l; ++l) {
+                value_type mean = 0;
+                for (std::vector<size_t>::const_iterator v = shell.get_volumes().begin(); v != shell.get_volumes().end(); ++v) {
+                  input.index(3) = *v;
+                  mean += input.value();
                 }
-                if (progress)
-                  ++(*progress);
-
-                // Threshold the mean intensity image for this shell
-                OptimalThreshold threshold_filter (shell_data);
-                BufferScratch<bool> shell_mask_data (threshold_filter);
-                auto shell_mask_voxel = shell_mask_data.voxel();
-                threshold_filter (shell_voxel, shell_mask_voxel);
-                if (progress)
-                  ++(*progress);
-
-                // Add this mask to the master
-                for (auto l = loop (mask_voxel, shell_mask_voxel); l; ++l) {
-                  if (shell_mask_voxel.value())
-                    mask_voxel.value() = true;
-                }
-                if (progress)
-                  ++(*progress);
-
+                shell_image.value() = mean / value_type(shell.count());
               }
-
-              // The following operations apply to the mask as combined from all shells
-
-              BufferScratch<bool> temp_data (info, "temporary mask");
-              auto temp_voxel = temp_data.voxel();
-              Median median_filter (mask_voxel);
-              median_filter (mask_voxel, temp_voxel);
               if (progress)
                 ++(*progress);
 
-              ConnectedComponents connected_filter (temp_voxel);
-              connected_filter.set_largest_only (true);
-              connected_filter (temp_voxel, temp_voxel);
+              // Threshold the mean intensity image for this shell
+              OptimalThreshold threshold_filter (shell_image);
+
+              auto shell_mask_voxel = Image<bool>::scratch (threshold_filter);
+              threshold_filter (shell_image, shell_mask_voxel);
               if (progress)
                 ++(*progress);
 
-              for (auto l = loop (temp_voxel); l; ++l) 
-                temp_voxel.value() = !temp_voxel.value();
+              // Add this mask to the master
+              for (auto l = Loop (0, 3)(mask_image, shell_mask_voxel); l; ++l) {
+                if (shell_mask_voxel.value())
+                  mask_image.value() = true;
+              }
               if (progress)
                 ++(*progress);
 
-              connected_filter (temp_voxel, temp_voxel);
-              if (progress)
-                ++(*progress);
+            }
 
-              for (auto l = loop (temp_voxel, output); l; ++l) 
-                output.value() = !temp_voxel.value();
-          }
+            // The following operations apply to the mask as combined from all shells
+            auto temp_image = Image<bool>::scratch (header, "temporary mask");
+            Median median_filter (mask_image);
+            median_filter (mask_image, temp_image);
+            if (progress)
+              ++(*progress);
 
-        protected:
-          const Math::Matrix<float>& grad;
+            ConnectedComponents connected_filter (temp_image);
+            connected_filter.set_largest_only (true);
+            connected_filter (temp_image, temp_image);
+            if (progress)
+              ++(*progress);
 
-      };
-      //! @}
-    }
+            for (auto l = Loop (0,3)(temp_image); l; ++l)
+              temp_image.value() = !temp_image.value();
+            if (progress)
+              ++(*progress);
+
+            connected_filter (temp_image, temp_image);
+            if (progress)
+              ++(*progress);
+
+            for (auto l = Loop (0,3) (temp_image, output); l; ++l)
+              output.value() = !temp_image.value();
+        }
+
+      protected:
+        const Eigen::MatrixXd& grad;
+
+    };
+    //! @}
   }
 }
 

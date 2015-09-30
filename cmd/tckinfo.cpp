@@ -26,7 +26,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -48,7 +47,7 @@ void usage ()
   + Option ("ascii",
             "save positions of each track in individual ascii files, with the "
             "specified prefix.")
-  + Argument ("prefix");
+  + Argument ("prefix").type_text();
 }
 
 
@@ -57,12 +56,12 @@ void usage ()
 void run ()
 {
 
-  Options opt = get_options ("ascii");
+  auto opt = get_options ("ascii");
   bool actual_count = get_options ("count").size();
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
-    Tractography::Reader<float> file (argument[i], properties);
+    Tractography::Reader file (argument[i], properties);
 
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";
@@ -81,6 +80,7 @@ void run ()
 
     for (std::multimap<std::string,std::string>::const_iterator i = properties.roi.begin(); i != properties.roi.end(); ++i)
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
+
 
 
     if (actual_count) {
@@ -107,7 +107,7 @@ void run ()
         filename.replace (filename.size()-4-num.size(), num.size(), num);
 
         File::OFStream out (filename);
-        for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
+        for (auto i = tck.begin(); i != tck.end(); ++i)
           out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
         out.close();
 

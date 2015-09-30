@@ -26,7 +26,6 @@
 #include "memory.h"
 #include "image.h"
 #include "algo/loop.h"
-#include "nav.h"
 
 #include "filter/base.h"
 
@@ -159,7 +158,7 @@ namespace MR
             for (std::vector< std::vector<int> >::const_iterator offset = neighbour_offsets.begin(); offset != neighbour_offsets.end(); ++offset) {
               for (size_t dim = 0; dim < mask.ndim(); dim++)
                 mask_neigh.index(dim) = (*it)[dim] + (*offset)[dim];
-              if (Nav::within_bounds (mask_neigh)) {
+              if (!is_out_of_bounds (mask_neigh)) {
                 if (mask_neigh.value() >= 0.5) {
                   assign_pos_of (mask_neigh).to (index_image);
                   neighbour_indices.push_back (index_image.value());

@@ -62,12 +62,12 @@ namespace MR
             if (modulate) {
               Eigen::VectorXd modulation_factors = transformed_directions.colwise().norm() / linear_transform.linear().inverse().determinant();
               transformed_directions.colwise().normalize();
-              transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
-                           * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+              transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * modulation_factors.asDiagonal()
+                                  * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             } else {
               transformed_directions.colwise().normalize();
-              transform = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
-                           * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
+              transform.noalias() = (aPSF_weights_to_FOD_transform (n_SH, transformed_directions)
+                                  * Math::pinv(aPSF_weights_to_FOD_transform (n_SH, directions))).cast <typename FODImageType::value_type> ();
             }
           }
 
@@ -138,10 +138,10 @@ namespace MR
                 for (ssize_t i = 0; i < temp.cols(); ++i)
                   temp.col(i) = temp.col(i) * modulation_factors(0,i);
 
-                transform = temp * FOD_to_aPSF_transform;
+                transform.noalias() = temp * FOD_to_aPSF_transform;
               } else {
                 transformed_directions.colwise().normalize();
-                transform = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
+                transform.noalias() = aPSF_weights_to_FOD_transform (n_SH, transformed_directions) * FOD_to_aPSF_transform;
               }
 
               image.row(3) = transform.cast<typename WarpImageType::value_type>() * image.row(3);

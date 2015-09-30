@@ -122,7 +122,7 @@ class Processor
         
         if (dkt_image) {
           assign_pos_of (dwi_image, 0, 3).to (*dkt_image);
-          double adc_sq = (p[1]+p[2]+p[3])*(p[1]+p[2]+p[3])/9.0;
+          double adc_sq = (p[0]+p[1]+p[2])*(p[0]+p[1]+p[2])/9.0;
           for (auto l = Loop(3)(*dkt_image); l; ++l) {
             dkt_image->value() = p[dkt_image->index(3)+7]/adc_sq;
           }

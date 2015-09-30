@@ -254,7 +254,6 @@ namespace MR
      *  directions on the sphere. This may be less than the value requested at
      *  the command-line, or that calculated from the number of directions, if
      *  the resulting transform matrix is ill-posed. */
-    template <typename ValueType>
       inline size_t lmax_for_directions (const Eigen::MatrixXd& directions,
           const bool lmax_from_command_line = true,
           const int default_lmax = 8)

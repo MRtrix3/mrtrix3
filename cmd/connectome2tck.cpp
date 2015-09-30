@@ -87,7 +87,7 @@ const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / ex
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "extract streamlines from a tractogram based on their assignment to parcellated nodes";

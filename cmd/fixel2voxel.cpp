@@ -21,17 +21,15 @@
 */
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
 
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "algo/loop.h"
+#include "algo/threaded_loop.h"
 
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/keys.h"
-#include "image/sparse/voxel.h"
+#include "sparse/fixel_metric.h"
+#include "sparse/image.h"
+#include "sparse/keys.h"
 
 #include "math/SH.h"
 
@@ -40,7 +38,7 @@ using namespace MR;
 using namespace App;
 
 
-using Image::Sparse::FixelMetric;
+using Sparse::FixelMetric;
 
 const char* operations[] = {
   "mean",
@@ -101,8 +99,8 @@ void usage ()
 class OpBase
 {
   protected:
-    typedef Image::BufferSparse<FixelMetric>::voxel_type in_vox_type;
-    typedef Image::Buffer<float>::voxel_type out_vox_type;
+    typedef Sparse::Image<FixelMetric> in_type;
+    typedef Image<float> out_type;
 
   public:
     OpBase (const bool weighted) :
@@ -110,9 +108,9 @@ class OpBase
     OpBase (const OpBase& that) :
         weighted (that.weighted) { }
     virtual ~OpBase() { }
-    virtual bool operator() (in_vox_type&, out_vox_type&) = 0;
+    virtual bool operator() (in_type&, out_type&) = 0;
   protected:
-    bool weighted;
+    const bool weighted;
 };
 
 
@@ -127,7 +125,7 @@ class Mean : public OpBase
         OpBase (that),
         sum (0.0f),
         sum_volumes (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       sum = sum_volumes = 0.0;
       if (weighted) {
@@ -139,12 +137,12 @@ class Mean : public OpBase
       } else {
         for (size_t i = 0; i != in.value().size(); ++i)
           sum += in.value()[i].value;
-        out.value() = in.value().size() ? (sum / float(in.value().size())) : 0.0;
+        out.value() = in.value().size() ? (sum / default_type(in.value().size())) : 0.0;
       }
       return true;
     }
   private:
-    float sum, sum_volumes;
+    default_type sum, sum_volumes;
 };
 
 class Sum : public OpBase
@@ -152,11 +150,11 @@ class Sum : public OpBase
   public:
     Sum (const bool weighted) :
         OpBase (weighted),
-        sum (0.0f) { }
+        sum (0.0) { }
     Sum (const Sum& that) :
         OpBase (that),
-        sum (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        sum (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
       sum = 0.0;
       if (weighted) {
@@ -171,7 +169,7 @@ class Sum : public OpBase
       return true;
     }
   private:
-    float sum;
+    default_type sum;
 };
 
 class Product : public OpBase
@@ -179,15 +177,15 @@ class Product : public OpBase
   public:
     Product (const bool weighted) :
         OpBase (weighted),
-        product (0.0f)
+        product (0.0)
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for product operation; ignoring");
     }
     Product (const Product& that) :
         OpBase (that),
-        product (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        product (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
       if (!in.value().size()) {
         out.value() = 0.0;
@@ -200,7 +198,7 @@ class Product : public OpBase
       return true;
     }
   private:
-    float product;
+    default_type product;
 };
 
 class RMS : public OpBase
@@ -208,15 +206,15 @@ class RMS : public OpBase
   public:
     RMS (const bool weighted) :
         OpBase (weighted),
-        sum (0.0f),
-        sum_volumes (0.0f) { }
+        sum (0.0),
+        sum_volumes (0.0) { }
     RMS (const RMS& that) :
         OpBase (that),
-        sum (0.0f),
-        sum_volumes (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        sum (0.0),
+        sum_volumes (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
-      sum = sum_volumes = 0.0f;
+      sum = sum_volumes = 0.0;
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i) {
           sum *= in.value()[i].size * Math::pow2 (in.value()[i].value);
@@ -226,12 +224,12 @@ class RMS : public OpBase
       } else {
         for (size_t i = 0; i != in.value().size(); ++i)
           sum += Math::pow2 (in.value()[i].value);
-        out.value() = std::sqrt (sum / float(in.value().size()));
+        out.value() = std::sqrt (sum / default_type(in.value().size()));
       }
       return true;
     }
   private:
-    float sum, sum_volumes;
+    default_type sum, sum_volumes;
 };
 
 class Var : public OpBase
@@ -240,34 +238,34 @@ class Var : public OpBase
     Var (const bool weighted) :
         OpBase (weighted),
         sum (0.0f),
-        weighted_mean (0.0f),
-        sum_volumes (0.0f),
-        sum_volumes_sqr (0.0f),
-        sum_sqr (0.0f) { }
+        weighted_mean (0.0),
+        sum_volumes (0.0),
+        sum_volumes_sqr (0.0),
+        sum_sqr (0.0) { }
     Var (const Var& that) :
         OpBase (that),
-        sum (0.0f),
-        weighted_mean (0.0f),
-        sum_volumes (0.0f),
-        sum_volumes_sqr (0.0f),
-        sum_sqr (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        sum (0.0),
+        weighted_mean (0.0),
+        sum_volumes (0.0),
+        sum_volumes_sqr (0.0),
+        sum_sqr (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
       if (!in.value().size()) {
         out.value() = NAN;
         return true;
       } else if (in.value().size() == 1) {
-        out.value() = 0.0f;
+        out.value() = 0.0;
         return true;
       }
       if (weighted) {
-        sum = sum_volumes = 0.0f;
+        sum = sum_volumes = 0.0;
         for (size_t i = 0; i != in.value().size(); ++i) {
           sum += in.value()[i].size * in.value()[i].value;
           sum_volumes += in.value()[i].size;
         }
         weighted_mean = sum / sum_volumes;
-        sum = sum_volumes_sqr = 0.0f;
+        sum = sum_volumes_sqr = 0.0;
         for (size_t i = 0; i != in.value().size(); ++i) {
           sum += in.value()[i].size * Math::pow2 (weighted_mean - in.value()[i].value);
           sum_volumes_sqr += Math::pow2 (in.value()[i].size);
@@ -275,22 +273,22 @@ class Var : public OpBase
         // Unbiased variance estimator in the presence of weighting
         out.value() = sum / (sum_volumes - (sum_volumes_sqr / sum_volumes));
       } else {
-        sum = sum_sqr = 0.0f;
+        sum = sum_sqr = 0.0;
         for (size_t i = 0; i != in.value().size(); ++i) {
           sum += in.value()[i].value;
           sum_sqr += Math::pow2 (in.value()[i].value);
         }
-        out.value() = (sum_sqr - (Math::pow2 (sum) / float(in.value().size()))) / float(in.value().size() - 1);
+        out.value() = (sum_sqr - (Math::pow2 (sum) / default_type(in.value().size()))) / default_type(in.value().size() - 1);
       }
       return true;
     }
   private:
     // Used for both calculations
-    float sum;
+    default_type sum;
     // Used for weighted calculations
-    float weighted_mean, sum_volumes, sum_volumes_sqr;
+    default_type weighted_mean, sum_volumes, sum_volumes_sqr;
     // Used for unweighted calculations
-    float sum_sqr;
+    default_type sum_sqr;
 };
 
 class Std : public Var
@@ -300,7 +298,7 @@ class Std : public Var
         Var (weighted) { }
     Std (const Std& that) :
         Var (that) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       Var::operator() (in, out);
       out.value() = std::sqrt (out.value());
@@ -313,17 +311,17 @@ class Min : public OpBase
   public:
     Min (const bool weighted) :
         OpBase (weighted),
-        min (std::numeric_limits<float>::infinity())
+        min (std::numeric_limits<default_type>::infinity())
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for min operation; ignoring");
     }
     Min (const Min& that) :
         OpBase (that),
-        min (std::numeric_limits<float>::infinity()) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        min (std::numeric_limits<default_type>::infinity()) { }
+    bool operator() (in_type& in, out_type& out)
     {
-      min = std::numeric_limits<float>::infinity();
+      min = std::numeric_limits<default_type>::infinity();
       for (size_t i = 0; i != in.value().size(); ++i) {
         if (in.value()[i].value < min)
           min = in.value()[i].value;
@@ -332,7 +330,7 @@ class Min : public OpBase
       return true;
     }
   private:
-    float min;
+    default_type min;
 };
 
 class Max : public OpBase
@@ -340,17 +338,17 @@ class Max : public OpBase
   public:
     Max (const bool weighted) :
         OpBase (weighted),
-        max (-std::numeric_limits<float>::infinity())
+        max (-std::numeric_limits<default_type>::infinity())
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for max operation; ignoring");
     }
     Max (const Max& that) :
         OpBase (that),
-        max (-std::numeric_limits<float>::infinity()) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        max (-std::numeric_limits<default_type>::infinity()) { }
+    bool operator() (in_type& in, out_type& out)
     {
-      max = -std::numeric_limits<float>::infinity();
+      max = -std::numeric_limits<default_type>::infinity();
       for (size_t i = 0; i != in.value().size(); ++i) {
         if (in.value()[i].value > max)
           max = in.value()[i].value;
@@ -359,7 +357,7 @@ class Max : public OpBase
       return true;
     }
   private:
-    float max;
+    default_type max;
 };
 
 class AbsMax : public OpBase
@@ -375,7 +373,7 @@ class AbsMax : public OpBase
     AbsMax (const AbsMax& that) :
         OpBase (that),
         max (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       max = 0.0f;
       for (size_t i = 0; i != in.value().size(); ++i) {
@@ -386,7 +384,7 @@ class AbsMax : public OpBase
       return true;
     }
   private:
-    float max;
+    default_type max;
 };
 
 class MagMax : public OpBase
@@ -394,17 +392,17 @@ class MagMax : public OpBase
   public:
     MagMax (const bool weighted) :
         OpBase (weighted),
-        max (0.0f)
+        max (0.0)
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for magmax operation; ignoring");
     }
     MagMax (const AbsMax& that) :
         OpBase (that),
-        max (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        max (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
-      max = 0.0f;
+      max = 0.0;
       for (size_t i = 0; i != in.value().size(); ++i) {
         if (std::abs (in.value()[i].value) > std::abs (max))
           max = in.value()[i].value;
@@ -413,7 +411,7 @@ class MagMax : public OpBase
       return true;
     }
   private:
-    float max;
+    default_type max;
 };
 
 class Count : public OpBase
@@ -427,7 +425,7 @@ class Count : public OpBase
     }
     Count (const Count& that) :
         OpBase (that) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       out.value() = in.value().size();
       return true;
@@ -439,8 +437,8 @@ class Complexity : public OpBase
   public:
     Complexity (const bool weighted) :
         OpBase (weighted),
-        max (0.0f),
-        sum (0.0f)
+        max (0.0),
+        sum (0.0)
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for complexity operation; ignoring");
@@ -449,22 +447,22 @@ class Complexity : public OpBase
         OpBase (that),
         max (0.0f),
         sum (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       if (in.value().size() <= 1) {
         out.value() = 0.0;
         return true;
       }
-      max = sum = 0.0f;
+      max = sum = 0.0;
       for (size_t i = 0; i != in.value().size(); ++i) {
-        max = std::max (max, in.value()[i].value);
+        max = std::max (max, default_type(in.value()[i].value));
         sum += in.value()[i].value;
       }
-      out.value() = (float(in.value().size()) / float(in.value().size()-1.0)) * (1.0 - (max / sum));
+      out.value() = (default_type(in.value().size()) / default_type(in.value().size()-1.0)) * (1.0 - (max / sum));
       return true;
     }
   private:
-    float max, sum;
+    default_type max, sum;
 };
 
 class SF : public OpBase
@@ -472,28 +470,28 @@ class SF : public OpBase
   public:
     SF (const bool weighted) :
         OpBase (weighted),
-        max (0.0f),
-        sum (0.0f)
+        max (0.0),
+        sum (0.0)
     {
       if (weighted)
         WARN ("Option -weighted has no meaningful interpretation for sf operation; ignoring");
     }
     SF (const Complexity& that) :
         OpBase (that),
-        max (0.0f),
-        sum (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        max (0.0),
+        sum (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
       max = sum = 0.0f;
       for (size_t i = 0; i != in.value().size(); ++i) {
-        max = std::max (max, in.value()[i].value);
+        max = std::max (max, default_type(in.value()[i].value));
         sum += in.value()[i].value;
       }
       out.value() = sum ? (max / sum) : 0.0f;
       return true;
     }
   private:
-    float max, sum;
+    default_type max, sum;
 };
 
 class DEC_unit : public OpBase
@@ -501,27 +499,27 @@ class DEC_unit : public OpBase
   public:
     DEC_unit (const bool weighted) :
         OpBase (weighted),
-        sum_dec (0.0f, 0.0f, 0.0f) { }
+        sum_dec {0.0, 0.0, 0.0} { }
     DEC_unit (const DEC_unit& that) :
         OpBase (that),
-        sum_dec (0.0f, 0.0f, 0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        sum_dec {0.0, 0.0, 0.0} { }
+    bool operator() (in_type& in, out_type& out)
     {
-      sum_dec.set (0.0f, 0.0f, 0.0f);
+      sum_dec = {0.0, 0.0, 0.0};
       if (weighted) {
         for (size_t i = 0; i != in.value().size(); ++i)
-          sum_dec += Point<float> (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
+          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
       } else {
         for (size_t i = 0; i != in.value().size(); ++i)
-          sum_dec += Point<float> (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
+          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
       }
-      sum_dec.normalise();
-      for (out[3] = 0; out[3] != 3; ++out[3])
-        out.value() = sum_dec[size_t(out[3])];
+      sum_dec.normalize();
+      for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
+        out.value() = sum_dec[size_t(out.index(3))];
       return true;
     }
   private:
-    Point<float> sum_dec;
+    Eigen::Vector3 sum_dec;
 };
 
 class DEC_scaled : public OpBase
@@ -529,42 +527,42 @@ class DEC_scaled : public OpBase
   public:
     DEC_scaled (const bool weighted) :
         OpBase (weighted),
-        sum_dec (0.0f, 0.0f, 0.0f),
-        sum_volume (0.0f),
-        sum_value (0.0f) { }
+        sum_dec {0.0, 0.0, 0.0},
+        sum_volume (0.0),
+        sum_value (0.0) { }
     DEC_scaled (const DEC_scaled& that) :
         OpBase (that),
-        sum_dec (0.0f, 0.0f, 0.0f),
-        sum_volume (0.0f),
-        sum_value (0.0f) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+        sum_dec {0.0, 0.0, 0.0},
+        sum_volume (0.0),
+        sum_value (0.0) { }
+    bool operator() (in_type& in, out_type& out)
     {
-      sum_dec.set (0.0f, 0.0f, 0.0f);
-      sum_value = 0.0f;
+      sum_dec = {0.0, 0.0, 0.0};
+      sum_value = 0.0;
       if (weighted) {
-        sum_volume = 0.0f;
+        sum_volume = 0.0;
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum_dec += Point<float> (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
+          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value * in.value()[i].size;
           sum_volume += in.value()[i].size;
           sum_value += in.value()[i].size * in.value()[i].value;
         }
-        sum_dec.normalise();
+        sum_dec.normalize();
         sum_dec *= (sum_value / sum_volume);
       } else {
         for (size_t i = 0; i != in.value().size(); ++i) {
-          sum_dec += Point<float> (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
+          sum_dec += Eigen::Vector3 (std::abs (in.value()[i].dir[0]), std::abs (in.value()[i].dir[1]), std::abs (in.value()[i].dir[2])) * in.value()[i].value;
           sum_value += in.value()[i].value;
         }
-        sum_dec.normalise();
+        sum_dec.normalize();
         sum_dec *= sum_value;
       }
-      for (out[3] = 0; out[3] != 3; ++out[3])
-        out.value() = sum_dec[size_t(out[3])];
+      for (out.index(3) = 0; out.index(3) != 3; ++out.index(3))
+        out.value() = sum_dec[size_t(out.index(3))];
       return true;
     }
   private:
-    Point<float> sum_dec;
-    float sum_volume, sum_value;
+    Eigen::Vector3 sum_dec;
+    default_type sum_volume, sum_value;
 };
 
 class SplitSize : public OpBase
@@ -578,11 +576,11 @@ class SplitSize : public OpBase
     }
     SplitSize (const SplitSize& that) :
         OpBase (that) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
-      for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
-        if (out[3] < in.value().size())
-          out.value() = in.value()[out[3]].size;
+      for (out.index(3) = 0; out.index(3) < out.size(3); ++out.index(3)) {
+        if (out.index(3) < in.value().size())
+          out.value() = in.value()[out.index(3)].size;
         else
           out.value() = 0.0;
       }
@@ -601,11 +599,11 @@ class SplitValue : public OpBase
     }
     SplitValue (const SplitValue& that) :
         OpBase (that) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
-      for (out[3] = 0; out[3] < out.dim(3); ++out[3]) {
-        if (out[3] < in.value().size())
-          out.value() = in.value()[out[3]].value;
+      for (out.index(3) = 0; out.index(3) < out.size(3); ++out.index(3)) {
+        if (out.index(3) < in.value().size())
+          out.value() = in.value()[out.index(3)].value;
         else
           out.value() = 0.0;
       }
@@ -624,16 +622,16 @@ class SplitDir : public OpBase
     }
     SplitDir (const SplitDir& that) :
         OpBase (that) { }
-    bool operator() (in_vox_type& in, out_vox_type& out)
+    bool operator() (in_type& in, out_type& out)
     {
       size_t index;
       for (index = 0; index != in.value().size(); ++index) {
         for (size_t axis = 0; axis != 3; ++axis) {
-          out[3] = (3*index) + axis;
+          out.index(3) = (3*index) + axis;
           out.value() = in.value()[index].dir[axis];
         }
       }
-      for (++out[3]; out[3] != out.dim (3); ++out[3])
+      for (++out.index(3); out.index(3) != out.size(3); ++out.index(3))
         out.value() = NAN;
       return true;
     }
@@ -648,63 +646,58 @@ class SplitDir : public OpBase
 
 void run ()
 {
-  Image::Header H_in (argument[0]);
-  Image::BufferSparse<FixelMetric> fixel_data (H_in);
-  auto voxel = fixel_data.voxel();
+  Header H_in = Header::open (argument[0]);
+  Sparse::Image<FixelMetric> in (H_in);
 
   const int op = argument[1];
 
-  Image::Header H_out (H_in);
+  Header H_out (H_in);
   H_out.datatype() = DataType::Float32;
   H_out.datatype().set_byte_order_native();
-  H_out.erase (Image::Sparse::name_key);
-  H_out.erase (Image::Sparse::size_key);
+  H_out.keyval().erase (Sparse::name_key);
+  H_out.keyval().erase (Sparse::size_key);
   if (op == 10) { // count
     H_out.datatype() = DataType::UInt8;
   } else if (op == 13 || op == 14) { // dec
     H_out.set_ndim (4);
-    H_out.dim (3) = 3;
+    H_out.size (3) = 3;
   } else if (op == 15 || op == 16 || op == 17) { // split_*
     H_out.set_ndim (4);
     uint32_t max_count = 0;
-    Image::BufferSparse<FixelMetric>::voxel_type voxel (fixel_data);
-    Image::LoopInOrder loop (voxel, "determining largest fixel count... ");
-    for (loop.start (voxel); loop.ok(); loop.next (voxel))
-      max_count = std::max (max_count, voxel.value().size());
+    for (auto l = Loop ("determining largest fixel count... ", in) (in); l; ++l)
+      max_count = std::max (max_count, in.value().size());
     if (max_count == 0)
       throw Exception ("fixel image is empty");
     // 3 volumes per fixel if performing split_dir
-    H_out.dim(3) = (op == 17) ? (3 * max_count) : max_count;
+    H_out.size(3) = (op == 17) ? (3 * max_count) : max_count;
   }
 
-  Image::Buffer<float> out_data (argument[2], H_out);
+  auto out = Image<float>::create (argument[2], H_out);
 
-  auto out = out_data.voxel();
-
-  Options opt = get_options ("weighted");
+  auto opt = get_options ("weighted");
   const bool weighted = opt.size();
 
-  Image::ThreadedLoop loop ("converting sparse fixel data to scalar image... ", voxel);
+  auto loop = ThreadedLoop ("converting sparse fixel data to scalar image... ", in);
 
   switch (op) {
-    case 0:  loop.run (Mean       (weighted), voxel, out); break;
-    case 1:  loop.run (Sum        (weighted), voxel, out); break;
-    case 2:  loop.run (Product    (weighted), voxel, out); break;
-    case 3:  loop.run (RMS        (weighted), voxel, out); break;
-    case 4:  loop.run (Var        (weighted), voxel, out); break;
-    case 5:  loop.run (Std        (weighted), voxel, out); break;
-    case 6:  loop.run (Min        (weighted), voxel, out); break;
-    case 7:  loop.run (Max        (weighted), voxel, out); break;
-    case 8:  loop.run (AbsMax     (weighted), voxel, out); break;
-    case 9:  loop.run (MagMax     (weighted), voxel, out); break;
-    case 10: loop.run (Count      (weighted), voxel, out); break;
-    case 11: loop.run (Complexity (weighted), voxel, out); break;
-    case 12: loop.run (SF         (weighted), voxel, out); break;
-    case 13: loop.run (DEC_unit   (weighted), voxel, out); break;
-    case 14: loop.run (DEC_scaled (weighted), voxel, out); break;
-    case 15: loop.run (SplitSize  (weighted), voxel, out); break;
-    case 16: loop.run (SplitValue (weighted), voxel, out); break;
-    case 17: loop.run (SplitDir   (weighted), voxel, out); break;
+    case 0:  loop.run (Mean       (weighted), in, out); break;
+    case 1:  loop.run (Sum        (weighted), in, out); break;
+    case 2:  loop.run (Product    (weighted), in, out); break;
+    case 3:  loop.run (RMS        (weighted), in, out); break;
+    case 4:  loop.run (Var        (weighted), in, out); break;
+    case 5:  loop.run (Std        (weighted), in, out); break;
+    case 6:  loop.run (Min        (weighted), in, out); break;
+    case 7:  loop.run (Max        (weighted), in, out); break;
+    case 8:  loop.run (AbsMax     (weighted), in, out); break;
+    case 9:  loop.run (MagMax     (weighted), in, out); break;
+    case 10: loop.run (Count      (weighted), in, out); break;
+    case 11: loop.run (Complexity (weighted), in, out); break;
+    case 12: loop.run (SF         (weighted), in, out); break;
+    case 13: loop.run (DEC_unit   (weighted), in, out); break;
+    case 14: loop.run (DEC_scaled (weighted), in, out); break;
+    case 15: loop.run (SplitSize  (weighted), in, out); break;
+    case 16: loop.run (SplitValue (weighted), in, out); break;
+    case 17: loop.run (SplitDir   (weighted), in, out); break;
   }
 
 }

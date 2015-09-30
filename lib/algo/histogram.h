@@ -23,19 +23,20 @@
 #ifndef __image_histogram_h__
 #define __image_histogram_h__
 
-#include "image/min_max.h"
+#include <vector>
+
+#include "algo/loop.h"
+#include "algo/min_max.h"
 
 namespace MR
 {
-  namespace Image
-  {
 
     template <class Set> class Histogram
     {
       public:
         typedef typename Set::value_type value_type;
 
-        Histogram (Set& D, size_t num_buckets=100) {
+        Histogram (Set& D, const size_t num_buckets=100) {
           if (num_buckets < 10)
             throw Exception ("Error initialising histogram: number of buckets must be greater than 10");
 
@@ -50,9 +51,8 @@ namespace MR
           for (size_t n = 0; n < list.size(); n++)
             list[n].value = min + step * (n + 0.5);
 
-          MR::Image::LoopInOrder loop (D, "building histogram of \"" + shorten (D.name()) + "\"...");
-          for (auto l = loop (D); l; ++l) {
-            value_type val = D.value();
+          for (auto l = Loop("building histogram of \"" + shorten (D.name()) + "\"...", D) (D); l; ++l) {
+            const value_type val = D.value();
             if (std::isfinite (val) && val != 0.0) {
               size_t pos = size_t ( (val-min) /step);
               if (pos >= list.size()) pos = list.size()-1;
@@ -103,8 +103,8 @@ namespace MR
 
           for (size_t i = 0; i < list.size(); i++){
             double probability = static_cast<double>(list[i].frequency) / static_cast<double>(totalFrequency);
-            if(probability > 0.99 / totalFrequency)
-                imageEntropy += -probability * log(probability);
+            if (probability > 0.99 / totalFrequency)
+              imageEntropy += -probability * log(probability);
           }
           return imageEntropy;
         }
@@ -123,7 +123,6 @@ namespace MR
     };
 
 
-  }
 }
 
 #endif

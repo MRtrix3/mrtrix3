@@ -142,14 +142,15 @@ namespace MR
             typedef typename ImageType::value_type value_type;
             typedef typename MaskType::value_type mask_value_type;
 
-            ImageCorrelationCostFunction (ImageType& input, MaskType* mask = NULL) :
-              input (input),
-              mask (mask) {
+            ImageCorrelationCostFunction (ImageType& input, MaskType& mask) :
+                input (input),
+                mask (mask)
+              {
                 double sum_sqr = 0.0, sum = 0.0;
                 count = 0;
 
-                if (mask) {
-                  Adapter::Replicate<MaskType> replicated_mask (*mask, input);
+                if (mask.valid()) {
+                  Adapter::Replicate<MaskType> replicated_mask (mask, input);
                   ThreadedLoop (input).run (MeanStdFunctor (sum, sum_sqr, count), input, replicated_mask);
                 }
                 else {
@@ -164,8 +165,8 @@ namespace MR
               double sum = 0;
               double mean_xy = 0.0;
 
-              if (mask) {
-                Adapter::Replicate<MaskType> replicated_mask (*mask, input);
+              if (mask.valid()) {
+                Adapter::Replicate<MaskType> replicated_mask (mask, input);
                 ThreadedLoop (input).run (CorrelationFunctor (threshold, sum, mean_xy), input, replicated_mask);
               }
               else
@@ -180,7 +181,7 @@ namespace MR
 
           private:
             ImageType& input;
-            MaskType* mask;
+            MaskType& mask;
             size_t count;
             double input_image_mean;
             double input_image_stdev;
@@ -188,7 +189,7 @@ namespace MR
 
 
       template <class ImageType, class MaskType>
-        typename ImageType::value_type estimate_optimal_threshold (ImageType& input, MaskType* mask)
+        typename ImageType::value_type estimate_optimal_threshold (ImageType& input, MaskType& mask)
         {
           typedef typename ImageType::value_type input_value_type;
 
@@ -211,7 +212,8 @@ namespace MR
       template <class ImageType>
         inline typename ImageType::value_type estimate_optimal_threshold (ImageType& input)
         {
-          return estimate_optimal_threshold (input, (Image<bool>*)nullptr);
+          Image<bool> mask;
+          return estimate_optimal_threshold (input, mask);
         }
 
       /** \addtogroup Filters
@@ -246,12 +248,20 @@ namespace MR
             datatype_ = DataType::Bit;
           }
 
+          template <class InputImageType, class OutputImageType>
+            void operator() (InputImageType& input, OutputImageType& output)
+            {
+              auto mask = Image<bool>();
+              operator() (input, output, mask);
+            }
 
-          template <class InputImageType, class OutputImageType, class MaskType = Image<bool>>
-            void operator() (InputImageType& input, OutputImageType& output, MaskType* mask = nullptr)
+
+          template <class InputImageType, class OutputImageType, class MaskType>
+            void operator() (InputImageType& input, OutputImageType& output, MaskType& mask)
             {
               axes_.resize (4);
               typedef typename InputImageType::value_type input_value_type;
+
               input_value_type optimal_threshold = estimate_optimal_threshold (input, mask);
               
               auto f = [&](decltype(input) in, decltype(output) out) {
