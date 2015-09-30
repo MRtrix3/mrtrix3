@@ -22,7 +22,7 @@
 #define __stats_cluster_h__
 
 
-#include "image/filter/connected_components.h"
+#include "filter/connected_components.h"
 
 namespace MR
 {
@@ -38,13 +38,13 @@ namespace MR
       @{ */
       class ClusterSize {
         public:
-          ClusterSize (const Image::Filter::Connector& connector, value_type cluster_forming_threshold) :
-                      connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
+          ClusterSize (const Filter::Connector& connector, value_type cluster_forming_threshold) :
+                       connector (connector), cluster_forming_threshold (cluster_forming_threshold) { }
 
           value_type operator() (const value_type unused, const std::vector<value_type>& stats,
                                  std::vector<value_type>& get_cluster_sizes) const
           {
-            std::vector<Image::Filter::cluster> clusters;
+            std::vector<Filter::cluster> clusters;
             std::vector<uint32_t> labels (stats.size(), 0);
             connector.run (clusters, labels, stats, cluster_forming_threshold);
             get_cluster_sizes.resize (stats.size());
@@ -55,7 +55,7 @@ namespace MR
           }
 
         protected:
-          const Image::Filter::Connector& connector;
+          const Filter::Connector& connector;
           value_type cluster_forming_threshold;
       };
 

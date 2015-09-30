@@ -83,7 +83,7 @@ namespace MR
                                     std::vector<value_type>& pvalues)
       {
         std::vector <value_type> permutations (perm_dist.size(), 0);
-        for (size_t i = 0; i < perm_dist.size(); i++)
+        for (ssize_t i = 0; i < perm_dist.size(); i++)
           permutations[i] = perm_dist[i];
         std::sort (permutations.begin(), permutations.end());
         pvalues.resize (stats.size());

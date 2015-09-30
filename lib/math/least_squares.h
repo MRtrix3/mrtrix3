@@ -111,6 +111,13 @@ namespace MR
           return (M*M.transpose()).ldlt().solve (M).transpose();                                                                               
       }
 
+    template <class MatrixType>
+      inline size_t rank (const MatrixType& M)
+      {
+        Eigen::FullPivLU<MatrixType> lu_decomp (M);
+        return lu_decomp.rank();
+      }
+
     /** @} */
     /** @} */
 

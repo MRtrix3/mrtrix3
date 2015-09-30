@@ -23,15 +23,9 @@
 
 #include <mutex>
 
-#include <gsl/gsl_linalg.h>
-#include <mutex>
-
 #include "progressbar.h"
 #include "thread.h"
-
-#include "math/vector.h"
 #include "math/stats/permutation.h"
-
 #include "thread_queue.h"
 
 namespace MR
@@ -143,7 +137,7 @@ namespace MR
               Processor (PermutationStack& permutation_stack, const StatsType& stats_calculator,
                          const EnhancementType& enhancer, const std::shared_ptr<std::vector<double> >& empirical_enhanced_statistics,
                          const std::vector<value_type>& default_enhanced_statistics, const std::shared_ptr<std::vector<value_type> >& default_enhanced_statistics_neg,
-                         Math::Vector<value_type>& perm_dist_pos, std::shared_ptr<Math::Vector<value_type> >& perm_dist_neg,
+                         Eigen::Matrix<value_type, Eigen::Dynamic, 1>& perm_dist_pos, std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> >& perm_dist_neg,
                          std::vector<size_t>& global_uncorrected_pvalue_counter, std::shared_ptr<std::vector<size_t> >& global_uncorrected_pvalue_counter_neg) :
                            perm_stack (permutation_stack), stats_calculator (stats_calculator),
                            enhancer (enhancer), empirical_enhanced_statistics (empirical_enhanced_statistics),
@@ -180,14 +174,14 @@ namespace MR
               {
                 value_type max_stat = 0.0, min_stat = 0.0;
                 stats_calculator (perm_stack.permutation (index), statistics, max_stat, min_stat);
-                perm_dist_pos[index] = enhancer (max_stat, statistics, enhanced_statistics);
+                perm_dist_pos(index) = enhancer (max_stat, statistics, enhanced_statistics);
 
                 if (empirical_enhanced_statistics) {
-                  perm_dist_pos[index] = 0.0;
+                  perm_dist_pos(index) = 0.0;
                   for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
                     enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
-                    if (enhanced_statistics[i] > perm_dist_pos[index])
-                      perm_dist_pos[index] = enhanced_statistics[i];
+                    if (enhanced_statistics[i] > perm_dist_pos(index))
+                      perm_dist_pos(index) = enhanced_statistics[i];
                   }
                 }
 
@@ -201,14 +195,14 @@ namespace MR
                   for (size_t i = 0; i < statistics.size(); ++i)
                     statistics[i] = -statistics[i];
 
-                  (*perm_dist_neg)[index] = enhancer (-min_stat, statistics, enhanced_statistics);
+                  (*perm_dist_neg)(index) = enhancer (-min_stat, statistics, enhanced_statistics);
 
                   if (empirical_enhanced_statistics) {
-                    (*perm_dist_neg)[index] = 0.0;
+                    (*perm_dist_neg)(index) = 0.0;
                     for (size_t i = 0; i < enhanced_statistics.size(); ++i) {
                       enhanced_statistics[i] /= (*empirical_enhanced_statistics)[i];
-                      if (enhanced_statistics[i] > (*perm_dist_neg)[index])
-                        (*perm_dist_neg)[index] = enhanced_statistics[i];
+                      if (enhanced_statistics[i] > (*perm_dist_neg)(index))
+                        (*perm_dist_neg)(index) = enhanced_statistics[i];
                     }
                   }
 
@@ -230,8 +224,8 @@ namespace MR
               std::vector<value_type> enhanced_statistics;
               std::vector<size_t> uncorrected_pvalue_counter;
               std::shared_ptr<std::vector<size_t> > uncorrected_pvalue_counter_neg;
-              Math::Vector<value_type>& perm_dist_pos;
-              std::shared_ptr<Math::Vector<value_type> > perm_dist_neg;
+              Eigen::Matrix<value_type, Eigen::Dynamic, 1>& perm_dist_pos;
+              std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> > perm_dist_neg;
               std::vector<size_t>& global_uncorrected_pvalue_counter;
               std::shared_ptr<std::vector<size_t> > global_uncorrected_pvalue_counter_neg;
         };
@@ -302,7 +296,7 @@ namespace MR
           inline void run_permutations (const StatsType& stats_calculator, const EnhancementType& enhancer, size_t num_permutations,
                                         const std::shared_ptr<std::vector<double> >& empirical_enhanced_statistic,
                                         const std::vector<value_type>& default_enhanced_statistics, const std::shared_ptr<std::vector<value_type> >& default_enhanced_statistics_neg,
-                                        Math::Vector<value_type>& perm_dist_pos, std::shared_ptr<Math::Vector<value_type> >& perm_dist_neg,
+                                        Eigen::Matrix<value_type, Eigen::Dynamic, 1>& perm_dist_pos, std::shared_ptr<Eigen::Matrix<value_type, Eigen::Dynamic, 1> >& perm_dist_neg,
                                         std::vector<value_type>& uncorrected_pvalues, std::shared_ptr<std::vector<value_type> >& uncorrected_pvalues_neg)
           {
 
