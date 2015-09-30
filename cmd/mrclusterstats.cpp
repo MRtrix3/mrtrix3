@@ -124,13 +124,11 @@ void run() {
 
   // Load design matrix:
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> design = load_matrix<value_type> (argument[1]);
-
   if (design.rows() != (ssize_t)subjects.size())
-    throw Exception ("number of subjects does not match number of rows in design matrix");
+    throw Exception ("number of input files does not match number of rows in design matrix");
 
   // Load contrast matrix:
   Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> contrast = load_matrix<value_type> (argument[2]);
-
   if (contrast.cols() != design.cols())
     throw Exception ("the number of contrasts does not equal the number of columns in the design matrix");
 
