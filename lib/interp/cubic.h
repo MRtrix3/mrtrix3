@@ -79,7 +79,7 @@ namespace MR
         typedef typename ImageType::value_type value_type;
 
         using ImageType::size;
-        using ImageType::index;
+        using ImageType::x;
         using ImageType::ndim;
         using Transform::set_to_nearest;
         using Transform::voxelsize;
@@ -97,6 +97,10 @@ namespace MR
           H { SplineType(PType), SplineType(PType), SplineType(PType) } { }
 
         const value_type out_of_bounds_value;
+
+        FORCE_INLINE ssize_t index (size_t axis) const { return x[axis]; }
+        FORCE_INLINE auto index (size_t axis) -> decltype (Helper::index (*this, axis)) { return { *this, axis }; }
+        FORCE_INLINE void move_index (size_t axis, ssize_t increment) { assert(axis>=3); ImageType::move_index(axis, increment); }
 
       protected:
         SplineType H[3];
@@ -216,11 +220,11 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
                 i += 1;
               }
@@ -243,11 +247,11 @@ namespace MR
           Eigen::Matrix<value_type, Eigen::Dynamic, 64> coeff_matrix ( size(3), 64 );
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_matrix.col (i) = ImageType::row (axis);
                 i += 1;
               }
@@ -362,11 +366,11 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
                 i += 1;
               }
@@ -398,11 +402,11 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_matrix.col (i) = ImageType::row (3);
                 i += 1;
               }
@@ -513,11 +517,11 @@ namespace MR
 
           size_t i(0);
           for (ssize_t z = 0; z < 4; ++z) {
-            index(2) = check (c[2] + z, size (2)-1);
+            ImageType::index(2) = check (c[2] + z, size (2)-1);
             for (ssize_t y = 0; y < 4; ++y) {
-              index(1) = check (c[1] + y, size (1)-1);
+              ImageType::index(1) = check (c[1] + y, size (1)-1);
               for (ssize_t x = 0; x < 4; ++x) {
-                index(0) = check (c[0] + x, size (0)-1);
+                ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
                 i += 1;
               }
