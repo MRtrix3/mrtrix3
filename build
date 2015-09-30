@@ -24,6 +24,7 @@ bcolors = {
     "ERROR" : '\033[01;95m',
     "error" : '\033[01;31m',
     "failed" : '\033[91m',
+    "confused" : '\033[91m',
     "note" : '\033[94m'}
 
 def colorize(s):
