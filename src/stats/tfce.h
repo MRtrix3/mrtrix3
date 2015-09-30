@@ -21,12 +21,8 @@
 #ifndef __stats_tfce_h__
 #define __stats_tfce_h__
 
-#include <gsl/gsl_linalg.h>
-
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/stats/permutation.h"
-#include "image/filter/connected_components.h"
+#include "filter/connected_components.h"
 #include "thread_queue.h"
 
 namespace MR
@@ -44,7 +40,7 @@ namespace MR
 
       class Enhancer {
         public:
-          Enhancer (const Image::Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
+          Enhancer (const Filter::Connector& connector, const value_type dh, const value_type E, const value_type H) :
                     connector (connector), dh (dh), E (E), H (H) {}
 
           value_type operator() (const value_type max_stat, const std::vector<value_type>& stats,
@@ -54,7 +50,7 @@ namespace MR
             std::fill (enhanced_stats.begin(), enhanced_stats.end(), 0.0);
 
             for (value_type h = this->dh; h < max_stat; h += this->dh) {
-              std::vector<Image::Filter::cluster> clusters;
+              std::vector<Filter::cluster> clusters;
               std::vector<uint32_t> labels (enhanced_stats.size(), 0);
               connector.run (clusters, labels, stats, h);
               for (size_t i = 0; i < enhanced_stats.size(); ++i)
@@ -66,7 +62,7 @@ namespace MR
           }
 
         protected:
-          const Image::Filter::Connector& connector;
+          const Filter::Connector& connector;
           const value_type dh, E, H;
       };
 

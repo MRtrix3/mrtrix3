@@ -21,7 +21,8 @@
 #ifndef __math_stats_glm_h__
 #define __math_stats_glm_h__
 
-#include <gsl/gsl_linalg.h>
+#include "types.h"
+#include "math/least_squares.h"
 
 #define GLM_BATCH_SIZE 1024
 
@@ -32,38 +33,6 @@ namespace MR
     namespace Stats
     {
 
-      typedef float value_type;
-
-
-      inline void SVD_invert (Eigen::MatrixXd& I, const Eigen::MatrixXd& M, double precision = 1.0e-10)
-      {
-        size_t N = std::min (M.rows(), M.columns());
-        Eigen::MatrixXd U (M), V (N,N);
-        Eigen::MatrixXd S (N), work (N);
-        gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
-        for (size_t n = 0; n < N; ++n) {
-          double sv = S[n] < precision ? 0.0 : 1.0/S[n];
-          for (size_t r = 0; r < N; ++r)
-            V(r,n) *= sv;
-        }
-        Math::mult (I, 1.0, CblasNoTrans, V, CblasTrans, U);
-      }
-
-
-      inline size_t rank (const Eigen::MatrixXd& M)
-      {
-        size_t N = std::min (M.rows(), M.columns());
-        Eigen::MatrixXd U (M), V (N,N);
-        Eigen::VectorXd S (N), work (N);
-        gsl_linalg_SV_decomp (U.gsl(), V.gsl(), S.gsl(), work.gsl());
-        for (size_t n = 0; n < N; ++n)
-          if (S[n] < 1.0e-10)
-            return n+1;
-        return N;
-      }
-
-
-
       namespace GLM {
 
         //! scale contrasts for use in t-test
@@ -73,26 +42,18 @@ namespace MR
                                                                                            const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
                                                                                            size_t degrees_of_freedom)
           {
-            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> XtX;
-            Math::mult (XtX, ValueType(1.0), CblasTrans, design, CblasNoTrans, design);
-            {
-              Eigen::MatrixXd d_XtX = XtX;
-              Eigen::MatrixXd d_pinv_XtX;
-              SVD_invert (d_pinv_XtX, d_XtX);
-              XtX = d_pinv_XtX;
-            }
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> XtX = Math::pinv ((design.transpose() * design).template cast<double>()).template cast<ValueType>();
 
             // make sure contrast is a column vector:
             Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> scaled_contrasts (contrasts);
-            if (scaled_contrasts.columns() > 1 && scaled_contrasts.rows() > 1)
+            if (scaled_contrasts.cols() > 1 && scaled_contrasts.rows() > 1)
               throw Exception ("too many columns in contrast matrix: this implementation currently only supports univariate GLM");
             if (scaled_contrasts.rows() > 1)
-              scaled_contrasts = scaled_contrasts.transpose();
+              scaled_contrasts.transposeInPlace();
             scaled_contrasts.resize (scaled_contrasts.rows(), design.cols());
 
             for (size_t n = 0; n < contrasts.rows(); ++n) {
-              Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c;
-              pinv_XtX_c = XtX * contrasts.row(n);
+              Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c = XtX * contrasts.row(n).transpose(); //TODO transpose
               scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / contrasts.row(n).dot(pinv_XtX_c));
             }
 
@@ -110,20 +71,19 @@ namespace MR
          * using the GLM::scale_contrasts() function. */
         template <typename ValueType>
           inline void ttest (
-              Math::Matrix<ValueType>& tvalues,
-              const Math::Matrix<ValueType>& design,  //TODO check Eigen default template parameteres
-              const Math::Matrix<ValueType>& pinv_design,
-              const Math::Matrix<ValueType>& measurements,
-              const Math::Matrix<ValueType>& scaled_contrasts,
-              Math::Matrix<ValueType>& betas,
-              Math::Matrix<ValueType>& residuals)
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& tvalues,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& pinv_design,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& scaled_contrasts,
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& betas,
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& residuals)
           {
-            Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinv_design);
-            Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
-            residuals += measurements;
-            Math::mult (tvalues, ValueType(1.0), CblasNoTrans, betas, CblasTrans, scaled_contrasts);
+            betas.noalias() = measurements * pinv_design;
+            residuals.noalias() = measurements - betas * design;
+            tvalues.noalias() = betas * scaled_contrasts;
             for (size_t n = 0; n < tvalues.rows(); ++n)
-              tvalues.row(n) /= Math::norm (residuals.row(n));
+              tvalues.row(n).array() /= residuals.row(n).norm();
           }
 
           /** \addtogroup Statistics
@@ -134,13 +94,9 @@ namespace MR
           * @param betas the matrix containing the output effect
           */
           template <typename ValueType>
-            inline void solve_betas (const Math::Matrix<ValueType>& measurements,
-                                     const Math::Matrix<ValueType>& design,
-                                     Math::Matrix<ValueType>& betas) {
-            Math::Matrix<double> d_pinvX, d_X (design);
-            SVD_invert (d_pinvX, d_X);
-            Math::Matrix<ValueType> pinvX = d_pinvX;
-            Math::mult (betas, ValueType(1.0), CblasNoTrans, measurements, CblasTrans, pinvX);
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> solve_betas (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+                                                                                  const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design) {
+            return design.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(measurements.transpose());
           }
 
 
@@ -152,15 +108,27 @@ namespace MR
           * @param effect the matrix containing the output effect
           */
           template <typename ValueType>
-            inline void abs_effect_size (const Math::Matrix<ValueType>& measurements,
-                                         const Math::Matrix<ValueType>& design,
-                                         const Math::Matrix<ValueType>& contrast,
-                                         Math::Matrix<ValueType>& effect) {
-              Math::Matrix<ValueType> betas;
-              GLM::solve_betas (measurements, design, betas);
-              Math::mult (effect, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> abs_effect_size (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+                                                                                      const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
+                                                                                      const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& contrast) {
+              return contrast * solve_betas (measurements, design);
           }
 
+
+          /*! Compute the pooled standard deviation
+          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
+          * @param stdev the matrix containing the output standard deviation size
+          */
+          template <typename ValueType>
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> stdev (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+                                                                            const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design) {
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> residuals = measurements.transpose() - design * solve_betas (measurements, design); //TODO
+              residuals = residuals.array().pow(2.0);
+              Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> one_over_dof (1, measurements.cols());  //TODO supply transposed measurements
+              one_over_dof.fill(1.0 / ValueType(design.rows()-Math::rank(design)));
+              return (one_over_dof * residuals).array().sqrt();
+          }
 
 
           /*! Compute cohen's d, the standardised effect size between two means
@@ -170,46 +138,10 @@ namespace MR
           * @param cohens_d the matrix containing the output standardised effect size
           */
           template <typename ValueType>
-            inline void std_effect_size (const Math::Matrix<ValueType>& measurements,
-                                         const Math::Matrix<ValueType>& design,
-                                         const Math::Matrix<ValueType>& contrast,
-                                         Math::Matrix<ValueType>& cohens_d) {
-              Math::Matrix<ValueType> betas;
-              GLM::solve_betas (measurements, design, betas);
-              Math::Matrix<ValueType> residuals;
-              Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
-              residuals += measurements;
-              residuals.pow (2.0);
-              Math::Matrix<ValueType> one_over_dof (measurements.columns(), 1);
-              one_over_dof = 1.0 / ValueType(design.rows()-rank(design));
-              Math::Matrix<ValueType> stdev;
-              Math::mult (stdev, residuals, one_over_dof);
-              stdev.sqrt();
-              Math::mult (cohens_d, ValueType(1.0), CblasNoTrans, betas, CblasTrans, contrast);
-              cohens_d /= stdev;
-          }
-
-
-
-          /*! Compute the pooled standard deviation
-          * @param measurements a matrix storing the measured data for each subject in a column
-          * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
-          * @param stdev the matrix containing the output standard deviation size
-          */
-          template <typename ValueType>
-            inline void stdev (const Math::Matrix<ValueType>& measurements,
-                               const Math::Matrix<ValueType>& design,
-                               Math::Matrix<ValueType>& stdev) {
-              Math::Matrix<ValueType> betas;
-              GLM::solve_betas (measurements, design, betas);
-              Math::Matrix<ValueType> residuals;
-              Math::mult (residuals, ValueType(-1.0), CblasNoTrans, betas, CblasTrans, design);
-              residuals += measurements;
-              residuals.pow(2.0);
-              Math::Matrix<ValueType> one_over_dof (measurements.columns(), 1);
-              one_over_dof = 1.0 / ValueType(design.rows()-rank(design));
-              Math::mult (stdev, residuals, one_over_dof);
-              stdev.sqrt();
+            Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic> std_effect_size (const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& measurements,
+                                                                                      const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& design,
+                                                                                      const Eigen::Matrix<ValueType, Eigen::Dynamic, Eigen::Dynamic>& contrast) {
+              return abs_effect_size (measurements, design, contrast).array() / stdev (measurements, design).array();
           }
           //! @}
       }
@@ -221,20 +153,18 @@ namespace MR
       {
         public:
           /*!
-          * @param measurements a matrix storing the measured data for each subject in a column
+          * @param measurements a matrix storing the measured data for each subject in a column //TODO
           * @param design the design matrix (unlike other packages a column of ones is NOT automatically added for correlation analysis)
           * @param contrast a matrix containing the contrast of interest.
           */
-          GLMTTest (const Math::Matrix<value_type>& measurements,
-                    const Math::Matrix<value_type>& design,
-                    const Math::Matrix<value_type>& contrast) :
+          GLMTTest (const Eigen::MatrixXf& measurements,
+                    const Eigen::MatrixXf& design,
+                    const Eigen::MatrixXf& contrast) :
             y (measurements),
             X (design),
-            scaled_contrasts (GLM::scale_contrasts (contrast, X, X.rows()-rank(X)))
+            scaled_contrasts (GLM::scale_contrasts (contrast, X, X.rows()-rank(X)).transpose())
           {
-            Math::Matrix<double> d_pinvX, d_X (X);
-            SVD_invert (d_pinvX, d_X);
-            pinvX = d_pinvX;
+            pinvX = Math::pinv (X.cast<double>()).template cast<float>();
           }
 
           /*! Compute the t-statistics
@@ -243,44 +173,46 @@ namespace MR
           * @param max_stat the maximum t-statistic
           * @param min_stat the minimum t-statistic
           */
-          void operator() (const std::vector<size_t>& perm_labelling, std::vector<value_type>& stats,
-                           value_type& max_stat, value_type& min_stat) const
+          void operator() (const std::vector<size_t>& perm_labelling, std::vector<float>& stats,
+                           float& max_stat, float& min_stat) const
           {
             stats.resize (y.rows(), 0.0);
-            Math::Matrix<value_type> tvalues, betas, residuals, SX, pinvSX;
+            Eigen::MatrixXf tvalues, betas, residuals, SX, pinvSX;
 
-            SX.allocate (X);
-            pinvSX.allocate (pinvX);
-            for (size_t i = 0; i < X.rows(); ++i) {
+            SX.resize (X.rows(), X.cols());
+            pinvSX.resize (pinvX.rows(), pinvX.cols());
+            for (ssize_t i = 0; i < X.rows(); ++i) {
               // TODO: check whether we should permute rows or columns
               SX.row(i) = X.row (perm_labelling[i]);
-              pinvSX.column(i) = pinvX.column (perm_labelling[i]);
+              pinvSX.col(i) = pinvX.col (perm_labelling[i]);
             }
 
-            for (size_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
-              GLM::ttest (tvalues, SX, pinvSX, y.sub(i, std::min (i+GLM_BATCH_SIZE, y.rows()), 0, y.columns()),
-                  scaled_contrasts, betas, residuals);
-              for (size_t n = 0; n < tvalues.rows(); ++n) {
-                value_type val = tvalues(n,0);
+            pinvSX.transposeInPlace();
+            SX.transposeInPlace();
+            for (ssize_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
+              Eigen::MatrixXf tmp = y.block(i, 0, std::min (i+GLM_BATCH_SIZE, y.rows()), y.cols());
+              GLM::ttest (tvalues, SX, pinvSX, tmp, scaled_contrasts, betas, residuals);
+              for (ssize_t n = 0; n < tvalues.rows(); ++n) {
+                float val = tvalues(n,0);
                 if (std::isfinite (val)) {
                   if (val > max_stat)
                     max_stat = val;
                   if (val < min_stat)
                     min_stat = val;
                 } else {
-                  val = value_type(0.0);
+                  val = float(0.0);
                 }
                 stats[i+n] = val;
               }
             }
           }
 
-          size_t num_subjects () const { return y.columns(); }
+          size_t num_subjects () const { return y.cols(); }
           size_t num_elements () const { return y.rows(); }
 
         protected:
-          const Math::Matrix<value_type>& y;
-          Math::Matrix<value_type> X, pinvX, scaled_contrasts;
+          const Eigen::MatrixXf& y;
+          Eigen::MatrixXf X, pinvX, scaled_contrasts;
       };
       //! @}
 
