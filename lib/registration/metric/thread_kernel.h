@@ -25,7 +25,6 @@
 
 #include "image.h"
 #include "algo/iterator.h"
-#include "algo/neighbourhooditerator.h"
 #include "transform.h"
 
 namespace MR
@@ -51,14 +50,23 @@ namespace MR
         struct is_neighbourhood_metric<MetricType, typename Void<typename MetricType::is_neighbourhood>::type> {
           typedef int yes;
         };
+
+        template <class MetricType, typename U = void>
+        struct use_processed_image {
+          typedef int no;
+        };
+
+        template <class MetricType>
+        struct use_processed_image<MetricType, typename Void<typename MetricType::requires_precompute>::type> {
+          typedef int yes;
+        };
       }
       //! \endcond
-
 
       template <class MetricType, class ParamType>
       class ThreadKernel {
         public:
-          ThreadKernel (const MetricType& metric, ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient) :
+          ThreadKernel (const MetricType& metric, const ParamType& parameters, default_type& overall_cost_function, Eigen::VectorXd& overall_gradient) :
             metric (metric),
             params (parameters),
             cost_function (0.0),
@@ -140,93 +148,42 @@ namespace MR
           #endif
 
           template <class U = MetricType>
-            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0) {
+            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::no = 0) {
+              throw Exception ("neighbourhood metric without precompute method not implemented");
+            }
+
+          template <class U = MetricType>
+            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::yes = 0) {
+              assert(params.processed_image.valid());
+
               Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
-              typedef Eigen::Matrix< default_type, 3, Eigen::Dynamic > NeighbhType1;
-              typedef Eigen::Matrix< default_type, 3, Eigen::Dynamic > NeighbhType2;
+              if (params.processed_mask.valid()){
+                // assign_pos_of(iter).to(params.processed_mask);
+                params.processed_mask.index(0) = iter.index(0);
+                params.processed_mask.index(1) = iter.index(1);
+                params.processed_mask.index(2) = iter.index(2);
+                if (!params.processed_mask.value())
+                  return;
+              }
+              // Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
+              // if (params.processed_mask_interp){
+                // assign_pos_of(iter).to(*params.processed_mask_interp);
+                // std::cerr << iter << ": mask1" << *params.processed_mask_interp << std::endl;
+                // params.processed_mask_interp->scanner(midway_point);
+                // params.processed_mask_interp->index(0) = voxel_pos[0];
+                // params.processed_mask_interp->index(1) = voxel_pos[1];
+                // params.processed_mask_interp->index(2) = voxel_pos[2];
+                // if (!params.processed_mask_interp->value())
+                  // return;
+              // }
 
-              NeighbhType1 neighbh1;
-              NeighbhType2 neighbh2;
-              
-              // mat * Map<Matrix<float, 3, Dynamic> >(data,3,N).colwise().homogeneous()
-
-              Eigen::Vector3 midway_point, moving_point, template_point;
+              Eigen::Vector3 midway_point, im1_point, im2_point;
               midway_point = transform.voxel2scanner * voxel_pos;
-              params.transformation.transform_half_inverse (template_point, midway_point);
-              params.transformation.transform_half (moving_point, midway_point);
-              
-              params.moving_image_interp->scanner (moving_point);
-              if (!(*params.moving_image_interp))
-                return;
-              
-              params.template_image_interp->scanner (template_point);
-              if (!(*params.template_image_interp))
-                return;
+              params.transformation.transform_half (im1_point, midway_point);
+              params.transformation.transform_half_inverse (im2_point, midway_point);
 
-              if (params.moving_mask_interp) {
-                params.moving_mask_interp->scanner (moving_point);
-                if (!params.moving_mask_interp->value())
-                  return;
-              }
-
-              if (params.template_mask_interp) {
-                params.template_mask_interp->scanner (template_point);
-                if (!params.template_mask_interp->value())
-                  return;
-              }
-
-              Eigen::Vector3 mid_point, point1, point2;
-              mid_point.setZero(); // avoid compiler warning [-Wmaybe-uninitialized]
-              point1.setZero();
-              point2.setZero();
-              auto extent = params.get_extent();
-              auto niter = NeighbourhoodIterator(iter, extent);
-              size_t actual_size = 0;
-              size_t anticipated_size = 0;
-              while(niter.loop()){
-                // std::cerr << niter << std::endl;
-                anticipated_size = niter.extent(0) * niter.extent(1) * niter.extent(2);
-                neighbh1.resize(3,anticipated_size);
-                neighbh2.resize(3,anticipated_size);
-
-                Eigen::Vector3 vox ((default_type)niter.index(0), (default_type)niter.index(1), (default_type)niter.index(2));
-                mid_point = transform.voxel2scanner * vox;
-                
-                params.transformation.transform_half (point1, mid_point);
-                params.moving_image_interp->scanner (point1);
-                if (!(*params.moving_image_interp))
-                  continue;
-                if (params.moving_mask_interp) {
-                  params.moving_mask_interp->scanner (point1);
-                  if (!params.moving_mask_interp->value())
-                    continue;
-                }
-
-                params.transformation.transform_half_inverse (point2, mid_point);
-                params.template_image_interp->scanner (point2);
-                if (!(*params.template_image_interp))
-                  continue;
-                if (params.template_mask_interp) {
-                  params.template_mask_interp->scanner (point2);
-                  if (!params.template_mask_interp->value())
-                    continue;
-                }
-
-                neighbh1.col(actual_size) = point1;
-                neighbh2.col(actual_size) = point2;
-                actual_size += 1;
-              }
-
-              if (actual_size == 0)
-                throw Exception ("neighbourhood does not include centre");
-
-              if (anticipated_size != actual_size){
-                neighbh1.conservativeResize(neighbh1.rows(), actual_size);
-                neighbh2.conservativeResize(neighbh2.rows(), actual_size);
-              }
-
-              cost_function += metric (params, neighbh1, neighbh2, template_point, moving_point, mid_point, gradient);
+              cost_function += metric (params, iter, im1_point, im2_point, midway_point, gradient);
             }
 
           protected:

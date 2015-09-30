@@ -31,31 +31,38 @@ namespace MR
     {
 
       template <class TransformType,
-                class MovingImageType,
-                class MovingImageInterpolatorType,
-                class TemplateImageType,
+                class Im1ImageType,
+                class Im2ImageType,
                 class MidwayImageType,
-                class TemplateImageInterpolatorType,
-                class MovingMaskInterpolatorType,
-                class TemplateMaskInterpolatorType>
+                class Im1ImageInterpolatorType,
+                class Im2ImageInterpolatorType,
+                class Im1MaskInterpolatorType,
+                class Im2MaskInterpolatorType,
+                class ProcessedImageType,
+                class ProcessedImageInterpolatorType,
+                class ProcessedMaskType,
+                class ProcessedMaskInterpolatorType>
       class Params {
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
-          typedef typename MovingImageInterpolatorType::value_type MovingValueType;
-          typedef typename TemplateImageInterpolatorType::value_type TemplateValueType;
+          typedef typename Im1ImageInterpolatorType::value_type MovingValueType;
+          typedef typename Im2ImageInterpolatorType::value_type TemplateValueType;
+          typedef typename ProcessedImageInterpolatorType::value_type ImProcessedValueType;
+          typedef ProcessedMaskType ImProcessedMaskType;
+          typedef ProcessedMaskInterpolatorType ImProcessedMaskInterpolatorType;
 
           Params (TransformType& transform,
-                  MovingImageType& moving_image,
-                  TemplateImageType& template_image,
+                  Im1ImageType& moving_image,
+                  Im2ImageType& template_image,
                   MidwayImageType& midway_image) :
                     transformation (transform),
                     moving_image (moving_image),
                     template_image (template_image),
                     midway_image (midway_image),
                     sparsity(static_cast<double> (0.0)){
-                      moving_image_interp.reset (new MovingImageInterpolatorType (moving_image));
-                      template_image_interp.reset (new TemplateImageInterpolatorType (template_image));
+                      moving_image_interp.reset (new Im1ImageInterpolatorType (moving_image));
+                      template_image_interp.reset (new Im2ImageInterpolatorType (template_image));
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
@@ -63,19 +70,22 @@ namespace MR
           const std::vector<size_t>& get_extent() const { return extent; }
 
           TransformType& transformation;
-          MovingImageType moving_image;
-          TemplateImageType template_image;
+          Im1ImageType moving_image;
+          Im2ImageType template_image;
           MidwayImageType midway_image;
-          MR::copy_ptr<MovingImageInterpolatorType> moving_image_interp;
-          MR::copy_ptr<TemplateImageInterpolatorType> template_image_interp;
-          MR::copy_ptr<MovingMaskInterpolatorType> moving_mask_interp;
-          MR::copy_ptr<TemplateMaskInterpolatorType> template_mask_interp;
+          MR::copy_ptr<Im1ImageInterpolatorType> moving_image_interp;
+          MR::copy_ptr<Im2ImageInterpolatorType> template_image_interp;
           double sparsity;
           std::vector<size_t> extent;
-          MovingImageType im1_processed;
-          TemplateImageType im2_processed;
-          MR::copy_ptr<MovingImageInterpolatorType> im1_processed_interp;
-          MR::copy_ptr<TemplateImageInterpolatorType> im2_processed_interp;
+          Image<bool> im1_mask;
+          Image<bool> im2_mask;
+          MR::copy_ptr<Im1MaskInterpolatorType> moving_mask_interp;
+          MR::copy_ptr<Im2MaskInterpolatorType> template_mask_interp;
+
+          ProcessedImageType processed_image;
+          MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp; 
+          ProcessedMaskType processed_mask;
+          MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp; 
       };
     }
   }

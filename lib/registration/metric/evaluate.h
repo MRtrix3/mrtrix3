@@ -37,6 +37,26 @@ namespace MR
   {
     namespace Metric
     {
+
+      //! \cond skip
+      namespace {
+        template<class T>
+        struct Void2 {
+          typedef void type;
+        };
+
+        template <class MetricType, typename U = void>
+        struct metric_requires_precompute {
+          typedef int no;
+        };
+
+        template <class MetricType>
+        struct metric_requires_precompute<MetricType, typename Void2<typename MetricType::requires_precompute>::type> {
+          typedef int yes;
+        };
+      }
+      //! \endcond
+
       template <class MetricType, class ParamType>
         class Evaluate {
           public:
@@ -49,8 +69,34 @@ namespace MR
               params (parameters),
               iteration (1) { }
 
+            // template <class U = MetricType>
+            // Evaluate (const MetricType& metric, ParamType& parameters, typename metric_requires_precompute<U>::yes = 0) :
+            //   metric (metric),
+            //   params (parameters),
+            //   iteration (1) { 
+            //     metric.precompute(parameters);
+            //     params(parameters); }
 
-            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
+            template <class U = MetricType>
+            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::yes = 0) {
+              default_type overall_cost_function = 0.0;
+              gradient.setZero();
+              params.transformation.set_parameter_vector(x);
+
+              metric.precompute(params);
+              {
+                ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
+                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+              }
+              DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
+              DEBUG ("  x: " + str(x.transpose()));
+              DEBUG ("  gradient: " + str(gradient.transpose()));
+              return overall_cost_function;
+            }
+
+
+            template <class U = MetricType>
+            double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::no = 0) {
 
               default_type overall_cost_function = 0.0;
               gradient.setZero();
