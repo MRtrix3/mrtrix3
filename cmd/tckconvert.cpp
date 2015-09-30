@@ -44,7 +44,7 @@ void usage ()
     "VTK polydata files, and ascii text files.";
 
   ARGUMENTS
-  + Argument ("input", "the input track file.").type_file_in ()
+  + Argument ("input", "the input track file.").type_text ()
   + Argument ("output", "the output track file.").type_file_out ();
 
   OPTIONS
@@ -117,6 +117,40 @@ private:
 };
 
 
+
+
+class ASCIIReader: public ReaderInterface<float>
+{
+public:
+    ASCIIReader(const std::string& file) {
+        VAR(file);
+        auto num = list.parse_scan_check(file);
+        VAR(num);
+        VAR(list.size());
+        VAR(list[0].name());
+    }
+
+    bool operator() (Streamline<float>& tck) {
+        tck.clear();
+        if (item < list.size()) {
+            auto t = load_matrix<float>(list[item].name());
+            for (size_t i = 0; i < t.rows(); i++)
+                tck.push_back(Eigen::Vector3f(t.row(i)));
+            item++;
+            return true;
+        }
+        return false;
+    }
+
+    ~ASCIIReader() { }
+
+private:
+    File::ParsedName::List list;
+    size_t item = 0;
+
+};
+
+
 class ASCIIWriter: public WriterInterface<float>
 {
 public:
@@ -161,7 +195,16 @@ void run ()
 {
     // Reader
     Properties properties;
-    Reader<float> read (argument[0], properties);
+    std::unique_ptr<ReaderInterface<float> > reader;
+    if (has_suffix(argument[0], ".tck")) {
+        reader.reset( new Reader<float>(argument[0], properties) );
+    }
+    else if (has_suffix(argument[0], ".txt")) {
+        reader.reset( new ASCIIReader(argument[0]) );
+    }
+    else {
+        throw Exception("Unsupported input file type.");
+    }
 
     // Writer
     std::unique_ptr<WriterInterface<float> > writer;
@@ -175,7 +218,7 @@ void run ()
         writer.reset( new ASCIIWriter(argument[1]) );
     }
     else {
-        throw Exception("Unknown file type.");
+        throw Exception("Unsupported output file type.");
     }
     
     
@@ -202,7 +245,7 @@ void run ()
     
     // Copy
     Streamline<float> tck;
-    while (read(tck))
+    while ( (*reader)(tck) )
     {
         for (auto& pos : tck) {
             pos = T.cast<float>() * pos;
