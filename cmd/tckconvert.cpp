@@ -22,6 +22,7 @@
 
 #include "command.h"
 #include "file/ofstream.h"
+#include "file/name_parser.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -60,7 +61,7 @@ void usage ()
 }
 
 
-class VTKWriter
+class VTKWriter: public WriterInterface<float>
 {
 public:
     VTKWriter(const std::string& file) : VTKout (file) {
@@ -76,8 +77,7 @@ public:
         VTKout << "XXXXXXXXXX float\n";
     }
 
-    template <class ValueType>
-    bool operator() (const Streamline<ValueType>& tck) {
+    bool operator() (const Streamline<float>& tck) {
         // write out points, and build index of tracks:
         size_t start_index = current_index;
         current_index += tck.size();
@@ -117,15 +117,68 @@ private:
 };
 
 
+class ASCIIWriter: public WriterInterface<float>
+{
+public:
+    ASCIIWriter(const std::string& file) {
+        count.push_back(0);
+        parser.parse(file);
+        parser.calculate_padding({1000000});
+    }
+
+    bool operator() (const Streamline<float>& tck) {
+      std::string name = parser.name(count);
+      File::OFStream out (name);
+      for (auto i = tck.begin(); i != tck.end(); ++i)
+        out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
+      out.close();
+      count[0]++;
+      return true;
+    }
+
+    ~ASCIIWriter() { }
+
+private:
+    File::NameParser parser;
+    std::vector<int> count;
+
+};
+
+
+
+
+bool has_suffix(const std::string &str, const std::string &suffix)
+{
+    return str.size() >= suffix.size() &&
+           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+
+
 
 
 void run ()
 {
+    // Reader
     Properties properties;
     Reader read (argument[0], properties);
 
-    VTKWriter write (argument[1]);
-
+    // Writer
+    std::unique_ptr<WriterInterface<float> > writer;
+    if (has_suffix(argument[1], ".tck")) {
+        writer.reset( new Writer<float>(argument[1], properties) );
+    }
+    else if (has_suffix(argument[1], ".vtk")) {
+        writer.reset( new VTKWriter(argument[1]) );
+    }
+    else if (has_suffix(argument[1], ".txt")) {
+        writer.reset( new ASCIIWriter(argument[1]) );
+    }
+    else {
+        throw Exception("Unknown file type.");
+    }
+    
+    
     // Tranform matrix
     transform_type T;
     T.setIdentity();
@@ -146,13 +199,15 @@ void run ()
         throw Exception("Transform options are mutually exclusive.");
     }
 
+    
+    // Copy
     Streamline<float> tck;
     while (read(tck))
     {
         for (auto& pos : tck) {
             pos = T.cast<float>() * pos;
         }
-        write(tck);
+        (*writer)(tck);
     }
 
 }
