@@ -40,8 +40,8 @@ void usage ()
   DESCRIPTION
   + "Convert between different track file formats."
 
-  + "The program currently supports MRtrix .tck files, "
-    "VTK polydata files, and ascii text files.";
+  + "The program currently supports MRtrix .tck files (input/output), "
+    "ascii text files (input/output), and VTK polydata files (output only).";
 
   ARGUMENTS
   + Argument ("input", "the input track file.").type_text ()
@@ -56,8 +56,18 @@ void usage ()
   + Option ("scanner2image",
       "if specified, the properties of this image will be used to convert "
       "track point positions from real (scanner) coordinates into image coordinates (in mm).")
-  +    Argument ("reference").type_image_in ();
+  +    Argument ("reference").type_image_in ()
 
+  + Option ("voxel2scanner",
+      "if specified, the properties of this image will be used to convert "
+      "track point positions from voxel coordinates into real (scanner) coordinates.")
+    + Argument ("reference").type_image_in ()
+
+  + Option ("image2scanner",
+      "if specified, the properties of this image will be used to convert "
+      "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
+  +    Argument ("reference").type_image_in ();
+  
 }
 
 
@@ -233,6 +243,18 @@ void run ()
     if (opt.size()) {
         auto header = Header::open(opt[0][0]);
         T = Transform(header).scanner2image;
+        nopts++;
+    }
+    opt = get_options("voxel2scanner");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).voxel2scanner;
+        nopts++;
+    }
+    opt = get_options("image2scanner");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).image2scanner;
         nopts++;
     }
     if (nopts > 1) {
