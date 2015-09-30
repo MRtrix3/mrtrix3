@@ -111,7 +111,7 @@ void run ()
 {
 
   Tractography::Properties properties;
-  Tractography::Reader reader (argument[0], properties);
+  Tractography::Reader<float> reader (argument[0], properties);
 
   std::vector< std::vector<node_t> > assignments_lists;
   assignments_lists.reserve (to<size_t>(properties["count"]));

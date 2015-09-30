@@ -45,6 +45,15 @@ namespace MR
     {
       
       template <class ValueType>
+      class ReaderInterface
+      {
+        public:
+          virtual bool operator() (Streamline<ValueType>&) = 0;
+          virtual ~ReaderInterface() { }
+      };
+      
+      
+      template <class ValueType>
       class WriterInterface
       {
         public:
@@ -55,7 +64,8 @@ namespace MR
 
 
       //! A class to read streamlines data
-      class Reader : public __ReaderBase__
+      template <class ValueType = float>
+      class Reader : public __ReaderBase__, public ReaderInterface<ValueType>
       {
         public:
 
@@ -72,8 +82,7 @@ namespace MR
             }
 
 
-          //! fetch next track from file
-          template <class ValueType>
+            //! fetch next track from file
             bool operator() (Streamline<ValueType>& tck) {
               tck.clear();
 
@@ -81,7 +90,7 @@ namespace MR
                 return false;
 
               do {
-                auto p = get_next_point<ValueType>();
+                auto p = get_next_point();
                 if (std::isinf (p[0])) {
                   in.close();
                   check_excess_weights();
@@ -131,7 +140,6 @@ namespace MR
 
           //! takes care of byte ordering issues
 
-          template <typename ValueType>
             Eigen::Matrix<ValueType,3,1> get_next_point ()
             { 
               using namespace ByteOrder;

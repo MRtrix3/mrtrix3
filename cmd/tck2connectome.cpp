@@ -125,7 +125,7 @@ void run ()
 
   // Prepare for reading the track data
   Tractography::Properties properties;
-  Tractography::Reader reader (argument[0], properties);
+  Tractography::Reader<float> reader (argument[0], properties);
 
   // Initialise classes in preparation for multi-threading
   Mapping::TrackLoader loader (reader, properties["count"].empty() ? 0 : to<size_t>(properties["count"]), "Constructing connectome... ");

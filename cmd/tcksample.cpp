@@ -246,7 +246,7 @@ inline Eigen::Vector3f get_pos (const std::vector<default_type>& s)
 void run ()
 {
   DWI::Tractography::Properties properties;
-  DWI::Tractography::Reader read (argument[0], properties);
+  DWI::Tractography::Reader<value_type> read (argument[0], properties);
 
   auto image = Image<value_type>::open (argument[1]);
   auto interp = Interp::Linear< decltype(image) > (image);

@@ -46,7 +46,7 @@ namespace MR {
         size_t determine_upsample_ratio (const Header& header, const std::string& tck_path, const float ratio)
         {
           Properties properties;
-          Reader reader (tck_path, properties);
+          Reader<> reader (tck_path, properties);
           return determine_upsample_ratio (header, properties, ratio);
         }
 
@@ -78,7 +78,7 @@ namespace MR {
         {
 
           Properties properties;
-          Reader file (tck_file_path, properties);
+          Reader<> file (tck_file_path, properties);
 
           Streamline<> tck;
           size_t track_counter = 0;

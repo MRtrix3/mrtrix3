@@ -61,7 +61,7 @@ void run ()
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Tractography::Properties properties;
-    Tractography::Reader file (argument[i], properties);
+    Tractography::Reader<float> file (argument[i], properties);
 
     std::cout << "***********************************\n";
     std::cout << "  Tracks file: \"" << argument[i] << "\"\n";

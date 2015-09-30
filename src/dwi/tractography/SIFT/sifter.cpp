@@ -294,7 +294,7 @@ namespace MR
       void SIFTer::output_filtered_tracks (const std::string& input_path, const std::string& output_path) const
       {
         Tractography::Properties p;
-        Tractography::Reader reader (input_path, p);
+        Tractography::Reader<float> reader (input_path, p);
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;

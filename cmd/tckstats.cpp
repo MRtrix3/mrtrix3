@@ -111,7 +111,7 @@ void run ()
 
   {
     Tractography::Properties properties;
-    Tractography::Reader reader (argument[0], properties);
+    Tractography::Reader<float> reader (argument[0], properties);
 
     if (properties.find ("count") != properties.end())
       header_count = to<size_t> (properties["count"]);

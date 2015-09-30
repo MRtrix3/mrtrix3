@@ -171,7 +171,7 @@ namespace MR
       void Model<Fixel>::map_streamlines (const std::string& path)
       {
         Tractography::Properties properties;
-        Tractography::Reader file (path, properties);
+        Tractography::Reader<> file (path, properties);
 
         const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
         if (!count)
@@ -305,7 +305,7 @@ namespace MR
       void Model<Fixel>::output_non_contributing_streamlines (const std::string& output_path) const
       {
         Tractography::Properties p;
-        Tractography::Reader reader (tck_file_path, p);
+        Tractography::Reader<float> reader (tck_file_path, p);
         Tractography::Writer<float> writer (output_path, p);
         Tractography::Streamline<> tck, null_tck;
         ProgressBar progress ("Writing non-contributing streamlines output file...", contributions.size());

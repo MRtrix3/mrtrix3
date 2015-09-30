@@ -161,7 +161,7 @@ void run ()
 {
     // Reader
     Properties properties;
-    Reader read (argument[0], properties);
+    Reader<float> read (argument[0], properties);
 
     // Writer
     std::unique_ptr<WriterInterface<float> > writer;

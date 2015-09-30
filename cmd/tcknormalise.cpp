@@ -62,7 +62,7 @@ class Loader
 
     Tractography::Properties properties;
   protected:
-    Tractography::Reader reader;
+    Tractography::Reader<value_type> reader;
 };
 
 
