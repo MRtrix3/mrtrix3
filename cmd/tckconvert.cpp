@@ -140,7 +140,7 @@ public:
         tck.clear();
         if (item < list.size()) {
             auto t = load_matrix<float>(list[item].name());
-            for (size_t i = 0; i < t.rows(); i++)
+            for (size_t i = 0; i < size_t(t.rows()); i++)
                 tck.push_back(Eigen::Vector3f(t.row(i)));
             item++;
             return true;
