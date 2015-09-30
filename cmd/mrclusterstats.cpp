@@ -15,7 +15,7 @@
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU General Public Licensels
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -167,17 +167,21 @@ void run() {
   Header output_header (header);
   output_header.datatype() = DataType::Float32;
   output_header.keyval()["num permutations"] = str(num_perms);
-  output_header.keyval()["tfce_dh"] = str(tfce_dh);
-  output_header.keyval()["tfce_e"] = str(tfce_E);
-  output_header.keyval()["tfce_h"] = str(tfce_H);
   output_header.keyval()["26 connectivity"] = str(do_26_connectivity);
   output_header.keyval()["nonstationary adjustment"] = str(do_nonstationary_adjustment);
+  if (std::isfinite (cluster_forming_threshold)) {
+    output_header.keyval()["threshold"] = str(cluster_forming_threshold);
+  } else {
+    output_header.keyval()["tfce_dh"] = str(tfce_dh);
+    output_header.keyval()["tfce_e"] = str(tfce_E);
+    output_header.keyval()["tfce_h"] = str(tfce_H);
+  }
 
   std::string prefix (argument[4]);
 
   std::string cluster_name (prefix);
   if (std::isfinite (cluster_forming_threshold))
-     cluster_name.append ("clusters.mif");
+     cluster_name.append ("cluster_sizes.mif");
   else
     cluster_name.append ("tfce.mif");
 
@@ -203,7 +207,7 @@ void run() {
   if (compute_negative_contrast) {
     std::string cluster_neg_name (prefix);
     if (std::isfinite (cluster_forming_threshold))
-       cluster_neg_name.append ("clusters_neg.mif");
+       cluster_neg_name.append ("cluster_sizes_neg.mif");
     else
       cluster_neg_name.append ("tfce_neg.mif");
     cluster_image_neg = Image<value_type>::create (cluster_neg_name, output_header);
@@ -242,7 +246,6 @@ void run() {
 
       Stats::PermTest::precompute_default_permutation (glm, tfce_integrator, empirical_tfce_statistic,
                                                        default_cluster_output, default_cluster_output_neg, tvalue_output);
-
 
       Stats::PermTest::run_permutations (glm, tfce_integrator, num_perms, empirical_tfce_statistic,
                                          default_cluster_output, default_cluster_output_neg,

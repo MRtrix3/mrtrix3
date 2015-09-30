@@ -190,7 +190,7 @@ namespace MR
             pinvSX.transposeInPlace();
             SX.transposeInPlace();
             for (ssize_t i = 0; i < y.rows(); i += GLM_BATCH_SIZE) {
-              Eigen::MatrixXf tmp = y.block(i, 0, std::min (i+GLM_BATCH_SIZE, y.rows()), y.cols());
+              Eigen::MatrixXf tmp = y.block (i, 0, std::min (GLM_BATCH_SIZE, (int)(y.rows()-i)), y.cols());
               GLM::ttest (tvalues, SX, pinvSX, tmp, scaled_contrasts, betas, residuals);
               for (ssize_t n = 0; n < tvalues.rows(); ++n) {
                 float val = tvalues(n,0);
