@@ -123,11 +123,7 @@ class ASCIIReader: public ReaderInterface<float>
 {
 public:
     ASCIIReader(const std::string& file) {
-        VAR(file);
         auto num = list.parse_scan_check(file);
-        VAR(num);
-        VAR(list.size());
-        VAR(list[0].name());
     }
 
     bool operator() (Streamline<float>& tck) {
@@ -206,6 +202,7 @@ void run ()
         throw Exception("Unsupported input file type.");
     }
 
+    
     // Writer
     std::unique_ptr<WriterInterface<float> > writer;
     if (has_suffix(argument[1], ".tck")) {
