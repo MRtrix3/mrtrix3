@@ -47,11 +47,7 @@ void usage ()
         "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
         "with the -in and -ref options.")
     + Argument ("in").type_image_in ()
-    + Argument ("ref").type_image_in ()
-
-
-    + Option ("ants_import",
-        "convert a transformation matrix produced by ANTS affine registration into a format usable by MRtrix.");
+    + Argument ("ref").type_image_in ();
 }
 
 
