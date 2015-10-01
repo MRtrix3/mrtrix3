@@ -72,10 +72,10 @@ namespace MR
         bool Random_per_voxel::get_seed (Eigen::Vector3f& p) const
         {
 
+          std::lock_guard<std::mutex> lock (mutex);
+
           if (expired)
             return false;
-
-          std::lock_guard<std::mutex> lock (mutex);
 
           if (mask.index(2) < 0 || ++inc == num) {
             inc = 0;
@@ -112,10 +112,10 @@ namespace MR
         bool Grid_per_voxel::get_seed (Eigen::Vector3f& p) const
         {
 
+          std::lock_guard<std::mutex> lock (mutex);
+
           if (expired)
             return false;
-
-          std::lock_guard<std::mutex> lock (mutex);
 
           if (++pos[2] >= os) {
             pos[2] = 0;

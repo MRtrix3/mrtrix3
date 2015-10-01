@@ -46,17 +46,26 @@ namespace MR
     {
       namespace Tool
       {
+        class Base;
+
+
+
 
         class Dock : public QDockWidget
         {
           public:
             Dock (const QString& name) :
               QDockWidget (name, Window::main), tool (nullptr) { }
+            ~Dock (); 
 
             void closeEvent (QCloseEvent*) override;
 
             Base* tool;
         };
+
+
+
+
 
 
         class Base : public QFrame {
@@ -141,7 +150,16 @@ namespace MR
 
 
 
+
+
+
+
         //! \cond skip
+        
+        inline Dock::~Dock () { delete tool; }
+
+
+
         class __Action__ : public QAction
         {
           public:
@@ -155,6 +173,8 @@ namespace MR
               setShortcut (tr (std::string ("Ctrl+F" + str (index)).c_str()));
               setStatusTip (tr (description));
             }
+
+            virtual ~__Action__ () { delete dock; }
 
             virtual Dock* create () = 0;
             Dock* dock;

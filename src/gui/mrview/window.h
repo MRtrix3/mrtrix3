@@ -36,6 +36,30 @@ namespace MR
       {
           Q_OBJECT
 
+        private:
+          Cursor cursors_do_not_use;
+
+          class GLArea : public GL::Area {
+            public:
+              GLArea (Window& parent);
+              QSize sizeHint () const override;
+
+            protected:
+              void dragEnterEvent (QDragEnterEvent* event) override;
+              void dragMoveEvent (QDragMoveEvent* event) override;
+              void dragLeaveEvent (QDragLeaveEvent* event) override;
+              void dropEvent (QDropEvent* event) override;
+              bool event (QEvent* event) override;
+            private:
+              void initializeGL () override;
+              void paintGL () override;
+              void mousePressEvent (QMouseEvent* event) override;
+              void mouseMoveEvent (QMouseEvent* event) override;
+              void mouseReleaseEvent (QMouseEvent* event) override;
+              void wheelEvent (QWheelEvent* event) override;
+          };
+          GLArea* glarea;
+
         public:
           Window();
           ~Window();
@@ -178,30 +202,9 @@ namespace MR
 
 
         private:
-          Cursor cursors_do_not_use;
           QPoint mouse_position_, mouse_displacement_;
           Qt::MouseButtons buttons_;
           Qt::KeyboardModifiers modifiers_;
-
-          class GLArea : public GL::Area {
-            public:
-              GLArea (Window& parent);
-              QSize sizeHint () const override;
-
-            protected:
-              void dragEnterEvent (QDragEnterEvent* event) override;
-              void dragMoveEvent (QDragMoveEvent* event) override;
-              void dragLeaveEvent (QDragLeaveEvent* event) override;
-              void dropEvent (QDropEvent* event) override;
-              bool event (QEvent* event) override;
-            private:
-              void initializeGL () override;
-              void paintGL () override;
-              void mousePressEvent (QMouseEvent* event) override;
-              void mouseMoveEvent (QMouseEvent* event) override;
-              void mouseReleaseEvent (QMouseEvent* event) override;
-              void wheelEvent (QWheelEvent* event) override;
-          };
 
           enum MouseAction {
             NoAction,
@@ -213,7 +216,6 @@ namespace MR
             Rotate
           };
 
-          GLArea* glarea;
           std::unique_ptr<Mode::Base> mode;
           GL::Lighting* lighting_;
           GL::Font font;

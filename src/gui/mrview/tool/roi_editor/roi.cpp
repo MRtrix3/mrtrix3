@@ -319,7 +319,7 @@ namespace MR
             Window::GrabContext context; 
             roi->texture().bind();
             gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
-            gl::GetTexImage (gl::TEXTURE_3D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*) (&data[0]));
+            gl::GetTexImage (gl::TEXTURE_3D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*) (&data[0]));
           }
 
           try {
