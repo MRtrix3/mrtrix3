@@ -647,6 +647,11 @@ namespace MR
             const size_t ws = line.find (' ');
             const int num_vertices = to<int> (line.substr (0, ws));
             line = line.substr (ws + 1);
+            bool is_double = false;
+            if (line.substr (0, 6) == "double")
+              is_double = true;
+            else if (line.substr (0, 5) != "float")
+              throw Exception ("Error in reading binary .vtk file: Unsupported datatype (\"" + line + "\"");
 
             vertices.reserve (num_vertices);
             for (int i = 0; i != num_vertices; ++i) {
@@ -656,8 +661,15 @@ namespace MR
                 std::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);
               } else {
-                for (size_t i = 0; i != 3; ++i)
-                  in.read (reinterpret_cast<char*>(&v[i]), sizeof (float));
+                if (is_double) {
+                  double data[3];
+                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (double));
+                  v = { data[0], data[1], data[2] };
+                } else {
+                  float data[3];
+                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (float));
+                  v = { data[0], data[1], data[2] };
+                }
               }
               vertices.push_back (v);
 
@@ -990,14 +1002,21 @@ namespace MR
 
         out.close();
         out.open (path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-        const std::string points_header ("POINTS " + str(vertices.size()) + " float\n");
+        const bool is_double = (sizeof(default_type) == 8);
+        const std::string str_datatype = is_double ? "double" : "float";
+        const std::string points_header ("POINTS " + str(vertices.size()) + " " + str_datatype + "\n");
         out.write (points_header.c_str(), points_header.size());
         for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
           //float temp[3];
           //for (size_t id = 0; id != 3; ++id)
           //  MR::putBE ((*i)[id], &temp[id]);
-          const float temp[3] { float((*i)[0]), float((*i)[1]), float((*i)[2]) };
-          out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
+          if (is_double) {
+            const double temp[3] { double((*i)[0]), double((*i)[1]), double((*i)[2]) };
+            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(double));
+          } else {
+            const float temp[3] { float((*i)[0]), float((*i)[1]), float((*i)[2]) };
+            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
+          }
           ++progress;
         }
         const std::string polygons_header ("POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n");
