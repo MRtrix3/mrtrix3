@@ -147,6 +147,7 @@ namespace MR
         class Rejection : public Base
         {
           public:
+            typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
             Rejection (const std::string&);
 
             virtual bool get_seed (Eigen::Vector3f& p) const override;
