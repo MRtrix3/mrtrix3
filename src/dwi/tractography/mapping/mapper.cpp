@@ -149,6 +149,11 @@ void TrackMapperTWI::set_factor (const Streamline<>& tck, SetVoxelExtras& out) c
             out.factor = 0.0;
           break;
 
+        case ENDS_CORR:
+          assert (factors.size() == 1);
+          out.factor = factors.front();
+          break;
+
         default:
           throw Exception ("FIXME: Undefined / unsupported track statistic in TrackMapperTWI::get_factor()");
 

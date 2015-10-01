@@ -80,8 +80,6 @@ class TODMappingPlugin
 class TWIImagePluginBase
 {
 
-    typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
-
   public:
     TWIImagePluginBase (const std::string& input_image) :
         data (new Image::BufferPreload<float> (input_image)),
@@ -100,11 +98,13 @@ class TWIImagePluginBase
 
 
   protected:
+    typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
+
     std::shared_ptr< Image::BufferPreload<float> > data;
     const input_voxel_type voxel;
     // Each instance of the class has its own interpolator for obtaining values
     //   in a thread-safe fashion
-    mutable Image::Interp::Linear< input_voxel_type > interp;
+    mutable Image::Interp::Linear<input_voxel_type> interp;
 
     // New helper function; find the last point on the streamline from which valid image information can be read
     const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool) const;
@@ -122,10 +122,15 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
         TWIImagePluginBase (input_image),
         statistic (track_statistic)
     {
-      if (!((data->ndim() == 3) || (data->ndim() == 4 && data->dim(3) == 1)))
-        throw Exception ("Scalar image used for TWI must be a 3D image");
-      if (data->ndim() == 4)
-        interp[3] = 0;
+      if (track_statistic == ENDS_CORR) {
+        if (data->ndim() != 4)
+          throw Exception ("Image provided for ends_corr statistic must be a 4D image");
+      } else {
+        if (!((data->ndim() == 3) || (data->ndim() == 4 && data->dim(3) == 1)))
+          throw Exception ("Scalar image used for TWI must be a 3D image");
+        if (data->ndim() == 4)
+          interp[3] = 0;
+      }
     }
 
     TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
