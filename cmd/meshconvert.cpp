@@ -97,7 +97,7 @@ void run ()
   if (opt.size()) {
     if (have_transformed)
       throw Exception ("meshconvert can only perform one spatial transformation per call");
-    Image::Header H (opt[0][0]);
+    Header H = Header::open (opt[0][0]);
     for (auto i = meshes.begin(); i != meshes.end(); ++i)
       i->transform_realspace_to_first (H);
     have_transformed = true;

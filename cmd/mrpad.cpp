@@ -62,16 +62,16 @@ void run ()
   Header input_header = Header::open (argument[0]);
   auto input = input_header.get_image<float>();
 
-  int bounds[3][2] = { {0, input_header.size (0) - 1},
+  ssize_t bounds[3][2] = { {0, input_header.size (0) - 1},
                        {0, input_header.size (1) - 1},
                        {0, input_header.size (2) - 1} };
 
-  int padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
+  ssize_t padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
 
   auto opt = get_options ("uniform");
   if (opt.size()) {
-    int pad = opt[0][0];
-    for (int axis = 0; axis < 3; axis++) {
+    ssize_t pad = opt[0][0];
+    for (size_t axis = 0; axis < 3; axis++) {
       padding[axis][0] = pad;
       padding[axis][1] = pad;
     }
@@ -80,27 +80,27 @@ void run ()
   opt = get_options ("axis");
   for (size_t i = 0; i != opt.size(); ++i) {
     // Manual padding of axis overrides uniform padding
-    const int axis  = opt[i][0];
+    const size_t axis  = opt[i][0];
     padding[axis][0] = opt[i][1];
     padding[axis][1] = opt[i][2];
   }
 
   Header output_header (input_header);
   auto output_transform = input_header.transform();
-  for (int axis = 0; axis < 3; ++axis) {
-    output_header.dim (axis) = output_header.dim(axis) + padding[axis][0] + padding[axis][1];
-    output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.vox (0))
-                                + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.vox (1))
-                                + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.vox (2));
+  for (size_t axis = 0; axis < 3; ++axis) {
+    output_header.size (axis) = output_header.size(axis) + padding[axis][0] + padding[axis][1];
+    output_transform (axis, 3) +=	(output_transform (axis, 0) * (bounds[0][0] - padding[0][0]) * input_header.spacing (0))
+                                + (output_transform (axis, 1) * (bounds[1][0] - padding[0][0]) * input_header.spacing (1))
+                                + (output_transform (axis, 2) * (bounds[2][0] - padding[0][0]) * input_header.spacing (2));
   }
   output_header.transform() = output_transform;
   auto output = Image<float>::create (argument[1], output_header);
 
   for (auto l = Loop ("padding image... ", output) (output); l; ++l) {
     bool in_bounds = true;
-    for (int axis = 0; axis < 3; ++axis) {
-      input[axis] = output[axis] - padding[axis][0];
-      if (input[axis] < 0 || input[axis] >= input_header.size (axis))
+    for (size_t axis = 0; axis < 3; ++axis) {
+      input.index(axis) = output.index(axis) - padding[axis][0];
+      if (input.index(axis) < 0 || input.index(axis) >= input_header.size (axis))
         in_bounds = false;
     }
     if (input.ndim() > 3)

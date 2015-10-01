@@ -97,7 +97,6 @@ namespace MR
         for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
           *n = transform.scanner2image.rotation() * *n;
           (*n)[0] = -(*n)[0];
-
         }
       }
     }
@@ -797,13 +796,8 @@ namespace MR
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested facets");
             inside_facet = true;
             line = line.substr (12);
-<<<<<<< HEAD
             sscanf (line.c_str(), "%lf %lf %lf", &normal[0], &normal[1], &normal[2]);
-          } else if (line.substr(10) == "outer loop") {
-=======
-            sscanf (line.c_str(), "%f %f %f", &normal[0], &normal[1], &normal[2]);
           } else if (line.substr(0, 10) == "outer loop") {
->>>>>>> origin/master
             if (inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested loops");
             if (!inside_facet)

@@ -300,9 +300,9 @@ namespace MR {
             for (size_t end = 0; end != 2; ++end) {
               const auto vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
               if (check (vox, info)) {
-                Streamline<>::point_type dir;
+                Streamline<>::point_type dir { NAN, NAN, NAN };
                 if (tck.size() > 1)
-                  dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalise();
+                  dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalized();
                 add_to_set (out, vox, dir, 1.0f);
               }
             }

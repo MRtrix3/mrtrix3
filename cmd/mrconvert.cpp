@@ -238,11 +238,11 @@ void run ()
     if (lowercase (opt[0][0]) == "preserve")
       header_out.set_intensity_scaling (header_in);
     else {
-      std::vector<float> scaling = opt[0][0];
+      std::vector<default_type> scaling = parse_floats (opt[0][0]);
       if (scaling.size() != 2) 
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
-      header_out.intensity_scale() = scaling[1];
+      header_out.intensity_scale()  = scaling[1];
     }
   }
 
