@@ -122,7 +122,7 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
       "define the statistic for choosing the contribution to be made by each streamline as a "
       "function of the samples taken along their lengths\n"
       "Only has an effect for 'scalar_map', 'fod_amp' and 'curvature' contrast types\n"
-      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod (default: mean)")
+      "Options are: sum, min, mean, max, median, mean_nonzero, gaussian, ends_min, ends_mean, ends_max, ends_prod, ends_corr (default: mean)")
     + Argument ("type").type_choice (track_statistics)
 
   + Option ("fwhm_tck",
@@ -421,7 +421,7 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD)
+      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD || stat_tck == ENDS_CORR)
         throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
       break;
 
@@ -545,6 +545,7 @@ void run () {
       case ENDS_MEAN:      msg += "endpoints (mean)"; break;
       case ENDS_MAX:       msg += "endpoints (maximum)"; break;
       case ENDS_PROD:      msg += "endpoints (product)"; break;
+      case ENDS_CORR:      msg += "endpoints (correlation)"; break;
       default:             msg += "ERROR";   break;
     }
     msg += " per-track statistic";
@@ -573,7 +574,6 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image (opt[0][0]);
-    const Image::Header H_assoc_image (assoc_image);
     if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
       mapper->add_scalar_image (assoc_image);
     else
