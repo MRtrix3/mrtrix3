@@ -52,7 +52,7 @@ namespace MR
               scaled_contrasts.transposeInPlace();
             scaled_contrasts.resize (scaled_contrasts.rows(), design.cols());
 
-            for (size_t n = 0; n < contrasts.rows(); ++n) {
+            for (size_t n = 0; n < size_t(contrasts.rows()); ++n) {
               Eigen::Matrix<ValueType, Eigen::Dynamic, 1> pinv_XtX_c = XtX * contrasts.row(n).transpose(); //TODO transpose
               scaled_contrasts.row(n) *= std::sqrt (ValueType(degrees_of_freedom) / contrasts.row(n).dot(pinv_XtX_c));
             }
@@ -82,7 +82,7 @@ namespace MR
             betas.noalias() = measurements * pinv_design;
             residuals.noalias() = measurements - betas * design;
             tvalues.noalias() = betas * scaled_contrasts;
-            for (size_t n = 0; n < tvalues.rows(); ++n)
+            for (size_t n = 0; n < size_t(tvalues.rows()); ++n)
               tvalues.row(n).array() /= residuals.row(n).norm();
           }
 
