@@ -116,7 +116,7 @@ namespace MR {
 
 
         private:
-          Eigen::VectorXd coefficients;
+          Eigen::Array<default_type, Eigen::Dynamic, 1> coefficients;
 
           double reg_multiplier_tikhonov, reg_multiplier_tv;
           size_t min_iters, max_iters;

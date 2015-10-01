@@ -75,10 +75,10 @@ void usage ()
   + Option ("invert", "invert output binary mask.")
 
   + Option ("toppercent", "provide a mask of the N%% top-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Argument ("N").type_float (0.0, 10.0, 100.0)
 
   + Option ("bottompercent", "provide a mask of the N%% bottom-valued voxels")
-  + Argument ("N").type_integer (0, 100, std::numeric_limits<int>::max())
+  + Argument ("N").type_float (0.0, 10.0, 100.0)
 
   + Option ("nan", "use NaN as the output zero value.")
 

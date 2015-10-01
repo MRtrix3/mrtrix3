@@ -60,7 +60,7 @@ namespace MR
           } while (!seed.value());
           std::uniform_real_distribution<float> uniform;
           p = { seed.index(0)+uniform(*rng)-0.5f, seed.index(1)+uniform(*rng)-0.5f, seed.index(2)+uniform(*rng)-0.5f };
-          p = mask.voxel2scanner.cast<float>() * p;
+          p = (*mask.voxel2scanner) * p;
           return true;
         }
 
@@ -98,7 +98,7 @@ namespace MR
 
           std::uniform_real_distribution<float> uniform;
           p = { mask.index(0)+uniform(*rng)-0.5f, mask.index(1)+uniform(*rng)-0.5f, mask.index(2)+uniform(*rng)-0.5f };
-          p = mask.voxel2scanner.cast<float>() * p;
+          p = (*mask.voxel2scanner) * p;
           return true;
         }
 
@@ -142,7 +142,7 @@ namespace MR
           }
 
           p = { mask.index(0)+offset+(pos[0]*step), mask.index(1)+offset+(pos[1]*step), mask.index(2)+offset+(pos[2]*step) };
-          p = mask.voxel2scanner.cast<float>() * p;
+          p = (*mask.voxel2scanner) * p;
           return true;
 
         }
