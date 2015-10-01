@@ -246,13 +246,52 @@ void print_header (bool is_complex)
 }
 
 
+
+class Volume_loop
+{
+  public:
+    Volume_loop (Image<complex_type>& in) :
+        image (in),
+        is_4D (in.ndim() == 4),
+        status (true)
+    {
+      if (is_4D)
+        image.index(3) = 0;
+    }
+
+    void operator++ ()
+    {
+      if (is_4D) {
+        image.index(3)++;
+      } else {
+        assert (status);
+        status = false;
+      }
+    }
+    operator bool() const
+    {
+      if (is_4D)
+        return (image.index(3) >= 0 && image.index(3) < image.size(3));
+      else
+        return status;
+    }
+
+  private:
+    Image<complex_type>& image;
+    const bool is_4D;
+    bool status;
+};
+
+
+
 void run ()
 {
   auto data = Image<complex_type>::open (argument[0]);
   const bool is_complex = data.header().datatype().is_complex();
+  if (data.ndim() > 4)
+    throw Exception ("mrstats is not designed to handle images greater than 4D");
 
   auto inner_loop = Loop(0, 3);
-  auto outer_loop = Loop(3);
 
   std::unique_ptr<File::OFStream> dumpstream, hist_stream, position_stream;
 
@@ -297,7 +336,7 @@ void run ()
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", voxel_count (data));
-      for (auto i = outer_loop (data); i; ++i) {
+      for (auto i = Volume_loop (data); i; ++i) {
         for (auto j = inner_loop (mask, data); j; ++j) {
           if (mask.value())
             calibrate (complex_type(data.value()).real());
@@ -307,7 +346,7 @@ void run ()
       calibrate.init (*hist_stream);
     }
 
-    for (auto i = outer_loop (data); i; ++i) {
+    for (auto i = Volume_loop (data); i; ++i) {
       Stats stats (is_complex);
 
       if (dumpstream)
@@ -347,7 +386,7 @@ void run ()
 
     if (hist_stream) {
       ProgressBar progress ("calibrating histogram...", voxel_count (data));
-      for (auto i = outer_loop (data); i; ++i) {
+      for (auto i = Volume_loop (data); i; ++i) {
         for (auto j = inner_loop (data); j; ++j) {
           calibrate (complex_type(data.value()).real());
           ++progress;
@@ -356,7 +395,7 @@ void run ()
       calibrate.init (*hist_stream);
     }
 
-    for (auto l = outer_loop (data); l; ++l) {
+    for (auto l = Volume_loop (data); l; ++l) {
       Stats stats (is_complex);
 
       if (dumpstream)
@@ -407,7 +446,7 @@ void run ()
 
   if (hist_stream) {
     ProgressBar progress ("calibrating histogram...", voxel.size());
-    for (auto i = outer_loop (data); i; ++i) {
+    for (auto i = Volume_loop (data); i; ++i) {
       for (size_t i = 0; i < voxel.size(); ++i) {
         data.index(0) = voxel[i][0];
         data.index(1) = voxel[i][1];
@@ -419,7 +458,7 @@ void run ()
     calibrate.init (*hist_stream);
   }
 
-  for (auto i = outer_loop (data); i; ++i) {
+  for (auto i = Volume_loop (data); i; ++i) {
     Stats stats (is_complex);
 
     if (dumpstream)
