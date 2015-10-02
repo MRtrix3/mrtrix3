@@ -21,10 +21,14 @@
 */
 
 #include "app.h"
+#include "file/path.h"
 #include "gui/shview/render_window.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/lighting_dock.h"
 #include "gui/dialog/file.h"
+#include "math/math.h"
+#include "math/SH.h"
+
 
 namespace MR
 {
@@ -68,7 +72,7 @@ namespace MR
 
         QAction* next_10_action = new QAction ("Next (fast)", this);
         next_10_action->setShortcut (tr ("Shift+Right"));
-        next_10_action->setStatusTip (tr ("Increase current row of SH matrix by 10Use values from next row of SH coefficients matrix"));
+        next_10_action->setStatusTip (tr ("Increase current row of SH matrix by 10"));
         connect (next_10_action, SIGNAL (triggered()), this, SLOT (next_10_slot()));
 
         QAction* screenshot_action = new QAction ("Grab &Screenshot", this);
@@ -232,7 +236,7 @@ namespace MR
 
       void Window::close_slot ()
       {
-        values.clear();
+        values.resize (0,0);
         set_values (0);
       }
 
@@ -313,19 +317,16 @@ namespace MR
       void Window::set_values (const std::string& filename)
       {
         try {
-          values.load (filename);
-          if (values.columns() == 0 || values.rows() == 0)
+          values = MR::load_matrix<float> (filename);
+          if (values.cols() == 0 || values.rows() == 0)
             throw Exception ("invalid matrix of SH coefficients");
 
-          if (values.columns() == 1) {
-            Math::Matrix<float> tmp;
-            Math::transpose (tmp, values);
-            values.swap (tmp);
-          }
+          if (values.cols() == 1)
+            values.transposeInPlace();
 
-          is_response = values.columns() < 15;
+          is_response = values.cols() < 15;
           response_action->setChecked (is_response);
-          int lmax = is_response ? values.columns()-2 : (Math::SH::LforN (values.columns())/2)-1;
+          int lmax = is_response ? values.cols()-2 : (Math::SH::LforN (values.cols())/2)-1;
           lmax_group->actions()[lmax]->setChecked (true);
 
           name = Path::basename (filename);
@@ -340,7 +341,7 @@ namespace MR
 
       void Window::set_values (int row)
       {
-        Math::Vector<float> val;
+        Eigen::Matrix<float, Eigen::Dynamic, 1> val;
         std::string title;
 
         if (values.rows()) {
@@ -351,9 +352,8 @@ namespace MR
             current = int (values.rows())-1;
 
           if (is_response) {
-            val.resize (Math::SH::NforL (2* (values.columns()-1)), 0.0);
-            val = 0.0;
-            for (size_t n = 0; n < values.columns(); n++)
+            val = decltype(val)::Zero (Math::SH::NforL (2 * (values.cols()-1)));
+            for (size_t n = 0; n < size_t(values.cols()); n++)
               val[Math::SH::index (2*n,0)] = values (current,n);
           }
           else 

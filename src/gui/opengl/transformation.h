@@ -25,9 +25,6 @@
 
 #include <iostream>
 
-#include "point.h"
-#include "math/LU.h"
-#include "math/versor.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -44,13 +41,8 @@ namespace MR
         public:
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
-          template <typename T>
-            vec4 (const Point<T>& p, float w) { 
-              v[0] = p[0]; 
-              v[1] = p[1];
-              v[2] = p[2]; 
-              v[3] = w; 
-            }
+          vec4 (const Eigen::Quaternionf& q) { v[0] = q.x(); v[1] = q.y(); v[2] = q.z(); v[3] = q.w(); }
+          vec4 (const Eigen::Vector3& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
 
           void zero () {
@@ -79,23 +71,24 @@ namespace MR
           mat4 () { } 
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
-          template <typename T>
-            mat4 (const Math::Versor<T>& Q) {
-              zero();
-              (*this)(0,0) = Q[0]*Q[0] + Q[1]*Q[1] - Q[2]*Q[2] - Q[3]*Q[3];
-              (*this)(1,0) = 2.0f*Q[1]*Q[2] - 2.0f*Q[0]*Q[3];
-              (*this)(2,0) = 2.0f*Q[1]*Q[3] + 2.0f*Q[0]*Q[2];
-                          
-              (*this)(0,1) = 2.0f*Q[1]*Q[2] + 2.0f*Q[0]*Q[3];
-              (*this)(1,1) = Q[0]*Q[0] + Q[2]*Q[2] - Q[1]*Q[1] - Q[3]*Q[3];
-              (*this)(2,1) = 2.0f*Q[2]*Q[3] - 2.0f*Q[0]*Q[1];
-                          
-              (*this)(0,2) = 2.0f*Q[1]*Q[3] - 2.0f*Q[0]*Q[2];
-              (*this)(1,2) = 2.0f*Q[2]*Q[3] + 2.0f*Q[0]*Q[1];
-              (*this)(2,2) = Q[0]*Q[0] + Q[3]*Q[3] - Q[2]*Q[2] - Q[1]*Q[1];
-              
-              (*this)(3,3) = 1.0f;
+          mat4 (const Eigen::Quaternionf& q)
+          {
+            const Eigen::Quaternionf::Matrix3 R = q.matrix();
+            zero();
+            for (size_t i = 0; i != 3; ++i) {
+              for (size_t j = 0; j != 3; ++j)
+                (*this)(i,j) = R(i,j);
             }
+            (*this)(3,3) = 1.0f;
+          }
+          template <class M>
+          mat4 (const M& m)
+          {
+            for (size_t i = 0; i != 4; ++i) {
+              for (size_t j = 0; j != 4; ++j)
+                (*this)(i,j) = m(i,j);
+            }
+          }
 
           void zero () {
             memset (m, 0, sizeof (m));
@@ -175,11 +168,12 @@ namespace MR
 
       inline mat4 inv (const mat4& a) 
       {
-        mat4 b;
-        Math::Matrix<float> A (const_cast<float*> (&a(0,0)), 4, 4); 
-        Math::Matrix<float> B (&b(0,0), 4, 4); 
-        Math::LU::inv (B, A);
-        return b;
+        Eigen::Matrix<float, 4, 4> A;
+        for (size_t i = 0; i != 4; ++i) {
+          for (size_t j = 0; j != 4; ++j)
+            A(i,j) = a(i,j);
+        }
+        return mat4 (A.inverse().eval());
       }
 
 
@@ -230,10 +224,10 @@ namespace MR
       }
 
       template <typename ValueType>
-        inline mat4 translate (const Point<ValueType> x)
-        {
-          return translate (x[0], x[1], x[2]);
-        }
+      inline mat4 translate (const Eigen::Vector3& x)
+      {
+        return translate (x[0], x[1], x[2]);
+      }
 
 
       inline mat4 scale (float x, float y, float z) 

@@ -28,7 +28,7 @@
 #define __gui_dwi_render_frame_h__
 
 #include "memory.h"
-#include "math/versor.h"
+#include "types.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -54,7 +54,7 @@ namespace MR
 
           GL::Lighting* lighting;
 
-          void set (const Math::Vector<float>& new_values) {
+          void set (const Eigen::Matrix<float, Eigen::Dynamic, 1>& new_values) {
             values = new_values;
             recompute_amplitudes = true;
             update();
@@ -114,8 +114,8 @@ namespace MR
           QPoint last_pos;
           GL::Font font;
           Projection projection;
-          Math::Versor<float> orientation;
-          Point<> focus;
+          Eigen::Quaternionf orientation;
+          Eigen::Vector3f focus;
 
           std::string screenshot_name;
           std::unique_ptr<QImage> pix;
@@ -127,7 +127,7 @@ namespace MR
           GL::Shader::Program axes_shader;
 
           Renderer renderer;
-          Math::Vector<float> values;
+          Eigen::Matrix<float, Eigen::Dynamic, 1> values;
 
         protected:
           virtual void initializeGL () override;

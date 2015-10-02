@@ -21,7 +21,6 @@
 */
 
 #include "file/config.h"
-#include "math/vector.h"
 #include "gui/opengl/lighting.h"
 
 namespace MR
@@ -50,7 +49,7 @@ namespace MR
         //CONF renders
         File::Config::get_RGB ("LightPosition", lightpos, 1.0, 1.0, 3.0);
 
-        Math::normalise (lightpos, 3);
+        Eigen::Map<Eigen::Vector3f> (lightpos).normalize();
 
         //CONF option: AmbientIntensity
         //CONF default: 0.6
