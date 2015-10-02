@@ -407,7 +407,7 @@ class Entry:
         fd.write ('<!DOCTYPE RCC><RCC version="1.0">\n<qresource>\n')
         for entry in self.deps:
           entry = os.path.basename (entry)
-          if not entry.startswith ('config.'):
+          if not entry.startswith ('config'):
             fd.write ('<file>' + entry + '</file>\n')
         fd.write ('</qresource>\n</RCC>\n')
       
@@ -450,18 +450,22 @@ class Entry:
   def set_object (self):
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
-    cc_file = split_intermediate (cc_file)
-    cc_file = os.path.normpath (os.path.join (cc_file[0], cc_file[2]))
-    self.deps = set([ cc_file ])
+
     flags = copy.copy (gsl_cflags)
 
     if is_moc (cc_file):
-      src_header = cc_file[:-len(moc_cpp_suffix)] + h_suffix
+      cc_file = split_intermediate (cc_file)
+      src_header = os.path.normpath (os.path.join (cc_file[0], cc_file[2][:-len(moc_cpp_suffix)] + h_suffix))
+      cc_file = os.path.normpath (os.path.join (cc_file[0], cc_file[1], cc_file[2]))
       list_headers (src_header)
       file_flags[cc_file] = file_flags[src_header]
-    else: 
+    else:
+      cc_file = split_intermediate (cc_file)
+      cc_file = os.path.normpath (os.path.join (cc_file[0], cc_file[2]))
       self.deps = self.deps.union (list_headers (cc_file))
     self.deps.add (config_file)
+
+    self.deps = set([ cc_file ])
 
     skip = False
     if 'Q' in file_flags[cc_file]: flags += qt_cflags
@@ -710,7 +714,7 @@ def list_cmd_deps (file_cc):
       if os.path.exists (entry_cc):
         object_deps[file_cc] = object_deps[file_cc].union (list_cmd_deps(entry_cc))
       if os.path.basename (entry) == 'icons'+h_suffix:
-        object_deps[file_cc].add (make_intermediate (entry[:-len(h_suffix)]+obj_suffix), config_name)
+        object_deps[file_cc].add (make_intermediate (entry[:-len(h_suffix)] + obj_suffix, config_name))
     if file_cc not in file_flags: file_flags[file_cc] = ''
     for entry in headers[file_cc]:
       for c in file_flags[entry]:
