@@ -243,9 +243,12 @@ void run ()
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
         INFO ("DW gradients will be reoriented");
+        Eigen::MatrixXd rotation = linear_transform.linear();
+        Eigen::MatrixXd test = rotation.transpose() * rotation;
+        test = test.array() / test.diagonal().mean();
+        if (!test.isIdentity (0.001))
+          WARN("the input linear transform contains shear or anisotropic scaling and therefore should not be used to reorient diffusion gradients");
 
-        // TODO do we want to detect and warn about shears here?
-        auto rotation = linear_transform.linear();
         if (replace)
           rotation = linear_transform.linear() * input_header.transform().linear().inverse();
 
@@ -352,6 +355,14 @@ void run ()
     // straight copy:
     INFO ("image will not be regridded");
     if (linear) {
+
+      Eigen::MatrixXd rotation = linear_transform.linear();
+      Eigen::MatrixXd test = rotation.transpose() * rotation;
+      test = test.array() / test.diagonal().mean();
+      if (!test.isIdentity (0.001))
+        WARN("the input linear transform contains shear or anisotropic scaling and therefore the "
+             "output image header transform will be non-orthogonal.");
+
       add_line (output_header.keyval()["comments"], std::string ("transform modified"));
       if (replace)
         output_header.transform() = linear_transform;
