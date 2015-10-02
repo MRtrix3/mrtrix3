@@ -243,8 +243,8 @@ void run ()
         Eigen::MatrixXd test = rotation.transpose() * rotation;
         test = test.array() / test.diagonal().mean();
         if (!test.isIdentity (0.001))
-          WARN ("the input linear transform contains shear or anisotropic scaling and "
-                "therefore should not be used to reorient diffusion gradients");
+        WARN ("the input linear transform contains shear or anisotropic scaling and "
+              "therefore should not be used to reorient diffusion gradients");
         if (replace)
           rotation = linear_transform.linear() * input_header.transform().linear().inverse();
         for (ssize_t n = 0; n < grad.rows(); ++n) {
@@ -349,11 +349,9 @@ void run ()
 
     INFO ("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
-    Eigen::MatrixXd test = rotation.transpose() * rotation;
-    test = test.array() / test.diagonal().mean();
-    if (!test.isIdentity (0.001))
-      WARN("the input linear transform contains shear or anisotropic scaling and therefore the "
-           "output image header transform will be non-orthogonal.");
+    if (!(rotation.transpose() * rotation).isIdentity (0.001))
+      WARN("the input linear transform is not orthonormal and therefore applying this without the -template"
+           "option will mean the output header transform will also be not orthonormal");
 
     add_line (output_header.keyval()["comments"], std::string ("transform modified"));
     if (replace)
