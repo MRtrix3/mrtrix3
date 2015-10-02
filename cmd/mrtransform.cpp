@@ -99,7 +99,8 @@ void usage ()
 
     + Option ("replace", 
         "replace the linear transform of the original image by that specified, "
-        "rather than applying it to the original image.")
+        "rather than applying it to the original image. If no -linear transform is specified then "
+        "the header transform is replaced with an identity transform.")
 
     + OptionGroup ("Regridding options")
 
@@ -149,8 +150,6 @@ void run ()
   Header output_header (input_header);
   output_header.datatype() = DataType::from_command_line (output_header.datatype());
 
-  const bool replace = get_options ("replace").size();
-
   // Linear
   transform_type linear_transform;
   bool linear = false;
@@ -160,15 +159,26 @@ void run ()
     linear_transform = load_transform (opt[0][0]);
   } else {
     linear_transform.setIdentity();
-    if (replace)
-      throw Exception ("no transform provided for option '-replace'");
   }
+
+  // Replace
+  const bool replace = get_options ("replace").size();
+  if (replace && !linear) {
+    INFO ("no linear is supplied so replace with the default (identity) transform");
+    linear = true;
+  }
+
+  // Warp
+  opt = get_options ("warp");
+  std::shared_ptr<Image<float> > warp_ptr;
+  if (opt.size())
+    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
 
   // Inverse
   const bool inverse = get_options ("inverse").size();
   if (inverse) {
-    if (!linear)
-      throw Exception ("no transform provided for option '-inverse'");
+    if (!(linear || warp_ptr))
+      throw Exception ("no linear or warp transformation provided for option '-inverse'");
     linear_transform = linear_transform.inverse();
   }
 
@@ -185,28 +195,13 @@ void run ()
       flip(axes[i],3) += flip(axes[i],axes[i]) * input_header.spacing(axes[i]) * (input_header.size(axes[i])-1);
       flip(axes[i], axes[i]) *= -1.0;
     }
-    transform_type tmp;
-    if (!replace) {
-      transform_type irot = input_header.transform().inverse();
-      tmp = flip * irot;
-      flip = input_header.transform() * tmp;
-    }
-    tmp = linear_transform * flip;
-    linear_transform = tmp;
+    if (!replace)
+      flip = input_header.transform() * flip * input_header.transform().inverse();
+    linear_transform = linear_transform * flip;
+    linear = true;
   }
 
   Stride::List stride = Stride::get (input_header);
-
-
-
-  auto input = input_header.get_image<float>().with_direct_io (stride);
-
-  // Warp
-  opt = get_options ("warp");
-  std::shared_ptr<Image<float> > warp_ptr;
-  if (opt.size())
-    warp_ptr = std::make_shared<Image<float> > (Image<float>::open(opt[0][0]));
-
 
   // Detect FOD image for reorientation
   opt = get_options ("noreorientation");
@@ -230,6 +225,7 @@ void run ()
     stride = Stride::contiguous_along_axis (3, input_header);
   }
 
+  // Modulate FODs
   bool modulate = false;
   if (get_options ("modulate").size()) {
     modulate = true;
@@ -237,26 +233,24 @@ void run ()
       throw Exception ("modulation can only be performed with FOD reorientation");
   }
 
-
+  // Rotate/Flip gradient directions if present
   if (linear && input_header.ndim() == 4 && !warp_ptr && !fod_reorientation) {
     try {
       auto grad = DWI::get_DW_scheme (input_header);
       if (input_header.size(3) == (ssize_t) grad.rows()) {
-        INFO ("DW gradients will be reoriented");
+        INFO ("DW gradients detected and will be reoriented");
         Eigen::MatrixXd rotation = linear_transform.linear();
         Eigen::MatrixXd test = rotation.transpose() * rotation;
         test = test.array() / test.diagonal().mean();
         if (!test.isIdentity (0.001))
-          WARN("the input linear transform contains shear or anisotropic scaling and therefore should not be used to reorient diffusion gradients");
-
+          WARN ("the input linear transform contains shear or anisotropic scaling and "
+                "therefore should not be used to reorient diffusion gradients");
         if (replace)
           rotation = linear_transform.linear() * input_header.transform().linear().inverse();
-
         for (ssize_t n = 0; n < grad.rows(); ++n) {
           Eigen::Vector3 grad_vector = grad.block<1,3>(n,0);
           grad.block<1,3>(n,0) = rotation * grad_vector;
         }
-
         output_header.set_DW_scheme(grad);
       }
     }
@@ -266,8 +260,10 @@ void run ()
   }
 
 
+  auto input = input_header.get_image<float>().with_direct_io (stride);
 
-  opt = get_options ("template"); // need to reslice
+  // Reslice the image onto template or warp grid
+  opt = get_options ("template");
   if (opt.size() || warp_ptr) {
     INFO ("image will be regridded");
 
@@ -291,7 +287,6 @@ void run ()
       add_line (output_header.keyval()["comments"], std::string ("resliced to using warp image \"" + warp_ptr->name() + "\""));
     }
 
-
     int interp = 2;  // cubic
     opt = get_options ("interp");
     if (opt.size())
@@ -301,8 +296,6 @@ void run ()
     opt = get_options ("nan");
     if (opt.size())
       out_of_bounds_value = NAN;
-
-
 
     // compose warp with affine
     std::shared_ptr<Image<float> > warp_composed_ptr;
@@ -345,30 +338,28 @@ void run ()
         break;
     }
 
-    // only reorient if linear or warp input
+    // only reorient FODs if linear or warp input
     if (fod_reorientation && linear && !warp_ptr)
       Registration::Transform::reorient ("reorienting...", output, linear_transform, directions_cartesian.transpose(), modulate);
     else if (fod_reorientation && warp_ptr)
       Registration::Transform::reorient_warp ("reorienting...", output, *warp_composed_ptr, directions_cartesian.transpose(), modulate);
 
+  // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
-    // straight copy:
+
     INFO ("image will not be regridded");
-    if (linear) {
+    Eigen::MatrixXd rotation = linear_transform.linear();
+    Eigen::MatrixXd test = rotation.transpose() * rotation;
+    test = test.array() / test.diagonal().mean();
+    if (!test.isIdentity (0.001))
+      WARN("the input linear transform contains shear or anisotropic scaling and therefore the "
+           "output image header transform will be non-orthogonal.");
 
-      Eigen::MatrixXd rotation = linear_transform.linear();
-      Eigen::MatrixXd test = rotation.transpose() * rotation;
-      test = test.array() / test.diagonal().mean();
-      if (!test.isIdentity (0.001))
-        WARN("the input linear transform contains shear or anisotropic scaling and therefore the "
-             "output image header transform will be non-orthogonal.");
-
-      add_line (output_header.keyval()["comments"], std::string ("transform modified"));
-      if (replace)
-        output_header.transform() = linear_transform;
-      else
-        output_header.transform() = linear_transform.inverse() * output_header.transform();
-    }
+    add_line (output_header.keyval()["comments"], std::string ("transform modified"));
+    if (replace)
+      output_header.transform() = linear_transform;
+    else
+      output_header.transform() = linear_transform.inverse() * output_header.transform();
     auto output = Image<float>::create (argument[1], output_header);
     copy_with_progress (input, output);
 
