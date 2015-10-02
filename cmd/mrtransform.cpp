@@ -349,7 +349,8 @@ void run ()
 
     INFO ("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
-    if (!(rotation.transpose() * rotation).isIdentity (0.001))
+    Eigen::MatrixXd temp = rotation.transpose() * rotation;
+    if (!temp.isIdentity (0.001))
       WARN("the input linear transform is not orthonormal and therefore applying this without the -template"
            "option will mean the output header transform will also be not orthonormal");
 
