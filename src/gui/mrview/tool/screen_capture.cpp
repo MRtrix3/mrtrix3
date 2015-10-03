@@ -24,6 +24,7 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/screen_capture.h"
+#include "gui/opengl/transformation.h"
 
 
 namespace MR

@@ -25,6 +25,7 @@
 
 #include "app.h"
 #include "gui/mrview/mode/base.h"
+#include "gui/opengl/transformation.h"
 
 namespace MR
 {
