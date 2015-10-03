@@ -233,7 +233,7 @@ namespace MR
        * problems.
        */
       template <typename ValueType>
-        Image<ValueType> get_image ();
+        Image<ValueType> get_image();
 
       //! get generic key/value text attributes
       const std::map<std::string, std::string>& keyval () const { return keyval_; }

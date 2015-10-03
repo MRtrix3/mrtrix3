@@ -339,10 +339,12 @@ namespace MR
               return;
             }
 
+            std::mutex mutex;
+
             struct Shared {
               Iterator& iterator;
               decltype (outer_loop (iterator)) loop;
-              std::mutex mutex;
+              std::mutex& mutex;
               FORCE_INLINE bool next (Iterator& pos) {
                 std::lock_guard<std::mutex> lock (mutex);
                 if (loop) {
@@ -352,7 +354,7 @@ namespace MR
                 }
                 else return false;
               }
-            } shared = { iterator, outer_loop (iterator) };
+            } shared = { iterator, outer_loop (iterator), mutex };
 
             struct {
               Shared& shared;
