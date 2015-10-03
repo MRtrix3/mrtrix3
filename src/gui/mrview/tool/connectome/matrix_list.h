@@ -27,6 +27,7 @@
 
 #include <QAbstractItemModel>
 
+#include "mrtrix.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
 
 

@@ -35,10 +35,10 @@ namespace Connectome {
 
 typedef uint32_t node_t;
 
-typedef Eigen::MatrixXd matrix_type;
+typedef Eigen::Matrix<default_type, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
 
 
-void verify_matrix (matrix_type& in, const node_t num_nodes);
+void verify_matrix (matrix_type&, const node_t);
 
 
 }

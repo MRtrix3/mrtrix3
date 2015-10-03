@@ -24,7 +24,6 @@
 #define __gui_mrview_tool_connectome_selection_h__
 
 #include "mrtrix.h"
-#include "point.h"
 
 #include "gui/color_button.h"
 #include "gui/mrview/adjust_button.h"
@@ -48,39 +47,39 @@ namespace MR
         public:
           NodeSelectionSettings();
 
-          bool  get_node_selected_visibility_override()  const { return node_selected_visibility_override; }
-          float get_node_selected_colour_fade()          const { return node_selected_colour_fade; }
-          const Point<float>& get_node_selected_colour() const { return node_selected_colour; }
-          float get_node_selected_size_multiplier()      const { return node_selected_size_multiplier; }
-          float get_node_selected_alpha_multiplier()     const { return node_selected_alpha_multiplier; }
+          bool  get_node_selected_visibility_override()    const { return node_selected_visibility_override; }
+          float get_node_selected_colour_fade()            const { return node_selected_colour_fade; }
+          const Eigen::Array3f& get_node_selected_colour() const { return node_selected_colour; }
+          float get_node_selected_size_multiplier()        const { return node_selected_size_multiplier; }
+          float get_node_selected_alpha_multiplier()       const { return node_selected_alpha_multiplier; }
 
-          bool  get_edge_selected_visibility_override()  const { return edge_selected_visibility_override; }
-          float get_edge_selected_colour_fade()          const { return edge_selected_colour_fade; }
-          const Point<float>& get_edge_selected_colour() const { return edge_selected_colour; }
-          float get_edge_selected_size_multiplier()      const { return edge_selected_size_multiplier; }
-          float get_edge_selected_alpha_multiplier()     const { return edge_selected_alpha_multiplier; }
+          bool  get_edge_selected_visibility_override()    const { return edge_selected_visibility_override; }
+          float get_edge_selected_colour_fade()            const { return edge_selected_colour_fade; }
+          const Eigen::Array3f& get_edge_selected_colour() const { return edge_selected_colour; }
+          float get_edge_selected_size_multiplier()        const { return edge_selected_size_multiplier; }
+          float get_edge_selected_alpha_multiplier()       const { return edge_selected_alpha_multiplier; }
 
-          float get_node_associated_colour_fade()          const { return node_associated_colour_fade; }
-          const Point<float>& get_node_associated_colour() const { return node_associated_colour; }
-          float get_node_associated_size_multiplier()      const { return node_associated_size_multiplier; }
-          float get_node_associated_alpha_multiplier()     const { return node_associated_alpha_multiplier; }
+          float get_node_associated_colour_fade()            const { return node_associated_colour_fade; }
+          const Eigen::Array3f& get_node_associated_colour() const { return node_associated_colour; }
+          float get_node_associated_size_multiplier()        const { return node_associated_size_multiplier; }
+          float get_node_associated_alpha_multiplier()       const { return node_associated_alpha_multiplier; }
 
-          float get_edge_associated_colour_fade()          const { return edge_associated_colour_fade; }
-          const Point<float>& get_edge_associated_colour() const { return edge_associated_colour; }
-          float get_edge_associated_size_multiplier()      const { return edge_associated_size_multiplier; }
-          float get_edge_associated_alpha_multiplier()     const { return edge_associated_alpha_multiplier; }
+          float get_edge_associated_colour_fade()            const { return edge_associated_colour_fade; }
+          const Eigen::Array3f& get_edge_associated_colour() const { return edge_associated_colour; }
+          float get_edge_associated_size_multiplier()        const { return edge_associated_size_multiplier; }
+          float get_edge_associated_alpha_multiplier()       const { return edge_associated_alpha_multiplier; }
 
-          bool  get_node_other_visibility_override()  const { return node_other_visibility_override; }
-          float get_node_other_colour_fade()          const { return node_other_colour_fade; }
-          const Point<float>& get_node_other_colour() const { return node_other_colour; }
-          float get_node_other_size_multiplier()      const { return node_other_size_multiplier; }
-          float get_node_other_alpha_multiplier()     const { return node_other_alpha_multiplier; }
+          bool  get_node_other_visibility_override()    const { return node_other_visibility_override; }
+          float get_node_other_colour_fade()            const { return node_other_colour_fade; }
+          const Eigen::Array3f& get_node_other_colour() const { return node_other_colour; }
+          float get_node_other_size_multiplier()        const { return node_other_size_multiplier; }
+          float get_node_other_alpha_multiplier()       const { return node_other_alpha_multiplier; }
 
-          bool  get_edge_other_visibility_override()  const { return edge_other_visibility_override; }
-          float get_edge_other_colour_fade()          const { return edge_other_colour_fade; }
-          const Point<float>& get_edge_other_colour() const { return edge_other_colour; }
-          float get_edge_other_size_multiplier()      const { return edge_other_size_multiplier; }
-          float get_edge_other_alpha_multiplier()     const { return edge_other_alpha_multiplier; }
+          bool  get_edge_other_visibility_override()    const { return edge_other_visibility_override; }
+          float get_edge_other_colour_fade()            const { return edge_other_colour_fade; }
+          const Eigen::Array3f& get_edge_other_colour() const { return edge_other_colour; }
+          float get_edge_other_size_multiplier()        const { return edge_other_size_multiplier; }
+          float get_edge_other_alpha_multiplier()       const { return edge_other_alpha_multiplier; }
 
 
         signals:
@@ -90,35 +89,35 @@ namespace MR
         private:
           bool node_selected_visibility_override;
           float node_selected_colour_fade;
-          Point<float> node_selected_colour;
+          Eigen::Array3f node_selected_colour;
           float node_selected_size_multiplier;
           float node_selected_alpha_multiplier;
 
           bool edge_selected_visibility_override;
           float edge_selected_colour_fade;
-          Point<float> edge_selected_colour;
+          Eigen::Array3f edge_selected_colour;
           float edge_selected_size_multiplier;
           float edge_selected_alpha_multiplier;
 
           float node_associated_colour_fade;
-          Point<float> node_associated_colour;
+          Eigen::Array3f node_associated_colour;
           float node_associated_size_multiplier;
           float node_associated_alpha_multiplier;
 
           float edge_associated_colour_fade;
-          Point<float> edge_associated_colour;
+          Eigen::Array3f edge_associated_colour;
           float edge_associated_size_multiplier;
           float edge_associated_alpha_multiplier;
 
           bool node_other_visibility_override;
           float node_other_colour_fade;
-          Point<float> node_other_colour;
+          Eigen::Array3f node_other_colour;
           float node_other_size_multiplier;
           float node_other_alpha_multiplier;
 
           bool edge_other_visibility_override;
           float edge_other_colour_fade;
-          Point<float> edge_other_colour;
+          Eigen::Array3f edge_other_colour;
           float edge_other_size_multiplier;
           float edge_other_alpha_multiplier;
 

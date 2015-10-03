@@ -27,7 +27,7 @@
 #include <vector>
 
 #include "bitset.h"
-#include "point.h"
+#include "image.h"
 
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
@@ -35,7 +35,6 @@
 #include "gui/lighting_dock.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/colourmap_button.h"
-#include "gui/mrview/image.h"
 #include "gui/mrview/spin_box.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -44,9 +43,6 @@
 #include "gui/shapes/sphere.h"
 #include "gui/color_button.h"
 #include "gui/projection.h"
-
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
 
 #include "mesh/mesh.h"
 
@@ -250,7 +246,7 @@ namespace MR
 
             // For the sake of viewing nodes as an overlay, need to ALWAYS
             // have access to the parcellation image
-            std::unique_ptr< MR::Image::BufferPreload<node_t> > buffer;
+            std::unique_ptr< MR::Image<node_t> > buffer;
 
 
             std::vector<Node> nodes;
@@ -330,7 +326,7 @@ namespace MR
             bool have_meshes;
             node_visibility_matrix_operator_t node_visibility_matrix_operator;
             node_property_matrix_operator_t node_colour_matrix_operator, node_size_matrix_operator, node_alpha_matrix_operator;
-            Point<float> node_fixed_colour;
+            Eigen::Array3f node_fixed_colour;
             size_t node_colourmap_index;
             bool node_colourmap_invert;
             float node_fixed_alpha;
@@ -351,7 +347,7 @@ namespace MR
 
             // Other values that need to be stored w.r.t. edge visualisation
             bool have_exemplars, have_streamtubes;
-            Point<float> edge_fixed_colour;
+            Eigen::Array3f edge_fixed_colour;
             size_t edge_colourmap_index;
             bool edge_colourmap_invert;
             float edge_fixed_alpha;
@@ -400,14 +396,14 @@ namespace MR
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
             void node_selection_changed (const std::vector<node_t>&);
-            bool         node_visibility_given_selection (const node_t);
-            Point<float> node_colour_given_selection     (const node_t);
-            float        node_size_given_selection       (const node_t);
-            float        node_alpha_given_selection      (const node_t);
-            bool         edge_visibility_given_selection (const Edge&);
-            Point<float> edge_colour_given_selection     (const Edge&);
-            float        edge_size_given_selection       (const Edge&);
-            float        edge_alpha_given_selection      (const Edge&);
+            bool           node_visibility_given_selection (const node_t);
+            Eigen::Array3f node_colour_given_selection     (const node_t);
+            float          node_size_given_selection       (const node_t);
+            float          node_alpha_given_selection      (const node_t);
+            bool           edge_visibility_given_selection (const Edge&);
+            Eigen::Array3f edge_colour_given_selection     (const Edge&);
+            float          edge_size_given_selection       (const Edge&);
+            float          edge_alpha_given_selection      (const Edge&);
 
             // Helper functions to update the min / max / value / rate of parameter controls
             void update_controls_node_visibility (const float, const float, const float);

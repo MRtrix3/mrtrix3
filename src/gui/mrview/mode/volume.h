@@ -80,7 +80,7 @@ namespace MR
             bool get_clipintersectionmodestate () const;
 
             void move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance);
-            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versor<float>& rot);
+            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot);
         };
 
       }

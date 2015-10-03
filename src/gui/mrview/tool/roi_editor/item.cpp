@@ -25,14 +25,14 @@
 #include <string>
 #include <vector>
 
+#include "gui/mrview/tool/roi_editor/item.h"
+
 #include "progressbar.h"
 #include "file/config.h"
-#include "image/buffer.h"
-#include "image/loop.h"
+#include "algo/loop.h"
 
 #include "gui/dialog/file.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/roi_editor/item.h"
 
 
 namespace MR
@@ -56,7 +56,7 @@ namespace MR
 
 
 
-        ROI_Item::ROI_Item (const MR::Image::Info& src) :
+        ROI_Item::ROI_Item (const MR::Header& src) :
             Volume (src),
             saved (true),
             current_undo (-1)
@@ -76,7 +76,7 @@ namespace MR
           transparent_intensity = 0.4f;
           opaque_intensity = 0.6f;
           colourmap = ColourMap::index ("Colour");
-          float spacing = std::min (src.vox(0), std::min (src.vox(1), src.vox(2)));
+          float spacing = std::min (src.spacing(0), std::min (src.spacing(1), src.spacing(2)));
           brush_size = min_brush_size = spacing;
           max_brush_size = 100.0f*min_brush_size;
 
@@ -95,26 +95,25 @@ namespace MR
         {
           Window::GrabContext context;
           bind();
-          std::vector<GLubyte> data (info().dim(0)*info().dim(1));
-          for (int n = 0; n < info().dim(2); ++n)
-            upload_data ({ { 0, 0, n } }, { { info().dim(0), info().dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+          std::vector<GLubyte> data (header().size(0)*header().size(1));
+          for (int n = 0; n < header().size(2); ++n)
+            upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
         }
 
 
 
-        void ROI_Item::load (const MR::Image::Header& header) 
+        void ROI_Item::load (MR::Header& header)
         {
           Window::GrabContext context;
           bind();
-          MR::Image::Buffer<bool> buffer (header);
-          auto vox = buffer.voxel();
-          std::vector<GLubyte> data (vox.dim(0)*vox.dim(1));
+          auto image = header.get_image<bool>();
+          std::vector<GLubyte> data (image.size(0)*image.size(1));
           ProgressBar progress ("loading ROI image \"" + header.name() + "\"...");
-          for (auto outer = MR::Image::Loop(2,3) (vox); outer; ++outer) {
+          for (auto outer = MR::Loop(2,3) (image); outer; ++outer) {
             auto p = data.begin();
-            for (auto inner = MR::Image::Loop (0,2) (vox); inner; ++inner)
-              *(p++) = vox.value();
-            upload_data ({ { 0, 0, vox[2] } }, { { vox.dim(0), vox.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+            for (auto inner = MR::Loop (0,2) (image); inner; ++inner)
+              *(p++) = image.value();
+            upload_data ({ { 0, 0, image.index(2) } }, { { image.size(0), image.size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
             ++progress;
           }
           filename = header.name();

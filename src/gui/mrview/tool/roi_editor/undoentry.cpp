@@ -21,8 +21,7 @@
 */
 
 #include <limits>
-
-#include "image/transform.h"
+#include <vector>
 
 #include "gui/mrview/window.h"
 #include "gui/mrview/tool/roi_editor/item.h"
@@ -48,7 +47,7 @@ namespace MR
         {
           from = { { 0, 0, 0 } };
           from[current_axis] = current_slice;
-          size = { { roi.info().dim(0), roi.info().dim(1), roi.info().dim(2) } };
+          size = { { GLint(roi.header().size(0)), GLint(roi.header().size(1)), GLint(roi.header().size(2)) } };
           size[current_axis] = 1;
 
           if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
@@ -146,19 +145,19 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::draw_line (ROI_Item& roi, const Point<>& prev_pos, const Point<>& pos, bool insert_mode_value)
+        void ROI_UndoEntry::draw_line (ROI_Item& roi, const Eigen::Vector3f& prev_pos, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
           const GLubyte value = insert_mode_value ? 1 : 0;
-          Point<> p = roi.transform().scanner2voxel (prev_pos);
-          const Point<> final_pos = roi.transform().scanner2voxel (pos);
-          const Point<> dir ((final_pos - p).normalise());
-          Point<int> v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
-          const Point<int> final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
+          Eigen::Vector3f p = roi.transform().scanner2voxel.cast<float>() * prev_pos;
+          const Eigen::Vector3f final_pos = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f dir ((final_pos - p).normalized());
+          Eigen::Array3i v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
+          const Eigen::Array3i final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
           do {
-            if (v[0] >= 0 && v[0] < roi.info().dim(0) && v[1] >= 0 && v[1] < roi.info().dim(1) && v[2] >= 0 && v[2] < roi.info().dim(2))
+            if (v[0] >= 0 && v[0] < roi.header().size(0) && v[1] >= 0 && v[1] < roi.header().size(1) && v[2] >= 0 && v[2] < roi.header().size(2))
               after[v[0]-from[0] + size[0] * (v[1]-from[1] + size[1] * (v[2]-from[2]))] = value;
-            if (v != final_vox) {
-              Point<int> step (0, 0, 0);
+            if ((v - final_vox).abs().maxCoeff()) {
+              Eigen::Array3i step (0, 0, 0);
               float min_multiplier = std::numeric_limits<float>::infinity();
               for (size_t axis = 0; axis != 3; ++axis) {
                 float this_multiplier;
@@ -168,14 +167,14 @@ namespace MR
                   this_multiplier = ((v[axis]-0.5f) - p[axis]) / dir[axis];
                 if (std::isfinite (this_multiplier) && this_multiplier < min_multiplier) {
                   min_multiplier = this_multiplier;
-                  step.set (0, 0, 0);
+                  step = { 0, 0, 0 };
                   step[axis] = (dir[axis] > 0.0f) ? 1 : -1;
                 }
               }
               v += step;
               p += dir * min_multiplier;
             }
-          } while (v != final_vox);
+          } while ((v - final_vox).abs().maxCoeff());
 
           Window::GrabContext context;
           roi.texture().bind();
@@ -185,37 +184,37 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::draw_thick_line (ROI_Item& roi, const Point<>& prev_pos, const Point<>& pos, bool insert_mode_value, float diameter)
+        void ROI_UndoEntry::draw_thick_line (ROI_Item& roi, const Eigen::Vector3f& prev_pos, const Eigen::Vector3f& pos, const bool insert_mode_value, const float diameter)
         {
           roi.brush_size = diameter;
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
           const GLubyte value = insert_mode_value ? 1 : 0;
-          const Point<> start = roi.transform().scanner2voxel (prev_pos);
-          const Point<> end = roi.transform().scanner2voxel (pos);
-          const Point<> offset (end - start);
+          const Eigen::Vector3f start = roi.transform().scanner2voxel.cast<float>() * prev_pos;
+          const Eigen::Vector3f end = roi.transform().scanner2voxel.cast<float>() * pos;
+          const Eigen::Vector3f offset (end - start);
           const float offset_norm (offset.norm());
-          const Point<> dir (Point<>(offset).normalise());
+          const Eigen::Vector3f dir (Eigen::Vector3f(offset).normalized());
 
           std::array<int,3> a = { { int(std::lround (std::min (start[0], end[0]))),   int(std::lround (std::min (start[1], end[1]))),   int(std::lround (std::min (start[2], end[2])))   } };
           std::array<int,3> b = { { int(std::lround (std::max (start[0], end[0])))+1, int(std::lround (std::max (start[1], end[1])))+1, int(std::lround (std::max (start[2], end[2])))+1 } };
 
-          int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
+          int rad[2] = { int(std::ceil (radius/roi.header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.header().spacing (slice_axes[1]))) };
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
-          b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad[0]);
-          b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad[1]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
 
           for (int k = a[2]; k < b[2]; ++k) {
             for (int j = a[1]; j < b[1]; ++j) {
               for (int i = a[0]; i < b[0]; ++i) {
 
-                const Point<> p (i, j, k);
-                const Point<> v (p - start);
+                const Eigen::Vector3f p { float(i), float(j), float(k) };
+                const Eigen::Vector3f v (p - start);
                 if ((v.dot (dir) > 0.0f) && (v.dot (dir) < offset_norm)) {
-                  Point<> d (v - (dir * v.dot (dir)));
-                  d[0] *= roi.info().vox(0); d[1] *= roi.info().vox(1); d[2] *= roi.info().vox(2);
-                  if (d.norm2() < radius_sq)
+                  Eigen::Vector3f d (v - (dir * v.dot (dir)));
+                  d[0] *= roi.header().spacing(0); d[1] *= roi.header().spacing(1); d[2] *= roi.header().spacing(2);
+                  if (d.squaredNorm() < radius_sq)
                     after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
                 }
 
@@ -229,9 +228,9 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::draw_circle (ROI_Item& roi, const Point<>& pos, bool insert_mode_value, float diameter)
+        void ROI_UndoEntry::draw_circle (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value, const float diameter)
         {
-          Point<> vox = roi.transform().scanner2voxel (pos);
+          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
           roi.brush_size = diameter;
           const float radius = 0.5f * diameter;
           const float radius_sq = Math::pow2 (radius);
@@ -240,18 +239,18 @@ namespace MR
           std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           std::array<int,3> b = { { a[0]+1, a[1]+1, a[2]+1 } };
 
-          int rad[2] = { int(std::ceil (radius/roi.info().vox(slice_axes[0]))), int(std::ceil (radius/roi.info().vox(slice_axes[1]))) };
+          int rad[2] = { int(std::ceil (radius/roi.header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.header().spacing (slice_axes[1]))) };
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
-          b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0]), b[slice_axes[0]]+rad[0]);
-          b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1]), b[slice_axes[1]]+rad[1]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
 
           for (int k = a[2]; k < b[2]; ++k)
             for (int j = a[1]; j < b[1]; ++j)
               for (int i = a[0]; i < b[0]; ++i)
-                if (Math::pow2 (roi.info().vox(0) * (vox[0]-i)) +
-                    Math::pow2 (roi.info().vox(1) * (vox[1]-j)) +
-                    Math::pow2 (roi.info().vox(2) * (vox[2]-k)) < radius_sq)
+                if (Math::pow2 (roi.header().spacing(0) * (vox[0]-i)) +
+                    Math::pow2 (roi.header().spacing(1) * (vox[1]-j)) +
+                    Math::pow2 (roi.header().spacing(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
           Window::GrabContext context;
@@ -262,12 +261,12 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::draw_rectangle (ROI_Item& roi, const Point<>& from_pos, const Point<>& to_pos, bool insert_mode_value)
+        void ROI_UndoEntry::draw_rectangle (ROI_Item& roi, const Eigen::Vector3f& from_pos, const Eigen::Vector3f& to_pos, const bool insert_mode_value)
         {
-          Point<> vox = roi.transform().scanner2voxel (from_pos);
+          Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * from_pos;
           const GLubyte value = insert_mode_value ? 1 : 0;
           std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
-          vox = roi.transform().scanner2voxel (to_pos);
+          vox = roi.transform().scanner2voxel.cast<float>() * to_pos;
           std::array<int,3> b = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
 
           if (a[0] > b[0]) std::swap (a[0], b[0]);
@@ -276,8 +275,8 @@ namespace MR
 
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]);
-          b[slice_axes[0]] = std::min (roi.info().dim(slice_axes[0])-1, b[slice_axes[0]]);
-          b[slice_axes[1]] = std::min (roi.info().dim(slice_axes[1])-1, b[slice_axes[1]]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])-1), b[slice_axes[0]]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])-1), b[slice_axes[1]]);
 
           after = before;
           for (int k = a[2]; k <= b[2]; ++k)
@@ -292,32 +291,32 @@ namespace MR
 
 
 
-        void ROI_UndoEntry::draw_fill (ROI_Item& roi, const Point<> pos, bool insert_mode_value)
+        void ROI_UndoEntry::draw_fill (ROI_Item& roi, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {
-          const Point<> vox = roi.transform().scanner2voxel (pos);
-          const Point<int> seed_voxel (std::lround (vox[0]), std::lround (vox[1]), std::lround (vox[2]));
-          for (int axis = 0; axis != 3; ++axis) {
+          const Eigen::Vector3f vox = roi.transform().scanner2voxel.cast<float>() * pos;
+          const std::array<int,3> seed_voxel = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
+          for (size_t axis = 0; axis != 3; ++axis) {
             if (seed_voxel[axis] < 0) return;
-            if (seed_voxel[axis] >= roi.info().dim (axis)) return;
+            if (seed_voxel[axis] >= int(roi.header().size (axis))) return;
           }
           const GLubyte fill_value = insert_mode_value ? 1 : 0;
           const size_t seed_index = seed_voxel[0]-from[0] + size[0] * (seed_voxel[1]-from[1] + size[1] * (seed_voxel[2]-from[2]));
           const bool existing_value = after[seed_index];
           if (existing_value == insert_mode_value) return;
           after[seed_index] = fill_value;
-          std::vector< Point<int> > buffer (1, seed_voxel);
+          std::vector<std::array<int,3>> buffer (1, seed_voxel);
           while (buffer.size()) {
-            const Point<int> v (buffer.back());
+            const std::array<int,3> v (buffer.back());
             buffer.pop_back();
             for (size_t i = 0; i != 4; ++i) {
-              Point<int> adj (v);
+              std::array<int,3> adj (v);
               switch (i) {
                 case 0: adj[slice_axes[0]] -= 1; break;
                 case 1: adj[slice_axes[0]] += 1; break;
                 case 2: adj[slice_axes[1]] -= 1; break;
                 case 3: adj[slice_axes[1]] += 1; break;
               }
-              if (adj[0] >= 0 && adj[0] < roi.info().dim (0) && adj[1] >= 0 && adj[1] < roi.info().dim (1) && adj[2] >= 0 && adj[2] < roi.info().dim (2)) {
+              if (adj[0] >= 0 && adj[0] < int(roi.header().size (0)) && adj[1] >= 0 && adj[1] < int(roi.header().size (1)) && adj[2] >= 0 && adj[2] < int(roi.header().size (2))) {
                 const size_t adj_index = adj[0]-from[0] + size[0] * (adj[1]-from[1] + size[1] * (adj[2]-from[2]));
                 const bool adj_value = after[adj_index];
                 if (adj_value != insert_mode_value) {
@@ -325,7 +324,6 @@ namespace MR
                   buffer.push_back (adj);
                 }
               }
-
             }
           }
           Window::GrabContext context;

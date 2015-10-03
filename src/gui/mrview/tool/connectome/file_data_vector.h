@@ -25,7 +25,7 @@
 
 #include <QString>
 
-#include "math/vector.h"
+#include <Eigen/Dense>
 
 
 namespace MR
@@ -38,14 +38,15 @@ namespace MR
       {
 
       // Vector that stores the name of the file imported, so it can be displayed in the GUI
-      class FileDataVector : public Math::Vector<float>
+      class FileDataVector : public Eigen::VectorXf
       {
         public:
+          typedef Eigen::VectorXf base_t;
           FileDataVector ();
-          FileDataVector (const FileDataVector& V);
-          FileDataVector (FileDataVector&& V);
-          FileDataVector (size_t nelements);
-          FileDataVector (const std::string& file);
+          FileDataVector (const FileDataVector&);
+          FileDataVector (FileDataVector&&);
+          FileDataVector (const size_t);
+          FileDataVector (const std::string&);
 
           FileDataVector& operator= (const FileDataVector&);
           FileDataVector& operator= (FileDataVector&&);

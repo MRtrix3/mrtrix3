@@ -42,7 +42,8 @@ namespace MR
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
           vec4 (const Eigen::Quaternionf& q) { v[0] = q.x(); v[1] = q.y(); v[2] = q.z(); v[3] = q.w(); }
-          vec4 (const Eigen::Vector3& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
+          template <class Cont>
+          vec4 (const Cont& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
 
           void zero () {
@@ -223,8 +224,8 @@ namespace MR
         return m;
       }
 
-      template <typename ValueType>
-      inline mat4 translate (const Eigen::Vector3& x)
+      template <class Cont>
+      inline mat4 translate (const Cont& x)
       {
         return translate (x[0], x[1], x[2]);
       }

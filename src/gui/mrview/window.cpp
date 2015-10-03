@@ -1,9 +1,8 @@
 #include "app.h"
 #include "timer.h"
 #include "file/config.h"
-#include "image/header.h"
-#include "image/voxel.h"
-#include "image/copy.h"
+#include "header.h"
+#include "algo/copy.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dialog/file.h"
@@ -124,11 +123,11 @@ namespace MR
       void Window::GLArea::dropEvent (QDropEvent* event) {
         const QMimeData* mimeData = event->mimeData();
         if (mimeData->hasUrls()) {
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           QList<QUrl> urlList = mimeData->urls();
           for (int i = 0; i < urlList.size() && i < 32; ++i) {
             try {
-              list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (urlList.at (i).path().toUtf8().constData())));
+              list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (urlList.at (i).path().toUtf8().constData()))));
             }
             catch (Exception& e) {
               e.display();
@@ -697,10 +696,10 @@ namespace MR
         if (image_list.empty())
           return;
 
-        std::vector<std::unique_ptr<MR::Image::Header>> list;
+        std::vector<std::unique_ptr<MR::Header>> list;
         for (size_t n = 0; n < image_list.size(); ++n) {
           try {
-            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (image_list[n])));
+            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (image_list[n]))));
           }
           catch (Exception& E) {
             E.display();
@@ -719,8 +718,8 @@ namespace MR
 
 
         try {
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
-          list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (folder)));
+          std::vector<std::unique_ptr<MR::Header>> list;
+          list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (folder))));
           add_images (list);
         }
         catch (Exception& E) {
@@ -731,7 +730,7 @@ namespace MR
 
 
 
-      void Window::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+      void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
           QAction* action = new Image (*list[i]);
@@ -758,9 +757,8 @@ namespace MR
           return;
 
         try {
-          MR::Image::Buffer<cfloat> dest (image_name, image()->header());
-          auto src (image()->voxel());
-          MR::Image::copy_with_progress (src, dest.voxel());
+          auto dest = MR::Image<cfloat>::create (image_name, image()->header());
+          MR::copy_with_progress (image()->image, dest);
         }
         catch (Exception& E) {
           E.display();
@@ -1042,7 +1040,7 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        size_t vol = image()->interp[3]+1;
+        size_t vol = image()->linear_interp.index(3)+1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1052,7 +1050,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->interp[3]-1;
+        size_t vol = image()->linear_interp.index(3)-1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1062,7 +1060,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        size_t vol = image()->interp[4]+1;
+        size_t vol = image()->linear_interp.index(4)+1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1072,7 +1070,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->interp[4]-1;
+        size_t vol = image()->linear_interp.index(4)-1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1088,7 +1086,7 @@ namespace MR
         colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
-        setWindowTitle (image()->interp.name().c_str());
+        setWindowTitle (image()->linear_interp.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
@@ -1216,16 +1214,16 @@ namespace MR
         bool show_next_volume_group (false), show_prev_volume_group (false);
         Image* imagep = image();
         if (imagep) {
-          if (imagep->interp.ndim() > 3) {
-            if (imagep->interp[3] > 0) 
+          if (imagep->linear_interp.ndim() > 3) {
+            if (imagep->linear_interp.index(3) > 0)
               show_prev_volume = true;
-            if (imagep->interp[3] < imagep->interp.dim(3)-1) 
+            if (imagep->linear_interp.index(3) < imagep->linear_interp.size(3)-1)
               show_next_volume = true;
 
-            if (imagep->interp.ndim() > 4) {
-              if (imagep->interp[4] > 0) 
+            if (imagep->linear_interp.ndim() > 4) {
+              if (imagep->linear_interp.index(4) > 0)
                 show_prev_volume_group = true;
-              if (imagep->interp[4] < imagep->interp.dim(4)-1) 
+              if (imagep->linear_interp.index(4) < imagep->linear_interp.size(4)-1)
                 show_next_volume_group = true;
             }
           }
@@ -1624,20 +1622,20 @@ namespace MR
             }
 
             if (opt.opt->is ("focus")) { 
-              std::vector<float> pos = opt[0];
+              std::vector<default_type> pos = parse_floats (opt[0]);
               if (pos.size() != 3) 
                 throw Exception ("-focus option expects a comma-separated list of 3 floating-point values");
-              set_focus (Point<> (pos[0], pos[1], pos[2]));
+              set_focus (Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
               glarea->update();
               continue;
             }
 
             if (opt.opt->is ("voxel")) { 
               if (image()) {
-                std::vector<float> pos = opt[0];
+                std::vector<default_type> pos = parse_floats (opt[0]);
                 if (pos.size() != 3) 
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-                set_focus (image()->interp.voxel2scanner (Point<> (pos[0], pos[1], pos[2])));
+                set_focus (image()->linear_interp.voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
                 glarea->update();
               }
               continue;
@@ -1673,8 +1671,8 @@ namespace MR
             }
 
             if (opt.opt->is ("load")) { 
-              std::vector<std::unique_ptr<MR::Image::Header>> list; 
-              try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+              std::vector<std::unique_ptr<MR::Header>> list;
+              try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
               catch (Exception& e) { e.display(); }
               add_images (list);
               continue;
@@ -1695,7 +1693,7 @@ namespace MR
 
             if (opt.opt->is ("intensity_range")) { 
               if (image()) {
-                std::vector<float> param = opt[0];
+                std::vector<default_type> param = parse_floats (opt[0]);
                 if (param.size() != 2) 
                   throw Exception ("-intensity_range options expects comma-separated list of two floating-point values");
                 image()->set_windowing (param[0], param[1]);

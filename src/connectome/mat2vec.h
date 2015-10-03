@@ -28,9 +28,6 @@
 
 #include <vector>
 
-#include "math/matrix.h"
-#include "math/vector.h"
-
 #include "connectome/connectome.h"
 
 
@@ -49,8 +46,8 @@ class Mat2Vec
 
     size_t operator() (const node_t i, const node_t j) const
     {
-      assert (i < dim);
-      assert (j < dim);
+      assert (i < size);
+      assert (j < size);
       return lookup[i][j];
     }
     std::pair<node_t, node_t> operator() (const size_t i) const
@@ -58,16 +55,16 @@ class Mat2Vec
       assert (i < inv_lookup.size());
       return inv_lookup[i];
     }
-    node_t size() const { return dim; }
+    node_t mat_size() const { return size; }
     size_t vec_size() const { return inv_lookup.size(); }
 
     // Complete Matrix->Vector and Vector->Matrix conversion
-    template <typename T> Math::Vector<T>& operator() (const Math::Matrix<T>&, Math::Vector<T>&) const;
-    template <typename T> std::vector<T>&  operator() (const Math::Matrix<T>&, std::vector<T>&) const;
-    template <class Cont, typename T> Math::Matrix<T>& operator() (const Cont&, Math::Matrix<T>&) const;
+    // Templating allows use of either an Eigen::Vector or a std::vector
+    template <class Cont> Cont&        operator() (const matrix_type&, Cont&) const;
+    template <class Cont> matrix_type& operator() (const Cont&, matrix_type&) const;
 
   protected:
-    node_t dim;
+    node_t size;
 
   private:
     // Lookup tables
@@ -79,13 +76,13 @@ class Mat2Vec
 
 
 
-template <typename T>
-Math::Vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, Math::Vector<T>& out) const
+template <class Cont>
+Cont& Mat2Vec::operator() (const matrix_type& in, Cont& out) const
 {
-  assert (in.rows() == in.columns());
-  assert (in.rows() == dim);
+  assert (in.rows() == in.cols());
+  assert (in.rows() == size);
   out.resize (vec_size());
-  for (size_t index = 0; index != out.size(); ++index) {
+  for (size_t index = 0; index != vec_size(); ++index) {
     const std::pair<node_t, node_t> row_column = (*this) (index);
     out[index] = in (row_column.first, row_column.second);
   }
@@ -93,27 +90,14 @@ Math::Vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, Math::Vector<T>
 }
 
 
-template <typename T>
-std::vector<T>& Mat2Vec::operator() (const Math::Matrix<T>& in, std::vector<T>& out) const
-{
-  assert (in.rows() == in.columns());
-  assert (in.rows() == dim);
-  out.resize (vec_size());
-  for (size_t index = 0; index != out.size(); ++index) {
-    const std::pair<node_t, node_t> row_column = (*this) (index);
-    out[index] = in (row_column.first, row_column.second);
-  }
-  return out;
-}
 
-
-template <class Cont, typename T>
-Math::Matrix<T>& Mat2Vec::operator() (const Cont& in, Math::Matrix<T>& out) const
+template <class Cont>
+matrix_type& Mat2Vec::operator() (const Cont& in, matrix_type& out) const
 {
   assert (in.size() == vec_size());
-  out.resize (dim, dim);
-  for (node_t row = 0; row != dim; ++row) {
-    for (node_t column = 0; column != dim; ++column)
+  out.resize (size, size);
+  for (node_t row = 0; row != size; ++row) {
+    for (node_t column = 0; column != size; ++column)
       out (row, column) = in[(*this) (row, column)];
   }
   return out;

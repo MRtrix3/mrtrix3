@@ -25,6 +25,7 @@
 #include <limits>
 
 #include "file/path.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -37,20 +38,20 @@ namespace MR
 
 
         FileDataVector::FileDataVector () :
-            Math::Vector<float>(),
+            base_t (),
             min (NAN),
             mean (NAN),
             max (NAN) { }
 
         FileDataVector::FileDataVector (const FileDataVector& V) :
-            Math::Vector<float> (V),
+            base_t (V),
             name (V.name),
             min (V.min),
             mean (V.mean),
             max (V.max) { }
 
         FileDataVector::FileDataVector (FileDataVector&& V) :
-            Math::Vector<float> (std::move (V)),
+            base_t (std::move (V)),
             name (V.name),
             min (V.min),
             mean (V.mean),
@@ -60,19 +61,21 @@ namespace MR
           V.min = V.mean = V.max = NAN;
         }
 
-        FileDataVector::FileDataVector (size_t nelements) :
-            Math::Vector<float> (nelements),
+        FileDataVector::FileDataVector (const size_t nelements) :
+            base_t (nelements),
             min (NAN),
             mean (NAN),
             max (NAN) { }
 
         FileDataVector::FileDataVector (const std::string& file) :
-            Math::Vector<float> (file),
+            base_t (),
             name (Path::basename (file).c_str()),
             min (NAN),
             mean (NAN),
             max (NAN)
         {
+          base_t temp = MR::load_vector<float> (file);
+          base_t::operator= (temp);
           calc_stats();
         }
 
@@ -81,7 +84,7 @@ namespace MR
 
         FileDataVector& FileDataVector::operator= (const FileDataVector& that)
         {
-          Math::Vector<float>::operator= (that);
+          base_t::operator= (that);
           name = that.name;
           min = that.min;
           mean = that.mean;
@@ -90,7 +93,7 @@ namespace MR
         }
         FileDataVector& FileDataVector::operator= (FileDataVector&& that)
         {
-          Math::Vector<float>::operator= (std::move (that));
+          base_t::operator= (std::move (that));
           name = that.name;
           min = that.min;
           mean = that.mean;
@@ -103,8 +106,10 @@ namespace MR
 
 
 
-        FileDataVector& FileDataVector::load (const std::string& filename) {
-          Math::Vector<float>::load (filename);
+        FileDataVector& FileDataVector::load (const std::string& filename)
+        {
+          base_t temp = MR::load_vector<float> (filename);
+          base_t::operator= (temp);
           name = Path::basename (filename).c_str();
           calc_stats();
           return *this;
@@ -112,7 +117,7 @@ namespace MR
 
         FileDataVector& FileDataVector::clear ()
         {
-          Math::Vector<float>::clear();
+          base_t::resize (0);
           name.clear();
           min = mean = max = NAN;
           return *this;
@@ -120,15 +125,15 @@ namespace MR
 
         void FileDataVector::calc_stats()
         {
-          min = std::numeric_limits<float>::max();
-          mean = 0.0f;
-          max = -std::numeric_limits<float>::max();
-          for (size_t i = 0; i != size(); ++i) {
+          min = std::numeric_limits<float>::infinity();
+          double sum = 0.0;
+          max = -std::numeric_limits<float>::infinity();
+          for (size_t i = 0; i != size_t(size()); ++i) {
             min = std::min (min, operator[] (i));
-            mean += operator[] (i);
+            sum += operator[] (i);
             max = std::max (max, operator[] (i));
           }
-          mean /= float(size());
+          mean = sum / double(size());
         }
 
 

@@ -20,9 +20,10 @@
 
 */
 
+#include "gui/mrview/gui_image.h"
+
+#include "header.h"
 #include "progressbar.h"
-#include "image/stride.h"
-#include "gui/mrview/image.h"
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
 
@@ -37,9 +38,9 @@ namespace MR
 
 
 
-      ImageBase::ImageBase (const MR::Image::Info& image_info) :
-        Volume (image_info),
-        position (image_info.ndim())
+      ImageBase::ImageBase (const MR::Header& header) :
+          Volume (header),
+          position (header.ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
       }
@@ -53,30 +54,30 @@ namespace MR
 
         int x, y;
         get_axes (plane, x, y);
-        float xdim = info().dim (x)-0.5, ydim = info().dim (y)-0.5;
+        float xsize = header().size(x)-0.5, ysize = header().size(y)-0.5;
 
-        Point<> p;
+        Eigen::Vector3f p;
         p[plane] = slice;
 
         p[x] = -0.5;
         p[y] = -0.5;
-        vertices[0] = _transform.voxel2scanner (p);
-        vertices[1].set (0.0, 0.0, 0.0);
+        vertices[0].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[1] = { 0.0f, 0.0f, 0.0f };
 
         p[x] = -0.5;
-        p[y] = ydim;
-        vertices[2] = _transform.voxel2scanner (p);
-        vertices[3].set (0.0, 1.0, 0.0);
+        p[y] = ysize;
+        vertices[2].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[3] = { 0.0f, 1.0f, 0.0f };
 
-        p[x] = xdim;
-        p[y] = ydim;
-        vertices[4] = _transform.voxel2scanner (p);
-        vertices[5].set (1.0, 1.0, 0.0);
+        p[x] = xsize;
+        p[y] = ysize;
+        vertices[4].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[5] = { 1.0f, 1.0f, 0.0f };
 
-        p[x] = xdim;
+        p[x] = xsize;
         p[y] = -0.5;
-        vertices[6] = _transform.voxel2scanner (p);
-        vertices[7].set (1.0, 0.0, 0.0);
+        vertices[6].noalias() = _transform.voxel2scanner.cast<float>() * p;
+        vertices[7] = { 1.0f, 0.0f, 0.0f };
 
         start (shader_program);
         projection.set (shader_program);
@@ -116,10 +117,11 @@ namespace MR
 
 
 
-      Image::Image (const MR::Image::Header& image_header) :
-        ImageBase (image_header),
-        buffer (image_header),
-        interp (buffer)
+      Image::Image (const MR::Header& image_header) :
+          ImageBase (image_header),
+          image (Volume::header().get_image<cfloat>()),
+          linear_interp (image),
+          nearest_interp (image)
       {
         set_colourmap (guess_colourmap ());
       }
@@ -132,7 +134,7 @@ namespace MR
         if (header().datatype().is_complex())
           map = "Complex";
         else if (header().ndim() == 4) {
-          if (header().dim(3) == 3)
+          if (header().size(3) == 3)
             map = "RGB";
         }
         for (size_t n = 0; ColourMap::maps[n].name; ++n)
@@ -161,37 +163,36 @@ namespace MR
 
         int x, y;
         get_axes (plane, x, y);
-        ssize_t xdim = header().dim (x), ydim = header().dim (y);
+        const ssize_t xsize = header().size (x), ysize = header().size (y);
 
         type = gl::FLOAT;
         std::vector<float> data;
-        auto& vox (voxel());
 
         std::string cmap_name = ColourMap::maps[colourmap].name;
 
         if (cmap_name == "RGB") {
 
-          data.resize (3*xdim*ydim, 0.0f);
+          data.resize (3*xsize*ysize, 0.0f);
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          if (position[plane] >= 0 && position[plane] < header().dim (plane)) {
+          if (position[plane] >= 0 && position[plane] < header().size (plane)) {
             // copy data:
-            vox[plane] = slice;
+            image.index (plane) = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
 
             for (size_t n = 0; n < 3; ++n) {
-              if (vox.ndim() > 3) {
-                if (vox.dim(3) > int(position[3] + n))
-                  vox[3] = position[3] + n;
+              if (image.ndim() > 3) {
+                if (image.size (3) > int(position[3] + n))
+                  image.index (3) = position[3] + n;
                 else break;
               }
-              for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-                for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-                  cfloat val = vox.value();
+              for (image.index (y) = 0; image.index (y) < ysize; ++image.index (y)) {
+                for (image.index (x) = 0; image.index (x) < xsize; ++image.index (x)) {
+                  cfloat val = image.value();
                   float mag = std::abs (val.real());
-                  data[3*(vox[x]+vox[y]*xdim) + n] = mag;
+                  data[3*(image.index(x)+image.index(y)*xsize) + n] = mag;
                   if (std::isfinite (mag)) {
                     if (mag < value_min) value_min = mag;
                     if (mag > value_max) value_max = mag;
@@ -199,32 +200,32 @@ namespace MR
                 }
               }
 
-              if (vox.ndim() <= 3) 
+              if (image.ndim() <= 3)
                 break;
             }
-            if (vox.ndim() > 3) 
-              vox[3] = position[3];
+            if (image.ndim() > 3)
+              image.index (3) = position[3];
           }
 
         }
         else if (cmap_name == "Complex") {
 
-          data.resize (2*xdim*ydim);
+          data.resize (2*xsize*ysize);
           format = gl::RG;
           internal_format = gl::RG32F;
 
-          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
+          if (position[plane] < 0 || position[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
             // copy data:
-            vox[plane] = slice;
+            image.index (plane) = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
-            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-                cfloat val = vox.value();
-                size_t idx = 2*(vox[x]+vox[y]*xdim);
+            for (image.index (y) = 0; image.index (y) < ysize; ++image.index (y)) {
+              for (image.index (x) = 0; image.index (x) < xsize; ++image.index (x)) {
+                cfloat val = image.value();
+                size_t idx = 2*(image.index(x)+image.index(y)*xsize);
                 data[idx] = val.real();
                 data[idx+1] = val.imag();
                 float mag = std::abs (val);
@@ -239,22 +240,22 @@ namespace MR
         }
         else {
 
-          data.resize (xdim*ydim);
+          data.resize (xsize*ysize);
           format = gl::RED;
           internal_format = gl::R32F;
 
-          if (position[plane] < 0 || position[plane] >= header().dim (plane)) {
+          if (position[plane] < 0 || position[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
             // copy data:
-            vox[plane] = slice;
+            image.index (plane) = slice;
             value_min = std::numeric_limits<float>::infinity();
             value_max = -std::numeric_limits<float>::infinity();
-            for (vox[y] = 0; vox[y] < ydim; ++vox[y]) {
-              for (vox[x] = 0; vox[x] < xdim; ++vox[x]) {
-                cfloat val = vox.value();
-                data[vox[x]+vox[y]*xdim] = val.real();
+            for (image.index(y) = 0; image.index(y) < ysize; ++image.index(y)) {
+              for (image.index(x) = 0; image.index(x) < xsize; ++image.index(x)) {
+                cfloat val = image.value();
+                data[image.index(x)+image.index(y)*xsize] = val.real();
                 if (std::isfinite (val.real())) {
                   if (val.real() < value_min) value_min = val.real();
                   if (val.real() > value_max) value_max = val.real();
@@ -270,7 +271,7 @@ namespace MR
 
         set_min_max (value_min, value_max);
 
-        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xdim, ydim, 1, 0, format, type, reinterpret_cast<void*> (&data[0]));
+        gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format, xsize, ysize, 1, 0, format, type, reinterpret_cast<void*> (&data[0]));
       }
 
 
@@ -388,23 +389,22 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          MR::Image::Buffer<ValueType> buffer_tmp (buffer);
-          auto V = buffer_tmp.voxel();
+          auto V = Volume::header().get_image<ValueType>();
           int N = ( format == gl::RED ? 1 : 3 );
-          std::vector<ValueType> data (N * V.dim(0) * V.dim(1));
+          std::vector<ValueType> data (N * V.size(0) * V.size(1));
 
-          ProgressBar progress ("loading image data...", V.dim(2));
+          ProgressBar progress ("loading image data...", V.size(2));
 
           for (size_t n = 3; n < V.ndim(); ++n) 
-            V[n] = position[n];
+            V.index (n) = position[n];
 
-          for (V[2] = 0; V[2] < V.dim(2); ++V[2]) {
+          for (V.index(2) = 0; V.index(2) < V.size(2); ++V.index(2)) {
 
             if (format == gl::RED) {
               auto p = data.begin();
 
-              for (V[1] = 0; V[1] < V.dim(1); ++V[1]) {
-                for (V[0] = 0; V[0] < V.dim(0); ++V[0]) {
+              for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
+                for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
                   ValueType val = *p = V.value();
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
@@ -421,14 +421,14 @@ namespace MR
 
               for (size_t n = 0; n < 3; ++n) {
                 if (V.ndim() > 3) {
-                  if (V.dim(3) > int(position[3] + n))
-                    V[3] = position[3] + n;
+                  if (V.size(3) > int(position[3] + n))
+                    V.index (3) = position[3] + n;
                   else break;
                 }
 
                 auto p = data.begin() + n;
-                for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
-                  for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
+                for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
+                  for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
                     ValueType val = *p = abs_if_signed (ValueType (V.value()));
                     if (std::isfinite (val)) {
                       if (val < value_min) value_min = val;
@@ -445,11 +445,11 @@ namespace MR
                   break;
               }
               if (V.ndim() > 3) 
-                V[3] = position[3];
+                V.index (3) = position[3];
 
             }
 
-            upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+            upload_data ({ { 0, 0, V.index(2) } }, { { V.size(0), V.size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
             ++progress;
           }
 
@@ -459,20 +459,19 @@ namespace MR
 
       inline void Image::copy_texture_3D_complex ()
       {
-        auto V = buffer.voxel();
-        std::vector<float> data (2 * V.dim (0) * V.dim (1));
+        std::vector<float> data (2 * image.size (0) * image.size (1));
 
-        ProgressBar progress ("loading image data...", V.dim (2));
+        ProgressBar progress ("loading image data...", image.size (2));
 
-        for (size_t n = 3; n < V.ndim(); ++n) 
-          V[n] = position[n];
+        for (size_t n = 3; n < image.ndim(); ++n)
+          image.index (n) = position[n];
 
-        for (V[2] = 0; V[2] < V.dim (2); ++V[2]) {
+        for (image.index(2) = 0; image.index(2) < image.size(2); ++image.index(2)) {
           auto p = data.begin();
 
-          for (V[1] = 0; V[1] < V.dim (1); ++V[1]) {
-            for (V[0] = 0; V[0] < V.dim (0); ++V[0]) {
-              cfloat val = V.value();
+          for (image.index(1) = 0; image.index(1) < image.size(1); ++image.index(1)) {
+            for (image.index(0) = 0; image.index(0) < image.size(0); ++image.index(0)) {
+              cfloat val = image.value();
               *(p++) = val.real();
               *(p++) = val.imag();
               float mag = std::abs (val);
@@ -483,20 +482,35 @@ namespace MR
             }
           }
 
-          upload_data ({ { 0, 0, V[2] } }, { { V.dim(0), V.dim(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+          upload_data ({ { 0, 0, image.index(2) } }, { { image.size(0), image.size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
           ++progress;
         }
       }
 
 
 
+
+      cfloat Image::trilinear_value (const Eigen::Vector3f& scanner_point) const {
+        if (linear_interp.scanner (scanner_point))
+          return cfloat(NAN, NAN);
+        return linear_interp.value();
+      }
+      cfloat Image::nearest_neighbour_value (const Eigen::Vector3f& scanner_point) const {
+        if (nearest_interp.scanner (scanner_point))
+          return cfloat(NAN, NAN);
+        return nearest_interp.value();
+      }
+
+
+
+
       inline bool Image::volume_unchanged ()
       {
         bool is_unchanged = true;
-        for (size_t i = 3; i < buffer.ndim(); ++i) {
-          if (interp[i] != position[i]) {
+        for (size_t i = 3; i < image.ndim(); ++i) {
+          if (linear_interp.index (i) != position[i]) {
             is_unchanged = false;
-            position[i] = interp[i];
+            position[i] = linear_interp.index (i);
           }
         }
 

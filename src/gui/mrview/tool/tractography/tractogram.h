@@ -70,18 +70,14 @@ namespace MR
             void load_track_scalars (const std::string&);
             void erase_nontrack_data();
 
-            void set_colour (float c[3])
-            {
-              colour[0] = c[0];
-              colour[1] = c[1];
-              colour[2] = c[2];
-            }
+            void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
             bool should_update_stride;
             TrackColourType color_type;
-            float colour[3], original_fov;
+            Eigen::Array3f colour;
+            float original_fov;
             std::string scalar_filename;
 
             class Shader : public Displayable::Shader {
@@ -120,12 +116,12 @@ namespace MR
             bool vao_dirty;
 
 
-            void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+            void load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,
                                        std::vector<GLint>& starts,
                                        std::vector<GLint>& sizes,
                                        size_t& tck_count);
                                               
-            void load_end_colours_onto_GPU (std::vector<Point<float> >& buffer);
+            void load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>&);
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
 

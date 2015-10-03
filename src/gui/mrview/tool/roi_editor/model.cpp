@@ -37,7 +37,7 @@ namespace MR
 
 
 
-        void ROI_Model::load (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+        void ROI_Model::load (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
@@ -49,7 +49,7 @@ namespace MR
           endInsertRows();
         }
 
-        void ROI_Model::create (MR::Image::Header& image)
+        void ROI_Model::create (const MR::Header& image)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+1);
           { 

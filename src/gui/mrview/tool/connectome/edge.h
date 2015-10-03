@@ -23,8 +23,7 @@
 #ifndef __gui_mrview_tool_connectome_edge_h__
 #define __gui_mrview_tool_connectome_edge_h__
 
-#include "point.h"
-
+#include "math/math.h"
 #include "connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
 #include "gui/opengl/gl.h"
@@ -48,7 +47,7 @@ namespace MR
           typedef MR::Connectome::node_t node_t;
 
         public:
-          Edge (const node_t, const node_t, const Point<float>&, const Point<float>&);
+          Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);
           Edge (Edge&&);
           Edge ();
           ~Edge();
@@ -69,16 +68,16 @@ namespace MR
           static void set_streamtube_LOD (const size_t lod) { Streamtube::LOD (lod); }
 
           node_t get_node_index (const size_t i) const { assert (i==0 || i==1); return node_indices[i]; }
-          const Point<float> get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
-          Point<float> get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
+          const Eigen::Vector3f& get_node_centre (const size_t i) const { assert (i==0 || i==1); return node_centres[i]; }
+          Eigen::Vector3f get_com() const { return (node_centres[0] + node_centres[1]) * 0.5; }
 
           const GLfloat* get_rot_matrix() const { return rot_matrix; }
 
-          const Point<float>& get_dir() const { return dir; }
+          const Eigen::Vector3f& get_dir() const { return dir; }
           void set_size (const float i) { size = i; }
           float get_size() const { return size; }
-          void set_colour (const Point<float>& i) { colour = i; }
-          const Point<float>& get_colour() const { return colour; }
+          void set_colour (const Eigen::Array3f& i) { colour = i; }
+          const Eigen::Array3f& get_colour() const { return colour; }
           void set_alpha (const float i) { alpha = i; }
           float get_alpha() const { return alpha; }
           void set_visible (const bool i) { visible = i; }
@@ -89,13 +88,13 @@ namespace MR
 
         private:
           const node_t node_indices[2];
-          const Point<float> node_centres[2];
-          const Point<float> dir;
+          const Eigen::Vector3f node_centres[2];
+          const Eigen::Vector3f dir;
 
           GLfloat* rot_matrix;
 
           float size;
-          Point<float> colour;
+          Eigen::Array3f colour;
           float alpha;
           bool visible;
 
@@ -131,8 +130,8 @@ namespace MR
                   binormals (std::move (that.binormals)) { }
               Exemplar () = delete;
             private:
-              const Point<float> endpoints[2];
-              std::vector< Point<float> > vertices, tangents, normals, binormals;
+              const Eigen::Vector3f endpoints[2];
+              std::vector<Eigen::Vector3f> vertices, tangents, normals, binormals;
               friend class Streamline;
               friend class Streamtube;
           };

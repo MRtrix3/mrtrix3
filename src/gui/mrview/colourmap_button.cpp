@@ -16,19 +16,19 @@ using Entry = ColourMap::Entry;
 const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
         "color.rgb = vec3 (amplitude);\n",
-        [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
+        [] (float amplitude) { return Eigen::Vector3f (amplitude, amplitude, amplitude); }),
 
     Entry ("Hot",
         "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-        [] (float amplitude) { return Point<float> (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
+        [] (float amplitude) { return Eigen::Vector3f (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
 
     Entry ("Cool",
         "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-        [] (float amplitude) { return Point<float> (1.0 - (2.7213 * (1.0 - amplitude)), 1.0 - (2.7213 * (1.0 - amplitude) - 1.0), 1.0 - (3.7727 * (1.0 - amplitude) - 2.7727)); }),
+        [] (float amplitude) { return Eigen::Vector3f (1.0 - (2.7213 * (1.0 - amplitude)), 1.0 - (2.7213 * (1.0 - amplitude) - 1.0), 1.0 - (3.7727 * (1.0 - amplitude) - 2.7727)); }),
 
     Entry ("Jet",
         "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-        [] (float amplitude) { return Point<float> (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
+        [] (float amplitude) { return Eigen::Vector3f (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
 }};
 
 

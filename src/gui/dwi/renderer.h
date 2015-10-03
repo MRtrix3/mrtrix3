@@ -48,8 +48,8 @@ namespace MR
 
       class Renderer
       {
-          typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> matrix_t;
-          typedef Eigen::Matrix<float, Eigen::Dynamic, 1> vector_t;
+          typedef Eigen::MatrixXf matrix_t;
+          typedef Eigen::VectorXf vector_t;
         public:
           Renderer () : reverse_ID (0), origin_ID (0) { }
 

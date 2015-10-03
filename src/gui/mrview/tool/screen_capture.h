@@ -91,14 +91,14 @@ namespace MR
 
             class CaptureState {
               public:
-                Math::Versor<float> orientation;
-                Point<> focus, target;
+                Eigen::Quaternionf orientation;
+                Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Math::Versor<float> &orientation,
-                  const Point<> &focus, const Point<> &target, float fov,
+                CaptureState(const Eigen::Quaternionf& orientation,
+                  const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)
                   : orientation(orientation), focus(focus), target(target), fov(fov),

@@ -23,8 +23,8 @@
 #ifndef __gui_mrview_tool_roi_editor_model_h__
 #define __gui_mrview_tool_roi_editor_model_h__
 
+#include "header.h"
 #include "memory.h"
-#include "image/header.h"
 #include "gui/mrview/tool/list_model_base.h"
 #include "gui/mrview/tool/roi_editor/item.h"
 
@@ -47,8 +47,8 @@ namespace MR
             ROI_Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void load (std::vector<std::unique_ptr<MR::Image::Header>>& list);
-            void create (MR::Image::Header& image);
+            void load (std::vector<std::unique_ptr<MR::Header>>&);
+            void create (const MR::Header&);
 
             ROI_Item* get (QModelIndex& index) {
               return dynamic_cast<ROI_Item*>(items[index.row()].get());

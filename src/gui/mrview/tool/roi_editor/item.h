@@ -27,10 +27,8 @@
 #include <array>
 #include <vector>
 
-#include "image/header.h"
-#include "image/info.h"
-#include "image/loop.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "algo/loop.h"
 #include "gui/mrview/volume.h"
 #include "gui/mrview/tool/roi_editor/undoentry.h"
 
@@ -61,13 +59,13 @@ namespace MR
 
        class ROI_Item : public Volume {
           public:
-            ROI_Item (const MR::Image::Info&);
+            ROI_Item (const MR::Header&);
 
             void zero ();
-            void load (const MR::Image::Header& header);
+            void load (MR::Header&);
 
-            template <class VoxelType> 
-            void save (VoxelType&&, GLubyte*);
+            template <class ImageType>
+            void save (ImageType&&, GLubyte*);
 
             bool has_undo () { return current_undo >= 0; }
             bool has_redo () { return current_undo < int(undo_list.size()-1); }
@@ -92,13 +90,13 @@ namespace MR
 
 
 
-        template <class VoxelType>
-        void ROI_Item::save (VoxelType&& vox, GLubyte* data) 
+        template <class ImageType>
+        void ROI_Item::save (ImageType&& out, GLubyte* data)
         {
-          for (auto l = MR::Image::Loop() (vox); l; ++l)
-            vox.value() = data[vox[0] + vox.dim(0) * (vox[1] + vox.dim(1)*vox[2])];
+          for (auto l = Loop(out) (out); l; ++l)
+            out.value() = data[out.index(0) + out.size(0) * (out.index(1) + out.size(1)*out.index(2))];
           saved = true;
-          filename = vox.name();
+          filename = out.name();
         }
 
 

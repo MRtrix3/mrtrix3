@@ -23,8 +23,7 @@
 #ifndef __gui_mrview_tool_connectome_node_h__
 #define __gui_mrview_tool_connectome_node_h__
 
-#include "point.h"
-#include "image/buffer_scratch.h"
+#include "image.h"
 
 #include "gui/opengl/gl.h"
 #include "mesh/mesh.h"
@@ -43,22 +42,22 @@ namespace MR
       class Node
       {
         public:
-          Node (const Point<float>&, const size_t, const size_t, std::shared_ptr< MR::Image::BufferScratch<bool> >&);
+          Node (const Eigen::Vector3f&, const size_t, const size_t, const MR::Image<bool>&);
           Node ();
 
           void assign_mesh (MR::Mesh::Mesh& in) { clear_mesh(); mesh.reset (new Node::Mesh (in)); }
           void render_mesh() const { if (!mesh) return; mesh->render(); }
           void clear_mesh() { if (mesh) delete mesh.release(); }
 
-          const Point<float>& get_com() const { return centre_of_mass; }
+          const Eigen::Vector3f& get_com() const { return centre_of_mass; }
           size_t get_volume() const { return volume; }
 
           void set_name (const std::string& i) { name = i; }
           const std::string& get_name() const { return name; }
           void set_size (const float i) { size = i; }
           float get_size() const { return size; }
-          void set_colour (const Point<float>& i) { colour = i; pixmap.fill (QColor (i[0] * 255.0f, i[1] * 255.0f, i[2] * 255.0f)); }
-          const Point<float>& get_colour() const { return colour; }
+          void set_colour (const Eigen::Array3f& i) { colour = i; pixmap.fill (QColor (i[0] * 255.0f, i[1] * 255.0f, i[2] * 255.0f)); }
+          const Eigen::Array3f& get_colour() const { return colour; }
           const QPixmap get_pixmap() const { return pixmap; }
           void set_alpha (const float i) { alpha = i; }
           float get_alpha() const { return alpha; }
@@ -68,13 +67,13 @@ namespace MR
           bool to_draw() const { return (visible && (alpha > 0.0f) && (size > 0.0f)); }
 
         private:
-          const Point<float> centre_of_mass;
+          const Eigen::Vector3f centre_of_mass;
           const size_t volume;
-          std::shared_ptr< MR::Image::BufferScratch<bool> > mask;
+          MR::Image<bool> mask;
 
           std::string name;
           float size;
-          Point<float> colour;
+          Eigen::Array3f colour;
           float alpha;
           bool visible;
 

@@ -54,7 +54,7 @@ namespace MR
 
           GL::Lighting* lighting;
 
-          void set (const Eigen::Matrix<float, Eigen::Dynamic, 1>& new_values) {
+          void set (const Eigen::VectorXf& new_values) {
             values = new_values;
             recompute_amplitudes = true;
             update();
@@ -127,7 +127,7 @@ namespace MR
           GL::Shader::Program axes_shader;
 
           Renderer renderer;
-          Eigen::Matrix<float, Eigen::Dynamic, 1> values;
+          Eigen::VectorXf values;
 
         protected:
           virtual void initializeGL () override;

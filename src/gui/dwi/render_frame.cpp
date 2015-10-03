@@ -276,12 +276,12 @@ namespace MR
 
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            Eigen::Vector3f x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
-            Eigen::Vector3f z = projection.screen_normal();
+            const Eigen::Vector3f x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
+            const Eigen::Vector3f z = projection.screen_normal();
             Eigen::Vector3f v = x.cross (z).normalized();
             float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            v *= -std::sin (angle/2.0) / v.norm();
+            v *= -std::sin (angle/2.0);
             Eigen::Quaternionf rot (std::cos (angle/2.0), v[0], v[1], v[2]);
             rot.normalize();
             orientation = orientation * rot;
