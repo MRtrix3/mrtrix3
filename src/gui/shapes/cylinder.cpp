@@ -50,13 +50,13 @@ namespace MR
       // To do this, just duplicate the vertices, and store the normals manually
       //   (normals will also need to be rotated in the vertex shader)
 
-      const size_t N = Math::pow2 (level_of_detail + 1);
+      const int N = int(Math::pow2 (level_of_detail + 1));
       const float angle_multiplier = 2.0 * Math::pi / float(N);
 
       // The near face
       vertices.push_back (Eigen::Vector3f { 0.0f, 0.0f, 0.0f });
       normals.push_back (Eigen::Vector3f { 0.0f, 0.0f, -1.0f });
-      for (size_t i = 0; i != N; ++i) {
+      for (int i = 0; i != N; ++i) {
         vertices.push_back (Eigen::Vector3f { std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f });
         normals.push_back (Eigen::Vector3f { 0.0f, 0.0f, -1.0f });
         if (i == N-1)
@@ -69,7 +69,7 @@ namespace MR
       const int far_face_centre_index = int(vertices.size());
       vertices.push_back (Eigen::Vector3f { 0.0f, 0.0f, 1.0f });
       normals.push_back (Eigen::Vector3f { 0.0f, 0.0f, 1.0f });
-      for (size_t i = 0; i != N; ++i) {
+      for (int i = 0; i != N; ++i) {
         vertices.push_back (Eigen::Vector3f { std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 1.0f });
         normals.push_back (Eigen::Vector3f { 0.0f, 0.0f, 1.0f });
         if (i == N-1)
@@ -83,7 +83,7 @@ namespace MR
       normals.push_back (Eigen::Vector3f { 1.0f, 0.0f, 0.0f });
       vertices.push_back (Eigen::Vector3f { 1.0f, 0.0f, 1.0f });
       normals.push_back (Eigen::Vector3f { 1.0f, 0.0f, 0.0f });
-      for (size_t i = 1; i <= N; ++i) {
+      for (int i = 1; i <= N; ++i) {
         const int V = vertices.size();
         vertices.push_back (Eigen::Vector3f { std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f });
         normals.push_back (Eigen::Vector3f { std::cos (i * angle_multiplier), std::sin (i * angle_multiplier), 0.0f });

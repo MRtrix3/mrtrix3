@@ -2919,7 +2919,7 @@ namespace MR
 
           } else if (node_visibility == node_visibility_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_visibility.size() == num_edges());
+            assert (size_t(node_values_from_file_visibility.size()) == num_edges());
 
             if (selected_node_count) {
               const bool invert = node_visibility_threshold_invert_checkbox->isChecked();
@@ -3042,7 +3042,7 @@ namespace MR
 
           } else if (node_colour == node_colour_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_colour.size() == num_edges());
+            assert (size_t(node_values_from_file_colour.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_colour_lower_button->value(), upper = node_colour_upper_button->value();
               for (node_t i = 1; i <= num_nodes(); ++i) {
@@ -3153,7 +3153,7 @@ namespace MR
 
           } else if (node_size == node_size_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_size.size() == num_edges());
+            assert (size_t(node_values_from_file_size.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_size_lower_button->value(), upper = node_size_upper_button->value();
               const bool invert = node_size_invert_checkbox->isChecked();
@@ -3257,7 +3257,7 @@ namespace MR
 
           } else if (node_alpha == node_alpha_t::MATRIX_FILE) {
 
-            assert (node_values_from_file_alpha.size() == num_edges());
+            assert (size_t(node_values_from_file_alpha.size()) == num_edges());
             if (selected_node_count) {
               const float lower = node_alpha_lower_button->value(), upper = node_alpha_upper_button->value();
               const bool invert = node_alpha_invert_checkbox->isChecked();
