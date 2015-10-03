@@ -85,10 +85,12 @@ namespace MR
           template <class M>
           mat4 (const M& m)
           {
-            for (size_t i = 0; i != 4; ++i) {
+            zero();
+            for (size_t i = 0; i != 3; ++i) {
               for (size_t j = 0; j != 4; ++j)
                 (*this)(i,j) = m(i,j);
             }
+            (*this)(3,3) = 1.0f;
           }
 
           void zero () {
