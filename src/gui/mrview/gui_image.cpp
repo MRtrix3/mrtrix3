@@ -38,9 +38,9 @@ namespace MR
 
 
 
-      ImageBase::ImageBase (const MR::Header& header) :
-          Volume (header),
-          position (header.ndim())
+      ImageBase::ImageBase (MR::Header&& H) :
+          Volume (std::move (H)),
+          position (header().ndim())
       {
         position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
       }
@@ -117,8 +117,8 @@ namespace MR
 
 
 
-      Image::Image (const MR::Header& image_header) :
-          ImageBase (image_header),
+      Image::Image (MR::Header&& image_header) :
+          ImageBase (std::move (image_header)),
           image (Volume::header().get_image<cfloat>()),
           linear_interp (image),
           nearest_interp (image)
@@ -389,7 +389,7 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          auto V = Volume::header().get_image<ValueType>();
+          auto V = header().get_image<ValueType>();
           int N = ( format == gl::RED ? 1 : 3 );
           std::vector<ValueType> data (N * V.size(0) * V.size(1));
 

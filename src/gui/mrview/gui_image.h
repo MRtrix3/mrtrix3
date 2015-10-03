@@ -50,7 +50,7 @@ namespace MR
       class ImageBase : public Volume
       {
         public:
-          ImageBase (const MR::Header&);
+          ImageBase (MR::Header&&);
 
           void render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth);
@@ -69,10 +69,7 @@ namespace MR
       class Image : public ImageBase
       {
         public:
-          Image (const MR::Header&);
-
-          //MR::Header& header () { return image.header(); }
-          const MR::Header& header () const { return image.header(); }
+          Image (MR::Header&&);
 
           void update_texture2D (const int plane, const int slice) override;
           void update_texture3D() override;

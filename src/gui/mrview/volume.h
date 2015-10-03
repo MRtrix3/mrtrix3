@@ -44,9 +44,9 @@ namespace MR
       class Volume : public Displayable
       {
         public:
-          Volume (const MR::Header& header) :
+          Volume (MR::Header&& header) :
               Displayable (header.name()),
-              _header (header),
+              _header (std::move (header)),
               _transform (_header),
               interpolation (gl::LINEAR),
               texture_mode_changed (true) { }

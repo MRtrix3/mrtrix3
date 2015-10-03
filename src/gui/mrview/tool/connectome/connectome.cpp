@@ -2370,7 +2370,7 @@ namespace MR
           H_overlay.stride (2) = 4;
           H_overlay.stride (3) = 1;
           H_overlay.sanitise();
-          node_overlay.reset (new NodeOverlay (H_overlay));
+          node_overlay.reset (new NodeOverlay (std::move (H_overlay)));
           update_node_overlay();
 
           selected_nodes.resize (num_nodes()+1);

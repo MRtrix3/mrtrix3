@@ -56,8 +56,8 @@ namespace MR
 
 
 
-        ROI_Item::ROI_Item (const MR::Header& src) :
-            Volume (src),
+        ROI_Item::ROI_Item (MR::Header&& src) :
+            Volume (std::move (src)),
             saved (true),
             current_undo (-1)
         {

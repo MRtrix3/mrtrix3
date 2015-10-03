@@ -42,7 +42,7 @@ namespace MR
 
         class Overlay::Item : public Image {
           public:
-            Item (const MR::Header& H) : Image (H) { }
+            Item (MR::Header&& H) : Image (std::move (H)) { }
             Mode::Slice::Shader slice_shader; 
         };
 
@@ -65,7 +65,7 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Item* overlay = new Item (*list[i]);
+            Item* overlay = new Item (std::move (*list[i]));
             overlay->set_allowed_features (true, true, false);
             if (!overlay->colourmap) 
               overlay->colourmap = 1;

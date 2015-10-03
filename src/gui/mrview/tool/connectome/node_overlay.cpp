@@ -35,8 +35,8 @@ namespace MR
       {
 
 
-        NodeOverlay::NodeOverlay (const MR::Header& H) :
-            MR::GUI::MRView::ImageBase (H),
+        NodeOverlay::NodeOverlay (MR::Header&& H) :
+            MR::GUI::MRView::ImageBase (std::move (H)),
             data (MR::Image<float>::scratch (header(), "node overlay scratch image")),
             need_update (true)
         {

@@ -280,7 +280,8 @@ namespace MR
         void ROI::new_slot ()
         {
           assert (window().image());
-          list_model->create (window().image()->header());
+          MR::Header H (window().image()->header());
+          list_model->create (std::move (H));
           list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();

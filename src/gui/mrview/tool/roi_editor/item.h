@@ -59,7 +59,7 @@ namespace MR
 
        class ROI_Item : public Volume {
           public:
-            ROI_Item (const MR::Header&);
+            ROI_Item (MR::Header&&);
 
             void zero ();
             void load (MR::Header&);

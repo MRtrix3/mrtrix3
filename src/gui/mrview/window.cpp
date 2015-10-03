@@ -733,7 +733,7 @@ namespace MR
       void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
-          QAction* action = new Image (*list[i]);
+          QAction* action = new Image (std::move (*list[i]));
           action->setText (shorten (list[i]->name(), 20, 0).c_str());
           action->setParent (Window::main);
           action->setCheckable (true);

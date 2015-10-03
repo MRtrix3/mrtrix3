@@ -41,8 +41,8 @@ namespace MR
 
         class ODF::Image {
           public:
-            Image (const MR::Header& header, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
-              image (header),
+            Image (MR::Header&& H, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
+              image (std::move (H)),
               lmax (lmax),
               scale (scale),
               hide_negative_lobes (hide_negative_lobes),
@@ -108,7 +108,7 @@ namespace MR
               if (hlist.size()) {
                 beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
                 for (size_t i = 0; i < hlist.size(); ++i) 
-                  items.push_back (std::unique_ptr<Image> (new Image (*hlist[i], lmax, scale, hide_negative_lobes, colour_by_direction)));
+                  items.push_back (std::unique_ptr<Image> (new Image (std::move (*hlist[i]), lmax, scale, hide_negative_lobes, colour_by_direction)));
                 endInsertRows();
               }
 

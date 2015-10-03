@@ -42,7 +42,7 @@ namespace MR
       class NodeOverlay : public MR::GUI::MRView::ImageBase
       {
         public:
-          NodeOverlay (const MR::Header&);
+          NodeOverlay (MR::Header&&);
 
           void update_texture2D (const int, const int) override;
           void update_texture3D() override;

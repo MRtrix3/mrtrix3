@@ -48,7 +48,7 @@ namespace MR
               ListModelBase (parent) { }
 
             void load (std::vector<std::unique_ptr<MR::Header>>&);
-            void create (const MR::Header&);
+            void create (MR::Header&&);
 
             ROI_Item* get (QModelIndex& index) {
               return dynamic_cast<ROI_Item*>(items[index.row()].get());
