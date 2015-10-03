@@ -109,8 +109,8 @@ namespace MR
 
             if (window().show_comments()) {
               size_t counter = 0;
-              for (auto i : image()->header().keyval())
-                projection.render_text (i.first + ": " + i.second, LeftEdge | TopEdge, counter++);
+              for (auto& i : image()->comments())
+                projection.render_text (i, LeftEdge | TopEdge, counter++);
             }
 
             projection.done_render_text();

@@ -119,16 +119,17 @@ namespace MR
 
       Image::Image (MR::Header&& image_header) :
           ImageBase (std::move (image_header)),
-          image (Volume::header().get_image<cfloat>()),
+          image (header().get_image<cfloat>()),
           linear_interp (image),
           nearest_interp (image)
       {
-        set_colourmap (guess_colourmap ());
+        set_colourmap (guess_colourmap());
+        load_comments();
       }
 
 
 
-      size_t Image::guess_colourmap () const
+      size_t Image::guess_colourmap() const
       {
         std::string map = "Gray";
         if (header().datatype().is_complex())
@@ -141,6 +142,17 @@ namespace MR
           if (ColourMap::maps[n].name == map)
             return n;
         return 0;
+      }
+
+
+
+      void Image::load_comments()
+      {
+        _comments.clear();
+        for (auto& i : header().keyval()) {
+          if (i.second.find ('\n') == i.second.npos)
+            _comments.push_back (i.first + ": " + i.second);
+        }
       }
 
 

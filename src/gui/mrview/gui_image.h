@@ -83,10 +83,15 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
+          const std::vector<std::string>& comments() const { return _comments; }
+
         private:
           bool volume_unchanged ();
           bool format_unchanged ();
           size_t guess_colourmap () const;
+
+          std::vector<std::string> _comments;
+          void load_comments();
 
           template <typename T> void copy_texture_3D ();
           void copy_texture_3D_complex ();
