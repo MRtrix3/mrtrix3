@@ -197,7 +197,7 @@ namespace MR
               const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
               const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
 
-              if (this_actual_cf_change < std::min (required_cf_change_ratio, std::min (required_cf_change_quantisation, this_nonlinearity))) {
+              if (this_actual_cf_change < std::min ( {required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity })) {
 
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {

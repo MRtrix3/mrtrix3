@@ -108,9 +108,9 @@ namespace MR
             GL_CHECK_ERROR;
 
             if (window().show_comments()) {
-              size_t counter = 0;
-              for (auto& i : image()->comments())
-                projection.render_text (i, LeftEdge | TopEdge, counter++);
+              const std::map<std::string, std::string>::const_iterator i = image()->header().keyval().find ("comments");
+              if (i != image()->header().keyval().end())
+                projection.render_text (i->second, LeftEdge | TopEdge, 0);
             }
 
             projection.done_render_text();

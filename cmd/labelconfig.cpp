@@ -23,12 +23,14 @@
 
 
 #include "command.h"
+#include "image.h"
+#include "image_helpers.h"
+#include "mrtrix.h"
+#include "transform.h"
+
+#include "algo/loop.h"
 #include "file/path.h"
 #include "file/utils.h"
-#include "image.h"
-#include "algo/loop.h"
-#include "transform.h"
-#include "image_helpers.h"
 #include "interp/nearest.h"
 
 #include "connectome/config/config.h"
@@ -113,9 +115,7 @@ void run ()
 
   // Create a new header for the output file
   Header H (in.header());
-  H.keyval().insert (std::make_pair ("created_by", "labelconfig"));
-  H.keyval().insert (std::make_pair ("basis_image", Path::basename (argument[0])));
-  H.keyval().insert (std::make_pair ("config_file", Path::basename (argument[1])));
+  add_line (H.keyval()["comments"], "Created by labelconfig using " + Path::basename (argument[0]) + " and " + Path::basename (argument[1]));
 
   // Create the output file
   auto out = Image<node_t>::create (argument[2], H);

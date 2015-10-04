@@ -124,7 +124,6 @@ namespace MR
           nearest_interp (image)
       {
         set_colourmap (guess_colourmap());
-        load_comments();
       }
 
 
@@ -142,17 +141,6 @@ namespace MR
           if (ColourMap::maps[n].name == map)
             return n;
         return 0;
-      }
-
-
-
-      void Image::load_comments()
-      {
-        _comments.clear();
-        for (auto& i : header().keyval()) {
-          if (i.second.find ('\n') == i.second.npos)
-            _comments.push_back (i.first + ": " + i.second);
-        }
       }
 
 
