@@ -292,7 +292,7 @@ namespace MR
           regular_grid_buffer_dir.clear();
           regular_grid_buffer_val.clear();
 
-          for (int y = -nx; y <= ny; ++y) {
+          for (int y = -ny; y <= ny; ++y) {
             for (int x = -nx; x <= nx; ++x) {
               Point<> scanner_pos = p + float(x)*x_dir + float(y)*y_dir;
               Point<> voxel_pos = header_transform.scanner2voxel(scanner_pos);

@@ -1,7 +1,7 @@
 /*
     Copyright 2011 Brain Research Institute, Melbourne, Australia
 
-    Written by Robert Smith, 2011.
+    Written by David Raffelt, 2014
 
     This file is part of MRtrix.
 
@@ -33,7 +33,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "Pad an image to increase the FOV";
@@ -46,20 +46,15 @@ void usage ()
 
   OPTIONS
   + Option   ("uniform",
-              "pad the input image by a uniform amount on all sides")
-  + Argument ("number",
-              "the number of voxels to pad").type_integer (0, 0, 1e6)
+              "pad the input image by a uniform number of voxels on all sides (in 3D)")
+  + Argument ("number").type_integer (0, 0, 1e6)
 
   + Option   ("axis",
-              "pad the input image in the provided axis").allow_multiple()
-  + Argument ("index",
-              "the index of the image axis to be padded").type_integer (0, 0, 2)
-  + Argument ("lower",
-              "the number of voxels to pad at the lower bound "
-              "of this axis").type_integer (0, 0, 1e6)
-  + Argument ("upper",
-              "the number of voxels to pad at the upper bound "
-              "of this axis").type_integer (0, 1e6, 1e6);
+              "pad the input image along the provided axis (defined by index). Lower and upper define "
+              "the number of voxels to add to the lower and upper bounds of the axis").allow_multiple()
+  + Argument ("index").type_integer (0, 0, 2)
+  + Argument ("lower").type_integer (0, 0, 1e6)
+  + Argument ("upper").type_integer (0, 1e6, 1e6);
 }
 
 
@@ -68,13 +63,13 @@ void run ()
 
   Image::Header input_header (argument[0]);
   Image::Buffer<float> input_data (input_header);
-  Image::Buffer<float>::voxel_type input_voxel (input_data);
+  auto input_voxel = input_data.voxel();
 
   int bounds[3][2] = { {0, input_header.dim (0) - 1},
                        {0, input_header.dim (1) - 1},
                        {0, input_header.dim (2) - 1} };
 
-  int padding[3][2] = { {0 , 0}, {0, 0}, {0, 0} };
+  int padding[3][2] = { {0, 0}, {0, 0}, {0, 0} };
 
   Options opt = get_options ("uniform");
   if (opt.size()) {
@@ -103,7 +98,7 @@ void run ()
   }
   output_header.transform() = output_transform;
   Image::Buffer<float> output_data (argument[1], output_header);
-  auto output_voxel (output_data);
+  auto output_voxel = output_data.voxel();
 
   Image::Loop loop ("padding image...");
   for (loop.start (output_voxel); loop.ok(); loop.next (output_voxel)) {
