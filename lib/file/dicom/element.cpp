@@ -168,10 +168,12 @@ namespace MR {
 
         next = data;
         if (size == LENGTH_UNDEFINED) {
-          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) 
-            throw Exception ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
+          if (VR != VR_SQ && !(group == GROUP_SEQUENCE && element == ELEMENT_SEQUENCE_ITEM)) {
+            INFO ("undefined length used for DICOM tag " + ( tag_name().size() ? tag_name().substr (2) : "" ) 
                 + " (" + str (group) + ", " + str (element) 
                 + ") in file \"" + fmap->name() + "\"");
+            size = 0;
+          }
         }
         else if (next+size > fmap->address() + fmap->size()) 
           throw Exception ("file \"" + fmap->name() + "\" is too small to contain DICOM elements specified");
