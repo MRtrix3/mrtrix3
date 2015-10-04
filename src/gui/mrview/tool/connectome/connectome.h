@@ -57,6 +57,7 @@
 #include "gui/mrview/tool/connectome/colourmap_observers.h"
 #include "gui/mrview/tool/connectome/edge.h"
 #include "gui/mrview/tool/connectome/file_data_vector.h"
+#include "gui/mrview/tool/connectome/matrix_list.h"
 #include "gui/mrview/tool/connectome/node.h"
 #include "gui/mrview/tool/connectome/node_list.h"
 #include "gui/mrview/tool/connectome/node_overlay.h"
@@ -100,18 +101,13 @@ namespace MR
             virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
           private slots:
+
             void image_open_slot();
-            void lut_open_slot (int);
-            void config_open_slot();
             void hide_all_slot();
 
-            void lighting_change_slot (int);
-            void lighting_settings_slot();
-            void lighting_parameter_slot();
-            void crop_to_slab_toggle_slot (int);
-            void crop_to_slab_parameter_slot();
-            void show_node_list_slot();
-            void node_selection_settings_changed_slot();
+            void matrix_open_slot();
+            void matrix_close_slot();
+            void connectome_selection_changed_slot (const QItemSelection&, const QItemSelection&);
 
             void node_visibility_selection_slot (int);
             void node_geometry_selection_slot (int);
@@ -148,23 +144,27 @@ namespace MR
             void edge_alpha_value_slot (int);
             void edge_alpha_parameter_slot();
 
+            void config_open_slot();
+            void lut_open_slot (int);
+            void lighting_change_slot (int);
+            void lighting_settings_slot();
+            void lighting_parameter_slot();
+            void crop_to_slab_toggle_slot (int);
+            void crop_to_slab_parameter_slot();
+            void show_node_list_slot();
+            void node_selection_settings_changed_slot();
+
           protected:
 
             QPushButton *image_button, *hide_all_button;
-            QComboBox *lut_combobox;
-            QPushButton *config_button;
 
-            QCheckBox *lighting_checkbox;
-            QPushButton *lighting_settings_button;
-            QCheckBox *crop_to_slab_checkbox;
-            QLabel *crop_to_slab_label;
-            AdjustButton *crop_to_slab_button;
-            QLabel *show_node_list_label;
-            QPushButton *show_node_list_button;
+            QPushButton *matrix_open_button, *matrix_close_button;
+            QListView *matrix_list_view;
 
             QComboBox *node_visibility_combobox;
             QComboBox *node_visibility_matrix_operator_combobox;
             QLabel *node_visibility_warning_icon;
+            QWidget *node_visibility_threshold_controls;
             QLabel *node_visibility_threshold_label;
             AdjustButton *node_visibility_threshold_button;
             QCheckBox *node_visibility_threshold_invert_checkbox;
@@ -179,12 +179,14 @@ namespace MR
             QComboBox *node_colour_matrix_operator_combobox;
             QColorButton *node_colour_fixedcolour_button;
             ColourMapButton *node_colour_colourmap_button;
+            QWidget *node_colour_range_controls;
             QLabel *node_colour_range_label;
             AdjustButton *node_colour_lower_button, *node_colour_upper_button;
 
             QComboBox *node_size_combobox;
             QComboBox *node_size_matrix_operator_combobox;
             AdjustButton *node_size_button;
+            QWidget *node_size_range_controls;
             QLabel *node_size_range_label;
             AdjustButton *node_size_lower_button, *node_size_upper_button;
             QCheckBox *node_size_invert_checkbox;
@@ -192,12 +194,14 @@ namespace MR
             QComboBox *node_alpha_combobox;
             QComboBox *node_alpha_matrix_operator_combobox;
             QSlider *node_alpha_slider;
+            QWidget *node_alpha_range_controls;
             QLabel *node_alpha_range_label;
             AdjustButton *node_alpha_lower_button, *node_alpha_upper_button;
             QCheckBox *node_alpha_invert_checkbox;
 
             QComboBox *edge_visibility_combobox;
             QLabel *edge_visibility_warning_icon;
+            QWidget *edge_visibility_threshold_controls;
             QLabel *edge_visibility_threshold_label;
             AdjustButton *edge_visibility_threshold_button;
             QCheckBox *edge_visibility_threshold_invert_checkbox;
@@ -210,20 +214,33 @@ namespace MR
             QComboBox *edge_colour_combobox;
             QColorButton *edge_colour_fixedcolour_button;
             ColourMapButton *edge_colour_colourmap_button;
+            QWidget *edge_colour_range_controls;
             QLabel *edge_colour_range_label;
             AdjustButton *edge_colour_lower_button, *edge_colour_upper_button;
 
             QComboBox *edge_size_combobox;
             AdjustButton *edge_size_button;
+            QWidget *edge_size_range_controls;
             QLabel *edge_size_range_label;
             AdjustButton *edge_size_lower_button, *edge_size_upper_button;
             QCheckBox *edge_size_invert_checkbox;
 
             QComboBox *edge_alpha_combobox;
             QSlider *edge_alpha_slider;
+            QWidget *edge_alpha_range_controls;
             QLabel *edge_alpha_range_label;
             AdjustButton *edge_alpha_lower_button, *edge_alpha_upper_button;
             QCheckBox *edge_alpha_invert_checkbox;
+
+            QPushButton *config_button;
+            QComboBox *lut_combobox;
+            QCheckBox *lighting_checkbox;
+            QPushButton *lighting_settings_button;
+            QCheckBox *crop_to_slab_checkbox;
+            QLabel *crop_to_slab_label;
+            AdjustButton *crop_to_slab_button;
+            QLabel *show_node_list_label;
+            QPushButton *show_node_list_button;
 
           private:
 
@@ -262,6 +279,10 @@ namespace MR
             // Fixed lighting settings from the main window, and popup dialog
             GL::Lighting lighting;
             std::unique_ptr<LightingDock> lighting_dock;
+
+
+            // Model for selecting connectome matrices
+            Matrix_list_model* matrix_list_model;
 
 
             // Node selection
@@ -354,6 +375,7 @@ namespace MR
             void clear_all();
             void enable_all (const bool);
             void initialise (const std::string&);
+            void add_matrices (const std::vector<std::string>&);
 
             void draw_nodes (const Projection&);
             void draw_edges (const Projection&);
@@ -378,7 +400,6 @@ namespace MR
             // Helper functions for determining actual node / edge visual properties
             //   given current selection status
             void node_selection_changed (const std::vector<node_t>&);
-
             bool         node_visibility_given_selection (const node_t);
             Point<float> node_colour_given_selection     (const node_t);
             float        node_size_given_selection       (const node_t);
@@ -387,6 +408,16 @@ namespace MR
             Point<float> edge_colour_given_selection     (const Edge&);
             float        edge_size_given_selection       (const Edge&);
             float        edge_alpha_given_selection      (const Edge&);
+
+            // Helper functions to update the min / max / value / rate of parameter controls
+            void update_controls_node_visibility (const float, const float, const float);
+            void update_controls_node_colour     (const float, const float, const float);
+            void update_controls_node_size       (const float, const float, const float);
+            void update_controls_node_alpha      (const float, const float, const float);
+            void update_controls_edge_visibility (const float, const float, const float);
+            void update_controls_edge_colour     (const float, const float, const float);
+            void update_controls_edge_size       (const float, const float, const float);
+            void update_controls_edge_alpha      (const float, const float, const float);
 
             void get_meshes();
             void get_exemplars();

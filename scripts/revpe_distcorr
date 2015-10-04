@@ -21,15 +21,18 @@ from lib.binaryInPath  import binaryInPath
 from lib.errorMessage  import errorMessage
 from lib.getFSLSuffix  import getFSLSuffix
 from lib.getHeaderInfo import getHeaderInfo
+from lib.getPEAxis     import getPEAxis
 from lib.printMessage  import printMessage
 from lib.runCommand    import runCommand
 from lib.warnMessage   import warnMessage
 
-numArgs = 5
-if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <PE direction> <Reversed-PE Image 1> <Reversed-PE Image 2> <Input image series> <Output image series> (options)\n')
-  exit(0)
-lib.app.initialise(numArgs)
+lib.app.initParser('Perform EPI distortion correction of a volume series using a reversed phase-encode image pair to estimate the inhomogeneity field')
+lib.app.parser.add_argument('pe_axis',   help='The phase encode direction / axis; can be an axis number (0, 1 or 2) or a code (e.g. AP, LR, IS)')
+lib.app.parser.add_argument('image1of2', help='The first image of the reversed-PE image pair')
+lib.app.parser.add_argument('image2of2', help='The second image of the reversed-PE image pair')
+lib.app.parser.add_argument('series',    help='The image series to be corrected; note that the phase-encode direction of this series should be identical to the FIRST image of the reversed-PE pair')
+lib.app.parser.add_argument('output',    help='The output corrected image series')
+lib.app.initialise()
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -60,27 +63,13 @@ if not binaryInPath(eddy_cmd):
 fsl_suffix = getFSLSuffix()
 
 # Figure out the phase encode axis
-PE_axis = sys.argv[1]
-if PE_axis.isdigit():
-  PE_axis = int(PE_axis)
-  if PE_axis < 0 or PE_axis > 2:
-    errorMessage ('Phase encode axis must be either 0, 1 or 2')
-else:
-  PE_axis = PE_axis.lower()
-  if PE_axis == 'lr' or PE_axis == 'rl':
-    PE_axis = 0
-  elif PE_axis == 'ap' or PE_axis == 'pa':
-    PE_axis = 1
-  elif PE_axis == 'is' or PE_axis == 'si':
-    PE_axis = 2
-  else:
-    errorMessage ('Unrecognized phase encode direction specifier')
+PE_axis = getPEAxis(lib.app.args.pe_axis)
 
 # Convert all input images into MRtrix format and store in temprary directory first;
 #   that way getHeaderInfo() can be run multiple times without having to repeatedly parse e.g. DICOM data
-runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(lib.app.tempDir, 'pair1.mif'))
-runCommand('mrconvert ' + sys.argv[3] + ' ' + os.path.join(lib.app.tempDir, 'pair2.mif'))
-runCommand('mrconvert ' + sys.argv[4] + ' ' + os.path.join(lib.app.tempDir, 'series.mif'))
+runCommand('mrconvert ' + lib.app.args.image1of2 + ' ' + os.path.join(lib.app.tempDir, 'pair1.mif'))
+runCommand('mrconvert ' + lib.app.args.image2of2 + ' ' + os.path.join(lib.app.tempDir, 'pair2.mif'))
+runCommand('mrconvert ' + lib.app.args.series    + ' ' + os.path.join(lib.app.tempDir, 'series.mif'))
 
 lib.app.gotoTempDir()
 
@@ -146,10 +135,10 @@ config_file = open('config.txt', 'w')
 config_line = [ '0', '0', '0', '0.1' ]
 config_line[PE_axis] = '1'
 for AP_lines in range(0, Pair1_bzero_count):
-  config_file.write (' '.join (config_line) + '\n')
+  config_file.write(' '.join (config_line) + '\n')
 config_line[PE_axis] = '-1'
 for PA_lines in range(0, Pair2_bzero_count):
-  config_file.write (' '.join (config_line) + '\n')
+  config_file.write(' '.join (config_line) + '\n')
 config_file.close()
 
 # Perform the field estimation
@@ -159,7 +148,7 @@ runCommand(topup_cmd + ' --imain=' + topup_imain + ' --datain=config.txt --out=f
 # Note: applytopup appears to ignore FSLOUTPUTTYPE field, and just outputs a .nii.gz
 runCommand(applytopup_cmd + ' --imain=' + series_imain + ' --datain=config.txt --inindex=1 --topup=field --out=series_topup' + fsl_suffix + ' --method=jac')
 
-result_path = 'result' + os.path.splitext(sys.argv[5])[1]
+result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 
 # Need to split depending on whether DW information is available
 if not grad:
@@ -184,7 +173,7 @@ else:
   
   # Need to find the number of input volumes
   # For this, import bvals and count the number of entries
-  bvals_input = open ('bvals', 'r')
+  bvals_input = open('bvals', 'r')
   bvals = bvals_input.read()
   bvals = bvals.strip().split()
   num_volumes = len(bvals)
@@ -205,6 +194,6 @@ else:
   #   re-imported here)
   runCommand('mrconvert series_after' + fsl_suffix + ' ' + result_path + stride_option + ' -fslgrad bvecs bvals')
   
-lib.app.moveFileToDest (result_path, sys.argv[5])
-lib.app.terminate()
+lib.app.moveFileToDest(result_path, lib.app.args.output)
+lib.app.complete()
 

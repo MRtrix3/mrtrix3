@@ -122,7 +122,7 @@ void load_fmls_thresholds (Segmenter& segmenter)
 Segmenter::Segmenter (const DWI::Directions::Set& directions, const size_t l) :
       dirs                             (directions),
       lmax                             (l),
-      transform                        (NULL),
+      transform                        (nullptr),
       precomputer                      (new Math::SH::PrecomputedAL<float> (lmax, 2 * dirs.size())),
       ratio_to_negative_lobe_integral  (FMLS_RATIO_TO_NEGATIVE_LOBE_INTEGRAL_DEFAULT),
       ratio_to_negative_lobe_mean_peak (FMLS_RATIO_TO_NEGATIVE_LOBE_MEAN_PEAK_DEFAULT),

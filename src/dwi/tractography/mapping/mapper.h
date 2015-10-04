@@ -305,7 +305,9 @@ void TrackMapperBase::voxelise_ends (const Streamline<>& tck, Cont& out) const
   for (size_t end = 0; end != 2; ++end) {
     const Point<int> vox = round (transform.scanner2voxel (end ? tck.back() : tck.front()));
     if (check (vox, info)) {
-      const Point<float> dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalise();
+      Point<float> dir;
+      if (tck.size() > 1)
+        dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalise();
       add_to_set (out, vox, dir, 1.0f);
     }
   }
