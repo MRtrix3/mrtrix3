@@ -389,8 +389,8 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          auto V = header().get_image<ValueType>();
-          int N = ( format == gl::RED ? 1 : 3 );
+          auto V (image);
+          const size_t N = ( format == gl::RED ? 1 : 3 );
           std::vector<ValueType> data (N * V.size(0) * V.size(1));
 
           ProgressBar progress ("loading image data...", V.size(2));
@@ -405,7 +405,8 @@ namespace MR
 
               for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
                 for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
-                  ValueType val = *p = V.value();
+                  const float value = cfloat(V.value()).real();
+                  const ValueType val = *p = (std::is_integral<ValueType>::value ? std::round (value) : value);
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
@@ -429,7 +430,8 @@ namespace MR
                 auto p = data.begin() + n;
                 for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
                   for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
-                    ValueType val = *p = abs_if_signed (ValueType (V.value()));
+                    const float value = cfloat(V.value()).real();
+                    const ValueType val = *p = (std::is_integral<ValueType>::value ? std::round (value) : value);
                     if (std::isfinite (val)) {
                       if (val < value_min) value_min = val;
                       if (val > value_max) value_max = val;
