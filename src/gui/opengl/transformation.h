@@ -88,9 +88,13 @@ namespace MR
           template <class M>
           mat4 (const M& m)
           {
-            for (size_t i = 0; i != 4; ++i) {
+            for (size_t i = 0; i != size_t(m.rows()); ++i) {
               for (size_t j = 0; j != 4; ++j)
                 (*this)(i,j) = m(i,j);
+            }
+            if (m.rows() == 3) {
+              (*this)(3,0) = (*this)(3,1) = (*this)(3,2) = 0.0f;
+              (*this)(3,3) = 1.0f;
             }
           }
 

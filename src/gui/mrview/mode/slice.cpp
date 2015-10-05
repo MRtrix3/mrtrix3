@@ -22,6 +22,8 @@
 
 #include "gui/mrview/mode/slice.h"
 
+#include "gui/opengl/transformation.h"
+
 namespace MR
 {
   namespace GUI
