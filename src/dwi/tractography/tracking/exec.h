@@ -44,6 +44,8 @@
 
 #define MAX_NUM_SEED_ATTEMPTS 100000
 
+#define DYNAMIC_SEEDING_BATCH_SIZE 8
+
 
 
 namespace MR
@@ -101,11 +103,11 @@ namespace MR
 
                 Thread::run_queue (
                     Thread::multi (tracker), 
-                    Thread::batch (GeneratedTrack()),
+                    Thread::batch (GeneratedTrack(), DYNAMIC_SEEDING_BATCH_SIZE),
                     writer, 
-                    Thread::batch (Streamline<value_type>()),
+                    Thread::batch (Streamline<value_type>(), DYNAMIC_SEEDING_BATCH_SIZE),
                     Thread::multi (mapper), 
-                    Thread::batch (SetDixel()),
+                    Thread::batch (SetDixel(), DYNAMIC_SEEDING_BATCH_SIZE),
                     *seeder);
 
               }
