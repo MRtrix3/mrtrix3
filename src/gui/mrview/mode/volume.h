@@ -24,6 +24,7 @@
 #define __gui_mrview_mode_volume_h__
 
 #include "app.h"
+#include "math/versor.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/opengl/transformation.h"
 
@@ -81,7 +82,7 @@ namespace MR
             bool get_clipintersectionmodestate () const;
 
             void move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance);
-            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot);
+            void rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versorf& rot);
         };
 
       }

@@ -344,15 +344,15 @@ namespace MR
                                             float(image()->linear_interp.size(2)*image()->linear_interp.spacing(2)) } );
 
 
-          Eigen::Quaternionf Q = orientation();
-          if (!std::isfinite (Q.w())) {
-            Q = { 1.0f, 0.0f, 0.0f, 0.0f };
-            set_orientation (Q);
+          Math::Versorf V = orientation();
+          if (!V) {
+            V = Math::Versorf::unit();
+            set_orientation (V);
           }
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-          GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
+          GL::mat4 MV = adjust_projection_matrix (V) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
           GL_CHECK_ERROR;
@@ -589,14 +589,13 @@ namespace MR
         }
 
 
-        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Eigen::Quaternionf& rot)
+        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versorf& rot)
         {
           for (size_t n = 0; n < clip.size(); ++n) {
             GL::vec4& p (*clip[n]);
             float distance_to_focus = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - p[3];
-            Eigen::Quaternionf norm (0.0f, p[0], p[1], p[2]);
-            Eigen::Quaternionf rotated = norm * rot;
-            rotated.normalize();
+            const Math::Versorf norm (0.0f, p[0], p[1], p[2]);
+            const Math::Versorf rotated = norm * rot;
             p[0] = rotated.x();
             p[1] = rotated.y();
             p[2] = rotated.z();
@@ -656,8 +655,8 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Eigen::Quaternionf rot = get_tilt_rotation();
-            if (!std::isfinite (rot.w()))
+            const Math::Versorf rot = get_tilt_rotation();
+            if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }
@@ -671,8 +670,8 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const Eigen::Quaternionf rot = get_rotate_rotation();
-            if (!std::isfinite (rot.w()))
+            const Math::Versorf rot = get_rotate_rotation();
+            if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }

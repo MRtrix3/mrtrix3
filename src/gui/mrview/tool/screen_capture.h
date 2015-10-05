@@ -23,10 +23,14 @@
 #ifndef __gui_mrview_tool_screen_capture_h__
 #define __gui_mrview_tool_screen_capture_h__
 
+#include <deque>
+
+#include "math/versor.h"
+
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
 #include "gui/mrview/spin_box.h"
-#include <deque>
+
 
 namespace MR
 {
@@ -91,13 +95,13 @@ namespace MR
 
             class CaptureState {
               public:
-                Eigen::Quaternionf orientation;
+                Math::Versorf orientation;
                 Eigen::Vector3f focus, target;
                 float fov;
                 size_t volume, volume_axis;
                 size_t frame_index;
                 int plane;
-                CaptureState(const Eigen::Quaternionf& orientation,
+                CaptureState(const Math::Versorf& orientation,
                   const Eigen::Vector3f& focus, const Eigen::Vector3f& target, float fov,
                   size_t volume, size_t volume_axis,
                   size_t frame_index, int plane)

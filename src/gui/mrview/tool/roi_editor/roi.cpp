@@ -27,6 +27,7 @@
 #include "gui/mrview/tool/roi_editor/roi.h"
 
 #include "header.h"
+#include "math/versor.h"
 #include "gui/cursor.h"
 #include "gui/projection.h"
 #include "gui/dialog/file.h"
@@ -727,7 +728,7 @@ namespace MR
           slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
           current_slice_loc = current_origin.dot (slice_axis);
 
-          Eigen::Quaternionf orient (roi->header().transform().rotation().cast<float>());
+          const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
           window().set_snap_to_image (false);
           window().set_orientation (orient);
 

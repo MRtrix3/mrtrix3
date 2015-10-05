@@ -129,7 +129,7 @@ namespace MR
         }
 
         Eigen::Vector3f screen_normal () const {
-          return Eigen::Vector3f (iMVP(0,2), iMVP(1,2), iMVP(2,2)).normalized();
+          return Eigen::Vector3f (iMVP(0,2), iMVP(1,2), iMVP(2,2)).normalized().eval();
         }
 
         Eigen::Vector3f screen_to_model_direction (float x, float y, float depth) const {

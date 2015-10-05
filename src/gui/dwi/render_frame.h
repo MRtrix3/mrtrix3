@@ -29,6 +29,7 @@
 
 #include "memory.h"
 #include "types.h"
+#include "math/versor.h"
 #include "gui/opengl/lighting.h"
 #include "gui/dwi/renderer.h"
 #include "gui/projection.h"
@@ -114,7 +115,7 @@ namespace MR
           QPoint last_pos;
           GL::Font font;
           Projection projection;
-          Eigen::Quaternionf orientation;
+          Math::Versorf orientation;
           Eigen::Vector3f focus;
 
           std::string screenshot_name;

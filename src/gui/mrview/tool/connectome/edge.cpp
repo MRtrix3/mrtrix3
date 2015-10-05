@@ -23,6 +23,7 @@
 #include "gui/mrview/tool/connectome/edge.h"
 
 #include "math/rng.h"
+#include "math/versor.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -69,9 +70,7 @@ namespace MR
             // Now, a rotation angle
             const float angle = std::acos (z_axis.dot (dir));
             // Convert to versor representation
-            v *= std::sin (angle/2.0);
-            Eigen::Quaternionf rot (std::cos (angle/2.0), v[0], v[1], v[2]);
-            rot.normalize();
+            const Math::Versorf rot (angle, v);
             // Convert to a matrix
             const Eigen::MatrixXf matrix (rot.matrix());
             // Put into the GLfloat array

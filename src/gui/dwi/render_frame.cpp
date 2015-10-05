@@ -57,7 +57,7 @@ namespace MR
         lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
         normalise (false), font (parent->font()), projection (this, font),
-        orientation (1.0f, 0.0f, 0.0f, 0.0f),
+        orientation (Math::Versorf::unit()),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0)
       {
         setMinimumSize (128, 128);
@@ -77,7 +77,7 @@ namespace MR
           for (size_t j = 0; j != 3; ++j)
             M(i,j) = rotation(i,j);
         }
-        orientation = Eigen::Quaternionf (M);
+        orientation = Math::Versorf (M);
         update();
       }
 
@@ -166,10 +166,8 @@ namespace MR
           P = GL::frustum (-horizontal, horizontal, -vertical, vertical, near_, dist+3.0);
         }
 
-
-
         Eigen::Matrix<float, 4, 4> M;
-        M.topLeftCorner (3, 3) = orientation.matrix();
+        M.topLeftCorner (3, 3) = orientation.matrix().transpose();
         M(0,3) = M(1,3) = M(2,3) = M(3,0) = M(3,1) = M(3,2) = 0.0f;
         M(3,3) = 1.0f;
 
@@ -251,7 +249,7 @@ namespace MR
       {
         if (event->modifiers() == Qt::NoModifier) {
           if (event->buttons() == Qt::LeftButton) {
-            orientation = Eigen::Quaternionf (1.0f, 0.0f, 0.0f, 0.0f);
+            orientation = Math::Versorf::unit();
             update();
           }
           else if (event->buttons() == Qt::MidButton) {
@@ -278,13 +276,11 @@ namespace MR
           if (event->buttons() == Qt::LeftButton) {
             const Eigen::Vector3f x = projection.screen_to_model_direction (QPoint (-dx, dy), focus);
             const Eigen::Vector3f z = projection.screen_normal();
-            Eigen::Vector3f v = x.cross (z).normalized();
+            const Eigen::Vector3f v = x.cross (z).normalized();
             float angle = ROTATION_INC * std::sqrt (float (Math::pow2 (dx) + Math::pow2 (dy)));
             if (angle > Math::pi_2) angle = Math::pi_2;
-            v *= -std::sin (angle/2.0);
-            Eigen::Quaternionf rot (std::cos (angle/2.0), v[0], v[1], v[2]);
-            rot.normalize();
-            orientation = orientation * rot;
+            const Math::Versorf rot (angle, v);
+            orientation = rot * orientation;
             update();
           }
           else if (event->buttons() == Qt::MidButton) {

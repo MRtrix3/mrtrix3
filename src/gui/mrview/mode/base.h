@@ -23,6 +23,8 @@
 #ifndef __gui_mrview_mode_base_h__
 #define __gui_mrview_mode_base_h__
 
+#include "math/versor.h"
+
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
 #include "gui/projection.h"
@@ -109,9 +111,9 @@ namespace MR
             const Eigen::Vector3f& target () const { return window().target(); }
             float FOV () const { return window().FOV(); }
             int plane () const { return window().plane(); }
-            Eigen::Quaternionf orientation () const {
+            Math::Versorf orientation () const {
               if (snap_to_image()) 
-                return Eigen::Quaternionf (1.0f, 0.0f, 0.0f, 0.0f);
+                return Math::Versorf::unit();
               return window().orientation(); 
             }
 
@@ -133,9 +135,9 @@ namespace MR
             void set_plane (int p) { window().set_plane (p); }
             void set_orientation (const Eigen::Quaternionf& Q) { window().set_orientation (Q); }
             void reset_orientation () { 
-              Eigen::Quaternionf orient (1.0f, 0.0f, 0.0f, 0.0f);
+              Math::Versorf orient (Math::Versorf::unit());
               if (image()) 
-                orient = Eigen::Quaternionf (image()->header().transform().rotation().cast<float>());
+                orient = Math::Versorf (image()->header().transform().rotation().cast<float>());
               set_orientation (orient);
             }
 
@@ -169,12 +171,13 @@ namespace MR
               }
             }
 
-            Eigen::Quaternionf get_tilt_rotation () const;
-            Eigen::Quaternionf get_rotate_rotation () const;
+            Math::Versorf get_tilt_rotation () const;
+            Math::Versorf get_rotate_rotation () const;
 
             Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
               if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
-              return image()->transform().scanner2voxel.cast<float>() * pos;
+              const Eigen::Vector3f result = image()->transform().scanner2voxel.cast<float>() * pos;
+              return result;
             }
 
             void draw_crosshairs (const Projection& with_projection) const {

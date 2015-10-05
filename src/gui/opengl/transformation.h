@@ -25,6 +25,9 @@
 
 #include <iostream>
 
+#include "math/least_squares.h"
+#include "math/versor.h"
+
 #include "gui/opengl/gl.h"
 
 namespace MR
@@ -41,7 +44,7 @@ namespace MR
         public:
           vec4 () { }
           vec4 (float x, float y, float z, float w) { v[0] = x; v[1] = y; v[2] = z; v[3] = w; }
-          vec4 (const Eigen::Quaternionf& q) { v[0] = q.x(); v[1] = q.y(); v[2] = q.z(); v[3] = q.w(); }
+          vec4 (const Math::Versorf& V) { v[0] = V.x(); v[1] = V.y(); v[2] = V.z(); v[3] = V.w(); }
           template <class Cont>
           vec4 (const Cont& p, float w) { v[0] = p[0]; v[1] = p[1]; v[2] = p[2]; v[3] = w;  }
           vec4 (const float* p) { memcpy (v, p, sizeof(v)); }
@@ -72,9 +75,9 @@ namespace MR
           mat4 () { } 
           mat4 (const mat4& a) { memcpy (m, a.m, sizeof(m)); }
           mat4 (const float* p) { memcpy (m, p, sizeof(m)); }
-          mat4 (const Eigen::Quaternionf& q)
+          mat4 (const Math::Versorf& v)
           {
-            const Eigen::Quaternionf::Matrix3 R = q.matrix();
+            const Math::Versorf::Matrix3 R = v.matrix();
             zero();
             for (size_t i = 0; i != 3; ++i) {
               for (size_t j = 0; j != 3; ++j)
@@ -85,12 +88,10 @@ namespace MR
           template <class M>
           mat4 (const M& m)
           {
-            zero();
-            for (size_t i = 0; i != 3; ++i) {
+            for (size_t i = 0; i != 4; ++i) {
               for (size_t j = 0; j != 4; ++j)
                 (*this)(i,j) = m(i,j);
             }
-            (*this)(3,3) = 1.0f;
           }
 
           void zero () {
@@ -176,7 +177,7 @@ namespace MR
           for (size_t j = 0; j != 4; ++j)
             A(i,j) = a(i,j);
         }
-        return mat4 (A.inverse().eval());
+        return A.inverse().eval();
       }
 
 
