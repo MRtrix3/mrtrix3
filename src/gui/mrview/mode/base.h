@@ -133,7 +133,7 @@ namespace MR
             void set_target (const Eigen::Vector3f& p) { window().set_target (p); }
             void set_FOV (float value) { window().set_FOV (value); }
             void set_plane (int p) { window().set_plane (p); }
-            void set_orientation (const Eigen::Quaternionf& Q) { window().set_orientation (Q); }
+            void set_orientation (const Math::Versorf& V) { window().set_orientation (V); }
             void reset_orientation () { 
               Math::Versorf orient (Math::Versorf::unit());
               if (image()) 
