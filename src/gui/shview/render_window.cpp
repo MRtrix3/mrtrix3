@@ -226,6 +226,20 @@ namespace MR
         lod_group->actions() [render_frame->get_LOD()-3]->setChecked (true);
       }
 
+      Window::~Window()
+      {
+        render_frame->makeCurrent();
+        QList<QAction*> lmax = lod_group->actions();
+        for (QAction* action : lmax)
+          delete action;
+        QList<QAction*> lods = lod_group->actions();
+        for (QAction* action : lods)
+          delete action;
+        QList<QAction*> screens = screenshot_OS_group->actions();
+        for (QAction* action : screens)
+          delete action;
+      }
+
 
       void Window::open_slot ()
       {

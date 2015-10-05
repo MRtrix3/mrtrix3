@@ -42,6 +42,7 @@ namespace MR
 
         public:
           Window (bool is_response_coefs);
+          ~Window();
           void set_values (const std::string& filename);
 
         protected slots:
