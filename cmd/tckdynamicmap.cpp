@@ -144,15 +144,15 @@ class Mapper : public Mapping::TrackMapperBase
     // This is where the windowed Pearson correlation coefficient for the streamline is determined
     // By overloading this function, the standard mapping functionalities of TrackMapperBase are utilised;
     //   it's only the per-factor streamline that changes
-    bool preprocess (const std::vector< Point<float> >&, Mapping::SetVoxel&);
+    bool preprocess (const Streamline<>&, SetVoxelExtras&) const override;
 
-    const Point<int> get_last_voxel_in_fov (const std::vector< Point<float> >&, const bool);
+    const Point<int> get_last_voxel_in_fov (const std::vector< Point<float> >&, const bool) const;
 
 };
 
 
 
-bool Mapper::preprocess (const std::vector< Point<float> >& tck, Mapping::SetVoxel& out)
+bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
 {
 
   out.factor = 0.0;
@@ -193,7 +193,7 @@ bool Mapper::preprocess (const std::vector< Point<float> >& tck, Mapping::SetVox
   start_variance /= kernel_sum;
   end_variance   /= kernel_sum;
 
-  out.factor = corr / (std::sqrt (start_variance) * std::sqrt (end_variance));
+  out.factor = corr / std::sqrt (start_variance * end_variance);
   return true;
 
 }
@@ -203,7 +203,7 @@ bool Mapper::preprocess (const std::vector< Point<float> >& tck, Mapping::SetVox
 // Slightly different to get_last_point_in_fov() provided in the TrackMapperTWIImage:
 //   want the last voxel traversed by the streamline before exiting the FoV, rather than the last
 //   point for which a valid tri-linear interpolation can be performed
-const Point<int> Mapper::get_last_voxel_in_fov (const std::vector< Point<float> >& tck, const bool end)
+const Point<int> Mapper::get_last_voxel_in_fov (const std::vector< Point<float> >& tck, const bool end) const
 {
 
   int index = end ? tck.size() - 1 : 0;
@@ -278,8 +278,12 @@ void Receiver::scale_by_count (Image::BufferScratch<uint32_t>& counts)
 {
   Image::BufferScratch<uint32_t>::voxel_type v_counts (counts);
   Image::Loop loop;
-  for (loop.start (v_buffer, v_counts); loop.ok(); loop.next (v_buffer, v_counts))
-    v_buffer.value() /= float(v_counts.value());
+  for (loop.start (v_buffer, v_counts); loop.ok(); loop.next (v_buffer, v_counts)) {
+    if (v_counts.value())
+      v_buffer.value() /= float(v_counts.value());
+    else
+      v_buffer.value() = 0.0f;
+  }
 }
 
 void Receiver::write (Image::Buffer<float>::voxel_type& v_out)
