@@ -21,6 +21,7 @@
 */
 
 #include "command.h"
+#include "math/math.h"
 #include "image.h"
 #include "file/nifti1_utils.h"
 
@@ -71,7 +72,10 @@ void run ()
   auto flirt_opt = get_options ("flirt_import");
 
   if (flirt_opt.size()) {
-    transform_type transform = load_transform (argument[0]);
+    transform_type transform = load_transform<float> (argument[0]);
+    if(transform.matrix().determinant() == float(0.0))
+        WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
+
     auto src_header = Header::open (flirt_opt[0][0]);
     transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
 
@@ -79,6 +83,8 @@ void run ()
     transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
 
     transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
+    if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
+      WARN ("NAN in transformation.");
     save_transform (forward_transform.inverse(), argument[1]);
   } else {
     throw Exception ("you must supply the in and ref images using the -flirt_import option");
