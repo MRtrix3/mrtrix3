@@ -37,11 +37,11 @@ namespace Mapping {
 
 const Point<float> TWIImagePluginBase::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
 {
-  size_t index = end ? tck.size() - 1 : 0;
+  ssize_t index = end ? tck.size() - 1 : 0;
   const int step = end ? -1 : 1;
   while (interp.scanner (tck[index])) {
     index += step;
-    if (index == tck.size())
+    if (index == -1 || index == ssize_t(tck.size()))
       return Point<float>();
   }
   return tck[index];
@@ -73,12 +73,10 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
     input_voxel_type start (voxel), end (voxel);
     const Point<float> p_start (get_last_point_in_fov (tck, false));
     if (!p_start) return;
-    const Point<int> v_start (int(std::round (p_start[0])), int(std::round (p_start[1])), int(std::round (p_start[2])));
-    Image::Nav::set_pos (start, v_start);
+    Image::Nav::set_pos (start, interp, 0, 3);
     const Point<float> p_end (get_last_point_in_fov (tck, true));
     if (!p_end) return;
-    const Point<int> v_end (int(std::round (p_end[0])), int(std::round (p_end[1])), int(std::round (p_end[2])));
-    Image::Nav::set_pos (end, v_end);
+    Image::Nav::set_pos (end, interp, 0, 3);
 
     double start_sum = 0.0, end_sum = 0.0;
     for (start[3] = end[3] = 0; start[3] != start.dim (3); ++start[3], ++end[3]) {
