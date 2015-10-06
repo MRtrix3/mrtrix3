@@ -76,7 +76,7 @@ namespace MR
           transparent_intensity = 0.4f;
           opaque_intensity = 0.6f;
           colourmap = ColourMap::index ("Colour");
-          float spacing = std::min (src.spacing(0), std::min (src.spacing(1), src.spacing(2)));
+          float spacing = std::min ( { header().spacing(0), header().spacing(1), header().spacing(2) } );
           brush_size = min_brush_size = spacing;
           max_brush_size = 100.0f*min_brush_size;
 

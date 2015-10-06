@@ -296,9 +296,9 @@ namespace MR
           inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
             const Eigen::Vector3f pos   = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
-            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.rotation().cast<float>() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
-            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
-            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
+            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
+            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
+            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];

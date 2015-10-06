@@ -125,6 +125,7 @@ namespace MR
               -with_projection.height()*fov, with_projection.height()*fov,
               -depth, depth);
           GL::mat4 M = snap_to_image() ? GL::mat4 (image()->linear_interp.image2scanner.matrix()) : GL::mat4 (orientation());
+          M = GL::transpose (M);
           GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
           with_projection.set (MV, P);
         }
