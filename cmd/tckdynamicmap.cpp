@@ -168,17 +168,20 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
     return false;
   Image::Nav::set_pos (end_voxel, v_end);
 
-  double start_mean = 0.0, end_mean = 0.0, kernel_sum = 0.0;
+  double start_mean = 0.0, end_mean = 0.0, kernel_sum = 0.0, kernel_sq_sum = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
     start_voxel[3] = end_voxel[3] = sample_centre - kernel_centre + int(i);
     if (start_voxel[3] >= 0 && start_voxel[3] < start_voxel.dim(3)) {
       start_mean += kernel[i] * start_voxel.value();
       end_mean   += kernel[i] * end_voxel  .value();
       kernel_sum += kernel[i];
+      kernel_sq_sum += Math::pow2 (kernel[i]);
     }
   }
   start_mean /= kernel_sum;
   end_mean   /= kernel_sum;
+
+  const double denom = kernel_sum - (kernel_sq_sum / kernel_sum);
 
   double corr = 0.0, start_variance = 0.0, end_variance = 0.0;
   for (size_t i = 0; i != kernel.size(); ++i) {
@@ -189,9 +192,9 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
       end_variance   += kernel[i] * Math::pow2 (end_voxel  .value() - end_mean  );
     }
   }
-  corr           /= kernel_sum;
-  start_variance /= kernel_sum;
-  end_variance   /= kernel_sum;
+  corr           /= denom;
+  start_variance /= denom;
+  end_variance   /= denom;
 
   out.factor = corr / std::sqrt (start_variance * end_variance);
   return true;
