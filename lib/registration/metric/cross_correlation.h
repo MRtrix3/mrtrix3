@@ -362,7 +362,7 @@ namespace MR
                 // }
 
                 Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (midway_point);
-                for (size_t par = 0; par < gradient.size(); par++) {
+                for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++){
                     sum -= A_BC * jacobian (dim, par) * (val2 - A/B * val1) * grad1[dim];
