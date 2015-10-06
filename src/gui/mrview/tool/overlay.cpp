@@ -20,11 +20,12 @@
 
 */
 
+#include "gui/mrview/tool/overlay.h"
+
 #include "mrtrix.h"
-#include "gui/mrview/image.h"
+#include "gui/mrview/gui_image.h"
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/slice.h"
-#include "gui/mrview/tool/overlay.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
 
@@ -41,7 +42,7 @@ namespace MR
 
         class Overlay::Item : public Image {
           public:
-            Item (const MR::Image::Header& H) : Image (H) { }
+            Item (MR::Header&& H) : Image (std::move (H)) { }
             Mode::Slice::Shader slice_shader; 
         };
 
@@ -52,7 +53,7 @@ namespace MR
             Model (QObject* parent) : 
               ListModelBase (parent) { }
 
-            void add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list);
+            void add_items (std::vector<std::unique_ptr<MR::Header>>& list);
 
             Item* get_image (QModelIndex& index) {
               return dynamic_cast<Item*>(items[index.row()].get());
@@ -60,11 +61,11 @@ namespace MR
         };
 
 
-        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+        void Overlay::Model::add_items (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Item* overlay = new Item (*list[i]);
+            Item* overlay = new Item (std::move (*list[i]));
             overlay->set_allowed_features (true, true, false);
             if (!overlay->colourmap) 
               overlay->colourmap = 1;
@@ -200,9 +201,9 @@ namespace MR
           std::vector<std::string> overlay_names = Dialog::File::get_images (this, "Select overlay images to open");
           if (overlay_names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < overlay_names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (overlay_names[n])));
+            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (overlay_names[n]))));
 
           add_images (list);
         }
@@ -211,7 +212,7 @@ namespace MR
 
 
 
-        void Overlay::add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
+        void Overlay::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           image_list_model->add_items (list);
@@ -403,8 +404,9 @@ namespace MR
                         image.scaling_max();
 
             window().colourbar_renderer.render (image.colourmap, image.scale_inverted(),
-                                       min_value, max_value,
-                                       image.scaling_min(), image.display_range, image.colour);
+                                                min_value, max_value,
+                                                image.scaling_min(), image.display_range,
+                                                Eigen::Vector3f { image.colour[0] / 255.0f, image.colour[1] / 255.0f, image.colour[2] / 255.0f });
         }
 
 
@@ -429,8 +431,8 @@ namespace MR
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-          if (overlay->info().ndim() < 4) return;
-          overlay->interp[3] = volume_selecter->value();
+          if (overlay->header().ndim() < 4) return;
+          overlay->linear_interp.index(3) = volume_selecter->value();
           if (overlay->show)
             updateGL();
         }
@@ -599,10 +601,10 @@ namespace MR
 
           if (indices.size() == 1) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-            if (overlay->info().ndim() == 4 && overlay->info().dim(3) > 1) {
+            if (overlay->header().ndim() == 4 && overlay->header().size(3) > 1) {
               volume_label->setEnabled (true);
-              volume_selecter->setMaximum (overlay->info().dim(3)-1);
-              volume_selecter->setValue (overlay->interp[3]);
+              volume_selecter->setMaximum (overlay->header().size(3)-1);
+              volume_selecter->setValue (overlay->linear_interp.index(3));
               volume_selecter->setEnabled (true);
             } else {
               volume_selecter->setMaximum (0);
@@ -664,8 +666,8 @@ namespace MR
         bool Overlay::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("overlay.load")) {
-            std::vector<std::unique_ptr<MR::Image::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+            std::vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
             catch (Exception& e) { e.display(); }
             add_images (list);
             return true;

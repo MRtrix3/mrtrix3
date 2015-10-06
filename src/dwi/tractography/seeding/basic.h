@@ -98,6 +98,7 @@ namespace MR
               inc (0),
               expired (false) {
                 count = get_count (mask) * num_per_voxel;
+                mask.index(0) = 0; mask.index(1) = 0; mask.index(2) = -1;
               }
 
             virtual bool get_seed (Eigen::Vector3f& p) const override;
@@ -146,6 +147,7 @@ namespace MR
         class Rejection : public Base
         {
           public:
+            typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
             Rejection (const std::string&);
 
             virtual bool get_seed (Eigen::Vector3f& p) const override;

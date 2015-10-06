@@ -26,8 +26,6 @@
 #include <array>
 #include <vector>
 
-#include "point.h"
-
 #include "gui/opengl/shader.h"
 #include "gui/opengl/gl.h"
 
@@ -48,11 +46,11 @@ namespace MR
         struct ROI_UndoEntry {
 
           ROI_UndoEntry (ROI_Item&, int, int);
-          void draw_line (ROI_Item&, const Point<>&, const Point<>&, bool);
-          void draw_thick_line (ROI_Item&, const Point<>&, const Point<>&, bool, float);
-          void draw_circle (ROI_Item&, const Point<>&, bool, float);
-          void draw_rectangle (ROI_Item&, const Point<>&, const Point<>&, bool);
-          void draw_fill (ROI_Item&, const Point<>, bool);
+          void draw_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool);
+          void draw_thick_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool, const float);
+          void draw_circle (ROI_Item&, const Eigen::Vector3f&, const bool, const float);
+          void draw_rectangle (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool);
+          void draw_fill (ROI_Item&, const Eigen::Vector3f&, const bool);
 
           void undo (ROI_Item& roi);
           void redo (ROI_Item& roi);

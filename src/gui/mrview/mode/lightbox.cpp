@@ -102,7 +102,7 @@ namespace MR
             const Projection& slice_proj = slices_proj_focusdelta[current_slice_index].first;
             float focus_delta = slices_proj_focusdelta[current_slice_index].second;
 
-            const Point<> slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+            const Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
             set_focus(focus() + slice_focus);
             update_slices_focusdelta();
           }
@@ -136,7 +136,7 @@ namespace MR
           GLint w = projection.width(), h = projection.height();
           GLfloat dw = w / (float)n_cols, dh = h / (float)n_rows;
 
-          const Point<> orig_focus = window().focus();
+          const Eigen::Vector3f orig_focus = window().focus();
 
           if(layout_is_dirty)
           {
@@ -159,7 +159,7 @@ namespace MR
               setup_draw(plane(), slice_proj);
 
               float focus_delta = slices_proj_focusdelta[slice_idx].second;
-              Point<> slice_focus = move_in_out_displacement(focus_delta, slice_proj);
+              Eigen::Vector3f slice_focus = move_in_out_displacement(focus_delta, slice_proj);
               set_focus(orig_focus + slice_focus);
 
               draw_plane_primitive(plane(), slice_shader, slice_proj);
@@ -291,7 +291,7 @@ namespace MR
           if(image())
           {
             const auto& header = image()->header();
-            float slice_inc = std::pow (header.vox(0)*header.vox(1)*header.vox(2), 1.f/3.f);
+            float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
             slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
             set_slice_increment(slice_inc);

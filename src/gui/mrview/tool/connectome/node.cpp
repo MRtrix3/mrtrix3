@@ -40,13 +40,13 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, const size_t pixheight, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
+        Node::Node (const Eigen::Vector3f& com, const size_t vol, const size_t pixheight, const MR::Image<bool>& image) :
             centre_of_mass (com),
             volume (vol),
             mask (image),
-            name (image->name()),
+            name (image.name()),
             size (1.0f),
-            colour (0.5f, 0.5f, 0.5f),
+            colour { 0.5f, 0.5f, 0.5f },
             alpha (1.0f),
             visible (true),
             pixmap (pixheight, pixheight)
@@ -58,7 +58,7 @@ namespace MR
             centre_of_mass (),
             volume (0),
             size (0.0f),
-            colour (0.0f, 0.0f, 0.0f),
+            colour { 0.0f, 0.0f, 0.0f },
             alpha (0.0f),
             visible (false),
             pixmap (12, 12)

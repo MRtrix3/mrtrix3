@@ -86,6 +86,21 @@ namespace MR
       }
     }
 
+    void Mesh::transform_realspace_to_first (const Header& header)
+    {
+      Transform transform (header);
+      for (VertexList::iterator v = vertices.begin(); v != vertices.end(); ++v) {
+        *v = transform.scanner2image * *v;
+        (*v)[0] = ((header.size(0)-1) * header.spacing(0)) - (*v)[0];
+      }
+      if (normals.size()) {
+        for (VertexList::iterator n = normals.begin(); n != normals.end(); ++n) {
+          *n = transform.scanner2image.rotation() * *n;
+          (*n)[0] = -(*n)[0];
+        }
+      }
+    }
+
     void Mesh::transform_voxel_to_realspace (const Header& header)
     {
       Transform transform (header);
@@ -632,6 +647,11 @@ namespace MR
             const size_t ws = line.find (' ');
             const int num_vertices = to<int> (line.substr (0, ws));
             line = line.substr (ws + 1);
+            bool is_double = false;
+            if (line.substr (0, 6) == "double")
+              is_double = true;
+            else if (line.substr (0, 5) != "float")
+              throw Exception ("Error in reading binary .vtk file: Unsupported datatype (\"" + line + "\"");
 
             vertices.reserve (num_vertices);
             for (int i = 0; i != num_vertices; ++i) {
@@ -641,8 +661,15 @@ namespace MR
                 std::getline (in, line);
                 sscanf (line.c_str(), "%lf %lf %lf", &v[0], &v[1], &v[2]);
               } else {
-                for (size_t i = 0; i != 3; ++i)
-                  in.read (reinterpret_cast<char*>(&v[i]), sizeof (float));
+                if (is_double) {
+                  double data[3];
+                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (double));
+                  v = { data[0], data[1], data[2] };
+                } else {
+                  float data[3];
+                  in.read (reinterpret_cast<char*>(&data[0]), 3 * sizeof (float));
+                  v = { data[0], data[1], data[2] };
+                }
               }
               vertices.push_back (v);
 
@@ -721,8 +748,9 @@ namespace MR
 
       char init[6];
       in.get (init, 6);
+      init[5] = '\0';
 
-      if (strncmp (init, "solid ", 6)) {
+      if (strncmp (init, "solid", 5)) {
 
         // File is stored as binary
         in.close();
@@ -769,23 +797,25 @@ namespace MR
 
         std::string line;
         size_t vertex_index = 0;
-        bool inside_facet = false, inside_loop = false;
+        bool inside_solid = true, inside_facet = false, inside_loop = false;
         while (std::getline (in, line)) {
           // Strip leading whitespace
           line = line.substr (line.find_first_not_of (' '), line.npos);
-          if (line.substr(12) == "facet normal") {
+          if (line.substr(0, 12) == "facet normal") {
+            if (!inside_solid)
+              throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet outside solid");
             if (inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested facets");
             inside_facet = true;
             line = line.substr (12);
             sscanf (line.c_str(), "%lf %lf %lf", &normal[0], &normal[1], &normal[2]);
-          } else if (line.substr(10) == "outer loop") {
+          } else if (line.substr(0, 10) == "outer loop") {
             if (inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": nested loops");
             if (!inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop outside facet");
             inside_loop = true;
-          } else if (line.substr(6) == "vertex") {
+          } else if (line.substr(0, 6) == "vertex") {
             if (!inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": vertex outside loop");
             if (!inside_facet)
@@ -794,13 +824,13 @@ namespace MR
             sscanf (line.c_str(), "%lf %lf %lf", &vertex[0], &vertex[1], &vertex[2]);
             vertices.push_back (vertex);
             ++vertex_index;
-          } else if (line.substr() == "endloop") {
+          } else if (line.substr(0, 7) == "endloop") {
             if (!inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop ending without start");
             if (!inside_facet)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": loop ending outside facet");
             inside_loop = false;
-          } else if (line.substr() == "endfacet") {
+          } else if (line.substr(0, 8) == "endfacet") {
             if (inside_loop)
               throw Exception ("Error parsing STL file " + Path::basename (path) + ": facet ending inside loop");
             if (!inside_facet)
@@ -815,10 +845,18 @@ namespace MR
               warn_right_hand_rule = true;
             if (std::abs (computed_normal.dot (normal)) < 0.99)
               warn_nonstandard_normals = true;
+          } else if (line.substr(0, 8) == "endsolid") {
+            if (inside_facet)
+              throw Exception ("Error parsing STL file " + Path::basename (path) + ": solid ending inside facet");
+            inside_solid = false;
+          } else if (line.substr(0, 5) == "solid") {
+            throw Exception ("Error parsing STL file " + Path::basename (path) + ": multiple solids in file");
           } else {
             throw Exception ("Error parsing STL file " + Path::basename (path) + ": unknown key (" + line + ")");
           }
         }
+        if (inside_solid)
+          throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to close solid");
         if (inside_facet)
           throw Exception ("Error parsing STL file " + Path::basename (path) + ": Failed to close facet");
         if (inside_loop)
@@ -964,14 +1002,21 @@ namespace MR
 
         out.close();
         out.open (path, std::ios_base::out | std::ios_base::app | std::ios_base::binary);
-        const std::string points_header ("POINTS " + str(vertices.size()) + " float\n");
+        const bool is_double = (sizeof(default_type) == 8);
+        const std::string str_datatype = is_double ? "double" : "float";
+        const std::string points_header ("POINTS " + str(vertices.size()) + " " + str_datatype + "\n");
         out.write (points_header.c_str(), points_header.size());
         for (VertexList::const_iterator i = vertices.begin(); i != vertices.end(); ++i) {
           //float temp[3];
           //for (size_t id = 0; id != 3; ++id)
           //  MR::putBE ((*i)[id], &temp[id]);
-          const float temp[3] { float((*i)[0]), float((*i)[1]), float((*i)[2]) };
-          out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
+          if (is_double) {
+            const double temp[3] { double((*i)[0]), double((*i)[1]), double((*i)[2]) };
+            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(double));
+          } else {
+            const float temp[3] { float((*i)[0]), float((*i)[1]), float((*i)[2]) };
+            out.write (reinterpret_cast<const char*>(temp), 3 * sizeof(float));
+          }
           ++progress;
         }
         const std::string polygons_header ("POLYGONS " + str(triangles.size() + quads.size()) + " " + str(4*triangles.size() + 5*quads.size()) + "\n");

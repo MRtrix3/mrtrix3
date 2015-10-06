@@ -185,8 +185,7 @@ namespace MR
       {
         // order is r, del, daz
 
-        transform.allocate (3*vertices.size(), Math::SH::NforL (lmax));
-        transform.zero();
+        transform = decltype(transform)::Zero (3*vertices.size(), Math::SH::NforL (lmax));
 
         for (size_t n = 0; n < vertices.size(); ++n) {
           for (int l = 0; l <= lmax; l+=2) {

@@ -20,9 +20,9 @@
 
 */
 
-#include "mrtrix.h"
-#include "math/vector.h"
 #include "gui/mrview/mode/ortho.h"
+
+#include "mrtrix.h"
 #include "gui/cursor.h"
 
 namespace MR
@@ -70,7 +70,6 @@ namespace MR
           projection.set (MV, P);
 
           gl::Disable (gl::DEPTH_TEST);
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
@@ -152,8 +151,8 @@ namespace MR
           if (!proj) return;
           const auto &header = image()->header();
           float increment = snap_to_image() ?
-            x * header.vox(current_plane) :
-            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+            x * header.spacing (current_plane) :
+            x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
           move_in_out (increment, *proj);
           updateGL();
         }

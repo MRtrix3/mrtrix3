@@ -1,7 +1,7 @@
 /*
    Copyright 2009 Brain Research Institute, Melbourne, Australia
 
-   Written by J-Donald Tournier, 2014.
+   Written by Robert E. Smith, 2015.
 
    This file is part of MRtrix.
 
@@ -20,13 +20,9 @@
 
 */
 
-#ifndef __gui_mrview_tool_roi_editor_model_h__
-#define __gui_mrview_tool_roi_editor_model_h__
+#include "gui/mrview/tool/connectome/matrix_list.h"
 
-#include "header.h"
-#include "memory.h"
-#include "gui/mrview/tool/list_model_base.h"
-#include "gui/mrview/tool/roi_editor/item.h"
+#include "gui/mrview/tool/connectome/connectome.h"
 
 
 namespace MR
@@ -38,22 +34,24 @@ namespace MR
       namespace Tool
       {
 
-            
 
 
-        class ROI_Model : public ListModelBase
-        {
-          public:
-            ROI_Model (QObject* parent) : 
-              ListModelBase (parent) { }
+      Matrix_list_model::Matrix_list_model (Connectome* parent) :
+          QAbstractItemModel (dynamic_cast<QObject*>(parent)) { }
 
-            void load (std::vector<std::unique_ptr<MR::Header>>&);
-            void create (MR::Header&&);
 
-            ROI_Item* get (QModelIndex& index) {
-              return dynamic_cast<ROI_Item*>(items[index.row()].get());
-            }
-        };
+
+
+
+
+      void Matrix_list_model::add_items (std::vector<FileDataVector>& list) {
+        beginInsertRows (QModelIndex(), items.size(), items.size() + list.size());
+        items.reserve (items.size() + list.size());
+        std::move (std::begin (list), std::end (list), std::back_inserter (items));
+        list.clear();
+        endInsertRows();
+      }
+
 
 
 
@@ -63,6 +61,5 @@ namespace MR
   }
 }
 
-#endif
 
 

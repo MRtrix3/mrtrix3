@@ -65,10 +65,9 @@ void usage ()
 void run ()
 {
 
-  Header H = Header::open (argument[0]);
-  if (!H.datatype().is_integer())
+  auto labels = Image<uint32_t>::open (argument[0]);
+  if (!labels.header().datatype().is_integer())
     throw Exception ("Input image must have an integer data type");
-  auto labels = H.get_image<uint32_t>();
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;
 
@@ -76,11 +75,11 @@ void run ()
 
   {
     for (auto i = Loop ("Importing label image... ", labels) (labels); i; ++i) {
-      const size_t index = labels.value();
+      const uint32_t index = labels.value();
       if (index) {
 
         if (index >= lower_corners.size()) {
-          lower_corners.resize (index+1, voxel_corner_t (H.size(0), H.size(1), H.size(2)));
+          lower_corners.resize (index+1, voxel_corner_t (labels.size(0), labels.size(1), labels.size(2)));
           upper_corners.resize (index+1, voxel_corner_t (-1, -1, -1));
         }
 
@@ -95,11 +94,11 @@ void run ()
 
   MeshMulti meshes (lower_corners.size(), MR::Mesh::Mesh());
   meshes[0].set_name ("none");
+  const bool blocky = get_options ("blocky").size();
 
   {
     std::mutex mutex;
     ProgressBar progress ("Generating meshes from labels... ", lower_corners.size() - 1);
-    const bool blocky = get_options ("blocky").size();
     auto loader = [&] (size_t& out) { static size_t i = 1; out = i++; return (out != lower_corners.size()); };
 
     auto worker = [&] (const size_t& in)

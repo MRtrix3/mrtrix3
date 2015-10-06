@@ -26,8 +26,7 @@
 #include <vector>
 
 #include "memory.h"
-#include "image/header.h"
-#include "image/transform.h"
+#include "transform.h"
 
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/base.h"
@@ -42,6 +41,9 @@
 
 namespace MR
 {
+
+  class Header;
+
   namespace GUI
   {
     namespace MRView
@@ -98,7 +100,7 @@ namespace MR
              AdjustButton *brush_size_button;
              int current_axis, current_slice;
              bool in_insert_mode, insert_mode_value;
-             Point<> current_origin, prev_pos;
+             Eigen::Vector3f current_origin, prev_pos;
              float current_slice_loc;
 
              Mode::Slice::Shader shader;
@@ -109,10 +111,10 @@ namespace MR
                window().updateGL();
              }
              
-             void load (std::vector<std::unique_ptr<MR::Image::Header>>& list); 
+             void load (std::vector<std::unique_ptr<MR::Header>>& list);
              void save (ROI_Item*);
 
-             int normal2axis (const Point<>&, const MR::Image::Transform&) const;
+             int normal2axis (const Eigen::Vector3f&, const MR::Transform&) const;
         };
 
 

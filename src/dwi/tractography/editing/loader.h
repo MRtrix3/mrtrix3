@@ -48,7 +48,7 @@ namespace MR {
             Loader (const std::vector<std::string>& files) :
               file_list (files),
               dummy_properties (),
-              reader (new Reader (file_list[0], dummy_properties)),
+              reader (new Reader<> (file_list[0], dummy_properties)),
               file_index (0) { }
 
             bool operator() (Streamline<>&);
@@ -57,7 +57,7 @@ namespace MR {
           private:
             const std::vector<std::string>& file_list;
             Properties dummy_properties;
-            std::unique_ptr<Reader> reader;
+            std::unique_ptr<Reader<> > reader;
             size_t file_index;
 
         };
@@ -73,7 +73,7 @@ namespace MR {
 
           while (++file_index != file_list.size()) {
             dummy_properties.clear();
-            reader.reset (new Reader (file_list[file_index], dummy_properties));
+            reader.reset (new Reader<> (file_list[file_index], dummy_properties));
             if ((*reader) (out))
               return true;
           }

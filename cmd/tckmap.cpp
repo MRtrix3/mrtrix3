@@ -263,7 +263,7 @@ DataType determine_datatype (const DataType current_dt, const contrast_t contras
 void run () {
 
   Tractography::Properties properties;
-  Tractography::Reader file (argument[0], properties);
+  Tractography::Reader<float> file (argument[0], properties);
 
   const size_t num_tracks = properties["count"].empty() ? 0 : to<size_t> (properties["count"]);
 

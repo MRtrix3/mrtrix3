@@ -243,7 +243,7 @@ namespace MR
         void ModelBase<Fixel>::map_streamlines (const std::string& path)
         {
           Tractography::Properties properties;
-          Tractography::Reader file (path, properties);
+          Tractography::Reader<> file (path, properties);
 
           const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
           if (!count)

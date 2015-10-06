@@ -393,6 +393,8 @@ exe_suffix = ''
 lib_prefix = 'lib'
 
 system = platform.system().lower()
+if system.startswith('mingw'):
+  system = 'windows'
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
   cpp_flags += [ '-pthread', '-fPIC' ]
@@ -950,8 +952,6 @@ int main() { Foo f; }
       f.close();
 
       qmake_cmd = [ qmake ]
-      if system == 'windows':
-        qmake_cmd += [ '-spec', 'win32-g++' ]
 
       try: 
          (retcode, stdout, stderr) = execute (qmake_cmd, QMakeError, raise_on_non_zero_exit_code = False, cwd=qt_dir.name)
@@ -988,6 +988,9 @@ int main() { Foo f; }
         elif line.startswith ('LFLAGS'):
           qt_ldflags = shlex.split (line[line.find('=')+1:].strip())
 
+      for index, entry in enumerate(qt_includes):
+        if entry[2:].startswith('..'):
+          qt_includes[index] = '-I' + os.path.abspath(qt_dir.name + '/' + entry[2:])
       
       qt = qt_cflags + qt_defines + qt_includes
       qt_cflags = []

@@ -427,7 +427,7 @@ namespace MR
     template <class HeaderType> 
       inline List contiguous_along_axis (size_t axis, const HeaderType& header) 
       {
-        return get_nearest_match (get (header), contiguous_along_axis (axis));
+        return get_nearest_match (header, contiguous_along_axis (axis));
       }
 
     //! convenience function to get spatially contiguous strides

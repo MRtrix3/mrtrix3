@@ -197,7 +197,7 @@ namespace MR
               const double required_cf_change_quantisation = enforce_quantisation ? (-0.5 * quantisation) : 0.0;
               const double this_nonlinearity = (candidate->get_cost_gradient() - this_actual_cf_change);
 
-              if (this_actual_cf_change < std::min (required_cf_change_ratio, std::min (required_cf_change_quantisation, this_nonlinearity))) {
+              if (this_actual_cf_change < std::min ( {required_cf_change_ratio, required_cf_change_quantisation, this_nonlinearity })) {
 
                 // Candidate streamline removal meets all criteria; remove from reconstruction
                 for (size_t f = 0; f != candidate_contribution.dim(); ++f) {
@@ -294,7 +294,7 @@ namespace MR
       void SIFTer::output_filtered_tracks (const std::string& input_path, const std::string& output_path) const
       {
         Tractography::Properties p;
-        Tractography::Reader reader (input_path, p);
+        Tractography::Reader<float> reader (input_path, p);
         p["SIFT_mu"] = str (mu());
         Tractography::Writer<float> writer (output_path, p);
         track_t tck_counter = 0;

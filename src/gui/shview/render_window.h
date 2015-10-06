@@ -24,8 +24,6 @@
 #define __gui_dwi_render_window_h__
 
 #include "gui/opengl/gl.h"
-#include "file/path.h"
-#include "math/SH.h"
 
 namespace MR
 {
@@ -44,6 +42,7 @@ namespace MR
 
         public:
           Window (bool is_response_coefs);
+          ~Window();
           void set_values (const std::string& filename);
 
         protected slots:
@@ -74,8 +73,8 @@ namespace MR
 
           std::string name;
           int current;
-          Math::Matrix<float> values;
-          bool  is_response;
+          Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> values;
+          bool is_response;
 
           void set_values (int row);
       };

@@ -105,7 +105,7 @@ namespace MR
         Image (const std::string& image_name) :
           ::MR::Image<uint64_t> (::MR::Image<uint64_t>::open (image_name)), io (nullptr) { check(); }
 
-        Image (Header& header, bool readwrite = false) :
+        Image (Header& header) :
           ::MR::Image<uint64_t> (header.get_image<uint64_t>()), io (nullptr) { check(); }
 
         Image (const Image<DataType>& that) = default;

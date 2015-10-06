@@ -47,12 +47,14 @@ namespace MR
 
       class Mask : public Image<bool> {
         public:
+          typedef Eigen::Transform<float, 3, Eigen::AffineCompact> transform_type;
           Mask (const Mask&) = default;
           Mask (const std::string& name) :
-            Image<bool> (__get_mask (name)), 
-            scanner2voxel (Transform(*this).scanner2voxel),
-            voxel2scanner (Transform (*this).voxel2scanner) { }
-          transform_type scanner2voxel, voxel2scanner;
+              Image<bool> (__get_mask (name)),
+              scanner2voxel (new transform_type (Transform(*this).scanner2voxel.cast<float>())),
+              voxel2scanner (new transform_type (Transform(*this).voxel2scanner.cast<float>())) { }
+
+          std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
 
         private:
           static Image<bool> __get_mask (const std::string& name);
@@ -95,13 +97,14 @@ namespace MR
           {
 
             if (mask) {
-              Eigen::Vector3d v = mask->scanner2voxel * p.cast<double>();
-              mask->index(0) = std::round (v[0]);
-              mask->index(1) = std::round (v[1]);
-              mask->index(2) = std::round (v[2]);
-              if (is_out_of_bounds (*mask))
+              Eigen::Vector3f v = *(mask->scanner2voxel) * p;
+              Mask temp (*mask); // Required for thread-safety
+              temp.index(0) = std::round (v[0]);
+              temp.index(1) = std::round (v[1]);
+              temp.index(2) = std::round (v[2]);
+              if (is_out_of_bounds (temp))
                 return false;
-              return mask->value();
+              return temp.value();
             }
 
             return (pos-p).squaredNorm() <= radius2;

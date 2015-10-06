@@ -23,7 +23,6 @@
 #ifndef __gui_mrview_displayable_h__
 #define __gui_mrview_displayable_h__
 
-#include "point.h"
 #include "math/math.h"
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"

@@ -46,7 +46,7 @@ namespace MR
 
               void set_tractogram (Tractogram* selected_tractogram);
 
-              void render_tractogram_colourbar(const Tool::Tractogram&) override;
+              void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
             public slots:
               bool open_track_scalar_file_slot ();

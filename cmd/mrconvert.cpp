@@ -69,6 +69,18 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
+  + Option ("scaling",
+            "specify the data scaling parameters used to rescale the intensity values. "
+            "These take the form of a comma-separated 2-vector of floating-point values, "
+            "corresponding to offset & scale, with final intensity values being given by "
+            "offset + scale * stored_value. "
+            "By default, the values in the input image header are passed through to the "
+            "output image header when writing to an integer image; when writing to a "
+            "floating-point image, these values are reset to 0,1 (no scaling). To force "
+            "mrconvert to preserve the input image's scaling parameters even for "
+            "floating-point outputs, use '-scaling preserve'")
+  + Argument ("values").type_sequence_float()
+
   + Stride::Options
 
   + DataType::options()
@@ -137,21 +149,12 @@ inline std::vector<int> set_header (Header& header, const ImageType& input)
 template <typename T>
 inline void copy_permute (Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
 {
-  //typedef Image::Buffer<T> buffer_type;
-  //typedef typename buffer_type::voxel_type voxel_type;
-  //typedef Image::Adapter::Extract<voxel_type> extract_type;
-
-  //buffer_type buffer_in (header_in);
-  //voxel_type in = buffer_in.voxel();
 
   auto in = header_in.get_image<T>();
-
 
   if (pos.empty()) {
 
     const auto axes = set_header (header_out, in);
-    //buffer_type buffer_out (output_filename, header_out);
-    //voxel_type out = buffer_out.voxel();
 
     auto out = Header::create (output_filename, header_out).get_image<T>();
     DWI::export_grad_commandline (out.header());
@@ -188,6 +191,8 @@ void run ()
 
   Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
+  if (!header_out.datatype().is_floating_point())
+    header_out.set_intensity_scaling (header_in);
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
@@ -227,30 +232,50 @@ void run ()
     }
   }
 
-  switch (header_out.datatype()() & DataType::Type) {
-    case DataType::Undefined: throw Exception ("Undefined output image data type"); break;
-    case DataType::Bit:
-    case DataType::UInt8:
-    case DataType::UInt16:
-    case DataType::UInt32:
-      if (header_out.datatype().is_signed())
-        copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
-      break;
-    case DataType::UInt64:
-      if (header_out.datatype().is_signed())
-        copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
-      break;
-    case DataType::Float32:
-    case DataType::Float64:
-      if (header_out.datatype().is_complex())
-        copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
-      else
-        copy_permute<double> (header_in, header_out, pos, argument[1]);
-      break;
+
+  opt = get_options ("scaling");
+  if (opt.size()) {
+    if (lowercase (opt[0][0]) == "preserve")
+      header_out.set_intensity_scaling (header_in);
+    else {
+      std::vector<default_type> scaling = parse_floats (opt[0][0]);
+      if (scaling.size() != 2) 
+        throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
+      header_out.intensity_offset() = scaling[0];
+      header_out.intensity_scale()  = scaling[1];
+    }
+  }
+
+  if (!std::isfinite (header_out.intensity_offset()) || !std::isfinite (header_out.intensity_scale()) || header_out.intensity_scale() == 0.0)
+    WARN ("invalid scaling parameters (offset: " + str(header_out.intensity_offset()) + ", scale: " + str(header_out.intensity_scale()) + ")");
+
+
+  if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {
+    switch (header_out.datatype()() & DataType::Type) {
+      case DataType::Bit:
+      case DataType::UInt8:
+      case DataType::UInt16:
+      case DataType::UInt32:
+        if (header_out.datatype().is_signed())
+          copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
+        else
+          copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
+        break;
+      case DataType::UInt64:
+        if (header_out.datatype().is_signed())
+          copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
+        else
+          copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
+        break;
+      case DataType::Undefined: throw Exception ("invalid output image data type"); break;
+
+    }
+  }
+  else {
+    if (header_out.datatype().is_complex())
+      copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
+    else
+      copy_permute<double> (header_in, header_out, pos, argument[1]);
   }
 
 }

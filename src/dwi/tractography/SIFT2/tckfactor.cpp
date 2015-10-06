@@ -191,7 +191,7 @@ namespace MR {
       void TckFactor::estimate_factors()
       {
 
-        coefficients.resize (num_tracks(), 0.0);
+        coefficients = decltype(coefficients)::Zero (num_tracks());
 
         const double init_cf = calc_cost_function();
         double cf_data = init_cf;
@@ -326,7 +326,7 @@ namespace MR {
       {
         if (size_t(coefficients.size()) != contributions.size())
           throw Exception ("Cannot output weighting factors if they have not first been estimated!");
-        Eigen::VectorXd weights (coefficients.size());
+        decltype(coefficients) weights (coefficients.size());
         for (SIFT::track_t i = 0; i != num_tracks(); ++i)
           weights[i] = std::exp (coefficients[i]);
         save_vector (weights, path);

@@ -22,6 +22,7 @@
 
 #include "command.h"
 #include "file/ofstream.h"
+#include "file/name_parser.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
@@ -39,11 +40,11 @@ void usage ()
   DESCRIPTION
   + "Convert between different track file formats."
 
-  + "The program currently supports MRtrix .tck files, "
-    "VTK polydata files, and ascii text files.";
+  + "The program currently supports MRtrix .tck files (input/output), "
+    "ascii text files (input/output), and VTK polydata files (output only).";
 
   ARGUMENTS
-  + Argument ("input", "the input track file.").type_file_in ()
+  + Argument ("input", "the input track file.").type_text ()
   + Argument ("output", "the output track file.").type_file_out ();
 
   OPTIONS
@@ -55,12 +56,22 @@ void usage ()
   + Option ("scanner2image",
       "if specified, the properties of this image will be used to convert "
       "track point positions from real (scanner) coordinates into image coordinates (in mm).")
-  +    Argument ("reference").type_image_in ();
+  +    Argument ("reference").type_image_in ()
 
+  + Option ("voxel2scanner",
+      "if specified, the properties of this image will be used to convert "
+      "track point positions from voxel coordinates into real (scanner) coordinates.")
+    + Argument ("reference").type_image_in ()
+
+  + Option ("image2scanner",
+      "if specified, the properties of this image will be used to convert "
+      "track point positions from image coordinates (in mm) into real (scanner) coordinates.")
+  +    Argument ("reference").type_image_in ();
+  
 }
 
 
-class VTKWriter
+class VTKWriter: public WriterInterface<float>
 {
 public:
     VTKWriter(const std::string& file) : VTKout (file) {
@@ -76,8 +87,7 @@ public:
         VTKout << "XXXXXXXXXX float\n";
     }
 
-    template <class ValueType>
-    bool operator() (const Streamline<ValueType>& tck) {
+    bool operator() (const Streamline<float>& tck) {
         // write out points, and build index of tracks:
         size_t start_index = current_index;
         current_index += tck.size();
@@ -119,13 +129,106 @@ private:
 
 
 
+class ASCIIReader: public ReaderInterface<float>
+{
+public:
+    ASCIIReader(const std::string& file) {
+        auto num = list.parse_scan_check(file);
+    }
+
+    bool operator() (Streamline<float>& tck) {
+        tck.clear();
+        if (item < list.size()) {
+            auto t = load_matrix<float>(list[item].name());
+            for (size_t i = 0; i < size_t(t.rows()); i++)
+                tck.push_back(Eigen::Vector3f(t.row(i)));
+            item++;
+            return true;
+        }
+        return false;
+    }
+
+    ~ASCIIReader() { }
+
+private:
+    File::ParsedName::List list;
+    size_t item = 0;
+
+};
+
+
+class ASCIIWriter: public WriterInterface<float>
+{
+public:
+    ASCIIWriter(const std::string& file) {
+        count.push_back(0);
+        parser.parse(file);
+        parser.calculate_padding({1000000});
+    }
+
+    bool operator() (const Streamline<float>& tck) {
+      std::string name = parser.name(count);
+      File::OFStream out (name);
+      for (auto i = tck.begin(); i != tck.end(); ++i)
+        out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
+      out.close();
+      count[0]++;
+      return true;
+    }
+
+    ~ASCIIWriter() { }
+
+private:
+    File::NameParser parser;
+    std::vector<int> count;
+
+};
+
+
+
+
+bool has_suffix(const std::string &str, const std::string &suffix)
+{
+    return str.size() >= suffix.size() &&
+           str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+
+
+
+
 void run ()
 {
+    // Reader
     Properties properties;
-    Reader read (argument[0], properties);
+    std::unique_ptr<ReaderInterface<float> > reader;
+    if (has_suffix(argument[0], ".tck")) {
+        reader.reset( new Reader<float>(argument[0], properties) );
+    }
+    else if (has_suffix(argument[0], ".txt")) {
+        reader.reset( new ASCIIReader(argument[0]) );
+    }
+    else {
+        throw Exception("Unsupported input file type.");
+    }
 
-    VTKWriter write (argument[1]);
-
+    
+    // Writer
+    std::unique_ptr<WriterInterface<float> > writer;
+    if (has_suffix(argument[1], ".tck")) {
+        writer.reset( new Writer<float>(argument[1], properties) );
+    }
+    else if (has_suffix(argument[1], ".vtk")) {
+        writer.reset( new VTKWriter(argument[1]) );
+    }
+    else if (has_suffix(argument[1], ".txt")) {
+        writer.reset( new ASCIIWriter(argument[1]) );
+    }
+    else {
+        throw Exception("Unsupported output file type.");
+    }
+    
+    
     // Tranform matrix
     transform_type T;
     T.setIdentity();
@@ -142,17 +245,31 @@ void run ()
         T = Transform(header).scanner2image;
         nopts++;
     }
+    opt = get_options("voxel2scanner");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).voxel2scanner;
+        nopts++;
+    }
+    opt = get_options("image2scanner");
+    if (opt.size()) {
+        auto header = Header::open(opt[0][0]);
+        T = Transform(header).image2scanner;
+        nopts++;
+    }
     if (nopts > 1) {
         throw Exception("Transform options are mutually exclusive.");
     }
 
+    
+    // Copy
     Streamline<float> tck;
-    while (read(tck))
+    while ( (*reader)(tck) )
     {
         for (auto& pos : tck) {
             pos = T.cast<float>() * pos;
         }
-        write(tck);
+        (*writer)(tck);
     }
 
 }

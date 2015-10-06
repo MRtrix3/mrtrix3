@@ -119,12 +119,12 @@ namespace MR
 
     template <typename RAMType, typename DiskType> 
       RAMType __fetch_LE (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
+        return round_func<RAMType> (scale_from_storage (Raw::fetch_LE<DiskType> (data, i), offset, scale));
       }
 
     template <typename RAMType, typename DiskType> 
       void __store_LE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+        return Raw::store_LE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i);
       }
 
 
@@ -132,12 +132,12 @@ namespace MR
 
     template <typename RAMType, typename DiskType> 
       RAMType __fetch_BE (const void* data, size_t i, default_type offset, default_type scale) {
-        return round_func<RAMType> (scale_from_storage (Raw::fetch<DiskType> (data, i), offset, scale)); 
+        return round_func<RAMType> (scale_from_storage (Raw::fetch_BE<DiskType> (data, i), offset, scale));
       }
 
     template <typename RAMType, typename DiskType> 
       void __store_BE (RAMType val, void* data, size_t i, default_type offset, default_type scale) {
-        return Raw::store<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i); 
+        return Raw::store_BE<DiskType> (round_func<DiskType> (scale_to_storage (val, offset, scale)), data, i);
       }
 
 

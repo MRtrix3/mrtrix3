@@ -59,7 +59,7 @@ namespace MR
 
           public:
             Preview (ODF*);
-            void set (const Math::Vector<float>&);
+            void set (const Eigen::VectorXf&);
             bool interpolate() const { return interpolation_box->isChecked(); }
             Window& window () const { return *Window::main; }
           private slots:

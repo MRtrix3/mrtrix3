@@ -76,7 +76,7 @@ void run ()
   auto input_header = Header::open (argument[0]);
   Sparse::Image<FixelMetric> input_fixel (argument[0]);
 
-  DWI::Tractography::Reader reader (argument[1], properties);
+  DWI::Tractography::Reader<float> reader (argument[1], properties);
   properties.comments.push_back ("Created using fixel2tsf");
   properties.comments.push_back ("Source fixel image: " + Path::basename (argument[0]));
   properties.comments.push_back ("Source track file: " + Path::basename (argument[1]));

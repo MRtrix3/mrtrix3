@@ -73,7 +73,7 @@ namespace MR
               H_5tt.set_ndim (4);
               H_5tt.size(3) = 5;
               assert (!out_5tt.valid());
-              out_5tt = Image<float>::scratch (H_5tt, "5TT BufferScratch");
+              out_5tt = Image<float>::scratch (H_5tt, "5TT scratch buffer");
 
               // Test to see if the image has already been re-gridded to match the fixel image
               // If it has, can do a direct import

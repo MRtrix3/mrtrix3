@@ -195,7 +195,7 @@ namespace MR
     {
       public:
         //! construct a Buffer object to access the data in the image specified
-        Buffer (Header& H, bool read_write_if_existing = false, bool direct_io = false, Stride::List strides = Stride::List());
+        Buffer (Header& H, bool read_write_if_existing = false);
         Buffer (Buffer&&) = default;
         Buffer& operator= (const Buffer&) = delete;
         Buffer& operator= (Buffer&&) = default;
@@ -280,7 +280,7 @@ namespace MR
 
 
   template <typename ValueType>
-    Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing, bool direct_io, Stride::List strides) :
+    Image<ValueType>::Buffer::Buffer (Header& H, bool read_write_if_existing) :
       Header (H) {
         assert (H.valid()); // IO handler set
         assert (H.is_file_backed() ? is_data_type<ValueType>::value : true);
@@ -319,7 +319,7 @@ namespace MR
 
 
   template <typename ValueType>
-    Image<ValueType> Header::get_image () 
+    Image<ValueType> Header::get_image()
     {
       assert (valid());
       if (!valid())

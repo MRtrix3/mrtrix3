@@ -29,8 +29,6 @@
 
 #include <vector>
 
-#include "math/vector.h"
-
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 
@@ -67,7 +65,7 @@ namespace MR
             p[0] = vertices[i1][0] + vertices[i2][0];
             p[1] = vertices[i1][1] + vertices[i2][1];
             p[2] = vertices[i1][2] + vertices[i2][2];
-            Math::normalise (p);
+            Eigen::Map<Eigen::Vector3f> (p).normalize();
           }
 
           float& operator[] (const int n) { return p[n]; }

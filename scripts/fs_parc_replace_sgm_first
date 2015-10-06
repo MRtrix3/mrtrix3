@@ -23,11 +23,12 @@ from lib.errorMessage import errorMessage
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 
-numArgs = 4
-if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input parcellation image> <input T1 image> <FreeSurfer lookup table / connectome config file> <output parcellation image> (options)\n')
-  exit(0)
-lib.app.initialise(numArgs)
+lib.app.initParser('In a FreeSurfer parcellation image, replace the sub-cortical grey matter structure delineations using FSL FIRST')
+lib.app.parser.add_argument('parc',   help='The input FreeSurfer parcellation image')
+lib.app.parser.add_argument('t1',     help='The T1 image to be provided to FIRST')
+lib.app.parser.add_argument('config', help='Either the FreeSurfer lookup table (if the input parcellation image is directly from FreeSurfer), or the connectome configuration file (if the parcellation image has been modified using the labelconfig command)')
+lib.app.parser.add_argument('output', help='The output parcellation image')
+lib.app.initialise()
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -55,7 +56,7 @@ structure_map = { 'L_Accu':'Left-Accumbens-area',  'R_Accu':'Right-Accumbens-are
 # Import the config file
 # Invert the mapping - go from the structure name to the index
 config = {}
-with open(sys.argv[3]) as f:
+with open(lib.app.args.config) as f:
   for line in f:
     line = line.rstrip()
     if line and line[0]!='#':
@@ -63,8 +64,8 @@ with open(sys.argv[3]) as f:
        config[line[1]] = line[0] # This can remain as a string
 
 # Get the parcellation and T1 images into the temporary directory, with conversion of the T1 into the correct format for FSL
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
-runCommand('mrconvert ' + sys.argv[2] + ' ' + os.path.join(lib.app.tempDir, 'T1.nii')   + ' -stride +1,+2,+3')
+runCommand('mrconvert ' + lib.app.args.parc + ' ' + os.path.join(lib.app.tempDir, 'parc.mif'))
+runCommand('mrconvert ' + lib.app.args.t1   + ' ' + os.path.join(lib.app.tempDir, 'T1.nii')   + ' -stride +1,+2,+3')
 
 lib.app.gotoTempDir()
 
@@ -95,11 +96,11 @@ for struct in structure_map.keys():
 
 # Detect any overlapping voxels between these masks
 # These will be set to 0 in the final parcellated image
-result_path = 'result' + os.path.splitext(sys.argv[4])[1]
+result_path = 'result' + os.path.splitext(lib.app.args.output)[1]
 runCommand('mrmath ' + ' '.join(mask_list) + ' sum - | mrcalc - 1 -gt overlap_mask.nii')
 runCommand('mrcalc overlap_mask.nii 0 parc.mif -if ' + result_path)
 
-lib.app.moveFileToDest(result_path, sys.argv[4])
+lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 

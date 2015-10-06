@@ -46,25 +46,25 @@ namespace MR
         const Entry maps[] = {
           Entry ("Gray", 
               "color.rgb = vec3 (amplitude);\n",
-              [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
+              [] (float amplitude) { return Eigen::Array3f (amplitude, amplitude, amplitude); }),
 
           Entry ("Hot", 
               "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
-                                                          std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
-                                                          std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 2.7213f * amplitude)),
+                                                            std::max (0.0f, std::min (1.0f, 2.7213f * amplitude - 1.0f)),
+                                                            std::max (0.0f, std::min (1.0f, 3.7727f * amplitude - 2.7727f))); }),
 
           Entry ("Cool",
               "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude)))),
+                                                            std::max (0.0f, std::min (1.0f, 1.0f - (2.7213f * (1.0f - amplitude) - 1.0f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.0f - (3.7727f * (1.0f - amplitude) - 2.7727f)))); }),
 
           Entry ("Jet", 
               "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
-              [] (float amplitude) { return Point<float> (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
-                                                          std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
+              [] (float amplitude) { return Eigen::Array3f (std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.25f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.5f))),
+                                                            std::max (0.0f, std::min (1.0f, 1.5f - 4.0f * std::abs (1.0f - amplitude - 0.75f)))); }),
 
           Entry ("Colour", 
               "color.rgb = amplitude * colourmap_colour;\n",
@@ -217,7 +217,7 @@ namespace MR
         {
           render (object.colourmap, inverted, object.scaling_min (), object.scaling_max (),
                   object.scaling_min (), object.display_range,
-                  Point<float> (object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f));
+                  Eigen::Array3f { object.colour[0] / 255.0f, object.colour[1] / 255.0f, object.colour[2] / 255.0f });
         }
 
 
@@ -225,7 +225,7 @@ namespace MR
         void Renderer::render (size_t colourmap, bool inverted,
                                float local_min_value, float local_max_value,
                                float global_min_value, float global_range,
-                               Point<float> colour)
+                               Eigen::Array3f colour)
         {
           if (!current_position) return;
           if (maps[colourmap].special) return;

@@ -63,7 +63,7 @@ namespace MR
           }
 
           GL_CHECK_ERROR;
-          if (!focus() || !target()) 
+          if (!std::isfinite (focus().squaredNorm()) || !std::isfinite (target().squaredNorm()))
             reset_view();
 
           {
@@ -76,24 +76,25 @@ namespace MR
 
             projection.setup_render_text();
             if (window().show_voxel_info()) {
-              Point<> voxel (image()->interp.scanner2voxel (focus()));
-              Image::VoxelType& imvox (image()->voxel());
+              Eigen::Vector3f voxel (image()->linear_interp.scanner2voxel.cast<float>() * focus());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
-              for (size_t n = 3; n < imvox.ndim(); ++n)
-                vox_str += str(imvox[n]) + " ";
+              for (size_t n = 3; n < image()->header().ndim(); ++n)
+                vox_str += str(image()->linear_interp.index(n)) + " ";
               vox_str += "]";
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
               projection.render_text (vox_str, LeftEdge | BottomEdge, 1);
               std::string value_str = "value: ";
               cfloat value = image()->interpolate() ?
-                image()->trilinear_value(window().focus()) :
-                image()->nearest_neighbour_value(window().focus());
-              if(std::isnan(std::abs(value)))
+                image()->trilinear_value (window().focus()) :
+                image()->nearest_neighbour_value (window().focus());
+              if (std::isfinite (std::abs (value)))
+                value_str += str(value);
+              else
                 value_str += "?";
-              else value_str += str(value);
+
               projection.render_text (value_str, LeftEdge | BottomEdge, 2);
 
               // Draw additional labels from tools
@@ -107,8 +108,9 @@ namespace MR
             GL_CHECK_ERROR;
 
             if (window().show_comments()) {
-              for (size_t i = 0; i < image()->header().comments().size(); ++i)
-                projection.render_text (image()->header().comments() [i], LeftEdge | TopEdge, i);
+              const std::map<std::string, std::string>::const_iterator i = image()->header().keyval().find ("comments");
+              if (i != image()->header().keyval().end())
+                projection.render_text (i->second, LeftEdge | TopEdge, 0);
             }
 
             projection.done_render_text();
@@ -161,8 +163,8 @@ done_painting:
           if (!proj) return;
           const auto &header = image()->header();
           float increment = snap_to_image() ?
-            x * header.vox(plane()) :
-            x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+            x * header.spacing (plane()) :
+            x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
           move_in_out (increment, *proj);
           move_target_to_focus_plane (*proj);
           updateGL();
@@ -215,30 +217,24 @@ done_painting:
 
 
 
-        Math::Versor<float> Base::get_tilt_rotation () const 
+        Math::Versorf Base::get_tilt_rotation () const
         {
-          Math::Versor<float> rot;
           const Projection* proj = get_current_projection();
-          if (!proj) {
-            rot.invalidate(); 
-            return rot;
-          }
+          if (!proj)
+            return Math::Versorf();
 
           QPoint dpos = window().mouse_displacement();
-          if (dpos.x() == 0 && dpos.y() == 0) {
-            rot.invalidate();
-            return rot;
-          }
+          if (dpos.x() == 0 && dpos.y() == 0)
+            return Math::Versorf();
 
-          Point<> x = proj->screen_to_model_direction (dpos, target());
-          Point<> z = proj->screen_normal();
-          Point<> v (x.cross (z));
+          const Eigen::Vector3f x = proj->screen_to_model_direction (dpos, target());
+          const Eigen::Vector3f z = proj->screen_normal();
+          const Eigen::Vector3f v (x.cross (z).normalized());
           float angle = -ROTATION_INC * std::sqrt (float (Math::pow2 (dpos.x()) + Math::pow2 (dpos.y())));
-          v.normalise();
-          if (angle > Math::pi_2) 
+          if (angle > Math::pi_2)
             angle = Math::pi_2;
-
-          return Math::Versor<float> (angle, v);
+          const Math::Versorf rot (angle, v);
+          return rot;
         }
 
 
@@ -246,37 +242,33 @@ done_painting:
 
 
 
-        Math::Versor<float> Base::get_rotate_rotation () const
+        Math::Versorf Base::get_rotate_rotation () const
         {
-          Math::Versor<float> rot;
-          rot.invalidate();
-
           const Projection* proj = get_current_projection();
           if (!proj) 
-            return rot;
+            return Math::Versorf();
 
           QPoint dpos = window().mouse_displacement();
           if (dpos.x() == 0 && dpos.y() == 0) 
-            return rot;
+            return Math::Versorf();
 
-          Point<> x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
-              window().mouse_position().y() - proj->y_position() - proj->height()/2,
-              0.0);
+          Eigen::Vector3f x1 (window().mouse_position().x() - proj->x_position() - proj->width()/2,
+                              window().mouse_position().y() - proj->y_position() - proj->height()/2,
+                              0.0);
 
           if (x1.norm() < 16.0f) 
-            return rot;
+            return Math::Versorf();
 
-          Point<> x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
+          Eigen::Vector3f x0 (dpos.x() - x1[0], dpos.y() - x1[1], 0.0);
 
-          x1.normalise();
-          x0.normalise();
+          x1.normalize();
+          x0.normalize();
 
-          Point<> n = x1.cross (x0);
-
-          Point<> v = proj->screen_normal();
-          v.normalise();
-
-          return Math::Versor<float> (n[2], v);
+          const Eigen::Vector3f n = x1.cross (x0);
+          const float angle = n[2];
+          Eigen::Vector3f v = (proj->screen_normal()).normalized();
+          const Math::Versorf rot (angle, v);
+          return rot;
         }
 
 
@@ -288,11 +280,10 @@ done_painting:
           if (snap_to_image()) 
             window().set_snap_to_image (false);
 
-          Math::Versor<float> rot = get_tilt_rotation();
-          if (!rot) 
+          const Math::Versorf rot = get_tilt_rotation();
+          if (!rot)
             return;
-          Math::Versor<float> orient = rot * orientation();
-          orient.normalise();
+          Math::Versorf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }
@@ -306,11 +297,10 @@ done_painting:
           if (snap_to_image()) 
             window().set_snap_to_image (false);
 
-          Math::Versor<float> rot = get_rotate_rotation();
-          if (!rot) 
+          const Math::Versorf rot = get_rotate_rotation();
+          if (!rot)
             return;
-          Math::Versor<float> orient = rot * orientation();
-          orient.normalise();
+          Math::Versorf orient = rot * orientation();
           set_orientation (orient);
           updateGL();
         }
@@ -335,9 +325,9 @@ done_painting:
           if (!proj) return;
 
           float dim[] = {
-            image()->header().dim (0) * image()->header().vox (0),
-            image()->header().dim (1) * image()->header().vox (1),
-            image()->header().dim (2) * image()->header().vox (2)
+            float(image()->header().size (0) * image()->header().spacing (0)),
+            float(image()->header().size (1) * image()->header().spacing (1)),
+            float(image()->header().size (2) * image()->header().spacing (2))
           };
           if (dim[0] < dim[1] && dim[0] < dim[2])
             set_plane (0);
@@ -346,13 +336,13 @@ done_painting:
           else
             set_plane (2);
 
-          Point<> p (
-              floor ((image()->header().dim(0)-1)/2.0f),
-              floor ((image()->header().dim(1)-1)/2.0f),
-              floor ((image()->header().dim(2)-1)/2.0f)
+          Eigen::Vector3f p (
+              std::floor ((image()->header().size(0)-1)/2.0f),
+              std::floor ((image()->header().size(1)-1)/2.0f),
+              std::floor ((image()->header().size(2)-1)/2.0f)
               );
 
-          set_focus (image()->interp.voxel2scanner (p));
+          set_focus (image()->linear_interp.voxel2scanner.cast<float>() * p);
           set_target (focus());
           reset_orientation();
 

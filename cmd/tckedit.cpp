@@ -128,7 +128,7 @@ void run ()
     input_file_list.push_back (argument[file_index]);
 
     Properties p;
-    Reader reader (argument[file_index], p);
+    Reader<float> reader (argument[file_index], p);
 
     for (std::vector<std::string>::const_iterator i = p.comments.begin(); i != p.comments.end(); ++i) {
       bool present = false;

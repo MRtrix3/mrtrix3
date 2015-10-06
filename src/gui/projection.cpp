@@ -33,18 +33,18 @@ namespace MR
       {
         public:
           OrientationLabel () { }
-          OrientationLabel (const Point<>& direction, const char textlabel) :
+          OrientationLabel (const Eigen::Vector3f& direction, const char textlabel) :
             dir (direction), label (1, textlabel) { }
-          Point<> dir;
+          Eigen::Vector3f dir;
           std::string label;
           bool operator< (const OrientationLabel& R) const {
-            return dir.norm2() < R.dir.norm2();
+            return dir.squaredNorm() < R.dir.squaredNorm();
           }
       };
     }
 
 
-    void Projection::render_crosshairs (const Point<>& focus) const
+    void Projection::render_crosshairs (const Eigen::Vector3f& focus) const
     {
       if (!crosshairs_VB || !crosshairs_VAO) {
         crosshairs_VB.gen();
@@ -77,7 +77,7 @@ namespace MR
         crosshairs_program.link();
       }
 
-      Point<> F = model_to_screen (focus);
+      Eigen::Vector3f F = model_to_screen (focus);
       F[0] = std::round (F[0] - x_position()) - 0.5f;
       F[1] = std::round (F[1] - y_position()) + 0.5f;
 
@@ -107,12 +107,12 @@ namespace MR
     void Projection::draw_orientation_labels () const
     {
       std::vector<OrientationLabel> labels;
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (-1.0, 0.0, 0.0)), 'L'));
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (1.0, 0.0, 0.0)), 'R'));
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, -1.0, 0.0)), 'P'));
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 1.0, 0.0)), 'A'));
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 0.0, -1.0)), 'I'));
-      labels.push_back (OrientationLabel (model_to_screen_direction (Point<> (0.0, 0.0, 1.0)), 'S'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f {-1.0,  0.0,  0.0}), 'L'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 1.0,  0.0,  0.0}), 'R'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 0.0, -1.0,  0.0}), 'P'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 0.0,  1.0,  0.0}), 'A'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 0.0,  0.0, -1.0}), 'I'));
+      labels.push_back (OrientationLabel (model_to_screen_direction (Eigen::Vector3f { 0.0,  0.0,  1.0}), 'S'));
 
       setup_render_text (1.0, 0.0, 0.0);
       std::sort (labels.begin(), labels.end());

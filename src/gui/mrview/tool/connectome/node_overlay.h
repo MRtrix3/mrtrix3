@@ -23,12 +23,11 @@
 #ifndef __gui_mrview_tool_connectome_nodeoverlay_h__
 #define __gui_mrview_tool_connectome_nodeoverlay_h__
 
-#include "image/buffer_scratch.h"
-#include "image/info.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "types.h"
 
 #include "gui/mrview/displayable.h"
-#include "gui/mrview/image.h"
+#include "gui/mrview/gui_image.h"
 
 namespace MR
 {
@@ -43,16 +42,14 @@ namespace MR
       class NodeOverlay : public MR::GUI::MRView::ImageBase
       {
         public:
-          NodeOverlay (const MR::Image::Info&);
+          NodeOverlay (MR::Header&&);
 
           void update_texture2D (const int, const int) override;
           void update_texture3D() override;
 
-          typedef MR::Image::BufferScratch<float>::voxel_type voxel_type;
-          voxel_type voxel() { need_update = true; return voxel_type (data); }
+          MR::Image<float> data;
 
         private:
-          MR::Image::BufferScratch<float> data;
           bool need_update;
 
         public:
