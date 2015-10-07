@@ -294,7 +294,7 @@ namespace MR
             for (int x = -nx; x <= nx; ++x) {
               Eigen::Vector3f scanner_pos = p + float(x)*x_dir + float(y)*y_dir;
               Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
-              Eigen::Array3i voxel { (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) };
+              std::array<int, 3> voxel { (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) };
 
               // Find and add point indices that correspond to projected voxel
               const auto &voxel_indices = voxel_to_indices_map[voxel];
@@ -390,8 +390,9 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const Eigen::Array3i voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
-            const Eigen::Vector3f pos = transform.voxel2scanner.cast<float>() * voxel.matrix().cast<float>();
+            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
+            pos = transform.voxel2scanner.cast<float>() * pos;
 
             for (size_t f = 0; f != fixel_data->value().size(); ++f) {
 
@@ -449,8 +450,9 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const Eigen::Array3i voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
-            const Eigen::Vector3f pos = transform.voxel2scanner.cast<float>() * voxel.matrix().cast<float>();
+            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
+            pos = transform.voxel2scanner.cast<float>() * pos;
 
             for (size_t f = 0; f < n_fixels; ++f) {
 
