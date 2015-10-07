@@ -316,7 +316,7 @@ namespace MR
                   parameters.sparsity = 0.0;
                 else
                   parameters.sparsity = 0.2;
-                INFO(str(parameters.sparsity));
+                INFO("stochastic gradient descent sparsity: " + str(parameters.sparsity));
 #endif
 
 // #ifndef NONSYMREGISTRATION

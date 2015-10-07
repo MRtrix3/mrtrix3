@@ -59,7 +59,7 @@ namespace MR
                 default_type diff = moving_value - params.template_image.value();
                 total_diff += (diff * diff);
 
-                for (size_t par = 0; par < gradient.size(); par++) {
+                for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++)
                     sum += 2.0 * diff * jacobian (dim, par) * moving_grad[dim];

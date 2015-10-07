@@ -86,7 +86,7 @@ namespace MR
                   return 0.0;
 
                 default_type diff = moving_value - template_value;
-                for (size_t par = 0; par < gradient.size(); par++) {
+                for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++)
                     sum += diff * jacobian (dim, par) * (moving_grad[dim] + template_grad[dim]);
