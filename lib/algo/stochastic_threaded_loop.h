@@ -62,10 +62,10 @@ namespace MR
           assign_pos_of (pos, outer_axes).to (vox);
           for (auto i = unpack (loop, vox); i; ++i) {
             if (rng() <= sparse){
-              DEBUG (str(pos) + " ...skipped inner");
+              //DEBUG (str(pos) + " ...skipped inner");
               continue;
             }
-            DEBUG (str(pos) + " ...used inner");
+            // DEBUG (str(pos) + " ...used inner");
             unpack (func, vox);
           }
         }
