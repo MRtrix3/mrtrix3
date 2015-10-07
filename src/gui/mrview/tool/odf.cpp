@@ -339,28 +339,28 @@ namespace MR
             Eigen::Vector3f pos (window().target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window().focus() - window().target()));
             if (lock_to_grid_box->isChecked()) {
-              Eigen::Vector3f p = image.linear_interp.scanner2voxel.cast<float>() * pos;
+              Eigen::Vector3f p = image.transform().scanner2voxel.cast<float>() * pos;
               p[0] = std::round (p[0]);
               p[1] = std::round (p[1]);
               p[2] = std::round (p[2]);
-              pos = image.linear_interp.voxel2scanner.cast<float>() * p;
+              pos = image.transform().voxel2scanner.cast<float>() * p;
             }
 
             Eigen::Vector3f x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
             x_dir.normalize();
-            x_dir = image.linear_interp.scanner2image.rotation().cast<float>() * x_dir;
-            x_dir[0] *= image.linear_interp.spacing (0);
-            x_dir[1] *= image.linear_interp.spacing (1);
-            x_dir[2] *= image.linear_interp.spacing (2);
-            x_dir = image.linear_interp.image2scanner.rotation().cast<float>() * x_dir;
+            x_dir = image.transform().scanner2image.rotation().cast<float>() * x_dir;
+            x_dir[0] *= image.header().spacing (0);
+            x_dir[1] *= image.header().spacing (1);
+            x_dir[2] *= image.header().spacing (2);
+            x_dir = image.transform().image2scanner.rotation().cast<float>() * x_dir;
 
             Eigen::Vector3f y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
             y_dir.normalize();
-            y_dir = image.linear_interp.scanner2image.rotation().cast<float>() * y_dir;
-            y_dir[0] *= image.linear_interp.spacing (0);
-            y_dir[1] *= image.linear_interp.spacing (1);
-            y_dir[2] *= image.linear_interp.spacing (2);
-            y_dir = image.linear_interp.image2scanner.rotation().cast<float>() * y_dir;
+            y_dir = image.transform().scanner2image.rotation().cast<float>() * y_dir;
+            y_dir[0] *= image.header().spacing (0);
+            y_dir[1] *= image.header().spacing (1);
+            y_dir[2] *= image.header().spacing (2);
+            y_dir = image.transform().image2scanner.rotation().cast<float>() * y_dir;
 
             const Eigen::Vector3f x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
             const int nx = std::ceil (x_width.norm() / x_dir.norm());

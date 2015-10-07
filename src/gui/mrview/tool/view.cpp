@@ -567,7 +567,7 @@ namespace MR
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          focus = window().image()->linear_interp.scanner2voxel.cast<float>() * focus;
+          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -601,7 +601,7 @@ namespace MR
         {
           try {
             Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
-            focus = window().image()->linear_interp.voxel2scanner.cast<float>() * focus;
+            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
             window().set_focus (focus);
             window().updateGL();
           }

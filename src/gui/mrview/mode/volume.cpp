@@ -379,7 +379,7 @@ namespace MR
           GL::mat4 S2T = GL::inv (T2S);
 
           float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
-          Eigen::Vector3f ray = image()->linear_interp.scanner2voxel.rotation().cast<float>() * projection.screen_normal();
+          Eigen::Vector3f ray = image()->transform().scanner2voxel.rotation().cast<float>() * projection.screen_normal();
           Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
           ray[0] /= image()->header().size(0);
