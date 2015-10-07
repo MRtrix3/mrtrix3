@@ -51,6 +51,7 @@ namespace MR
         class AbstractFixel : public Displayable {
           public:
             AbstractFixel (const std::string&, Vector&);
+            ~AbstractFixel();
 
               class Shader : public Displayable::Shader {
                 public:

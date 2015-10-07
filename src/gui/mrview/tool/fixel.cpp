@@ -57,6 +57,19 @@ namespace MR
           voxel_size_length_multipler = 0.45 * (header.spacing(0) + header.spacing(1) + header.spacing(2)) / 3;
         }
 
+        AbstractFixel::~AbstractFixel()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          direction_buffer.clear();
+          vertex_array_object.clear();
+          value_buffer.clear();
+          regular_grid_vao.clear();
+          regular_grid_vertex_buffer.clear();
+          regular_grid_dir_buffer.clear();
+          regular_grid_val_buffer.clear();
+        }
+
         std::string AbstractFixel::Shader::vertex_shader_source (const Displayable&)
         {
           std::string source =
