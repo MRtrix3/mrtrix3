@@ -194,6 +194,19 @@ namespace MR
 
 
 
+        ROI_UndoEntry& ROI_UndoEntry::operator= (ROI_UndoEntry&& r)
+        {
+          from = r.from;
+          size = r.size;
+          tex_size = r.tex_size;
+          slice_axes = r.slice_axes;
+          before = std::move (r.before);
+          after = std::move (r.after);
+          return *this;
+        }
+
+
+
 
         void ROI_UndoEntry::draw_line (ROI_Item& roi, const Eigen::Vector3f& prev_pos, const Eigen::Vector3f& pos, const bool insert_mode_value)
         {

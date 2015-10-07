@@ -807,24 +807,26 @@ namespace MR
 
         void Connectome::draw_colourbars()
         {
+          if (!buffer) return;
           if (hide_all_button->isChecked()) return;
-          if ((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
+          if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
             window().colourbar_renderer.render (node_colourmap_index, node_colourmap_invert,
-                                              node_colour_lower_button->value(), node_colour_upper_button->value(),
-                                              node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
-                                              node_fixed_colour);
-          if ((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar)
+                                                node_colour_lower_button->value(), node_colour_upper_button->value(),
+                                                node_colour_lower_button->value(), node_colour_upper_button->value() - node_colour_lower_button->value(),
+                                                node_fixed_colour);
+          if (((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar)
             window().colourbar_renderer.render (edge_colourmap_index, edge_colourmap_invert,
-                                              edge_colour_lower_button->value(), edge_colour_upper_button->value(),
-                                              edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
-                                              edge_fixed_colour);
+                                                edge_colour_lower_button->value(), edge_colour_upper_button->value(),
+                                                edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
+                                                edge_fixed_colour);
         }
 
 
         size_t Connectome::visible_number_colourbars()
         {
-          return ((((node_colour == node_colour_t::CONNECTOME || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
-                  + (((edge_colour == edge_colour_t::CONNECTOME || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar) ? 1 : 0));
+          if (!buffer) return 0;
+          return (((((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar) ? 1 : 0)
+                  + ((((edge_colour == edge_colour_t::CONNECTOME && matrix_list_model->rowCount()) || edge_colour == edge_colour_t::MATRIX_FILE) && show_edge_colour_bar) ? 1 : 0));
         }
 
 

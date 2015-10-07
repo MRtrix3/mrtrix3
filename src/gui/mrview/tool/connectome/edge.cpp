@@ -154,6 +154,7 @@ namespace MR
         {
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
+          Window::GrabContext context;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();

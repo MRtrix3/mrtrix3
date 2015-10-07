@@ -24,6 +24,7 @@
 #define __gui_mrview_tool_roi_editor_undoentry_h__
 
 #include <array>
+#include <atomic>
 #include <vector>
 
 #include "gui/opengl/shader.h"
@@ -49,6 +50,10 @@ namespace MR
           ROI_UndoEntry (const ROI_UndoEntry&) = delete;
           ROI_UndoEntry (ROI_UndoEntry&&);
           ~ROI_UndoEntry();
+
+          ROI_UndoEntry& operator= (const ROI_UndoEntry&) = delete;
+          ROI_UndoEntry& operator= (ROI_UndoEntry&&);
+
           void draw_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool);
           void draw_thick_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool, const float);
           void draw_circle (ROI_Item&, const Eigen::Vector3f&, const bool, const float);
