@@ -658,6 +658,8 @@ namespace MR
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
             +   Argument ("value").type_float (0.0, 1.0, 1.0)
 
+            + Option ("overlay.nointerpolation", "Disables the overlay interpolation.")
+
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
             +   Argument ("index").type_integer();
             
@@ -692,6 +694,16 @@ namespace MR
             catch (Exception& e) { e.display(); }
             return true;
           }
+
+          if (opt.opt->is ("overlay.nointerpolation")) {
+            try {
+              interpolate_check_box->setCheckState (Qt::Unchecked);
+              Overlay::interpolate_changed ();
+            }
+            catch (Exception& e) { e.display(); }
+            return true;
+          }
+          
 
           return false;
         }
