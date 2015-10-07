@@ -22,6 +22,8 @@
 
 #include "gui/mrview/volume.h"
 
+#include "gui/mrview/window.h"
+
 
 namespace MR
 {
@@ -30,6 +32,13 @@ namespace MR
     namespace MRView
     {
 
+
+      Volume::~Volume() {
+        Window::GrabContext context;
+        _texture.clear();
+        vertex_buffer.clear();
+        vertex_array_object.clear();
+      }
 
       void Volume::allocate ()
       {

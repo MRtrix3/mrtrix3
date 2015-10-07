@@ -36,10 +36,76 @@ namespace MR
       namespace Tool
       {
 
+
+        std::unique_ptr<ROI_UndoEntry::Shared> ROI_UndoEntry::shared;
             
-        GL::Shader::Program   ROI_UndoEntry::copy_program;
-        GL::VertexBuffer      ROI_UndoEntry::copy_vertex_buffer;
-        GL::VertexArrayObject ROI_UndoEntry::copy_vertex_array_object;
+
+        ROI_UndoEntry::Shared::Shared() :
+            count (1)
+        {
+          Window::GrabContext context;
+          GL::Shader::Vertex vertex_shader (
+              "layout(location = 0) in ivec3 vertpos;\n"
+              "void main() {\n"
+              "  gl_Position = vec4 (vertpos,1);\n"
+              "}\n");
+          GL::Shader::Fragment fragment_shader (
+              "uniform isampler3D tex;\n"
+              "uniform ivec3 position;\n"
+              "uniform ivec2 axes;\n"
+              "layout (location = 0) out vec3 color0;\n"
+              "void main() {\n"
+              "  ivec3 pos = position;\n"
+              "  pos[axes.x] = int(gl_FragCoord.x);\n"
+              "  pos[axes.y] = int(gl_FragCoord.y);\n"
+              "  color0.r = texelFetch (tex, pos, 0).r;\n"
+              "}\n");
+
+          program.attach (vertex_shader);
+          program.attach (fragment_shader);
+          program.link();
+
+          vertex_buffer.gen();
+          vertex_array_object.gen();
+
+          vertex_buffer.bind (gl::ARRAY_BUFFER);
+          vertex_array_object.bind();
+
+          gl::EnableVertexAttribArray (0);
+          gl::VertexAttribIPointer (0, 3, gl::INT, 3*sizeof(GLint), (void*)0);
+
+          GLint vertices[12] = {
+            -1, -1, 0,
+            -1, 1, 0,
+            1, 1, 0,
+            1, -1, 0,
+          };
+          gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STREAM_DRAW);
+        }
+
+
+
+        ROI_UndoEntry::Shared::~Shared()
+        {
+          assert (!count);
+          Window::GrabContext context;
+          program.clear();
+          vertex_buffer.clear();
+          vertex_array_object.clear();
+        }
+
+
+
+        void ROI_UndoEntry::Shared::operator++ ()
+        {
+          ++count;
+        }
+
+        bool ROI_UndoEntry::Shared::operator-- ()
+        {
+          return --count;
+        }
+
 
 
 
@@ -56,49 +122,11 @@ namespace MR
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
           Window::GrabContext context;
-          if (!copy_program) {
-            GL::Shader::Vertex vertex_shader (
-                "layout(location = 0) in ivec3 vertpos;\n"
-                "void main() {\n"
-                "  gl_Position = vec4 (vertpos,1);\n"
-                "}\n");
-            GL::Shader::Fragment fragment_shader (
-                "uniform isampler3D tex;\n"
-                "uniform ivec3 position;\n"
-                "uniform ivec2 axes;\n"
-                "layout (location = 0) out vec3 color0;\n"
-                "void main() {\n"
-                "  ivec3 pos = position;\n"
-                "  pos[axes.x] = int(gl_FragCoord.x);\n"
-                "  pos[axes.y] = int(gl_FragCoord.y);\n"
-                "  color0.r = texelFetch (tex, pos, 0).r;\n"
-                "}\n");
-
-            copy_program.attach (vertex_shader);
-            copy_program.attach (fragment_shader);
-            copy_program.link();
-          }
-
-          if (!copy_vertex_array_object) {
-            copy_vertex_buffer.gen();
-            copy_vertex_array_object.gen();
-
-            copy_vertex_buffer.bind (gl::ARRAY_BUFFER);
-            copy_vertex_array_object.bind();
-
-            gl::EnableVertexAttribArray (0);
-            gl::VertexAttribIPointer (0, 3, gl::INT, 3*sizeof(GLint), (void*)0);
-
-            GLint vertices[12] = {
-              -1, -1, 0,
-              -1, 1, 0,
-              1, 1, 0,
-              1, -1, 0,
-            };
-            gl::BufferData (gl::ARRAY_BUFFER, sizeof(vertices), vertices, gl::STREAM_DRAW);
-          }
-          else copy_vertex_array_object.bind();
-
+          if (!shared)
+            shared.reset (new Shared());
+          else
+            ++(*shared);
+          shared->vertex_array_object.bind();
 
           // set up 2D texture to store slice:
           GL::Texture tex;
@@ -116,19 +144,18 @@ namespace MR
           framebuffer.check();
           GL_CHECK_ERROR;
 
-
           // render slice onto framebuffer:
           gl::Disable (gl::DEPTH_TEST);
           gl::Disable (gl::BLEND);
           gl::DepthMask (gl::FALSE_);
           gl::Viewport (0, 0, tex_size[0], tex_size[1]);
           roi.texture().bind();
-          copy_program.start();
-          gl::Uniform3iv (gl::GetUniformLocation (copy_program, "position"), 1, from.data());
-          gl::Uniform2iv (gl::GetUniformLocation (copy_program, "axes"), 1, slice_axes.data());
+          shared->program.start();
+          gl::Uniform3iv (gl::GetUniformLocation (shared->program, "position"), 1, from.data());
+          gl::Uniform2iv (gl::GetUniformLocation (shared->program, "axes"), 1, slice_axes.data());
 
           gl::DrawArrays (gl::TRIANGLE_FAN, 0, 4);
-          copy_program.stop();
+          shared->program.stop();
           framebuffer.unbind();
           GL_CHECK_ERROR;
 
@@ -140,6 +167,29 @@ namespace MR
           gl::GetTexImage (gl::TEXTURE_2D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*)(&before[0]));
           after = before;
           GL_CHECK_ERROR;
+        }
+
+
+
+        ROI_UndoEntry::ROI_UndoEntry (ROI_UndoEntry&& r) :
+          from (r.from),
+          size (r.size),
+          tex_size (r.tex_size),
+          slice_axes (r.slice_axes),
+          before (std::move (r.before)),
+          after (std::move (r.after))
+        {
+          assert (shared);
+          ++(*shared);
+        }
+
+
+
+        ROI_UndoEntry::~ROI_UndoEntry()
+        {
+          assert (shared);
+          if (!--(*shared))
+            delete shared.release();
         }
 
 
