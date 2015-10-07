@@ -16,7 +16,7 @@ Usage:	%s -m [dir_path] -c [file_path]\n
 	-m, --mrtrix_commands_dir [dir path]: The directory where the mrtrix executable commands reside.
 	-c, --completion_path [file path]: The generated bash completion file path.
 ''' % (sys.argv[0]))
-	
+
 
 def main(argv):
 	try:
@@ -97,12 +97,14 @@ def parse_commands (commands_dir, completion_path, commands):
 				else:
 					arg_choices +=  " " + choice
 		elif arg_type == 'IMAGEIN':
-			arg_choices ='`ls *.{mih,mif,nii,dcm,msf,hdr,mgh} 2> /dev/null | tr "\n" " "`'
+			arg_choices ='`eval ls $1*.{mih,mif,nii,dcm,msf,hdr,mgh,nii.gz,mif.gz} 2> /dev/null | tr "\n" " "`'
 		elif arg_type == 'FILEIN':
-			arg_choices ='`ls 2> /dev/null | grep -E "*\.[^[:space:]]+"`'
-		elif arg_type in ['FLOAT', 'INT']:
-			# Use default value	
-			arg_choices = choices[2].rstrip ()
+			arg_choices ='`eval ls "$1*" 2> /dev/null | grep -E "$1*\.[^[:space:]]+"`'
+		#elif arg_type in ['FLOAT', 'INT']:
+		else:
+			arg_choices = "__empty__"
+		
+
 		return arg_choices
 	
 ###########################################################################
@@ -165,6 +167,7 @@ _%s()
 
 	COMPREPLY=();
 	cur="${COMP_WORDS[COMP_CWORD]}";
+	cur_filtered=`echo "${COMP_WORDS[COMP_CWORD]}" | sed 's/\..*$//g'`;
 
 	if [[ "$cur" == --* ]]; then
 		COMPREPLY=( $( compgen -W "%s" -- "$cur" ) );
@@ -172,7 +175,8 @@ _%s()
 		COMPREPLY=( $( compgen -W "%s" -- "$cur" ) );
 	else
 		current_option=""
-		word=""		
+		word=""	
+		array=""	
 
 		for ((i=${#COMP_WORDS[@]}-2; i>=0; i--)); do
   			word="${COMP_WORDS[$i]}"
@@ -197,8 +201,8 @@ _%s()
 			fi
 		done
 
-		if [[ "$current_option" != "" ]] && (( $current_arg_index >= 0 && $current_arg_index < $current_max_args )); then			
-			COMPREPLY=( $(_%s_${current_option}_arg_${current_arg_index}));	
+		if [[ "$current_option" != "" ]] && (( $current_arg_index >= 0 && $current_arg_index < $current_max_args )); then
+			array=`_%s_${current_option}_arg_${current_arg_index} $cur_filtered`
 		else
 			current_arg_index=$(($COMP_CWORD - $consumed_option_tokens - 1));		
 			current_max_args=$(_%s_max_num_args);
@@ -212,14 +216,20 @@ _%s()
 			done
 
 			if (( $current_arg_index >= 0 && $current_arg_index < $current_max_args )); then
-				COMPREPLY=( $(_%s_arg_${current_arg_index}));
+				array=`_%s_arg_${current_arg_index} $cur_filtered`;
 			fi
 		fi
-		
-		COMPREPLY=( $( for i in ${COMPREPLY[@]} ; do echo $i ; done | grep "^${cur}" ) )
+
+		if [[ "$array" == "__empty__" ]]; then
+			COMPREPLY=()
+			compopt +o dirnames %s;
+		else
+			mapfile -t COMPREPLY < <( compgen -W "$array" -- "$cur" )
+			compopt -o dirnames %s;
+		fi
 	fi
 }
-complete -F _%s %s \n''' % (double_dash_options, single_dash_options, command, command, command, command, command, command, command), file = completion_file)
+complete -F _%s %s \n''' % (double_dash_options, single_dash_options, command, command, command, command, command, command, command, command, command), file = completion_file)
 
 	completion_file.close ()
 

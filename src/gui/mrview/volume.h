@@ -51,6 +51,8 @@ namespace MR
               interpolation (gl::LINEAR),
               texture_mode_changed (true) { }
 
+          virtual ~Volume();
+
           void set_interpolate (bool linear) { interpolation = linear ? gl::LINEAR : gl::NEAREST; }
           bool interpolate () const { return interpolation == gl::LINEAR; }
 

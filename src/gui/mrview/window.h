@@ -117,7 +117,7 @@ namespace MR
           void set_image_volume (size_t axis, ssize_t index)
           {
             assert (image());
-            image()->linear_interp.index (axis) = index;
+            image()->image.index (axis) = index;
             set_image_navigation_menu();
             updateGL();
           }

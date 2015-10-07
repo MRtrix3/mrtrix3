@@ -57,6 +57,19 @@ namespace MR
           voxel_size_length_multipler = 0.45 * (header.spacing(0) + header.spacing(1) + header.spacing(2)) / 3;
         }
 
+        AbstractFixel::~AbstractFixel()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          direction_buffer.clear();
+          vertex_array_object.clear();
+          value_buffer.clear();
+          regular_grid_vao.clear();
+          regular_grid_vertex_buffer.clear();
+          regular_grid_dir_buffer.clear();
+          regular_grid_val_buffer.clear();
+        }
+
         std::string AbstractFixel::Shader::vertex_shader_source (const Displayable&)
         {
           std::string source =
@@ -294,7 +307,7 @@ namespace MR
             for (int x = -nx; x <= nx; ++x) {
               Eigen::Vector3f scanner_pos = p + float(x)*x_dir + float(y)*y_dir;
               Eigen::Vector3f voxel_pos = transform.scanner2voxel.cast<float>() * scanner_pos;
-              Eigen::Array3i voxel { (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) };
+              std::array<int, 3> voxel { (int)std::round (voxel_pos[0]), (int)std::round (voxel_pos[1]), (int)std::round (voxel_pos[2]) };
 
               // Find and add point indices that correspond to projected voxel
               const auto &voxel_indices = voxel_to_indices_map[voxel];
@@ -390,8 +403,9 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const Eigen::Array3i voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
-            const Eigen::Vector3f pos = transform.voxel2scanner.cast<float>() * voxel.matrix().cast<float>();
+            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
+            pos = transform.voxel2scanner.cast<float>() * pos;
 
             for (size_t f = 0; f != fixel_data->value().size(); ++f) {
 
@@ -449,8 +463,9 @@ namespace MR
 
           for (auto l = Loop(*fixel_data) (*fixel_data); l; ++l) {
 
-            const Eigen::Array3i voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
-            const Eigen::Vector3f pos = transform.voxel2scanner.cast<float>() * voxel.matrix().cast<float>();
+            const std::array<int, 3> voxel { int(fixel_data->index(0)), int(fixel_data->index(1)), int(fixel_data->index(2)) };
+            Eigen::Vector3f pos { float(voxel[0]), float(voxel[1]), float(voxel[2]) };
+            pos = transform.voxel2scanner.cast<float>() * pos;
 
             for (size_t f = 0; f < n_fixels; ++f) {
 

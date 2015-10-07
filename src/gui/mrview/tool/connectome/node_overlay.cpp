@@ -40,7 +40,7 @@ namespace MR
             data (MR::Image<float>::scratch (header(), "node overlay scratch image")),
             need_update (true)
         {
-          position.assign       (3, -1);
+          tex_positions.assign  (3, -1);
           set_interpolate       (false);
           set_colourmap         (5);
           set_min_max           (0.0f, 1.0f);
@@ -73,9 +73,9 @@ namespace MR
           gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
           texture2D[plane].set_interp (interpolation);
 
-          if (position[plane] == slice && !need_update)
+          if (tex_positions[plane] == slice && !need_update)
             return;
-          position[plane] = slice;
+          tex_positions[plane] = slice;
 
           int x, y;
           get_axes (plane, x, y);
@@ -83,7 +83,7 @@ namespace MR
 
           std::vector<float> texture_data;
           texture_data.resize (4*xsize*ysize, 0.0f);
-          if (position[plane] >= 0 && position[plane] < data.size (plane)) {
+          if (tex_positions[plane] >= 0 && tex_positions[plane] < data.size (plane)) {
             data.index(plane) = slice;
             for (data.index(y) = 0; data.index(y) < ysize; ++data.index(y)) {
               for (data.index(x) = 0; data.index(x) < xsize; ++data.index(x)) {

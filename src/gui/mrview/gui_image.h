@@ -30,10 +30,6 @@
 #include "interp/linear.h"
 #include "interp/nearest.h"
 
-//#ifndef __image_h__
-//#error File that #includes "gui/mrview/image.h" must explicitly #include "image.h" beforehand
-//#endif
-
 
 namespace MR
 {
@@ -62,7 +58,7 @@ namespace MR
 
         protected:
           GL::Texture texture2D[3];
-          std::vector<ssize_t> position;
+          std::vector<ssize_t> tex_positions;
 
       };
 
@@ -82,6 +78,8 @@ namespace MR
           mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
+
+          const MR::Transform transform() const { return linear_interp; }
 
         private:
           bool volume_unchanged ();

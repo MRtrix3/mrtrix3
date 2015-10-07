@@ -51,6 +51,7 @@ namespace MR
         class AbstractFixel : public Displayable {
           public:
             AbstractFixel (const std::string&, Vector&);
+            ~AbstractFixel();
 
               class Shader : public Displayable::Shader {
                 public:
@@ -110,15 +111,10 @@ namespace MR
 
             protected:
               struct IntPointHasher {
-                size_t operator () (const Eigen::Array3i& p) const {
+                size_t operator () (const std::array<int, 3>& v) const {
                   // This hashing function works best if the fixel image dimensions
                   // are bounded above by 2^10 x 2^10 x 2^10 = 1024 x 1024 x 1024
-                  return (p[0] + (p[1] << 10) + (p[2] << 20));
-                }
-              };
-              struct Array3iComp {
-                bool operator() (const Eigen::Array3i& a, const Eigen::Array3i& b) const {
-                  return ((a-b).abs().maxCoeff());
+                  return (v[0] + (v[1] << 10) + (v[2] << 20));
                 }
               };
 
@@ -142,7 +138,7 @@ namespace MR
 
               // Flattened buffer used when cropping to slice
               // To support off-axis rendering, we maintain dict mapping voxels to buffer_pos indices
-              std::unordered_map <Eigen::Array3i, std::vector<GLint>, IntPointHasher, Array3iComp> voxel_to_indices_map;
+              std::unordered_map <std::array<int, 3>, std::vector<GLint>, IntPointHasher> voxel_to_indices_map;
 
             private:
               Vector& fixel_tool;

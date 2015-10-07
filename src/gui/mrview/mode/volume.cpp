@@ -339,9 +339,9 @@ namespace MR
           int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
 
-          float depth = std::max<float> ( { float(image()->linear_interp.size(0)*image()->linear_interp.spacing(0)),
-                                            float(image()->linear_interp.size(1)*image()->linear_interp.spacing(1)),
-                                            float(image()->linear_interp.size(2)*image()->linear_interp.spacing(2)) } );
+          float depth = std::max<float> ( { float(image()->image.size(0)*image()->image.spacing(0)),
+                                            float(image()->image.size(1)*image()->image.spacing(1)),
+                                            float(image()->image.size(2)*image()->image.spacing(2)) } );
 
 
           Math::Versorf V = orientation();
@@ -379,7 +379,7 @@ namespace MR
           GL::mat4 S2T = GL::inv (T2S);
 
           float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
-          Eigen::Vector3f ray = image()->linear_interp.scanner2voxel.rotation().cast<float>() * projection.screen_normal();
+          Eigen::Vector3f ray = image()->transform().scanner2voxel.rotation().cast<float>() * projection.screen_normal();
           Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
           ray[0] /= image()->header().size(0);

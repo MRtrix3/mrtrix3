@@ -25,8 +25,7 @@
 
 #include <QString>
 
-#include <Eigen/Dense>
-
+#include "mrtrix.h"
 
 namespace MR
 {

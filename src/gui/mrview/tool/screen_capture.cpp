@@ -252,11 +252,11 @@ namespace MR
         {
             if (!window().image())
               return;
-            auto& interp (window().image()->linear_interp);
+            auto& image (window().image()->image);
 
             cached_state.emplace( cached_state.end(),
               window().orientation(), window().focus(), window().target(), window().FOV(),
-              volume_axis->value() < ssize_t (interp.ndim()) ? interp.index (volume_axis->value()) : 0,
+              volume_axis->value() < ssize_t (image.ndim()) ? image.index (volume_axis->value()) : 0,
               volume_axis->value(), start_index->value(), window().plane()
             );
 
@@ -300,7 +300,7 @@ namespace MR
 
           cache_capture_state();
 
-          auto& interp (img->linear_interp);
+          auto& image (img->image);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -336,10 +336,10 @@ namespace MR
           size_t first_index = start_index->value();
 
           float volume = 0, volume_inc = 0;
-          if (volume_axis->value() < ssize_t (interp.ndim())) {
-            if (target_volume->value() >= interp.size (volume_axis->value()))
-              target_volume->setValue (interp.size (volume_axis->value())-1);
-            volume = interp.index (volume_axis->value());
+          if (volume_axis->value() < ssize_t (image.ndim())) {
+            if (target_volume->value() >= image.size (volume_axis->value()))
+              target_volume->setValue (image.size (volume_axis->value())-1);
+            volume = image.index (volume_axis->value());
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
@@ -379,7 +379,7 @@ namespace MR
 
             switch (translation_type) {
               case TranslationType::Voxel:
-                trans_vec = interp.voxel2scanner.rotation().cast<float>() * trans_vec;
+                trans_vec = img->transform().voxel2scanner.rotation().cast<float>() * trans_vec;
                 break;
               case TranslationType::Camera:
               {
@@ -414,7 +414,7 @@ namespace MR
             win.set_target (target);
 
             // Volume
-            if (volume_axis->value() < ssize_t (interp.ndim())) {
+            if (volume_axis->value() < ssize_t (image.ndim())) {
               volume += volume_inc;
               win.set_image_volume (volume_axis->value(), std::round(volume));
             }

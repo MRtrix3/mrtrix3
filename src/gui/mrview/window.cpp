@@ -1042,7 +1042,7 @@ namespace MR
 
       void Window::image_next_volume_slot () 
       {
-        size_t vol = image()->linear_interp.index(3)+1;
+        size_t vol = image()->image.index(3)+1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1052,7 +1052,7 @@ namespace MR
 
       void Window::image_previous_volume_slot ()
       {
-        size_t vol = image()->linear_interp.index(3)-1;
+        size_t vol = image()->image.index(3)-1;
         set_image_volume (3, vol);
         emit volumeChanged(vol);
       }
@@ -1062,7 +1062,7 @@ namespace MR
 
       void Window::image_next_volume_group_slot () 
       {
-        size_t vol = image()->linear_interp.index(4)+1;
+        size_t vol = image()->image.index(4)+1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1072,7 +1072,7 @@ namespace MR
 
       void Window::image_previous_volume_group_slot ()
       {
-        size_t vol = image()->linear_interp.index(4)-1;
+        size_t vol = image()->image.index(4)-1;
         set_image_volume (4, vol);
         emit volumeGroupChanged(vol);
       }
@@ -1088,7 +1088,7 @@ namespace MR
         colourmap_button->colourmap_actions[cmap_index]->setChecked (true);
         invert_scale_action->setChecked (image()->scale_inverted());
         mode->image_changed_event();
-        setWindowTitle (image()->linear_interp.name().c_str());
+        setWindowTitle (image()->image.name().c_str());
         set_image_navigation_menu();
         image()->set_allowed_features (
             mode->features & Mode::ShaderThreshold,
@@ -1216,16 +1216,16 @@ namespace MR
         bool show_next_volume_group (false), show_prev_volume_group (false);
         Image* imagep = image();
         if (imagep) {
-          if (imagep->linear_interp.ndim() > 3) {
-            if (imagep->linear_interp.index(3) > 0)
+          if (imagep->image.ndim() > 3) {
+            if (imagep->image.index(3) > 0)
               show_prev_volume = true;
-            if (imagep->linear_interp.index(3) < imagep->linear_interp.size(3)-1)
+            if (imagep->image.index(3) < imagep->image.size(3)-1)
               show_next_volume = true;
 
-            if (imagep->linear_interp.ndim() > 4) {
-              if (imagep->linear_interp.index(4) > 0)
+            if (imagep->image.ndim() > 4) {
+              if (imagep->image.index(4) > 0)
                 show_prev_volume_group = true;
-              if (imagep->linear_interp.index(4) < imagep->linear_interp.size(4)-1)
+              if (imagep->image.index(4) < imagep->image.size(4)-1)
                 show_next_volume_group = true;
             }
           }
@@ -1637,7 +1637,7 @@ namespace MR
                 std::vector<default_type> pos = parse_floats (opt[0]);
                 if (pos.size() != 3) 
                   throw Exception ("-voxel option expects a comma-separated list of 3 floating-point values");
-                set_focus (image()->linear_interp.voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
+                set_focus (image()->transform().voxel2scanner.cast<float>() *  Eigen::Vector3f { float(pos[0]), float(pos[1]), float(pos[2]) });
                 glarea->update();
               }
               continue;

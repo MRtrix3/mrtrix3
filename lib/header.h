@@ -54,6 +54,7 @@ namespace MR
 
       Header () :
         transform_ (Eigen::Matrix<default_type,3,4>::Constant (NaN)),
+        format_ (nullptr),
         offset_ (0.0),
         scale_ (1.0) {
         }
@@ -63,16 +64,18 @@ namespace MR
         transform_ (std::move (H.transform_)),
         name_ (std::move (H.name_)),
         keyval_ (std::move (H.keyval_)),
+        format_ (H.format_),
         io (std::move (H.io)),
         datatype_ (std::move (H.datatype_)),
         offset_ (H.offset_),
-        scale_ (H.scale_) { }
+        scale_ (H.scale_) {}
 
       Header& operator= (Header&& H) noexcept {
         axes_ = std::move (H.axes_);
         transform_ = std::move (H.transform_);
         name_ = std::move (H.name_);
         keyval_ = std::move (H.keyval_);
+        format_ = H.format_;
         io = std::move (H.io);
         datatype_ = std::move (H.datatype_);
         offset_ = H.offset_;
@@ -88,6 +91,7 @@ namespace MR
         transform_ (H.transform_),
         name_ (H.name_),
         keyval_ (H.keyval_),
+        format_ (H.format_),
         datatype_ (H.datatype_),
         offset_ (0.0),
         scale_ (1.0) { }
@@ -114,6 +118,7 @@ namespace MR
         transform_ = H.transform_;
         name_ = H.name_;
         keyval_ = H.keyval_;
+        format_ = H.format_;
         datatype_ = H.datatype_;
         offset_ = 0.0;
         scale_ = 1.0;

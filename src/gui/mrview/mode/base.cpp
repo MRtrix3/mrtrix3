@@ -76,12 +76,12 @@ namespace MR
 
             projection.setup_render_text();
             if (window().show_voxel_info()) {
-              Eigen::Vector3f voxel (image()->linear_interp.scanner2voxel.cast<float>() * focus());
+              Eigen::Vector3f voxel (image()->transform().scanner2voxel.cast<float>() * focus());
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
               for (size_t n = 3; n < image()->header().ndim(); ++n)
-                vox_str += str(image()->linear_interp.index(n)) + " ";
+                vox_str += str(image()->image.index(n)) + " ";
               vox_str += "]";
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);
@@ -342,7 +342,7 @@ done_painting:
               std::floor ((image()->header().size(2)-1)/2.0f)
               );
 
-          set_focus (image()->linear_interp.voxel2scanner.cast<float>() * p);
+          set_focus (image()->transform().voxel2scanner.cast<float>() * p);
           set_target (focus());
           reset_orientation();
 

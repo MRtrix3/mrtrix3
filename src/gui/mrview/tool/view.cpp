@@ -515,17 +515,17 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->linear_interp.ndim();
+          size_t dim = image->image.ndim();
           if(dim > 3) {
             volume_box->setVisible(true);
             vol_index->setEnabled(true);
-            vol_index->setMaximum(image->linear_interp.size(3) - 1);
-            vol_index->setValue(image->linear_interp.index(3));
+            vol_index->setMaximum(image->image.size(3) - 1);
+            vol_index->setValue(image->image.index(3));
 
             if(dim > 4) {
               vol_group->setEnabled(true);
-              vol_group->setMaximum(image->linear_interp.size(4) - 1);
-              vol_group->setValue(image->linear_interp.index(4));
+              vol_group->setMaximum(image->image.size(4) - 1);
+              vol_group->setValue(image->image.index(4));
             } else
               vol_group->setEnabled(false);
           } else {
@@ -567,7 +567,7 @@ namespace MR
           focus_y->setValue (focus[1]);
           focus_z->setValue (focus[2]);
 
-          focus = window().image()->linear_interp.scanner2voxel.cast<float>() * focus;
+          focus = window().image()->transform().scanner2voxel.cast<float>() * focus;
           voxel_x->setValue (focus[0]);
           voxel_y->setValue (focus[1]);
           voxel_z->setValue (focus[2]);
@@ -601,7 +601,7 @@ namespace MR
         {
           try {
             Eigen::Vector3f focus { voxel_x->value(), voxel_y->value(), voxel_z->value() };
-            focus = window().image()->linear_interp.voxel2scanner.cast<float>() * focus;
+            focus = window().image()->transform().voxel2scanner.cast<float>() * focus;
             window().set_focus (focus);
             window().updateGL();
           }
