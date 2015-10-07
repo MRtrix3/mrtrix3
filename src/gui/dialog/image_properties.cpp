@@ -42,6 +42,7 @@ namespace MR
         TreeItem* root = model->rootItem;
 
         root->appendChild (new TreeItem ("File", H.name(), root));
+        assert (H.format());
         root->appendChild (new TreeItem ("Format", H.format(), root));
 
         if (H.keyval().size()) {
@@ -72,15 +73,14 @@ namespace MR
         root->appendChild (new TreeItem ("Data scaling",
                                          "offset: " + str (H.intensity_offset()) + ", multiplier = " + str (H.intensity_scale()), root));
 
+        Eigen::IOFormat Fmt (6, 0, ", ", "\n", "[", "]");
         TreeItem* transform = new TreeItem ("Transform", std::string(), root);
         root->appendChild (transform);
-        for (size_t n = 0; n < 4; ++n)
-          transform->appendChild (new TreeItem (std::string(),
-                                                str (H.transform() (n,0)) + ", " +
-                                                str (H.transform() (n,1)) + ", " +
-                                                str (H.transform() (n,2)) + ", " +
-                                                str (H.transform() (n,3)),
-                                                transform));
+        for (size_t n = 0; n < 3; ++n) {
+          std::stringstream ss;
+          ss << H.transform().matrix().row (n).format (Fmt);
+          transform->appendChild (new TreeItem (std::string(), ss.str(), transform));
+        }
 
         auto DW_scheme = H.parse_DW_scheme();
         if (DW_scheme.rows()) {
@@ -90,13 +90,11 @@ namespace MR
           else {
             TreeItem* scheme = new TreeItem ("Diffusion scheme", std::string(), root);
             root->appendChild (scheme);
-            for (size_t n = 0; n < size_t(DW_scheme.rows()); ++n)
-              scheme->appendChild (new TreeItem (std::string(),
-                                                 str (DW_scheme (n,0)) + ", " +
-                                                 str (DW_scheme (n,1)) + ", " +
-                                                 str (DW_scheme (n,2)) + ", " +
-                                                 str (DW_scheme (n,3)),
-                                                 scheme));
+            for (size_t n = 0; n < size_t(DW_scheme.rows()); ++n) {
+              std::stringstream ss;
+              ss << DW_scheme.row (n).format (Fmt);
+              scheme->appendChild (new TreeItem (std::string(), ss.str(), scheme));
+            }
           }
         }
 

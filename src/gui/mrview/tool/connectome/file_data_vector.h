@@ -23,8 +23,6 @@
 #ifndef __gui_mrview_tool_connectome_filedatavector_h__
 #define __gui_mrview_tool_connectome_filedatavector_h__
 
-#include <QString>
-
 #include <Eigen/Dense>
 
 

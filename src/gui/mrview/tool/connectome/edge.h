@@ -23,6 +23,8 @@
 #ifndef __gui_mrview_tool_connectome_edge_h__
 #define __gui_mrview_tool_connectome_edge_h__
 
+#include <memory>
+
 #include "math/math.h"
 #include "connectome/connectome.h"
 #include "dwi/tractography/streamline.h"
