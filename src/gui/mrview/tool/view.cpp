@@ -515,17 +515,17 @@ namespace MR
           focus_y->setRate (rate);
           focus_z->setRate (rate);
 
-          size_t dim = image->linear_interp.ndim();
+          size_t dim = image->image.ndim();
           if(dim > 3) {
             volume_box->setVisible(true);
             vol_index->setEnabled(true);
-            vol_index->setMaximum(image->linear_interp.size(3) - 1);
-            vol_index->setValue(image->linear_interp.index(3));
+            vol_index->setMaximum(image->image.size(3) - 1);
+            vol_index->setValue(image->image.index(3));
 
             if(dim > 4) {
               vol_group->setEnabled(true);
-              vol_group->setMaximum(image->linear_interp.size(4) - 1);
-              vol_group->setValue(image->linear_interp.index(4));
+              vol_group->setMaximum(image->image.size(4) - 1);
+              vol_group->setValue(image->image.index(4));
             } else
               vol_group->setEnabled(false);
           } else {

@@ -40,9 +40,9 @@ namespace MR
 
       ImageBase::ImageBase (MR::Header&& H) :
           Volume (std::move (H)),
-          position (header().ndim())
+          tex_positions (header().ndim(), 0)
       {
-        position[0] = position[1] = position[2] = std::numeric_limits<ssize_t>::min();
+        tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
       }
 
 
@@ -156,10 +156,10 @@ namespace MR
         gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
         texture2D[plane].set_interp (interpolation);
 
-        if (position[plane] == slice && volume_unchanged () && format_unchanged ())
+        if (tex_positions[plane] == slice && volume_unchanged () && format_unchanged ())
           return;
 
-        position[plane] = slice;
+        tex_positions[plane] = slice;
 
         int x, y;
         get_axes (plane, x, y);
@@ -176,7 +176,7 @@ namespace MR
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          if (position[plane] >= 0 && position[plane] < header().size (plane)) {
+          if (tex_positions[plane] >= 0 && tex_positions[plane] < header().size (plane)) {
             // copy data:
             image.index (plane) = slice;
             value_min = std::numeric_limits<float>::infinity();
@@ -184,8 +184,8 @@ namespace MR
 
             for (size_t n = 0; n < 3; ++n) {
               if (image.ndim() > 3) {
-                if (image.size (3) > int(position[3] + n))
-                  image.index (3) = position[3] + n;
+                if (image.size (3) > int(tex_positions[3] + n))
+                  image.index (3) = tex_positions[3] + n;
                 else break;
               }
               for (image.index (y) = 0; image.index (y) < ysize; ++image.index (y)) {
@@ -204,7 +204,7 @@ namespace MR
                 break;
             }
             if (image.ndim() > 3)
-              image.index (3) = position[3];
+              image.index (3) = tex_positions[3];
           }
 
         }
@@ -214,7 +214,7 @@ namespace MR
           format = gl::RG;
           internal_format = gl::RG32F;
 
-          if (position[plane] < 0 || position[plane] >= header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
@@ -244,7 +244,7 @@ namespace MR
           format = gl::RED;
           internal_format = gl::R32F;
 
-          if (position[plane] < 0 || position[plane] >= header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
@@ -396,7 +396,7 @@ namespace MR
           ProgressBar progress ("loading image data...", V.size(2));
 
           for (size_t n = 3; n < V.ndim(); ++n) 
-            V.index (n) = position[n];
+            V.index (n) = tex_positions[n];
 
           for (V.index(2) = 0; V.index(2) < V.size(2); ++V.index(2)) {
 
@@ -422,8 +422,8 @@ namespace MR
 
               for (size_t n = 0; n < 3; ++n) {
                 if (V.ndim() > 3) {
-                  if (V.size(3) > int(position[3] + n))
-                    V.index (3) = position[3] + n;
+                  if (V.size(3) > int(tex_positions[3] + n))
+                    V.index (3) = tex_positions[3] + n;
                   else break;
                 }
 
@@ -447,7 +447,7 @@ namespace MR
                   break;
               }
               if (V.ndim() > 3) 
-                V.index (3) = position[3];
+                V.index (3) = tex_positions[3];
 
             }
 
@@ -466,7 +466,7 @@ namespace MR
         ProgressBar progress ("loading image data...", image.size (2));
 
         for (size_t n = 3; n < image.ndim(); ++n)
-          image.index (n) = position[n];
+          image.index (n) = tex_positions[n];
 
         for (image.index(2) = 0; image.index(2) < image.size(2); ++image.index(2)) {
           auto p = data.begin();
@@ -510,14 +510,14 @@ namespace MR
       {
         bool is_unchanged = true;
         for (size_t i = 3; i < image.ndim(); ++i) {
-          if (linear_interp.index (i) != position[i]) {
+          if (image.index (i) != tex_positions[i]) {
             is_unchanged = false;
-            position[i] = linear_interp.index (i);
+            tex_positions[i] = image.index (i);
           }
         }
 
         if (!is_unchanged) 
-          position[0] = position[1] = position[2] = -1;
+          tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
 
         return is_unchanged;
       }

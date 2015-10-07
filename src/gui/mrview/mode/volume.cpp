@@ -339,9 +339,9 @@ namespace MR
           int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
 
-          float depth = std::max<float> ( { float(image()->linear_interp.size(0)*image()->linear_interp.spacing(0)),
-                                            float(image()->linear_interp.size(1)*image()->linear_interp.spacing(1)),
-                                            float(image()->linear_interp.size(2)*image()->linear_interp.spacing(2)) } );
+          float depth = std::max<float> ( { float(image()->image.size(0)*image()->image.spacing(0)),
+                                            float(image()->image.size(1)*image()->image.spacing(1)),
+                                            float(image()->image.size(2)*image()->image.spacing(2)) } );
 
 
           Math::Versorf V = orientation();

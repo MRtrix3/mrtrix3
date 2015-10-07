@@ -81,7 +81,7 @@ namespace MR
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
               for (size_t n = 3; n < image()->header().ndim(); ++n)
-                vox_str += str(image()->linear_interp.index(n)) + " ";
+                vox_str += str(image()->image.index(n)) + " ";
               vox_str += "]";
 
               projection.render_text (printf ("position: [ %.4g %.4g %.4g ] mm", focus() [0], focus() [1], focus() [2]), LeftEdge | BottomEdge);

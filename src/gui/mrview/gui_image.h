@@ -62,7 +62,7 @@ namespace MR
 
         protected:
           GL::Texture texture2D[3];
-          std::vector<ssize_t> position;
+          std::vector<ssize_t> tex_positions;
 
       };
 
