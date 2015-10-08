@@ -466,7 +466,7 @@ class Entry:
       self.deps = self.deps.union (list_headers (cc_file))
     self.deps.add (config_file)
 
-    self.deps = set([ cc_file ])
+    self.deps.add( cc_file )
 
     skip = False
     if 'Q' in file_flags[cc_file]: flags += qt_cflags
