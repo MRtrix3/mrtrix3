@@ -45,7 +45,7 @@ namespace MR
         {
           Image* img = image();
 
-          if(!img || prev_image_name != img->header().name())
+          if(!img || prev_image_name != img->original_header().name())
             image_changed_event();
           else
             set_slice_increment(slice_focus_increment);
@@ -290,14 +290,14 @@ namespace MR
 
           if(image())
           {
-            const auto& header = image()->header();
+            const auto& header = image()->original_header();
             float slice_inc = std::pow (header.spacing(0)*header.spacing(1)*header.spacing(2), 1.f/3.f);
             slice_focus_inc_adjust_rate = slice_inc / 5.f;
 
             set_slice_increment(slice_inc);
             emit slice_increment_reset();
 
-            prev_image_name = image()->header().name();
+            prev_image_name = image()->original_header().name();
           }
           else
             prev_image_name.clear();

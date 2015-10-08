@@ -268,7 +268,7 @@ value_type AFDConnectivity::get (const std::string& path)
 
 void AFDConnectivity::save (const std::string& path)
 {
-  auto out = Image<value_type>::create (path, header());
+  auto out = Image<value_type>::create (path, original_header());
   VoxelAccessor v (accessor());
   for (auto l = Loop(v) (v, out); l; ++l) {
     value_type value = 0.0;

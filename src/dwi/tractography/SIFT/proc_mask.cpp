@@ -69,7 +69,7 @@ namespace MR
               auto in_5tt = Image<float>::open (opt[0][0]);
               ACT::verify_5TT_image (in_5tt);
 
-              Header H_5tt = in_dwi.header();
+              Header H_5tt = in_dwi.original_header();
               H_5tt.set_ndim (4);
               H_5tt.size(3) = 5;
               assert (!out_5tt.valid());

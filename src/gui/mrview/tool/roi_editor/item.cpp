@@ -76,7 +76,7 @@ namespace MR
           transparent_intensity = 0.4f;
           opaque_intensity = 0.6f;
           colourmap = ColourMap::index ("Colour");
-          float spacing = std::min ( { header().spacing(0), header().spacing(1), header().spacing(2) } );
+          float spacing = std::min ( { original_header().spacing(0), original_header().spacing(1), original_header().spacing(2) } );
           brush_size = min_brush_size = spacing;
           max_brush_size = 100.0f*min_brush_size;
 
@@ -95,9 +95,9 @@ namespace MR
         {
           Window::GrabContext context;
           bind();
-          std::vector<GLubyte> data (header().size(0)*header().size(1));
-          for (int n = 0; n < header().size(2); ++n)
-            upload_data ({ { 0, 0, n } }, { { header().size(0), header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
+          std::vector<GLubyte> data (original_header().size(0)*original_header().size(1));
+          for (int n = 0; n < original_header().size(2); ++n)
+            upload_data ({ { 0, 0, n } }, { { original_header().size(0), original_header().size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
         }
 
 

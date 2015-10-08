@@ -61,7 +61,7 @@ namespace MR
 
         virtual ~Base() { }
 
-        const Header& header () const {
+        const Header& original_header () const {
           return *this;
         }
 

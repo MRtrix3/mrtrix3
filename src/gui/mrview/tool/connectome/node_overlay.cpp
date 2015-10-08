@@ -37,7 +37,7 @@ namespace MR
 
         NodeOverlay::NodeOverlay (MR::Header&& H) :
             MR::GUI::MRView::ImageBase (std::move (H)),
-            data (MR::Image<float>::scratch (header(), "node overlay scratch image")),
+            data (MR::Image<float>::scratch (original_header(), "node overlay scratch image")),
             need_update (true)
         {
           tex_positions.assign  (3, -1);
