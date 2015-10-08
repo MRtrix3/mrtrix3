@@ -38,4 +38,4 @@ icons.cpp
 *.files
 *.includes
 /debug/
-
+/assert/
