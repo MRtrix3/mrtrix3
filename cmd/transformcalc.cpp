@@ -44,11 +44,17 @@ void usage ()
 
   OPTIONS
     + Option ("flirt_import", 
-        "convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
+        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
         "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
         "with the -in and -ref options.")
     + Argument ("in").type_image_in ()
-    + Argument ("ref").type_image_in ();
+    + Argument ("ref").type_image_in ()
+
+    + Option ("interpolate",
+        "Create interpolated transformation matrix between input (t=0) and input2 (t=1). "
+        "Based on polar decomposition with linear interpolation of translation, rotation and stretch.")
+    + Argument ("input2").type_file_in ()
+    + Argument ("t").type_float ();
 }
 
 
@@ -65,13 +71,18 @@ transform_type get_flirt_transform (const Header& header)
   return nifti_transform * coord_switch;
 }
 
+template <typename T> int sgn(T val) {
+    return (T(0) < val) - (val < T(0));
+}
+
 
 
 void run ()
 {
   auto flirt_opt = get_options ("flirt_import");
+  auto interp_opt = get_options ("interpolate");
 
-  if (flirt_opt.size()) {
+  if (flirt_opt.size() && !interp_opt.size()) {
     transform_type transform = load_transform<float> (argument[0]);
     if(transform.matrix().determinant() == float(0.0))
         WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
@@ -86,9 +97,40 @@ void run ()
     if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
       WARN ("NAN in transformation.");
     save_transform (forward_transform.inverse(), argument[1]);
+  } else if(interp_opt.size() && !flirt_opt.size()) {
+    transform_type transform1 = load_transform<double> (argument[0]);
+    transform_type transform2 = load_transform<double> (interp_opt[0][0]);
+    transform_type transform_out;
+    double t = interp_opt[0][1];
+    if (t < 0.0 || t > 1.0)
+      throw Exception ("t has to be in the interval [0,1]");
+
+    Eigen::MatrixXd M1 = transform1.linear();
+    Eigen::MatrixXd M2 = transform2.linear();
+    if (sgn(M1.determinant()) != sgn(M2.determinant()))
+      WARN("transformation determinants have different signs");
+
+    // transform1.computeRotationScaling (R1, S1);
+    Eigen::Matrix3d R1 = transform1.rotation(); // SVD based, polar decomposition should be faster [Higham86]
+    Eigen::Matrix3d R2 = transform2.rotation();
+    Eigen::Quaterniond Q1(R1);
+    Eigen::Quaterniond Q2(R2);
+    Eigen::Quaterniond Qout;
+
+    // get stretch (shear becomes roation and stretch)
+    Eigen::MatrixXd S1 = R1.transpose() * M1;
+    Eigen::MatrixXd S2 = R2.transpose() * M2;
+    if (!M1.isApprox(R1*S1))
+      WARN ("M1 matrix decomposition might have failed");
+    if (!M2.isApprox(R2*S2))
+      WARN ("M2 matrix decomposition might have failed");
+
+    transform_out.translation() = ((1.0 - t) * transform1.translation() + t * transform2.translation());
+    Qout = Q1.slerp(t, Q2);
+    transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
+    INFO("\n"+str(transform_out.matrix().format(
+      Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
   } else {
-    throw Exception ("you must supply the in and ref images using the -flirt_import option");
+    throw Exception ("you must specify either -flirt_import or -interpolate option");
   }
 }
-
-
