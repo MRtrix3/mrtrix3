@@ -52,7 +52,10 @@ void usage ()
 
     + Option ("interpolate",
         "Create interpolated transformation matrix between input (t=0) and input2 (t=1). "
-        "Based on polar decomposition with linear interpolation of translation, rotation and stretch.")
+        "Based on matrix decomposition with linear interpolation of "
+        " translation, rotation and stretch described in "
+        " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
+        " Matrix, 92, 258-264. doi:10.1.1.56.1336")
     + Argument ("input2").type_file_in ()
     + Argument ("t").type_float ();
 }
