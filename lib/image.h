@@ -58,7 +58,7 @@ namespace MR
         FORCE_INLINE bool valid () const { return bool(buffer); }
         FORCE_INLINE bool operator! () const { return !valid(); }
 
-        FORCE_INLINE const Header& header () const { return *buffer; }
+        FORCE_INLINE const Header& original_header () const { return *buffer; }
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
@@ -435,7 +435,7 @@ namespace MR
 
       File::OFStream out (filename, std::ios::out | std::ios::binary);
       out << "mrtrix image\n";
-      Formats::write_mrtrix_header (header(), out);
+      Formats::write_mrtrix_header (original_header(), out);
 
       const bool single_file = Path::has_suffix (filename, ".mif");
       std::string data_filename = filename;
@@ -454,7 +454,7 @@ namespace MR
         out.open (data_filename, std::ios::out | std::ios::binary); 
       }
 
-      const int64_t data_size = footprint (header());
+      const int64_t data_size = footprint (original_header());
       out.seekp (offset, out.beg);
       out.write ((const char*) data_pointer, data_size);
       if (!out.good())
