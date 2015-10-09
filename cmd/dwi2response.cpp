@@ -320,7 +320,9 @@ void run ()
 
   opt = get_options ("sf");
   if (opt.size())
-    save (mask, std::string (opt[0][0]));
+    H_mask.datatype() = DataType::Bit;
+    auto out = Image<bool>::create (opt[0][0], H_mask);
+    threaded_copy (mask, out);
 
 }
 
