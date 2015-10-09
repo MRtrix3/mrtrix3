@@ -59,7 +59,7 @@ typedef double value_type;
 void run ()
 {
   auto image = Image<value_type>::open (argument[0]);
-  auto trafo = Transform(image.header()); // #.transform();
+  auto trafo = Transform(image.original_header()); // #.transform();
   // auto voxel2scanner = trafo.voxel2scanner();
   auto cost = Eigen::Matrix<value_type, 3, 1>(0,0,0) ;
   size_t n_voxels = image.size(0) * image.size(1) * image.size(2);

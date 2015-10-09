@@ -119,8 +119,8 @@ void run ()
     if (opt.size())
       interp = opt[0][0];
     
-    auto output1 = Header::scratch(input1.header(),"-").get_image<value_type>();
-    auto output2 = Header::scratch(input2.header(),"-").get_image<value_type>();
+    auto output1 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
+    auto output2 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
 
     MaskType output1mask;
     MaskType output2mask;
@@ -130,8 +130,8 @@ void run ()
         DEBUG("image 1");
         output1 = input1;
         output1mask = mask1;
-        output2 = Header::scratch(input1.header(),"-").get_image<value_type>();
-        output2mask = Header::scratch(input1.header(),"-").get_image<bool>();
+        output2 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
+        output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
         {
           LogLevelLatch log_level (0);
           Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
@@ -141,8 +141,8 @@ void run ()
       }
       if (space == 2) {
         DEBUG("image 2");
-        output1 = Header::scratch(input2.header(),"-").get_image<value_type>();
-        output1mask = Header::scratch(input2.header(),"-").get_image<bool>();
+        output1 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
+        output1mask = Header::scratch(input2.original_header(),"-").get_image<bool>();
         output2 = input2;
         output2mask = mask2;
         {
@@ -156,8 +156,8 @@ void run ()
       if (space == 3) {
         DEBUG("average space");
         std::vector<Header> headers;
-        headers.push_back (input1.header());
-        headers.push_back (input2.header());
+        headers.push_back (input1.original_header());
+        headers.push_back (input2.original_header());
         default_type template_res = 1.0;
         auto padding = Eigen::Matrix<default_type, 4, 1>(0, 0, 0, 1.0);
         std::vector<Eigen::Transform<double, 3, Eigen::Projective>> transform_header_with;

@@ -176,7 +176,7 @@ void run ()
   Image<value_type> transformed;
   if (opt.size()){
     transformed = Image<value_type>::create (opt[0][0], template_image); 
-    transformed.header().datatype() = DataType::from_command_line (DataType::Float32);
+    transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
 
   opt = get_options ("type");

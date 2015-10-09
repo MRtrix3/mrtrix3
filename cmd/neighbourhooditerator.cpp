@@ -28,7 +28,7 @@ void usage ()
 void run ()
 {
   auto input = Image<float>::open (argument[0]);
-  std::cerr << input.header() << std::endl;
+  std::cerr << input.original_header() << std::endl;
 
   auto iter = Iterator(input);
   Eigen::Vector3 voxel(46,41,29);

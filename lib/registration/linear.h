@@ -226,8 +226,8 @@ namespace MR
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               default_type template_res = 1.0;
               std::vector<Header> headers;
-              headers.push_back(template_image.header());
-              headers.push_back(moving_image.header());
+              headers.push_back(template_image.original_header());
+              headers.push_back(moving_image.original_header());
               auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, template_res, padding, init_transforms);
               auto midway_image = Header::scratch (midway_image_header).get_image<float>();
             #endif
