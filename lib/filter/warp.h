@@ -79,7 +79,7 @@ namespace MR
            !dimensions_match (warp, destination, 0, 3) ||
            !spacings_match (warp, destination, 0, 3)) {
 
-           auto header = destination.header();
+           auto header = destination.original_header();
            header.set_ndim(4);
            header.size(3) = 3;
            Stride::set (header, Stride::contiguous_along_axis (3));

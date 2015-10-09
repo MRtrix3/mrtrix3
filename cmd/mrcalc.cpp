@@ -294,7 +294,7 @@ class Evaluator
 
 
 inline bool StackEntry::is_complex () const {
-  if (image) return image->header().datatype().is_complex();
+  if (image) return image->original_header().datatype().is_complex();
   if (evaluator) return evaluator->is_complex();
   return value.imag() != 0.0;
 }
@@ -567,7 +567,7 @@ void get_header (const StackEntry& entry, Header& header)
     return;
 
   if (header.ndim() == 0) {
-    header = entry.image->header();
+    header = entry.image->original_header();
     return;
   }
 

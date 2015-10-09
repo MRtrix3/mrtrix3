@@ -94,8 +94,8 @@ namespace MR
 
           float scale_factor () const { return _scale_factor; }
           const GL::Texture& texture () const { return _texture; }
-          const MR::Header& header () const { return _header; }
-          MR::Header& header () { return _header; }
+          const MR::Header& original_header () const { return _header; }
+          MR::Header& original_header () { return _header; }
           const MR::Transform& transform () const { return _transform; }
 
           void set_min_max (float min, float max) {

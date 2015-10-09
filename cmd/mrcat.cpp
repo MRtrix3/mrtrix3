@@ -107,7 +107,7 @@ void run () {
   {
     size_t axis_dim = 0;
     for (int n = 0; n < num_images; n++) {
-      if (in[n]->header().datatype().is_complex())
+      if (in[n]->original_header().datatype().is_complex())
         header_out.datatype() = DataType::CFloat32;
       axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->size (axis) > 1 ? in[n]->size (axis) : 1) : 1;
     }
@@ -122,7 +122,7 @@ void run () {
     size_t nrows = 0;
     std::vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
-      auto grad = DWI::get_DW_scheme (in[n]->header());
+      auto grad = DWI::get_DW_scheme (in[n]->original_header());
       input_grads.push_back (grad);
       if (grad.rows() == 0 || grad.cols() != 4) {
         nrows = 0;

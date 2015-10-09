@@ -86,7 +86,7 @@ class DWI2ADC {
 
 void run () {
   auto dwi = Header::open (argument[0]).get_image<value_type>();
-  auto grad = DWI::get_valid_DW_scheme (dwi.header());
+  auto grad = DWI::get_valid_DW_scheme (dwi.original_header());
 
   size_t dwi_axis = 3;
   while (dwi.size (dwi_axis) < 2)
@@ -101,7 +101,7 @@ void run () {
 
   auto binv = Math::pinv (b);
 
-  auto header = dwi.header();
+  auto header = dwi.original_header();
   header.datatype() = DataType::Float32;
   header.set_ndim (4);
   header.size(3) = 2;

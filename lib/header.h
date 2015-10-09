@@ -99,7 +99,7 @@ namespace MR
       //! \copydoc Header (const Header&)
       template <class HeaderType>
         Header (const HeaderType& original) :
-          Header (original.header()) {
+          Header (original.original_header()) {
             name() = original.name();
             set_ndim (original.ndim());
             for (size_t n = 0; n < original.ndim(); ++n) {
@@ -129,7 +129,7 @@ namespace MR
       //! \copydoc operator=(const Header&)
       template <class HeaderType>
         Header& operator= (const HeaderType& original) {
-          *this = original.header();
+          *this = original.original_header();
           set_ndim (original.ndim());
           for (size_t n = 0; n < ndim(); ++n) {
             size(n) = original.size(n);

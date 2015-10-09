@@ -44,7 +44,7 @@ void run ()
 
 
 
-//  auto output = Image<float>::create (argument[2], input.header());
+//  auto output = Image<float>::create (argument[2], input.original_header());
 //  Registration::Transform::compose (linear_transform, input, output);
 
 

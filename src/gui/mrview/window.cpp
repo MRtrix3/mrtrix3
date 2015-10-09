@@ -759,7 +759,7 @@ namespace MR
           return;
 
         try {
-          auto dest = MR::Image<cfloat>::create (image_name, image()->header());
+          auto dest = MR::Image<cfloat>::create (image_name, image()->original_header());
           MR::copy_with_progress (image()->image, dest);
         }
         catch (Exception& E) {
@@ -794,7 +794,7 @@ namespace MR
       void Window::image_properties_slot ()
       {
         assert (image());
-        Dialog::ImageProperties props (this, image()->header());
+        Dialog::ImageProperties props (this, image()->original_header());
         props.exec();
       }
 

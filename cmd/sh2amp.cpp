@@ -92,7 +92,7 @@ void run ()
   auto sh_data = Image<value_type>::open(argument[0]);
   Math::SH::check (sh_data);
 
-  auto amp_header = sh_data.header();
+  auto amp_header = sh_data.original_header();
 
   Eigen::MatrixXd directions;
 

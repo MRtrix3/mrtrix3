@@ -194,7 +194,7 @@ inline Processor<MASKType, ADCType, FAType, VALUEType, VECTORType> processor (MA
 void run ()
 {
   auto dt = Header::open (argument[0]).get_image<value_type>();
-  auto header = dt.header();
+  auto header = dt.original_header();
   header.datatype() = DataType::Float32;
   
   Image<bool>* mask = nullptr;

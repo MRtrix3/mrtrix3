@@ -115,9 +115,9 @@ namespace MR
           // info for projection:
           float fov = FOV() / (float) (with_projection.width()+with_projection.height());
           float depth = 2.0 * std::max (std::max (
-                image()->header().spacing(0) * image()->header().size(0),
-                image()->header().spacing(1) * image()->header().size(1)),
-                image()->header().spacing(2) * image()->header().size(2));
+                image()->original_header().spacing(0) * image()->original_header().size(0),
+                image()->original_header().spacing(1) * image()->original_header().size(1)),
+                image()->original_header().spacing(2) * image()->original_header().size(2));
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (

@@ -66,7 +66,7 @@ void run ()
 {
 
   auto labels = Image<uint32_t>::open (argument[0]);
-  if (!labels.header().datatype().is_integer())
+  if (!labels.original_header().datatype().is_integer())
     throw Exception ("Input image must have an integer data type");
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;

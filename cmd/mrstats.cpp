@@ -287,7 +287,7 @@ class Volume_loop
 void run ()
 {
   auto data = Image<complex_type>::open (argument[0]);
-  const bool is_complex = data.header().datatype().is_complex();
+  const bool is_complex = data.original_header().datatype().is_complex();
   if (data.ndim() > 4)
     throw Exception ("mrstats is not designed to handle images greater than 4D");
 

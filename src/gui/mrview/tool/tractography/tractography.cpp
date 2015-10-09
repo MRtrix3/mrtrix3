@@ -84,9 +84,9 @@ namespace MR
 
             float voxel_size;
             if (window().image()) {
-              voxel_size = (window().image()->header().spacing(0) +
-                            window().image()->header().spacing(1) +
-                            window().image()->header().spacing(2)) / 3.0f;
+              voxel_size = (window().image()->original_header().spacing(0) +
+                            window().image()->original_header().spacing(1) +
+                            window().image()->original_header().spacing(2)) / 3.0f;
             } else {
               voxel_size = 2.5;
             }

@@ -349,17 +349,17 @@ namespace MR
             Eigen::Vector3f x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
             x_dir.normalize();
             x_dir = image.transform().scanner2image.rotation().cast<float>() * x_dir;
-            x_dir[0] *= image.header().spacing (0);
-            x_dir[1] *= image.header().spacing (1);
-            x_dir[2] *= image.header().spacing (2);
+            x_dir[0] *= image.original_header().spacing (0);
+            x_dir[1] *= image.original_header().spacing (1);
+            x_dir[2] *= image.original_header().spacing (2);
             x_dir = image.transform().image2scanner.rotation().cast<float>() * x_dir;
 
             Eigen::Vector3f y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
             y_dir.normalize();
             y_dir = image.transform().scanner2image.rotation().cast<float>() * y_dir;
-            y_dir[0] *= image.header().spacing (0);
-            y_dir[1] *= image.header().spacing (1);
-            y_dir[2] *= image.header().spacing (2);
+            y_dir[0] *= image.original_header().spacing (0);
+            y_dir[1] *= image.original_header().spacing (1);
+            y_dir[2] *= image.original_header().spacing (2);
             y_dir = image.transform().image2scanner.rotation().cast<float>() * y_dir;
 
             const Eigen::Vector3f x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
