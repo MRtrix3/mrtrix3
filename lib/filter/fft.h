@@ -94,7 +94,7 @@ namespace MR
 
           std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, axes_to_process.size() + 2) : nullptr);
 
-            auto temp = Image<cdouble>::scratch (header());
+            auto temp = Image<cdouble>::scratch (original_header());
             copy (input, temp);
             if (progress)
               ++(*progress);

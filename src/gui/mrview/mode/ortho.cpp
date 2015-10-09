@@ -149,7 +149,7 @@ namespace MR
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          const auto &header = image()->header();
+          const auto &header = image()->original_header();
           float increment = snap_to_image() ?
             x * header.spacing (current_plane) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);

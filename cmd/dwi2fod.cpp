@@ -148,7 +148,7 @@ void run ()
   }
 
 
-  DWI::CSDeconv::Shared shared (dwi.header());
+  DWI::CSDeconv::Shared shared (dwi.original_header());
   shared.parse_cmdline_options();
   shared.set_response (argument[1]);
   shared.init();

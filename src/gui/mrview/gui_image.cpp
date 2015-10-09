@@ -40,7 +40,7 @@ namespace MR
 
       ImageBase::ImageBase (MR::Header&& H) :
           Volume (std::move (H)),
-          tex_positions (header().ndim(), 0)
+          tex_positions (original_header().ndim(), 0)
       {
         tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
       }
@@ -54,7 +54,7 @@ namespace MR
 
         int x, y;
         get_axes (plane, x, y);
-        float xsize = header().size(x)-0.5, ysize = header().size(y)-0.5;
+        float xsize = original_header().size(x)-0.5, ysize = original_header().size(y)-0.5;
 
         Eigen::Vector3f p;
         p[plane] = slice;
@@ -119,7 +119,7 @@ namespace MR
 
       Image::Image (MR::Header&& image_header) :
           ImageBase (std::move (image_header)),
-          image (header().get_image<cfloat>()),
+          image (original_header().get_image<cfloat>()),
           linear_interp (image),
           nearest_interp (image)
       {
@@ -131,10 +131,10 @@ namespace MR
       size_t Image::guess_colourmap() const
       {
         std::string map = "Gray";
-        if (header().datatype().is_complex())
+        if (original_header().datatype().is_complex())
           map = "Complex";
-        else if (header().ndim() == 4) {
-          if (header().size(3) == 3)
+        else if (original_header().ndim() == 4) {
+          if (original_header().size(3) == 3)
             map = "RGB";
         }
         for (size_t n = 0; ColourMap::maps[n].name; ++n)
@@ -163,7 +163,7 @@ namespace MR
 
         int x, y;
         get_axes (plane, x, y);
-        const ssize_t xsize = header().size (x), ysize = header().size (y);
+        const ssize_t xsize = original_header().size (x), ysize = original_header().size (y);
 
         type = gl::FLOAT;
         std::vector<float> data;
@@ -176,7 +176,7 @@ namespace MR
           format = gl::RGB;
           internal_format = gl::RGB32F;
 
-          if (tex_positions[plane] >= 0 && tex_positions[plane] < header().size (plane)) {
+          if (tex_positions[plane] >= 0 && tex_positions[plane] < original_header().size (plane)) {
             // copy data:
             image.index (plane) = slice;
             value_min = std::numeric_limits<float>::infinity();
@@ -214,7 +214,7 @@ namespace MR
           format = gl::RG;
           internal_format = gl::RG32F;
 
-          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= original_header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
@@ -244,7 +244,7 @@ namespace MR
           format = gl::RED;
           internal_format = gl::R32F;
 
-          if (tex_positions[plane] < 0 || tex_positions[plane] >= header().size (plane)) {
+          if (tex_positions[plane] < 0 || tex_positions[plane] >= original_header().size (plane)) {
             for (auto& d : data) d = 0.0f;
           }
           else {
@@ -300,7 +300,7 @@ namespace MR
         }
         else {
 
-          switch (header().datatype() ()) {
+          switch (original_header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
               internal_format = ( format == gl::RED ? gl::R16F : gl::RGB16F );
@@ -341,7 +341,7 @@ namespace MR
         texture_mode_changed = false;
 
         if (format != gl::RG) {
-          switch (header().datatype() ()) {
+          switch (original_header().datatype() ()) {
             case DataType::Bit:
             case DataType::UInt8:
               copy_texture_3D<uint8_t> ();

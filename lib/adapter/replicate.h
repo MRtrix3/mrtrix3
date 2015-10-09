@@ -53,7 +53,7 @@ namespace MR
             }
           }
 
-        const Header& header() const {
+        const Header& original_header() const {
           return header_;
         }
 

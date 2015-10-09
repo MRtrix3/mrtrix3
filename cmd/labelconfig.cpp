@@ -114,7 +114,7 @@ void run ()
   auto in = Image<node_t>::open (argument[0]);
 
   // Create a new header for the output file
-  Header H (in.header());
+  Header H (in.original_header());
   add_line (H.keyval()["comments"], "Created by labelconfig using " + Path::basename (argument[0]) + " and " + Path::basename (argument[1]));
 
   // Create the output file

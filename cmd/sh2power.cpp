@@ -43,7 +43,7 @@ void run () {
   auto SH_data = Image<float>::open(argument[0]);
   Math::SH::check (SH_data);
 
-  auto power_header = SH_data.header();
+  auto power_header = SH_data.original_header();
 
   int lmax = Math::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));

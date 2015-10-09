@@ -80,7 +80,7 @@ namespace MR
               ssize_t vox [] = { ssize_t(std::round (voxel[0])), ssize_t(std::round (voxel[1])), ssize_t(std::round (voxel[2])) };
 
               std::string vox_str = printf ("voxel: [ %d %d %d ", vox[0], vox[1], vox[2]);
-              for (size_t n = 3; n < image()->header().ndim(); ++n)
+              for (size_t n = 3; n < image()->original_header().ndim(); ++n)
                 vox_str += str(image()->image.index(n)) + " ";
               vox_str += "]";
 
@@ -108,8 +108,8 @@ namespace MR
             GL_CHECK_ERROR;
 
             if (window().show_comments()) {
-              const std::map<std::string, std::string>::const_iterator i = image()->header().keyval().find ("comments");
-              if (i != image()->header().keyval().end())
+              const std::map<std::string, std::string>::const_iterator i = image()->original_header().keyval().find ("comments");
+              if (i != image()->original_header().keyval().end())
                 projection.render_text (i->second, LeftEdge | TopEdge, 0);
             }
 
@@ -161,7 +161,7 @@ done_painting:
         {
           const Projection* proj = get_current_projection();
           if (!proj) return;
-          const auto &header = image()->header();
+          const auto &header = image()->original_header();
           float increment = snap_to_image() ?
             x * header.spacing (plane()) :
             x * std::pow (header.spacing(0) * header.spacing(1) * header.spacing(2), 1/3.f);
@@ -325,9 +325,9 @@ done_painting:
           if (!proj) return;
 
           float dim[] = {
-            float(image()->header().size (0) * image()->header().spacing (0)),
-            float(image()->header().size (1) * image()->header().spacing (1)),
-            float(image()->header().size (2) * image()->header().spacing (2))
+            float(image()->original_header().size (0) * image()->original_header().spacing (0)),
+            float(image()->original_header().size (1) * image()->original_header().spacing (1)),
+            float(image()->original_header().size (2) * image()->original_header().spacing (2))
           };
           if (dim[0] < dim[1] && dim[0] < dim[2])
             set_plane (0);
@@ -337,9 +337,9 @@ done_painting:
             set_plane (2);
 
           Eigen::Vector3f p (
-              std::floor ((image()->header().size(0)-1)/2.0f),
-              std::floor ((image()->header().size(1)-1)/2.0f),
-              std::floor ((image()->header().size(2)-1)/2.0f)
+              std::floor ((image()->original_header().size(0)-1)/2.0f),
+              std::floor ((image()->original_header().size(1)-1)/2.0f),
+              std::floor ((image()->original_header().size(2)-1)/2.0f)
               );
 
           set_focus (image()->transform().voxel2scanner.cast<float>() * p);

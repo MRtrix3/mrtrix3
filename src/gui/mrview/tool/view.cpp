@@ -132,12 +132,12 @@ namespace MR
             }
 
             void reset (ClipPlane& p, const Image& image, int proj) {
-              const transform_type& M (image.header().transform());
+              const transform_type& M (image.original_header().transform());
               p.plane[0] = M (proj, 0);
               p.plane[1] = M (proj, 1);
               p.plane[2] = M (proj, 2);
 
-              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.header().size(0)/2.0f, image.header().size(1)/2.0f, image.header().size(2)/2.0f };
+              const Eigen::Vector3f centre = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { image.original_header().size(0)/2.0f, image.original_header().size(1)/2.0f, image.original_header().size(2)/2.0f };
               p.plane[3] = centre[0]*p.plane[0] + centre[1]*p.plane[1] + centre[2]*p.plane[2];
               p.active = true;
 
