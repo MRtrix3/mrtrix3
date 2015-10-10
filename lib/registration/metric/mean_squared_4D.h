@@ -35,34 +35,34 @@ namespace MR
           #ifdef NONSYMREGISTRATION
           template <class Params>
             default_type operator() (Params& params,
-                                     const Eigen::Vector3 target_point,
+                                     const Eigen::Vector3 im2_point,
                                      Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 
-              assert (params.template_image.ndim() == 4);
+              assert (params.im2_image.ndim() == 4);
 
-              params.template_image.index(3) = 0;
-              if (isnan (default_type (params.template_image.value())))
+              params.im2_image.index(3) = 0;
+              if (isnan (default_type (params.im2_image.value())))
                 return 0.0;
 
-              Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (target_point);
+              Eigen::MatrixXd jacobian = params.transformation.get_jacobian_wrt_params (im2_point);
 
               default_type total_diff = 0.0;
 
-              typename Params::MovingValueType moving_value;
-              Eigen::Matrix<typename Params::MovingValueType, 1, 3> moving_grad;
+              typename Params::Im1ValueType im1_value;
+              Eigen::Matrix<typename Params::Im1ValueType, 1, 3> im1_grad;
 
               // TODO interpolate 4th dimension in one go
-              for (params.template_image.index(3) = 0; params.template_image.index(3) < params.template_image.size(3); ++params.template_image.index(3)) {
-                (*params.moving_image_interp).index(3) = params.template_image.index(3);
+              for (params.im2_image.index(3) = 0; params.im2_image.index(3) < params.im2_image.size(3); ++params.im2_image.index(3)) {
+                (*params.im1_image_interp).index(3) = params.im2_image.index(3);
 
-                params.moving_image_interp->value_and_gradient (moving_value, moving_grad);
-                default_type diff = moving_value - params.template_image.value();
+                params.im1_image_interp->value_and_gradient (im1_value, im1_grad);
+                default_type diff = im1_value - params.im2_image.value();
                 total_diff += (diff * diff);
 
                 for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++)
-                    sum += 2.0 * diff * jacobian (dim, par) * moving_grad[dim];
+                    sum += 2.0 * diff * jacobian (dim, par) * im1_grad[dim];
                   gradient[par] += sum;
                 }
 
@@ -73,8 +73,8 @@ namespace MR
             // TODO: symmetric
             template <class Params>
               default_type operator() (Params& params,
-                                       const Eigen::Vector3 target_point,
-                                       const Eigen::Vector3 moving_point,
+                                       const Eigen::Vector3 im1_point,
+                                       const Eigen::Vector3 im2_point,
                                        const Eigen::Vector3 midway_point,
                                        Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
 

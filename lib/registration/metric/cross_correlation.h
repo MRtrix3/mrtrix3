@@ -226,8 +226,8 @@ namespace MR
                 throw Exception("cross correlation not compatible with non-symmetric metric");
                 return 0;
 #else
-                typedef decltype(parameters.moving_image) Im1Type;
-                typedef decltype(parameters.template_image) Im2Type;
+                typedef decltype(parameters.im1_image) Im1Type;
+                typedef decltype(parameters.im2_image) Im2Type;
                 typedef typename ParamType::ImProcessedValueType ProcessedImageValueType;
                 typedef typename ParamType::ImProcessedMaskType ProcessedMaskType;
                 typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
@@ -264,9 +264,9 @@ namespace MR
                   }
                 }
 
-                Adapter::Reslice<Interp::Cubic, Im1Type> interp1 (parameters.moving_image, cc_image_header, parameters.transformation.get_transform_half(), Adapter::AutoOverSample, std::numeric_limits<typename Im1Type::value_type>::quiet_NaN());
+                Adapter::Reslice<Interp::Cubic, Im1Type> interp1 (parameters.im1_image, cc_image_header, parameters.transformation.get_transform_half(), Adapter::AutoOverSample, std::numeric_limits<typename Im1Type::value_type>::quiet_NaN());
 
-                Adapter::Reslice<Interp::Cubic, Im2Type> interp2 (parameters.template_image, cc_image_header, parameters.transformation.get_transform_half_inverse(), Adapter::AutoOverSample, std::numeric_limits<typename Im2Type::value_type>::quiet_NaN());
+                Adapter::Reslice<Interp::Cubic, Im2Type> interp2 (parameters.im2_image, cc_image_header, parameters.transformation.get_transform_half_inverse(), Adapter::AutoOverSample, std::numeric_limits<typename Im2Type::value_type>::quiet_NaN());
 
                 const auto extent = parameters.get_extent();
 
@@ -320,10 +320,10 @@ namespace MR
 
                 params.processed_image_interp->voxel(pos);
                 params.processed_image_interp->index (3) = 0;
-                typename Params::MovingValueType val1;
-                typename Params::TemplateValueType val2;
-                Eigen::Matrix<typename Params::MovingValueType, 1, 3> grad1;
-                Eigen::Matrix<typename Params::TemplateValueType, 1, 3> grad2;
+                typename Params::Im1ValueType val1;
+                typename Params::Im2ValueType val2;
+                Eigen::Matrix<typename Params::Im1ValueType, 1, 3> grad1;
+                Eigen::Matrix<typename Params::Im2ValueType, 1, 3> grad2;
 
                 // gradient calculation
                 params.processed_image_interp->index(3) = 0;
@@ -342,10 +342,10 @@ namespace MR
                 }
 
                 // {
-                  // typename Params::MovingValueType val1_scanner;
-                  // typename Params::TemplateValueType val2_scanner;
-                  // Eigen::Matrix<typename Params::MovingValueType, 1, 3> grad1_scanner;
-                  // Eigen::Matrix<typename Params::TemplateValueType, 1, 3> grad2_scanner;
+                  // typename Params::Im1ValueType val1_scanner;
+                  // typename Params::Im2ValueType val2_scanner;
+                  // Eigen::Matrix<typename Params::Im1ValueType, 1, 3> grad1_scanner;
+                  // Eigen::Matrix<typename Params::Im2ValueType, 1, 3> grad2_scanner;
                   // params.processed_image_interp->index(3) = 0;
                   // params.processed_image_interp->scanner(midway_point);
                   // params.processed_image_interp->value_and_gradient(val1_scanner, grad1_scanner);

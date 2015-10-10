@@ -170,11 +170,11 @@ namespace MR
 //                Ptr<TemplateMaskVoxelType> template_mask_vox;
 //                if (moving_mask) {
 //                  moving_mask_vox = new MovingMaskVoxelType (*moving_mask);
-//                  parameters.moving_mask_interp = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask_vox);
+//                  parameters.im1_mask_interp = new Image::Interp::Nearest<MovingMaskVoxelType> (*moving_mask_vox);
 //                }
 //                if (template_mask) {
 //                  template_mask_vox = new TemplateMaskVoxelType (*template_mask);
-//                  parameters.template_mask_interp = new Image::Interp::Nearest<TemplateMaskVoxelType> (*template_mask_vox);
+//                  parameters.im2_mask_interp = new Image::Interp::Nearest<TemplateMaskVoxelType> (*template_mask_vox);
 //                }
 
                 /**

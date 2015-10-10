@@ -74,7 +74,7 @@ namespace MR
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
             #ifdef NONSYMREGISTRATION
-              transform (params.template_image) {
+              transform (params.im2_image) {
             #else
               transform (params.midway_image) {
             #endif
@@ -90,26 +90,26 @@ namespace MR
             template <class U = MetricType>
             void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
               Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-              Eigen::Vector3 template_point = transform.voxel2scanner * voxel_pos;
-              if (params.template_mask_interp) {
-                params.template_mask_interp->scanner (template_point);
-                if (!params.template_mask_interp->value())
+              Eigen::Vector3 im2_point = transform.voxel2scanner * voxel_pos;
+              if (params.im2_mask_interp) {
+                params.im2_mask_interp->scanner (im2_point);
+                if (!params.im2_mask_interp->value())
                   return;
               }
 
-              Eigen::Vector3 moving_point;
+              Eigen::Vector3 im1_point;
 
-              params.transformation.transform (moving_point, template_point);
-              if (params.moving_mask_interp) {
-                params.moving_mask_interp->scanner (moving_point);
-                if (!params.moving_mask_interp->value())
+              params.transformation.transform (im1_point, im2_point);
+              if (params.im1_mask_interp) {
+                params.im1_mask_interp->scanner (im1_point);
+                if (!params.im1_mask_interp->value())
                   return;
               }
-              assign_pos_of (iter).to (params.template_image);
-              params.moving_image_interp->scanner (moving_point);
-              if (!(*params.moving_image_interp))
+              assign_pos_of (iter).to (params.im2_image);
+              params.im1_image_interp->scanner (im1_point);
+              if (!(*params.im1_image_interp))
                 return;
-              cost_function += metric (params, template_point, gradient);
+              cost_function += metric (params, im2_point, gradient);
             }
           #else
             template <class U = MetricType>
@@ -119,31 +119,31 @@ namespace MR
               Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
 
 
-              Eigen::Vector3 template_point;
-              params.transformation.transform_half_inverse (template_point, midway_point);
-              if (params.template_mask_interp) {
-                params.template_mask_interp->scanner (template_point);
-                if (!params.template_mask_interp->value())
+              Eigen::Vector3 im2_point;
+              params.transformation.transform_half_inverse (im2_point, midway_point);
+              if (params.im2_mask_interp) {
+                params.im2_mask_interp->scanner (im2_point);
+                if (!params.im2_mask_interp->value())
                   return;
               }
 
-              Eigen::Vector3 moving_point;
-              params.transformation.transform_half (moving_point, midway_point);
-              if (params.moving_mask_interp) {
-                params.moving_mask_interp->scanner (moving_point);
-                if (!params.moving_mask_interp->value())
+              Eigen::Vector3 im1_point;
+              params.transformation.transform_half (im1_point, midway_point);
+              if (params.im1_mask_interp) {
+                params.im1_mask_interp->scanner (im1_point);
+                if (!params.im1_mask_interp->value())
                   return;
               }
               
-              params.moving_image_interp->scanner (moving_point);
-              if (!(*params.moving_image_interp))
+              params.im1_image_interp->scanner (im1_point);
+              if (!(*params.im1_image_interp))
                 return;
               
-              params.template_image_interp->scanner (template_point);
-              if (!(*params.template_image_interp))
+              params.im2_image_interp->scanner (im2_point);
+              if (!(*params.im2_image_interp))
                 return;
 
-              cost_function += metric (params, template_point, moving_point, midway_point, gradient);
+              cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
             }
           #endif
 

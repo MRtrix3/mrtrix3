@@ -102,13 +102,13 @@ namespace MR
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
 
-              std::unique_ptr<Image<float> > reoriented_moving; // MP unused
-              std::unique_ptr<Image<float> > reoriented_template; // MP unused
+              // std::unique_ptr<Image<float> > reoriented_moving; // MP unused
+              // std::unique_ptr<Image<float> > reoriented_template; // MP unused
 
               // TODO I wonder if reorienting within the metric would be quicker since it's only one pass? Means we would need to set current affine to the metric4D before running the thread kernel
 //              if (directions.cols()) {
-//                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.moving_image)));
-//                Registration::Transform::reorient (params.moving_image, *reoriented_moving, params.transformation.get_matrix(), directions);
+//                reoriented_moving.reset (new Image<float> (Image<float>::scratch (params.im1_image)));
+//                Registration::Transform::reorient (params.im1_image, *reoriented_moving, params.transformation.get_matrix(), directions);
 //                params.set_moving_iterpolator (*reoriented_moving);
 //                metric.set_moving_image (*reoriented_moving);
 //              }

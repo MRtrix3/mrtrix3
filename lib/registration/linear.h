@@ -129,50 +129,50 @@ namespace MR
           log_stream = stream;
         }
 
-        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType>
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType>
         void run (
           MetricType& metric,
           TransformType& transform,
-          MovingImageType& moving_image,
-          TemplateImageType& template_image) {
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image) {
             typedef Image<bool> BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, BogusMaskType >
-              (metric, transform, moving_image, template_image, nullptr, nullptr);
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, BogusMaskType >
+              (metric, transform, im1_image, im2_image, nullptr, nullptr);
           }
 
-        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class TemplateMaskType>
-        void run_template_mask (
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im2MaskType>
+        void run_im2_mask (
           MetricType& metric,
           TransformType& transform,
-          MovingImageType& moving_image,
-          TemplateImageType& template_image,
-          std::unique_ptr<TemplateMaskType>& template_mask) {
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          std::unique_ptr<Im2MaskType>& im2_mask) {
             typedef Image<bool> BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, BogusMaskType, TemplateMaskType >
-              (metric, transform, moving_image, template_image, nullptr, template_mask);
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, BogusMaskType, Im2MaskType >
+              (metric, transform, im1_image, im2_image, nullptr, im2_mask);
           }
 
 
-        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType>
-        void run_moving_mask (
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType>
+        void run_im1_mask (
           MetricType& metric,
           TransformType& transform,
-          MovingImageType& moving_image,
-          TemplateImageType& template_image,
-          std::unique_ptr<MovingMaskType>& moving_mask) {
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          std::unique_ptr<Im1MaskType>& im1_mask) {
             typedef Image<bool> BogusMaskType;
-            run_masked<MetricType, TransformType, MovingImageType, TemplateImageType, MovingMaskType, BogusMaskType >
-              (metric, transform, moving_image, template_image, moving_mask, nullptr);
+            run_masked<MetricType, TransformType, Im1ImageType, Im2ImageType, Im1MaskType, BogusMaskType >
+              (metric, transform, im1_image, im2_image, im1_mask, nullptr);
           }
 
-        template <class MetricType, class TransformType, class MovingImageType, class TemplateImageType, class MovingMaskType, class TemplateMaskType>
+        template <class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
         void run_masked (
           MetricType& metric,
           TransformType& transform,
-          MovingImageType& moving_image,
-          TemplateImageType& template_image,
-          MovingMaskType& moving_mask,
-          TemplateMaskType& template_mask) {
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          Im1MaskType& im1_mask,
+          Im2MaskType& im2_mask) {
 
             if (max_iter.size() == 1)
               max_iter.resize (scale_factor.size(), max_iter[0]);
@@ -181,9 +181,9 @@ namespace MR
 
             std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (moving_image, template_image, transform); 
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform); 
             else if (init_type == Transform::Init::geometric)
-              Transform::Init::initialise_using_image_centres (moving_image, template_image, transform); 
+              Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform); 
             #ifndef NONSYMREGISTRATION
               // define transfomations that will be applied to the image header when the common space is calculated
               {
@@ -198,18 +198,18 @@ namespace MR
             typedef Image<float> ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
-            typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> MovingImageInterpolatorType;
-            typedef Interp::SplineInterp<TemplateImageType, Math::UniformBSpline<typename TemplateImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> TemplateImageInterpolatorType;
+            typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im1ImageInterpolatorType;
+            typedef Interp::SplineInterp<Im2ImageType, Math::UniformBSpline<typename Im2ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im2ImageInterpolatorType;
             typedef Interp::SplineInterp<ProcessedImageType, Math::UniformBSpline<typename ProcessedImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> ProcessedImageInterpolatorType;
 
             typedef Metric::Params<TransformType,
-                                   MovingImageType,
-                                   TemplateImageType,
+                                   Im1ImageType,
+                                   Im2ImageType,
                                    MidwayImageType,
-                                   MovingImageInterpolatorType,
-                                   TemplateImageInterpolatorType,
-                                   Interp::Nearest<MovingMaskType>,
-                                   Interp::Nearest<TemplateMaskType>,
+                                   Im1ImageInterpolatorType,
+                                   Im2ImageInterpolatorType,
+                                   Interp::Nearest<Im1MaskType>,
+                                   Interp::Nearest<Im2MaskType>,
                                    ProcessedImageType,
                                    ProcessedImageInterpolatorType,
                                    ProcessedMaskType,
@@ -219,16 +219,16 @@ namespace MR
 
             // get midway (affine average) space
             #ifdef NONSYMREGISTRATION
-              auto midway_image = moving_image;
+              auto midway_image = im1_image;
               CONSOLE("non-symmetric metric");
             #else
               CONSOLE("symmetric metric");
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              default_type template_res = 1.0;
+              default_type im2_res = 1.0;
               std::vector<Header> headers;
-              headers.push_back(template_image.original_header());
-              headers.push_back(moving_image.original_header());
-              auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, template_res, padding, init_transforms);
+              headers.push_back(im2_image.original_header());
+              headers.push_back(im1_image.original_header());
+              auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
               auto midway_image = Header::scratch (midway_image_header).get_image<float>();
             #endif
 
@@ -243,30 +243,30 @@ namespace MR
 
 
               #ifdef NONSYMREGISTRATION
-                Filter::Resize moving_resize_filter (moving_image);
-                moving_resize_filter.set_scale_factor (scale_factor[level]);
-                moving_resize_filter.set_interp_type (1);
-                auto moving_resized = Image<float>::scratch (moving_resize_filter);
-                Filter::Smooth moving_smooth_filter (moving_resized);
-                auto moving__smoothed = Image<float>::scratch (moving_smooth_filter);
+                Filter::Resize im1_resize_filter (im1_image);
+                im1_resize_filter.set_scale_factor (scale_factor[level]);
+                im1_resize_filter.set_interp_type (1);
+                auto im1_resized = Image<float>::scratch (im1_resize_filter);
+                Filter::Smooth im1_smooth_filter (im1_resized);
+                auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
               #else
-                Filter::Smooth moving_smooth_filter (moving_image);
-                moving_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
+                Filter::Smooth im1_smooth_filter (im1_image);
+                im1_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
                 INFO("smooth_factor " + str(smooth_factor));
-                auto moving__smoothed = Image<float>::scratch (moving_smooth_filter);
+                auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
               #endif
 
               #ifdef NONSYMREGISTRATION
-                Filter::Resize template_resize_filter (template_image);
-                template_resize_filter.set_scale_factor (scale_factor[level]);
-                template_resize_filter.set_interp_type (1);
-                auto template_resized = Image<float>::scratch (template_resize_filter);
-                Filter::Smooth template_smooth_filter (template_resized);
-                auto template__smoothed = Image<float>::scratch (template_smooth_filter);
+                Filter::Resize im2_resize_filter (im2_image);
+                im2_resize_filter.set_scale_factor (scale_factor[level]);
+                im2_resize_filter.set_interp_type (1);
+                auto im2_resized = Image<float>::scratch (im2_resize_filter);
+                Filter::Smooth im2_smooth_filter (im2_resized);
+                auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
               #else
-                Filter::Smooth template_smooth_filter (template_image);
-                template_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
-                auto template__smoothed = Image<float>::scratch (template_smooth_filter);
+                Filter::Smooth im2_smooth_filter (im2_image);
+                im2_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
+                auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
               #endif
               
               Filter::Resize midway_resize_filter (midway_image);
@@ -277,38 +277,31 @@ namespace MR
               {
                 LogLevelLatch log_level (0);
                 midway_resize_filter(midway_image,midway_resized);
-                // display<Image<float>>(midway_resized);
 
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
                 #ifdef NONSYMREGISTRATION
-                  moving_resize_filter (moving_image, moving_resized);
-                  moving_smooth_filter (moving_resized, moving__smoothed);
-                  template_resize_filter (template_image, template_resized);
-                  template_smooth_filter (template_resized, template__smoothed);
+                  im1_resize_filter (im1_image, im1_resized);
+                  im1_smooth_filter (im1_resized, im1__smoothed);
+                  im2_resize_filter (im2_image, im2_resized);
+                  im2_smooth_filter (im2_resized, im2__smoothed);
                 #else
-                  moving_smooth_filter (moving_image, moving__smoothed); // TODO change name
-                  template_smooth_filter (template_image, template__smoothed); // TODO change name
+                  im1_smooth_filter (im1_image, im1__smoothed);
+                  im2_smooth_filter (im2_image, im2__smoothed);
                 #endif             
               }
-              // std::string filename = save(moving_image, "moving_resized.mif");
-              // CONSOLE ("image written to " + filename + "\"");
-              // save<Image<float>>(template__smoothed, "template_resized.mif");
-              // save<Image<float>>(moving__smoothed, "moving_resized.mif");
-              // display<Image<float>>(moving__smoothed);
-              // display<Image<float>>(template__smoothed);
 
-              ParamType parameters (transform, moving__smoothed, template__smoothed, midway_resized);
+              ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized);
 
               INFO ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
-              if (moving_mask.valid()){
-                parameters.im1_mask = moving_mask;
-                parameters.moving_mask_interp.reset (new Interp::Nearest<MovingMaskType> (parameters.im1_mask));
+              if (im1_mask.valid()){
+                parameters.im1_mask = im1_mask;
+                parameters.im1_mask_interp.reset (new Interp::Nearest<Im1MaskType> (parameters.im1_mask));
               }
-              if (template_mask.valid()){
-                parameters.im2_mask = template_mask;
-                parameters.template_mask_interp.reset (new Interp::Nearest<TemplateMaskType> (parameters.im2_mask));
+              if (im2_mask.valid()){
+                parameters.im2_mask = im2_mask;
+                parameters.im2_mask_interp.reset (new Interp::Nearest<Im2MaskType> (parameters.im2_mask));
               }
 
 #ifdef STOCHASTICLOOP
@@ -318,106 +311,6 @@ namespace MR
                   parameters.sparsity = 0.2;
                 INFO("stochastic gradient descent sparsity: " + str(parameters.sparsity));
 #endif
-
-// #ifndef NONSYMREGISTRATION
-//               if (typeid(metric) == typeid(Metric::CrossCorrelation)){
-//                 // metric.precompute(parameters);
-//                 DEBUG("precomputing cross correlation data");
-//                 typedef Interp::SplineInterp<MovingImageType, Math::UniformBSpline<typename MovingImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> CCInterpType;
-
-//                 // store I, J, IJ, II, JJ
-//                 auto cc_image_header = Header::scratch(midway_resized);
-//                 cc_image_header.set_ndim(4);
-//                 cc_image_header.size(3) = 5; 
-//                 auto cc_image = Header::scratch (cc_image_header).get_image<float>().with_direct_io(Stride::contiguous_along_axis(3));
-//                 Image<bool> cc_mask;
-//                 { 
-//                   LogLevelLatch log_level (0);
-//                   auto cc_mask_header = Header::scratch(midway_resized);
-//                   if (moving_mask.valid() or template_mask.valid())
-//                     cc_mask = Header::scratch (cc_mask_header).get_image<bool>();
-//                   if (moving_mask.valid() and !template_mask.valid())
-//                     Filter::reslice <Interp::Nearest> (moving_mask, cc_mask, transform.get_transform_half());
-//                   else if (!moving_mask.valid() and template_mask.valid())
-//                     Filter::reslice <Interp::Nearest> (template_mask, cc_mask, transform.get_transform_half_inverse(), Adapter::AutoOverSample);
-//                   else if (moving_mask.valid() and template_mask.valid()){
-//                     Adapter::Reslice<Interp::Nearest, MovingMaskType> mask_interp1 (moving_mask, cc_mask_header, transform.get_transform_half());
-//                     Adapter::Reslice<Interp::Nearest, TemplateMaskType> mask_interp2 (template_mask, cc_mask_header, transform.get_transform_half_inverse());
-//                     // TODO possibly faster to loop over m1: 
-//                     //    m1.value()? assign_pos_of(m1).to(m2), m2.value() : false
-//                     auto both = [](decltype(cc_mask)& cc_mask, decltype(mask_interp1)& m1, decltype(mask_interp2)& m2) {
-//                       cc_mask.value() = m1.value() & m2.value();
-//                     };
-//                     ThreadedLoop (cc_mask).run (both, cc_mask, mask_interp1, mask_interp2);
-//                   }
-//                 }
-
-//                 Adapter::Reslice<Interp::Cubic, MovingImageType> interp1 (moving__smoothed, cc_image_header, transform.get_transform_half(), Adapter::AutoOverSample, std::numeric_limits<typename MovingImageType::value_type>::quiet_NaN());
-
-//                 Adapter::Reslice<Interp::Cubic, TemplateImageType> interp2 (template__smoothed, cc_image_header, transform.get_transform_half_inverse(), Adapter::AutoOverSample, std::numeric_limits<typename TemplateImageType::value_type>::quiet_NaN());
-
-//                 // if (!cc_mask.valid())
-//                 //   ThreadedLoop (cc_image, 0, 3).run (CCPrecomputeFunctor(), interp1, interp2, cc_image);
-//                 // else {
-//                 //   ThreadedLoop (cc_image, 0, 3).run (CCPrecomputeFunctorMasked(), cc_mask, interp1, interp2, cc_image);
-//                 // }
-
-//                 // Eigen::Matrix<float, 5, 1> row;
-//                 // for (auto i = Loop() (interp1,interp2,cc_image); i ;++i){
-//                 //   // TODO mask
-//                 //   // assign_pos_of(cc_image, 0, 3).to(mask_interp1);
-//                 //   // assign_pos_of(cc_image, 0, 3).to(mask_interp2);
-//                 //   // std::cerr<<"interp1: "<<interp1.index(0)<<" "<<interp1.index(1)<<" "<<interp1.index(2)<<": "<<interp1.value()<<std::endl;
-//                 //   // std::cerr<<"interp2: "<<interp2.index(0)<<" "<<interp2.index(1)<<" "<<interp2.index(2)<<": "<<interp2.value()<<std::endl;
-//                 //   // std::cerr << cc_image << std::endl;
-//                 //   row[0] = interp1.value();
-//                 //   if (std::isnan(row[0]))
-//                 //     continue;
-//                 //   row[1] = interp2.value();
-//                 //   if (std::isnan(row[1]))
-//                 //     continue;
-//                 //   row[2] = row[0] * row[1];
-//                 //   row[3] = row[0] * row[0];
-//                 //   row[4] = row[1] * row[1];
-//                 //   cc_image.row(3) =  row;
-//                 // }
-
-                
-                
-//                 // display<Image<float>>(midway_resized);
-//                 // save<Image<float>>(cc_image,"cc_image.mif");
-
-//                 // auto im1_resliced = Image<float>::scratch (midway_image_header);
-//                 // Filter::reslice <Im1ValueInterpType> (moving__smoothed, im1_resliced, Adapter::NoTransform, Adapter::AutoOverSample, std::numeric_limits<typename MovingImageType::value_type>::quiet_NaN());
-//                 // Filter::Normalise im1_normalise_filter (im1_resliced);
-//                 // auto im1_resliced_normalised = Image<float>::scratch (im1_normalise_filter);
-                
-//                 // Filter::Resize im1_resize_filter (moving__smoothed);
-//                 // im1_resize_filter.set_scale_factor (scale_factor[level]);
-//                 // im1_resize_filter.set_interp_type (1);
-//                 // midway_image_header
-//                 // auto im1_resliced = Image<float>::scratch (im1_reslice_filter);
-
-//                 // Filter::Resize im2_resize_filter (template__smoothed);
-//                 // im2_resize_filter.set_scale_factor (scale_factor[level]);
-//                 // im2_resize_filter.set_interp_type (1);
-//                 // auto im2_resized = Image<float>::scratch (im2_resize_filter);
-//                 // Filter::Normalise im2_normalise_filter (im2_resized);
-//                 // auto im2_resized_normalised = Image<float>::scratch (im2_normalise_filter);
-//                 // {
-//                   // LogLevelLatch log_level (0);
-//                   // im1_resize_filter (moving__smoothed, im1_resized);
-//                   // im1_normalise_filter (im1_resliced, im1_resliced_normalised);
-//                   // im2_normalise_filter (im2_resliced, im1_resliced_normalised);
-//                   // im2_resize_filter (template__smoothed, im2_resized);
-//                   // im2_normalise_filter (im2_resized, im2_resized_normalised);
-//                 // }
-//                 parameters.im1_processed = cc_image;
-//                 parameters.im1_processed_interp.reset (new CCInterpType (parameters.im1_processed));
-//                 parameters.im2_processed = cc_image;
-//                 parameters.im2_processed_interp.reset (new CCInterpType (parameters.im2_processed));
-//               }
-// #endif
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.cols())
@@ -452,7 +345,7 @@ namespace MR
               t_back = t_back * t_back;
               save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
 #endif
-            // TODO: update midway_image after to increase speed of next iteration
+            // TODO: update midway_image
           }
 
       protected:

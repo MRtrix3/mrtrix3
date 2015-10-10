@@ -124,29 +124,29 @@ void load_image (std::string filename, size_t num_vols, Image<value_type>& image
 
 void run ()
 {
-  const auto moving_header = Header::open (argument[0]);
-  const auto template_header = Header::open (argument[1]);
+  const auto im1_header = Header::open (argument[0]);
+  const auto im2_header = Header::open (argument[1]);
 
-  check_dimensions (moving_header, template_header);
-  Image<value_type> moving_image;
-  Image<value_type> template_image;
+  check_dimensions (im1_header, im2_header);
+  Image<value_type> im1_image;
+  Image<value_type> im2_image;
 
   auto opt = get_options ("noreorientation");
   bool do_reorientation = true;
   if (opt.size())
     do_reorientation = false;
 
-  if (template_header.ndim() > 4) {
+  if (im2_header.ndim() > 4) {
     throw Exception ("image dimensions larger than 4 are not supported");
   }
-  else if (template_header.ndim() == 4) {
-    value_type val = (std::sqrt (float (1 + 8 * template_header.size(3))) - 3.0) / 4.0;
-    if (!(val - (int)val) && do_reorientation && template_header.size(3) > 1) {
+  else if (im2_header.ndim() == 4) {
+    value_type val = (std::sqrt (float (1 + 8 * im2_header.size(3))) - 3.0) / 4.0;
+    if (!(val - (int)val) && do_reorientation && im2_header.size(3) > 1) {
         CONSOLE ("SH series detected, performing FOD registration");
         // Only load as many SH coefficients as required
         int lmax = 4;
-        if (Math::SH::LforN(template_header.size(3)) < 4)
-          lmax = Math::SH::LforN(template_header.size(3));
+        if (Math::SH::LforN(im2_header.size(3)) < 4)
+          lmax = Math::SH::LforN(im2_header.size(3));
         auto opt = get_options ("lmax");
         if (opt.size()) {
           lmax = opt[0][0];
@@ -154,28 +154,28 @@ void run ()
             throw Exception ("the input lmax must be even");
         }
         int num_SH = Math::SH::NforL (lmax);
-        if (num_SH > template_header.size(3))
+        if (num_SH > im2_header.size(3))
             throw Exception ("not enough SH coefficients within input image for desired lmax");
-        load_image (argument[0], num_SH, moving_image);
-        load_image (argument[1], num_SH, template_image);
+        load_image (argument[0], num_SH, im1_image);
+        load_image (argument[1], num_SH, im2_image);
     }
     else {
       do_reorientation = false;
-      load_image (argument[0], moving_header.size(3), moving_image);
-      load_image (argument[1], template_header.size(3), template_image);
+      load_image (argument[0], im1_header.size(3), im1_image);
+      load_image (argument[1], im2_header.size(3), im2_image);
     }
   }
   else {
     do_reorientation = false;
-    load_image (argument[0], 1, moving_image);
-    load_image (argument[1], 1, template_image);
+    load_image (argument[0], 1, im1_image);
+    load_image (argument[1], 1, im2_image);
   }
 
   // Will currently output whatever lmax was used during registration
   opt = get_options ("transformed");
   Image<value_type> transformed;
   if (opt.size()){
-    transformed = Image<value_type>::create (opt[0][0], template_image); 
+    transformed = Image<value_type>::create (opt[0][0], im2_image); 
     transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
 
@@ -243,7 +243,7 @@ void run ()
   if (opt.size()) {
     if (!do_syn)
       throw Exception ("SyN warp output requested when no SyN registration is requested");
-    Header warp_header (template_header);
+    Header warp_header (im2_header);
     warp_header.set_ndim (5); //TODO decide on format
     warp_header.size(3) = 3;
     warp_header.size(4) = 4;
@@ -427,21 +427,21 @@ void run ()
       rigid_registration.set_init_type (init_centre);
 
       
-    if (template_image.ndim() == 4) {
+    if (im2_image.ndim() == 4) {
       if (rigid_cc)
         throw Exception ("rigid cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
-      rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
     } else {
       if (rigid_cc){
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
-        rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        rigid_registration.run_masked (metric, rigid, moving_image, template_image, mmask_image, tmask_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
       }
     }
 
@@ -473,21 +473,21 @@ void run ()
       affine_registration.set_directions (directions_cartesian);
 
 
-    if (template_image.ndim() == 4) {
+    if (im2_image.ndim() == 4) {
       if (affine_cc)
         throw Exception ("affine cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
     } else {
       if (affine_cc){
         Registration::Metric::CrossCorrelation metric;
         std::vector<size_t> extent(3,3);
         affine_registration.set_extent(extent);
-        affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        affine_registration.run_masked (metric, affine, moving_image, template_image, mmask_image, tmask_image);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
       }
     }
 
@@ -517,13 +517,13 @@ void run ()
   if (transformed.valid()) {
     if (do_syn) {
     } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (moving_image, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (im1_image, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, transformed, affine.get_transform(), directions_cartesian);
       }
     } else {
-      Filter::reslice<Interp::Cubic> (moving_image, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (im1_image, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, transformed, rigid.get_transform(), directions_cartesian);

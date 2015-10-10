@@ -39,18 +39,18 @@ namespace MR
 
           template <class Params>
             double operator() (Params& params,
-                               Eigen::Vector3 target_point,
-                               Eigen::Vector3 moving_point,
+                               Eigen::Vector3 im1_point,
+                               Eigen::Vector3 im2_point,
                                Eigen::Vector3& gradient) {
 
-              params.transformation.get_jacobian_wrt_params (target_point, jacobian);
+              params.transformation.get_jacobian_wrt_params (im2_point, jacobian);
 
-              value_type diff = params.moving_image_interp.value() - params.target_image.value();
+              value_type diff = params.im1_image_interp.value() - params.target_image.value();
 
               for (ssize_t par = 0; par < gradient.size(); par++) {
                 value_type sum = 0.0;
                 for( size_t dim = 0; dim < 3; dim++) {
-                  sum += 2.0 * diff * jacobian(dim, par) * moving_grad[dim];
+                  sum += 2.0 * diff * jacobian(dim, par) * im1_grad[dim];
                 }
                 gradient[par] += sum;
               }

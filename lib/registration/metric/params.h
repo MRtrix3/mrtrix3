@@ -46,23 +46,23 @@ namespace MR
         public:
 
           typedef typename TransformType::ParameterType TransformParamType;
-          typedef typename Im1ImageInterpolatorType::value_type MovingValueType;
-          typedef typename Im2ImageInterpolatorType::value_type TemplateValueType;
+          typedef typename Im1ImageInterpolatorType::value_type Im1ValueType;
+          typedef typename Im2ImageInterpolatorType::value_type Im2ValueType;
           typedef typename ProcessedImageInterpolatorType::value_type ImProcessedValueType;
           typedef ProcessedMaskType ImProcessedMaskType;
           typedef ProcessedMaskInterpolatorType ImProcessedMaskInterpolatorType;
 
           Params (TransformType& transform,
-                  Im1ImageType& moving_image,
-                  Im2ImageType& template_image,
+                  Im1ImageType& im1_image,
+                  Im2ImageType& im2_image,
                   MidwayImageType& midway_image) :
                     transformation (transform),
-                    moving_image (moving_image),
-                    template_image (template_image),
+                    im1_image (im1_image),
+                    im2_image (im2_image),
                     midway_image (midway_image),
                     sparsity(static_cast<double> (0.0)){
-                      moving_image_interp.reset (new Im1ImageInterpolatorType (moving_image));
-                      template_image_interp.reset (new Im2ImageInterpolatorType (template_image));
+                      im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
+                      im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
@@ -70,17 +70,17 @@ namespace MR
           const std::vector<size_t>& get_extent() const { return extent; }
 
           TransformType& transformation;
-          Im1ImageType moving_image;
-          Im2ImageType template_image;
+          Im1ImageType im1_image;
+          Im2ImageType im2_image;
           MidwayImageType midway_image;
-          MR::copy_ptr<Im1ImageInterpolatorType> moving_image_interp;
-          MR::copy_ptr<Im2ImageInterpolatorType> template_image_interp;
+          MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;
+          MR::copy_ptr<Im2ImageInterpolatorType> im2_image_interp;
           double sparsity;
           std::vector<size_t> extent;
           Image<bool> im1_mask;
           Image<bool> im2_mask;
-          MR::copy_ptr<Im1MaskInterpolatorType> moving_mask_interp;
-          MR::copy_ptr<Im2MaskInterpolatorType> template_mask_interp;
+          MR::copy_ptr<Im1MaskInterpolatorType> im1_mask_interp;
+          MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
 
           ProcessedImageType processed_image;
           MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp; 
