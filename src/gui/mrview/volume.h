@@ -26,6 +26,7 @@
 #include "header.h"
 #include "transform.h"
 
+#include "file/config.h"
 #include "gui/opengl/gl.h"
 #include "gui/mrview/displayable.h"
 
@@ -48,7 +49,10 @@ namespace MR
               Displayable (header.name()),
               _header (std::move (header)),
               _transform (_header),
-              interpolation (gl::LINEAR),
+              //CONF option: ImageInterpolation
+              //CONF define default interplation setting for image and image overlay
+              //CONF default: true
+              interpolation (File::Config::get_bool("ImageInterpolation", true) ? gl::LINEAR : gl::NEAREST),
               texture_mode_changed (true) { }
 
           virtual ~Volume();

@@ -317,8 +317,8 @@ namespace MR
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
               cfloat value = image->interpolate() ?
-                image->nearest_neighbour_value(window().focus()) :
-                image->trilinear_value(window().focus());
+                image->trilinear_value(window().focus()) :
+                image->nearest_neighbour_value(window().focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
@@ -658,7 +658,9 @@ namespace MR
             + Option ("overlay.opacity", "Sets the overlay opacity to floating value [0-1].")
             +   Argument ("value").type_float (0.0, 1.0, 1.0)
 
-            + Option ("overlay.nointerpolation", "Disables the overlay interpolation.")
+            + Option ("overlay.interpolation_on", "Enables overlay image interpolation.")
+
+            + Option ("overlay.interpolation_off", "Disables overlay image interpolation.")
 
             + Option ("overlay.colourmap", "Sets the colourmap of the overlay as indexed in the colourmap dropdown menu.")
             +   Argument ("index").type_integer();
@@ -684,21 +686,22 @@ namespace MR
             return true;
           }
 
+          if (opt.opt->is ("overlay.interpolation_on")) {
+            interpolate_check_box->setCheckState (Qt::Checked);
+            interpolate_changed();
+          }
+
+          if (opt.opt->is ("overlay.interpolation_off")) {
+            interpolate_check_box->setCheckState (Qt::Unchecked);
+            interpolate_changed();
+          }
+
           if (opt.opt->is ("overlay.colourmap")) {
             try {
               int n = opt[0];
               if (n < 0 || !ColourMap::maps[n].name)
                 throw Exception ("invalid overlay colourmap index \"" + std::string (opt[0]) + "\" for -overlay.colourmap option");
               colourmap_button->set_colourmap_index(n);
-            }
-            catch (Exception& e) { e.display(); }
-            return true;
-          }
-
-          if (opt.opt->is ("overlay.nointerpolation")) {
-            try {
-              interpolate_check_box->setCheckState (Qt::Unchecked);
-              Overlay::interpolate_changed ();
             }
             catch (Exception& e) { e.display(); }
             return true;

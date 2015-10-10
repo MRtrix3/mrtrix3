@@ -54,7 +54,7 @@ namespace MR
             colour (0.5f, 0.5f, 0.5f),
             alpha (1.0f),
             visible (one != two),
-            line (*this)
+            line (new Line (*this))
         {
           static const Eigen::Vector3f z_axis (0.0f, 0.0f, 1.0f);
           if (is_diagonal()) {
@@ -98,17 +98,6 @@ namespace MR
           that.rot_matrix = nullptr;
         }
 
-        Edge::Edge () :
-            node_indices { 0, 0 },
-            node_centres { Eigen::Vector3f { NAN, NAN, NAN }, Eigen::Vector3f { NAN, NAN, NAN } },
-            dir (Eigen::Vector3f { NAN, NAN, NAN }),
-            rot_matrix (nullptr),
-            size (0.0f),
-            colour (0.0f, 0.0f, 0.0f),
-            alpha (0.0f),
-            visible (false),
-            line (*this) { }
-
         Edge::~Edge()
         {
           if (rot_matrix) {
@@ -124,11 +113,11 @@ namespace MR
 
         Edge::Line::Line (const Edge& parent)
         {
-          Window::GrabContext context;
-
           std::vector<Eigen::Vector3f> data;
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
+
+          Window::GrabContext context;
 
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -148,6 +137,14 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+        }
+
+        Edge::Line::~Line()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          tangent_buffer.clear();
+          vertex_array_object.clear();
         }
 
         void Edge::Line::render() const
@@ -220,7 +217,13 @@ namespace MR
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
         }
 
-
+        Edge::Streamline::~Streamline()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          tangent_buffer.clear();
+          vertex_array_object.clear();
+        }
 
         void Edge::Streamline::render() const
         {
@@ -301,7 +304,14 @@ namespace MR
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
         }
 
-
+        Edge::Streamtube::~Streamtube()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          tangent_buffer.clear();
+          normal_buffer.clear();
+          vertex_array_object.clear();
+        }
 
         void Edge::Streamtube::render() const
         {

@@ -391,7 +391,7 @@ namespace MR
           image_interpolate_action = colourmap_menu->addAction (tr ("Interpolate"), this, SLOT (image_interpolate_slot()));
           image_interpolate_action->setShortcut (tr ("I"));
           image_interpolate_action->setCheckable (true);
-          image_interpolate_action->setChecked (true);
+          image_interpolate_action->setChecked (File::Config::get_bool("ImageInterpolation", true));
           addAction (image_interpolate_action);
 
           toolbar->addWidget (colourmap_button);
@@ -1693,6 +1693,16 @@ namespace MR
               continue;
             }
 
+            if (opt.opt->is ("interpolation_on")) {
+              image_interpolate_action->setChecked(true);
+              image_interpolate_slot();
+            }
+
+            if (opt.opt->is ("interpolation_off")) {
+              image_interpolate_action->setChecked(false);
+              image_interpolate_slot();
+            }
+
             if (opt.opt->is ("intensity_range")) { 
               if (image()) {
                 std::vector<default_type> param = parse_floats (opt[0]);
@@ -1777,6 +1787,10 @@ namespace MR
           +   Argument ("index").type_integer (0)
 
           + Option ("autoscale", "Reset the image scaling to automatically determined range.")
+
+          + Option ("interpolation_on", "Enable the image interpolation.")
+
+          + Option ("interpolation_off", "Disable the image interpolation.")
 
           + Option ("colourmap", "Switch the image colourmap to that specified, as per the colourmap menu.")
           +   Argument ("index").type_integer (0)
