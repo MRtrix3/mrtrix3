@@ -352,7 +352,7 @@ namespace MR
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-          GL::mat4 MV = adjust_projection_matrix (V) * GL::translate  (-target()[0], -target()[1], -target()[2]);
+          GL::mat4 MV = adjust_projection_matrix (GL::transpose (V)) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
           GL_CHECK_ERROR;
