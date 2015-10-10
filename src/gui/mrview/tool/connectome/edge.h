@@ -51,10 +51,10 @@ namespace MR
         public:
           Edge (const node_t, const node_t, const Eigen::Vector3f&, const Eigen::Vector3f&);
           Edge (Edge&&);
-          Edge ();
+          Edge () = delete;
           ~Edge();
 
-          void render_line() const { line.render(); }
+          void render_line() const { assert (line); line->render(); }
 
           void load_exemplar (const MR::DWI::Tractography::Streamline<float>& data) { assert (!exemplar); exemplar.reset (new Exemplar (*this, data)); }
           void clear_exemplar() { if (streamtube) delete streamtube.release(); if (streamline) delete streamline.release(); if (exemplar) delete exemplar.release(); }
@@ -100,6 +100,7 @@ namespace MR
           float alpha;
           bool visible;
 
+          class Line;
           class Exemplar;
           class Streamline;
           class Streamtube;
@@ -113,11 +114,13 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { }
               Line () = delete;
+              ~Line();
               void render() const;
             private:
               GL::VertexBuffer vertex_buffer, tangent_buffer;
               GL::VertexArrayObject vertex_array_object;
-          } line;
+          };
+          std::unique_ptr<Line> line;
 
           // Raw data for exemplar; need to hold on to this
           class Exemplar
@@ -150,6 +153,7 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { that.count = 0; }
               Streamline () = delete;
+              ~Streamline();
               void render() const;
             private:
               // The master thread must assign the VBOs and VAO
@@ -170,6 +174,7 @@ namespace MR
                   tangent_buffer (std::move (that.tangent_buffer)),
                   normal_buffer (std::move (that.normal_buffer)),
                   vertex_array_object (std::move (that.vertex_array_object)) { that.count = 0; }
+              ~Streamtube();
               void render() const;
               static void LOD (const size_t lod) { shared.set_LOD (lod); }
             private:
