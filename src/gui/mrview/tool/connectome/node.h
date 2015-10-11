@@ -85,8 +85,8 @@ namespace MR
               Mesh (MR::Mesh::Mesh&);
               Mesh (const Mesh&) = delete;
               Mesh (Mesh&&);
-              Mesh ();
-              ~Mesh() { }
+              Mesh () = delete;
+              ~Mesh();
               Mesh& operator= (Mesh&&);
               void render() const;
             private:
