@@ -34,8 +34,9 @@ void usage ()
   DESCRIPTION
   + "edit transformations."
 
-  + "Currently, this command's only function is to convert the transformation matrix provided "
-    "by FSL's flirt command to a format usable in MRtrix.";
+  + "This command's function is to either convert the transformation matrix provided "
+    "by FSL's flirt command to a format usable in MRtrix or to interpolate between "
+    "two transformation files";
 
   ARGUMENTS
   + Argument ("input", "input transformation matrix").type_file_in ()
@@ -133,6 +134,7 @@ void run ()
     transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
     INFO("\n"+str(transform_out.matrix().format(
       Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
+    save_transform (transform_out, argument[1]);
   } else {
     throw Exception ("you must specify either -flirt_import or -interpolate option");
   }
