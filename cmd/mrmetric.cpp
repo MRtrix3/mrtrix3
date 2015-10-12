@@ -3,10 +3,10 @@
 #include "algo/loop.h"
 
 #include "image/average_space.h"
-// #include "interp/linear.h"
+#include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/cubic.h"
-// #include "interp/sinc.h"
+#include "interp/sinc.h"
 #include "filter/reslice.h"
 
 using namespace MR;
@@ -18,6 +18,31 @@ const char* space_choices[] = { "voxel", "image1", "image2", "average", NULL };
 template <class ValueType>
 inline void meansquared(const ValueType& value1, const ValueType& value2, ValueType& cost){
   cost += std::pow (value1 - value2, 2);
+}
+
+// TODO: there must be a better way of doing this?
+template <class ImageType1, class ImageType2, class TransformType, class OversampleType, class ValueType>
+void reslice(size_t interp, ImageType1& input, ImageType2& output, const TransformType& trafo = Adapter::NoTransform, const OversampleType& oversample = Adapter::AutoOverSample, const ValueType out_of_bounds_value = 0.f){
+  switch(interp){
+    case 0:
+      Filter::reslice<Interp::Nearest> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Nearest");
+      break;
+    case 1:
+      Filter::reslice<Interp::Linear> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Linear");
+      break;
+    case 2:
+      Filter::reslice<Interp::Cubic> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Cubic");
+      break;
+    case 3:
+      Filter::reslice<Interp::Sinc> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Sinc");
+      break;
+    default:
+      throw Exception ("Fixme: interpolation value invalid");
+  }
 }
 
 void usage ()
@@ -125,61 +150,61 @@ void run ()
     MaskType output1mask;
     MaskType output2mask;
 
-    if (interp == 2) {
-      if (space == 1){
-        DEBUG("image 1");
-        output1 = input1;
-        output1mask = mask1;
-        output2 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
-        output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
-        {
-          LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-          if (use_mask2)
-            Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-        }
+    if (space == 1){
+      DEBUG("image 1");
+      output1 = input1;
+      output1mask = mask1;
+      output2 = Header::scratch(input1.original_header(),"-").get_image<value_type>();
+      output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
+      {
+        LogLevelLatch log_level (0);
+        reslice(interp,input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (use_mask2)
+          Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
-      if (space == 2) {
-        DEBUG("image 2");
-        output1 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
-        output1mask = Header::scratch(input2.original_header(),"-").get_image<bool>();
-        output2 = input2;
-        output2mask = mask2;
-        {
-          LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-          if (use_mask1)
-            Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-        }
-        n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
-      }
-      if (space == 3) {
-        DEBUG("average space");
-        std::vector<Header> headers;
-        headers.push_back (input1.original_header());
-        headers.push_back (input2.original_header());
-        default_type template_res = 1.0;
-        auto padding = Eigen::Matrix<default_type, 4, 1>(0, 0, 0, 1.0);
-        std::vector<Eigen::Transform<double, 3, Eigen::Projective>> transform_header_with;
+    }
 
-        auto template_header = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::Projective>>(headers, template_res, padding, transform_header_with);
-
-        output1 = Header::scratch(template_header,"-").get_image<value_type>();
-        output2 = Header::scratch(template_header,"-").get_image<value_type>();
-        output1mask = Header::scratch(template_header,"-").get_image<bool>();
-        output2mask = Header::scratch(template_header,"-").get_image<bool>();
-        { 
-          LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform,Adapter::AutoOverSample, out_of_bounds_value);
-          Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
-          if (use_mask1)
-            Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-          if (use_mask2)
-            Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
-        }
-        n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
+    if (space == 2) {
+      DEBUG("image 2");
+      output1 = Header::scratch(input2.original_header(),"-").get_image<value_type>();
+      output1mask = Header::scratch(input2.original_header(),"-").get_image<bool>();
+      output2 = input2;
+      output2mask = mask2;
+      {
+        LogLevelLatch log_level (0);
+        reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (use_mask1)
+          Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
       }
-    } else throw Exception ("Other than cubic interpolation not implemented yet.");
+      n_voxels = input2.size(0) * input2.size(1) * input2.size(2);
+    }
+    
+    if (space == 3) {
+      DEBUG("average space");
+      std::vector<Header> headers;
+      headers.push_back (input1.original_header());
+      headers.push_back (input2.original_header());
+      default_type template_res = 1.0;
+      auto padding = Eigen::Matrix<default_type, 4, 1>(0, 0, 0, 1.0);
+      std::vector<Eigen::Transform<double, 3, Eigen::Projective>> transform_header_with;
+
+      auto template_header = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::Projective>>(headers, template_res, padding, transform_header_with);
+
+      output1 = Header::scratch(template_header,"-").get_image<value_type>();
+      output2 = Header::scratch(template_header,"-").get_image<value_type>();
+      output1mask = Header::scratch(template_header,"-").get_image<bool>();
+      output2mask = Header::scratch(template_header,"-").get_image<bool>();
+      { 
+        LogLevelLatch log_level (0);
+        reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+        if (use_mask1)
+          Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+        if (use_mask2)
+          Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
+      }
+      n_voxels = output1.size(0) * output1.size(1) * output1.size(2);
+    }
 
     if (use_mask1 or use_mask2)
       n_voxels = 0;
