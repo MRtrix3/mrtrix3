@@ -49,6 +49,9 @@ void usage ()
   + Option ("voxel",
          "normalise dissimiliarity to voxel size of image")
 
+  + Option ("cumulative_absolute",
+          "sum the absolute of each voxel position displacement")
+
   + Option ("norm",
          "display the norm of the displacement.");
 
@@ -87,6 +90,7 @@ void run ()
   if (opt.size())
     reference_trafo = load_transform<value_type> (opt[0][0]);
 
+  bool cumulative_absolute = get_options ("cumulative_absolute").size();
   bool normalise = get_options ("normalise").size();
   bool norm = get_options ("norm").size();
 
@@ -108,7 +112,10 @@ void run ()
   for (auto i = Loop() (image); i ;++i){
     pos << image.index(0), image.index(1), image.index(2);
     displacement = trafo2 * pos - reference_trafo * pos;
-    cost += displacement.cwiseAbs();
+    if (cumulative_absolute)
+      cost += displacement.cwiseAbs();
+    else
+      cost += displacement;
   }
   
   cost /= static_cast<value_type>(n_voxels);
