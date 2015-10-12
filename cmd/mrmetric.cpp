@@ -3,10 +3,10 @@
 #include "algo/loop.h"
 
 #include "image/average_space.h"
-// #include "interp/linear.h"
+#include "interp/linear.h"
 #include "interp/nearest.h"
 #include "interp/cubic.h"
-// #include "interp/sinc.h"
+#include "interp/sinc.h"
 #include "filter/reslice.h"
 
 using namespace MR;
@@ -18,6 +18,31 @@ const char* space_choices[] = { "voxel", "image1", "image2", "average", NULL };
 template <class ValueType>
 inline void meansquared(const ValueType& value1, const ValueType& value2, ValueType& cost){
   cost += std::pow (value1 - value2, 2);
+}
+
+// TODO: there must be a better way of doing this?
+template <class ImageType1, class ImageType2, class TransformType, class OversampleType, class ValueType>
+void reslice(size_t interp, ImageType1& input, ImageType2& output, const TransformType& trafo = Adapter::NoTransform, const OversampleType& oversample = Adapter::AutoOverSample, const ValueType out_of_bounds_value = 0.f){
+  switch(interp){
+    case 0:
+      Filter::reslice<Interp::Nearest> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Nearest");
+      break;
+    case 1:
+      Filter::reslice<Interp::Linear> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Linear");
+      break;
+    case 2:
+      Filter::reslice<Interp::Cubic> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Cubic");
+      break;
+    case 3:
+      Filter::reslice<Interp::Sinc> (input, output, trafo, Adapter::AutoOverSample, out_of_bounds_value);
+      DEBUG("Sinc");
+      break;
+    default:
+      throw Exception ("Fixme: interpolation value invalid");
+  }
 }
 
 void usage ()
@@ -134,7 +159,7 @@ void run ()
         output2mask = Header::scratch(input1.original_header(),"-").get_image<bool>();
         {
           LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp,input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           if (use_mask2)
             Filter::reslice<Interp::Nearest> (mask2, output2mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
@@ -147,7 +172,7 @@ void run ()
         output2mask = mask2;
         {
           LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           if (use_mask1)
             Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
         }
@@ -170,8 +195,8 @@ void run ()
         output2mask = Header::scratch(template_header,"-").get_image<bool>();
         { 
           LogLevelLatch log_level (0);
-          Filter::reslice<Interp::Cubic> (input1, output1, Adapter::NoTransform,Adapter::AutoOverSample, out_of_bounds_value);
-          Filter::reslice<Interp::Cubic> (input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp, input1, output1, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
+          reslice(interp, input2, output2, Adapter::NoTransform, Adapter::AutoOverSample, out_of_bounds_value);
           if (use_mask1)
             Filter::reslice<Interp::Nearest> (mask1, output1mask, Adapter::NoTransform, Adapter::AutoOverSample, 0);
           if (use_mask2)
