@@ -17,7 +17,6 @@
 
     You should have received a copy of the GNU General Public License
     along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
-
 */
 
 #include <sstream>
@@ -44,10 +43,10 @@ void usage ()
     "There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.";
 
   REFERENCES
-    + "Dhollander T, Raffelt D, Smith RE, Connelly A. "
+    + "Dhollander T, Smith RE, Tournier JD, Jeurissen B, Connelly A. "
       "Time to move on: an FOD-based DEC map to replace DTI's trademark DEC FA. "
       "Proc Intl Soc Mag Reson Med, 2015, 23, 1027."
-    + "Dhollander T, Smith RE, Tournier JD, Jeurissen B, Connelly A. "
+    + "Dhollander T, Raffelt D, Smith RE, Connelly A. "
       "Panchromatic sharpening of FOD-based DEC maps by structural T1 information. "
       "Proc Intl Soc Mag Reson Med, 2015, 23, 566.";
 
@@ -80,11 +79,8 @@ void usage ()
     + Argument ("value").type_float();
 }
 
-
 typedef float value_type;
-
 const value_type UNIT = 1.0 / std::sqrt(3.0);
-
 
 class DecTransform {
 
@@ -106,8 +102,8 @@ class DecComputer {
   private:
 
   const DecTransform& dectrans;
-  Image<bool> mask;
-  Image<value_type> fodint;
+  Image<bool> mask_img;
+  Image<value_type> int_img;
   Eigen::VectorXd amps;
   Eigen::RowVector3d dec;
   double ampsum;
@@ -115,17 +111,17 @@ class DecComputer {
 
   public:
 
-  DecComputer (const DecTransform& dectrans, Image<bool>& mask, Image<value_type>& fodint) :
+  DecComputer (const DecTransform& dectrans, Image<bool>& mask_img, Image<value_type>& int_img) :
     dectrans (dectrans),
-    mask (mask),
-    fodint (fodint),
+    mask_img (mask_img),
+    int_img (int_img),
     amps (dectrans.sht.rows()) { }
 
   void operator() (Image<value_type>& fod_img, Image<value_type>& dec_img) {
 
-    if (mask.valid()) {
-      assign_pos_of(fod_img,0,3).to(mask);
-      if (!mask.value()) {
+    if (mask_img.valid()) {
+      assign_pos_of(fod_img, 0, 3).to(mask_img);
+      if (!mask_img.value()) {
         dec_img.row(3).fill(UNIT);
         return;
       }
@@ -141,7 +137,6 @@ class DecComputer {
       dec += dectrans.decs.row(i) * amps(i);
       ampsum += amps(i);
     }
-
     dec = dec.cwiseMax(0.0);
     ampsum = std::max(ampsum, 0.0);
 
@@ -152,9 +147,9 @@ class DecComputer {
     else
       dec_img.row(3) = (dec / decnorm).cast<value_type>();
 
-    if (fodint.valid()) {
-      assign_pos_of(fod_img,0,3).to(fodint);
-      fodint.value() = (ampsum / amps.rows()) * 4.0 * Math::pi;
+    if (int_img.valid()) {
+      assign_pos_of(fod_img, 0, 3).to(int_img);
+      int_img.value() = (ampsum / amps.rows()) * 4.0 * Math::pi;
     }
 
   }
@@ -167,7 +162,7 @@ class DecWeighter {
 
   Eigen::Array<value_type, 3, 1> coefs;
   value_type gamma;
-  Image<value_type> weight;
+  Image<value_type> w_img;
   value_type grey;
   Eigen::Array<value_type, 3, 1> dec;
   value_type w;
@@ -175,18 +170,18 @@ class DecWeighter {
 
   public:
 
-  DecWeighter (Eigen::Matrix<value_type, 3, 1> coefs, value_type gamma, Image<value_type>& weight) :
+  DecWeighter (Eigen::Matrix<value_type, 3, 1> coefs, value_type gamma, Image<value_type>& w_img) :
     coefs (coefs),
     gamma (gamma),
-    weight (weight),
+    w_img (w_img),
     grey (1.0 / std::pow(coefs.sum(), 1.0 / gamma)) {}
 
   void operator() (Image<value_type>& dec_img) {
 
-    w = 1.0;  
-    if (weight.valid()) {
-      assign_pos_of(dec_img,0,3).to(weight);
-      w = weight.value();
+    w = 1.0;
+    if (w_img.valid()) {
+      assign_pos_of(dec_img, 0, 3).to(w_img);
+      w = w_img.value();
       if (w <= 0.0) {
         for (auto l = Loop (3) (dec_img); l; ++l)
           dec_img.value() = 0.0;
@@ -213,9 +208,7 @@ class DecWeighter {
 
 };
 
-
-void run ()
-{
+void run () {
 
   auto fod_hdr = Header::open(argument[0]);
   Math::SH::check(fod_hdr);
@@ -262,11 +255,9 @@ void run ()
   auto w_img = Image<value_type>();
 
   {
-
     auto dec_img = Image<value_type>();
 
-    {  
-
+    {
       auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(Stride::contiguous_along_axis(3, fod_hdr));
 
       auto dec_hdr = Header(fod_img);
@@ -302,7 +293,6 @@ void run ()
       Filter::reslice<Interp::Cubic> (dec_img, out_img, Adapter::NoTransform, Adapter::AutoOverSample, UNIT);
     else
       copy (dec_img, out_img);
-
   }
 
   if (!get_options("no-weight").size() && map_hdr.valid())
