@@ -93,10 +93,10 @@ namespace MR
         void operator() (Iterator& pos) {
           for (auto i = loop (pos); i; ++i){
             if (rng() <= sparse){
-              DEBUG (str(pos) + " ...skipped inner");
+              // DEBUG (str(pos) + " ...skipped inner");
               continue;
             }
-            DEBUG (str(pos) + " ...used inner");
+            // DEBUG (str(pos) + " ...used inner");
             func (pos);
           }
         }
