@@ -25,7 +25,7 @@ void usage ()
   + "test average space calculation";
 
   ARGUMENTS
-  + Argument ("input", "the input image(s).").type_image_in ().allow_multiple();
+  + Argument ("input", "the input image(s).").type_image_in ().allow_multiple()
   + Argument ("output", "the output image").type_image_out ();
 
   OPTIONS
