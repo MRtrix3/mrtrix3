@@ -127,7 +127,9 @@ void run ()
   const auto im1_header = Header::open (argument[0]);
   const auto im2_header = Header::open (argument[1]);
 
-  check_dimensions (im1_header, im2_header);
+  if (im1_header.ndim() != im2_header.ndim())
+    throw Exception ("input images to not have the same number of dimensions");
+
   Image<value_type> im1_image;
   Image<value_type> im2_image;
 
@@ -140,6 +142,9 @@ void run ()
     throw Exception ("image dimensions larger than 4 are not supported");
   }
   else if (im2_header.ndim() == 4) {
+    if (im1_header.size(3) != im2_header.size(3))
+      throw Exception ("input images do not have the same number of volumes in the 4th dimension");
+
     value_type val = (std::sqrt (float (1 + 8 * im2_header.size(3))) - 3.0) / 4.0;
     if (!(val - (int)val) && do_reorientation && im2_header.size(3) > 1) {
         CONSOLE ("SH series detected, performing FOD registration");
