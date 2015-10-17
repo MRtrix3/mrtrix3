@@ -24,6 +24,7 @@
 #include "math/math.h"
 #include "image.h"
 #include "file/nifti1_utils.h"
+#include "transform.h"
 
 
 using namespace MR;
@@ -39,7 +40,6 @@ void usage ()
     "two transformation files";
 
   ARGUMENTS
-  + Argument ("input", "input transformation matrix").type_file_in ()
   + Argument ("output", "the output transformation matrix.").type_file_out ();
 
 
@@ -48,8 +48,24 @@ void usage ()
         "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
         "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
         "with the -in and -ref options.")
+    + Argument ("input", "input transformation matrix").type_file_in ()
     + Argument ("in").type_image_in ()
     + Argument ("ref").type_image_in ()
+
+    + Option ("surfer_vox2vox", 
+        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
+        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
+        "with the -in and -ref options.")
+    + Argument ("vox2vox", "input transformation matrix").type_file_in ()
+    + Argument ("mov").type_image_in ()
+    + Argument ("dst").type_image_in ()
+
+    + Option ("surfer_fromheader", 
+        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
+        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
+        "with the -in and -ref options.")
+    + Argument ("mov").type_image_in ()
+    + Argument ("mapmovhdr").type_image_in ()
 
     + Option ("interpolate",
         "Create interpolated transformation matrix between input (t=0) and input2 (t=1). "
@@ -57,6 +73,7 @@ void usage ()
         " translation, rotation and stretch described in "
         " Shoemake, K., Hill, M., & Duff, T. (1992). Matrix Animation and Polar Decomposition. "
         " Matrix, 92, 258-264. doi:10.1.1.56.1336")
+    + Argument ("input", "input transformation matrix").type_file_in ()
     + Argument ("input2").type_file_in ()
     + Argument ("t").type_float ();
 }
@@ -75,6 +92,56 @@ transform_type get_flirt_transform (const Header& header)
   return nifti_transform * coord_switch;
 }
 
+transform_type get_surfer_transform (const Header& header) {
+  // TODO
+  return transform_type();
+}
+
+//! read matrix data into a 2D vector \a filename
+template <class ValueType = default_type>
+  transform_type parse_surfer_transform (const std::string& filename) {
+    std::ifstream stream (filename, std::ios_base::in | std::ios_base::binary);
+    std::vector<std::vector<ValueType>> V;
+    std::string sbuf;
+    std::string file_version;
+    while (getline (stream, sbuf)) {
+      if (sbuf.substr (0,1) == "#")
+        continue;
+      if (sbuf.find("1 4 4") != std::string::npos)
+        break;
+      if (sbuf.find("type") == std::string::npos) 
+        continue;
+      file_version = sbuf.substr (sbuf.find_first_of ('=')+1);
+    }
+    if (file_version.empty())
+      throw Exception ("not a surfer transformation");
+    // so far we only understand vox2vox transformations
+    // vox2vox = inverse(colrowslice_to_xyz(moving))*M*colrowslice_to_xyz(target)
+    if (stoi(file_version)!=0)
+      throw Exception ("not a vox2vox transformation");
+
+    for (auto i = 0; i<4 && getline (stream, sbuf); ++i){
+      // sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('type')));
+      V.push_back (std::vector<ValueType>());
+      const auto elements = MR::split (sbuf, " ,;\t", true);
+      for (const auto& entry : elements)
+        V.back().push_back (to<ValueType> (entry));
+      if (V.size() > 1)
+        if (V.back().size() != V[0].size())
+          throw Exception ("uneven rows in matrix");
+    }
+    if (stream.bad()) 
+      throw Exception (strerror (errno));
+    if (!V.size())
+      throw Exception ("no data in file");
+
+    transform_type M;
+    for (ssize_t i = 0; i < 3; i++)
+      for (ssize_t j = 0; j < 4; j++)
+        M(i,j) = V[i][j];
+    return M;
+  }
+
 template <typename T> int sgn(T val) {
     return (T(0) < val) - (val < T(0));
 }
@@ -85,27 +152,70 @@ void run ()
 {
   auto flirt_opt = get_options ("flirt_import");
   auto interp_opt = get_options ("interpolate");
+  auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
+  auto surfer_fromheader_opt = get_options ("surfer_fromheader");
 
-  if (flirt_opt.size() && !interp_opt.size()) {
-    transform_type transform = load_transform<float> (argument[0]);
+  size_t options = 0;
+  if (flirt_opt.size())
+    options++;
+  if (interp_opt.size())
+    options++;
+  if (surfer_fromheader_opt.size())
+    options++;
+  if (surfer_vox2vox_opt.size())
+    options++;
+  if (options != 1)
+    throw Exception ("You must specify one option");
+
+  if(surfer_fromheader_opt.size()){
+    auto orig_header = Header::open (surfer_fromheader_opt[0][0]);
+    auto modified_header = Header::open (surfer_fromheader_opt[0][1]);
+
+    transform_type forward_transform = Transform(orig_header).scanner2voxel * Transform(modified_header).voxel2scanner;
+    save_transform (forward_transform.inverse(), argument[0]);
+  } 
+
+  if(surfer_vox2vox_opt.size()){
+    auto vox2vox = parse_surfer_transform (surfer_vox2vox_opt[0][0]);
+
+    auto src_header = Header::open (surfer_vox2vox_opt[0][0]);
+    auto dest_header = Header::open (surfer_vox2vox_opt[0][1]);
+    
+    auto transform_source = Transform(src_header); // .transform();
+    auto transform_dest = Transform(dest_header); //dest_header.transform();
+
+    VAR(transform_source.voxel2scanner.matrix());
+    VAR(transform_dest.voxel2scanner.matrix());
+    VAR(vox2vox.matrix());
+
+    auto forward_transform = transform_dest.voxel2scanner * 
+        /*swap axis,negation?*/    vox2vox *
+                              transform_source.scanner2voxel.inverse();
+    throw Exception ("FIXME: not implemented");
+    save_transform (forward_transform.inverse(), argument[0]);
+  } 
+
+  if (flirt_opt.size()) {
+    transform_type transform = load_transform<float> (flirt_opt[0][0]);
     if(transform.matrix().determinant() == float(0.0))
         WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
 
-    auto src_header = Header::open (flirt_opt[0][0]);
+    auto src_header = Header::open (flirt_opt[0][1]);
     transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
 
-    auto dest_header = Header::open (flirt_opt[0][1]);
+    auto dest_header = Header::open (flirt_opt[0][2]);
     transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
 
     transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
     if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
       WARN ("NAN in transformation.");
-    save_transform (forward_transform.inverse(), argument[1]);
-  } else if(interp_opt.size() && !flirt_opt.size()) {
-    transform_type transform1 = load_transform<double> (argument[0]);
-    transform_type transform2 = load_transform<double> (interp_opt[0][0]);
+    save_transform (forward_transform.inverse(), argument[0]);
+  }
+  if(interp_opt.size()) {
+    transform_type transform1 = load_transform<double> (interp_opt[0][0]);
+    transform_type transform2 = load_transform<double> (interp_opt[0][1]);
     transform_type transform_out;
-    double t = interp_opt[0][1];
+    double t = interp_opt[0][2];
     if (t < 0.0 || t > 1.0)
       throw Exception ("t has to be in the interval [0,1]");
 
@@ -134,8 +244,6 @@ void run ()
     transform_out.linear() = Qout * ((1 - t) * S1 + t * S2);
     INFO("\n"+str(transform_out.matrix().format(
       Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
-    save_transform (transform_out, argument[1]);
-  } else {
-    throw Exception ("you must specify either -flirt_import or -interpolate option");
-  }
+    save_transform (transform_out, argument[0]);
+  } 
 }
