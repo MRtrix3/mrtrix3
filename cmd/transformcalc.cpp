@@ -53,17 +53,13 @@ void usage ()
     + Argument ("ref").type_image_in ()
 
     + Option ("surfer_vox2vox", 
-        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
-        "with the -in and -ref options.")
+        "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
     + Argument ("vox2vox", "input transformation matrix").type_file_in ()
     + Argument ("mov").type_image_in ()
     + Argument ("dst").type_image_in ()
 
-    + Option ("surfer_fromheader", 
-        "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
-        "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
-        "with the -in and -ref options.")
+    + Option ("header", 
+        "Calculate the transformation matrix from an original image and an image with modified header.")
     + Argument ("mov").type_image_in ()
     + Argument ("mapmovhdr").type_image_in ()
 
@@ -153,25 +149,25 @@ void run ()
   auto flirt_opt = get_options ("flirt_import");
   auto interp_opt = get_options ("interpolate");
   auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
-  auto surfer_fromheader_opt = get_options ("surfer_fromheader");
+  auto from_header_opt = get_options ("header");
 
   size_t options = 0;
   if (flirt_opt.size())
     options++;
   if (interp_opt.size())
     options++;
-  if (surfer_fromheader_opt.size())
+  if (from_header_opt.size())
     options++;
   if (surfer_vox2vox_opt.size())
     options++;
   if (options != 1)
     throw Exception ("You must specify one option");
 
-  if(surfer_fromheader_opt.size()){
-    auto orig_header = Header::open (surfer_fromheader_opt[0][0]);
-    auto modified_header = Header::open (surfer_fromheader_opt[0][1]);
+  if(from_header_opt.size()){
+    auto orig_header = Header::open (from_header_opt[0][0]);
+    auto modified_header = Header::open (from_header_opt[0][1]);
 
-    transform_type forward_transform = Transform(orig_header).scanner2voxel * Transform(modified_header).voxel2scanner;
+    transform_type forward_transform = Transform(modified_header).image2scanner * orig_header.transform().inverse();
     save_transform (forward_transform.inverse(), argument[0]);
   } 
 
