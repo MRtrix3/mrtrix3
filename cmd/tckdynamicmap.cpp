@@ -103,6 +103,11 @@ OPTIONS
   + Option ("window_width", "set the full width of the sliding window (in volumes, not time) (must be an odd number)")
     + Argument ("value").type_integer (3, 15, 1e6-1)
 
+  + Option ("zero_outside_fov",
+      "if a streamline exits the image FoV, by default the time series of that "
+      "streamline endpoint will be drawn from the last streamline point within the image "
+      "FoV. Use this option to instead set the TWI factor to zero for such streamlines.")
+
   + Option ("resample",
       "resample the tracks at regular intervals using Hermite interpolation\n"
       "(If omitted, an appropriate interpolation will be determined automatically)")
@@ -123,13 +128,14 @@ class Mapper : public Mapping::TrackMapperBase
     typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
   public:
-    Mapper (const Image::Header& header, const size_t upsample_ratio, Image::BufferPreload<float>& input_image, const std::vector<float>& windowing_function, const int timepoint) :
+    Mapper (const Image::Header& header, const size_t upsample_ratio, Image::BufferPreload<float>& input_image, const std::vector<float>& windowing_function, const int timepoint, const bool zero) :
         Mapping::TrackMapperBase (header),
         in (input_image),
         fmri_transform (input_image),
         kernel (windowing_function),
         kernel_centre (kernel.size() / 2),
-        sample_centre (timepoint)
+        sample_centre (timepoint),
+        zero_outside_fov (zero)
     {
       Mapping::TrackMapperBase::set_upsample_ratio (upsample_ratio);
     }
@@ -140,6 +146,7 @@ class Mapper : public Mapping::TrackMapperBase
     const Image::Transform fmri_transform;
     const std::vector<float>& kernel;
     const int kernel_centre, sample_centre;
+    const bool zero_outside_fov;
 
     // This is where the windowed Pearson correlation coefficient for the streamline is determined
     // By overloading this function, the standard mapping functionalities of TrackMapperBase are utilised;
@@ -160,12 +167,12 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
   input_voxel_type start_voxel (in), end_voxel (in);
   const Point<int> v_start (get_last_voxel_in_fov (tck, false));
   if (v_start == Point<int> (-1, -1, -1))
-    return false;
+    return true;
   Image::Nav::set_pos (start_voxel, v_start);
 
   const Point<int> v_end (get_last_voxel_in_fov (tck, true));
   if (v_end == Point<int> (-1, -1, -1))
-    return false;
+    return true;
   Image::Nav::set_pos (end_voxel, v_end);
 
   double start_mean = 0.0, end_mean = 0.0, kernel_sum = 0.0, kernel_sq_sum = 0.0;
@@ -208,19 +215,28 @@ bool Mapper::preprocess (const Streamline<>& tck, SetVoxelExtras& out) const
 //   point for which a valid tri-linear interpolation can be performed
 const Point<int> Mapper::get_last_voxel_in_fov (const std::vector< Point<float> >& tck, const bool end) const
 {
-
   int index = end ? tck.size() - 1 : 0;
-  const int step  = end ? -1 : 1;
-  do {
-    const Point<float>& p = fmri_transform.scanner2voxel (tck[index]);
+  if (zero_outside_fov) {
+
+    const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
     const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
     if (Image::Nav::within_bounds (in, v))
       return v;
-    index += step;
-  } while (index >= 0 && index < int(tck.size()));
+    return Point<int> (-1, -1, -1);
 
-  return Point<int> (-1, -1, -1);
+  } else {
 
+    const int step  = end ? -1 : 1;
+    do {
+      const Point<float> p = fmri_transform.scanner2voxel (tck[index]);
+      const Point<int> v (std::round (p[0]), std::round (p[1]), std::round (p[2]));
+      if (Image::Nav::within_bounds (in, v))
+        return v;
+      index += step;
+    } while (index >= 0 && index < int(tck.size()));
+    return Point<int> (-1, -1, -1);
+
+  }
 }
 
 
@@ -412,8 +428,6 @@ void run () {
     WARN ("track interpolation off; track step size information in header is absent or malformed");
   }
 
-  //Math::Matrix<float> interp_matrix (resample_factor > 1 ? gen_interp_matrix<float> (resample_factor) : Math::Matrix<float> ());
-
   opt = get_options ("stat_vox");
   vox_stat_t stat_vox = opt.size() ? vox_stat_t(int(opt[0][0])) : V_MEAN;
 
@@ -464,6 +478,8 @@ void run () {
 
   }
 
+  const bool zero_outside_fov = get_options ("zero_outside_fov").size();
+
   // TODO Reconsider pre-calculating & storing SetVoxel for each streamline
   // - Faster, but ups RAM requirements, may become prohibitive with super-resolution
   // TODO Add voxel-wise statistic V_MEAN_ABS - mean absolute value?
@@ -491,7 +507,7 @@ void run () {
       LogLevelLatch latch (0);
       Tractography::Reader<float> tck_file (tck_path, properties);
       Mapping::TrackLoader loader (tck_file);
-      Mapper mapper (H_3d, resample_factor, in_image, window, timepoint);
+      Mapper mapper (H_3d, resample_factor, in_image, window, timepoint, zero_outside_fov);
       Receiver receiver (H_3d, stat_vox);
       Thread::run_queue (loader, Thread::batch (Tractography::Streamline<>()), Thread::multi (mapper), Thread::batch (Mapping::SetVoxel()), receiver);
 

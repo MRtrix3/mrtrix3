@@ -389,6 +389,7 @@ class TrackMapperTWI : public TrackMapperBase
 
 
     void add_scalar_image (const std::string&);
+    void set_zero_outside_fov();
     void add_fod_image    (const std::string&);
 
 

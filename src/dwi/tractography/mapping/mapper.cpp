@@ -185,13 +185,23 @@ void TrackMapperTWI::add_scalar_image (const std::string& path)
   image_plugin = new TWIScalarImagePlugin (path, track_statistic);
 }
 
+void TrackMapperTWI::set_zero_outside_fov()
+{
+  if (!image_plugin)
+    throw Exception ("Cannot set zero outside FoV if no TWI associated image provided");
+  if (typeid(image_plugin) != typeid(TWIScalarImagePlugin))
+    throw Exception ("Zeroing outside FoV is only applicable to scalar image TWI plugins");
+  TWIScalarImagePlugin* ptr = dynamic_cast<TWIScalarImagePlugin*>(image_plugin);
+  ptr->set_zero_outside_fov();
+}
+
 void TrackMapperTWI::add_fod_image (const std::string& path)
 {
   if (image_plugin)
     throw Exception ("Cannot add more than one associated image to TWI");
   if (contrast != FOD_AMP)
     throw Exception ("Cannot add an FOD image to TWI unless the FOD_AMP contrast is used");
-  image_plugin = new TWIFODImagePlugin (path);
+  image_plugin = new TWIFODImagePlugin (path, track_statistic);
 }
 
 

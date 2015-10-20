@@ -34,16 +34,27 @@ namespace Mapping {
 
 
 
-
-const Point<float> TWIImagePluginBase::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
+const ssize_t TWIImagePluginBase::get_last_index_in_fov (const std::vector< Point<float> >& tck, const bool end) const
 {
   ssize_t index = end ? tck.size() - 1 : 0;
-  const int step = end ? -1 : 1;
-  while (interp.scanner (tck[index])) {
-    index += step;
-    if (index == -1 || index == ssize_t(tck.size()))
-      return Point<float>();
+  if (zero_outside_fov) {
+    if (interp.scanner (tck[index]))
+      return -1;
+  } else {
+    const ssize_t step = end ? -1 : 1;
+    while (interp.scanner (tck[index])) {
+      index += step;
+      if (index == -1 || index == ssize_t(tck.size()))
+        return -1;
+    }
   }
+  return index;
+}
+const Point<float> TWIImagePluginBase::get_last_point_in_fov (const std::vector< Point<float> >& tck, const bool end) const
+{
+  const ssize_t index = get_last_index_in_fov (tck, end);
+  if (index == -1)
+    return Point<float>();
   return tck[index];
 }
 
@@ -63,7 +74,7 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
       if (endpoint.valid())
         factors.push_back (interp.value());
       else
-        factors.push_back (NAN);
+        factors.push_back (0.0);
     }
 
   } else if (statistic == ENDS_CORR) {
@@ -105,7 +116,7 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
       if (!interp.scanner (*i))
         factors.push_back (interp.value());
       else
-        factors.push_back (NAN);
+        factors.push_back (0.0);
     }
 
   }
@@ -117,19 +128,38 @@ void TWIScalarImagePlugin::load_factors (const std::vector< Point<float> >& tck,
 
 void TWIFODImagePlugin::load_factors (const std::vector< Point<float> >& tck, std::vector<float>& factors) const
 {
-  for (size_t i = 0; i != tck.size(); ++i) {
-    const Point<float>& p = tck[i];
-    if (!interp.scanner (p)) {
-      // Get the FOD at this (interploated) point
-      for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
-        sh_coeffs[interp[3]] = interp.value();
-      // Get the FOD amplitude along the streamline tangent
-      const Point<float> dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalise();
-      factors.push_back (precomputer->value (sh_coeffs, dir));
-    } else {
-      factors.push_back (NAN);
+  if (statistic == ENDS_MAX || statistic == ENDS_MEAN || statistic == ENDS_MIN || statistic == ENDS_PROD) {
+
+    for (size_t tck_end_index = 0; tck_end_index != 2; ++tck_end_index) {
+      const ssize_t index = get_last_index_in_fov (tck, tck_end_index);
+      if (index == -1) {
+        factors.push_back (0.0);
+      } else {
+        for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
+          sh_coeffs[interp[3]] = interp.value();
+        const Point<float> dir = (tck[(index == ssize_t(tck.size()-1)) ? index : (index+1)] - tck[index ? (index-1) : 0]).normalise();
+        factors.push_back (precomputer->value (sh_coeffs, dir));
+      }
     }
+
+  } else {
+
+    for (size_t i = 0; i != tck.size(); ++i) {
+      const Point<float>& p = tck[i];
+      if (!interp.scanner (p)) {
+        // Get the FOD at this (interploated) point
+        for (interp[3] = 0; interp[3] != interp.dim(3); ++interp[3])
+          sh_coeffs[interp[3]] = interp.value();
+        // Get the FOD amplitude along the streamline tangent
+        const Point<float> dir = (tck[(i == tck.size()-1) ? i : (i+1)] - tck[i ? (i-1) : 0]).normalise();
+        factors.push_back (precomputer->value (sh_coeffs, dir));
+      } else {
+        factors.push_back (0.0);
+      }
+    }
+
   }
+
 }
 
 

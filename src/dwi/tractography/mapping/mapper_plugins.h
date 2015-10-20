@@ -81,18 +81,24 @@ class TWIImagePluginBase
 {
 
   public:
-    TWIImagePluginBase (const std::string& input_image) :
+    TWIImagePluginBase (const std::string& input_image, const tck_stat_t track_statistic) :
+        statistic (track_statistic),
         data (new Image::BufferPreload<float> (input_image)),
         voxel (*data),
-        interp (voxel) { }
+        interp (voxel),
+        zero_outside_fov (false) { }
 
     TWIImagePluginBase (const TWIImagePluginBase& that) :
+        statistic (that.statistic),
         data (that.data),
         voxel (that.voxel),
-        interp (voxel) { }
+        interp (voxel),
+        zero_outside_fov (that.zero_outside_fov) { }
 
     virtual ~TWIImagePluginBase() { }
 
+
+    void set_zero_outside_fov() { zero_outside_fov = true; }
 
     virtual void load_factors (const std::vector< Point<float> >&, std::vector<float>&) const = 0;
 
@@ -100,13 +106,21 @@ class TWIImagePluginBase
   protected:
     typedef Image::BufferPreload<float>::voxel_type input_voxel_type;
 
+    const tck_stat_t statistic;
+
     std::shared_ptr< Image::BufferPreload<float> > data;
     const input_voxel_type voxel;
     // Each instance of the class has its own interpolator for obtaining values
     //   in a thread-safe fashion
     mutable Image::Interp::Linear<input_voxel_type> interp;
 
+    // If the streamline endpoint extends beyond the image FoV, but we want the value
+    //   at the endpoint, should we backtrack to the first streamline point that _is_
+    //   within the FoV, or should it provide a value of zero?
+    bool zero_outside_fov;
+
     // New helper function; find the last point on the streamline from which valid image information can be read
+    const ssize_t get_last_index_in_fov (const std::vector< Point<float> >&, const bool) const;
     const Point<float> get_last_point_in_fov (const std::vector< Point<float> >&, const bool) const;
 
 };
@@ -119,8 +133,7 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
 {
   public:
     TWIScalarImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
-        TWIImagePluginBase (input_image),
-        statistic (track_statistic)
+        TWIImagePluginBase (input_image, track_statistic)
     {
       if (track_statistic == ENDS_CORR) {
         if (data->ndim() != 4)
@@ -134,8 +147,7 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
     }
 
     TWIScalarImagePlugin (const TWIScalarImagePlugin& that) :
-        TWIImagePluginBase (that),
-        statistic (that.statistic)
+        TWIImagePluginBase (that)
     {
       if (data->ndim() == 4)
         interp[3] = 0;
@@ -143,11 +155,10 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
 
     ~TWIScalarImagePlugin() { }
 
-
     void load_factors (const std::vector< Point<float> >&, std::vector<float>&) const;
 
   private:
-    const tck_stat_t statistic;
+
 
 };
 
@@ -158,12 +169,14 @@ class TWIScalarImagePlugin : public TWIImagePluginBase
 class TWIFODImagePlugin : public TWIImagePluginBase
 {
   public:
-    TWIFODImagePlugin (const std::string& input_image) :
-        TWIImagePluginBase (input_image),
+    TWIFODImagePlugin (const std::string& input_image, const tck_stat_t track_statistic) :
+        TWIImagePluginBase (input_image, track_statistic),
         N (data->dim(3)),
         sh_coeffs (new float[N]),
         precomputer (new Math::SH::PrecomputedAL<float> ())
     {
+      if (track_statistic == ENDS_CORR)
+        throw Exception ("Cannot use ends_corr track statistic with an FOD image");
       Math::SH::check (*data);
       precomputer->init (Math::SH::LforN (N));
     }

@@ -133,7 +133,12 @@ const OptionGroup TWIOption = OptionGroup ("Options for the TWI image contrast p
   + Option ("map_zero",
       "if a streamline has zero contribution based on the contrast & statistic, typically it is not mapped; "
       "use this option to still contribute to the map even if this is the case "
-      "(these non-contributing voxels can then influence the mean value in each voxel of the map)");
+      "(these non-contributing voxels can then influence the mean value in each voxel of the map)")
+
+  + Option ("zero_outside_fov",
+      "when using -stat_tck ends_*, if the streamline exits the image FoV, by default the value "
+      "for that streamline endpoint will be drawn from the last streamline point within the image "
+      "FoV. Use this option to instead set the TWI factor to zero for such streamlines.");
 
 
 
@@ -337,6 +342,15 @@ void run () {
   }
 
 
+  bool zero_outside_fov = false;
+  if (get_options ("zero_outside_fov").size()) {
+    if (stat_tck == ENDS_CORR || stat_tck == ENDS_MAX || stat_tck == ENDS_MEAN || stat_tck == ENDS_MIN || stat_tck == ENDS_PROD)
+      zero_outside_fov = true;
+    else
+      WARN ("-zero_outside_fov option ignored; only applicable to endpoint-based track statistics");
+  }
+
+
   // Determine the dimensionality of the output image
   writer_dim writer_type = GREYSCALE;
 
@@ -421,8 +435,8 @@ void run () {
       break;
 
     case FOD_AMP:
-      if (stat_tck == ENDS_MIN || stat_tck == ENDS_MEAN || stat_tck == ENDS_MAX || stat_tck == ENDS_PROD || stat_tck == ENDS_CORR)
-        throw Exception ("Can't use endpoint-based track-wise statistics with FOD_AMP contrast");
+      if (stat_tck == ENDS_CORR)
+        throw Exception ("Can't use endpoint-correlation track-wise statistic with FOD_AMP contrast");
       break;
 
     case CURVATURE:
@@ -436,6 +450,8 @@ void run () {
   header["twi_contrast"] = contrasts[contrast];
   header["twi_vox_stat"] = voxel_statistics[stat_vox];
   header["twi_tck_stat"] = track_statistics[stat_tck];
+  if (zero_outside_fov)
+    header["zero_outside_fov"] = "1";
 
 
   // Figure out how the streamlines will be mapped
@@ -574,10 +590,13 @@ void run () {
         throw Exception ("If using 'fod_amp' contrast, must provide the relevant spherical harmonic image using -image option");
     }
     const std::string assoc_image (opt[0][0]);
-    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+    if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT) {
       mapper->add_scalar_image (assoc_image);
-    else
+      if (zero_outside_fov)
+        mapper->set_zero_outside_fov();
+    } else {
       mapper->add_fod_image (assoc_image);
+    }
     header["twi_assoc_image"] = str(opt[0][0]);
   }
 
