@@ -402,7 +402,7 @@ namespace MR
             // If rotating image we need to offset the translation so that the rotation is relative to
             // the center (i.e. target) of the image
             if (rotation_type == RotationType::Image) {
-              GL::vec4 target_after = GL::inv (GL::mat4 (rotation)) * GL::vec4 (target[0], target[1], target[2], 1.0f);
+              GL::vec4 target_after = GL::mat4 (rotation) * GL::vec4 (target[0], target[1], target[2], 1.0f);
               trans_vec += Eigen::Vector3f { target_after[0], target_after[1], target_after[2] } - target;
             }
 

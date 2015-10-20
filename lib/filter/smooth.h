@@ -56,10 +56,10 @@ namespace MR
         template <class HeaderType>
         Smooth (const HeaderType& in) :
             Base (in),
-            extent (in.ndim(), 0),
-            stdev (in.ndim(), 0.0)
+            extent (3, 0),
+            stdev (3, 0.0)
         {
-          for (int i = 0; i < std::min (int(in.ndim()), 3); i++)
+          for (int i = 0; i < 3; i++)
             stdev[i] = in.spacing(i);
           datatype() = DataType::Float32;
         }
@@ -67,20 +67,20 @@ namespace MR
         template <class HeaderType>
         Smooth (const HeaderType& in, const std::vector<default_type>& stdev) :
             Base (in),
-            extent (in.ndim(), 0),
-            stdev (in.ndim())
+            extent (3, 0),
+            stdev (3, 0.0)
         {
           set_stdev (stdev);
           datatype() = DataType::Float32;
         }
 
         //! Set the extent of smoothing kernel in voxels.
-        //! This can be set as a single value for all dimensions
+        //! This can be set as a single value to be used for the first 3 dimensions
         //! or separate values, one for each dimension. (Default: 4 standard deviations)
         void set_extent (const std::vector<int>& new_extent)
         {
-          if (new_extent.size() != 1 && new_extent.size() != this->ndim())
-            throw Exception ("the number of extent elements does not correspond to the number of image dimensions");
+          if (new_extent.size() != 1 && new_extent.size() != 3)
+            throw Exception ("Please supply a single kernel extent value, or three values (one for each spatial dimension)");
           for (size_t i = 0; i < new_extent.size(); ++i) {
             if (!(new_extent[i] & int (1)))
               throw Exception ("expected odd number for extent");
@@ -107,8 +107,8 @@ namespace MR
             for (unsigned int i = 0; i < 3; i++)
               stdev[i] = std_dev[0];
           } else {
-            if (stdev.size() != this->ndim())
-              throw Exception ("The number of stdev values supplied does not correspond to the number of dimensions");
+            if (stdev.size() != 3)
+              throw Exception ("Please supply a single standard deviation value, or three values (one for each spatial dimension)");
             stdev = std_dev;
           }
           for (size_t i = 0; i < stdev.size(); ++i)
@@ -122,7 +122,6 @@ namespace MR
         {
           std::shared_ptr <Image<ValueType> > in (std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input)));
           threaded_copy (input, *in);
-
           std::shared_ptr <Image<ValueType> > out;
 
           std::unique_ptr<ProgressBar> progress;
