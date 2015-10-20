@@ -52,6 +52,10 @@ void usage ()
     + Argument ("in").type_image_in ()
     + Argument ("ref").type_image_in ()
 
+    + Option ("invert",
+      "invert the input transformation.")
+    + Argument ("input", "input transformation matrix").type_file_in ()
+
     + Option ("surfer_vox2vox",
         "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
     + Argument ("vox2vox", "input transformation matrix").type_file_in ()
@@ -148,11 +152,14 @@ void run ()
 {
   auto flirt_opt = get_options ("flirt_import");
   auto interp_opt = get_options ("interpolate");
+  auto invert_opt = get_options ("invert");
   auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
   auto from_header_opt = get_options ("header");
 
   size_t options = 0;
   if (flirt_opt.size())
+    options++;
+  if (invert_opt.size())
     options++;
   if (interp_opt.size())
     options++;
@@ -162,6 +169,11 @@ void run ()
     options++;
   if (options != 1)
     throw Exception ("You must specify one option");
+
+  if(invert_opt.size()){
+    transform_type input = load_transform<double> (invert_opt[0][0]);
+    save_transform (input.inverse(), argument[0]);
+  }
 
   if(from_header_opt.size()){
     auto orig_header = Header::open (from_header_opt[0][0]);
