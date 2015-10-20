@@ -44,7 +44,7 @@ void usage ()
 
 
   OPTIONS
-    + Option ("flirt_import", 
+    + Option ("flirt_import",
         "Convert a transformation matrix produced by FSL's flirt command into a format usable by MRtrix. "
         "You'll need to provide as additional arguments the save NIfTI images that were passed to flirt "
         "with the -in and -ref options.")
@@ -52,13 +52,13 @@ void usage ()
     + Argument ("in").type_image_in ()
     + Argument ("ref").type_image_in ()
 
-    + Option ("surfer_vox2vox", 
+    + Option ("surfer_vox2vox",
         "Convert a transformation matrix produced by freesurfer's robust_register command into a format usable by MRtrix. ")
     + Argument ("vox2vox", "input transformation matrix").type_file_in ()
     + Argument ("mov").type_image_in ()
     + Argument ("dst").type_image_in ()
 
-    + Option ("header", 
+    + Option ("header",
         "Calculate the transformation matrix from an original image and an image with modified header.")
     + Argument ("mov").type_image_in ()
     + Argument ("mapmovhdr").type_image_in ()
@@ -105,7 +105,7 @@ template <class ValueType = default_type>
         continue;
       if (sbuf.find("1 4 4") != std::string::npos)
         break;
-      if (sbuf.find("type") == std::string::npos) 
+      if (sbuf.find("type") == std::string::npos)
         continue;
       file_version = sbuf.substr (sbuf.find_first_of ('=')+1);
     }
@@ -126,7 +126,7 @@ template <class ValueType = default_type>
         if (V.back().size() != V[0].size())
           throw Exception ("uneven rows in matrix");
     }
-    if (stream.bad()) 
+    if (stream.bad())
       throw Exception (strerror (errno));
     if (!V.size())
       throw Exception ("no data in file");
@@ -167,16 +167,16 @@ void run ()
     auto orig_header = Header::open (from_header_opt[0][0]);
     auto modified_header = Header::open (from_header_opt[0][1]);
 
-    transform_type forward_transform = Transform(modified_header).image2scanner * orig_header.transform().inverse();
+    transform_type forward_transform = Transform(modified_header).voxel2scanner * Transform(orig_header).voxel2scanner.inverse();
     save_transform (forward_transform.inverse(), argument[0]);
-  } 
+  }
 
   if(surfer_vox2vox_opt.size()){
     auto vox2vox = parse_surfer_transform (surfer_vox2vox_opt[0][0]);
 
-    auto src_header = Header::open (surfer_vox2vox_opt[0][0]);
-    auto dest_header = Header::open (surfer_vox2vox_opt[0][1]);
-    
+    auto src_header = Header::open (surfer_vox2vox_opt[0][1]);
+    auto dest_header = Header::open (surfer_vox2vox_opt[0][2]);
+
     auto transform_source = Transform(src_header); // .transform();
     auto transform_dest = Transform(dest_header); //dest_header.transform();
 
@@ -184,12 +184,11 @@ void run ()
     VAR(transform_dest.voxel2scanner.matrix());
     VAR(vox2vox.matrix());
 
-    auto forward_transform = transform_dest.voxel2scanner * 
-        /*swap axis,negation?*/    vox2vox *
-                              transform_source.scanner2voxel.inverse();
-    throw Exception ("FIXME: not implemented");
+    auto forward_transform =  transform_source.voxel2scanner *
+      vox2vox.inverse() * transform_dest.voxel2scanner;
     save_transform (forward_transform.inverse(), argument[0]);
-  } 
+    throw Exception ("FIXME: surfer_vox2vox not implemented yet");
+  }
 
   if (flirt_opt.size()) {
     transform_type transform = load_transform<float> (flirt_opt[0][0]);
@@ -241,5 +240,5 @@ void run ()
     INFO("\n"+str(transform_out.matrix().format(
       Eigen::IOFormat(Eigen::FullPrecision, 0, ", ", ",\n", "[", "]", "[", "]"))));
     save_transform (transform_out, argument[0]);
-  } 
+  }
 }
