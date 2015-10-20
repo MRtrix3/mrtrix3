@@ -25,6 +25,7 @@
 #include "image.h"
 #include "file/nifti1_utils.h"
 #include "transform.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 
 using namespace MR;
@@ -54,6 +55,10 @@ void usage ()
 
     + Option ("invert",
       "invert the input transformation.")
+    + Argument ("input", "input transformation matrix").type_file_in ()
+
+    + Option ("half",
+      "output the matrix square root of the input transformation.")
     + Argument ("input", "input transformation matrix").type_file_in ()
 
     + Option ("surfer_vox2vox",
@@ -153,6 +158,7 @@ void run ()
   auto flirt_opt = get_options ("flirt_import");
   auto interp_opt = get_options ("interpolate");
   auto invert_opt = get_options ("invert");
+  auto half_opt = get_options ("invert");
   auto surfer_vox2vox_opt = get_options ("surfer_vox2vox");
   auto from_header_opt = get_options ("header");
 
@@ -160,6 +166,8 @@ void run ()
   if (flirt_opt.size())
     options++;
   if (invert_opt.size())
+    options++;
+  if (half_opt.size())
     options++;
   if (interp_opt.size())
     options++;
@@ -173,6 +181,15 @@ void run ()
   if(invert_opt.size()){
     transform_type input = load_transform<double> (invert_opt[0][0]);
     save_transform (input.inverse(), argument[0]);
+  }
+
+  if(half_opt.size()){
+    transform_type input = load_transform<double> (half_opt[0][0]);
+    Eigen::Matrix<default_type, 4, 4> half;
+    half.row(3) << 0, 0, 0, 1.0;
+    half.topLeftCorner(3,4) = input.matrix().topLeftCorner(3,4);
+    input.matrix() = half.sqrt().topLeftCorner(3,4);
+    save_transform (input, argument[0]);
   }
 
   if(from_header_opt.size()){
