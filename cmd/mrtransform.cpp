@@ -35,6 +35,8 @@
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"
 #include "registration/transform/reorient.h"
+#include "image/average_space.h"
+#include <unsupported/Eigen/MatrixFunctions>
 
 
 
@@ -59,12 +61,12 @@ void usage ()
     "of coefficients in an antipodally symmetric spherical harmonic series (e.g. "
     "6, 15, 28 etc). The -no_reorientation option can be used to force "
     "reorientation off if required."
-  
+
   + "If a DW scheme is contained in the header (or specified separately), and "
     "the number of directions matches the number of volumes in the images, any "
     "transformation applied using the -linear option will be also be applied to the directions.";
 
-  REFERENCES 
+  REFERENCES
     + "If FOD reorientation is being performed:\n"
     "Raffelt, D.; Tournier, J.-D.; Crozier, S.; Connelly, A. & Salvado, O. "
     "Reorientation of fiber orientation distributions using apodized point spread functions. "
@@ -82,7 +84,7 @@ void usage ()
   OPTIONS
     + OptionGroup ("Affine transformation options")
 
-    + Option ("linear", 
+    + Option ("linear",
         "specify a 4x4 linear transform to apply, in the form "
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
@@ -94,21 +96,28 @@ void usage ()
         "flip the specified axes, provided as a comma-separated list of indices (0:x, 1:y, 2:z).")
     +   Argument ("axes").type_sequence_int()
 
-    + Option ("inverse", 
+    + Option ("inverse",
         "apply the inverse transformation")
 
-    + Option ("replace", 
+    + Option ("half",
+        "apply the matrix square root of the transformation. This can be combined with the inverse option.")
+
+    + Option ("replace",
         "replace the linear transform of the original image by that specified, "
         "rather than applying it to the original image. If no -linear transform is specified then "
         "the header transform is replaced with an identity transform.")
 
     + OptionGroup ("Regridding options")
 
-    + Option ("template", 
+    + Option ("template",
         "reslice the input image to match the specified template image grid.")
     + Argument ("image").type_image_in ()
 
-    + Option ("interp", 
+    + Option ("midway_space",
+        "reslice the input image to the midway space between the input image and the template image. "
+        "requires the template option.")
+
+    + Option ("interp",
         "set the interpolation method to use when reslicing (choices: nearest, linear, cubic, sinc. Default: cubic).")
     + Argument ("method").type_choice (interp_choices)
 
@@ -125,12 +134,12 @@ void usage ()
     + Option ("modulate",
         "modulate the FOD during reorientation to preserve the apparent fibre density")
 
-    + Option ("directions", 
+    + Option ("directions",
         "directions defining the number and orientation of the apodised point spread functions used in FOD reorientation"
         "(Default: 60 directions)")
     + Argument ("file", "a list of directions [az el] generated using the dirgen command.").type_file_in()
 
-    + Option ("noreorientation", 
+    + Option ("noreorientation",
         "turn off FOD reorientation. Reorientation is on by default if the number "
         "of volumes in the 4th dimension corresponds to the number of coefficients in an "
         "antipodally symmetric spherical harmonic series (i.e. 6, 15, 28, 45, 66 etc")
@@ -139,7 +148,7 @@ void usage ()
 
     + DataType::options ()
 
-    + Option ("nan", 
+    + Option ("nan",
       "Use NaN as the out of bounds value (Default: 0.0)");
 }
 
@@ -180,6 +189,19 @@ void run ()
     if (!(linear || warp_ptr))
       throw Exception ("no linear or warp transformation provided for option '-inverse'");
     linear_transform = linear_transform.inverse();
+  }
+
+  // Half
+  const bool half = get_options ("half").size();
+  if (half) {
+    if (!(linear || warp_ptr))
+      throw Exception ("no linear or warp transformation provided for option '-half'");
+    {
+      Eigen::Matrix<default_type, 4, 4> temp;
+      temp.row(3) << 0, 0, 0, 1.0;
+      temp.topLeftCorner(3,4) = linear_transform.matrix().topLeftCorner(3,4);
+      linear_transform.matrix() = temp.sqrt().topLeftCorner(3,4);
+    }
   }
 
 
@@ -272,6 +294,17 @@ void run ()
 
     if (opt.size()) {
       auto template_header = Header::open (opt[0][0]);
+      if (get_options ("midway_space").size()){
+        INFO("regridding to midway space");
+        std::vector<Header> headers;
+        headers.push_back(input_header);
+        headers.push_back(template_header);
+        std::vector<transform_type> void_trafo;
+        auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
+        double resolution = 1.0;
+        auto midway_header = compute_minimum_average_header<double,transform_type>(headers, resolution, padding, void_trafo);
+        template_header = midway_header;
+      }
       for (size_t i = 0; i < 3; ++i) {
         output_header.size(i) = template_header.size(i);
         output_header.spacing(i) = template_header.spacing(i);
@@ -284,7 +317,7 @@ void run ()
         output_header.spacing(i) = warp_ptr->spacing(i);
       }
       output_header.transform() = warp_ptr->transform();
-      add_line (output_header.keyval()["comments"], std::string ("resliced to using warp image \"" + warp_ptr->name() + "\""));
+      add_line (output_header.keyval()["comments"], std::string ("resliced using warp image \"" + warp_ptr->name() + "\""));
     }
 
     int interp = 2;  // cubic
@@ -346,6 +379,9 @@ void run ()
 
   // No reslicing required, so just modify the header and do a straight copy of the data
   } else {
+
+    if (get_options ("midway").size())
+      throw Exception ("midway option given but no template image defined");
 
     INFO ("image will not be regridded");
     Eigen::MatrixXd rotation = linear_transform.linear();
