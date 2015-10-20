@@ -4,8 +4,8 @@
 #include "math/math.h"
 
 #include "transform.h"
-#include <Eigen/Geometry> 
-#include <Eigen/SVD> 
+#include <Eigen/Geometry>
+#include <Eigen/SVD>
 
 // #include "registration/transform/compose.h"
 
@@ -22,12 +22,12 @@ void usage ()
   + "computes the dissimiliarty metric between two transformations. Currently only affine transformations and the mean absolute displacement metric are implemented";
 
   ARGUMENTS
-  + Argument ("image", 
+  + Argument ("image",
         "the image that defines the space over which the "
         "dissimilarity is measured.").type_image_in ();
 
   OPTIONS
-  + Option ("linear", 
+  + Option ("linear",
         "specify a 4x4 linear transform to apply, in the form "
         "of a 4x4 ascii file. Note the standard 'reverse' convention "
         "is used, where the transform maps points in the template image "
@@ -37,14 +37,14 @@ void usage ()
   + Option ("linear_inverse",
          "invert linear transformation")
 
-  + Option ("linear2", 
+  + Option ("linear2",
         "TODO: compare transformations")
     +   Argument ("transform").type_file_in ()
 
   + Option ("template",
         "use the voxel to scanner transformation of the template image instead "
         "of the linear transformation. ")
-    +   Argument ("transformation").type_image_in() 
+    +   Argument ("transformation").type_image_in()
 
   + Option ("voxel",
          "normalise dissimiliarity to voxel size of image")
@@ -91,17 +91,17 @@ void run ()
     reference_trafo = load_transform<value_type> (opt[0][0]);
 
   bool cumulative_absolute = get_options ("cumulative_absolute").size();
-  bool normalise = get_options ("normalise").size();
+  bool normalise_to_voxel = get_options ("voxel").size();
   bool norm = get_options ("norm").size();
 
 
 
   if (!do_linear)
     throw Exception ("TODO: only linear transformation implemented but no linear transformation provided.");
-  
+
   Eigen::Matrix<value_type, 3, 1> pos;
   Eigen::Matrix<value_type, 3, 1> displacement;
-  
+
   reference_trafo = reference_trafo * trafo.voxel2scanner;
   if (get_options ("linear_inverse").size())
     affine_trafo = affine_trafo.inverse();
@@ -117,9 +117,10 @@ void run ()
     else
       cost += displacement;
   }
-  
+
   cost /= static_cast<value_type>(n_voxels);
-  if (normalise){
+  if (normalise_to_voxel){
+    INFO("normalising to voxel dimensions");
     cost[0] /= static_cast<value_type>(image.spacing(0));
     cost[1] /= static_cast<value_type>(image.spacing(1));
     cost[2] /= static_cast<value_type>(image.spacing(2));
