@@ -34,6 +34,7 @@
 #include "registration/transform/rigid.h"
 #include "dwi/directions/predefined.h"
 #include "math/SH.h"
+#include "image/average_space.h"
 
 
 using namespace MR;
@@ -44,7 +45,7 @@ const char* transformation_choices[] = { "rigid", "affine", "syn", "rigid_affine
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
       + "Register two images together using a rigid, affine or a symmetric diffeomorphic (SyN) transformation model."
@@ -66,8 +67,8 @@ void usage ()
 
 
   ARGUMENTS
-    + Argument ("moving", "moving image").type_image_in ()
-    + Argument ("template", "template image").type_image_in ();
+    + Argument ("image1", "input image 1 ('moving')").type_image_in ()
+    + Argument ("image2", "input image 2 ('template')").type_image_in ();
 
 
   OPTIONS
@@ -75,13 +76,18 @@ void usage ()
                              "rigid, affine, syn, rigid_affine, rigid_syn, affine_syn, rigid_affine_syn (Default: affine_syn)")
     + Argument ("choice").type_choice (transformation_choices)
 
-  + Option ("transformed", "the transformed moving image after registration to the template")
+  + Option ("transformed", "image1 after registration transformed to the space of image2")
     + Argument ("image").type_image_out ()
 
-  + Option ("tmask", "a mask to define the template image region to use for optimisation.")
+  + Option ("transformed_midway", "image1 and image2 after registration transformed "
+        "to the midway space")
+    + Argument ("image1_transformed").type_image_out ()
+    + Argument ("image2_transformed").type_image_out ()
+
+  + Option ("mask1", "a mask to define the region of image1 to use for optimisation.")
     + Argument ("filename").type_image_in ()
 
-  + Option ("mmask", "a mask to define the moving image region to use for optimisation.")
+  + Option ("mask2", "a mask to define the region of image2 to use for optimisation.")
     + Argument ("filename").type_image_in ()
 
   + Registration::rigid_options
@@ -178,10 +184,26 @@ void run ()
 
   // Will currently output whatever lmax was used during registration
   opt = get_options ("transformed");
-  Image<value_type> transformed;
+  Image<value_type> im1_transformed;
   if (opt.size()){
-    transformed = Image<value_type>::create (opt[0][0], im2_image); 
-    transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
+    im1_transformed = Image<value_type>::create (opt[0][0], im2_image);
+    im1_transformed.original_header().datatype() = DataType::from_command_line (DataType::Float32);
+  }
+  opt = get_options ("transformed_midway");
+  Image<value_type> image1_midway;
+  Image<value_type> image2_midway;
+  if (opt.size()){
+    std::vector<Header> headers;
+    headers.push_back(im1_image.original_header());
+    headers.push_back(im2_image.original_header());
+    std::vector<transform_type> void_trafo;
+    auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
+    value_type resolution = 1.0;
+    auto mid_way_image = compute_minimum_average_header<double,transform_type>(headers, resolution, padding, void_trafo);
+    image1_midway = Image<value_type>::create (opt[0][0], mid_way_image);
+    image1_midway.original_header().datatype() = DataType::from_command_line (DataType::Float32);
+    image2_midway = Image<value_type>::create (opt[0][1], mid_way_image);
+    image2_midway.original_header().datatype() = DataType::from_command_line (DataType::Float32);
   }
 
   opt = get_options ("type");
@@ -223,7 +245,7 @@ void run ()
   }
 
 
-  opt = get_options ("rigid_out");
+  opt = get_options ("rigid");
   bool output_rigid = false;
   std::string rigid_filename;
   if (opt.size()) {
@@ -233,7 +255,7 @@ void run ()
     rigid_filename = std::string (opt[0][0]);
   }
 
-  opt = get_options ("affine_out");
+  opt = get_options ("affine");
   bool output_affine = false;
   std::string affine_filename;
   if (opt.size()) {
@@ -241,6 +263,26 @@ void run ()
      throw Exception ("affine transformation output requested when no affine registration is requested");
    output_affine = true;
    affine_filename = std::string (opt[0][0]);
+  }
+
+  opt = get_options ("affine_1tomidway");
+  bool output_affine_1tomid = false;
+  std::string affine_1tomid_filename;
+  if (opt.size()) {
+   if (!do_affine)
+     throw Exception ("midway affine transformation output requested when no affine registration is requested");
+   output_affine_1tomid = true;
+   affine_1tomid_filename = std::string (opt[0][0]);
+  }
+
+  opt = get_options ("affine_2tomidway");
+  bool output_affine_2tomid = false;
+  std::string affine_2tomid_filename;
+  if (opt.size()) {
+   if (!do_affine)
+     throw Exception ("midway affine transformation output requested when no affine registration is requested");
+   output_affine_2tomid = true;
+   affine_2tomid_filename = std::string (opt[0][0]);
   }
 
   opt = get_options ("warp_out");
@@ -304,15 +346,15 @@ void run ()
   }
 
 
-  opt = get_options ("tmask");
-  Image<bool> tmask_image;
+  opt = get_options ("mask2");
+  Image<bool> mask2_image;
   if (opt.size ())
-    tmask_image = Image<bool>::open(opt[0][0]);
+    mask2_image = Image<bool>::open(opt[0][0]);
 
-  opt = get_options ("mmask");
-  Image<bool> mmask_image;
+  opt = get_options ("mask1");
+  Image<bool> mask1_image;
   if (opt.size ())
-    mmask_image = Image<bool>::open(opt[0][0]);
+    mask1_image = Image<bool>::open(opt[0][0]);
 
   opt = get_options ("rigid_niter");
   std::vector<int> rigid_niter;
@@ -431,22 +473,22 @@ void run ()
     else
       rigid_registration.set_init_type (init_centre);
 
-      
+
     if (im2_image.ndim() == 4) {
       if (rigid_cc)
         throw Exception ("rigid cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
-      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
+      rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
     } else {
       if (rigid_cc){
         std::vector<size_t> extent(3,3);
         rigid_registration.set_extent(extent);
         Registration::Metric::CrossCorrelation metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mmask_image, tmask_image);
+        rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
       }
     }
 
@@ -482,23 +524,29 @@ void run ()
       if (affine_cc)
         throw Exception ("affine cross correlation not implemted for > 3D data");
       Registration::Metric::MeanSquared4D metric;
-      affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
+      affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
     } else {
       if (affine_cc){
         Registration::Metric::CrossCorrelation metric;
         std::vector<size_t> extent(3,3);
         affine_registration.set_extent(extent);
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
       }
       else {
         Registration::Metric::MeanSquared metric;
-        affine_registration.run_masked (metric, affine, im1_image, im2_image, mmask_image, tmask_image);
+        affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
       }
     }
 
 
     if (output_affine)
       save_transform (affine.get_transform(), affine_filename);
+
+    if (output_affine_1tomid)
+      save_transform (affine.get_transform_half(), affine_1tomid_filename);
+
+    if (output_affine_2tomid)
+      save_transform (affine.get_transform_half_inverse(), affine_2tomid_filename);
   }
 
   if (do_syn) {
@@ -519,19 +567,51 @@ void run ()
 
   }
 
-  if (transformed.valid()) {
+  if (im1_transformed.valid()) {
     if (do_syn) {
     } else if (do_affine) {
-      Filter::reslice<Interp::Cubic> (im1_image, transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, affine.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, transformed, affine.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, im1_transformed, affine.get_transform(), directions_cartesian);
       }
     } else {
-      Filter::reslice<Interp::Cubic> (im1_image, transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
+      Filter::reslice<Interp::Cubic> (im1_image, im1_transformed, rigid.get_transform(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
-        Registration::Transform::reorient (msg, transformed, rigid.get_transform(), directions_cartesian);
+        Registration::Transform::reorient (msg, im1_transformed, rigid.get_transform(), directions_cartesian);
+      }
+    }
+  }
+  if (image1_midway.valid()) {
+    if (do_syn) {
+    } else if (do_affine) {
+      Filter::reslice<Interp::Cubic> (im1_image, image1_midway, affine.get_transform_half(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Registration::Transform::reorient (msg, image1_midway, affine.get_transform_half(), directions_cartesian);
+      }
+    } else {
+      Filter::reslice<Interp::Cubic> (im1_image, image1_midway, rigid.get_transform_half(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Registration::Transform::reorient (msg, image1_midway, rigid.get_transform_half(), directions_cartesian);
+      }
+    }
+  }
+  if (image2_midway.valid()) {
+    if (do_syn) {
+    } else if (do_affine) {
+      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, affine.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Registration::Transform::reorient (msg, image2_midway, affine.get_transform_half_inverse(), directions_cartesian);
+      }
+    } else {
+      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
+      if (do_reorientation) {
+        std::string msg ("reorienting...");
+        Registration::Transform::reorient (msg, image2_midway, rigid.get_transform_half_inverse(), directions_cartesian);
       }
     }
   }

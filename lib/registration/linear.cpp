@@ -12,7 +12,7 @@ namespace MR
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
 
-      + Option ("rigid_out", "the output text file containing the rigid transformation as a 4x4 matrix")
+      + Option ("rigid", "the output text file containing the rigid transformation as a 4x4 matrix")
         + Argument ("file").type_file_out ()
 
       + Option ("rigid_scale", "use a multi-resolution scheme by defining a scale factor for each level "
@@ -32,7 +32,16 @@ namespace MR
     const OptionGroup affine_options =
         OptionGroup ("Affine registration options")
 
-      + Option ("affine_out", "the output text file containing the affine transformation as a 4x4 matrix")
+      + Option ("affine", "the output text file containing the affine transformation that aligns "
+        "input image 1 to input image 2 as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
+
+      + Option ("affine_2tomidway", "the output text file containing the affine transformation that aligns "
+        "image2 to image1 in their common midway space as a 4x4 matrix")
+        + Argument ("file").type_file_out ()
+
+      + Option ("affine_1tomidway", "the output text file containing the affine transformation that "
+        "aligns image1 to image2 in their common midway space as a 4x4 matrix")
         + Argument ("file").type_file_out ()
 
       + Option ("affine_scale", "use a multi-resolution scheme by defining a scale factor for each level "
