@@ -46,21 +46,23 @@ namespace MR
           {
             CONSOLE ("initialising centre of rotation and translation using geometric centre");
             Eigen::Vector3 im1_centre_voxel;
-            im1_centre_voxel[0] = (static_cast<default_type>(im1.size(0)) / 2.0) - 0.5;
-            im1_centre_voxel[1] = (static_cast<default_type>(im1.size(1)) / 2.0) - 0.5;
-            im1_centre_voxel[2] = (static_cast<default_type>(im1.size(2)) / 2.0) - 0.5;
+            im1_centre_voxel[0] = (static_cast<default_type>(im1.size(0)) / 2.0) - 1.0;
+            im1_centre_voxel[1] = (static_cast<default_type>(im1.size(1)) / 2.0) - 1.0;
+            im1_centre_voxel[2] = (static_cast<default_type>(im1.size(2)) / 2.0) - 1.0;
             MR::Transform im1_transform (im1);
             Eigen::Vector3 im1_centre_scanner  = im1_transform.voxel2scanner * im1_centre_voxel;
 
             Eigen::Vector3 im2_centre_voxel;
-            im2_centre_voxel[0] = (static_cast<default_type>(im2.size(0)) / 2.0) - 0.5 + 1.0;
-            im2_centre_voxel[1] = (static_cast<default_type>(im2.size(1)) / 2.0) - 0.5 + 1.0;
-            im2_centre_voxel[2] = (static_cast<default_type>(im2.size(2)) / 2.0) - 0.5 + 1.0;
-            Eigen::Vector3 im2_centre_scanner = im1_transform.voxel2scanner * im2_centre_voxel;
+            im2_centre_voxel[0] = (static_cast<default_type>(im2.size(0)) / 2.0) - 1.0;
+            im2_centre_voxel[1] = (static_cast<default_type>(im2.size(1)) / 2.0) - 1.0;
+            im2_centre_voxel[2] = (static_cast<default_type>(im2.size(2)) / 2.0) - 1.0;
+            MR::Transform im2_transform (im2);
+            Eigen::Vector3 im2_centre_scanner = im2_transform.voxel2scanner * im2_centre_voxel;
 
-            transform.set_centre (im2_centre_scanner);
-            im1_centre_scanner -= im2_centre_scanner;
-            transform.set_translation (im1_centre_scanner);
+            Eigen::Vector3 translation = im1_centre_scanner - im2_centre_scanner;
+            Eigen::Vector3 centre = (im1_centre_scanner + im2_centre_scanner) / 2.0;
+            transform.set_centre (centre);
+            transform.set_translation (translation);
           }
 
         template <class Im1ImageType,
@@ -71,41 +73,35 @@ namespace MR
                                             TransformType& transform)
           {
             CONSOLE ("initialising centre of rotation and translation using centre of mass");
-            Eigen::Matrix<typename TransformType::ParameterType, 3, 1> im2_centre_of_mass (3);
-            im2_centre_of_mass.setZero();
-            default_type im2_mass = 0;
-            MR::Transform im2_transform (im2);
-
-            // only use the first volume of a 4D file. This is important for FOD images.
-            for (auto i = Loop(0, 3)(im2); i; ++i) {
-              Eigen::Vector3 voxel_pos ((default_type)im2.index(0), (default_type)im2.index(1), (default_type)im2.index(2));
-              Eigen::Vector3 im2_scanner = im2_transform.voxel2scanner * voxel_pos;
-              im2_mass += im2.value();
-              for (size_t dim = 0; dim < 3; dim++) {
-                im2_centre_of_mass[dim] += im2_scanner[dim] * im2.value();
-              }
-            }
-
             Eigen::Matrix<typename TransformType::ParameterType, 3, 1>  im1_centre_of_mass (3);
             im1_centre_of_mass.setZero();
             default_type im1_mass = 0.0;
             MR::Transform im1_transform (im1);
+            // only use the first volume of a 4D file. This is important for FOD images.
             for (auto i = Loop (0, 3)(im1); i; ++i) {
               Eigen::Vector3 voxel_pos ((default_type)im1.index(0), (default_type)im1.index(1), (default_type)im1.index(2));
               Eigen::Vector3 im1_scanner = im1_transform.voxel2scanner * voxel_pos;
               im1_mass += im1.value();
-              for (size_t dim = 0; dim < 3; dim++) {
-                im1_centre_of_mass[dim] += im1_scanner[dim] * im1.value();
-              }
+              im1_centre_of_mass += im1_scanner * im1.value();
             }
-            for (size_t dim = 0; dim < 3; dim++) {
-              im2_centre_of_mass[dim] /= im2_mass;
-              im1_centre_of_mass[dim] /= im1_mass;
-            }
+            im1_centre_of_mass /= im1_mass;
 
-            transform.set_centre (im2_centre_of_mass);
-            im1_centre_of_mass -= im2_centre_of_mass;
-            transform.set_translation (im1_centre_of_mass);
+            Eigen::Matrix<typename TransformType::ParameterType, 3, 1> im2_centre_of_mass (3);
+            im2_centre_of_mass.setZero();
+            default_type im2_mass = 0.0;
+            MR::Transform im2_transform (im2);
+            for (auto i = Loop(0, 3)(im2); i; ++i) {
+              Eigen::Vector3 voxel_pos ((default_type)im2.index(0), (default_type)im2.index(1), (default_type)im2.index(2));
+              Eigen::Vector3 im2_scanner = im2_transform.voxel2scanner * voxel_pos;
+              im2_mass += im2.value();
+              im2_centre_of_mass += im2_scanner * im2.value();
+            }
+            im2_centre_of_mass /= im2_mass;
+
+            Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
+            Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
+            transform.set_centre (centre);
+            transform.set_translation (translation);
         }
       }
     }
