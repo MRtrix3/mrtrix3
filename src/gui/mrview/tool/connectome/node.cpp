@@ -25,7 +25,7 @@
 #include <vector>
 
 #include "exception.h"
-
+#include "gui/mrview/window.h"
 #include "mesh/vox2mesh.h"
 
 namespace MR
@@ -79,6 +79,8 @@ namespace MR
         Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
             count (3 * in.num_triangles())
         {
+          Window::GrabContext context;
+
           std::vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
@@ -134,8 +136,14 @@ namespace MR
           that.count = 0;
         }
 
-        Node::Mesh::Mesh () :
-            count (0) { }
+        Node::Mesh::~Mesh()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          normal_buffer.clear();
+          vertex_array_object.clear();
+          index_buffer.clear();
+        }
 
         Node::Mesh& Node::Mesh::operator= (Node::Mesh&& that)
         {
@@ -150,6 +158,7 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
+          Window::GrabContext context;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();

@@ -51,44 +51,27 @@ namespace MR
 
         typedef typename ImageType::value_type value_type;
 
-        value_type& value ()
+        value_type value ()
         {
-          if (!kernel.size()) {
-            result = Base<ImageType>::value();
-            return result;
-          }
+          if (!kernel.size())
+            return Base<ImageType>::value();
 
           const ssize_t pos = index (axis);
-          const int from = pos < radius ? 0 : pos - radius;
-          const int to = pos >= (size(axis) - radius) ? size(axis) - 1 : pos + radius;
+          const ssize_t from = (pos < radius) ? 0 : pos - radius;
+          const ssize_t to = (pos + radius) >= size(axis) ? size(axis) - 1 : pos + radius;
 
-          result = 0.0;
-
-          if (pos < radius) {
-            size_t c = radius - pos;
-            value_type av_weights = 0.0;
-            for (ssize_t k = from; k <= to; ++k) {
+          value_type result = 0.0;
+          value_type av_weights = 0.0;
+          ssize_t c = (pos < radius) ? radius - pos : 0;
+          for (ssize_t k = from; k <= to; ++k, ++c) {
+            index (axis) = k;
+            value_type neighbour_value = Base<ImageType>::value();
+            if (std::isfinite(neighbour_value)) {
               av_weights += kernel[c];
-              index (axis) = k;
-              result += value_type (Base<ImageType>::value()) * kernel[c++];
-            }
-            result /= av_weights;
-          } else if ((to - pos) < radius){
-            size_t c = 0;
-            value_type av_weights = 0.0;
-            for (ssize_t k = from; k <= to; ++k) {
-              av_weights += kernel[c];
-              index (axis) = k;
-              result += value_type (Base<ImageType>::value()) * kernel[c++];
-            }
-            result /= av_weights;
-          } else {
-            size_t c = 0;
-            for (ssize_t k = from; k <= to; ++k) {
-              index (axis) = k;
-              result += value_type (Base<ImageType>::value()) * kernel[c++];
+              result += value_type (Base<ImageType>::value()) * kernel[c];
             }
           }
+          result /= av_weights;
 
           index (axis) = pos;
           return result;
@@ -105,7 +88,7 @@ namespace MR
         {
           if ((radius < 1) || stdev <= 0.0)
             return;
-          kernel.resize(2 * radius + 1);
+          kernel.resize (2 * radius + 1);
           default_type norm_factor = 0.0;
           for (size_t c = 0; c < kernel.size(); ++c) {
             kernel[c] = exp(-((c-radius) * (c-radius) * spacing(axis) * spacing(axis))  / (2 * stdev * stdev));
@@ -120,7 +103,6 @@ namespace MR
         ssize_t radius;
         size_t axis;
         std::vector<default_type> kernel;
-        value_type result;
       };
   }
 }
