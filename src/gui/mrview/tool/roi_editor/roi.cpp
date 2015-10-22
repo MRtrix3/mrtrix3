@@ -281,7 +281,7 @@ namespace MR
         void ROI::new_slot ()
         {
           assert (window().image());
-          MR::Header H (window().image()->original_header());
+          MR::Header H (window().image()->header());
           list_model->create (std::move (H));
           list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
@@ -314,7 +314,7 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          std::vector<GLubyte> data (roi->original_header().size(0) * roi->original_header().size(1) * roi->original_header().size(2));
+          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
             Window::GrabContext context; 
             roi->texture().bind();
@@ -323,7 +323,7 @@ namespace MR
           }
 
           try {
-            MR::Header header (roi->original_header());
+            MR::Header header (roi->header());
             header.set_ndim(3);
             header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window(), "Select name of ROI to save", roi->get_filename());
@@ -480,7 +480,7 @@ namespace MR
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
 
           const int source_slice = current_slice + ((action == copy_from_above_button->defaultAction()) ? 1 : -1);
-          if (source_slice < 0 || source_slice >= roi->original_header().size (current_axis))
+          if (source_slice < 0 || source_slice >= roi->header().size (current_axis))
             return;
 
           ROI_UndoEntry source (*roi, current_axis, source_slice);
@@ -728,7 +728,7 @@ namespace MR
           slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
           current_slice_loc = current_origin.dot (slice_axis);
 
-          const Math::Versorf orient (roi->original_header().transform().rotation().cast<float>());
+          const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
           window().set_snap_to_image (false);
           window().set_orientation (orient);
 

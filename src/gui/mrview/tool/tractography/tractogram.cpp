@@ -389,9 +389,9 @@ namespace MR
             // set line thickness once upon loading, but don't touch it after that:
             // it shouldn't change when the background image changes
             default_type dim[] = {
-              window().image()->original_header().size (0) * window().image()->original_header().spacing (0),
-              window().image()->original_header().size (1) * window().image()->original_header().spacing (1),
-              window().image()->original_header().size (2) * window().image()->original_header().spacing (2)
+              window().image()->header().size (0) * window().image()->header().spacing (0),
+              window().image()->header().size (1) * window().image()->header().spacing (1),
+              window().image()->header().size (2) * window().image()->header().spacing (2)
             };
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }

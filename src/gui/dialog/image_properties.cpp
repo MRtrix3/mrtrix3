@@ -21,6 +21,7 @@
 */
 
 #include "header.h"
+#include "stride.h"
 #include "math/math.h"
 #include "gui/dialog/file.h"
 #include "gui/dialog/list.h"
@@ -48,8 +49,19 @@ namespace MR
         if (H.keyval().size()) {
           TreeItem* keyvals = new TreeItem ("Key/value pairs", std::string(), root);
           root->appendChild (keyvals);
-          for (auto n : H.keyval())
-            keyvals->appendChild (new TreeItem (n.first, n.second, keyvals));
+          for (auto n : H.keyval()) {
+            if (n.first != "dw_scheme") {
+              if (n.second.find ('\n') == n.second.npos) {
+                keyvals->appendChild (new TreeItem (n.first, n.second, keyvals));
+              } else {
+                const auto lines = split_lines (n.second);
+                TreeItem* multi_line_keyval = new TreeItem (n.first, std::string(), keyvals);
+                keyvals->appendChild (multi_line_keyval);
+                for (auto l : lines)
+                  multi_line_keyval->appendChild (new TreeItem (std::string(), l, multi_line_keyval));
+              }
+            }
+          }
         }
 
         std::string text;
@@ -65,9 +77,10 @@ namespace MR
 
         root->appendChild (new TreeItem ("Data type", H.datatype().description(), root));
 
-        text = str (H.stride (0));
-        for (size_t n = 1; n < H.ndim(); ++n)
-          text += ", " + str (H.stride (n));
+        MR::Stride::List strides = MR::Stride::get_symbolic (H);
+        text = str (strides[0]);
+        for (size_t n = 1; n != strides.size(); ++n)
+          text += ", " + str (strides[n]);
         root->appendChild (new TreeItem ("Strides", text, root));
 
         root->appendChild (new TreeItem ("Data scaling",
