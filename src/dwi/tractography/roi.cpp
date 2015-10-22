@@ -111,7 +111,7 @@ namespace MR {
         top[2] = std::min (size_t (data.size(2)-bottom[2]), top[2]+2-bottom[2]);
 
         auto sub = Adapter::make<Adapter::Subset> (data, bottom, top);
-        Header mask_header (sub);
+        Header mask_header (sub.header());
         mask_header.set_ndim (3);
         auto mask = Image<bool>::scratch (mask_header, data.name());
         threaded_copy (sub, mask, 0, 3);

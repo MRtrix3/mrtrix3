@@ -148,13 +148,13 @@ void run ()
   }
 
 
-  DWI::CSDeconv::Shared shared (dwi.original_header());
+  DWI::CSDeconv::Shared shared (dwi.header());
   shared.parse_cmdline_options();
   shared.set_response (argument[1]);
   shared.init();
 
 
-  auto header = Header(dwi);
+  auto header = dwi.header();
   header.set_ndim (4);
   header.size(3) = shared.nSH();
   header.datatype() = DataType::Float32;

@@ -384,7 +384,7 @@ namespace MR {
         }
 
         using Sparse::FixelMetric;
-        Header H_fixel (original_header());
+        Header H_fixel (header());
         H_fixel.datatype() = DataType::UInt64;
         H_fixel.datatype().set_byte_order_native();
         H_fixel.keyval()[Sparse::name_key] = str(typeid(FixelMetric).name());

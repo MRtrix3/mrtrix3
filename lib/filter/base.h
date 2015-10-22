@@ -50,18 +50,22 @@ namespace MR
     class Base : public Header
     {
       public:
-        template <class HeaderType>
-        Base (const HeaderType& in) :
-            Header (in) { }
-
-        template <class HeaderType>
-        Base (const HeaderType& in, const std::string& message) :
+        Base (const Header& in) :
             Header (in),
+            orig_header (in) { }
+
+        Base (const Header& in, const std::string& message) :
+            Header (in),
+            orig_header (in),
             message (message) { }
 
         virtual ~Base() { }
 
         const Header& original_header () const {
+          return orig_header;
+        }
+
+        const Header& header() const {
           return *this;
         }
 
@@ -74,6 +78,7 @@ namespace MR
         }
 
       protected:
+        const Header orig_header;
         std::string message;
 
     };

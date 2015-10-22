@@ -84,7 +84,7 @@ namespace MR
 
                 DWI::Directions::FastLookupSet dirs (1281);
                 auto fod_data = Image<float>::open (fod_path);
-                Math::SH::check (fod_data);
+                Math::SH::check (fod_data.header());
                 Seeding::Dynamic* seeder = new Seeding::Dynamic (fod_path, fod_data, num_tracks, dirs);
                 properties.seeds.add (seeder); // List is responsible for deleting this from memory
 
@@ -93,8 +93,8 @@ namespace MR
                 Writer       writer  (shared, destination, properties);
                 Exec<Method> tracker (shared);
 
-                TckMapper mapper (fod_data, dirs);
-                mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (fod_data, properties, 0.25));
+                TckMapper mapper (fod_data.header(), dirs);
+                mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (fod_data.header(), properties, 0.25));
                 mapper.set_use_precise_mapping (true);
 
                 Thread::run_queue (

@@ -95,7 +95,7 @@ void run ()
   const bool out_debug = opt.size();
 
   auto in_dwi = Image<float>::open (argument[1]);
-  Math::SH::check (in_dwi);
+  Math::SH::check (in_dwi.header());
   DWI::Directions::FastLookupSet dirs (1281);
 
   SIFTer sifter (in_dwi, dirs);

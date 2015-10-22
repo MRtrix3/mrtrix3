@@ -89,11 +89,11 @@ namespace MR
         using Transform::out_of_bounds;
         using Transform::bounds;
 
-        //! construct a Nearest object to obtain interpolated values using the
-        // parent DataSet class
+        /*! construct a Nearest object to obtain interpolated values using the
+         *  parent DataSet class */
         SplineInterpBase (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
           ImageType (parent),
-          Transform (parent),
+          Transform (parent.header()),
           out_of_bounds_value (value_when_out_of_bounds),
           H { SplineType(PType), SplineType(PType), SplineType(PType) }
         { }

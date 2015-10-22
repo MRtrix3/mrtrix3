@@ -119,7 +119,7 @@ namespace MR
         template <class MaskImageType>
         const std::vector<std::vector<int> >& precompute_adjacency (MaskImageType& mask) {
 
-          auto index_image = Image<uint32_t>::scratch (mask);
+          auto index_image = Image<uint32_t>::scratch (mask.header());
 
           // 1st pass, store mask image indices and their index in the array
           for (auto l = Loop (mask) (mask, index_image); l; ++l) {
@@ -274,11 +274,10 @@ namespace MR
     {
       public:
 
-      template <class HeaderType>
-      ConnectedComponents (const HeaderType& in) :
-        Base (in),
-        largest_only (false),
-        do_26_connectivity (false)
+      ConnectedComponents (const Header& in) :
+          Base (in),
+          largest_only (false),
+          do_26_connectivity (false)
       {
         if (this->ndim() > 4)
           throw Exception ("Cannot run connected components analysis with more than 4 dimensions");
@@ -288,9 +287,8 @@ namespace MR
           dim_to_ignore[3] = true;
       }
 
-      template <class HeaderType>
-      ConnectedComponents (const HeaderType& in, const std::string& message) :
-        ConnectedComponents (in)
+      ConnectedComponents (const Header& in, const std::string& message) :
+          ConnectedComponents (in)
       {
         set_message (message);
       }

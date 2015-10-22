@@ -60,7 +60,7 @@ void run ()
   if (input.size(3) != 3)
     throw Exception ("input warp should have 3 volumes in the 4th dimension");
 
-  auto output = Image<value_type>::create (argument[1], input);
+  auto output = Image<value_type>::create (argument[1], input.header());
 
   Eigen::Matrix<value_type, 3, 1> nans (std::numeric_limits<value_type>::quiet_NaN(),
                                         std::numeric_limits<value_type>::quiet_NaN(),

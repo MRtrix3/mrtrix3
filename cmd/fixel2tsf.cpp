@@ -94,7 +94,7 @@ void run ()
   ProgressBar progress ("mapping fixel values to streamline points...", num_tracks);
   DWI::Tractography::Streamline<float> tck;
 
-  Transform transform (input_fixel);
+  Transform transform (input_fixel.header());
   Eigen::Vector3 voxel_pos;
 
   while (reader (tck)) {

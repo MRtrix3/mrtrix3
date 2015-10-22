@@ -82,10 +82,11 @@ class SConvFunctor {
 };
 
 
-void run() {
+void run()
+{
 
   auto image_in = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
-  Math::SH::check (image_in);
+  Math::SH::check (image_in.header());
 
   auto responseSH = load_vector<value_type>(argument[1]);
   Eigen::Matrix<value_type, Eigen::Dynamic, 1> responseRH;
@@ -98,7 +99,7 @@ void run() {
     check_dimensions (image_in, mask, 0, 3);
   }
 
-  auto header = Header(image_in);
+  auto header = image_in.header();
   Stride::set_from_command_line (header);
   auto image_out = Image<value_type>::create (argument[2], header);
   

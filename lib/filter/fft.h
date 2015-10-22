@@ -56,8 +56,7 @@ namespace MR
     {
       public:
 
-        template <class HeaderType>
-        FFT (const HeaderType& in, const bool inverse) :
+        FFT (const Header& in, const bool inverse) :
             Base (in),
             inverse (inverse),
             centre_zero_ (false)
@@ -94,13 +93,13 @@ namespace MR
 
           std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, axes_to_process.size() + 2) : nullptr);
 
-            auto temp = Image<cdouble>::scratch (original_header());
+            auto temp = Image<cdouble>::scratch (header());
             copy (input, temp);
             if (progress)
               ++(*progress);
 
             for (std::vector<size_t>::const_iterator axis = axes_to_process.begin(); axis != axes_to_process.end(); ++axis) {
-              std::vector<size_t> axes = Stride::order (temp);
+              std::vector<size_t> axes = Stride::order (temp.header());
               for (size_t n = 0; n < axes.size(); ++n) {
                 if (axes[n] == *axis) {
                   axes.erase (axes.begin() + n);

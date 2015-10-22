@@ -212,7 +212,7 @@ class Amp2SH {
 void run ()
 {
   auto amp = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis (3));
-  auto header = amp.original_header();
+  auto header = amp.header();
 
   std::vector<size_t> bzeros, dwis;
   Eigen::MatrixXd dirs;
@@ -235,7 +235,7 @@ void run ()
       }
     } 
     else {
-      auto grad = DWI::get_valid_DW_scheme (amp.original_header());
+      auto grad = DWI::get_valid_DW_scheme (amp.header());
       DWI::Shells shells (grad);
       shells.select_shells (true, true);
       if (shells.smallest().is_bzero())

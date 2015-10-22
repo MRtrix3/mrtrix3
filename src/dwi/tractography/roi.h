@@ -51,8 +51,8 @@ namespace MR
           Mask (const Mask&) = default;
           Mask (const std::string& name) :
               Image<bool> (__get_mask (name)),
-              scanner2voxel (new transform_type (Transform(*this).scanner2voxel.cast<float>())),
-              voxel2scanner (new transform_type (Transform(*this).voxel2scanner.cast<float>())) { }
+              scanner2voxel (new transform_type (Transform(header()).scanner2voxel.cast<float>())),
+              voxel2scanner (new transform_type (Transform(header()).voxel2scanner.cast<float>())) { }
 
           std::shared_ptr<transform_type> scanner2voxel, voxel2scanner; // Ptr to prevent unnecessary copy-construction
 

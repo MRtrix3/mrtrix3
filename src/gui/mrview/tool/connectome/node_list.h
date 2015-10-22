@@ -101,8 +101,8 @@ namespace MR
             void setModel (QAbstractItemModel* model)
             {
               QTableView::setModel (model);
-              //setColumnWidth (0, model->original_headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
-              //setColumnWidth (1, model->original_headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
+              //setColumnWidth (0, model->headerData (0, Qt::Horizontal, Qt::SizeHintRole).toInt());
+              //setColumnWidth (1, model->headerData (1, Qt::Horizontal, Qt::SizeHintRole).toInt());
             }
         };
 

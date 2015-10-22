@@ -63,8 +63,7 @@ namespace MR
     {
 
       public:
-        template <class HeaderType>
-        Resize (const HeaderType& in) :
+        Resize (const Header& in) :
             Base (in),
             interp_type (2) { }
 
@@ -150,9 +149,9 @@ namespace MR
             }
 
             if (do_smoothing) {
-              Filter::Smooth smooth_filter (input);
+              Filter::Smooth smooth_filter (input.header());
               smooth_filter.set_stdev (stdev);
-              auto smoothed = Image<float>::scratch (input, input.name());
+              auto smoothed = Image<float>::scratch (input.header(), input.name());
               {
                 LogLevelLatch log_level (0);
                 smooth_filter (input, smoothed);

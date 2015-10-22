@@ -41,15 +41,14 @@ namespace MR
       class Base {
         public:
           Base (const ImageType& parent) :
-            parent_ (parent) {
-            }
+              parent_ (parent) { }
 
           typedef typename ImageType::value_type value_type;
 
           template <class U> 
             const Base& operator= (const U& V) { return parent_ = V; }
 
-          FORCE_INLINE const Header& original_header () const { return parent_.original_header(); }
+          FORCE_INLINE const Header& header () const { return parent_.header(); }
           FORCE_INLINE ImageType& parent () { return parent_; }
           FORCE_INLINE bool valid () const { return parent_.valid(); }
           FORCE_INLINE bool operator! () const { return !valid(); }

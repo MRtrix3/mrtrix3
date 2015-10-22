@@ -90,9 +90,9 @@ class SH2Amp
 void run ()
 {
   auto sh_data = Image<value_type>::open(argument[0]);
-  Math::SH::check (sh_data);
+  Math::SH::check (sh_data.header());
 
-  auto amp_header = sh_data.original_header();
+  auto amp_header = sh_data.header();
 
   Eigen::MatrixXd directions;
 

@@ -23,6 +23,7 @@
 #ifndef __adapter_reslice_h__
 #define __adapter_reslice_h__
 
+#include "header.h"
 #include "image.h"
 #include "transform.h"
 
@@ -41,7 +42,7 @@ namespace MR
     /*! the Reslice class provides an Image interface to data
      * interpolated using the specified Interpolator class from the
      * Image \a original. The Reslice object will have the same
-     * dimensions, voxel sizes and transform as the \a reference HeaderType.
+     * dimensions, voxel sizes and transform as the \a reference ImageType.
      * Any of the interpolator classes (currently Interp::Nearest,
      * Interp::Linear, Interp::Cubic and Interp::Sinc) can be used.
      *
@@ -82,20 +83,18 @@ namespace MR
       public:
         typedef typename ImageType::value_type value_type;
 
-        template <class HeaderType>
-          Reslice (const ImageType& original,
-                   const HeaderType& reference,
-                   const transform_type& transform = NoTransform,
-                   const std::vector<int>& oversample = AutoOverSample,
-                   const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
+        Reslice (const ImageType& original,
+                 const Header& reference,
+                 const transform_type& transform = NoTransform,
+                 const std::vector<int>& oversample = AutoOverSample,
+                 const value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
             interp (original, value_when_out_of_bounds),
-            x { 0, 0, 0 },
-            dim { reference.size(0), reference.size(1), reference.size(2) },
-            vox { reference.spacing(0), reference.spacing(1), reference.spacing(2) },
-            transform_ (reference.transform()),
-            direct_transform (Transform(original).scanner2voxel * transform * Transform(reference).voxel2scanner) {
+            pos { 0, 0, 0 },
+            header_ (original, reference),
+            direct_transform (Transform(original.header()).scanner2voxel * transform * Transform(reference).voxel2scanner)
+        {
               using namespace Eigen;
-              assert (ndim() >= 3);
+              assert (header().ndim() >= 3);
 
               if (oversample.size()) {
                 assert (oversample.size() == 3);
@@ -130,19 +129,17 @@ namespace MR
             }
 
 
-        size_t ndim () const { return interp.ndim(); }
         bool valid () const { return interp.valid(); }
-        int size (size_t axis) const { return axis < 3 ? dim[axis]: interp.size (axis); }
-        default_type spacing (size_t axis) const { return axis < 3 ? vox[axis] : interp.spacing (axis); }
-        const transform_type& transform () const { return transform_; }
         const std::string& name () const { return interp.name(); }
+        size_t ndim() const { return header().ndim(); }
+        int size (const size_t axis) const { return (axis < 3) ? header().size (axis): interp.size (axis); }
 
         ssize_t stride (size_t axis) const {
           return interp.stride (axis);
         }
 
         void reset () {
-          x[0] = x[1] = x[2] = 0;
+          pos[0] = pos[1] = pos[2] = 0;
           for (size_t n = 3; n < interp.ndim(); ++n)
             interp.index(n) = 0;
         }
@@ -150,7 +147,7 @@ namespace MR
         value_type value () {
           using namespace Eigen;
           if (oversampling) {
-            Vector3 d (x[0]+from[0], x[1]+from[1], x[2]+from[2]);
+            Vector3 d (pos[0]+from[0], pos[1]+from[1], pos[2]+from[2]);
             value_type result = 0.0;
             Vector3 s;
             for (int z = 0; z < OS[2]; ++z) {
@@ -168,27 +165,45 @@ namespace MR
             result *= norm;
             return result;
           }
-          interp.voxel (direct_transform * Vector3 (x[0], x[1], x[2]));
+          interp.voxel (direct_transform * Vector3 (pos[0], pos[1], pos[2]));
           return interp.value();
         }
 
-        ssize_t index (size_t axis) const { return axis < 3 ? x[axis] : interp.index(axis); }
+        ssize_t index (size_t axis) const { return axis < 3 ? pos[axis] : interp.index(axis); }
         auto index (size_t axis) -> decltype(Helper::index(*this, axis)) { return { *this, axis }; }
         void move_index (size_t axis, ssize_t increment) {
-          if (axis < 3) x[axis] += increment;
+          if (axis < 3) pos[axis] += increment;
           else interp.index(axis) += increment;
         }
 
+        const MR::Header& header() const { return header_; }
+
       private:
         Interpolator<ImageType> interp;
-        ssize_t x[3];
-        const ssize_t dim[3];
-        const default_type vox[3];
+        ssize_t pos[3];
         bool oversampling;
         int OS[3];
         default_type from[3], inc[3];
         default_type norm;
-        const transform_type transform_, direct_transform;
+
+        class HeaderHelper : public MR::Header
+        {
+          public:
+            HeaderHelper (const ImageType& original, const MR::Header& reference) :
+                MR::Header (reference)
+            {
+              MR::Header::set_ndim (original.ndim());
+              for (size_t n = 3; n != original.ndim(); ++n) {
+                MR::Header::size(n) = original.size(n);
+                MR::Header::spacing(n) = original.spacing(n);
+              }
+            }
+        } header_;
+
+        const transform_type direct_transform;
+
+
+
     };
 
     //! @}

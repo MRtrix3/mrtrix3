@@ -137,7 +137,7 @@ void run () {
       // FIXME Had to use cdouble throughout; seems to fail at compile time even trying to
       //   convert between cfloat and cdouble...
       auto input = Image<cdouble>::open (argument[0]).with_direct_io();
-      Filter::FFT filter (input, get_options ("inverse").size());
+      Filter::FFT filter (input.header(), get_options ("inverse").size());
 
       auto opt = get_options ("axes");
       if (opt.size())
@@ -154,7 +154,7 @@ void run () {
         for (auto l = Loop (output) (temp, output); l; ++l)
           output.value() = std::abs (cdouble(temp.value()));
       } else {
-        auto output = Image<cdouble>::create (argument[2], filter);
+        auto output = Image<cdouble>::create (argument[2], filter.header());
         filter (input, output);
       }
       break;
@@ -164,7 +164,7 @@ void run () {
     case 1:
     {
       auto input = Image<float>::open (argument[0]);
-      Filter::Gradient filter (input, get_options ("magnitude").size());
+      Filter::Gradient filter (input.header(), get_options ("magnitude").size());
 
       std::vector<default_type> stdev;
       auto opt = get_options ("stdev");
@@ -185,7 +185,7 @@ void run () {
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
       Stride::set_from_command_line (filter);
 
-      auto output = Image<float>::create (argument[2], filter);
+      auto output = Image<float>::create (argument[2], filter.header());
       filter (input, output);
     break;
     }
@@ -194,7 +194,7 @@ void run () {
     case 2:
     {
       auto input = Image<float>::open (argument[0]);
-      Filter::Median filter (input);
+      Filter::Median filter (input.header());
 
       auto opt = get_options ("extent");
       if (opt.size())
@@ -202,7 +202,7 @@ void run () {
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
       Stride::set_from_command_line (filter);
 
-      auto output = Image<float>::create (argument[2], filter);
+      auto output = Image<float>::create (argument[2], filter.header());
       filter (input, output);
       break;
      }
@@ -211,7 +211,7 @@ void run () {
     case 3:
     {
       auto input = Image<float>::open (argument[0]);
-      Filter::Smooth filter (input);
+      Filter::Smooth filter (input.header());
 
       auto opt = get_options ("stdev");
       const bool stdev_supplied = opt.size();
@@ -232,7 +232,7 @@ void run () {
       filter.set_message (std::string("applying ") + std::string(argument[1]) + " filter to image " + std::string(argument[0]) + "...");
       Stride::set_from_command_line (filter);
 
-      auto output = Image<float>::create (argument[2], filter);
+      auto output = Image<float>::create (argument[2], filter.header());
       filter (input, output);
       break;
     }

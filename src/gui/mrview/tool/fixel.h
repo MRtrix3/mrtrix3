@@ -173,7 +173,7 @@ namespace MR
               MR::Transform transform;
 
               void request_update_interp_image_buffer (const Projection& projection) override {
-                update_interp_image_buffer (projection, *fixel_data, transform);
+                update_interp_image_buffer (projection, fixel_data->header(), transform);
               }
         };
 

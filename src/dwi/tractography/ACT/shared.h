@@ -44,7 +44,7 @@ namespace MR
               voxel (Image<float>::open (path)),
               bt (false)
             {
-              verify_5TT_image (voxel.original_header());
+              verify_5TT_image (voxel.header());
               property_set.set (bt, "backtrack");
               if (property_set.find ("crop_at_gmwmi") != property_set.end())
                 gmwmi_finder.reset (new GMWMI_finder (voxel));

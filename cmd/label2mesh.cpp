@@ -66,7 +66,7 @@ void run ()
 {
 
   auto labels = Image<uint32_t>::open (argument[0]);
-  if (!labels.original_header().datatype().is_integer())
+  if (!labels.header().datatype().is_integer())
     throw Exception ("Input image must have an integer data type");
 
   typedef Eigen::Array<int, 3, 1> voxel_corner_t;
@@ -110,7 +110,7 @@ void run ()
       }
       Adapter::Subset<decltype(labels)> subset (labels, from, dimensions);
 
-      auto scratch = Image<bool>::scratch (subset, "Node " + str(in) + " mask");
+      auto scratch = Image<bool>::scratch (subset.header(), "Node " + str(in) + " mask");
       for (auto i = Loop (subset) (subset, scratch); i; ++i)
         scratch.value() = (subset.value() == in);
 
@@ -118,7 +118,7 @@ void run ()
         MR::Mesh::vox2mesh (scratch, meshes[in]);
       else
         MR::Mesh::vox2mesh_mc (scratch, 0.5, meshes[in]);
-      meshes[in].transform_voxel_to_realspace (scratch);
+      meshes[in].transform_voxel_to_realspace (scratch.header());
       meshes[in].set_name (str(in));
       std::lock_guard<std::mutex> lock (mutex);
       ++progress;

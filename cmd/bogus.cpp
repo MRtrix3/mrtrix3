@@ -32,7 +32,7 @@ void run ()
 
   std::cout << linear_transform.matrix() << std::endl;
 
-//  auto output = Image<float>::create (argument[2], input.original_header());
+//  auto output = Image<float>::create (argument[2], input.header());
 //  Registration::Transform::compose (linear_transform, input, output);
 
 

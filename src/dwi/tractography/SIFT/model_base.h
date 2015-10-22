@@ -139,8 +139,8 @@ namespace MR
 
           public:
             ModelBase (Image<float>& dwi, const DWI::Directions::FastLookupSet& dirs) :
-                Mapping::Fixel_TD_map<Fixel> (dwi.original_header(), dirs),
-                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::original_header(), "SIFT model processing mask")),
+                Mapping::Fixel_TD_map<Fixel> (dwi.header(), dirs),
+                proc_mask (Image<float>::scratch (Fixel_map<Fixel>::header(), "SIFT model processing mask")),
                 FOD_sum (0.0),
                 TD_sum (0.0),
                 have_null_lobes (false)
@@ -202,7 +202,7 @@ namespace MR
         template <class Fixel>
         void ModelBase<Fixel>::perform_FOD_segmentation (Image<float>& data)
         {
-          Math::SH::check (data);
+          Math::SH::check (data.header());
           DWI::FMLS::FODQueueWriter writer (data, proc_mask);
           DWI::FMLS::Segmenter fmls (dirs, Math::SH::LforN (data.size(3)));
           fmls.set_dilate_lookup_table (!App::get_options ("no_dilate_lut").size());
@@ -250,8 +250,8 @@ namespace MR
             throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
           Mapping::TrackLoader loader (file, count);
-          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::original_header(), dirs);
-          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::original_header(), properties, 0.1));
+          Mapping::TrackMapperBase mapper (Fixel_map<Fixel>::header(), dirs);
+          mapper.set_upsample_ratio (Mapping::determine_upsample_ratio (Fixel_map<Fixel>::header(), properties, 0.1));
           mapper.set_use_precise_mapping (true);
           Thread::run_queue (
               loader,

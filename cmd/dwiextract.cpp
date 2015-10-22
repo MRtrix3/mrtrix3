@@ -51,10 +51,10 @@ void usage ()
     + DWI::ShellOption;
 }
 
-void run() {
+void run()
+{
   auto input_image = Image<float>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
-
-  Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image);
+  Eigen::MatrixXd grad = DWI::get_valid_DW_scheme (input_image.header());
 
   // Want to support non-shell-like data if it's just a straight extraction
   //   of all dwis or all bzeros i.e. don't initialise the Shells class
@@ -86,7 +86,7 @@ void run() {
 
   std::sort (volumes.begin(), volumes.end());
 
-  Header header (input_image);
+  Header header (input_image.header());
 
   if (volumes.size() == 1)
     header.set_ndim (3);

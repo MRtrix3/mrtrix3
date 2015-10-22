@@ -47,10 +47,10 @@ namespace MR {
             typedef Mapping::TrackMapperTWI BaseMapper;
 
             public:
-            template <class HeaderType>
-              TrackMapper (const HeaderType& template_image, const contrast_t c) :
-              BaseMapper (template_image, c, GAUSSIAN),
-              gaussian_denominator  (0.0) {
+              TrackMapper (const Header& template_image, const contrast_t c) :
+                  BaseMapper (template_image, c, GAUSSIAN),
+                  gaussian_denominator  (0.0)
+              {
                 assert (c == SCALAR_MAP || c == SCALAR_MAP_COUNT || c == FOD_AMP || c == CURVATURE);
               }
 
@@ -132,7 +132,7 @@ namespace MR {
               Eigen::Vector3i vox;
               for (size_t i = 0; i != last; ++i) {
                 vox = round (scanner2voxel * tck[i]);
-                if (check (vox, info)) {
+                if (check (vox, header)) {
                   const Eigen::Vector3f dir ((tck[i+1] - tck[prev]).normalized());
                   const float factor = tck_index_to_factor (i);
                   add_to_set (output, vox, dir, 1.0f, factor);
@@ -141,7 +141,7 @@ namespace MR {
               }
 
               vox = round (scanner2voxel * tck[last]);
-              if (check (vox, info)) {
+              if (check (vox, header)) {
                 const Eigen::Vector3f dir ((tck[last] - tck[prev]).normalized());
                 const float factor = tck_index_to_factor (last);
                 add_to_set (output, vox, dir, 1.0f, factor);
@@ -162,7 +162,7 @@ namespace MR {
             {
               typedef Eigen::Vector3f PointF;
 
-              static const float accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
+              static const float accuracy = Math::pow2 (0.005 * std::min (header.spacing (0), std::min (header.spacing (1), header.spacing (2))));
 
               if (tck.size() < 2)
                 return;
@@ -230,7 +230,7 @@ namespace MR {
 
                 length += (p_prev - p_voxel_exit).norm();
                 PointF traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
-                if (traversal_vector.allFinite() && check (this_voxel, info)) {
+                if (traversal_vector.allFinite() && check (this_voxel, header)) {
                   const float index_voxel_exit = float(p) + mu;
                   const size_t mean_tck_index = std::round (0.5 * (index_voxel_entry + index_voxel_exit));
                   const float factor = tck_index_to_factor (mean_tck_index);
@@ -248,7 +248,7 @@ namespace MR {
             {
               for (size_t end = 0; end != 2; ++end) {
                 const Eigen::Vector3i vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
-                if (check (vox, info)) {
+                if (check (vox, header)) {
                   const Eigen::Vector3f dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalized();
                   const float factor = (end ? factors.back() : factors.front());
                   add_to_set (out, vox, dir, 1.0f, factor);

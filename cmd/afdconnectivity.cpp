@@ -123,7 +123,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
         DWI::Tractography::SIFT::ModelBase<Fixel> (fod_buffer, dirs),
         have_wbft (wbft_path.size()),
         all_fixels (false),
-        mapper (fod_buffer, dirs),
+        mapper (fod_buffer.header(), dirs),
         v_fod (fod_buffer)
     {
       if (have_wbft) {
@@ -132,7 +132,7 @@ class AFDConnectivity : public DWI::Tractography::SIFT::ModelBase<Fixel>
       } else {
         fmls.reset (new DWI::FMLS::Segmenter (dirs, Math::SH::LforN (fod_buffer.size (3))));
       }
-      mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer, tck_path, 0.1));
+      mapper.set_upsample_ratio (DWI::Tractography::Mapping::determine_upsample_ratio (fod_buffer.header(), tck_path, 0.1));
       mapper.set_use_precise_mapping (true);
     }
 
@@ -268,7 +268,7 @@ value_type AFDConnectivity::get (const std::string& path)
 
 void AFDConnectivity::save (const std::string& path)
 {
-  auto out = Image<value_type>::create (path, original_header());
+  auto out = Image<value_type>::create (path, header());
   VoxelAccessor v (accessor());
   for (auto l = Loop(v) (v, out); l; ++l) {
     value_type value = 0.0;
@@ -300,7 +300,7 @@ void run ()
 
   DWI::Directions::FastLookupSet dirs (1281);
   auto fod = Image<value_type>::open (argument[0]);
-  Math::SH::check (fod);
+  Math::SH::check (fod.header());
   AFDConnectivity model (fod, dirs, argument[1], wbft_path);
 
   opt = get_options ("all_fixels");

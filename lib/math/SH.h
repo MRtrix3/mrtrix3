@@ -27,6 +27,7 @@
 # warning using non-orthonormal SH basis
 #endif
 
+#include "header.h"
 #include "math/legendre.h"
 #include "math/least_squares.h"
 
@@ -817,14 +818,7 @@ namespace MR
 
 
       //! convenience function to check if an input image can contain SH coefficients
-      template <class ImageType>
-        void check (const ImageType& H) {
-          if (H.ndim() < 4)
-            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
-          size_t l = LforN (H.size(3));
-          if (l%2 || NforL (l) != size_t (H.size(3)))
-            throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
-        }
+      void check (const Header&);
       /** @} */
 
     }

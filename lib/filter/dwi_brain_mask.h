@@ -63,8 +63,7 @@ namespace MR
 
       public:
 
-        template <class HeaderType>
-        DWIBrainMask (const HeaderType& input, const Eigen::MatrixXd& grad) :
+        DWIBrainMask (const Header& input, const Eigen::MatrixXd& grad) :
             Base (input),
             grad (grad)
         {
@@ -77,7 +76,7 @@ namespace MR
         void operator() (InputImageType& input, OutputImageType& output) {
             typedef typename InputImageType::value_type value_type;
 
-            Header header (input);
+            Header header (input.header());
             header.set_ndim (3);
 
             // Generate a 'master' scratch buffer mask, to which all shells will contribute
@@ -104,9 +103,9 @@ namespace MR
                 ++(*progress);
 
               // Threshold the mean intensity image for this shell
-              OptimalThreshold threshold_filter (shell_image);
+              OptimalThreshold threshold_filter (header);
 
-              auto shell_mask_voxel = Image<bool>::scratch (threshold_filter);
+              auto shell_mask_voxel = Image<bool>::scratch (header);
               threshold_filter (shell_image, shell_mask_voxel);
               if (progress)
                 ++(*progress);
@@ -123,12 +122,12 @@ namespace MR
 
             // The following operations apply to the mask as combined from all shells
             auto temp_image = Image<bool>::scratch (header, "temporary mask");
-            Median median_filter (mask_image);
+            Median median_filter (header);
             median_filter (mask_image, temp_image);
             if (progress)
               ++(*progress);
 
-            ConnectedComponents connected_filter (temp_image);
+            ConnectedComponents connected_filter (header);
             connected_filter.set_largest_only (true);
             connected_filter (temp_image, temp_image);
             if (progress)

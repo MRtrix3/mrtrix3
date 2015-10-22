@@ -85,11 +85,11 @@ namespace MR
         using Transform::out_of_bounds;
         using Transform::bounds;
 
-        //! construct an Interp object to obtain interpolated values using the
-        // parent DataSet class
+        /*! construct an Interp object to obtain interpolated values using the
+         *  parent DataSet class */
         Sinc (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>(), const size_t w = SINC_WINDOW_SIZE) :
             ImageType (parent),
-            Transform (parent),
+            Transform (parent.header()),
             out_of_bounds_value (value_when_out_of_bounds),
             window_size (w),
             kernel_width ((window_size-1)/2),

@@ -96,20 +96,6 @@ namespace MR
         offset_ (0.0),
         scale_ (1.0) { }
 
-      //! \copydoc Header (const Header&)
-      template <class HeaderType>
-        Header (const HeaderType& original) :
-          Header (original.original_header()) {
-            name() = original.name();
-            set_ndim (original.ndim());
-            for (size_t n = 0; n < original.ndim(); ++n) {
-              size(n) = original.size(n);
-              stride(n) = original.stride(n);
-              spacing(n) = original.spacing(n);
-            }
-            transform() = original.transform();
-          }
-
       //! assignment operator
       /*! This copies everything over apart from the IO handler and the
        * intensity scaling. */
@@ -125,23 +111,6 @@ namespace MR
         io.reset();
         return *this;
       }
-
-      //! \copydoc operator=(const Header&)
-      template <class HeaderType>
-        Header& operator= (const HeaderType& original) {
-          *this = original.original_header();
-          set_ndim (original.ndim());
-          for (size_t n = 0; n < ndim(); ++n) {
-            size(n) = original.size(n);
-            spacing(n) = original.spacing(n);
-            stride(n) = original.stride(n);
-          }
-          transform() = original.transform();
-          offset_ = 0.0;
-          scale_ = 1.0;
-          io.reset();
-          return *this;
-        }
 
       ~Header () { 
         if (io) {
@@ -262,11 +231,10 @@ namespace MR
           keyval()["dw_scheme"] = dw_scheme;
         }
 
+      //! Primary interface for image open/formation
       static Header open (const std::string& image_name);
-      template <class HeaderType>
-        static Header create (const std::string& image_name, const HeaderType& template_header);
-      template <class HeaderType>
-        static Header scratch (const HeaderType& template_header, const std::string& label = "scratch image");
+      static Header create (const std::string& image_name, const Header& template_header);
+      static Header scratch (const Header& template_header, const std::string& label = "scratch image");
 
       /*! use to prevent automatic realignment of transform matrix into
        * near-standard (RAS) coordinate system. */
@@ -337,20 +305,6 @@ namespace MR
 
   inline const ssize_t& Header::stride (size_t axis) const { return axes_[axis].stride; }
   inline ssize_t& Header::stride (size_t axis) { return axes_[axis].stride; } 
-
-  template <class HeaderType>
-    inline Header Header::create (const std::string& image_name, const HeaderType& template_header) {
-      return create (image_name, Header (template_header)); 
-    }
-  template <> Header Header::create (const std::string& image_name, const Header& template_header);
-  extern template Header Header::create<Header> (const std::string& image_name, const Header& template_header);
-
-  template <class HeaderType>
-    inline Header Header::scratch (const HeaderType& template_header, const std::string& label) {
-      return scratch (Header (template_header), label);
-    }
-  template<> Header Header::scratch (const Header& template_header, const std::string& label);
-  extern template Header Header::scratch<Header> (const Header& template_header, const std::string& label);
 
   //! @}
 }

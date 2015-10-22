@@ -114,7 +114,7 @@ void run ()
   auto in = Image<node_t>::open (argument[0]);
 
   // Create a new header for the output file
-  Header H (in.original_header());
+  Header H (in.header());
   add_line (H.keyval()["comments"], "Created by labelconfig using " + Path::basename (argument[0]) + " and " + Path::basename (argument[1]));
 
   // Create the output file
@@ -146,7 +146,7 @@ void run ()
         WARN ("Spine node is being created from the mask image provided using -spine option using nearest-neighbour interpolation;");
         WARN ("recommend using the parcellation image as the basis for this mask so that interpolation is not required");
 
-        Transform transform (out);
+        Transform transform (H);
         Interp::Nearest<decltype(in_spine)> nearest (in_spine);
         for (auto l = Loop (out) (out); l; ++l) {
           Eigen::Vector3 p (out.index (0), out.index (1), out.index (2));

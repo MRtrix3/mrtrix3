@@ -139,7 +139,7 @@ namespace MR {
               TWIImagePluginBase (input_image),
               sh_coeffs (interp.size(3)),
               precomputer (new Math::SH::PrecomputedAL<float> ()) {
-                Math::SH::check (Header (interp));
+                Math::SH::check (interp.header());
                 precomputer->init (Math::SH::LforN (sh_coeffs.size()));
               }
 
