@@ -44,10 +44,10 @@ namespace MR {
           return { int(std::lround (p[0])), int(std::lround (p[1])), int(std::lround (p[2])) };
         }
 
-        template <class HeaderType>
-          inline bool check (const Eigen::Vector3i& V, const HeaderType& H)
+        template <class ImageType>
+          inline bool check (const Eigen::Vector3i& V, const ImageType& I)
           {
-            return (V[0] >= 0 && V[0] < H.size(0) && V[1] >= 0 && V[1] < H.size(1) && V[2] >= 0 && V[2] < H.size(2));
+            return (V[0] >= 0 && V[0] < I.size(0) && V[1] >= 0 && V[1] < I.size(1) && V[2] >= 0 && V[2] < I.size(2));
           }
 
         inline Eigen::Vector3f vec2DEC (const Eigen::Vector3f& d)

@@ -300,7 +300,7 @@ void run ()
     // compose warp with affine
     std::shared_ptr<Image<float> > warp_composed_ptr;
     if (warp_ptr && linear) {
-      warp_composed_ptr = std::make_shared<Image<float> > (Image<float>::scratch (*warp_ptr));
+      warp_composed_ptr = std::make_shared<Image<float> > (Image<float>::scratch (warp_ptr->header()));
       Registration::Transform::compose (linear_transform, *warp_ptr, *warp_composed_ptr);
     } else {
       warp_composed_ptr = warp_ptr;

@@ -39,7 +39,7 @@ namespace MR
           Jacobian (const WarpType& parent, bool wrt_scanner = true) :
             Base<WarpType> (parent),
             gradient1D (parent, 0, wrt_scanner),
-            transform (parent),
+            transform (parent.header()),
             wrt_scanner (wrt_scanner) { }
 
 

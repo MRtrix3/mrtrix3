@@ -260,7 +260,7 @@ void run () {
     {
       auto fod_img = fod_hdr.get_image<value_type>().with_direct_io(Stride::contiguous_along_axis(3, fod_hdr));
 
-      auto dec_hdr = Header(fod_img);
+      Header dec_hdr = fod_img.header();
       dec_hdr.set_ndim(4);
       dec_hdr.size(3) = 3;
       Stride::set (dec_hdr, Stride::contiguous_along_axis (3, dec_hdr));
@@ -273,7 +273,7 @@ void run () {
         mask_img = mask_hdr.get_image<bool>();
 
       if (!get_options("no-weight").size() && !map_hdr) {
-        auto int_hdr = Header(dec_img);
+        Header int_hdr = dec_hdr;
         int_hdr.size(3) = 1;
         w_img = Image<value_type>::scratch(int_hdr,"FOD integral map");
       }
@@ -282,7 +282,7 @@ void run () {
         .run (DecComputer (DecTransform (Math::SH::LforN(fod_img.size(3)), dirs, thresh), mask_img, w_img), fod_img, dec_img);  
     }
 
-    auto out_hdr = map_hdr.valid() ? Header(map_hdr) : Header(dec_img);
+    Header out_hdr = map_hdr.valid() ? map_hdr : dec_img.header();
     out_hdr.datatype() = DataType::Float32;
     out_hdr.set_ndim(4);
     out_hdr.size(3) = 3;

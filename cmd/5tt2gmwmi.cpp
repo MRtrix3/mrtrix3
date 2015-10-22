@@ -131,7 +131,7 @@ void run ()
 {
 
   auto input = Image<float>::open (argument[0]);
-  DWI::Tractography::ACT::verify_5TT_image (input);
+  DWI::Tractography::ACT::verify_5TT_image (input.header());
 
   // TODO It would be nice to have the capability to define this mask based on another image
   // This will however require the use of interpolators
@@ -146,11 +146,11 @@ void run ()
 
   Header H;
   if (mask.valid()) {
-    H = mask.original_header();
+    H = mask.header();
     H.datatype() = DataType::Float32;
     H.datatype().set_byte_order_native();
   } else {
-    H = input.original_header();
+    H = input.header();
     H.set_ndim (3);
   }
   auto output = Image<float>::create (argument[1], H);

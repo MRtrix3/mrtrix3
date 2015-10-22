@@ -145,7 +145,7 @@ void run ()
   const bool ignore_zeroes = get_options ("ignorezero").size();
 
   auto in = Image<float>::open (argument[0]);
-  if (in.original_header().datatype().is_complex())
+  if (in.header().datatype().is_complex())
     throw Exception ("Cannot perform thresholding on complex images");
 
   if (voxel_count (in) < topN || voxel_count (in) < bottomN)
@@ -160,7 +160,7 @@ void run ()
     else topN = std::round (voxel_count (in) * (1.0 - percentile));
   }
 
-  Header header_out (in.original_header());
+  Header header_out (in.header());
   header_out.datatype() = use_NaN ? DataType::Float32 : DataType::Bit;
 
   auto out = Image<float>::create (argument[1], header_out);

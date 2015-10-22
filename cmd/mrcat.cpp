@@ -65,7 +65,6 @@ void run () {
   int num_images = argument.size()-1;
   std::vector<std::unique_ptr<Image<value_type>>> in (num_images);
   in[0].reset (new Image<value_type> (Image<value_type>::open (argument[0])));
-  Header header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
@@ -88,7 +87,7 @@ void run () {
 
   if (axis >= ndims) ndims = axis+1;
 
-  Header header_out (header_in);
+  Header header_out (in[0]->header());
   header_out.set_ndim (ndims);
 
   for (size_t i = 0; i < header_out.ndim(); i++) {
@@ -107,7 +106,7 @@ void run () {
   {
     size_t axis_dim = 0;
     for (int n = 0; n < num_images; n++) {
-      if (in[n]->original_header().datatype().is_complex())
+      if (in[n]->header().datatype().is_complex())
         header_out.datatype() = DataType::CFloat32;
       axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->size (axis) > 1 ? in[n]->size (axis) : 1) : 1;
     }
@@ -122,7 +121,7 @@ void run () {
     size_t nrows = 0;
     std::vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
-      auto grad = DWI::get_DW_scheme (in[n]->original_header());
+      auto grad = DWI::get_DW_scheme (in[n]->header());
       input_grads.push_back (grad);
       if (grad.rows() == 0 || grad.cols() != 4) {
         nrows = 0;

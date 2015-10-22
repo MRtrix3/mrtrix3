@@ -23,6 +23,7 @@
 #ifndef __image_transform_h__
 #define __image_transform_h__
 
+#include "header.h"
 #include "types.h"
 
 namespace MR
@@ -32,8 +33,7 @@ namespace MR
     public:
 
       //! An object for transforming between voxel, scanner and image coordinate spaces
-      template <class HeaderType>
-        Transform (const HeaderType& header) :
+      Transform (const Header& header) :
           voxelsize (header.spacing(0), header.spacing(1), header.spacing(2)),
           voxel2scanner (header.transform() * voxelsize),
           scanner2voxel (voxel2scanner.inverse()),
@@ -56,8 +56,7 @@ namespace MR
           return std::numeric_limits<ValueType>::quiet_NaN(); 
         }
 
-      template <class HeaderType>
-        static inline transform_type get_default (const HeaderType& header) {
+      static inline transform_type get_default (const Header& header) {
           transform_type M;
           M.setIdentity();
           M.translation() = Eigen::Vector3d (

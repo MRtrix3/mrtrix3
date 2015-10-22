@@ -70,7 +70,7 @@ void run () {
 
   auto input = Image<float>::open (argument[0]);
 
-  Filter::Resize resize_filter (input);
+  Filter::Resize resize_filter (input.header());
 
   size_t resize_option_count = 0;
 

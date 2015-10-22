@@ -85,11 +85,11 @@ namespace MR
         using Transform::out_of_bounds;
         using Transform::bounds;
 
-        //! construct an Linear object to obtain interpolated values using the
-        // parent DataSet class
+        /*! construct an Linear object to obtain interpolated values using the
+         *  parent DataSet class */
         Linear (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
           ImageType (parent),
-          Transform (parent),
+          Transform (parent.header()),
           out_of_bounds_value (value_when_out_of_bounds) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos

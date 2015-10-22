@@ -187,7 +187,7 @@ namespace MR
           top[2] = std::min (size_t (vox.size(2)-bottom[2]), top[2]+2-bottom[2]);
 
           auto sub = Adapter::make<Adapter::Subset> (vox, bottom, top);
-          Header header = sub;
+          Header header = sub.header();
           header.set_ndim (3);
 
           auto buf = Image<float>::scratch (header);
@@ -198,7 +198,7 @@ namespace MR
           interp = Interp::Linear<Image<float>> (buf);
 #else
           image = buf;
-          voxel2scanner = Transform (image).voxel2scanner.cast<float>();
+          voxel2scanner = Transform (image.header()).voxel2scanner.cast<float>();
 #endif
         }
 

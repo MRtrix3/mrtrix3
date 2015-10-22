@@ -150,7 +150,7 @@ namespace MR
                 count = 0;
 
                 if (mask.valid()) {
-                  Adapter::Replicate<MaskType> replicated_mask (mask, input);
+                  Adapter::Replicate<MaskType> replicated_mask (mask, input.header());
                   ThreadedLoop (input).run (MeanStdFunctor (sum, sum_sqr, count), input, replicated_mask);
                 }
                 else {
@@ -166,7 +166,7 @@ namespace MR
               double mean_xy = 0.0;
 
               if (mask.valid()) {
-                Adapter::Replicate<MaskType> replicated_mask (mask, input);
+                Adapter::Replicate<MaskType> replicated_mask (mask, input.header());
                 ThreadedLoop (input).run (CorrelationFunctor (threshold, sum, mean_xy), input, replicated_mask);
               }
               else

@@ -294,7 +294,7 @@ extern value_type default_directions [];
 void run ()
 {
   auto SH_data = Image<value_type>::open (argument[0]).with_direct_io (Stride::contiguous_along_axis(3));
-  Math::SH::check (SH_data);
+  Math::SH::check (SH_data.header());
 
   auto opt = get_options ("mask");
 
@@ -325,7 +325,7 @@ void run ()
 
   value_type threshold = get_option_value("threshold", -INFINITY);
 
-  auto header = Header(SH_data);
+  auto header = SH_data.header();
   header.datatype() = DataType::Float32;
 
   opt = get_options ("peaks");

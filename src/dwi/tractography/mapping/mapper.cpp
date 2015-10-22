@@ -37,7 +37,7 @@ void TrackMapperBase::voxelise (const Streamline<>& tck, SetVoxel& voxels) const
   Eigen::Vector3i vox;
   for (const auto& i : tck) {
     vox = round (scanner2voxel * i);
-    if (check (vox, info))
+    if (check (vox, header))
       voxels.std::set<Voxel>::insert (vox);
   }
 }

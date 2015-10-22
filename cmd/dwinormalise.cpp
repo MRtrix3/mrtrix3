@@ -64,11 +64,11 @@ void run () {
 
   auto input = Image<float>::open (argument[0]);
   auto mask = Image<bool>::open (argument[1]);
-  auto output = Image<float>::create (argument[2], input);
+  auto output = Image<float>::create (argument[2], input.header());
 
   check_dimensions (input, mask, 0, 3);
 
-  auto grad = DWI::get_DW_scheme (input);
+  auto grad = DWI::get_DW_scheme (input.header());
   DWI::Shells grad_shells (grad);
 
   std::vector<size_t> bzeros;

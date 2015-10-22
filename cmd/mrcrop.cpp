@@ -149,7 +149,7 @@ void run ()
   }
 
   auto cropped = Adapter::make<Adapter::Subset> (in, from, size);
-  auto out = Image<float>::create (argument[1], cropped);
+  auto out = Image<float>::create (argument[1], cropped.header());
   threaded_copy_with_progress_message ("cropping image...", cropped, out);
 }
 

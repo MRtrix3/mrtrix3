@@ -28,6 +28,14 @@ namespace MR
         "etc...\n";
 
 
+      void check (const Header& H) {
+        if (H.ndim() < 4)
+          throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - not 4D");
+        size_t l = LforN (H.size(3));
+        if (l%2 || NforL (l) != size_t (H.size(3)))
+          throw Exception ("image \"" + H.name() + "\" does not contain SH coefficients - unexpected number of coefficients");
+      }
+
     }
   }
 }

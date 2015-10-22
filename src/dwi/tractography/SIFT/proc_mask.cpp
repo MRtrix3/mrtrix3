@@ -67,9 +67,9 @@ namespace MR
             if (opt.size()) {
 
               auto in_5tt = Image<float>::open (opt[0][0]);
-              ACT::verify_5TT_image (in_5tt);
+              ACT::verify_5TT_image (in_5tt.header());
 
-              Header H_5tt = in_dwi.original_header();
+              Header H_5tt = in_dwi.header();
               H_5tt.set_ndim (4);
               H_5tt.size(3) = 5;
               assert (!out_5tt.valid());
@@ -107,7 +107,7 @@ namespace MR
 
         ResampleFunctor::ResampleFunctor (Image<float>& dwi, Image<float>& anat, Image<float>& out) :
             dwi (dwi),
-            voxel2scanner (new transform_type (Transform(dwi).voxel2scanner.cast<float>())),
+            voxel2scanner (new transform_type (Transform(dwi.header()).voxel2scanner.cast<float>())),
             interp_anat (anat),
             out (out)
         {

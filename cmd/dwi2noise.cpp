@@ -68,15 +68,15 @@ void run ()
 {
   auto dwi_in = Image<value_type>::open (argument[0]);
 
-  auto header = Header (dwi_in);
-  header.set_ndim (3);
-  header.datatype() = DataType::Float32;
-  auto noise = Image<value_type>::create (argument[1], header);
+  auto H_out = dwi_in.header();
+  H_out.set_ndim (3);
+  H_out.datatype() = DataType::Float32;
+  auto noise = Image<value_type>::create (argument[1], H_out);
 
   std::vector<size_t> dwis;
   Eigen::MatrixXd mapping;
   {
-    auto grad = DWI::get_valid_DW_scheme (dwi_in.original_header());
+    auto grad = DWI::get_valid_DW_scheme (dwi_in.header());
     dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
     auto dirs = DWI::gen_direction_matrix (grad, dwis);
     mapping = DWI::compute_SH2amp_mapping (dirs);

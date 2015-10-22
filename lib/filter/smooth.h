@@ -53,8 +53,7 @@ namespace MR
     {
 
       public:
-        template <class HeaderType>
-        Smooth (const HeaderType& in) :
+        Smooth (const Header& in) :
             Base (in),
             extent (3, 0),
             stdev (3, 0.0)
@@ -64,8 +63,7 @@ namespace MR
           datatype() = DataType::Float32;
         }
 
-        template <class HeaderType>
-        Smooth (const HeaderType& in, const std::vector<default_type>& stdev) :
+        Smooth (const Header& in, const std::vector<default_type>& stdev) :
             Base (in),
             extent (3, 0),
             stdev (3, 0.0)
@@ -120,7 +118,7 @@ namespace MR
         template <class InputImageType, class OutputImageType, typename ValueType = float>
         void operator() (InputImageType& input, OutputImageType& output)
         {
-          std::shared_ptr <Image<ValueType> > in (std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input)));
+          std::shared_ptr <Image<ValueType> > in (std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input.header())));
           threaded_copy (input, *in);
           std::shared_ptr <Image<ValueType> > out;
 
@@ -135,7 +133,7 @@ namespace MR
 
           for (size_t dim = 0; dim < 3; dim++) {
             if (stdev[dim] > 0) {
-              out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input));
+              out = std::make_shared<Image<ValueType> > (Image<ValueType>::scratch (input.header()));
               Adapter::Gaussian1D<Image<ValueType> > gaussian (*in, stdev[dim], dim, extent[dim]);
               threaded_copy (gaussian, *out);
               in = out;

@@ -212,7 +212,7 @@ void run ()
         ++volumes[index];
       }
     }
-    Transform transform (image);
+    Transform transform (image.header());
     for (node_t index = 1; index <= max_node_index; ++index) {
       if (volumes[index])
         COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();

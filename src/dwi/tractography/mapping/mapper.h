@@ -62,19 +62,17 @@ namespace MR {
         {
 
           public:
-            template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image) :
-                info      (template_image),
-                scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
+              TrackMapperBase (const Header& template_image) :
+                header    (template_image),
+                scanner2voxel (Transform(header).scanner2voxel.cast<float>()),
                 map_zero  (false),
                 precise   (false),
                 ends_only (false),
                 upsampler (1) { }
 
-            template <class HeaderType>
-              TrackMapperBase (const HeaderType& template_image, const DWI::Directions::FastLookupSet& dirs) :
-                info         (template_image),
-                scanner2voxel (Transform(template_image).scanner2voxel.cast<float>()),
+              TrackMapperBase (const Header& template_image, const DWI::Directions::FastLookupSet& dirs) :
+                header       (template_image),
+                scanner2voxel (Transform(header).scanner2voxel.cast<float>()),
                 map_zero     (false),
                 precise      (false),
                 ends_only    (false),
@@ -137,7 +135,7 @@ namespace MR {
 
 
           protected:
-            const Header info;
+            const Header header;
             const Eigen::Transform<float,3,Eigen::AffineCompact> scanner2voxel;
             bool map_zero;
             bool precise;
@@ -186,7 +184,7 @@ namespace MR {
             Eigen::Vector3i vox;
             for (auto i = tck.cbegin(); i != last; ++i) {
               vox = round (scanner2voxel * (*i));
-              if (check (vox, info)) {
+              if (check (vox, header)) {
                 const auto dir = (*(i+1) - *prev).normalized();
                 if (dir.allFinite())
                   add_to_set (output, vox, dir, 1.0f);
@@ -195,7 +193,7 @@ namespace MR {
             }
 
             vox = round (scanner2voxel * (*last));
-            if (check (vox, info)) {
+            if (check (vox, header)) {
               const auto dir = (*last - *prev).normalized();
               if (dir.allFinite())
                 add_to_set (output, vox, dir, 1.0f);
@@ -216,7 +214,7 @@ namespace MR {
           {
             typedef Eigen::Vector3f PointF;
 
-            const float accuracy = Math::pow2 (0.005 * std::min (info.spacing (0), std::min (info.spacing (1), info.spacing (2))));
+            const float accuracy = Math::pow2 (0.005 * std::min (header.spacing (0), std::min (header.spacing (1), header.spacing (2))));
 
             if (tck.size() < 2)
               return;
@@ -285,7 +283,7 @@ namespace MR {
 
               length += (p_prev - p_voxel_exit).norm();
               PointF traversal_vector = (p_voxel_exit - p_voxel_entry).normalized();
-              if (std::isfinite (traversal_vector[0]) && check (this_voxel, info))
+              if (std::isfinite (traversal_vector[0]) && check (this_voxel, header))
                 add_to_set (out, this_voxel, traversal_vector, length);
 
             } while (!end_track);
@@ -299,7 +297,7 @@ namespace MR {
           {
             for (size_t end = 0; end != 2; ++end) {
               const auto vox = round (scanner2voxel * (end ? tck.back() : tck.front()));
-              if (check (vox, info)) {
+              if (check (vox, header)) {
                 Streamline<>::point_type dir { NAN, NAN, NAN };
                 if (tck.size() > 1)
                   dir = (end ? (tck[tck.size()-1] - tck[tck.size()-2]) : (tck[0] - tck[1])).normalized();
@@ -352,25 +350,25 @@ namespace MR {
         class TrackMapperTWI : public TrackMapperBase
         {
           public:
-            template <class HeaderType>
-              TrackMapperTWI (const HeaderType& template_image, const contrast_t c, const tck_stat_t s) :
+            TrackMapperTWI (const Header& template_image, const contrast_t c, const tck_stat_t s) :
                 TrackMapperBase       (template_image),
                 contrast              (c),
                 track_statistic       (s) { }
 
             TrackMapperTWI (const TrackMapperTWI& that) :
-              TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
-              contrast              (that.contrast),
-              track_statistic       (that.track_statistic) {
-                if (that.image_plugin) {
-                  if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
-                    image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
-                  else if (contrast == FOD_AMP)
-                    image_plugin.reset (new TWIFODImagePlugin    (*dynamic_cast<TWIFODImagePlugin*>    (that.image_plugin.get())));
-                  else
-                    throw Exception ("Copy-constructing TrackMapperTWI with unknown image plugin");
-                }
+                TrackMapperBase       (static_cast<const TrackMapperBase&> (that)),
+                contrast              (that.contrast),
+                track_statistic       (that.track_statistic)
+            {
+              if (that.image_plugin) {
+                if (contrast == SCALAR_MAP || contrast == SCALAR_MAP_COUNT)
+                  image_plugin.reset (new TWIScalarImagePlugin (*dynamic_cast<TWIScalarImagePlugin*> (that.image_plugin.get())));
+                else if (contrast == FOD_AMP)
+                  image_plugin.reset (new TWIFODImagePlugin    (*dynamic_cast<TWIFODImagePlugin*>    (that.image_plugin.get())));
+                else
+                  throw Exception ("Copy-constructing TrackMapperTWI with unknown image plugin");
               }
+            }
 
 
             void add_scalar_image (const std::string&);

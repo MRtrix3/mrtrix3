@@ -42,7 +42,7 @@ namespace MR
         using Base<ImageType>::ndim;
         using Base<ImageType>::spacing;
 
-          Replicate (ImageType& original, const Header& replication_template) :
+        Replicate (ImageType& original, const Header& replication_template) :
             Base<ImageType> (original),
             header_ (replication_template),
             pos_ (ndim(), 0)
@@ -53,7 +53,7 @@ namespace MR
             }
           }
 
-        const Header& original_header() const {
+        const Header& header() const {
           return header_;
         }
 

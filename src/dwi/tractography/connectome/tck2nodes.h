@@ -52,7 +52,7 @@ class Tck2nodes_base {
   public:
     Tck2nodes_base (const Image<node_t>& nodes_data, const bool pair) :
         nodes     (nodes_data),
-        transform (new Transform (nodes)),
+        transform (new Transform (nodes.header())),
         pair      (pair) { }
 
     Tck2nodes_base (const Tck2nodes_base& that) = default;

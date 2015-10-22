@@ -33,17 +33,19 @@ namespace MR
 
 
     template <class ImageType>
-      class Median3D : public Base<ImageType> {
+    class Median3D : public Base<ImageType> {
       public:
         Median3D (const ImageType& parent) :
-          Base<ImageType> (parent) {
-            set_extent (std::vector<int>(1,3));
-          }
+            Base<ImageType> (parent)
+        {
+          set_extent (std::vector<int>(1,3));
+        }
 
         Median3D (const ImageType& parent, const std::vector<int>& extent) :
-          Base<ImageType> (parent) {
-            set_extent (extent);
-          }
+            Base<ImageType> (parent)
+        {
+          set_extent (extent);
+        }
 
         typedef typename ImageType::value_type value_type;
         typedef Median3D voxel_type;

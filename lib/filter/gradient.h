@@ -52,8 +52,7 @@ namespace MR
     class Gradient : public Base
     {
       public:
-        template <class HeaderType>
-        Gradient (const HeaderType& in, const bool magnitude = false) :
+        Gradient (const Header& in, const bool magnitude = false) :
             Base (in),
             smoother (in),
             wrt_scanner (true),
@@ -101,9 +100,9 @@ namespace MR
         void operator() (InputImageType& in, OutputImageType& out)
         {
           if (magnitude) {
-            Gradient full_gradient (in, false);
+            Gradient full_gradient (in.header(), false);
             full_gradient.set_message (message);
-            auto temp = Image<float>::scratch (full_gradient, "full 3D gradient image");
+            auto temp = Image<float>::scratch (full_gradient.header(), "full 3D gradient image");
             full_gradient (in, temp);
             for (auto l = Loop (out)(out, temp); l; ++l) {
               if (out.ndim() == 4) {
@@ -118,7 +117,7 @@ namespace MR
             return;
           }
 
-          auto smoothed = Image<float>::scratch (smoother);
+          auto smoothed = Image<float>::scratch (smoother.header());
           if (message.size())
             smoother.set_message ("applying smoothing prior to calculating gradient... ");
           smoother (in, smoothed);
@@ -147,7 +146,7 @@ namespace MR
             if (progress) ++(*progress);
 
             if (wrt_scanner) {
-              Transform transform (in);
+              Transform transform (in.header());
               for (auto l = Loop(0,3) (out); l; ++l)
                 out.row(3) = transform.image2scanner.linear().template cast<typename OutputImageType::value_type>() * out.row(3);
             }

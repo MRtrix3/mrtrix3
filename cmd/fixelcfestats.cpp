@@ -196,7 +196,7 @@ void run() {
   std::vector<Eigen::Vector3> positions;
   std::vector<Eigen::Vector3f> directions;
 
-  Transform image_transform (mask_fixel_image);
+  Transform image_transform (mask_fixel_image.header());
   for (auto i = Loop (mask_fixel_image)(mask_fixel_image, fixel_index_image); i; ++i) {
     fixel_index_image.index(3) = 0;
     fixel_index_image.value() = directions.size();

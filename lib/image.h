@@ -53,12 +53,13 @@ namespace MR
         ~Image();
 
         //! used internally to instantiate Image objects
+        // TODO Need a way to store a header representing the original buffer
         Image (const std::shared_ptr<Buffer>&, const Stride::List& = Stride::List());
 
         FORCE_INLINE bool valid () const { return bool(buffer); }
         FORCE_INLINE bool operator! () const { return !valid(); }
 
-        FORCE_INLINE const Header& original_header () const { return *buffer; }
+        FORCE_INLINE const Header& header () const { return *buffer; }
 
         FORCE_INLINE const std::string& name() const { return buffer->name(); }
         FORCE_INLINE const transform_type& transform() const { return buffer->transform(); }
@@ -162,14 +163,12 @@ namespace MR
         static Image open (const std::string& image_name) {
           return Header::open (image_name).get_image<ValueType>();
         }
-        template <class HeaderType>
-          static Image create (const std::string& image_name, const HeaderType& template_header) {
-            return Header::create (image_name, template_header).template get_image<ValueType>();
-          }
-        template <class HeaderType>
-          static Image scratch (const HeaderType& template_header, const std::string& label = "scratch image") {
-            return Header::scratch (template_header, label).template get_image<ValueType>();
-          }
+        static Image create (const std::string& image_name, const Header& template_header) {
+          return Header::create (image_name, template_header).template get_image<ValueType>();
+        }
+        static Image scratch (const Header& template_header, const std::string& label = "scratch image") {
+          return Header::scratch (template_header, label).template get_image<ValueType>();
+        }
 
       protected:
         //! shared reference to header/buffer
@@ -345,7 +344,7 @@ namespace MR
       x (ndim(), 0),
       strides (desired_strides.size() ? desired_strides : Stride::get (*buffer)),
       data_offset (Stride::offset (*this))
-      { 
+      {
         assert (buffer);
         assert (data_pointer || buffer->get_io());
         DEBUG ("image \"" + name() + "\" initialised with strides = " + str(strides) + ", start = " + str(data_offset) 
@@ -435,7 +434,7 @@ namespace MR
 
       File::OFStream out (filename, std::ios::out | std::ios::binary);
       out << "mrtrix image\n";
-      Formats::write_mrtrix_header (original_header(), out);
+      Formats::write_mrtrix_header (header(), out);
 
       const bool single_file = Path::has_suffix (filename, ".mif");
       std::string data_filename = filename;
@@ -454,7 +453,7 @@ namespace MR
         out.open (data_filename, std::ios::out | std::ios::binary); 
       }
 
-      const int64_t data_size = footprint (original_header());
+      const int64_t data_size = footprint (header());
       out.seekp (offset, out.beg);
       out.write ((const char*) data_pointer, data_size);
       if (!out.good())
@@ -477,7 +476,7 @@ namespace MR
 
   template <class ImageType>
     std::string __save_generic (ImageType& x, const std::string& filename, bool use_multi_threading) {
-      auto out = Image<typename ImageType::value_type>::create (filename, x);
+      auto out = Image<typename ImageType::value_type>::create (filename, x.header());
       if (use_multi_threading)
         threaded_copy (x, out);
       else

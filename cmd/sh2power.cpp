@@ -39,15 +39,15 @@ void usage () {
 }
 
 
-void run () {
-  auto SH_data = Image<float>::open(argument[0]);
-  Math::SH::check (SH_data);
+void run ()
+{
+  auto SH_data = Image<float>::open (argument[0]);
+  Math::SH::check (SH_data.header());
 
-  auto power_header = SH_data.original_header();
-
-  int lmax = Math::SH::LforN (SH_data.size (3));
+  const int lmax = Math::SH::LforN (SH_data.size (3));
   INFO ("calculating spherical harmonic power up to degree " + str (lmax));
 
+  Header power_header = SH_data.header();
   power_header.size (3) = 1 + lmax/2;
   power_header.datatype() = DataType::Float32;
 
