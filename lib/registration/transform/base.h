@@ -59,106 +59,72 @@ namespace MR
             Base (size_t number_of_parameters) :
               number_of_parameters(number_of_parameters),
               optimiser_weights (number_of_parameters) {
-                matrix.setIdentity();
-                matrix_half.setIdentity();
-                matrix_half_inverse.setIdentity();
-                translation.setZero();
+                trafo.matrix().setIdentity();
+                trafo_half.matrix().setIdentity();
+                trafo_half_inverse.matrix().setIdentity();
                 centre.setZero();
-                offset.setZero();
-                offset_half.setZero();
-                offset_half_inverse.setZero();
             }
           #endif
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
-            out[0] = matrix(0,0)*in[0] + matrix(0,1)*in[1] + matrix(0,2)*in[2] + offset[0];
-            out[1] = matrix(1,0)*in[0] + matrix(1,1)*in[1] + matrix(1,2)*in[2] + offset[1];
-            out[2] = matrix(2,0)*in[0] + matrix(2,1)*in[1] + matrix(2,2)*in[2] + offset[2];
+            out = trafo * in;
           }
 
           template <class OutPointType, class InPointType>
           inline void transform_half (OutPointType& out, const InPointType& in) const {
-            out[0] = matrix_half(0,0)*in[0] + matrix_half(0,1)*in[1] + matrix_half(0,2)*in[2] + offset_half[0];
-            out[1] = matrix_half(1,0)*in[0] + matrix_half(1,1)*in[1] + matrix_half(1,2)*in[2] + offset_half[1];
-            out[2] = matrix_half(2,0)*in[0] + matrix_half(2,1)*in[1] + matrix_half(2,2)*in[2] + offset_half[2];
+            out = trafo_half * in;
           }
 
           template <class OutPointType, class InPointType>
           inline void transform_half_inverse (OutPointType& out, const InPointType& in) const {
-            out[0] = matrix_half_inverse(0,0)*in[0] + matrix_half_inverse(0,1)*in[1] + matrix_half_inverse(0,2)*in[2] + offset_half_inverse[0];
-            out[1] = matrix_half_inverse(1,0)*in[0] + matrix_half_inverse(1,1)*in[1] + matrix_half_inverse(1,2)*in[2] + offset_half_inverse[1];
-            out[2] = matrix_half_inverse(2,0)*in[0] + matrix_half_inverse(2,1)*in[1] + matrix_half_inverse(2,2)*in[2] + offset_half_inverse[2];
+            out = trafo_half_inverse * in;
           }
 
           void set_transform (transform_type& transform) {
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                matrix(row, col) = transform(row, col);
-              translation[row] = transform(row, 3);
-            }
+            trafo.matrix() = transform.matrix();
             compute_offset();
-            calculate_halfspace_transformations();
+            compute_halfspace_transformations();
           }
 
           transform_type get_transform () const {
             transform_type transform;
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                transform(row,col) = matrix(row,col);
-              transform(row, 3) = offset[row];
-            }
+            transform.matrix() = trafo.matrix();
             return transform;
           }
-
 
           transform_type get_transform_half () const {
-            transform_type transform;
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                transform(row,col) = matrix_half(row,col);
-              transform(row, 3) = offset_half[row];
-            }
-            return transform;
+            return trafo_half;
           }
-
 
           transform_type get_transform_half_inverse () const {
-            transform_type transform;
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                transform(row,col) = matrix_half_inverse(row,col);
-              transform(row, 3) = offset_half_inverse[row];
-            }
-            return transform;
+            return trafo_half_inverse;
           }
 
-
           void set_matrix (const Eigen::Matrix<default_type, 3, 3>& mat) {
-            for (size_t row = 0; row < 3; row++) {
-              for (size_t col = 0; col < 3; col++)
-                 matrix(row, col) = mat (row, col);
-            }
+            trafo.linear() = mat;
             compute_offset();
-            calculate_halfspace_transformations();
+            compute_halfspace_transformations();
           }
 
           const Eigen::Matrix<default_type, 3, 3> get_matrix () const {
-            return matrix;
+            return trafo.linear();
           }
 
           void set_translation (const Eigen::Vector3& trans) {
-            translation = trans;
+            trafo.translation() = trans;
             compute_offset();
+            compute_halfspace_transformations();
           }
 
           const Eigen::Vector3 get_translation() const {
-            return translation;
+            return trafo.translation();
           }
 
           void set_centre (const Eigen::Vector3& centre_in) {
             centre = centre_in;
             compute_offset();
+            compute_halfspace_transformations();
           }
 
           const Eigen::Vector3 get_centre() const {
@@ -178,77 +144,74 @@ namespace MR
             return optimiser_weights;
           }
 
-          Eigen::Vector3 get_offset () const {
-            return offset;
+          // Eigen::Vector3 get_offset () const {
+          //   return offset;
+          // }
+
+          void set_offset (const Eigen::Vector3& offset_in) {
+            trafo.translation() = offset_in;
+            compute_halfspace_transformations();
           }
-          #ifdef NONSYMREGISTRATION
-            void set_offset (const Eigen::Vector3& offset_in) {
-              offset = offset_in;
-            }
-          #else
-            void set_offset (const Eigen::Vector3& offset_in,
-                const Eigen::Vector3& offset_in_half,
-                const Eigen::Vector3& offset_in_half_inverse) {
-              offset = offset_in;
-              offset_half = offset_in_half;
-              offset_half_inverse = offset_in_half_inverse;
-            }
-          #endif
 
         #ifndef NONSYMREGISTRATION
-          void debug(){ 
-              CONSOLE("\n"+str(matrix));
-              CONSOLE("\n"+str(matrix_half));
-              CONSOLE("\n"+str(matrix_half_inverse));
-              CONSOLE("\n"+str(centre.transpose()));
-              CONSOLE("\n"+str(offset.transpose()));
-              CONSOLE("\n"+str(offset_half.transpose()));
-              CONSOLE("\n"+str(offset_half_inverse.transpose()));
+          void debug(){
+            INFO("debug():");
+            Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
+            INFO("trafo:\n"+str(trafo.matrix().format(fmt)));
+            INFO("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
+            INFO("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
+            INFO("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
+            INFO("centre: "+str(centre.transpose(),12));
+            Eigen::Vector3 in, out, half, half_inverse;
+            in << 1.0, 2.0, 3.0;
+            transform (out, in);
+            transform_half (half, in);
+            transform_half_inverse (half_inverse, in);
+            VAR(out.transpose());
+            VAR(half.transpose());
+            VAR(half_inverse.transpose());
+            // assert ((out-in).isApprox(half-half_inverse-in));
           }
         #endif
 
 
         protected:
 
-          #ifdef NONSYMREGISTRATION
             void compute_offset () {
-              for( size_t i = 0; i < 3; i++ ) {
-                offset[i] = translation[i] + centre[i];
-                for( size_t j = 0; j < 3; j++ )
-                  offset[i] -= matrix(i, j) * centre[j];
-              }
+              Eigen::Vector3 offset = trafo.translation() + centre - trafo.linear() * centre;
+              // for( size_t i = 0; i < 3; i++ ) {
+              //   offset[i] = translation[i] + centre[i];
+              //   for( size_t j = 0; j < 3; j++ )
+              //     offset[i] -= matrix(i, j) * centre[j];
+              // }
+              trafo.translation() = offset;
             }
-          #else
-            void compute_offset () {
-              for( size_t i = 0; i < 3; i++ ) {
-                offset[i] = translation[i] + centre[i];
-                offset_half[i] = 0.5 * translation[i] + centre[i];
-                offset_half_inverse[i] = - 0.5 * translation[i] + centre[i];
-                for( size_t j = 0; j < 3; j++ ){
-                  offset[i] -= matrix(i, j) * centre[j];
-                  offset_half[i] -= matrix_half(i, j) * centre[j];
-                  offset_half_inverse[i] -= matrix_half_inverse(i, j) * centre[j];
-                }
-              }
-            }
-          #endif
 
-          void calculate_halfspace_transformations(){
+
+          void compute_halfspace_transformations(){
             #ifndef NONSYMREGISTRATION
-              matrix_half  = matrix.sqrt();
-              matrix_half_inverse  = matrix_half.inverse();
+              Eigen::Matrix<default_type, 4, 4> tmp;
+              tmp.setIdentity();
+              tmp.template block<3,4>(0,0) = trafo.matrix();
+              assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
+              tmp = tmp.sqrt();
+              trafo_half.matrix() = tmp.template block<3,4>(0,0);
+              trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
+              assert(trafo.matrix().isApprox((trafo_half*trafo_half).matrix()));
+              assert(trafo.inverse().matrix().isApprox((trafo_half_inverse*trafo_half_inverse).matrix()));
+              // debug();
             #endif
             }
 
           size_t number_of_parameters;
-          Eigen::Matrix<default_type, 3, 3> matrix;
-          Eigen::Matrix<default_type, 3, 3> matrix_half;
-          Eigen::Matrix<default_type, 3, 3> matrix_half_inverse;
-          Eigen::Vector3 translation;
+          // TODO matrix, translation and offset are only here for the rigid class. to be removed
+            Eigen::Matrix<default_type, 3, 3> matrix;
+            Eigen::Vector3 translation;
+            Eigen::Vector3 offset;
+          transform_type trafo;
+          transform_type trafo_half;
+          transform_type trafo_half_inverse;
           Eigen::Vector3 centre;
-          Eigen::Vector3 offset;
-          Eigen::Vector3 offset_half;
-          Eigen::Vector3 offset_half_inverse;
           Eigen::VectorXd optimiser_weights;
 
       };

@@ -181,9 +181,9 @@ namespace MR
 
             std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
-              Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform); 
+              Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
-              Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform); 
+              Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
             #ifndef NONSYMREGISTRATION
               // define transfomations that will be applied to the image header when the common space is calculated
               {
@@ -194,7 +194,7 @@ namespace MR
               }
             #endif
 
-            typedef Image<float> MidwayImageType; 
+            typedef Image<float> MidwayImageType;
             typedef Image<float> ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
@@ -268,7 +268,7 @@ namespace MR
                 im2_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
                 auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
               #endif
-              
+
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
@@ -287,7 +287,7 @@ namespace MR
                 #else
                   im1_smooth_filter (im1_image, im1__smoothed);
                   im2_smooth_filter (im2_image, im2__smoothed);
-                #endif             
+                #endif
               }
 
               ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized);
@@ -323,7 +323,7 @@ namespace MR
 
               optim.precondition (optimiser_weights);
               // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              optim.run (500, 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+              optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){
