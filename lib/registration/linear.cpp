@@ -55,6 +55,9 @@ namespace MR
       + Option ("affine_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
         + Argument ("num").type_float (0.0, 1.0, std::numeric_limits<float>::infinity())
 
+      + Option ("affine_sparsity", "sparsity of gradient descent 0 (batch) to 1.0 (max stochastic) (Default: 0.0)")
+        + Argument ("num").type_float (0.0, 0.0, 1.0)
+
       + Option ("affine_cc", "metric: use cross correlation. default: least squares");
 
 

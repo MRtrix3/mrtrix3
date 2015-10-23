@@ -334,6 +334,14 @@ void run ()
     affine_smooth_factor = default_type (opt[0][0]);
   }
 
+  opt = get_options ("affine_sparsity");
+  default_type affine_sparsity = 0.0;
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine smooth factor was input when no affine registration is requested");
+    affine_sparsity = default_type (opt[0][0]);
+  }
+
   bool rigid_cc = get_options ("rigid_cc").size() == 1;
   bool affine_cc = get_options ("affine_cc").size() == 1;
 
@@ -498,7 +506,7 @@ void run ()
 
   if (do_affine) {
     CONSOLE ("running affine registration");
-    WARN("smooth_factor:" + str(affine_smooth_factor));
+    INFO("smooth_factor:" + str(affine_smooth_factor));
     Registration::Linear affine_registration;
 
     if (affine_scale_factors.size())
@@ -506,6 +514,7 @@ void run ()
     affine_registration.set_smoothing_factor (affine_smooth_factor);
     if (affine_niter.size())
       affine_registration.set_max_iter (affine_niter);
+    affine_registration.set_sparsity (affine_sparsity);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());

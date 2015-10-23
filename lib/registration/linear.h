@@ -67,6 +67,7 @@ namespace MR
         Linear () :
           max_iter (1, 300),
           scale_factor (2),
+          sparsity (0.0),
           smooth_factor (1.0),
           kernel_extent(3),
           grad_tolerance(1.0e-6),
@@ -107,6 +108,10 @@ namespace MR
               throw Exception ("the neighborhood kernel extent must be at least 1 voxel");
           }
           kernel_extent = extent;
+        }
+
+        void set_sparsity (const default_type& sparsity_level){
+          sparsity = sparsity_level;
         }
 
         void set_init_type (Transform::Init::InitType type) {
@@ -304,13 +309,12 @@ namespace MR
                 parameters.im2_mask_interp.reset (new Interp::Nearest<Im2MaskType> (parameters.im2_mask));
               }
 
-#ifdef STOCHASTICLOOP
-                if (scale_factor[level]==1.0)
-                  parameters.sparsity = 0.0;
-                else
-                  parameters.sparsity = 0.2;
+              if (sparsity > 0.0){
+                parameters.sparsity = sparsity;
                 INFO("stochastic gradient descent sparsity: " + str(parameters.sparsity));
-#endif
+              }
+              else
+                parameters.sparsity = 0.0;
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.cols())
@@ -351,6 +355,7 @@ namespace MR
       protected:
         std::vector<int> max_iter;
         std::vector<default_type> scale_factor;
+        default_type sparsity;
         default_type smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;
