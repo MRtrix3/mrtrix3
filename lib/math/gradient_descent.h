@@ -49,13 +49,10 @@ namespace MR
         template <typename ValueType>
           inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx, const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g, ValueType step_size) {
-            bool changed = false;
-            for (ssize_t n = 0; n < x.size(); ++n) {
-              newx[n] = x[n] - step_size * g[n];
-              if (newx[n] != x[n])
-                changed = true;
-            }
-            return changed;
+            assert (newx.size() == x.size());
+            assert (g.size() == x.size());
+            newx = x - step_size * g;
+            return !newx.isApprox(x);
           }
   };
 
@@ -128,7 +125,7 @@ namespace MR
             #endif
 
             for (int niter = 1; niter < max_iterations; niter++) {
-              // Math::check_function_gradient (func, x, 0.1, false, preconditioner_weights); 
+              // Math::check_function_gradient (func, x, 0.1, false, preconditioner_weights);
               bool retval = iterate (verbose);
               {
                 std::string cost = std::to_string(f);
@@ -208,7 +205,7 @@ namespace MR
           bool iterate (bool verbose = false) {
             // assert (normg != 0.0);
             assert (std::isfinite (normg));
-            
+
 
             while (normg != 0.0) {
               if (!update_func (x2, x, g, dt))
@@ -274,8 +271,11 @@ namespace MR
             value_type cost = func (newx, newg);
             if (!std::isfinite (cost))
               throw Exception ("cost function is NaN or Inf!");
-            if (verbose)
+            if (verbose){
               CONSOLE ("      << eval " + str(nfeval) + ", f = " + str (cost) + " >>");
+              CONSOLE ("      << newx = [ " + str(newx.transpose()) + "]");
+              CONSOLE ("      << newg = [ " + str(newg.transpose()) + "]");
+            }
             return cost;
           }
 
@@ -296,7 +296,7 @@ namespace MR
                 assert(std::isfinite(normg));
                 step_unscaled = std::sqrt (step_unscaled);
               }
-            } 
+            }
           }
 
       };
