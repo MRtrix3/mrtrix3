@@ -94,7 +94,10 @@ namespace MR
         format_ (H.format_),
         datatype_ (H.datatype_),
         offset_ (0.0),
-        scale_ (1.0) { }
+        scale_ (1.0) {
+          if (datatype().is_integer())
+            set_intensity_scaling (H);
+        }
 
       //! \copydoc Header (const Header&)
       template <class HeaderType>
@@ -111,8 +114,8 @@ namespace MR
           }
 
       //! assignment operator
-      /*! This copies everything over apart from the IO handler and the
-       * intensity scaling. */
+      /*! This copies everything over apart from the IO handler (and the
+       * intensity scaling if the data type is floating-point). */
       Header& operator= (const Header& H) {
         axes_ = H.axes_;
         transform_ = H.transform_;
@@ -120,8 +123,12 @@ namespace MR
         keyval_ = H.keyval_;
         format_ = H.format_;
         datatype_ = H.datatype_;
-        offset_ = 0.0;
-        scale_ = 1.0;
+        if (datatype().is_integer())
+          set_intensity_scaling (H);
+        else {
+          offset_ = 0.0;
+          scale_ = 1.0;
+        }
         io.reset();
         return *this;
       }
@@ -188,10 +195,32 @@ namespace MR
       //! get/set the stride between adjacent voxels along axis
       ssize_t& stride (size_t axis);
 
+      class DataTypeProxy : public DataType {
+        public:
+          DataTypeProxy (Header& H) : DataType (H.datatype_), H (H) { }
+          DataTypeProxy (DataTypeProxy&&) = default;
+          DataTypeProxy (const DataTypeProxy&) = delete;
+          DataTypeProxy& operator=(DataTypeProxy&&) = default;
+          DataTypeProxy& operator=(const DataTypeProxy&) = delete;
+
+          const uint8_t& operator()() const { return DataType::operator()(); }
+          const DataType& operator= (const DataType& DT) { DataType::operator= (DT); set(); return *this; }
+          void set_flag (uint8_t flag) { DataType::set_flag (flag); set(); }
+          void unset_flag (uint8_t flag) { DataType::unset_flag (flag); set(); }
+          void set_byte_order_native () { DataType::set_byte_order_native(); set(); }
+        private:
+          Header& H;
+          void set () {
+            H.datatype_ = dt;
+            if (!is_integer())
+              H.reset_intensity_scaling();
+          }
+      };
+
       //! get the datatype of the data as stored on file
-      DataType datatype () const { return datatype_; }
+      DataTypeProxy datatype () { return { *this }; }
       //! get/set the datatype of the data as stored on file
-      DataType& datatype () { return datatype_; }
+      DataType datatype () const { return datatype_; }
 
       //! get the offset applied to raw intensities
       default_type intensity_offset () const { return offset_; }
@@ -206,9 +235,12 @@ namespace MR
       void apply_intensity_scaling (default_type scaling, default_type bias = 0.0) {
         scale_ *= scaling;
         offset_ = scaling * offset_ + bias;
+        set_intensity_scaling (scale_, offset_);
       }
       //! replace existing intensity offset & scale with values supplied
       void set_intensity_scaling (default_type scaling = 1.0, default_type bias = 0.0) {
+        if (!std::isfinite (scaling) || !std::isfinite (bias) || scaling == 0.0)
+          WARN ("invalid scaling parameters (offset: " + str(bias) + ", scale: " + str(scaling) + ")");
         scale_ = scaling;
         offset_ = bias;
       }

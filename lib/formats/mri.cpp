@@ -152,7 +152,7 @@ namespace MR
         return { uint8_t (d | t) };
       }
 
-      uint8_t store_datatype (DataType& dt) {
+      uint8_t store_datatype (const DataType& dt) {
         uint8_t d = dt() & 0x07U;
         uint8_t t = dt() & ~(0x07U);
         if (d >= 0x05U) --d;
