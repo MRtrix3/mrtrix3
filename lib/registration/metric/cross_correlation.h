@@ -34,11 +34,11 @@ namespace MR
   namespace Registration
   {
     namespace Metric
-    {        
+    {
       template <typename ImageType1, typename ImageType2>
       struct CCPrecomputeFunctorMasked_DEBUG {
         template <typename MaskType, typename ImageType3>
-        void operator() (MaskType& mask, ImageType3& out) { 
+        void operator() (MaskType& mask, ImageType3& out) {
           out.index(0) = mask.index(0);
           out.index(1) = mask.index(1);
           out.index(2) = mask.index(2);
@@ -95,7 +95,7 @@ namespace MR
       template <typename ImageType1, typename ImageType2>
       struct CCPrecomputeFunctorMasked_Naive {
         template <typename MaskType, typename ImageType3>
-        void operator() (MaskType& mask, ImageType3& out) { 
+        void operator() (MaskType& mask, ImageType3& out) {
           if (!mask.value())
             return;
           out.index(0) = mask.index(0);
@@ -216,12 +216,12 @@ namespace MR
             /** typedef int is_neighbourhood: type_trait to distinguish voxel-wise and neighbourhood based metric types */
             typedef int is_neighbourhood;
             /** requires_precompute int is_neighbourhood: type_trait to distinguish metric types that require a call to precompute before the operator() is called */
-            typedef int requires_precompute;            
+            typedef int requires_precompute;
 
             template <class ParamType>
               default_type precompute(ParamType& parameters) const {
                 INFO("precomputing cross correlation data...");
-                
+
 #ifdef NONSYMREGISTRATION
                 throw Exception("cross correlation not compatible with non-symmetric metric");
                 return 0;
@@ -233,17 +233,17 @@ namespace MR
                 typedef typename ParamType::ImProcessedMaskInterpolatorType ProcessedMaskInterpolatorType;
                 typedef Interp::SplineInterp<Image<ProcessedImageValueType>, Math::UniformBSpline<ProcessedImageValueType>, Math::SplineProcessingType::ValueAndGradient> CCInterpType;
 
-                // store precomputed values in cc_image: 
+                // store precomputed values in cc_image:
                 // volumes 0 and 1: normalised intensities of both images (Im1 and Im2)
                 // vlumes 2 to 4: neighbourhood dot products Im1.dot(Im2), Im1.dot(Im1), Im2.dot(Im2)
                 auto cc_image_header = Header::scratch(parameters.midway_image.original_header());
                 cc_image_header.set_ndim(4);
-                cc_image_header.size(3) = 5; 
+                cc_image_header.size(3) = 5;
                 ProcessedMaskType cc_mask;
                 auto cc_mask_header = Header::scratch(parameters.midway_image);
-                
+
                 auto cc_image = cc_image_header.template get_image <ProcessedImageValueType>().with_direct_io(Stride::contiguous_along_axis(3));
-                { 
+                {
                   LogLevelLatch log_level (0);
                   if (parameters.im1_mask.valid() or parameters.im2_mask.valid())
                     cc_mask = cc_mask_header.template get_image<bool>();
@@ -254,7 +254,7 @@ namespace MR
                   else if (parameters.im1_mask.valid() and parameters.im2_mask.valid()){
                     Adapter::Reslice<Interp::Nearest, Image<bool>> mask_reslicer1 (parameters.im1_mask, cc_mask_header, parameters.transformation.get_transform_half());
                     Adapter::Reslice<Interp::Nearest, Image<bool>> mask_reslicer2 (parameters.im2_mask, cc_mask_header, parameters.transformation.get_transform_half_inverse());
-                    // TODO should be faster to just loop over m1: 
+                    // TODO should be faster to just loop over m1:
                     //    if (m1.value())
                     //     assign_pos_of(m1).to(m2); cc_mask.value() = m2.value()
                     auto both = [](decltype(cc_mask)& cc_mask, decltype(mask_reslicer1)& m1, decltype(mask_reslicer2)& m2) {
@@ -270,7 +270,7 @@ namespace MR
 
                 const auto extent = parameters.get_extent();
 
-                // TODO unmasked CCPrecomputeFunctor. create a mask (all voxels true) if none given. 
+                // TODO unmasked CCPrecomputeFunctor. create a mask (all voxels true) if none given.
                 // ThreadedLoop (cc_image, 0, 3).run (CCPrecomputeFunctor_Bogus(), interp1, interp2, cc_image);
                 if (!cc_mask.valid()){
                   cc_mask = cc_mask_header.template get_image<bool>();
@@ -279,7 +279,7 @@ namespace MR
                 parameters.processed_mask = cc_mask;
                 parameters.processed_mask_interp.reset (new ProcessedMaskInterpolatorType (parameters.processed_mask));
                 auto loop = ThreadedLoop ("precomputing cross correlation data...", parameters.processed_mask);
-                loop.run (CCPrecomputeFunctorMasked_Naive<decltype(interp1), decltype(interp2)>(extent, interp1, interp2), parameters.processed_mask, cc_image);  
+                loop.run (CCPrecomputeFunctorMasked_Naive<decltype(interp1), decltype(interp2)>(extent, interp1, interp2), parameters.processed_mask, cc_image);
                 parameters.processed_image = cc_image;
                 parameters.processed_image_interp.reset (new CCInterpType (parameters.processed_image));
                 // display<Image<float>>(parameters.processed_image);
@@ -329,14 +329,14 @@ namespace MR
                 params.processed_image_interp->index(3) = 0;
                 params.processed_image_interp->value_and_gradient(val1, grad1);
                 if (val1 != val1){
-                  // this should not happen as the precompute should have changed the mask 
-                  WARN("FIXME: val1 is nan"); 
+                  // this should not happen as the precompute should have changed the mask
+                  WARN("FIXME: val1 is nan");
                   return 0.0;
                 }
                 params.processed_image_interp->index(3) = 1;
                 params.processed_image_interp->value_and_gradient(val2, grad2);
                 if (val2 != val2){
-                  // this should not happen as the precompute should have changed the mask 
+                  // this should not happen as the precompute should have changed the mask
                   WARN("FIXME: val2 is nan");
                   return 0.0;
                 }

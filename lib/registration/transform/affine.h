@@ -127,6 +127,19 @@ namespace MR
   {
     namespace Transform
     {
+      class AffineRobustEstimator {
+      public:
+        template <typename ValueType>
+          inline bool operator() (Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& newx,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
+              const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g,
+              ValueType step_size) {
+            assert (newx.size() == x.size());
+            assert (g.size() == x.size());
+            newx = x - step_size * g;
+            return !(newx.isApprox(x));
+          }
+    };
 
       /** \addtogroup Transforms
       @{ */
@@ -143,6 +156,9 @@ namespace MR
 
           typedef typename Base::ParameterType ParameterType;
           typedef Math::AffineUpdate UpdateType;
+          typedef AffineRobustEstimator RobustEstimatorType;
+          typedef int has_robust_estimator;
+          // void has_robust_estimator() { };
 
           Affine () : Base (12) {
             for (size_t i = 0; i < 9; ++i)
@@ -199,9 +215,11 @@ namespace MR
           }
 
 
+          bool robust_estimate() const { return true; }
 
         protected:
           UpdateType gradient_descent_updator;
+          RobustEstimatorType robust_estimator;
       };
       //! @}
     }
