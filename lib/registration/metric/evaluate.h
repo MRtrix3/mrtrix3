@@ -115,6 +115,7 @@ namespace MR
                 ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
 
                 if (params.sparsity > 0.0){
+                  INFO("StochasticThreadedLoop " + str(params.sparsity));
                   StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
                 }
                 else {

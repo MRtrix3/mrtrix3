@@ -44,7 +44,6 @@
 #include "math/check_gradient.h"
 #include "math/rng.h"
 #include "math/math.h"
-
 #include <iostream>     // std::streambuf
 
 
@@ -67,18 +66,15 @@ namespace MR
         Linear () :
           max_iter (1, 300),
           scale_factor (2),
-          sparsity (0.0),
+          sparsity (1, 0.0),
           smooth_factor (1.0),
-          kernel_extent(3),
+          kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
           log_stream(nullptr),
           init_type (Transform::Init::mass) {
           scale_factor[0] = 0.5;
           scale_factor[1] = 1;
-          kernel_extent[0] = 1;
-          kernel_extent[1] = 1;
-          kernel_extent[2] = 1;
         }
 
         void set_max_iter (const std::vector<int>& maxiter) {
@@ -110,8 +106,11 @@ namespace MR
           kernel_extent = extent;
         }
 
-        void set_sparsity (const default_type& sparsity_level){
-          sparsity = sparsity_level;
+        void set_sparsity (const std::vector<default_type>& sparsity_){
+          for (size_t d = 0; d < sparsity_.size(); ++d)
+            if (sparsity_[d] < 0.0 or sparsity_[d] > 1.0 )
+              throw Exception ("sparsity must be between 0.0 and 1.0");
+          sparsity = sparsity_;
         }
 
         void set_init_type (Transform::Init::InitType type) {
@@ -184,6 +183,11 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
 
+            if (sparsity.size() == 1)
+              sparsity.resize (scale_factor.size(), sparsity[0]);
+            else if (sparsity.size() != scale_factor.size())
+              throw Exception ("the sparsity level needs to be defined for each multi-resolution level");
+
             std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
@@ -227,7 +231,6 @@ namespace MR
               auto midway_image = im1_image;
               CONSOLE("non-symmetric metric");
             #else
-              CONSOLE("symmetric metric");
               auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
               default_type im2_res = 1.0;
               std::vector<Header> headers;
@@ -238,8 +241,11 @@ namespace MR
             #endif
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
-
-              CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
+              {
+                std::string st;
+                sparsity[level] > 0.0 ? st = ", sparsity: " + str(sparsity[level]) : st = "";
+                CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
+              }
 
 
               // TODO: When we go symmetric, and change the gradient calculation to use the UniformBSline interpolation on the fly,
@@ -297,7 +303,10 @@ namespace MR
 
               ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized);
 
-              INFO ("neighbourhood kernel extent: " +str(kernel_extent));
+              INFO ("sparsity: " +str(sparsity[level]));
+              parameters.sparsity = sparsity[level];
+
+              DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
               if (im1_mask.valid()){
@@ -309,12 +318,6 @@ namespace MR
                 parameters.im2_mask_interp.reset (new Interp::Nearest<Im2MaskType> (parameters.im2_mask));
               }
 
-              if (sparsity > 0.0){
-                parameters.sparsity = sparsity;
-                INFO("stochastic gradient descent sparsity: " + str(parameters.sparsity));
-              }
-              else
-                parameters.sparsity = 0.0;
 
               Metric::Evaluate<MetricType, ParamType> evaluate (metric, parameters);
               if (directions.cols())
@@ -355,7 +358,7 @@ namespace MR
       protected:
         std::vector<int> max_iter;
         std::vector<default_type> scale_factor;
-        default_type sparsity;
+        std::vector<default_type> sparsity;
         default_type smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;

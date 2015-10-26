@@ -335,11 +335,11 @@ void run ()
   }
 
   opt = get_options ("affine_sparsity");
-  default_type affine_sparsity = 0.0;
+  std::vector<default_type> affine_sparsity;
   if (opt.size ()) {
     if (!do_affine)
-      throw Exception ("the affine smooth factor was input when no affine registration is requested");
-    affine_sparsity = default_type (opt[0][0]);
+      throw Exception ("the affine sparsity factor was input when no affine registration is requested");
+    affine_sparsity = parse_floats (opt[0][0]);
   }
 
   bool rigid_cc = get_options ("rigid_cc").size() == 1;
@@ -514,7 +514,8 @@ void run ()
     affine_registration.set_smoothing_factor (affine_smooth_factor);
     if (affine_niter.size())
       affine_registration.set_max_iter (affine_niter);
-    affine_registration.set_sparsity (affine_sparsity);
+    if (affine_sparsity.size())
+      affine_registration.set_sparsity (affine_sparsity);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());

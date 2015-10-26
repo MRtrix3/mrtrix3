@@ -60,7 +60,7 @@ namespace MR
                     im1_image (im1_image),
                     im2_image (im2_image),
                     midway_image (midway_image),
-                    sparsity(static_cast<double> (0.0)){
+                    sparsity(0.0){
                       im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
           }
@@ -75,7 +75,7 @@ namespace MR
           MidwayImageType midway_image;
           MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;
           MR::copy_ptr<Im2ImageInterpolatorType> im2_image_interp;
-          double sparsity;
+          default_type sparsity;
           std::vector<size_t> extent;
           Image<bool> im1_mask;
           Image<bool> im2_mask;
@@ -83,9 +83,9 @@ namespace MR
           MR::copy_ptr<Im2MaskInterpolatorType> im2_mask_interp;
 
           ProcessedImageType processed_image;
-          MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp; 
+          MR::copy_ptr<ProcessedImageInterpolatorType> processed_image_interp;
           ProcessedMaskType processed_mask;
-          MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp; 
+          MR::copy_ptr<ProcessedMaskInterpolatorType> processed_mask_interp;
       };
     }
   }
