@@ -24,6 +24,9 @@
 #define __registration_transform_base_h__
 
 #include "types.h"
+#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/SVD>
+#include <Eigen/Geometry> // Eigen::Translation
 
 namespace MR
 {
