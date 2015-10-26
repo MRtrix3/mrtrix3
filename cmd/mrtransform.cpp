@@ -31,6 +31,7 @@
 #include "filter/reslice.h"
 #include "filter/warp.h"
 #include "algo/loop.h"
+#include "algo/stochastic_threaded_loop.h"
 #include "algo/copy.h"
 #include "dwi/directions/predefined.h"
 #include "dwi/gradient.h"

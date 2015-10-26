@@ -77,7 +77,7 @@ namespace MR
      * \sa Interp::reslice()
      */
     template <template <class ImageType> class Interpolator, class ImageType>
-      class Reslice 
+      class Reslice
     {
       public:
         typedef typename ImageType::value_type value_type;
@@ -108,11 +108,11 @@ namespace MR
               else {
                 Vector3 y = direct_transform * Vector3 (0.0, 0.0, 0.0);
                 Vector3 x0 = direct_transform * Vector3 (1.0, 0.0, 0.0);
-                OS[0] = std::ceil (0.999 * (y-x0).norm());
+                OS[0] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
                 x0 = direct_transform * Vector3 (0.0, 1.0, 0.0);
-                OS[1] = std::ceil (0.999 * (y-x0).norm());
+                OS[1] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
                 x0 = direct_transform * Vector3 (0.0, 0.0, 1.0);
-                OS[2] = std::ceil (0.999 * (y-x0).norm());
+                OS[2] = std::ceil ((1.0-std::numeric_limits<default_type>::epsilon()) * (y-x0).norm());
               }
 
               if (OS[0] * OS[1] * OS[2] > 1) {
