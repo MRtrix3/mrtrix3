@@ -215,7 +215,10 @@ namespace MR
           }
 
 
-          bool robust_estimate() { return true; }
+          bool robust_estimate() const {
+            WARN("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEES");
+            return true;
+          }
 
         protected:
           UpdateType gradient_descent_updator;

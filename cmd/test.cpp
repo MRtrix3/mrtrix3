@@ -24,31 +24,31 @@ void usage ()
 }
 
 template<typename T>
-struct has_method
+struct has_robust_estimator
 {
 private:
   typedef std::true_type yes;
   typedef std::false_type no;
-
   template<typename U> static auto test(bool) -> decltype(std::declval<U>().robust_estimate() == 1, yes());
-
   template<typename> static no test(...);
-
 public:
-
   static constexpr bool value = std::is_same<decltype(test<T>(0)),yes>::value;
 };
 
 template <class TransformType_>
-void evaluate (TransformType_& trafo) {
-  if (has_method<decltype(trafo)>::value) {
-    CONSOLE("yes");
-    // trafo.robust_estimate();
+  typename std::enable_if<has_robust_estimator<TransformType_>::value, void>::type
+  evaluate (TransformType_&& trafo, bool dummy = true)
+  {
+    trafo.robust_estimate();
+    VAR(dummy);
   }
-  else {
-    CONSOLE("no");
+
+template <class TransformType_>
+  typename std::enable_if<!has_robust_estimator<TransformType_>::value, void>::type
+  evaluate (TransformType_&& trafo, bool dummy = false)
+  {
+    VAR(dummy);
   }
-}
 
 
 void run ()
@@ -70,8 +70,8 @@ void run ()
   Registration::Transform::Affine A;
   Registration::Transform::Rigid R;
 
-  std::cout << has_method<x>::value << ", " << has_method<y>::value << ", " << has_method<z>::value << std::endl; // 1, 0, 0
-  std::cout << has_method<decltype(A)>::value << ", " << has_method<decltype(R)>::value << std::endl;
+  std::cout << has_robust_estimator<x>::value << ", " << has_robust_estimator<y>::value << ", " << has_robust_estimator<z>::value << std::endl; // 1, 0, 0
+  std::cout << has_robust_estimator<decltype(A)>::value << ", " << has_robust_estimator<decltype(R)>::value << std::endl;
   evaluate(A);
   evaluate(R);
 
