@@ -39,6 +39,17 @@ public:
   static constexpr bool value = std::is_same<decltype(test<T>(0)),yes>::value;
 };
 
+template <class TransformType_>
+void evaluate (TransformType_& trafo) {
+  if (has_method<decltype(trafo)>::value) {
+    CONSOLE("yes");
+    // trafo.robust_estimate();
+  }
+  else {
+    CONSOLE("no");
+  }
+}
+
 
 void run ()
 {
@@ -60,6 +71,8 @@ void run ()
   Registration::Transform::Rigid R;
 
   std::cout << has_method<x>::value << ", " << has_method<y>::value << ", " << has_method<z>::value << std::endl; // 1, 0, 0
-  // std::cout << has_method<A>::value << std::endl; // error: the value of 'A' is not usable in a constant expression
-                                                     // note: 'A' was not declared 'constexpr'
+  std::cout << has_method<decltype(A)>::value << ", " << has_method<decltype(R)>::value << std::endl;
+  evaluate(A);
+  evaluate(R);
+
 }
