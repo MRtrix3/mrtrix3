@@ -5,6 +5,7 @@
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
 #include "algo/random_loop.h"
+#include <numeric>
 // #include <array>      // std::array
 // #include <random>     // std::default_random_engine
 // #include <chrono>     // std::chrono::system_clock
