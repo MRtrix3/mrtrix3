@@ -60,7 +60,8 @@ namespace MR
                     im1_image (im1_image),
                     im2_image (im2_image),
                     midway_image (midway_image),
-                    sparsity(0.0){
+                    sparsity(0.0),
+                    robust_estimate(false) {
                       im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
                       im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
           }
@@ -76,6 +77,7 @@ namespace MR
           MR::copy_ptr<Im1ImageInterpolatorType> im1_image_interp;
           MR::copy_ptr<Im2ImageInterpolatorType> im2_image_interp;
           default_type sparsity;
+          bool robust_estimate;
           std::vector<size_t> extent;
           Image<bool> im1_mask;
           Image<bool> im2_mask;

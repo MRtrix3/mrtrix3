@@ -215,8 +215,11 @@ namespace MR
           }
 
 
-          bool robust_estimate() const {
-            WARN("YEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEES");
+          bool robust_estimate(Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates) const {
+            for (auto& grad_estimate : grad_estimates ){
+              gradient += grad_estimate;
+            }
             return true;
           }
 

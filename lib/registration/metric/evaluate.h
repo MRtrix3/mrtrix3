@@ -60,7 +60,9 @@ namespace MR
         private:
           typedef std::true_type yes;
           typedef std::false_type no;
-          template<typename U> static auto test(bool) -> decltype(std::declval<U>().robust_estimate() == 1, yes());
+          Eigen::Matrix<default_type, Eigen::Dynamic, 1> mat;
+          std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> vec;
+          template<typename U> static auto test(bool) -> decltype(std::declval<U>().robust_estimate(mat, vec) == 1, yes());
           template<typename> static no test(...);
         public:
           static constexpr bool value = std::is_same<decltype(test<T>(0)),yes>::value;
@@ -122,14 +124,27 @@ namespace MR
                   MetricType& metric,
                   ParamType& params,
                   default_type& cost,
-                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-
-                trafo.robust_estimate();
+                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
 
                 if (params.sparsity > 0.0){
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                   INFO("StochasticThreadedLoop " + str(params.sparsity));
-                  StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
+                  if (params.robust_estimate){
+                    size_t n_estimates = 5;
+                    std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> grad_estimates(n_estimates);
+                    for (size_t i = 0; i < n_estimates; i++) {
+                      auto gradient_estimate(gradient);
+                      ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
+                      StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity / n_estimates);
+                      grad_estimates[i] = gradient_estimate;
+                      VAR(gradient_estimate.transpose());
+                    }
+                    trafo.robust_estimate(gradient, grad_estimates);
+                    VAR(gradient.transpose());
+                  } else {
+                    ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+                    StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
+                  }
                 }
                 else {
                   ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
@@ -143,13 +158,14 @@ namespace MR
                   MetricType& metric,
                   ParamType& params,
                   default_type& cost,
-                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient) {
-                  if (params.sparsity > 0.0){
+                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
+                if (params.robust_estimate) WARN("metric is not robust");
+                if (params.sparsity > 0.0){
                   ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                   INFO("StochasticThreadedLoop " + str(params.sparsity));
                   StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
-                }
-                else {
+                } else {
                   ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
                 }
@@ -161,19 +177,7 @@ namespace MR
               default_type overall_cost_function = 0.0;
               gradient.setZero();
               params.transformation.set_parameter_vector(x);
-              {
-                estimate(params.transformation, metric, params, overall_cost_function, gradient);
-                // estimate(gradient, overall_cost_function);
-                // if (params.sparsity > 0.0){
-                //   ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                //   INFO("StochasticThreadedLoop " + str(params.sparsity));
-                //   StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
-                // }
-                // else {
-                //   ThreadKernel<MetricType, ParamType> kernel (metric, params, overall_cost_function, gradient);
-                //   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
-                // }
-              }
+              estimate(params.transformation, metric, params, overall_cost_function, gradient, x);
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));

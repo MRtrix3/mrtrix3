@@ -344,6 +344,7 @@ void run ()
 
   bool rigid_cc = get_options ("rigid_cc").size() == 1;
   bool affine_cc = get_options ("affine_cc").size() == 1;
+  bool affine_robust_estimator = get_options ("affine_robust").size() == 1;
 
   opt = get_options ("syn_scale");
   std::vector<default_type> syn_scale_factors;
@@ -516,6 +517,8 @@ void run ()
       affine_registration.set_max_iter (affine_niter);
     if (affine_sparsity.size())
       affine_registration.set_sparsity (affine_sparsity);
+    if (affine_robust_estimator)
+      affine_registration.use_robust_estimate (true);
     if (do_rigid) {
       affine.set_centre (rigid.get_centre());
       affine.set_translation (rigid.get_translation());

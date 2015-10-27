@@ -72,7 +72,8 @@ namespace MR
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
           log_stream(nullptr),
-          init_type (Transform::Init::mass) {
+          init_type (Transform::Init::mass),
+          robust_estimate (false) {
           scale_factor[0] = 0.5;
           scale_factor[1] = 1;
         }
@@ -115,6 +116,10 @@ namespace MR
 
         void set_init_type (Transform::Init::InitType type) {
           init_type = type;
+        }
+
+        void use_robust_estimate (bool use) {
+          robust_estimate = use;
         }
 
         void set_transform_type (Transform::Init::InitType type) {
@@ -306,6 +311,9 @@ namespace MR
               INFO ("sparsity: " +str(sparsity[level]));
               parameters.sparsity = sparsity[level];
 
+              INFO ("robust_estimate: " +str(robust_estimate));
+              parameters.robust_estimate = robust_estimate;
+
               DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
               parameters.set_extent (kernel_extent);
 
@@ -365,6 +373,7 @@ namespace MR
         default_type step_tolerance;
         std::streambuf* log_stream;
         Transform::Init::InitType init_type;
+        bool robust_estimate;
         Eigen::MatrixXd directions;
 
     };
