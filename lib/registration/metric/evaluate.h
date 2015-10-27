@@ -128,6 +128,7 @@ namespace MR
                   const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
 
                 if (params.sparsity > 0.0){
+                  Eigen::Matrix<default_type, Eigen::Dynamic, 1> optimiser_weights = trafo.get_optimiser_weights();
                   INFO("StochasticThreadedLoop " + str(params.sparsity));
                   if (params.robust_estimate){
                     size_t n_estimates = 5;
@@ -141,6 +142,8 @@ namespace MR
                     }
                     trafo.robust_estimate(gradient, grad_estimates);
                     VAR(gradient.transpose());
+                    VAR(x.transpose());
+                    VAR(optimiser_weights.transpose());
                   } else {
                     ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                     StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
