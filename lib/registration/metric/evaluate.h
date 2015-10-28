@@ -54,19 +54,19 @@ namespace MR
           typedef int yes;
         };
 
-        template<typename T>
-        struct has_robust_estimator
-        {
-        private:
-          typedef std::true_type yes;
-          typedef std::false_type no;
-          Eigen::Matrix<default_type, Eigen::Dynamic, 1> mat;
-          std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> vec;
-          template<typename U> static auto test(bool) -> decltype(std::declval<U>().robust_estimate(mat, vec) == 1, yes());
-          template<typename> static no test(...);
-        public:
-          static constexpr bool value = std::is_same<decltype(test<T>(0)),yes>::value;
-        };
+        // template<typename T> // this does not compule with clang, fine with gcc
+        // struct has_robust_estimator
+        // {
+        // private:
+        //   typedef std::true_type yes;
+        //   typedef std::false_type no;
+        //   Eigen::Matrix<default_type, Eigen::Dynamic, 1> mat;
+        //   std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> vec;
+        //   template<typename U> static auto test(bool) -> decltype(std::declval<U>().robust_estimate(mat, vec) == 1, yes());
+        //   template<typename> static no test(...);
+        // public:
+        //   static constexpr bool value = std::is_same<decltype(test<T>(0)),yes>::value;
+        // };
 
       }
       //! \endcond
@@ -119,7 +119,8 @@ namespace MR
             }
 
             template <class TransformType_>
-              typename std::enable_if<has_robust_estimator<TransformType_>::value, void>::type
+              // typename std::enable_if<has_robust_estimator<TransformType_>::value, void>::type // doesn't work with clang
+              void
               estimate (TransformType_&& trafo,
                   MetricType& metric,
                   ParamType& params,
@@ -140,7 +141,9 @@ namespace MR
                       grad_estimates[i] = gradient_estimate;
                       VAR(gradient_estimate.transpose());
                     }
-                    trafo.robust_estimate(gradient, grad_estimates);
+
+                    params.transformation.robust_estimate(gradient, grad_estimates, params, x);
+
                     VAR(gradient.transpose());
                     VAR(x.transpose());
                     VAR(optimiser_weights.transpose());
@@ -155,24 +158,24 @@ namespace MR
                 }
               }
 
-            template <class TransformType_>
-              typename std::enable_if<!has_robust_estimator<TransformType_>::value, void>::type
-              estimate (TransformType_&& trafo,
-                  MetricType& metric,
-                  ParamType& params,
-                  default_type& cost,
-                  Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-                  const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
-                if (params.robust_estimate) WARN("metric is not robust");
-                if (params.sparsity > 0.0){
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
-                  INFO("StochasticThreadedLoop " + str(params.sparsity));
-                  StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
-                } else {
-                  ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
-                  ThreadedLoop (params.midway_image, 0, 3).run (kernel);
-                }
-              }
+            // template <class TransformType_>
+            //   typename std::enable_if<!has_robust_estimator<TransformType_>::value, void>::type
+            //   estimate (TransformType_&& trafo,
+            //       MetricType& metric,
+            //       ParamType& params,
+            //       default_type& cost,
+            //       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
+            //       const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x) {
+            //     if (params.robust_estimate) WARN("metric is not robust");
+            //     if (params.sparsity > 0.0){
+            //       ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+            //       INFO("StochasticThreadedLoop " + str(params.sparsity));
+            //       StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.sparsity);
+            //     } else {
+            //       ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+            //       ThreadedLoop (params.midway_image, 0, 3).run (kernel);
+            //     }
+            //   }
 
             template <class U = MetricType>
             double operator() (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& x, Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient, typename metric_requires_precompute<U>::no = 0) {

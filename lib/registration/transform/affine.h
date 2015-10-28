@@ -214,9 +214,12 @@ namespace MR
             return &gradient_descent_updator;
           }
 
-
-          bool robust_estimate(Eigen::Matrix<default_type, Eigen::Dynamic, 1>& gradient,
-            std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>>& grad_estimates) const {
+          template <class ParamType, class VectorType>
+          bool robust_estimate(
+            VectorType& gradient,
+            std::vector<VectorType>& grad_estimates,
+            const ParamType& params,
+            const VectorType& parameter_vector) const {
             for (auto& grad_estimate : grad_estimates ){
               gradient += grad_estimate;
             }
