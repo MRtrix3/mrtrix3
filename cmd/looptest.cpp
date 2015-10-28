@@ -4,11 +4,11 @@
 #include "interp/cubic.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
-#include "algo/random_loop.h"
 #include <numeric>
+#include "algo/random_loop.h"
 // #include <array>      // std::array
-// #include <random>     // std::default_random_engine
-// #include <chrono>     // std::chrono::system_clock
+#include <random>     // std::default_random_engine
+#include <chrono>     // std::chrono::system_clock
 
 namespace MR {
 }
@@ -43,7 +43,7 @@ void run ()
   if (dense){
     CONSOLE("dense");
     size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-    auto engine = std::default_random_engine{seed};
+    auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
 
     for (auto z = 0; z < 1000; ++z){
     auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * sparsity));
