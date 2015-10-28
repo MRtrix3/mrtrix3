@@ -26,6 +26,7 @@
 #include "registration/transform/base.h"
 #include "math/gradient_descent.h"
 #include "types.h"
+#include "math/median.h"
 
 using namespace MR::Math;
 
@@ -36,9 +37,12 @@ namespace MR
 
     //! \addtogroup Optimisation
     // @{
-
-    void matrix_to_parameter_vector (const Eigen::Matrix<default_type, 4, 4>& transformation_matrix,
-       Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) {
+    template<class MatrixType = Eigen::Matrix<default_type, 4, 4>>
+    void param_mat2vec_affine (const MatrixType& transformation_matrix,
+                                      Eigen::Matrix<default_type,
+                                      Eigen::Dynamic, 1>& param_vector) {
+        assert(transformation_matrix.cols()==4);
+        assert(transformation_matrix.rows()>=3);
         size_t index = 0;
         assert(param_vector.size() == 12);
         for (size_t row = 0; row < 3; ++row) {
@@ -49,8 +53,11 @@ namespace MR
           param_vector[index++] = transformation_matrix(dim,3);
       }
 
-    void parameter_vector_to_matrix (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector,
-        Eigen::Matrix<default_type, 4, 4>& transformation_matrix) {
+    template<class MatrixType = Eigen::Matrix<default_type, 4, 4>>
+    void param_vec2mat_affine (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector,
+                                     MatrixType& transformation_matrix) {
+        assert(transformation_matrix.cols()==4);
+        assert(transformation_matrix.rows()>=3);
         size_t index = 0;
         transformation_matrix.setIdentity();
         for (size_t row = 0; row < 3; ++row) {
@@ -65,6 +72,7 @@ namespace MR
         // M2.template transpose().template topLeftCorner<3,3>() << newx2.template segment<9>(0);
         // M2.col(3) << newx2.template segment<3>(9), 1.0;
       }
+
 
     class AffineLinearNonSymmetricUpdate {
       public:
@@ -94,9 +102,9 @@ namespace MR
             Eigen::Matrix<ValueType, 12, 1> delta;
             Eigen::Matrix<ValueType, 4, 4> X, Delta, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
 
-            parameter_vector_to_matrix(x, X);
+            param_vec2mat_affine(x, X);
             delta = g * step_size;
-            parameter_vector_to_matrix(delta, Delta);
+            param_vec2mat_affine(delta, Delta);
 
             A = X - Delta;
             A(3,3) = 1.0;
@@ -111,7 +119,7 @@ namespace MR
             // approximation for symmetry reasons as
             // A and B don't commute
             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
-            matrix_to_parameter_vector(Xnew, newx);
+            param_mat2vec_affine(Xnew, newx);
             // if (verbose){
             //   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", ";\n", "", "", "", "");
             //   WARN("AffineUpdate: newx " + str(newx.transpose(),12));
@@ -139,7 +147,9 @@ namespace MR
             newx = x - step_size * g;
             return !(newx.isApprox(x));
           }
-    };
+      };
+
+
 
       /** \addtogroup Transforms
       @{ */
@@ -220,9 +230,51 @@ namespace MR
             std::vector<VectorType>& grad_estimates,
             const ParamType& params,
             const VectorType& parameter_vector) const {
-            for (auto& grad_estimate : grad_estimates ){
-              gradient += grad_estimate;
+            assert (gradient.size()==12);
+            size_t n_estimates = grad_estimates.size();
+            assert (n_estimates>1);
+            const size_t n_corners = 4;
+            Eigen::Matrix<default_type, 3, n_corners> corners, corners_transformed_median;
+            corners.col(0) << 1.0,    0, -Math::sqrt1_2;
+            corners.col(1) <<-1.0,    0, -Math::sqrt1_2;
+            corners.col(2) <<   0,  1.0,  Math::sqrt1_2;
+            corners.col(3) <<   0, -1.0,  Math::sqrt1_2;
+            corners *= 10.0;
+
+
+            std::vector<Eigen::Matrix<default_type, 3, Eigen::Dynamic>> transformed_corner(4);
+            for (auto& corner : transformed_corner){
+              corner.resize(3,n_estimates);
             }
+
+            // Eigen::Matrix<default_type, 12, 1> delta;
+            Eigen::Matrix<default_type, 4, 4> X, X_upd;
+            Math::param_vec2mat_affine(parameter_vector, X);
+
+            // TODO weighting
+            transform_type trafo_upd;
+            for (size_t j =0; j < n_estimates; ++j){
+              gradient += grad_estimates[j]; // TODO remove me
+              Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
+              VAR(candidate.transpose());
+              Math::param_vec2mat_affine(candidate, trafo_upd.matrix()); // trafo_upd.matrix());
+              VAR(trafo_upd.matrix());
+              for (size_t i = 0; i < n_corners; ++i){
+                transformed_corner[i].col(j) = trafo_upd * corners.col(i); //transformed_corner[i].col(j) =
+              }
+            }
+
+            for (size_t i = 0; i < n_corners; ++i){
+              Eigen::Matrix<default_type, 3, 1> median_corner;
+              Math::geometric_median3 (transformed_corner[i], median_corner);
+              corners_transformed_median.col(i) = median_corner;
+            }
+            VAR(corners);
+            VAR(corners_transformed_median);
+            VAR(transformed_corner[0]);
+            VAR(transformed_corner[1]);
+            VAR(transformed_corner[2]);
+            VAR(transformed_corner[3]);
             return true;
           }
 

@@ -38,7 +38,7 @@ namespace MR
 
     namespace {
       template <typename X>
-        inline bool not_a_number (X x) { 
+        inline bool not_a_number (X x) {
           return false;
         }
 
@@ -48,7 +48,7 @@ namespace MR
 
 
 
-    template <class Container> 
+    template <class Container>
     inline typename Container::value_type median (Container& list)
     {
         size_t num = list.size();
@@ -73,6 +73,57 @@ namespace MR
           med_val = (med_val + list[middle])/2.0;
         }
         return med_val;
+    }
+    template <class MatrixType = Eigen::Matrix<default_type, 3, Eigen::Dynamic>, class  VectorType = Eigen::Matrix<default_type, 3, 1>>
+    void geometric_median3(const MatrixType& X, VectorType& median, size_t numIter = 300) {
+      // Weiszfeld median
+      // initialise to the centroid
+      assert(X.rows() == 3);
+      assert(X.cols() >= 2);
+      assert(median.rows() >= 3);
+      median = X.transpose().colwise().mean();
+      size_t m = X.cols();
+      // If the init point is in the set of points, we shift it:
+      size_t n = (X.colwise() - median).colwise().squaredNorm().nonZeros();
+      while (n != m){ // (X.colwise() - median).colwise().squaredNorm().transpose().colwise().minCoeff() > 0.000001;
+        median(0) += 0.0001;
+        median(1) += 0.0001;
+        median(2) += 0.0001;
+        n = (X.colwise() - median).colwise().squaredNorm().nonZeros();
+      }
+
+      bool convergence = false;
+      std::vector<default_type> dist(numIter);
+
+      // Minimizing the sum of the squares of the distances between each points in 'X' and the median.
+      size_t i = 0;
+      while ( !convergence && (i < numIter) ) {
+        default_type norm = 0.0;
+        Eigen::Matrix<default_type, 3, 1> s1(0.0, 0.0, 0.0);
+        default_type denum = 0.0;
+        default_type sdist = 0.0;
+        for (size_t j = 0; j < m; ++j){
+          norm = (X.col(j) - median).norm();
+          s1 += X.col(j) / norm;
+          denum += 1.0 / norm;
+          sdist += norm;
+        }
+        dist[i] = sdist;
+        if (denum == 0.0){
+          WARN( "Couldn't compute geometric median!" );
+          return;
+        }
+
+        median = s1 / denum;
+        if (i > 3){
+          convergence=(std::abs(dist[i]-dist[i-2])<0.00001);
+        }
+        ++i;
+      }
+      if (i == numIter)
+        throw Exception( "Weiszfeld's median did not converge after "+str(numIter)+" iterations");
+      // VAR(dist);
+      return;
     }
 
 
