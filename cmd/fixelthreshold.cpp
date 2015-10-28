@@ -48,7 +48,8 @@ void usage ()
   + Argument ("fixel_out",   "the output fixel image").type_image_out ();
 
   OPTIONS
-  + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)");
+  + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)")
+  + Option ("invert", "invert the output image (i.e. below threshold fixels are included instead)");
 
 }
 
@@ -64,28 +65,40 @@ void run ()
   Sparse::Image<FixelMetric> output (argument[2], input_header);
 
   auto opt = get_options("crop");
+  const bool invert = get_options("invert").size();
 
   for (auto i = Loop ("thresholding fixel image...", input) (input, output); i; ++i) {
     if (opt.size()) {
         size_t fixel_count = 0;
         for (size_t f = 0; f != input.value().size(); ++f) {
-          if (input.value()[f].value > threshold)
-            fixel_count++;
+          if (invert) {
+            if (input.value()[f].value < threshold)
+              fixel_count++;
+          } else {
+            if (input.value()[f].value > threshold)
+              fixel_count++;
+          }
         }
         output.value().set_size (fixel_count);
         fixel_count = 0;
         for (size_t f = 0; f != input.value().size(); ++f) {
-          if (input.value()[f].value > threshold)
-            output.value()[fixel_count++] = input.value()[f];
+          if (invert) {
+            if (input.value()[f].value < threshold)
+              output.value()[fixel_count++] = input.value()[f];
+          } else {
+            if (input.value()[f].value > threshold)
+              output.value()[fixel_count++] = input.value()[f];
+          }
         }
     } else {
       output.value().set_size (input.value().size());
       for (size_t f = 0; f != input.value().size(); ++f) {
         output.value()[f] = input.value()[f];
-        if (input.value()[f].value > threshold)
-          output.value()[f].value = 1.0;
-        else
-          output.value()[f].value = 0.0;
+        if (input.value()[f].value > threshold) {
+          output.value()[f].value = (invert) ? 0.0 : 1.0;
+        } else {
+          output.value()[f].value = (invert) ? 1.0 : 0.0;
+        }
       }
     }
   }
