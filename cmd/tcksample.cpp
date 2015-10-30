@@ -67,6 +67,10 @@ void usage ()
         "points, along which resampling is to occur.")
     +   Argument ("point").type_sequence_float()
 
+    + Option ("locations", "[only used with -resample] output a new track file "
+        "with vertices at the locations resampled by the algorithm.")
+    +   Argument ("file").type_file_out()
+
     + Option ("warp", "[only used with -resample] specify an image containing "
         "the warp field to the space in which the resampling is to take "
         "place. The tracks will be resampled as per their locations in the "
@@ -266,6 +270,7 @@ void run ()
   std::unique_ptr<Image::Interp::Linear<decltype(warp_vox)::element_type>> warp;
 
   Resampler<decltype(warp)::element_type> resample;
+  std::unique_ptr<DWI::Tractography::Writer<value_type>> writer;
 
   Options opt = get_options ("resample");
   bool resampling = opt.size();
@@ -296,6 +301,10 @@ void run ()
       resample.init (get_pos (opt[0][0]));
     else 
       resample.init ();
+
+    opt = get_options ("locations");
+    if (opt.size())
+      writer.reset (new DWI::Tractography::Writer<value_type> (opt[0][0], properties));
   }
 
   size_t skipped = 0, count = 0;
@@ -307,6 +316,9 @@ void run ()
     if (resampling) {
       if (!resample.limits (tck)) { skipped++; continue; }
       resample (tck);
+
+      if (writer) 
+        (*writer) (tck);
     }
     sample (out, interp, tck);
 
