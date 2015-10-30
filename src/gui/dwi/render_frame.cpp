@@ -187,7 +187,7 @@ namespace MR
             renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
 
             if (recompute_mesh) {
-              renderer.update_mesh (lod_computed, lmax_computed);
+              renderer.sh.update_mesh (lod_computed, lmax_computed);
               recompute_mesh = false;
             }
 
@@ -199,8 +199,8 @@ namespace MR
                 new_values.topRows (values.rows()) = values;
                 std::swap (values, new_values);
               }
-              renderer.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
-              renderer.set_data (r_del_daz);
+              renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
+              renderer.sh.set_data (r_del_daz);
               recompute_amplitudes = false;
             }
 

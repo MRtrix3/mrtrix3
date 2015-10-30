@@ -82,17 +82,9 @@ namespace MR {
 
 
 
-      void Set::initialise (const Eigen::MatrixXd& az_el_pairs)
+      void Set::initialise_adjacency()
       {
-        unit_vectors.resize (az_el_pairs.rows());
-        for (size_t i = 0; i != size(); ++i) {
-          const float azimuth   = az_el_pairs(i, 0);
-          const float elevation = az_el_pairs(i, 1);
-          const float sin_elevation = std::sin (elevation);
-          unit_vectors[i] = { std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation) };
-        }
-
-        adj_dirs = new std::vector<dir_t> [size()];
+        adj_dirs.assign (size(), std::vector<dir_t>());
         for (dir_t i = 0; i != size(); ++i) {
           for (dir_t j = 0; j != size(); ++j) {
             if (j != i) {
@@ -120,53 +112,19 @@ namespace MR {
             }
           }
         }
+      }
 
+      void Set::initialise_mask()
+      {
         dir_mask_bytes = (size() + 7) / 8;
         dir_mask_excess_bits = (8 * dir_mask_bytes) - size();
         dir_mask_excess_bits_mask = 0xFF >> dir_mask_excess_bits;
-
-      }
-
-
-
-      Set::~Set()
-      {
-        if (adj_dirs) {
-          delete[] adj_dirs;
-          adj_dirs = NULL;
-        }
       }
 
 
 
 
 
-
-
-      FastLookupSet::FastLookupSet (const FastLookupSet& that) :
-        Set (that),
-        grid_lookup (new std::vector<dir_t>[that.total_num_angle_grids]),
-        num_az_grids (that.num_az_grids),
-        num_el_grids (that.num_el_grids),
-        total_num_angle_grids (that.total_num_angle_grids),
-        az_grid_step (that.az_grid_step),
-        el_grid_step (that.el_grid_step),
-        az_begin (that.az_begin),
-        el_begin (that.el_begin)
-      {
-        for (size_t i = 0; i != total_num_angle_grids; ++i)
-          grid_lookup[i] = that.grid_lookup[i];
-      }
-
-
-
-      FastLookupSet::~FastLookupSet ()
-      {
-        if (grid_lookup) {
-          delete[] grid_lookup;
-          grid_lookup = NULL;
-        }
-      }
 
 
 
@@ -238,7 +196,7 @@ namespace MR {
         az_begin = -Math::pi;
         el_begin = 0.0;
 
-        grid_lookup = new std::vector<dir_t>[total_num_angle_grids];
+        grid_lookup.assign (total_num_angle_grids, std::vector<dir_t>());
         for (size_t i = 0; i != size(); ++i) {
           const size_t grid_index = dir2gridindex (get_dir(i));
           grid_lookup[grid_index].push_back (i);

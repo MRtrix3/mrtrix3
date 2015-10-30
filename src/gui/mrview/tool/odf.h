@@ -66,10 +66,13 @@ namespace MR
             void show_preview_slot ();
             void hide_all_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
+            void type_change_slot();
+            void lmax_slot (int);
+            void dirs_slot();
+            void shell_slot();
             void adjust_scale_slot ();
             void colour_by_direction_slot (int unused);
-            void hide_negative_lobes_slot (int unused);
-            void lmax_slot (int value);
+            void hide_negative_values_slot (int unused);
             void use_lighting_slot (int unused);
             void lighting_settings_slot (bool unused);
             void updateGL ();
@@ -89,9 +92,13 @@ namespace MR
              Model* image_list_model;
              QListView* image_list_view;
              QPushButton *show_preview_button, *hide_all_button;
-             QCheckBox *use_lighting_box, *hide_negative_lobes_box, *lock_to_grid_box, *main_grid_box;
-             QCheckBox *colour_by_direction_box, *interpolation_box;
+             QComboBox *type_selector;
+             QLabel *lmax_label, *level_of_detail_label;
              SpinBox *lmax_selector, *level_of_detail_selector;
+             QLabel *dirs_label, *shell_label;
+             QComboBox *dirs_selector, *shell_selector;
+             QCheckBox *use_lighting_box, *hide_negative_values_box, *lock_to_grid_box, *main_grid_box;
+             QCheckBox *colour_by_direction_box, *interpolation_box;
 
              AdjustButton *scale;
 
@@ -107,6 +114,7 @@ namespace MR
 
              Image* get_image ();
              void get_values (Eigen::VectorXf& SH, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp);
+             void setup_ODFtype_UI (const Image*);
 
              friend class ODF_Preview;
 

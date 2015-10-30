@@ -21,6 +21,9 @@
 */
 
 #include "mrtrix.h"
+#include "dwi/gradient.h"
+#include "dwi/shells.h"
+#include "dwi/directions/set.h"
 #include "gui/dialog/file.h"
 #include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
@@ -41,17 +44,150 @@ namespace MR
 
         class ODF::Image {
           public:
-            Image (MR::Header&& H, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
-              image (std::move (H)),
-              lmax (lmax),
-              scale (scale),
-              hide_negative_lobes (hide_negative_lobes),
-              color_by_direction (color_by_direction) { }
+            Image (MR::Header&& H, const float scale, const bool hide_negative, const bool color_by_direction) :
+                image (std::move (H)),
+                is_SH (true),
+                lmax (Math::SH::LforN (image.header().size (3))),
+                scale (scale),
+                hide_negative (hide_negative),
+                color_by_direction (color_by_direction),
+                dixel (image.header())
+            {
+              // Make an informed guess as to whether or not this is an SH image
+              // If it's not, try to initialise the dixel plugin
+              try {
+                Math::SH::check (image.header());
+                DEBUG ("Image " + image.header().name() + " initialised as SH ODF");
+              } catch (...) {
+                lmax = -1;
+                is_SH = false;
+                try {
+                  //dixel.set_shell (dixel.shells.count() - 1 - (dixel.shells.smallest().is_bzero() ? 1 : 0));
+                  dixel.set_shell (dixel.shells.count() - 1);
+                  DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
+                } catch (...) {
+                  try {
+                    dixel.set_header();
+                    DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using header directions field");
+                  } catch (...) {
+                    try {
+                      dixel.set_internal (image.header().size (3));
+                      DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using internal direction set");
+                    } catch (...) {
+                      DEBUG ("Image " + image.header().name() + " left uninitialised in ODF tool");
+                    }
+                  }
+                }
+              }
+            }
+
+            bool valid() const {
+              if (is_SH)
+                return true;
+              if (!dixel.dirs)
+                return false;
+              return dixel.dirs->size();
+            }
 
             MRView::Image image;
+            bool is_SH;
             int lmax;
             float scale;
-            bool hide_negative_lobes, color_by_direction;
+            bool hide_negative, color_by_direction;
+
+            class DixelPlugin
+            {
+              public:
+                enum dir_t { DW_SCHEME, HEADER, INTERNAL, FILE, NONE };
+
+                DixelPlugin (const MR::Header& H) :
+                    dir_type (dir_t::NONE),
+                    grad (MR::DWI::get_DW_scheme (H)),
+                    shells (grad),
+                    shell_index (shells.count()-1)
+                {
+                  auto entry = H.keyval().find ("directions");
+                  if (entry != H.keyval().end()) {
+                    try {
+                      const auto lines = split_lines (entry->second);
+                      if (lines.size() != size_t(H.size (3)))
+                        throw Exception ("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
+                      // TODO Add compatibility with az/el pairs stored in the header
+                      // TODO Sanity check this data
+                      header_dirs.resize (lines.size(), 3);
+                      for (size_t row = 0; row < lines.size(); ++row) {
+                        const auto values = parse_floats (lines[row]);
+                        if (values.size() != 3)
+                          throw Exception ("malformed directions field in image \"" + H.name() + "\" - should have 3 columns");
+                        for (size_t col = 0; col < values.size(); ++col)
+                          header_dirs(row, col) = values[col];
+                      }
+                    } catch (Exception& e) {
+                      DEBUG (e[0]);
+                      header_dirs.resize (0, 0);
+                    }
+                  }
+                }
+
+                void set_shell (size_t index) {
+                  if (!shells.count())
+                    throw Exception ("No DWI scheme in header");
+                  if (index >= shells.count())
+                    throw Exception ("Requested DW shell outside range");
+                  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs (shells[index].count(), 3);
+                  const std::vector<size_t>& volumes = shells[index].get_volumes();
+                  for (size_t row = 0; row != volumes.size(); ++row)
+                    shell_dirs.row (row) = grad.row (volumes[row]).head<3>().cast<float>();
+                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (shell_dirs));
+                  std::swap (dirs, new_dirs);
+                  shell_index = index;
+                  dir_type = DixelPlugin::dir_t::DW_SCHEME;
+                }
+
+                void set_header() {
+                  if (!header_dirs.rows())
+                    throw Exception ("No direction scheme defined in header");
+                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (header_dirs));
+                  std::swap (dirs, new_dirs);
+                  dir_type = DixelPlugin::dir_t::HEADER;
+                }
+
+                void set_internal (const size_t n) {
+                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (n));
+                  std::swap (dirs, new_dirs);
+                  dir_type = DixelPlugin::dir_t::INTERNAL;
+                }
+
+                void set_from_file (const std::string& path)
+                {
+                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (path));
+                  std::swap (dirs, new_dirs);
+                  dir_type = DixelPlugin::dir_t::FILE;
+                }
+
+                Eigen::VectorXf get_shell_data (const Eigen::VectorXf& values) const
+                {
+                  const std::vector<size_t>& volumes (shells[shell_index].get_volumes());
+                  Eigen::VectorXf result (volumes.size());
+                  for (size_t i = 0; i != volumes.size(); ++i)
+                    result[i] = values[volumes[i]];
+                  return result;
+                }
+
+                size_t num_DW_shells() const {
+                  if (!shells.count()) return 0;
+                  //return (shells.smallest().is_bzero() ? shells.count()-1 : shells.count());
+                  return shells.count();
+                }
+
+                dir_t dir_type;
+                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
+                Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
+                MR::DWI::Shells shells;
+                size_t shell_index;
+                std::unique_ptr<MR::DWI::Directions::Set> dirs;
+
+            } dixel;
         };
 
 
@@ -92,12 +228,12 @@ namespace MR
               return 1;
             }
 
-            size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
+            size_t add_items (const std::vector<std::string>& list, bool colour_by_direction, bool hide_negative_lobes, float scale) {
               std::vector<std::unique_ptr<MR::Header>> hlist;
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
                   std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
-                  Math::SH::check (*header);
+                  //Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
@@ -108,7 +244,7 @@ namespace MR
               if (hlist.size()) {
                 beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
                 for (size_t i = 0; i < hlist.size(); ++i) 
-                  items.push_back (std::unique_ptr<Image> (new Image (std::move (*hlist[i]), lmax, scale, hide_negative_lobes, colour_by_direction)));
+                  items.push_back (std::unique_ptr<Image> (new Image (std::move (*hlist[i]), scale, hide_negative_lobes, colour_by_direction)));
                 endInsertRows();
               }
 
@@ -201,18 +337,18 @@ namespace MR
             GridLayout* box_layout = new GridLayout;
             group_box->setLayout (box_layout);
 
-            QLabel* label = new QLabel ("scale");
+            QLabel* label = new QLabel ("data type");
             label->setAlignment (Qt::AlignHCenter);
             box_layout->addWidget (label, 0, 0);
-            scale = new AdjustButton (this, 1.0);
-            scale->setValue (1.0);
-            scale->setMin (0.0);
-            connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
-            box_layout->addWidget (scale, 0, 1, 1, 3);
+            type_selector = new QComboBox (this);
+            type_selector->addItem ("SH");
+            type_selector->addItem ("amps");
+            connect (type_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(type_change_slot()));
+            box_layout->addWidget (type_selector, 0, 1);
 
-            label = new QLabel ("detail");
-            label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 1, 0);
+            level_of_detail_label = new QLabel ("detail");
+            level_of_detail_label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (level_of_detail_label, 1, 0);
             level_of_detail_selector = new SpinBox (this);
             level_of_detail_selector->setMinimum (1);
             level_of_detail_selector->setMaximum (6);
@@ -221,9 +357,9 @@ namespace MR
             connect (level_of_detail_selector, SIGNAL (valueChanged(int)), this, SLOT(updateGL()));
             box_layout->addWidget (level_of_detail_selector, 1, 1);
 
-            label = new QLabel ("lmax");
-            label->setAlignment (Qt::AlignHCenter);
-            box_layout->addWidget (label, 1, 2);
+            lmax_label = new QLabel ("lmax");
+            lmax_label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (lmax_label, 1, 2);
             lmax_selector = new SpinBox (this);
             lmax_selector->setMinimum (2);
             lmax_selector->setMaximum (16);
@@ -231,42 +367,73 @@ namespace MR
             lmax_selector->setValue (8);
             connect (lmax_selector, SIGNAL (valueChanged(int)), this, SLOT(lmax_slot(int)));
             box_layout->addWidget (lmax_selector, 1, 3);
+
+            dirs_label = new QLabel ("directions");
+            dirs_label->setAlignment (Qt::AlignHCenter);
+            dirs_label->setVisible (false);
+            box_layout->addWidget (dirs_label, 2, 0);
+            dirs_selector = new QComboBox (this);
+            dirs_selector->addItem ("DW scheme");
+            dirs_selector->addItem ("Header");
+            dirs_selector->addItem ("Internal");
+            dirs_selector->addItem ("From file");
+            dirs_selector->setVisible (false);
+            connect (dirs_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(dirs_slot()));
+            box_layout->addWidget (dirs_selector, 2, 1);
+
+            shell_label = new QLabel ("shell");
+            shell_label->setAlignment (Qt::AlignHCenter);
+            shell_label->setVisible (false);
+            box_layout->addWidget (shell_label, 2, 2);
+            shell_selector = new QComboBox (this);
+            shell_selector->setVisible (false);
+            connect (shell_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(shell_slot()));
+            box_layout->addWidget (shell_selector, 2, 3);
+
+            label = new QLabel ("scale");
+            label->setAlignment (Qt::AlignHCenter);
+            box_layout->addWidget (label, 3, 0);
+            scale = new AdjustButton (this, 1.0);
+            scale->setValue (1.0);
+            scale->setMin (0.0);
+            connect (scale, SIGNAL (valueChanged()), this, SLOT (adjust_scale_slot()));
+            box_layout->addWidget (scale, 3, 1, 1, 3);
             
             interpolation_box = new QCheckBox ("interpolation");
             interpolation_box->setChecked (true);
             connect (interpolation_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (interpolation_box, 2, 0, 1, 2);
+            box_layout->addWidget (interpolation_box, 4, 0, 1, 2);
 
-            hide_negative_lobes_box = new QCheckBox ("hide negative lobes");
-            hide_negative_lobes_box->setChecked (true);
-            connect (hide_negative_lobes_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_lobes_slot(int)));
-            box_layout->addWidget (hide_negative_lobes_box, 2, 2, 1, 2);
+            hide_negative_values_box = new QCheckBox ("hide negative values");
+            hide_negative_values_box->setChecked (true);
+            connect (hide_negative_values_box, SIGNAL (stateChanged(int)), this, SLOT (hide_negative_values_slot(int)));
+            box_layout->addWidget (hide_negative_values_box, 4, 2, 1, 2);
 
             lock_to_grid_box = new QCheckBox ("lock to grid");
             lock_to_grid_box->setChecked (true);
             connect (lock_to_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (lock_to_grid_box, 3, 0, 1, 2);
+            box_layout->addWidget (lock_to_grid_box, 5, 0, 1, 2);
 
             colour_by_direction_box = new QCheckBox ("colour by direction");
             colour_by_direction_box->setChecked (true);
             connect (colour_by_direction_box, SIGNAL (stateChanged(int)), this, SLOT (colour_by_direction_slot(int)));
-            box_layout->addWidget (colour_by_direction_box, 3, 2, 1, 2);
+            box_layout->addWidget (colour_by_direction_box, 5, 2, 1, 2);
 
             main_grid_box = new QCheckBox ("use main grid");
             main_grid_box->setToolTip (tr ("Show individual ODFs at the spatial resolution of the main image instead of the ODF image's own spatial resolution"));
             main_grid_box->setChecked (false);
             connect (main_grid_box, SIGNAL (stateChanged(int)), this, SLOT (updateGL()));
-            box_layout->addWidget (main_grid_box, 4, 0, 1, 2);
+            box_layout->addWidget (main_grid_box, 6, 0, 1, 2);
 
             use_lighting_box = new QCheckBox ("use lighting");
             use_lighting_box->setCheckable (true);
             use_lighting_box->setChecked (true);
             connect (use_lighting_box, SIGNAL (stateChanged(int)), this, SLOT (use_lighting_slot(int)));
-            box_layout->addWidget (use_lighting_box, 4, 2, 1, 2);
+            box_layout->addWidget (use_lighting_box, 6, 2, 1, 2);
 
             QPushButton *lighting_settings_button = new QPushButton ("ODF colour and lighting...", this);
             connect (lighting_settings_button, SIGNAL(clicked(bool)), this, SLOT (lighting_settings_slot (bool)));
-            box_layout->addWidget (lighting_settings_button, 5, 0, 1, 4);
+            box_layout->addWidget (lighting_settings_button, 7, 0, 1, 4);
 
 
             connect (image_list_view->selectionModel(),
@@ -276,7 +443,11 @@ namespace MR
             connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
 
 
-            hide_negative_lobes_slot (0);
+            renderer = new DWI::Renderer;
+            renderer->initGL();
+
+
+            hide_negative_values_slot (0);
             colour_by_direction_slot (0);
             lmax_slot (0);
             adjust_scale_slot ();
@@ -318,20 +489,18 @@ namespace MR
 
           if (!hide_all_button->isChecked()) {
 
-            if (!renderer) {
-              renderer = new DWI::Renderer;
-              renderer->initGL();
+            if (settings->is_SH) {
+              if (lmax != settings->lmax || level_of_detail != level_of_detail_selector->value()) {
+                lmax = settings->lmax;
+                level_of_detail = level_of_detail_selector->value();
+                renderer->sh.update_mesh (level_of_detail, lmax);
+              }
             }
 
-            if (lmax != settings->lmax || 
-                level_of_detail != level_of_detail_selector->value()) {
-              lmax = settings->lmax;
-              level_of_detail = level_of_detail_selector->value();
-              renderer->update_mesh (level_of_detail, lmax);
-            }
+            renderer->set_mode (settings->is_SH);
 
             renderer->start (projection, *lighting, settings->scale, 
-                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative_lobes, true);
+                use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
 
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
@@ -367,7 +536,7 @@ namespace MR
             const Eigen::Vector3f y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
             const int ny = std::ceil (y_width.norm() / y_dir.norm());
 
-            Eigen::VectorXf values (Math::SH::NforL (settings->lmax));
+            Eigen::VectorXf values (settings->is_SH ? Math::SH::NforL (settings->lmax) : settings->image.header().size (3));
             Eigen::VectorXf r_del_daz;
 
             for (int y = -ny; y <= ny; ++y) {
@@ -376,9 +545,20 @@ namespace MR
                 get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
-                renderer->compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
-                renderer->set_data (r_del_daz);
+                if (settings->is_SH) {
+                  renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
+                  renderer->sh.set_data (r_del_daz);
+                } else {
+                  if (settings->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME) {
+                    const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
+                    renderer->dixel.set_data (shell_values);
+                  } else {
+                    renderer->dixel.set_data (values);
+                  }
+                }
+                GL_CHECK_ERROR;
                 renderer->draw (p);
+                GL_CHECK_ERROR;
               }
             }
 
@@ -427,18 +607,59 @@ namespace MR
 
 
 
+        void ODF::setup_ODFtype_UI (const Image* image)
+        {
+          assert (image);
+          type_selector->blockSignals (true);
+          type_selector->setCurrentIndex (image->is_SH ? 0 : 1);
+          type_selector->setEnabled (image->lmax >= 0);
+          type_selector->blockSignals (false);
+          lmax_label->setVisible (image->is_SH);
+          level_of_detail_label->setVisible (image->is_SH);
+          lmax_selector->setVisible (image->is_SH);
+          if (image->lmax >= 0)
+            lmax_selector->setValue (image->lmax);
+          level_of_detail_selector->setVisible (image->is_SH);
+          dirs_label->setVisible (!image->is_SH);
+          shell_label->setVisible (!image->is_SH);
+          dirs_selector->setVisible (!image->is_SH);
+          if (!image->is_SH)
+            dirs_selector->setCurrentIndex (image->dixel.dir_type);
+          shell_selector->setVisible (!image->is_SH);
+          shell_selector->blockSignals (true);
+          shell_selector->clear();
+          for (size_t i = 0; i != image->dixel.shells.count(); ++i) {
+            //if (!image->dixel.shells[i].is_bzero())
+              shell_selector->addItem (QString::fromStdString (str (int (std::round (image->dixel.shells[i].get_mean())))));
+          }
+          shell_selector->blockSignals (false);
+          if (!image->is_SH && shell_selector->count() && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME)
+            shell_selector->setCurrentIndex (image->dixel.shell_index);
+          //shell_selector->setEnabled (image->dixel.shells.count() >= 2);
+          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells.count());
+        }
+
+
+
+
 
         void ODF::add_images (std::vector<std::string>& list)
         {
           size_t previous_size = image_list_model->rowCount();
           if (!image_list_model->add_items (list,
-                lmax_selector->value(), 
-                colour_by_direction_box->isChecked(), 
-                hide_negative_lobes_box->isChecked(), 
-                scale->value())) 
+                                            colour_by_direction_box->isChecked(),
+                                            hide_negative_values_box->isChecked(),
+                                            scale->value()))
             return;
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
           image_list_view->selectionModel()->select (first, QItemSelectionModel::ClearAndSelect);
+          Image* settings = get_image();
+          setup_ODFtype_UI (settings);
+          assert (renderer);
+          if (!settings->is_SH) {
+            assert (settings->dixel.dirs);
+            renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          }
           updateGL();
         }
 
@@ -534,20 +755,36 @@ namespace MR
 
 
 
-        void ODF::hide_negative_lobes_slot (int) 
+        void ODF::hide_negative_values_slot (int)
         {
           Image* settings = get_image();
           if (!settings)
             return;
-          settings->hide_negative_lobes = hide_negative_lobes_box->isChecked();
+          settings->hide_negative = hide_negative_values_box->isChecked();
           if (preview) 
-            preview->render_frame->set_hide_neg_lobes (hide_negative_lobes_box->isChecked());
+            preview->render_frame->set_hide_neg_lobes (hide_negative_values_box->isChecked());
           updateGL();
         }
 
 
 
 
+
+        void ODF::type_change_slot ()
+        {
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          const bool mode_is_SH = !type_selector->currentIndex();
+          if (settings->is_SH == mode_is_SH)
+            return;
+          settings->is_SH = mode_is_SH;
+          // If image isn't compatible with SH, this shouldn't be accessible in the UI
+          if (mode_is_SH)
+            assert (settings->lmax);
+          setup_ODFtype_UI (settings);
+          updateGL();
+        }
 
 
 
@@ -556,9 +793,88 @@ namespace MR
           Image* settings = get_image();
           if (!settings)
             return;
+          assert (settings->is_SH);
           settings->lmax = lmax_selector->value();
           if (preview) 
             preview->render_frame->set_lmax (lmax_selector->value());
+          updateGL();
+        }
+
+
+
+        void ODF::dirs_slot ()
+        {
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          assert (!settings->is_SH);
+          const size_t mode = dirs_selector->currentIndex();
+          if (mode == settings->dixel.dir_type)
+            return;
+          try {
+            switch (mode) {
+              case 0: // DW scheme
+                if (!settings->dixel.num_DW_shells())
+                  throw Exception ("Cannot draw orientation information from DW scheme: no such scheme stored in header");
+                settings->dixel.set_shell (settings->dixel.shell_index);
+                break;
+              case 1: // Header
+                if (!settings->dixel.header_dirs.rows())
+                  throw Exception ("Cannot draw orientation information from header: no such data exist");
+                settings->dixel.set_header();
+                break;
+              case 2: // Internal
+                settings->dixel.set_internal (settings->image.header().size (3));
+                break;
+              case 3: // From file
+                const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)");
+                if (!path.size()) {
+                  dirs_selector->setCurrentIndex (settings->dixel.dir_type);
+                  return;
+                }
+                settings->dixel.set_from_file (path);
+                break;
+            }
+            assert (settings->dixel.dirs);
+            assert (renderer);
+            renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          } catch (Exception& e) {
+            e.display();
+            dirs_selector->setCurrentIndex (settings->dixel.dir_type);
+          }
+
+          updateGL();
+        }
+
+
+
+        void ODF::shell_slot ()
+        {
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          assert (!settings->is_SH);
+          assert (settings->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME);
+          const size_t index = shell_selector->currentIndex();
+          assert (index < settings->dixel.num_DW_shells());
+          settings->dixel.set_shell (index);
+          assert (settings->dixel.dirs);
+          assert (renderer);
+          renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          updateGL();
+        }
+
+
+
+        void ODF::adjust_scale_slot ()
+        {
+          scale->setRate (0.01 * scale->value());
+          Image* settings = get_image();
+          if (!settings)
+            return;
+          settings->scale = scale->value();
+          if (preview)
+            preview->render_frame->set_scale (scale->value());
           updateGL();
         }
 
@@ -587,17 +903,6 @@ namespace MR
 
 
 
-        void ODF::adjust_scale_slot () 
-        { 
-          scale->setRate (0.01 * scale->value());
-          Image* settings = get_image();
-          if (!settings)
-            return;
-          settings->scale = scale->value();
-          if (preview) 
-            preview->render_frame->set_scale (scale->value());
-          updateGL();
-        }
 
         void ODF::close_event ()
         {
@@ -625,7 +930,7 @@ namespace MR
           if (!settings)
             return;
           MRView::Image& image (settings->image);
-          Eigen::VectorXf values (Math::SH::NforL (lmax_selector->value()));
+          Eigen::VectorXf values (settings->is_SH ? Math::SH::NforL (lmax_selector->value()) : settings->image.header().size (3));
           get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
         }
@@ -638,9 +943,9 @@ namespace MR
           Image* settings = get_image();
           if (!settings)
             return;
+          setup_ODFtype_UI (settings);
           scale->setValue (settings->scale);
-          lmax_selector->setValue (settings->lmax);
-          hide_negative_lobes_box->setChecked (settings->hide_negative_lobes);
+          hide_negative_values_box->setChecked (settings->hide_negative);
           colour_by_direction_box->setChecked (settings->color_by_direction);
           updateGL();
           update_preview();
