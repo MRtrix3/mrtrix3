@@ -116,7 +116,7 @@ bool Matrix::operator() (const Mapped_track_nodelist& in)
 void Matrix::scale_by_streamline_count()
 {
   for (node_t i = 0; i != counts.rows(); ++i) {
-    for (node_t j = i; j != counts.columns(); ++j) {
+    for (node_t j = i; j != counts.cols(); ++j) {
       if (counts (i, j)) {
         data (i, j) /= counts (i, j);
         counts (i, j) = 1;
@@ -130,21 +130,21 @@ void Matrix::scale_by_streamline_count()
 void Matrix::remove_unassigned()
 {
   if (is_vector()) {
-    for (node_t i = 0; i != data.columns() - 1; ++i) {
+    for (node_t i = 0; i != data.cols() - 1; ++i) {
       data   (0, i) = data   (0, i+1);
       counts (0, i) = counts (0, i+1);
     }
-    data  .resize (1, data  .columns() - 1);
-    counts.resize (1, counts.columns() - 1);
+    data  .resize (1, data  .cols() - 1);
+    counts.resize (1, counts.cols() - 1);
   } else {
     for (node_t i = 0; i != data.rows() - 1; ++i) {
-      for (node_t j = i; j != data.columns() - 1; ++j) {
+      for (node_t j = i; j != data.cols() - 1; ++j) {
         data   (i, j) = data   (i+1, j+1);
         counts (i, j) = counts (i+1, j+1);
       }
     }
-    data  .resize (data  .rows() - 1, data  .columns() - 1);
-    counts.resize (counts.rows() - 1, counts.columns() - 1);
+    data  .resize (data  .rows() - 1, data  .cols() - 1);
+    counts.resize (counts.rows() - 1, counts.cols() - 1);
   }
 }
 
@@ -161,9 +161,9 @@ void Matrix::zero_diagonal()
 
 void Matrix::error_check (const std::set<node_t>& missing_nodes)
 {
-  std::vector<uint32_t> node_counts (data.columns(), 0);
+  std::vector<uint32_t> node_counts (data.cols(), 0);
   for (node_t i = 0; i != counts.rows(); ++i) {
-    for (node_t j = i; j != counts.columns(); ++j) {
+    for (node_t j = i; j != counts.cols(); ++j) {
       node_counts[i] += counts (i, j);
       node_counts[j] += counts (i, j);
     }
@@ -185,7 +185,13 @@ void Matrix::error_check (const std::set<node_t>& missing_nodes)
 
 
 
-void Matrix::write_assignments (const std::string& path)
+void Matrix::write (const std::string& path) const
+{
+  File::OFStream stream (path);
+  stream << data;
+}
+
+void Matrix::write_assignments (const std::string& path) const
 {
   File::OFStream stream (path);
   for (auto i = assignments_pairs.begin(); i != assignments_pairs.end(); ++i)

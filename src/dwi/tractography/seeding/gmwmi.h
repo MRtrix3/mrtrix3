@@ -24,10 +24,8 @@
 #define __dwi_tractography_seeding_gmwmi_h__
 
 
-#include "image/buffer.h"
-
+#include "image.h"
 #include "dwi/tractography/ACT/gmwmi.h"
-
 #include "dwi/tractography/seeding/basic.h"
 
 
@@ -54,8 +52,8 @@ namespace MR
         {
           public:
             GMWMI_5TT_Wrapper (const std::string& path) :
-                anat_data (path) { }
-            Image::Buffer<float> anat_data;
+                anat_data (Image<float>::open (path)) { }
+            Image<float> anat_data;
         };
 
 
@@ -67,14 +65,14 @@ namespace MR
 
             GMWMI (const std::string&, const std::string&);
 
-            bool get_seed (Point<float>&);
+            bool get_seed (Eigen::Vector3f&) const override;
 
 
           private:
             Rejection init_seeder;
             const float perturb_max_step;
 
-            bool perturb (Point<float>&, Interp&);
+            bool perturb (Eigen::Vector3f&, Interp&) const;
 
         };
 

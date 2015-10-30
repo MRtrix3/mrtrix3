@@ -112,7 +112,7 @@ namespace MR
 
 
 
-        void ODF::Preview::set (const Math::Vector<float>& data)
+        void ODF::Preview::set (const Eigen::VectorXf& data)
         {
           render_frame->set (data);
           lock_orientation_to_image_slot (0);

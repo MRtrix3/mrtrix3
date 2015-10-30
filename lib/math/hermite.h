@@ -25,6 +25,8 @@
 
 #include <limits>
 
+#include "types.h"
+
 namespace MR
 {
   namespace Math

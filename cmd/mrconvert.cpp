@@ -22,13 +22,10 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/axis.h"
-#include "image/threaded_copy.h"
-#include "image/adapter/extract.h"
-#include "image/adapter/permute_axes.h"
-#include "image/stride.h"
+#include "image.h"
+#include "algo/threaded_copy.h"
+#include "adapter/extract.h"
+#include "adapter/permute_axes.h"
 #include "dwi/gradient.h"
 
 
@@ -78,13 +75,12 @@ void usage ()
             "corresponding to offset & scale, with final intensity values being given by "
             "offset + scale * stored_value. "
             "By default, the values in the input image header are passed through to the "
-            "output image header when writing to an integer image; when writing to a "
-            "floating-point image, these values are reset to 0,1 (no scaling). To force "
-            "mrconvert to preserve the input image's scaling parameters even for "
-            "floating-point outputs, use '-scaling preserve'")
+            "output image header when writing to an integer image, and reset to 0,1 (no "
+            "scaling) for floating-point and binary images. Note that his option has no "
+            "effect for floating-point and binary images.")
   + Argument ("values").type_sequence_float()
 
-  + Image::Stride::StrideOption
+  + Stride::Options
 
   + DataType::options()
 
@@ -95,16 +91,19 @@ void usage ()
 
 
 
-template <class InfoType>
-inline std::vector<int> set_header (Image::Header& header, const InfoType& input)
+template <class ImageType>
+inline std::vector<int> set_header (Header& header, const ImageType& input)
 {
-  // need to preserve dataype, already parsed from command-line:
-  auto datatype = header.datatype();
-  header.info() = input.info();
-  header.datatype() = datatype;
+  header.set_ndim (input.ndim());
+  for (size_t n = 0; n < header.ndim(); ++n) {
+    header.size(n) = input.size(n);
+    header.spacing(n) = input.spacing(n);
+    header.stride(n) = input.stride(n);
+  }
+  header.transform() = input.transform();
 
   if (get_options ("grad").size() || get_options ("fslgrad").size())
-    header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    header.set_DW_scheme (DWI::get_DW_scheme (header));
 
   auto opt = get_options ("axes");
   std::vector<int> axes;
@@ -114,29 +113,29 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
     for (size_t i = 0; i < axes.size(); ++i) {
       if (axes[i] >= static_cast<int> (input.ndim()))
         throw Exception ("axis supplied to option -axes is out of bounds");
-      header.dim(i) = axes[i] < 0 ? 1 : input.dim (axes[i]);
+      header.size(i) = axes[i] < 0 ? 1 : input.size (axes[i]);
     }
   } else {
     header.set_ndim (input.ndim());
     axes.assign (input.ndim(), 0);
     for (size_t i = 0; i < axes.size(); ++i) {
       axes[i] = i;
-      header.dim (i) = input.dim (i);
+      header.size (i) = input.size (i);
     }
   }
 
   opt = get_options ("vox");
   if (opt.size()) {
-    std::vector<float> vox = opt[0][0];
+    std::vector<default_type> vox = opt[0][0];
     if (vox.size() > header.ndim())
       throw Exception ("too many axes supplied to -vox option");
     for (size_t n = 0; n < vox.size(); ++n) {
       if (std::isfinite (vox[n]))
-        header.vox(n) = vox[n];
+        header.spacing(n) = vox[n];
     }
   }
 
-  Image::Stride::set_from_command_line (header);
+  Stride::set_from_command_line (header);
 
   return axes;
 }
@@ -145,36 +144,30 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
 
 
 template <typename T>
-inline void copy_permute (Image::Header& header_in, Image::Header& header_out, const std::vector< std::vector<int> >& pos, const std::string& output_filename)
+inline void copy_permute (Header& header_in, Header& header_out, const std::vector<std::vector<int>>& pos, const std::string& output_filename)
 {
-  typedef Image::Buffer<T> buffer_type;
-  typedef typename buffer_type::voxel_type voxel_type;
-  typedef Image::Adapter::Extract<voxel_type> extract_type;
 
-  buffer_type buffer_in (header_in);
-  voxel_type in = buffer_in.voxel();
-
+  auto in = header_in.get_image<T>();
 
   if (pos.empty()) {
 
-    const std::vector<int> axes = set_header (header_out, in);
-    buffer_type buffer_out (output_filename, header_out);
-    voxel_type out = buffer_out.voxel();
-    DWI::export_grad_commandline (buffer_out);
+    const auto axes = set_header (header_out, in);
 
-    Image::Adapter::PermuteAxes<voxel_type> perm (in, axes);
-    Image::threaded_copy_with_progress (perm, out, 2);
+    auto out = Header::create (output_filename, header_out).get_image<T>();
+    DWI::export_grad_commandline (out.original_header());
+
+    auto perm = Adapter::make <Adapter::PermuteAxes> (in, axes); 
+    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   } else {
 
-    extract_type extract (in, pos);
-    const std::vector<int> axes = set_header (header_out, extract);
-    buffer_type buffer_out (output_filename, header_out);
-    voxel_type out = buffer_out.voxel();
-    DWI::export_grad_commandline (buffer_out);
+    auto extract = Adapter::make<Adapter::Extract> (in, pos); 
+    const auto axes = set_header (header_out, extract);
+    auto out = Header::create (output_filename, header_out).get_image<T>();
+    DWI::export_grad_commandline (out.original_header());
 
-    Image::Adapter::PermuteAxes<extract_type> perm (extract, axes);
-    Image::threaded_copy_with_progress (perm, out, 2);
+    auto perm = Adapter::make <Adapter::PermuteAxes> (extract, axes); 
+    threaded_copy_with_progress (perm, out, 0, std::numeric_limits<size_t>::max(), 2);
 
   }
 
@@ -191,18 +184,16 @@ inline void copy_permute (Image::Header& header_in, Image::Header& header_out, c
 
 void run ()
 {
-  Image::Header header_in (argument[0]);
+  Header header_in = Header::open (argument[0]);
 
-  Image::Header header_out (header_in);
+  Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
-  if (!header_out.datatype().is_floating_point())
-    header_out.set_intensity_scaling (header_in);
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-  Options opt = get_options ("coord");
-  std::vector< std::vector<int> > pos;
+  auto opt = get_options ("coord");
+  std::vector<std::vector<int>> pos;
   if (opt.size()) {
     pos.assign (header_in.ndim(), std::vector<int>());
     for (size_t n = 0; n < opt.size(); n++) {
@@ -211,25 +202,25 @@ void run ()
         throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = parse_ints (opt[n][1], header_in.dim(axis)-1);
-      if (axis == 3 && header_in.DW_scheme().is_set()) {
-        Math::Matrix<float>& grad (header_in.DW_scheme());
-        if ((int)grad.rows() != header_in.dim(3)) {
+      pos[axis] = parse_ints (opt[n][1], header_in.size(axis)-1);
+      auto grad = DWI::get_DW_scheme (header_in);
+      if (axis == 3 && grad.rows()) {
+        if ((ssize_t)grad.rows() != header_in.size(3)) {
           WARN ("Diffusion encoding of input file does not match number of image volumes; omitting gradient information from output image");
-          header_out.DW_scheme().clear();
+          header_out.keyval().erase ("dw_scheme");
         }
         else {
-          Math::Matrix<float> extract_grad (pos[3].size(), 4);
+          Eigen::MatrixXd extract_grad (pos[3].size(), grad.cols());
           for (size_t dir = 0; dir != pos[3].size(); ++dir)
-            extract_grad.row(dir) = grad.row((pos[3])[dir]);
-          header_out.DW_scheme() = extract_grad;
+            extract_grad.row (dir) = grad.row (pos[3][dir]);
+          header_out.set_DW_scheme (extract_grad);
         }
       }
     }
 
     for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
-        pos[n].resize (header_in.dim (n));
+        pos[n].resize (header_in.size (n));
         for (size_t i = 0; i < pos[n].size(); i++)
           pos[n][i] = i;
       }
@@ -239,19 +230,16 @@ void run ()
 
   opt = get_options ("scaling");
   if (opt.size()) {
-    if (lowercase (opt[0][0]) == "preserve")
-      header_out.set_intensity_scaling (header_in);
-    else {
-      std::vector<float> scaling = opt[0][0];
+    if (header_out.datatype().is_integer()) {
+      std::vector<default_type> scaling = opt[0][0];
       if (scaling.size() != 2) 
         throw Exception ("-scaling option expects comma-separated 2-vector of floating-point values");
       header_out.intensity_offset() = scaling[0];
-      header_out.intensity_scale() = scaling[1];
+      header_out.intensity_scale()  = scaling[1];
     }
+    else
+      WARN ("-scaling option has no effect for floating-point or binary images");
   }
-
-  if (!std::isfinite (header_out.intensity_offset()) || !std::isfinite (header_out.intensity_scale()) || header_out.intensity_scale() == 0.0)
-    WARN ("invalid scaling parameters (offset: " + str(header_out.intensity_offset()) + ", scale: " + str(header_out.intensity_scale()) + ")");
 
 
   if (header_out.intensity_offset() == 0.0 && header_out.intensity_scale() == 1.0 && !header_out.datatype().is_floating_point()) {

@@ -20,14 +20,10 @@
 
 */
 
-#include "image/stride.h"
-#include "get_set.h"
+#include "header.h"
+#include "raw.h"
 #include "file/config.h"
 #include "file/nifti1_utils.h"
-#include "math/LU.h"
-#include "math/permutation.h"
-#include "math/versor.h"
-#include "image/header.h"
 
 namespace MR
 {
@@ -45,35 +41,35 @@ namespace MR
 
 
 
-      Math::Matrix<float> adjust_transform (const Image::Header& H, std::vector<size_t>& axes)
+      transform_type adjust_transform (const Header& H, std::vector<size_t>& axes)
       {
-        Image::Stride::List strides = Image::Stride::get (H);
+        Stride::List strides = Stride::get (H);
         strides.resize (3);
-        axes = Image::Stride::order (strides);
+        axes = Stride::order (strides);
         bool flip[] = { strides[axes[0]] < 0, strides[axes[1]] < 0, strides[axes[2]] < 0 };
 
         if (axes[0] == 0 && axes[1] == 1 && axes[2] == 2 &&
             !flip[0] && !flip[1] && !flip[2])
           return H.transform();
 
-        Math::Matrix<float> M (H.transform());
+        const auto& M_in = H.transform().matrix();
+        transform_type out (H.transform());
+        auto& M_out = out.matrix();
 
         for (size_t i = 0; i < 3; i++)
-          M.column (i) = H.transform().column (axes[i]);
+          M_out.col (i) = M_in.col (axes[i]);
 
-        Math::Vector<float> translation = M.column (3).sub (0,3);
+        auto translation = M_out.col(3);
         for (size_t i = 0; i < 3; ++i) {
           if (flip[i]) {
-            float length = float (H.dim (axes[i])-1) * H.vox (axes[i]);
-            Math::Vector<float> axis = M.column (i).sub (0,3);
-            for (size_t n = 0; n < 3; n++) {
-              axis[n] = -axis[n];
-              translation[n] -= length*axis[n];
-            }
+            auto length = default_type (H.size (axes[i])-1) * H.spacing (axes[i]);
+            auto axis = M_out.col(i);
+            axis = -axis;
+            translation -= length * axis;
           }
         }
 
-        return M;
+        return out;
       }
 
 
@@ -82,12 +78,12 @@ namespace MR
 
 
 
-      size_t read (Image::Header& H, const nifti_1_header& NH)
+      size_t read (Header& H, const nifti_1_header& NH)
       {
         bool is_BE = false;
-        if (get<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
+        if (Raw::fetch<int32_t> (&NH.sizeof_hdr, is_BE) != 348) {
           is_BE = true;
-          if (get<int32_t> (&NH.sizeof_hdr, is_BE) != 348)
+          if (Raw::fetch<int32_t> (&NH.sizeof_hdr, is_BE) != 348)
             throw Exception ("image \"" + H.name() + "\" is not in NIfTI format (sizeof_hdr != 348)");
         }
 
@@ -101,11 +97,11 @@ namespace MR
         strncpy (db_name, NH.db_name, 18);
         if (db_name[0]) {
           db_name[18] = '\0';
-          H.comments().push_back (db_name);
+          add_line (H.keyval()["comments"], db_name);
         }
 
         // data set dimensions:
-        int ndim = get<int16_t> (&NH.dim, is_BE);
+        int ndim = Raw::fetch<int16_t> (&NH.dim, is_BE);
         if (ndim < 1)
           throw Exception ("too few dimensions specified in NIfTI image \"" + H.name() + "\"");
         if (ndim > 7)
@@ -114,19 +110,19 @@ namespace MR
 
 
         for (int i = 0; i < ndim; i++) {
-          H.dim(i) = get<int16_t> (&NH.dim[i+1], is_BE);
-          if (H.dim (i) < 0) {
+          H.size(i) = Raw::fetch<int16_t> (&NH.dim[i+1], is_BE);
+          if (H.size (i) < 0) {
             INFO ("dimension along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.dim(i) = std::abs (H.dim (i));
+            H.size(i) = std::abs (H.size (i));
           }
-          if (!H.dim (i))
-            H.dim(i) = 1;
+          if (!H.size (i))
+            H.size(i) = 1;
           H.stride(i) = i+1;
         }
 
         // data type:
         DataType dtype;
-        switch (get<int16_t> (&NH.datatype, is_BE)) {
+        switch (Raw::fetch<int16_t> (&NH.datatype, is_BE)) {
           case DT_BINARY:
             dtype = DataType::Bit;
             break;
@@ -177,114 +173,99 @@ namespace MR
             dtype.set_flag (DataType::LittleEndian);
         }
 
-        if (get<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
+        if (Raw::fetch<int16_t> (&NH.bitpix, is_BE) != (int16_t) dtype.bits())
           WARN ("bitpix field does not match data type in NIfTI image \"" + H.name() + "\" - ignored");
 
         H.datatype() = dtype;
 
         // voxel sizes:
         for (int i = 0; i < ndim; i++) {
-          H.vox(i) = get<float32> (&NH.pixdim[i+1], is_BE);
-          if (H.vox (i) < 0.0) {
+          H.spacing(i) = Raw::fetch<float32> (&NH.pixdim[i+1], is_BE);
+          if (H.spacing (i) < 0.0) {
             INFO ("voxel size along axis " + str (i) + " specified as negative in NIfTI image \"" + H.name() + "\" - taking absolute value");
-            H.vox(i) = std::abs (H.vox (i));
+            H.spacing(i) = std::abs (H.spacing (i));
           }
         }
 
 
         // offset and scale:
-        H.intensity_scale() = get<float32> (&NH.scl_slope, is_BE);
+        H.intensity_scale() = Raw::fetch<float32> (&NH.scl_slope, is_BE);
         if (std::isfinite (H.intensity_scale()) && H.intensity_scale() != 0.0) {
-          H.intensity_offset() = get<float32> (&NH.scl_inter, is_BE);
+          H.intensity_offset() = Raw::fetch<float32> (&NH.scl_inter, is_BE);
           if (!std::isfinite (H.intensity_offset()))
             H.intensity_offset() = 0.0;
         }
-        else {
-          H.intensity_offset() = 0.0;
-          H.intensity_scale() = 1.0;
-        }
+        else 
+          H.reset_intensity_scaling();
 
-        size_t data_offset = (size_t) get<float32> (&NH.vox_offset, is_BE);
+        size_t data_offset = (size_t) Raw::fetch<float32> (&NH.vox_offset, is_BE);
 
         char descrip[81];
         strncpy (descrip, NH.descrip, 80);
         if (descrip[0]) {
           descrip[80] = '\0';
           if (strncmp (descrip, "MRtrix version: ", 16) == 0)
-            H["mrtrix_version"] = descrip+16;
+            H.keyval()["mrtrix_version"] = descrip+16;
           else
-            H.comments().push_back (descrip);
+            add_line (H.keyval()["comments"], descrip);
         }
 
         if (is_nifti) {
-          if (get<int16_t> (&NH.sform_code, is_BE)) {
-            Math::Matrix<float>& M (H.transform());
-            M.allocate (4,4);
+          if (Raw::fetch<int16_t> (&NH.sform_code, is_BE)) {
+            auto& M (H.transform());
 
-            M (0,0) = get<float32> (&NH.srow_x[0], is_BE);
-            M (0,1) = get<float32> (&NH.srow_x[1], is_BE);
-            M (0,2) = get<float32> (&NH.srow_x[2], is_BE);
-            M (0,3) = get<float32> (&NH.srow_x[3], is_BE);
+            M(0,0) = Raw::fetch<float32> (&NH.srow_x[0], is_BE);
+            M(0,1) = Raw::fetch<float32> (&NH.srow_x[1], is_BE);
+            M(0,2) = Raw::fetch<float32> (&NH.srow_x[2], is_BE);
+            M(0,3) = Raw::fetch<float32> (&NH.srow_x[3], is_BE);
 
-            M (1,0) = get<float32> (&NH.srow_y[0], is_BE);
-            M (1,1) = get<float32> (&NH.srow_y[1], is_BE);
-            M (1,2) = get<float32> (&NH.srow_y[2], is_BE);
-            M (1,3) = get<float32> (&NH.srow_y[3], is_BE);
+            M(1,0) = Raw::fetch<float32> (&NH.srow_y[0], is_BE);
+            M(1,1) = Raw::fetch<float32> (&NH.srow_y[1], is_BE);
+            M(1,2) = Raw::fetch<float32> (&NH.srow_y[2], is_BE);
+            M(1,3) = Raw::fetch<float32> (&NH.srow_y[3], is_BE);
 
-            M (2,0) = get<float32> (&NH.srow_z[0], is_BE);
-            M (2,1) = get<float32> (&NH.srow_z[1], is_BE);
-            M (2,2) = get<float32> (&NH.srow_z[2], is_BE);
-            M (2,3) = get<float32> (&NH.srow_z[3], is_BE);
-
-            M (3,0) = M (3,1) = M (3,2) = 0.0;
-            M (3,3) = 1.0;
+            M(2,0) = Raw::fetch<float32> (&NH.srow_z[0], is_BE);
+            M(2,1) = Raw::fetch<float32> (&NH.srow_z[1], is_BE);
+            M(2,2) = Raw::fetch<float32> (&NH.srow_z[2], is_BE);
+            M(2,3) = Raw::fetch<float32> (&NH.srow_z[3], is_BE);
 
             // get voxel sizes:
-            H.vox(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
-            H.vox(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
-            H.vox(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
+            H.spacing(0) = std::sqrt (Math::pow2 (M(0,0)) + Math::pow2 (M(1,0)) + Math::pow2 (M(2,0)));
+            H.spacing(1) = std::sqrt (Math::pow2 (M(0,1)) + Math::pow2 (M(1,1)) + Math::pow2 (M(2,1)));
+            H.spacing(2) = std::sqrt (Math::pow2 (M(0,2)) + Math::pow2 (M(1,2)) + Math::pow2 (M(2,2)));
 
             // normalize each transform axis:
-            M (0,0) /= H.vox (0);
-            M (1,0) /= H.vox (0);
-            M (2,0) /= H.vox (0);
+            M (0,0) /= H.spacing (0);
+            M (1,0) /= H.spacing (0);
+            M (2,0) /= H.spacing (0);
 
-            M (0,1) /= H.vox (1);
-            M (1,1) /= H.vox (1);
-            M (2,1) /= H.vox (1);
+            M (0,1) /= H.spacing (1);
+            M (1,1) /= H.spacing (1);
+            M (2,1) /= H.spacing (1);
 
-            M (0,2) /= H.vox (2);
-            M (1,2) /= H.vox (2);
-            M (2,2) /= H.vox (2);
+            M (0,2) /= H.spacing (2);
+            M (1,2) /= H.spacing (2);
+            M (2,2) /= H.spacing (2);
           }
-          else if (get<int16_t> (&NH.qform_code, is_BE)) {
-            H.transform().allocate(4,4);
-
-            {
-              Math::Versor<double> Q (get<float32> (&NH.quatern_b, is_BE), get<float32> (&NH.quatern_c, is_BE), get<float32> (&NH.quatern_d, is_BE));
-              Math::Matrix<double> R (3,3);
-              Q.to_matrix (R);
-              H.transform().sub (0,3,0,3) = R;
+          else if (Raw::fetch<int16_t> (&NH.qform_code, is_BE)) {
+            { // TODO update with Eigen3 Quaternions
+              Eigen::Quaterniond Q (0.0, Raw::fetch<float32> (&NH.quatern_b, is_BE), Raw::fetch<float32> (&NH.quatern_c, is_BE), Raw::fetch<float32> (&NH.quatern_d, is_BE));
+              Q.w() = std::sqrt (1.0 - Q.squaredNorm());
+              H.transform().matrix().topLeftCorner<3,3>() = Q.matrix();
             }
 
-            H.transform()(0,3) = get<float32> (&NH.qoffset_x, is_BE);
-            H.transform()(1,3) = get<float32> (&NH.qoffset_y, is_BE);
-            H.transform()(2,3) = get<float32> (&NH.qoffset_z, is_BE);
-
-            H.transform()(3,0) = H.transform()(3,1) = H.transform()(3,2) = 0.0;
-            H.transform()(3,3) = 1.0;
+            H.transform().translation()[0] = Raw::fetch<float32> (&NH.qoffset_x, is_BE);
+            H.transform().translation()[1] = Raw::fetch<float32> (&NH.qoffset_y, is_BE);
+            H.transform().translation()[2] = Raw::fetch<float32> (&NH.qoffset_z, is_BE);
 
             // qfac:
-            float qfac = get<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
-            if (qfac < 0.0) {
-              H.transform()(0,2) *= qfac;
-              H.transform()(1,2) *= qfac;
-              H.transform()(2,2) *= qfac;
-            }
+            float qfac = Raw::fetch<float32> (&NH.pixdim[0], is_BE) >= 0.0 ? 1.0 : -1.0;
+            if (qfac < 0.0) 
+              H.transform().matrix().topLeftCorner<3,3>().col(2) *= qfac;
           }
         }
         else {
-          H.transform().clear();
+          H.transform()(0,0) = std::numeric_limits<default_type>::quiet_NaN();
           //CONF option: Analyse.LeftToRight
           //CONF default: 0 (false)
           //CONF A boolean value to indicate whether images in Analyse format
@@ -307,11 +288,11 @@ namespace MR
 
 
 
-      void check (Image::Header& H, bool has_nii_suffix)
+      void check (Header& H, bool has_nii_suffix)
       {
         for (size_t i = 0; i < H.ndim(); ++i)
-          if (H.dim (i) < 1)
-            H.dim(i) = 1;
+          if (H.size (i) < 1)
+            H.size(i) = 1;
 
         // ensure first 3 axes correspond to spatial dimensions
         // while preserving original strides as much as possible
@@ -321,7 +302,7 @@ namespace MR
             max_spatial_stride = std::abs(H.stride(n));
         for (size_t n = 3; n < H.ndim(); ++n)
           H.stride(n) += H.stride(n) > 0 ? max_spatial_stride : -max_spatial_stride;
-        Image::Stride::symbolise (H);
+        Stride::symbolise (H);
 
         // if .img, reset all strides to defaults, since it can't be assumed
         // that downstream software will be able to parse the NIfTI transform 
@@ -362,7 +343,7 @@ namespace MR
 
 
 
-      void write (nifti_1_header& NH, const Image::Header& H, bool has_nii_suffix)
+      void write (nifti_1_header& NH, const Header& H, bool has_nii_suffix)
       {
         if (H.ndim() > 7)
           throw Exception ("NIfTI-1.1 format cannot support more than 7 dimensions for image \"" + H.name() + "\"");
@@ -370,38 +351,40 @@ namespace MR
         bool is_BE = H.datatype().is_big_endian();
 
         std::vector<size_t> axes;
-        Math::Matrix<float> M = adjust_transform (H, axes);
+        auto M = adjust_transform (H, axes);
 
 
         memset (&NH, 0, sizeof (NH));
 
         // magic number:
-        put<int32_t> (348, &NH.sizeof_hdr, is_BE);
+        Raw::store<int32_t> (348, &NH.sizeof_hdr, is_BE);
 
-        strncpy ( (char*) &NH.db_name, H.comments().size() ? H.comments() [0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
-        put<int32_t> (16384, &NH.extents, is_BE);
+        const auto hit = H.keyval().find("comments");
+        auto comments = split_lines (hit == H.keyval().end() ? std::string() : hit->second);
+        strncpy ( (char*) &NH.db_name, comments.size() ? comments[0].c_str() : "untitled\0\0\0\0\0\0\0\0\0\0\0", 18);
+        Raw::store<int32_t> (16384, &NH.extents, is_BE);
         NH.regular = 'r';
         NH.dim_info = 0;
 
         // data set dimensions:
-        put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
+        Raw::store<int16_t> (H.ndim(), &NH.dim[0], is_BE);
         {
           size_t i = 0;
           for (; i < 3; i++)
-            put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
+            Raw::store<int16_t> (H.size (axes[i]), &NH.dim[i+1], is_BE);
           for (; i < H.ndim(); i++)
-            put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+            Raw::store<int16_t> (H.size (i), &NH.dim[i+1], is_BE);
 
           // pad out the other dimensions with 1, fix for fslview
           ++i;
           for (; i < 8; i++) 
-            put<int16_t> (1, &NH.dim[i], is_BE);
+            Raw::store<int16_t> (1, &NH.dim[i], is_BE);
         }
 
 
         // data type:
         int16_t dt = 0;
-        switch (H.datatype() ()) {
+        switch (H.datatype()()) {
           case DataType::Bit:
             dt = DT_BINARY;
             break;
@@ -455,21 +438,21 @@ namespace MR
             throw Exception ("unknown data type for NIfTI-1.1 image \"" + H.name() + "\"");
         }
 
-        put<int16_t> (dt, &NH.datatype, is_BE);
-        put<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
+        Raw::store<int16_t> (dt, &NH.datatype, is_BE);
+        Raw::store<int16_t> (H.datatype().bits(), &NH.bitpix, is_BE);
         NH.pixdim[0] = 1.0;
 
         // voxel sizes:
         for (size_t i = 0; i < 3; ++i)
-          put<float32> (H.vox (axes[i]), &NH.pixdim[i+1], is_BE);
+          Raw::store<float32> (H.spacing (axes[i]), &NH.pixdim[i+1], is_BE);
         for (size_t i = 3; i < H.ndim(); ++i)
-          put<float32> (H.vox (i), &NH.pixdim[i+1], is_BE);
+          Raw::store<float32> (H.spacing (i), &NH.pixdim[i+1], is_BE);
 
-        put<float32> (352.0, &NH.vox_offset, is_BE);
+        Raw::store<float32> (352.0, &NH.vox_offset, is_BE);
 
         // offset and scale:
-        put<float32> (H.intensity_scale(), &NH.scl_slope, is_BE);
-        put<float32> (H.intensity_offset(), &NH.scl_inter, is_BE);
+        Raw::store<float32> (H.intensity_scale(), &NH.scl_slope, is_BE);
+        Raw::store<float32> (H.intensity_offset(), &NH.scl_inter, is_BE);
 
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
@@ -479,48 +462,49 @@ namespace MR
           version_string += std::string(", project version: ") + App::project_version;
         strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);
 
-        put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
-        put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
+        Raw::store<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
+        Raw::store<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);
 
         // qform:
-        Math::Matrix<double> R = M.sub(0,3,0,3);
-        if (Math::LU::sgndet (R) < 0.0) {
-          R.column (2) *= -1.0;
+        Eigen::MatrixXd R = M.matrix().topLeftCorner<3,3>();
+        if (R.determinant() < 0.0) {
+          R.col(2) = -R.col(2);
           NH.pixdim[0] = -1.0;
         }
-        const Math::Versor<double> Q (R);
+        Eigen::Quaterniond Q (M.rotation());
 
-        put<float32> (Q[1], &NH.quatern_b, is_BE);
-        put<float32> (Q[2], &NH.quatern_c, is_BE);
-        put<float32> (Q[3], &NH.quatern_d, is_BE);
+        Raw::store<float32> (Q.x(), &NH.quatern_b, is_BE);
+        Raw::store<float32> (Q.y(), &NH.quatern_c, is_BE);
+        Raw::store<float32> (Q.z(), &NH.quatern_d, is_BE);
 
 
         // sform:
 
-        put<float32> (M(0,3), &NH.qoffset_x, is_BE);
-        put<float32> (M(1,3), &NH.qoffset_y, is_BE);
-        put<float32> (M(2,3), &NH.qoffset_z, is_BE);
+        Raw::store<float32> (M(0,3), &NH.qoffset_x, is_BE);
+        Raw::store<float32> (M(1,3), &NH.qoffset_y, is_BE);
+        Raw::store<float32> (M(2,3), &NH.qoffset_z, is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
-        put<float32> (M (0,3), &NH.srow_x[3], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(0,0), &NH.srow_x[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(0,1), &NH.srow_x[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(0,2), &NH.srow_x[2], is_BE);
+        Raw::store<float32> (M (0,3), &NH.srow_x[3], is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
-        put<float32> (M (1,3), &NH.srow_y[3], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(1,0), &NH.srow_y[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(1,1), &NH.srow_y[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(1,2), &NH.srow_y[2], is_BE);
+        Raw::store<float32> (M (1,3), &NH.srow_y[3], is_BE);
 
-        put<float32> (H.vox (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
-        put<float32> (H.vox (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
-        put<float32> (H.vox (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
-        put<float32> (M (2,3), &NH.srow_z[3], is_BE);
+        Raw::store<float32> (H.spacing (axes[0]) * M(2,0), &NH.srow_z[0], is_BE);
+        Raw::store<float32> (H.spacing (axes[1]) * M(2,1), &NH.srow_z[1], is_BE);
+        Raw::store<float32> (H.spacing (axes[2]) * M(2,2), &NH.srow_z[2], is_BE);
+        Raw::store<float32> (M (2,3), &NH.srow_z[3], is_BE);
 
         strncpy ( (char*) &NH.magic, has_nii_suffix ? "n+1\0" : "ni1\0", 4);
       }
 
+
+
     }
   }
 }
-
 

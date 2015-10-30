@@ -23,15 +23,12 @@
 #ifndef __gui_dialog_image_properties_h__
 #define __gui_dialog_image_properties_h__
 
-#include "math/matrix.h"
+#include "header.h"
 #include "gui/opengl/gl.h"
 
 namespace MR
 {
-  namespace Image
-  {
-    class Header;
-  }
+  class Header;
 
   namespace GUI
   {
@@ -44,17 +41,17 @@ namespace MR
           Q_OBJECT
 
         public:
-          ImageProperties (QWidget* parent, const Image::Header& header);
+          ImageProperties (QWidget* parent, const MR::Header& header);
 
         private slots:
           void context_menu (const QPoint& point);
           void write_to_file ();
 
         private:
-          const Image::Header& H;
+          const MR::Header& H;
           QTreeView* view;
           TreeModel* model;
-          const Math::Matrix<float>* save_target;
+          Eigen::MatrixXd save_data;
       };
 
     }

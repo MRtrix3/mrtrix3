@@ -20,13 +20,10 @@
 
 */
 
-#include <fstream>
-
 #include "command.h"
 #include "progressbar.h"
-#include "get_set.h"
-#include "image/buffer_preload.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "interp/linear.h"
 #include "thread_queue.h"
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -73,8 +70,8 @@ class Loader
 class Warper
 {
   public:
-    Warper (const Image::BufferPreload<value_type>::voxel_type& warp_voxel) :
-      interp (warp_voxel) { }
+    Warper (const Image<value_type>& warp) :
+      interp (warp) { }
 
     bool operator () (const TrackType& in, TrackType& out) {
       out.resize (in.size());
@@ -83,19 +80,19 @@ class Warper
       return true;
     }
 
-    Point<value_type> pos (const Point<value_type>& x) {
-      Point<value_type> p;
+    Eigen::Matrix<value_type,3,1> pos (const Eigen::Matrix<value_type,3,1>& x) {
+      Eigen::Matrix<value_type,3,1> p;
       if (!interp.scanner (x)) {
-        interp[3] = 0; p[0] = interp.value();
-        interp[3] = 1; p[1] = interp.value();
-        interp[3] = 2; p[2] = interp.value();
+        interp.index(3) = 0; p[0] = interp.value();
+        interp.index(3) = 1; p[1] = interp.value();
+        interp.index(3) = 2; p[2] = interp.value();
       }
       return p;
     }
 
 
   protected:
-    Image::Interp::Linear<Image::BufferPreload<value_type>::voxel_type> interp;
+    Interp::Linear< Image<value_type> > interp;
 };
 
 
@@ -127,9 +124,8 @@ void run ()
 {
   Loader loader (argument[0]);
 
-  Image::BufferPreload<value_type> data (argument[1]);
-  auto vox = data.voxel();
-  Warper warper (vox);
+  auto data = Image<value_type>::open (argument[1]).with_direct_io (Stride::contiguous_along_axis(3));
+  Warper warper (data);
 
   Writer writer (argument[2], loader.properties);
 

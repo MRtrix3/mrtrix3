@@ -68,15 +68,15 @@ void Exemplar::add (const Connectome::Streamline_nodelist& in)
   //   that are closest to the node COMs, and truncate the track to that range,
   //   before contributing to the exemplar
   size_t index_closest_to_first_node = 0, index_closest_to_second_node = 0;
-  float min_distance_to_first_node  = dist2 (node_COMs.first,  in[0]);
-  float min_distance_to_second_node = dist2 (node_COMs.second, in[0]);
+  float min_distance_to_first_node  = (node_COMs.first  - in[0]).squaredNorm();
+  float min_distance_to_second_node = (node_COMs.second - in[0]).squaredNorm();
   for (size_t i = 1; i != in.size(); ++i) {
-    const float distance_to_first_node = dist2 (node_COMs.first, in[i]);
+    const float distance_to_first_node = (node_COMs.first - in[i]).squaredNorm();
     if (distance_to_first_node < min_distance_to_first_node) {
       min_distance_to_first_node = distance_to_first_node;
       index_closest_to_first_node = i;
     }
-    const float distance_to_second_node = dist2 (node_COMs.second, in[i]);
+    const float distance_to_second_node = (node_COMs.second - in[i]).squaredNorm();
     if (distance_to_second_node < min_distance_to_second_node) {
       min_distance_to_second_node = distance_to_second_node;
       index_closest_to_second_node = i;
@@ -100,13 +100,13 @@ void Exemplar::add (const Tractography::Streamline<float>& in, const bool is_rev
   assert (!is_finalized);
   std::lock_guard<std::mutex> lock (mutex);
 
-  for (uint32_t i = 0; i != size(); ++i) {
+  for (size_t i = 0; i != size(); ++i) {
     float interp_pos = (in.size() - 1) * i / float(size());
     if (is_reversed)
       interp_pos = in.size() - 1 - interp_pos;
-    const uint32_t lower = std::floor (interp_pos), upper (lower + 1);
+    const size_t lower = std::floor (interp_pos), upper (lower + 1);
     const float mu = interp_pos - lower;
-    Point<float> pos;
+    point_type pos;
     if (lower == in.size() - 1)
       pos = in.back();
     else
@@ -136,16 +136,16 @@ void Exemplar::finalize (const float step_size)
   }
 
   const float multiplier = 1.0f / weight;
-  for (std::vector< Point<float> >::iterator i = begin(); i != end(); ++i)
+  for (auto i = begin(); i != end(); ++i)
     *i *= multiplier;
 
   // Constrain endpoints to the node centres of mass
-  uint32_t num_converging_points = EXEMPLAR_ENDPOINT_CONVERGE_FRACTION * size();
-  for (uint32_t i = 0; i != num_converging_points; ++i) {
+  size_t num_converging_points = EXEMPLAR_ENDPOINT_CONVERGE_FRACTION * size();
+  for (size_t i = 0; i != num_converging_points; ++i) {
     const float mu = i / float(num_converging_points);
     (*this)[i] = (mu * (*this)[i]) + ((1.0f-mu) * node_COMs.first);
   }
-  for (uint32_t i = size() - 1; i != size() - 1 - num_converging_points; --i) {
+  for (size_t i = size() - 1; i != size() - 1 - num_converging_points; --i) {
     const float mu = (size() - 1 - i) / float(num_converging_points);
     (*this)[i] = (mu * (*this)[i]) + ((1.0f-mu) * node_COMs.second);
   }
@@ -154,7 +154,7 @@ void Exemplar::finalize (const float step_size)
   // Start from the midpoint, resample backwards to the start of the exemplar,
   //   reverse the data, then do the second half of the exemplar
   int32_t index = (size() + 1) / 2;
-  std::vector< Point<float> > vertices (1, (*this)[index]);
+  std::vector<point_type> vertices (1, (*this)[index]);
   const float step_sq = Math::pow2 (step_size);
   for (int32_t step = -1; step <= 1; step += 2) {
     if (step == 1) {
@@ -162,7 +162,7 @@ void Exemplar::finalize (const float step_size)
       index = (size() + 1) / 2;
     }
     do {
-      while ((index+step) >= 0 && (index+step) < int32_t(size()) && dist2 ((*this)[index+step], vertices.back()) < step_sq)
+      while ((index+step) >= 0 && (index+step) < int32_t(size()) && ((*this)[index+step] - vertices.back()).squaredNorm() < step_sq)
         index += step;
       // Ideal point for fixed step size lies somewhere between [index] and [index+step]
       // Do a binary search to find this point
@@ -171,9 +171,9 @@ void Exemplar::finalize (const float step_size)
         vertices.push_back ((*this)[index]);
       } else {
         float lower = 0.0f, mu = 0.5f, upper = 1.0f;
-        Point<float> p (((*this)[index] + (*this)[index+step]) * 0.5f);
+        point_type p (((*this)[index] + (*this)[index+step]) * 0.5f);
         for (uint32_t iter = 0; iter != 6; ++iter) {
-          if (dist2 (p, vertices.back()) > step_sq)
+          if ((p - vertices.back()).squaredNorm() > step_sq)
             upper = mu;
           else
             lower = mu;

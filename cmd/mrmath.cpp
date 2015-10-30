@@ -23,13 +23,8 @@
 #include "command.h"
 #include "progressbar.h"
 #include "memory.h"
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/iterator.h"
-#include "image/threaded_loop.h"
-#include "image/utils.h"
-#include "image/voxel.h"
+#include "image.h"
+#include "algo/threaded_loop.h"
 #include "math/math.h"
 #include "math/median.h"
 
@@ -74,19 +69,13 @@ void usage ()
 
   OPTIONS
   + Option ("axis", "perform operation along a specified axis of a single input image")
-    + Argument ("index").type_integer();
+  +   Argument ("index").type_integer()
 
+  + DataType::options();
 }
 
 
 typedef float value_type;
-
-typedef Image::BufferPreload<value_type> PreloadBufferType;
-typedef PreloadBufferType::voxel_type PreloadVoxelType;
-
-typedef Image::Buffer<value_type> BufferType;
-typedef BufferType::voxel_type VoxelType;
-
 
 
 class Mean {
@@ -250,10 +239,10 @@ class AxisKernel {
   public:
     AxisKernel (size_t axis) : axis (axis) { }
 
-    template <class InputVoxelType, class OutputVoxelType>
-      void operator() (InputVoxelType& in, OutputVoxelType& out) {
+    template <class InputImageType, class OutputImageType>
+      void operator() (InputImageType& in, OutputImageType& out) {
         Operation op;
-        for (in[axis] = 0; in[axis] < in.dim(axis); ++in[axis])
+        for (auto l = Loop (axis) (in); l; ++l)
           op (in.value());
         out.value() = op.result();
       }
@@ -267,12 +256,8 @@ class AxisKernel {
 
 class ImageKernelBase {
   public:
-    ImageKernelBase (const std::string& path) :
-      output_path (path) { }
-    virtual ~ImageKernelBase() { }
-    virtual void process (const Image::Header& image_in) = 0;
-  protected:
-    const std::string output_path;
+    virtual void process (Header& image_in) = 0;
+    virtual void write_back (Image<value_type>& out) = 0;
 };
 
 
@@ -282,13 +267,13 @@ class ImageKernel : public ImageKernelBase {
   protected:
     class InitFunctor { 
       public: 
-        template <class VoxelType> 
-          void operator() (VoxelType& out) const { out.value() = Operation(); } 
+        template <class ImageType> 
+          void operator() (ImageType& out) const { out.value() = Operation(); } 
     };
     class ProcessFunctor { 
       public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const { 
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const { 
             Operation op = out.value(); 
             op (in.value()); 
             out.value() = op;
@@ -296,37 +281,32 @@ class ImageKernel : public ImageKernelBase {
     };
     class ResultFunctor {
       public: 
-        template <class VoxelType1, class VoxelType2>
-          void operator() (VoxelType1& out, VoxelType2& in) const {
+        template <class ImageType1, class ImageType2>
+          void operator() (ImageType1& out, ImageType2& in) const {
             Operation op = in.value(); 
             out.value() = op.result(); 
           } 
     };
 
   public:
-    ImageKernel (const Image::Header& header, const std::string& path) :
-      ImageKernelBase (path),
-      header (header),
-      buffer (header) {
-        Image::ThreadedLoop (buffer).run (InitFunctor(), buffer.voxel());
+    ImageKernel (const Header& header) :
+      image (Header::scratch (header).get_image<Operation>()) {
+        ThreadedLoop (image).run (InitFunctor(), image);
       }
 
-    ~ImageKernel()
+    void write_back (Image<value_type>& out)
     {
-      Image::Buffer<value_type> out (output_path, header);
-      Image::ThreadedLoop (buffer).run (ResultFunctor(), out.voxel(), buffer.voxel());
+      ThreadedLoop (image).run (ResultFunctor(), out, image);
     }
 
-    void process (const Image::Header& image_in)
+    void process (Header& header_in)
     {
-      Image::Buffer<value_type> in (image_in);
-      Image::ThreadedLoop (buffer).run (ProcessFunctor(), buffer.voxel(), in.voxel());
+      auto in = header_in.get_image<value_type>();
+      ThreadedLoop (image).run (ProcessFunctor(), image, in);
     }
 
   protected:
-    const Image::Header& header;
-    Image::BufferScratch<Operation> buffer;
-
+    Image<Operation> image;
 };
 
 
@@ -338,7 +318,7 @@ void run ()
   const int op = argument[num_inputs];
   const std::string& output_path = argument.back();
 
-  Options opt = get_options ("axis");
+  auto opt = get_options ("axis");
   if (opt.size()) {
 
     if (num_inputs != 1)
@@ -346,36 +326,34 @@ void run ()
 
     const size_t axis = opt[0][0];
 
-    PreloadBufferType buffer_in (argument[0], Image::Stride::contiguous_along_axis (axis));
+    auto image_in = Header::open (argument[0]).get_image<value_type>().with_direct_io (Stride::contiguous_along_axis (axis));
 
-    if (axis >= buffer_in.ndim())
-      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(buffer_in.ndim()) + " axes");
-
-    Image::Header header_out (buffer_in);
-    header_out.datatype() = DataType::Float32;
-    header_out.dim(axis) = 1;
-    Image::squeeze_dim (header_out);
-
-    BufferType buffer_out (output_path, header_out);
-
-    auto vox_in = buffer_in.voxel();
-    auto vox_out = buffer_out.voxel();
+    if (axis >= image_in.ndim())
+      throw Exception ("Cannot perform operation along axis " + str (axis) + "; image only has " + str(image_in.ndim()) + " axes");
 
 
-    Image::ThreadedLoop loop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", buffer_out);
+    Header header_out (image_in.original_header());
+
+    header_out.datatype() = DataType::from_command_line (DataType::Float32);
+    header_out.size(axis) = 1;
+    squeeze_dim (header_out);
+
+    auto image_out = Header::create (output_path, header_out).get_image<float>();
+
+    auto loop = ThreadedLoop (std::string("computing ") + operations[op] + " along axis " + str(axis) + "...", image_out);
 
     switch (op) {
-      case 0: loop.run  (AxisKernel<Mean>   (axis), vox_in, vox_out); return;
-      case 1: loop.run  (AxisKernel<Median> (axis), vox_in, vox_out); return;
-      case 2: loop.run  (AxisKernel<Sum>    (axis), vox_in, vox_out); return;
-      case 3: loop.run  (AxisKernel<Product>(axis), vox_in, vox_out); return;
-      case 4: loop.run  (AxisKernel<RMS>    (axis), vox_in, vox_out); return;
-      case 5: loop.run  (AxisKernel<Var>    (axis), vox_in, vox_out); return;
-      case 6: loop.run  (AxisKernel<Std>    (axis), vox_in, vox_out); return;
-      case 7: loop.run  (AxisKernel<Min>    (axis), vox_in, vox_out); return;
-      case 8: loop.run  (AxisKernel<Max>    (axis), vox_in, vox_out); return;
-      case 9: loop.run  (AxisKernel<AbsMax> (axis), vox_in, vox_out); return;
-      case 10: loop.run (AxisKernel<MagMax> (axis), vox_in, vox_out); return;
+      case 0: loop.run  (AxisKernel<Mean>   (axis), image_in, image_out); return;
+      case 1: loop.run  (AxisKernel<Median> (axis), image_in, image_out); return;
+      case 2: loop.run  (AxisKernel<Sum>    (axis), image_in, image_out); return;
+      case 3: loop.run  (AxisKernel<Product>(axis), image_in, image_out); return;
+      case 4: loop.run  (AxisKernel<RMS>    (axis), image_in, image_out); return;
+      case 5: loop.run  (AxisKernel<Var>    (axis), image_in, image_out); return;
+      case 6: loop.run  (AxisKernel<Std>    (axis), image_in, image_out); return;
+      case 7: loop.run  (AxisKernel<Min>    (axis), image_in, image_out); return;
+      case 8: loop.run  (AxisKernel<Max>    (axis), image_in, image_out); return;
+      case 9: loop.run  (AxisKernel<AbsMax> (axis), image_in, image_out); return;
+      case 10: loop.run (AxisKernel<MagMax> (axis), image_in, image_out); return;
       default: assert (0);
     }
 
@@ -385,30 +363,32 @@ void run ()
       throw Exception ("mrmath requires either multiple input images, or the -axis option to be provided");
 
     // Pre-load all image headers
-    std::vector<std::unique_ptr<Image::Header>> headers_in;
+    std::vector<Header> headers_in;
+    // std::vector<std::unique_ptr<Header>> headers_in;
 
     // Header of first input image is the template to which all other input images are compared
-    headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (argument[0])));
-    Image::Header header (*headers_in[0]);
-    header.datatype() = DataType::Float32;
+    headers_in.push_back (Header::open (argument[0]));
+    Header header (headers_in[0]);
+    header.datatype() = DataType::from_command_line (DataType::Float32);
 
     // Wipe any excess unary-dimensional axes
-    while (header.dim (header.ndim() - 1) == 1)
+    while (header.size (header.ndim() - 1) == 1)
       header.set_ndim (header.ndim() - 1);
 
     // Verify that dimensions of all input images adequately match
     for (size_t i = 1; i != num_inputs; ++i) {
       const std::string path = argument[i];
-      headers_in.push_back (std::unique_ptr<Image::Header> (new Image::Header (path)));
-      const Image::Header& temp (*headers_in[i]);
+      // headers_in.push_back (std::unique_ptr<Header> (new Header (Header::open (path))));
+      headers_in.push_back (Header::open (path));
+      const Header& temp (headers_in[i]);
       if (temp.ndim() < header.ndim())
         throw Exception ("Image " + path + " has fewer axes than first imput image " + header.name());
       for (size_t axis = 0; axis != header.ndim(); ++axis) {
-        if (temp.dim(axis) != header.dim(axis))
+        if (temp.size(axis) != header.size(axis))
           throw Exception ("Dimensions of image " + path + " do not match those of first input image " + header.name());
       }
       for (size_t axis = header.ndim(); axis != temp.ndim(); ++axis) {
-        if (temp.dim(axis) != 1)
+        if (temp.size(axis) != 1)
           throw Exception ("Image " + path + " has axis with non-unary dimension beyond first input image " + header.name());
       }
     }
@@ -416,17 +396,17 @@ void run ()
     // Instantiate a kernel depending on the operation requested
     std::unique_ptr<ImageKernelBase> kernel;
     switch (op) {
-      case 0:  kernel.reset (new ImageKernel<Mean>    (header, output_path)); break;
-      case 1:  kernel.reset (new ImageKernel<Median>  (header, output_path)); break;
-      case 2:  kernel.reset (new ImageKernel<Sum>     (header, output_path)); break;
-      case 3:  kernel.reset (new ImageKernel<Product> (header, output_path)); break;
-      case 4:  kernel.reset (new ImageKernel<RMS>     (header, output_path)); break;
-      case 5:  kernel.reset (new ImageKernel<Var>     (header, output_path)); break;
-      case 6:  kernel.reset (new ImageKernel<Std>     (header, output_path)); break;
-      case 7:  kernel.reset (new ImageKernel<Min>     (header, output_path)); break;
-      case 8:  kernel.reset (new ImageKernel<Max>     (header, output_path)); break;
-      case 9:  kernel.reset (new ImageKernel<AbsMax>  (header, output_path)); break;
-      case 10: kernel.reset (new ImageKernel<MagMax>  (header, output_path)); break;
+      case 0:  kernel.reset (new ImageKernel<Mean>    (header)); break;
+      case 1:  kernel.reset (new ImageKernel<Median>  (header)); break;
+      case 2:  kernel.reset (new ImageKernel<Sum>     (header)); break;
+      case 3:  kernel.reset (new ImageKernel<Product> (header)); break;
+      case 4:  kernel.reset (new ImageKernel<RMS>     (header)); break;
+      case 5:  kernel.reset (new ImageKernel<Var>     (header)); break;
+      case 6:  kernel.reset (new ImageKernel<Std>     (header)); break;
+      case 7:  kernel.reset (new ImageKernel<Min>     (header)); break;
+      case 8:  kernel.reset (new ImageKernel<Max>     (header)); break;
+      case 9:  kernel.reset (new ImageKernel<AbsMax>  (header)); break;
+      case 10: kernel.reset (new ImageKernel<MagMax>  (header)); break;
       default: assert (0);
     }
 
@@ -435,13 +415,14 @@ void run ()
       ProgressBar progress (std::string("computing ") + operations[op] + " across " 
           + str(headers_in.size()) + " images...", num_inputs);
       for (size_t i = 0; i != headers_in.size(); ++i) {
-        kernel->process (*headers_in[i]);
+        assert (headers_in[i].is_file_backed());
+        kernel->process (headers_in[i]);
         ++progress;
       }
     }
 
-    // Image output is handled by the kernel destructor
-
+    auto out = Header::create (output_path, header).get_image<value_type>();
+    kernel->write_back (out); 
   }
 
 }

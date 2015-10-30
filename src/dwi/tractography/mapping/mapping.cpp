@@ -35,25 +35,25 @@ namespace MR {
 
 
 
-        size_t determine_upsample_ratio (const Image::Info& info, const float step_size, const float ratio)
+        size_t determine_upsample_ratio (const Header& header, const float step_size, const float ratio)
         {
           size_t upsample_ratio = 1;
           if (step_size && std::isfinite (step_size))
-            upsample_ratio = std::ceil (step_size / (minvalue (info.vox(0), info.vox(1), info.vox(2)) * ratio));
+            upsample_ratio = std::ceil (step_size / (std::min (header.spacing(0), std::min (header.spacing(1), header.spacing(2))) * ratio));
           return upsample_ratio;
         }
 
-        size_t determine_upsample_ratio (const Image::Info& info, const std::string& tck_path, const float ratio)
+        size_t determine_upsample_ratio (const Header& header, const std::string& tck_path, const float ratio)
         {
-          Tractography::Properties properties;
-          Tractography::Reader<> reader (tck_path, properties);
-          return determine_upsample_ratio (info, properties, ratio);
+          Properties properties;
+          Reader<> reader (tck_path, properties);
+          return determine_upsample_ratio (header, properties, ratio);
         }
 
 
-        size_t determine_upsample_ratio (const Image::Info& info, const Tractography::Properties& properties, const float ratio)
+        size_t determine_upsample_ratio (const Header& header, const Tractography::Properties& properties, const float ratio)
         {
-          if (info.ndim() < 3)
+          if (header.ndim() < 3)
             throw Exception ("Cannot perform streamline mapping on image with less than three dimensions");
 
           Properties::const_iterator i = properties.find ("output_step_size");
@@ -64,7 +64,7 @@ namespace MR {
           }
           const float step_size = to<float> (i->second);
 
-          return determine_upsample_ratio (info, step_size, ratio);
+          return determine_upsample_ratio (header, step_size, ratio);
         }
 
 
@@ -74,56 +74,47 @@ namespace MR {
 
 
 
-        void generate_header (Image::Header& header, const std::string& tck_file_path, const std::vector<float>& voxel_size)
+        void generate_header (Header& header, const std::string& tck_file_path, const std::vector<default_type>& voxel_size)
         {
 
-          Tractography::Properties properties;
-          Tractography::Reader<float> file (tck_file_path, properties);
+          Properties properties;
+          Reader<> file (tck_file_path, properties);
 
-          Streamline<float> tck;
+          Streamline<> tck;
           size_t track_counter = 0;
 
-          Point<float> min_values ( INFINITY,  INFINITY,  INFINITY);
-          Point<float> max_values (-INFINITY, -INFINITY, -INFINITY);
+          Eigen::Vector3f min_values ( Inf,  Inf,  Inf);
+          Eigen::Vector3f max_values (-Inf, -Inf, -Inf);
 
           {
             ProgressBar progress ("creating new template image...", 0);
             while (file (tck) && track_counter++ < MAX_TRACKS_READ_FOR_HEADER) {
-              for (std::vector<Point<float> >::const_iterator i = tck.begin(); i != tck.end(); ++i) {
-                min_values[0] = std::min (min_values[0], (*i)[0]);
-                max_values[0] = std::max (max_values[0], (*i)[0]);
-                min_values[1] = std::min (min_values[1], (*i)[1]);
-                max_values[1] = std::max (max_values[1], (*i)[1]);
-                min_values[2] = std::min (min_values[2], (*i)[2]);
-                max_values[2] = std::max (max_values[2], (*i)[2]);
+              for (const auto& i : tck) {
+                min_values[0] = std::min (min_values[0], i[0]);
+                max_values[0] = std::max (max_values[0], i[0]);
+                min_values[1] = std::min (min_values[1], i[1]);
+                max_values[1] = std::max (max_values[1], i[1]);
+                min_values[2] = std::min (min_values[2], i[2]);
+                max_values[2] = std::max (max_values[2], i[2]);
               }
               ++progress;
             }
           }
 
-          min_values -= Point<float> (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
-          max_values += Point<float> (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
+          min_values -= Eigen::Vector3f (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
+          max_values += Eigen::Vector3f (3.0*voxel_size[0], 3.0*voxel_size[1], 3.0*voxel_size[2]);
 
           header.name() = "tckmap image header";
           header.set_ndim (3);
 
           for (size_t i = 0; i != 3; ++i) {
-            header.dim(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
-            header.vox(i) = voxel_size[i];
+            header.size(i) = std::ceil((max_values[i] - min_values[i]) / voxel_size[i]);
+            header.spacing(i) = voxel_size[i];
             header.stride(i) = i+1;
-            //header.set_units (i, Image::Axis::millimeters);
           }
 
-          //header.set_description (0, Image::Axis::left_to_right);
-          //header.set_description (1, Image::Axis::posterior_to_anterior);
-          //header.set_description (2, Image::Axis::inferior_to_superior);
-
-          Math::Matrix<float>& M (header.transform());
-          M.allocate (4,4);
-          M.identity();
-          M(0,3) = min_values[0];
-          M(1,3) = min_values[1];
-          M(2,3) = min_values[2];
+          header.transform().matrix().setIdentity();
+          header.transform().translation() = min_values.cast<double>();
           file.close();
         }
 
@@ -131,16 +122,19 @@ namespace MR {
 
 
 
-        void oversample_header (Image::Header& header, const std::vector<float>& voxel_size)
+        void oversample_header (Header& header, const std::vector<default_type>& voxel_size)
         {
           INFO ("oversampling header...");
 
-          Math::Matrix<float> transform (header.transform());
-          for (size_t j = 0; j != 3; ++j) {
-            for (size_t i = 0; i < 3; ++i)
-              header.transform()(i,3) += 0.5 * (voxel_size[j] - header.vox(j)) * transform(i,j);
-            header.dim(j) = std::ceil(header.dim(j) * header.vox(j) / voxel_size[j]);
-            header.vox(j) = voxel_size[j];
+          header.transform().translation() += header.transform().rotation() * Eigen::Vector3d (
+              0.5 * (voxel_size[0] - header.spacing(0)),
+              0.5 * (voxel_size[1] - header.spacing(1)),
+              0.5 * (voxel_size[2] - header.spacing(2))
+              );
+
+          for (size_t n = 0; n < 3; ++n) {
+            header.size(n) = std::ceil(header.size(n) * header.spacing(n) / voxel_size[n]);
+            header.spacing(n) = voxel_size[n];
           }
         }
 

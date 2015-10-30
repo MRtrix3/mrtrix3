@@ -25,7 +25,6 @@
 
 #include <vector>
 #include <gsl/gsl_fft_complex.h>
-#include "math/complex.h"
 
 namespace MR
 {

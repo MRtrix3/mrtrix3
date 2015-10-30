@@ -39,17 +39,17 @@ namespace MR
       typedef MR::Connectome::Node_info Node_info;
       typedef MR::Connectome::Node_map  Node_map;
 
-      enum class node_visibility_t { ALL, NONE, DEGREE, VECTOR_FILE, MATRIX_FILE };
+      enum class node_visibility_t { ALL, NONE, DEGREE, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
       enum class node_geometry_t   { SPHERE, CUBE, OVERLAY, MESH };
-      enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
-      enum class node_size_t       { FIXED, NODE_VOLUME, VECTOR_FILE, MATRIX_FILE };
-      enum class node_alpha_t      { FIXED, FROM_LUT, VECTOR_FILE, MATRIX_FILE };
+      enum class node_colour_t     { FIXED, RANDOM, FROM_LUT, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+      enum class node_size_t       { FIXED, NODE_VOLUME, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
+      enum class node_alpha_t      { FIXED, CONNECTOME, VECTOR_FILE, MATRIX_FILE };
 
-      enum class edge_visibility_t { ALL, NONE, VISIBLE_NODES, MATRIX_FILE };
+      enum class edge_visibility_t { ALL, NONE, VISIBLE_NODES, CONNECTOME, MATRIX_FILE };
       enum class edge_geometry_t   { LINE, CYLINDER, STREAMLINE, STREAMTUBE };
-      enum class edge_colour_t     { FIXED, DIRECTION, MATRIX_FILE };
-      enum class edge_size_t       { FIXED, MATRIX_FILE };
-      enum class edge_alpha_t      { FIXED, MATRIX_FILE };
+      enum class edge_colour_t     { FIXED, DIRECTION, CONNECTOME, MATRIX_FILE };
+      enum class edge_size_t       { FIXED, CONNECTOME, MATRIX_FILE };
+      enum class edge_alpha_t      { FIXED, CONNECTOME, MATRIX_FILE };
 
       }
     }

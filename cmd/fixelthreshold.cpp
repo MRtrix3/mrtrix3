@@ -22,18 +22,18 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/buffer_sparse.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/sparse/fixel_metric.h"
-#include "image/sparse/voxel.h"
+#include "algo/loop.h"
 
+#include "image.h"
+
+#include "sparse/fixel_metric.h"
+#include "sparse/keys.h"
+#include "sparse/image.h"
 
 using namespace MR;
 using namespace App;
 
-using Image::Sparse::FixelMetric;
+using Sparse::FixelMetric;
 
 void usage ()
 {
@@ -48,7 +48,8 @@ void usage ()
   + Argument ("fixel_out",   "the output fixel image").type_image_out ();
 
   OPTIONS
-  + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)");
+  + Option ("crop", "remove fixels that fall below threshold (instead of assigning their value to zero or one)")
+  + Option ("invert", "invert the output image (i.e. below threshold fixels are included instead)");
 
 }
 
@@ -56,39 +57,48 @@ void usage ()
 
 void run ()
 {
-  Image::Header input_header (argument[0]);
-  Image::BufferSparse<FixelMetric> input_data (input_header);
-  auto input_vox = input_data.voxel();
+  auto input_header = Header::open (argument[0]);
+  Sparse::Image<FixelMetric> input (argument[0]);
 
   float threshold = argument[1];
 
-  Image::BufferSparse<FixelMetric> output (argument[2], input_header);
-  auto output_vox = output.voxel();
+  Sparse::Image<FixelMetric> output (argument[2], input_header);
 
-  Options opt = get_options("crop");
+  auto opt = get_options("crop");
+  const bool invert = get_options("invert").size();
 
-  Image::LoopInOrder loop (input_vox, "thresholding fixel image...");
-  for (auto i = loop (input_vox, output_vox); i; ++i) {
+  for (auto i = Loop ("thresholding fixel image...", input) (input, output); i; ++i) {
     if (opt.size()) {
         size_t fixel_count = 0;
-        for (size_t f = 0; f != input_vox.value().size(); ++f) {
-          if (input_vox.value()[f].value > threshold)
-            fixel_count++;
+        for (size_t f = 0; f != input.value().size(); ++f) {
+          if (invert) {
+            if (input.value()[f].value < threshold)
+              fixel_count++;
+          } else {
+            if (input.value()[f].value > threshold)
+              fixel_count++;
+          }
         }
-        output_vox.value().set_size (fixel_count);
+        output.value().set_size (fixel_count);
         fixel_count = 0;
-        for (size_t f = 0; f != input_vox.value().size(); ++f) {
-          if (input_vox.value()[f].value > threshold)
-            output_vox.value()[fixel_count++] = input_vox.value()[f];
+        for (size_t f = 0; f != input.value().size(); ++f) {
+          if (invert) {
+            if (input.value()[f].value < threshold)
+              output.value()[fixel_count++] = input.value()[f];
+          } else {
+            if (input.value()[f].value > threshold)
+              output.value()[fixel_count++] = input.value()[f];
+          }
         }
     } else {
-      output_vox.value().set_size (input_vox.value().size());
-      for (size_t f = 0; f != input_vox.value().size(); ++f) {
-        output_vox.value()[f] = input_vox.value()[f];
-        if (input_vox.value()[f].value > threshold)
-          output_vox.value()[f].value = 1.0;
-        else
-          output_vox.value()[f].value = 0.0;
+      output.value().set_size (input.value().size());
+      for (size_t f = 0; f != input.value().size(); ++f) {
+        output.value()[f] = input.value()[f];
+        if (input.value()[f].value > threshold) {
+          output.value()[f].value = (invert) ? 0.0 : 1.0;
+        } else {
+          output.value()[f].value = (invert) ? 1.0 : 0.0;
+        }
       }
     }
   }

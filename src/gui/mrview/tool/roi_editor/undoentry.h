@@ -24,9 +24,8 @@
 #define __gui_mrview_tool_roi_editor_undoentry_h__
 
 #include <array>
+#include <atomic>
 #include <vector>
-
-#include "point.h"
 
 #include "gui/opengl/shader.h"
 #include "gui/opengl/gl.h"
@@ -48,11 +47,18 @@ namespace MR
         struct ROI_UndoEntry {
 
           ROI_UndoEntry (ROI_Item&, int, int);
-          void draw_line (ROI_Item&, const Point<>&, const Point<>&, bool);
-          void draw_thick_line (ROI_Item&, const Point<>&, const Point<>&, bool, float);
-          void draw_circle (ROI_Item&, const Point<>&, bool, float);
-          void draw_rectangle (ROI_Item&, const Point<>&, const Point<>&, bool);
-          void draw_fill (ROI_Item&, const Point<>, bool);
+          ROI_UndoEntry (const ROI_UndoEntry&) = delete;
+          ROI_UndoEntry (ROI_UndoEntry&&);
+          ~ROI_UndoEntry();
+
+          ROI_UndoEntry& operator= (const ROI_UndoEntry&) = delete;
+          ROI_UndoEntry& operator= (ROI_UndoEntry&&);
+
+          void draw_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool);
+          void draw_thick_line (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool, const float);
+          void draw_circle (ROI_Item&, const Eigen::Vector3f&, const bool, const float);
+          void draw_rectangle (ROI_Item&, const Eigen::Vector3f&, const Eigen::Vector3f&, const bool);
+          void draw_fill (ROI_Item&, const Eigen::Vector3f&, const bool);
 
           void undo (ROI_Item& roi);
           void redo (ROI_Item& roi);
@@ -62,9 +68,21 @@ namespace MR
           std::array<GLint,2> tex_size, slice_axes;
           std::vector<GLubyte> before, after;
 
-          static GL::Shader::Program copy_program;
-          static GL::VertexBuffer copy_vertex_buffer;
-          static GL::VertexArrayObject copy_vertex_array_object;
+          class Shared
+          {
+            public:
+              Shared();
+              ~Shared();
+              GL::Shader::Program program;
+              GL::VertexBuffer vertex_buffer;
+              GL::VertexArrayObject vertex_array_object;
+              void operator++ ();
+              bool operator-- ();
+            private:
+              std::atomic<uint32_t> count;
+          };
+          static std::unique_ptr<Shared> shared;
+
         };
 
 

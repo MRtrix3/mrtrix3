@@ -29,8 +29,7 @@
 #include <vector>
 
 #include "math/rng.h"
-#include "image/buffer.h"
-#include "image/header.h"
+#include "image.h"
 #include "dwi/fixel_map.h"
 #include "dwi/directions/set.h"
 #include "dwi/tractography/SIFT/fixel.h"
@@ -62,7 +61,7 @@ namespace MR
 
 
         public:
-        SIFTer (Image::Buffer<float>& i, const DWI::Directions::FastLookupSet& d) :
+        SIFTer (Image<float>& i, const DWI::Directions::FastLookupSet& d) :
             MapType (i, d),
             output_debug (false),
             term_number (0),
@@ -97,7 +96,6 @@ namespace MR
         using Fixel_map<Fixel>::accessor;
         using Fixel_map<Fixel>::fixels;
 
-        using MapType::H;
         using MapType::FOD_sum;
         using MapType::TD_sum;
         using MapType::mu;
@@ -126,7 +124,7 @@ namespace MR
         {
           public:
             TrackGradientCalculator (const SIFTer& sifter, std::vector<Cost_fn_gradient_sort>& v, const double mu, const double r) :
-              master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }
+                master (sifter), gradient_vector (v), current_mu (mu), current_roc_cost (r) { }
             bool operator() (const TrackIndexRange&) const;
           private:
             const SIFTer& master;

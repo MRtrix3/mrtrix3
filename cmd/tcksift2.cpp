@@ -23,9 +23,8 @@
 
 #include "command.h"
 #include "exception.h"
-
-#include "image/buffer.h"
-#include "image/header.h"
+#include "image.h"
+#include "header.h"
 
 #include "dwi/directions/set.h"
 
@@ -146,7 +145,7 @@ void run ()
   if (get_options("max_factor").size() && get_options("max_coeff").size())
     throw Exception ("Options -max_factor and -max_coeff are mutually exclusive");
 
-  Image::Buffer<float> in_dwi (argument[1]);
+  auto in_dwi = Image<float>::open (argument[1]);
 
   DWI::Directions::FastLookupSet dirs (1281);
 
@@ -164,21 +163,18 @@ void run ()
 
   tckfactor.store_orig_TDs();
 
-  Options opt = get_options ("min_td_frac");
-  const float min_td_frac = opt.size() ? to<float>(opt[0][0]) : SIFT2_MIN_TD_FRAC_DEFAULT;
+  const float min_td_frac = get_option_value ("min_td_frac", SIFT2_MIN_TD_FRAC_DEFAULT);
   tckfactor.remove_excluded_fixels (min_td_frac);
 
   if (output_debug)
     tckfactor.output_all_debug_images ("before");
 
-  opt = get_options ("csv");
+  auto opt = get_options ("csv");
   if (opt.size())
     tckfactor.set_csv_path (opt[0][0]);
 
-  opt = get_options ("reg_tikhonov");
-  const float reg_tikhonov = opt.size() ? float(opt[0][0]) : SIFT2_REGULARISATION_TIKHONOV_DEFAULT;
-  opt = get_options ("reg_tv");
-  const float reg_tv = opt.size() ? float(opt[0][0]) : SIFT2_REGULARISATION_TV_DEFAULT;
+  const float reg_tikhonov = get_option_value ("reg_tikhonov", SIFT2_REGULARISATION_TIKHONOV_DEFAULT);
+  const float reg_tv = get_option_value ("reg_tv", SIFT2_REGULARISATION_TV_DEFAULT);
   tckfactor.set_reg_lambdas (reg_tikhonov, reg_tv);
 
   opt = get_options ("min_iters");

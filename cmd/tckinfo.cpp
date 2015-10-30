@@ -26,7 +26,6 @@
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
 
-
 using namespace MR;
 using namespace MR::DWI;
 using namespace App;
@@ -43,12 +42,8 @@ void usage ()
 
   OPTIONS
   + Option ("count",
-            "count number of tracks in file explicitly, ignoring the header")
+            "count number of tracks in file explicitly, ignoring the header");
 
-  + Option ("ascii",
-            "save positions of each track in individual ascii files, with the "
-            "specified prefix.")
-  + Argument ("prefix");
 }
 
 
@@ -56,8 +51,6 @@ void usage ()
 
 void run ()
 {
-
-  Options opt = get_options ("ascii");
   bool actual_count = get_options ("count").size();
 
   for (size_t i = 0; i < argument.size(); ++i) {
@@ -83,6 +76,7 @@ void run ()
       std::cout << "    ROI:                  " << i->first << " " << i->second << "\n";
 
 
+
     if (actual_count) {
       Tractography::Streamline<float> tck;
       size_t count = 0;
@@ -96,24 +90,6 @@ void run ()
       std::cout << "actual count in file: " << count << "\n";
     }
 
-    if (opt.size()) {
-      ProgressBar progress ("writing track data to ascii files");
-      Tractography::Streamline<float> tck;
-      size_t count = 0;
-      while (file (tck)) {
-        std::string filename (opt[0][0]);
-        filename += "-000000.txt";
-        std::string num (str (count));
-        filename.replace (filename.size()-4-num.size(), num.size(), num);
 
-        File::OFStream out (filename);
-        for (std::vector<Point<float> >::iterator i = tck.begin(); i != tck.end(); ++i)
-          out << (*i) [0] << " " << (*i) [1] << " " << (*i) [2] << "\n";
-        out.close();
-
-        count++;
-        ++progress;
-      }
-    }
   }
 }

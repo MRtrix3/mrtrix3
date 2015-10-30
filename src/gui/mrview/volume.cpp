@@ -20,11 +20,9 @@
 
 */
 
-#include "image/stride.h"
 #include "gui/mrview/volume.h"
-#include "gui/mrview/window.h"
-#include "gui/projection.h"
 
+#include "gui/mrview/window.h"
 
 
 namespace MR
@@ -34,12 +32,20 @@ namespace MR
     namespace MRView
     {
 
+
+      Volume::~Volume() {
+        Window::GrabContext context;
+        _texture.clear();
+        vertex_buffer.clear();
+        vertex_array_object.clear();
+      }
+
       void Volume::allocate ()
       {
         gl::PixelStorei (gl::UNPACK_ALIGNMENT, 1);
 
         gl::TexImage3D (gl::TEXTURE_3D, 0, internal_format,
-            _info.dim(0), _info.dim(1), _info.dim(2),
+            _header.size(0), _header.size(1), _header.size(2),
             0, format, type, NULL);
 
         value_min = std::numeric_limits<float>::infinity();

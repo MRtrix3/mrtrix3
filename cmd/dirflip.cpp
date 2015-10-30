@@ -22,13 +22,10 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "math/vector.h"
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
 #include "file/utils.h"
 #include "thread.h"
-#include "point.h"
 #include "dwi/directions/file.h"
 
 
@@ -59,13 +56,14 @@ void usage () {
 
 
 typedef double value_type;
+typedef Eigen::Vector3d vector3_type;
 
 
 
 
 class Shared {
   public:
-    Shared (const Math::Matrix<value_type>& directions, size_t target_num_permutations) :
+    Shared (const Eigen::MatrixXd& directions, size_t target_num_permutations) :
       directions (directions), target_num_permutations (target_num_permutations), num_permutations(0),
       progress ("optimising directions for eddy-currents...", target_num_permutations),
       best_signs (directions.rows(), 1), best_eddy (std::numeric_limits<value_type>::max()) { }
@@ -86,11 +84,11 @@ class Shared {
 
 
     value_type eddy (size_t i, size_t j, const std::vector<int>& signs) const {
-      Point<value_type> a = { directions(i,0), directions(i,1), directions(i,2) };
-      Point<value_type> b = { directions(j,0), directions(j,1), directions(j,2) };
+      vector3_type a = { directions(i,0), directions(i,1), directions(i,2) };
+      vector3_type b = { directions(j,0), directions(j,1), directions(j,2) };
       if (signs[i] < 0) a = -a;
       if (signs[j] < 0) b = -b;
-      return 1.0 / (a-b).norm2();
+      return 1.0 / (a-b).squaredNorm();
     }
 
 
@@ -99,7 +97,7 @@ class Shared {
 
 
   protected:
-    const Math::Matrix<value_type>& directions;
+    const Eigen::MatrixXd& directions;
     const size_t target_num_permutations;
     size_t num_permutations;
     ProgressBar progress;
@@ -158,19 +156,16 @@ class Processor {
 
 void run () 
 {
-  Math::Matrix<value_type> directions = DWI::Directions::load_cartesian<value_type> (argument[0]);
+  auto directions = DWI::Directions::load_cartesian (argument[0]);
 
-  size_t num_permutations = 1e8;
-  Options opt = get_options ("permutations");
-  if (opt.size())
-    num_permutations = opt[0][0];
+  size_t num_permutations = get_option_value ("permutations", 1e8);
 
   Shared eddy_shared (directions, num_permutations);
   Thread::run (Thread::multi (Processor (eddy_shared)), "eval thread");
 
   auto& signs = eddy_shared.get_best_signs();
 
-  for (size_t n = 0; n < directions.rows(); ++n) 
+  for (ssize_t n = 0; n < directions.rows(); ++n) 
     if (signs[n] < 0)
       directions.row(n) *= -1.0;
 

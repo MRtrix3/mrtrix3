@@ -21,11 +21,10 @@
 */
 
 #include "command.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/loop.h"
+#include "image.h"
+#include "algo/loop.h"
 #include "progressbar.h"
-
+#include "dwi/gradient.h"
 
 using namespace MR;
 using namespace App;
@@ -61,23 +60,19 @@ typedef float value_type;
 
 
 void run () {
-  int axis = -1;
-
-  Options opt = get_options ("axis");
-  if (opt.size())
-    axis = opt[0][0];
+  int axis = get_option_value ("axis", -1);
 
   int num_images = argument.size()-1;
-  std::vector<std::unique_ptr<Image::Buffer<value_type>>> in (num_images);
-  in[0].reset (new Image::Buffer<value_type> (argument[0]));
-  Image::ConstHeader& header_in (*in[0]);
+  std::vector<std::unique_ptr<Image<value_type>>> in (num_images);
+  in[0].reset (new Image<value_type> (Image<value_type>::open (argument[0])));
+  Header header_in (*in[0]);
 
   int ndims = 0;
   int last_dim;
 
   for (int i = 1; i < num_images; i++) {
-    in[i].reset (new Image::Buffer<value_type> (argument[i]));
-    for (last_dim = in[i]->ndim()-1; in[i]->dim (last_dim) <= 1 && last_dim >= 0; last_dim--);
+    in[i].reset (new Image<value_type> (Image<value_type>::open (argument[i])));
+    for (last_dim = in[i]->ndim()-1; in[i]->size (last_dim) <= 1 && last_dim >= 0; last_dim--);
     if (last_dim > ndims)
       ndims = last_dim;
   }
@@ -88,20 +83,20 @@ void run () {
   for (int i = 0; i < ndims; i++)
     if (i != axis)
       for (int n = 0; n < num_images; n++)
-        if (in[0]->dim (i) != in[n]->dim (i))
+        if (in[0]->size (i) != in[n]->size (i))
           throw Exception ("dimensions of input images do not match");
 
   if (axis >= ndims) ndims = axis+1;
 
-  Image::Header header_out (header_in);
+  Header header_out (header_in);
   header_out.set_ndim (ndims);
 
   for (size_t i = 0; i < header_out.ndim(); i++) {
-    if (header_out.dim (i) <= 1) {
+    if (header_out.size (i) <= 1) {
       for (int n = 0; n < num_images; n++) {
         if (in[n]->ndim() > i) {
-          header_out.dim(i) = in[n]->dim (i);
-          header_out.vox(i) = in[n]->vox (i);
+          header_out.size(i) = in[n]->size (i);
+          header_out.spacing(i) = in[n]->spacing (i);
           break;
         }
       }
@@ -112,11 +107,11 @@ void run () {
   {
     size_t axis_dim = 0;
     for (int n = 0; n < num_images; n++) {
-      if (in[n]->datatype().is_complex())
+      if (in[n]->original_header().datatype().is_complex())
         header_out.datatype() = DataType::CFloat32;
-      axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->dim (axis) > 1 ? in[n]->dim (axis) : 1) : 1;
+      axis_dim += in[n]->ndim() > size_t (axis) ? (in[n]->size (axis) > 1 ? in[n]->size (axis) : 1) : 1;
     }
-    header_out.dim(axis) = axis_dim;
+    header_out.size (axis) = axis_dim;
   }
 
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
@@ -125,48 +120,49 @@ void run () {
 
   if (axis > 2) { // concatenate DW schemes
     size_t nrows = 0;
+    std::vector<Eigen::MatrixXd> input_grads;
     for (int n = 0; n < num_images; ++n) {
-      if (in[n]->DW_scheme().rows() == 0 ||  
-          in[n]->DW_scheme().columns() != 4) {
+      auto grad = DWI::get_DW_scheme (in[n]->original_header());
+      input_grads.push_back (grad);
+      if (grad.rows() == 0 || grad.cols() != 4) {
         nrows = 0;
         break;
       }   
-      nrows += in[n]->DW_scheme().rows();
+      nrows += grad.rows();
     }   
 
     if (nrows) {
-      header_out.DW_scheme().allocate (nrows, 4); 
+      Eigen::MatrixXd grad_out (nrows, 4);
       int row = 0;
       for (int n = 0; n < num_images; ++n) 
-        for (size_t i = 0; i < in[n]->DW_scheme().rows(); ++i, ++row)
+        for (ssize_t i = 0; i < input_grads[n].rows(); ++i, ++row)
           for (size_t j = 0; j < 4; ++j) 
-            header_out.DW_scheme()(row,j) = in[n]->DW_scheme()(i,j);
-    }   
+            grad_out (row,j) = input_grads[n](i,j);
+      header_out.set_DW_scheme (grad_out);
+    }
   }
 
 
 
-  Image::Buffer<value_type> data_out (argument[num_images], header_out);
-  auto out_vox = data_out.voxel();
+  auto image_out = Image<value_type>::create (argument[num_images], header_out);
   int axis_offset = 0;
 
 
   for (int i = 0; i < num_images; i++) {
-    auto in_vox = in[i]->voxel();
 
-    auto copy_func = [&axis, &axis_offset](decltype(in_vox)& in, decltype(out_vox)& out)
+    auto copy_func = [&axis, &axis_offset](decltype(*in[i])& in, decltype(image_out)& out)
     {
-      out[axis] = axis < int(in.ndim()) ? in[axis] + axis_offset : axis_offset;
+      out.index (axis) = axis < int(in.ndim()) ? in.index (axis) + axis_offset : axis_offset;
       out.value() = in.value();
     };
 
-    Image::ThreadedLoop ("concatenating \"" + in_vox.name() + "\"...", in_vox, 0, std::min (in_vox.ndim(), out_vox.ndim()))
-      .run (copy_func, in_vox, out_vox);
-    if (axis < int(in_vox.ndim()))
-      axis_offset += in_vox.dim (axis);
+    ThreadedLoop ("concatenating \"" + in[i]->name() + "\"...", *in[i], 0, std::min (in[i]->ndim(), image_out.ndim()))
+      .run (copy_func, *in[i], image_out);
+    if (axis < int(in[i]->ndim()))
+      axis_offset += in[i]->size (axis);
     else {
       ++axis_offset;
-      out_vox[axis] = axis_offset;
+      image_out.index (axis) = axis_offset;
     }
   }
 }

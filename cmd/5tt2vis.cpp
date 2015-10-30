@@ -23,10 +23,8 @@
 
 #include "command.h"
 
-#include "image/buffer.h"
-#include "image/header.h"
-#include "image/loop.h"
-#include "image/voxel.h"
+#include "header.h"
+#include "image.h"
 
 #include "dwi/tractography/ACT/act.h"
 #include "dwi/tractography/ACT/tissues.h"
@@ -76,7 +74,7 @@ void usage ()
     + Argument ("value").type_float (0.0, VALUE_DEFAULT_CSF,  1.0)
 
   + Option ("path", "image intensity of pathological tissue")
-    + Argument ("value").type_float (0.0, VALUE_DEFAULT_PATH, 1.0);
+    + Argument ("value").type_float (0.0, VALUE_DEFAULT_PATH, 10.0);
 
 };
 
@@ -89,33 +87,28 @@ void usage ()
 void run ()
 {
 
-  Image::Header H_in (argument[0]);
-  DWI::Tractography::ACT::verify_5TT_image (H_in);
-  Image::Buffer<float> in (H_in);
+  auto input = Image<float>::open (argument[0]);
+  DWI::Tractography::ACT::verify_5TT_image (input);
 
-  Image::Header H_out (in);
-  H_out.set_ndim (3);
-  H_out.datatype() = DataType::Float32;
+  Header H (input.original_header());
+  H.set_ndim (3);
 
-  Options
-  opt = get_options ("bg");   const float bg_multiplier   = opt.size() ? opt[0][0] : VALUE_DEFAULT_BG;
-  opt = get_options ("cgm");  const float cgm_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_CGM;
-  opt = get_options ("sgm");  const float sgm_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_SGM;
-  opt = get_options ("wm");   const float wm_multiplier   = opt.size() ? opt[0][0] : VALUE_DEFAULT_WM;
-  opt = get_options ("csf");  const float csf_multiplier  = opt.size() ? opt[0][0] : VALUE_DEFAULT_CSF;
-  opt = get_options ("path"); const float path_multiplier = opt.size() ? opt[0][0] : VALUE_DEFAULT_PATH;
+  const float bg_multiplier   = get_option_value ("bg", VALUE_DEFAULT_BG);
+  const float cgm_multiplier  = get_option_value ("cgm", VALUE_DEFAULT_CGM);
+  const float sgm_multiplier  = get_option_value ("sgm", VALUE_DEFAULT_SGM);
+  const float wm_multiplier   = get_option_value ("wm", VALUE_DEFAULT_WM);
+  const float csf_multiplier  = get_option_value ("csf", VALUE_DEFAULT_CSF);
+  const float path_multiplier = get_option_value ("path", VALUE_DEFAULT_PATH);
 
-  Image::Buffer<float> out (argument[1], H_out);
-  auto v_in = in.voxel();
-  auto v_out = out.voxel();
+  auto output = Image<float>::create (argument[1], H);
 
-  auto f = [&] (decltype(v_in)& in, decltype(v_out)& out) {
+  auto f = [&] (decltype(input)& in, decltype(output)& out) {
     const DWI::Tractography::ACT::Tissues t (in);
     const float bg = 1.0 - (t.get_cgm() + t.get_sgm() + t.get_wm() + t.get_csf() + t.get_path());
     out.value() = (bg_multiplier * bg) + (cgm_multiplier * t.get_cgm()) + (sgm_multiplier * t.get_sgm()) 
-      + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
+                + (wm_multiplier * t.get_wm()) + (csf_multiplier * t.get_csf()) + (path_multiplier * t.get_path());
   };
-  Image::ThreadedLoop (v_out, 0, 3).run (f, v_in, v_out);
+  ThreadedLoop (output).run (f, input, output);
 
 }
 

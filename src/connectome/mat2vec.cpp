@@ -30,13 +30,13 @@ namespace Connectome {
 
 
 Mat2Vec::Mat2Vec (const node_t i) :
-    dim (i)
+    size (i)
 {
-  lookup.assign (dim, std::vector<size_t> (dim, 0));
-  inv_lookup.reserve (dim * (dim+1) / 2);
+  lookup.assign (size, std::vector<size_t> (size, 0));
+  inv_lookup.reserve (size * (size+1) / 2);
   size_t index = 0;
-  for (node_t row = 0; row != dim; ++row) {
-    for (node_t column = row; column != dim; ++column) {
+  for (node_t row = 0; row != size; ++row) {
+    for (node_t column = row; column != size; ++column) {
       lookup[row][column] = lookup[column][row] = index++;
       inv_lookup.push_back (std::make_pair (row, column));
     }
@@ -47,7 +47,7 @@ Mat2Vec::Mat2Vec (const node_t i) :
 
 Mat2Vec& Mat2Vec::operator= (Mat2Vec&& that)
 {
-  dim = that.dim;
+  size = that.size; that.size = 0;
   lookup = std::move (that.lookup);
   inv_lookup = std::move (that.inv_lookup);
   return *this;

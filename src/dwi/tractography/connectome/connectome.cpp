@@ -68,12 +68,12 @@ const OptionGroup AssignmentOption = OptionGroup ("Structural connectome streaml
 
 
 
-Tck2nodes_base* load_assignment_mode (Image::Buffer<node_t>& nodes_data)
+Tck2nodes_base* load_assignment_mode (Image<node_t>& nodes_data)
 {
 
   Tck2nodes_base* tck2nodes = NULL;
   for (size_t index = 0; modes[index]; ++index) {
-    Options opt = get_options (modes[index]);
+    auto opt = get_options (modes[index]);
     if (opt.size()) {
 
       if (tck2nodes) {
@@ -115,10 +115,10 @@ const OptionGroup MetricOption = OptionGroup ("Structural connectome metric opti
 
 
 
-Metric_base* load_metric (Image::Buffer<node_t>& nodes_data)
+Metric_base* load_metric (Image<node_t>& nodes_data)
 {
   int edge_metric = 0; // default = count
-  Options opt = get_options ("metric");
+  auto opt = get_options ("metric");
   if (opt.size())
     edge_metric = opt[0][0];
   switch (edge_metric) {

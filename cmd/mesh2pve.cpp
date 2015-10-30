@@ -23,7 +23,7 @@
 
 #include "command.h"
 
-#include "image/header.h"
+#include "header.h"
 
 #include "mesh/mesh.h"
 
@@ -65,7 +65,7 @@ void run ()
   Mesh::Mesh mesh (argument[0]);
 
   // Get the template image
-  Image::Header template_image (argument[1]);
+  Header template_image = Header::open (argument[1]);
 
   // Create the output image
   mesh.output_pve_image (template_image, argument[2]);

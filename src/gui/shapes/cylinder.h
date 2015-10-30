@@ -25,8 +25,6 @@
 
 #include <vector>
 
-#include "math/vector.h"
-
 #include "gui/opengl/gl.h"
 #include "gui/opengl/gl_core_3_3.h"
 

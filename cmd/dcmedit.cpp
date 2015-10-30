@@ -100,7 +100,7 @@ void run ()
   std::vector<Tag> tags;
   std::vector<uint16_t> VRs;
 
-  Options opt = get_options ("anonymise");
+  auto opt = get_options ("anonymise");
   if (opt.size()) {
     tags.push_back (Tag (0x0010U, 0x0030U, "")); // PatientBirthDate
     VRs.push_back (VR_PN);

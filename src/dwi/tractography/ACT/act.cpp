@@ -27,10 +27,7 @@ namespace MR
 
         void load_act_properties (Properties& properties)
         {
-
-          using namespace MR::App;
-
-          Options opt = get_options ("act");
+          auto opt = App::get_options ("act");
           if (opt.size()) {
 
             properties["act"] = std::string (opt[0][0]);
@@ -55,9 +52,9 @@ namespace MR
 
 
 
-        void verify_5TT_image (const Image::Header& H)
+        void verify_5TT_image (const Header& H)
         {
-          if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.dim(3) != 5)
+          if (!H.datatype().is_floating_point() || H.ndim() != 4 || H.size(3) != 5)
             throw Exception ("Image " + H.name() + " is not a valid ACT 5TT image");
         }
 

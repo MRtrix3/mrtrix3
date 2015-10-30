@@ -20,9 +20,10 @@
 
 */
 
+#include "gui/mrview/tool/vector.h"
+
 #include "mrtrix.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/vector.h"
 #include "gui/mrview/tool/fixel.h"
 #include "gui/dialog/file.h"
 #include "gui/mrview/tool/list_model_base.h"
@@ -289,8 +290,9 @@ namespace MR
                       fixel.scaling_max();
 
           window().colourbar_renderer.render (fixel.colourmap, fixel.scale_inverted(),
-                                     min_value, max_value,
-                                     fixel.scaling_min(), fixel.display_range, fixel.colour);
+                                              min_value, max_value,
+                                              fixel.scaling_min(), fixel.display_range,
+                                              Eigen::Array3f { fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f });
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 

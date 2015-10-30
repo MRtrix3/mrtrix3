@@ -25,10 +25,9 @@
 
 #include <fstream>
 #include <queue>
-
 #include <atomic>
 
-#include "image/transform.h"
+#include "transform.h"
 #include "thread_queue.h"
 #include "dwi/fmls.h"
 #include "dwi/directions/set.h"
@@ -138,9 +137,8 @@ namespace MR
           }
 
 
-          void set_voxel (const Point<int>& i) { voxel = i; }
-          const Point<int>& get_voxel() const { return voxel; }
-
+          void set_voxel (const Eigen::Vector3i& i) { voxel = i; }
+          const Eigen::Vector3i& get_voxel() const { return voxel; }
 
           float get_ratio (const double mu) const { return ((mu * TD.load (std::memory_order_relaxed)) / FOD); }
 
@@ -173,7 +171,7 @@ namespace MR
 
 
         private:
-          Point<int> voxel;
+          Eigen::Vector3i voxel;
           std::atomic<double> TD; // Protect against concurrent reads & writes, though perfect thread concurrency is not necessary
           bool update; // For small / noisy fixels, exclude the seeding probability from being updated
 
@@ -183,7 +181,6 @@ namespace MR
           size_t track_count_at_last_update;
           size_t seed_count;
 
-
       };
 
 
@@ -192,19 +189,15 @@ namespace MR
       class Dynamic_ACT_additions
       {
 
-          typedef Image::Interp::Linear< Image::Buffer<float>::voxel_type > Interp;
-
         public:
           Dynamic_ACT_additions (const std::string& path) :
-            data (path),
-            interp_template (Image::Buffer<float>::voxel_type (data)),
-            gmwmi_finder (data) { }
+            interp_template (Image<float>::open (path)),
+            gmwmi_finder (static_cast<Image<float>&> (interp_template)) { }
 
-          bool check_seed (Point<float>&);
+          bool check_seed (Eigen::Vector3f&);
 
         private:
-          Image::Buffer<float> data;
-          const Interp interp_template;
+          Interp::Linear<Image<float>> interp_template;
           ACT::GMWMI_finder gmwmi_finder;
 
 
@@ -215,22 +208,24 @@ namespace MR
 
 
       class Dynamic : public Base, public SIFT::ModelBase<Fixel_TD_seed>
-      {
+        {
+          private:
 
-        typedef Fixel_TD_seed Fixel;
+            typedef Fixel_TD_seed Fixel;
 
-        typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
-        typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
+            typedef Fixel_map<Fixel>::MapVoxel MapVoxel;
+            typedef Fixel_map<Fixel>::VoxelAccessor VoxelAccessor;
 
 
         public:
-        Dynamic (const std::string&, Image::Buffer<float>&, const size_t, const DWI::Directions::FastLookupSet&);
+        Dynamic (const std::string&, Image<float>&, const size_t, const DWI::Directions::FastLookupSet&);
         ~Dynamic();
 
         Dynamic (const Dynamic&) = delete;
         Dynamic& operator= (const Dynamic&) = delete;
 
-        bool get_seed (Point<float>&, Point<float>&) override;
+        bool get_seed (Eigen::Vector3f&) const override;
+        bool get_seed (Eigen::Vector3f&, Eigen::Vector3f&) override;
 
         // Although the ModelBase version of this function is OK, the Fixel_TD_seed class
         //   includes the voxel location for easier determination of seed location
@@ -256,12 +251,12 @@ namespace MR
         }
 
 
-        private:
-        using Fixel_map<Fixel>::accessor;
-        using Fixel_map<Fixel>::fixels;
+          private:
+            using Fixel_map<Fixel>::accessor;
+            using Fixel_map<Fixel>::fixels;
 
-        using SIFT::ModelBase<Fixel>::mu;
-        using SIFT::ModelBase<Fixel>::proc_mask;
+            using SIFT::ModelBase<Fixel>::mu;
+            using SIFT::ModelBase<Fixel>::proc_mask;
 
         // New members required for new dynamic seed probability equation
         const size_t target_trackcount;
@@ -273,18 +268,16 @@ namespace MR
 
 #ifdef DYNAMIC_SEED_DEBUGGING
         Tractography::Writer<float> seed_output;
-        void write_seed (const Point<float>&);
+        void write_seed (const Eigen::Vector3f&);
         size_t test_fixel;
         void output_fixel_images();
 #endif
 
-        Image::Transform transform;
+            Transform transform;
 
         std::unique_ptr<Dynamic_ACT_additions> act;
 
-
         void perform_fixel_masking();
-
 
       };
 
@@ -293,13 +286,13 @@ namespace MR
 
 
       class WriteKernelDynamic : public Tracking::WriteKernel
-      {
-        public:
-          WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const DWI::Tractography::Properties& properties) :
+        {
+          public:
+            WriteKernelDynamic (const Tracking::SharedBase& shared, const std::string& output_file, const Properties& properties) :
               Tracking::WriteKernel (shared, output_file, properties) { }
           WriteKernelDynamic (const WriteKernelDynamic&) = delete;
           WriteKernelDynamic& operator= (const WriteKernelDynamic&) = delete;
-          bool operator() (const Tracking::GeneratedTrack&, Tractography::Streamline<>&);
+          bool operator() (const Tracking::GeneratedTrack&, Streamline<>&);
       };
 
 

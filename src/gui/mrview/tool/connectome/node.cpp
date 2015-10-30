@@ -26,7 +26,7 @@
 #include <vector>
 
 #include "exception.h"
-
+#include "gui/mrview/window.h"
 #include "mesh/vox2mesh.h"
 
 namespace MR
@@ -41,13 +41,13 @@ namespace MR
 
 
 
-        Node::Node (const Point<float>& com, const size_t vol, const size_t pixheight, std::shared_ptr< MR::Image::BufferScratch<bool> >& image) :
+        Node::Node (const Eigen::Vector3f& com, const size_t vol, const size_t pixheight, const MR::Image<bool>& image) :
             centre_of_mass (com),
             volume (vol),
             mask (image),
-            name (image->name()),
+            name (image.name()),
             size (1.0f),
-            colour (0.5f, 0.5f, 0.5f),
+            colour { 0.5f, 0.5f, 0.5f },
             alpha (1.0f),
             visible (true),
             pixmap (pixheight, pixheight)
@@ -59,7 +59,7 @@ namespace MR
             centre_of_mass (),
             volume (0),
             size (0.0f),
-            colour (0.0f, 0.0f, 0.0f),
+            colour { 0.0f, 0.0f, 0.0f },
             alpha (0.0f),
             visible (false),
             pixmap (12, 12)
@@ -80,7 +80,9 @@ namespace MR
         Node::Mesh::Mesh (MR::Mesh::Mesh& in) :
             count (3 * in.num_triangles())
         {
+          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           std::vector<float> vertices;
           vertices.reserve (3 * in.num_vertices());
           for (size_t v = 0; v != in.num_vertices(); ++v) {
@@ -137,8 +139,14 @@ namespace MR
           that.count = 0;
         }
 
-        Node::Mesh::Mesh () :
-            count (0) { }
+        Node::Mesh::~Mesh()
+        {
+          Window::GrabContext context;
+          vertex_buffer.clear();
+          normal_buffer.clear();
+          vertex_array_object.clear();
+          index_buffer.clear();
+        }
 
         Node::Mesh& Node::Mesh::operator= (Node::Mesh&& that)
         {
@@ -153,7 +161,9 @@ namespace MR
         void Node::Mesh::render() const
         {
           assert (count);
+          Window::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();

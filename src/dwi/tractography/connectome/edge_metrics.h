@@ -28,16 +28,14 @@
 
 #include <vector>
 
-#include "point.h"
-
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/voxel.h"
-#include "image/interp/linear.h"
+#include "image.h"
+#include "algo/loop.h"
+#include "interp/linear.h"
 
 #include "connectome/connectome.h"
 
 #include "dwi/tractography/streamline.h"
+#include "dwi/tractography/connectome/connectome.h"
 
 
 
@@ -100,7 +98,7 @@ class Metric_meanlength : public Metric_base {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
-      return (tck.size() - 1);
+      return tck.calc_length();
     }
 
     double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
@@ -118,7 +116,7 @@ class Metric_invlength : public Metric_base {
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
-      return (tck.size() > 1 ? (1.0 / (tck.size() - 1)) : 0);
+      return (tck.size() > 1 ? (1.0 / tck.calc_length()) : 0);
     }
 
     double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
@@ -133,13 +131,11 @@ class Metric_invlength : public Metric_base {
 class Metric_invnodevolume : public Metric_base {
 
   public:
-    Metric_invnodevolume (Image::Buffer<node_t>& in_data) :
-      Metric_base (false)
+    Metric_invnodevolume (Image<node_t>& node_image) :
+        Metric_base (false)
     {
-      auto in = in_data.voxel();
-      Image::Loop loop;
-      for (auto l = Image::Loop() (in); l; ++l) {
-        const node_t node_index = in.value();
+      for (auto l = Loop() (node_image); l; ++l) {
+        const node_t node_index = node_image.value();
         if (node_index >= node_volumes.size())
           node_volumes.resize (node_index + 1, 0);
         node_volumes[node_index]++;
@@ -172,12 +168,12 @@ class Metric_invnodevolume : public Metric_base {
 class Metric_invlength_invnodevolume : public Metric_invnodevolume {
 
   public:
-    Metric_invlength_invnodevolume (Image::Buffer<node_t>& in_data) :
-      Metric_invnodevolume (in_data) { }
+    Metric_invlength_invnodevolume (Image<node_t>& node_image) :
+        Metric_invnodevolume (node_image) { }
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
-      return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / (tck.size() - 1)) : 0);
+      return (tck.size() > 1 ? (Metric_invnodevolume::operator() (tck, nodes) / tck.calc_length()) : 0);
     }
 
     double operator() (const Streamline<>& tck, const std::vector<node_t>& nodes) const override
@@ -193,10 +189,9 @@ class Metric_meanscalar : public Metric_base {
 
   public:
     Metric_meanscalar (const std::string& path) :
-      Metric_base (true),
-      image (path),
-      v (image),
-      interp_template (v) { }
+        Metric_base (true),
+        image (Image<float>::open (path)),
+        interp_template (image) { }
 
     double operator() (const Streamline<>& tck, const NodePair& nodes) const override
     {
@@ -219,9 +214,8 @@ class Metric_meanscalar : public Metric_base {
 
 
   private:
-    Image::Buffer<float> image;
-    const Image::Buffer<float>::voxel_type v;
-    const Image::Interp::Linear< Image::Buffer<float>::voxel_type > interp_template;
+    Image<float> image;
+    const Interp::Linear< Image<float> > interp_template;
 
 };
 

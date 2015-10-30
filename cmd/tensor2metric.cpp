@@ -1,7 +1,8 @@
 /*
-    Copyright 2008 Brain Research Institute, Melbourne, Australia
+    Copyright 2015 Vision Lab, University of Antwerp, Belgium
+    Copyright 2015 The Florey Institute of Neuroscience and Mental Health, Melbourne, Australia
 
-    Written by J-Donald Tournier, 27/06/08.
+    Written by Ben Jeurissen (28/08/15) and Thijs Dhollander (21/09/15)
 
     This file is part of MRtrix.
 
@@ -22,268 +23,333 @@
 
 #include "command.h"
 #include "progressbar.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "math/matrix.h"
-#include "math/eigen.h"
+#include "image.h"
+#include "algo/threaded_copy.h"
+#include "dwi/gradient.h"
 #include "dwi/tensor.h"
-#include "image/value.h"
-#include "image/position.h"
-
+#include <Eigen/Eigenvalues>
 
 using namespace MR;
 using namespace App;
+using namespace std;
 
-const char* modulate_choices[] = { "none", "fa", "eval", NULL };
+typedef float value_type;
+const char* modulate_choices[] = { "none", "fa", "eigval", NULL };
 
 void usage ()
 {
-  DESCRIPTION
-  + "generate maps of tensor-derived parameters.";
+  ARGUMENTS 
+  + Argument ("tensor", "the input tensor image.").type_image_in ();
 
-  REFERENCES 
-    + "Basser, P. J.; Mattiello, J. & Lebihan, D. "
-    "MR diffusion tensor spectroscopy and imaging. "
-    "Biophysical Journal, 1994, 66, 259-267";
-
-  ARGUMENTS
-  + Argument ("tensor", "the input diffusion tensor image.").type_image_in ();
-
-  OPTIONS
+  OPTIONS 
   + Option ("adc",
-            "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor.")
+            "compute the mean apparent diffusion coefficient (ADC) of the diffusion tensor. "
+            "(sometimes also referred to as the mean diffusivity (MD))")
   + Argument ("image").type_image_out()
-
+ 
   + Option ("fa",
-            "compute the fractional anisotropy of the diffusion tensor.")
+            "compute the fractional anisotropy (FA) of the diffusion tensor.")
   + Argument ("image").type_image_out()
-
-  + Option ("num",
-            "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
-            "can be specified as a number sequence. For example, '1,3' specifies the "
-            "major (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
-  + Argument ("image").type_sequence_int()
-
-  + Option ("vector",
-            "compute the selected eigenvector(s) of the diffusion tensor.")
+ 
+  + Option ("ad",
+            "compute the axial diffusivity (AD) of the diffusion tensor. "
+            "(equivalent to the principal eigenvalue)")
   + Argument ("image").type_image_out()
-
+ 
+  + Option ("rd",
+            "compute the radial diffusivity (RD) of the diffusion tensor. "
+            "(equivalent to the mean of the two non-principal eigenvalues)")
+  + Argument ("image").type_image_out()
+  
+  + Option ("cl",
+            "compute the linearity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
+ 
+  + Option ("cp",
+            "compute the planarity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
+  
+  + Option ("cs",
+            "compute the sphericity metric of the diffusion tensor. "
+            "(one of the three Westin shape metrics)")
+  + Argument ("image").type_image_out()
+ 
   + Option ("value",
             "compute the selected eigenvalue(s) of the diffusion tensor.")
   + Argument ("image").type_image_out()
-
-  + Option ("mask",
-            "only perform computation within the specified binary brain mask image.")
-  + Argument ("image").type_image_in()
+ 
+  + Option ("vector",
+            "compute the selected eigenvector(s) of the diffusion tensor.")
+  + Argument ("image").type_image_out()
+ 
+  + Option ("num",
+            "specify the desired eigenvalue/eigenvector(s). Note that several eigenvalues "
+            "can be specified as a number sequence. For example, '1,3' specifies the "
+            "principal (1) and minor (3) eigenvalues/eigenvectors (default = 1).")
+  + Argument ("sequence").type_sequence_int()
 
   + Option ("modulate",
             "specify how to modulate the magnitude of the eigenvectors. Valid choices "
-            "are: none, FA, eval (default = FA).")
-  + Argument ("spec").type_choice (modulate_choices);
+            "are: none, FA, eigval (default = FA).")
+  + Argument ("choice").type_choice (modulate_choices)
+ 
+  + Option ("mask",
+            "only perform computation within the specified binary brain mask image.")
+  + Argument ("image").type_image_in();
+  
+  AUTHOR = "Thijs Dhollander (thijs.dhollander@gmail.com) & Ben Jeurissen (ben.jeurissen@uantwerpen.be) & J-Donald Tournier (jdtournier@gmail.com)";
+
+  
+  DESCRIPTION
+  + "Generate maps of tensor-derived parameters.";
+  
+  REFERENCES 
+  + "Basser, P. J.; Mattiello, J. & Lebihan, D. "
+    "MR diffusion tensor spectroscopy and imaging. "
+    "Biophysical Journal, 1994, 66, 259-267"
+  + "Westin, C. F.; Peled, S.; Gudbjartsson, H.; Kikinis, R. & Jolesz, F. A. "
+    "Geometrical diffusion measures for MRI from tensor basis analysis. "
+    "Proc Intl Soc Mag Reson Med, 1997, 5, 1742";
 }
 
-
-
-
-
-typedef float value_type;
-
-class ImagePair
+class Processor
 {
   public:
-    typedef ::value_type value_type;
+    Processor (Image<bool>& mask_img, Image<value_type>& adc_img, Image<value_type>& fa_img, Image<value_type>& ad_img, Image<value_type>& rd_img, Image<value_type>& cl_img, Image<value_type>& cp_img, Image<value_type>& cs_img, Image<value_type>& value_img, Image<value_type>& vector_img, std::vector<int> vals, int modulate) :
+      mask_img (mask_img),
+      adc_img (adc_img),
+      fa_img (fa_img),
+      ad_img (ad_img),
+      rd_img (rd_img),
+      cl_img (cl_img),
+      cp_img (cp_img),
+      cs_img (cs_img),
+      value_img (value_img),
+      vector_img (vector_img),
+      vals (vals),
+      modulate (modulate) { }
 
-    ImagePair (const Image::Header& header, const std::string& name, size_t nvols) :
-      data (name, param (header, nvols)), 
-      vox (data) { }
-
-    ImagePair (const std::string& name) : 
-      data (name), 
-      vox (data) { }
-
-    Image::Buffer<value_type> data;
-    Image::Buffer<value_type>::voxel_type vox;
-
-    static Image::Header param (const Image::Header& header, size_t nvols) {
-      Image::Header ret (header);
-      ret.datatype() = DataType::Float32;
-      if (nvols) ret.dim(3) = nvols;
-      else ret.set_ndim (3);
-      return ret;
+    void operator() (Image<value_type>& dt_img)
+    {
+      /* check mask */ 
+      if (mask_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (mask_img);
+        if (!mask_img.value())
+          return;
+      }
+     
+      /* input dt */
+      Eigen::Matrix<double, 6, 1> dt;
+      for (auto l = Loop (3) (dt_img); l; ++l)
+        dt[dt_img.index(3)] = dt_img.value();
+      
+      /* output adc */
+      if (adc_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (adc_img);
+        adc_img.value() = DWI::tensor2ADC(dt);
+      }
+      
+      double fa = 0.0;
+      if (fa_img.valid() || (vector_img.valid() && (modulate == 1)))
+        fa = DWI::tensor2FA(dt);
+      
+      /* output fa */
+      if (fa_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (fa_img);
+        fa_img.value() = fa;
+      }
+      
+      bool need_eigenvalues = value_img.valid() || (vector_img.valid() && (modulate == 2)) || ad_img.valid() || rd_img.valid() || cl_img.valid() || cp_img.valid() || cs_img.valid();
+      
+      Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d> es;
+      if (need_eigenvalues || vector_img.valid()) {
+        Eigen::Matrix3d M;
+        M (0,0) = dt[0];
+        M (1,1) = dt[1];
+        M (2,2) = dt[2];
+        M (0,1) = M (1,0) = dt[3];
+        M (0,2) = M (2,0) = dt[4];
+        M (1,2) = M (2,1) = dt[5];
+        es = Eigen::SelfAdjointEigenSolver<Eigen::Matrix3d>(M, vector_img.valid() ? Eigen::ComputeEigenvectors : Eigen::EigenvaluesOnly);
+      }
+      
+      Eigen::Vector3d eigval;
+      if (need_eigenvalues)
+        eigval = es.eigenvalues();
+        
+      /* output value */
+      if (value_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (value_img);
+        if (vals.size() > 1) {
+          auto l = Loop(3)(value_img);
+          for (size_t i = 0; i < vals.size(); i++) {
+            value_img.value() = eigval(3-vals[i]); l++;
+          }
+        } else {
+          value_img.value() = eigval(3-vals[0]);
+        }
+      }
+      
+      /* output ad */
+      if (ad_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (ad_img);
+        ad_img.value() = eigval(2);
+      }
+      
+      /* output rd */
+      if (rd_img.valid()) {
+        assign_pos_of (dt_img, 0, 3).to (rd_img);
+        rd_img.value() = (eigval(1) + eigval(0)) / 2;
+      }
+      
+      /* output shape measures */
+      if (cl_img.valid() || cp_img.valid() || cs_img.valid()) {
+        double eigsum = eigval.sum();
+        if (eigsum != 0.0) {
+          if (cl_img.valid()) {
+            assign_pos_of (dt_img, 0, 3).to (cl_img);
+            cl_img.value() = (eigval(2) - eigval(1)) / eigsum;
+          }
+          if (cp_img.valid()) {
+            assign_pos_of (dt_img, 0, 3).to (cp_img);
+            cp_img.value() = 2.0 * (eigval(1) - eigval(0)) / eigsum;
+          }
+          if (cs_img.valid()) {
+            assign_pos_of (dt_img, 0, 3).to (cs_img);
+            cs_img.value() = 3.0 * eigval(0) / eigsum;
+          }
+        }
+      }
+      
+      /* output vector */
+      if (vector_img.valid()) {
+        Eigen::Matrix3d eigvec = es.eigenvectors();
+        assign_pos_of (dt_img, 0, 3).to (vector_img);
+        auto l = Loop(3)(vector_img);
+        for (size_t i = 0; i < vals.size(); i++) {
+          double fact = 1.0;
+          if (modulate == 1)
+            fact = fa;
+          else if (modulate == 2)
+            fact = eigval(3-vals[i]);
+          vector_img.value() = eigvec(0,3-vals[i])*fact; l++;
+          vector_img.value() = eigvec(1,3-vals[i])*fact; l++;
+          vector_img.value() = eigvec(2,3-vals[i])*fact; l++;
+        }
+      }                   
     }
+    
+  private:
+    Image<bool> mask_img;
+    Image<value_type> adc_img;
+    Image<value_type> fa_img;
+    Image<value_type> ad_img;
+    Image<value_type> rd_img;
+    Image<value_type> cl_img;
+    Image<value_type> cp_img;
+    Image<value_type> cs_img;
+    Image<value_type> value_img;
+    Image<value_type> vector_img;
+    std::vector<int> vals;
+    int modulate;
 };
-
-
-inline void set_zero (size_t axis, 
-    std::unique_ptr<ImagePair>& i0, 
-    std::unique_ptr<ImagePair>& i1, 
-    std::unique_ptr<ImagePair>& i2, 
-    std::unique_ptr<ImagePair>& i3, 
-    std::unique_ptr<ImagePair>& i4)
-{
-  if (i0) i0->vox[axis] = 0;
-  if (i1) i1->vox[axis] = 0;
-  if (i2) i2->vox[axis] = 0;
-  if (i3) i3->vox[axis] = 0;
-  if (i4) i4->vox[axis] = 0;
-}
-
-inline void increment (size_t axis, 
-    std::unique_ptr<ImagePair>& i0, 
-    std::unique_ptr<ImagePair>& i1, 
-    std::unique_ptr<ImagePair>& i2, 
-    std::unique_ptr<ImagePair>& i3, 
-    std::unique_ptr<ImagePair>& i4)
-{
-  if (i0) ++i0->vox[axis];
-  if (i1) ++i1->vox[axis];
-  if (i2) ++i2->vox[axis];
-  if (i3) ++i3->vox[axis];
-  if (i4) ++i4->vox[axis];
-}
 
 void run ()
 {
-  Image::Buffer<value_type> dt_data (argument[0]);
+  auto dt_img = Image<value_type>::open (argument[0]);
+  auto header = dt_img.original_header();
+  header.datatype() = DataType::Float32;
 
-  if (dt_data.ndim() != 4)
-    throw Exception ("base image should contain 4 dimensions");
-
-  if (dt_data.dim (3) != 6)
-    throw Exception ("expecting dimension 3 of image \"" + dt_data.name() + "\" to be 6");
-
-
-  std::vector<int> vals (1);
-  vals[0] = 1;
-  Options opt = get_options ("num");
+  auto mask_img = Image<bool>();
+  auto opt = get_options ("mask");
+  if (opt.size()) {
+    mask_img = Image<bool>::open (opt[0][0]);
+    check_dimensions (dt_img, mask_img, 0, 3);
+  }
+  
+  auto adc_img = Image<value_type>();
+  opt = get_options ("adc");
+  if (opt.size()) {
+    header.set_ndim (3);
+    adc_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto fa_img = Image<value_type>();
+  opt = get_options ("fa");
+  if (opt.size()) {
+    header.set_ndim (3);
+    fa_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto ad_img = Image<value_type>();
+  opt = get_options ("ad");
+  if (opt.size()) {
+    header.set_ndim (3);
+    ad_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto rd_img = Image<value_type>();
+  opt = get_options ("rd");
+  if (opt.size()) {
+    header.set_ndim (3);
+    rd_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto cl_img = Image<value_type>();
+  opt = get_options ("cl");
+  if (opt.size()) {
+    header.set_ndim (3);
+    cl_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto cp_img = Image<value_type>();
+  opt = get_options ("cp");
+  if (opt.size()) {
+    header.set_ndim (3);
+    cp_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  auto cs_img = Image<value_type>();
+  opt = get_options ("cs");
+  if (opt.size()) {
+    header.set_ndim (3);
+    cs_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  std::vector<int> vals = {1};
+  opt = get_options ("num");
   if (opt.size()) {
     vals = opt[0][0];
-
-    if (vals.empty())
-      throw Exception ("invalid eigenvalue/eigenvector number specifier");
-
-    for (size_t i = 0; i < vals.size(); ++i)
-      if (vals[i] < 1 || vals[i] > 3)
-        throw Exception ("eigenvalue/eigenvector number is out of bounds");
+  if (vals.empty())
+    throw Exception ("invalid eigenvalue/eigenvector number specifier");
+  for (size_t i = 0; i < vals.size(); ++i)
+    if (vals[i] < 1 || vals[i] > 3)
+      throw Exception ("eigenvalue/eigenvector number is out of bounds");
   }
 
-  std::unique_ptr<ImagePair> adc, fa, eval, evec, mask;
+  float modulate = get_option_value ("modulate", 1);
 
-  opt = get_options ("vector");
-  if (opt.size())
-    evec.reset (new ImagePair (dt_data, opt[0][0], 3*vals.size()));
-
+  auto value_img = Image<value_type>();
   opt = get_options ("value");
-  if (opt.size())
-    eval.reset (new ImagePair (dt_data, opt[0][0], ( vals.size() > 1 ? vals.size() : 0 )));
-
-  opt = get_options ("adc");
-  if (opt.size())
-    adc.reset (new ImagePair (dt_data, opt[0][0], 0));
-
-  opt = get_options ("fa");
-  if (opt.size()) 
-    fa.reset (new ImagePair (dt_data, opt[0][0], 0));
-
-  opt = get_options ("mask");
   if (opt.size()) {
-    mask.reset (new ImagePair (opt[0][0]));
-    Image::check_dimensions (mask->data, dt_data, 0, 3);
-  }
-
-  int modulate = 1;
-  opt = get_options ("modulate");
-  if (opt.size())
-    modulate = opt[0][0];
-
-  if (! (adc || fa || eval || evec))
-    throw Exception ("no output metric specified - aborting");
-
-
-  for (size_t i = 0; i < vals.size(); i++)
-    vals[i] = 3-vals[i];
-
-
-  Math::Matrix<double> V (3,3), M (3,3);
-  Math::Vector<double> ev (3);
-  float el[6], faval = NAN;
-
-  std::unique_ptr<Math::Eigen::Symm<double> > eig;
-  std::unique_ptr<Math::Eigen::SymmV<double> > eigv;
-  if (evec)
-    eigv.reset (new Math::Eigen::SymmV<double> (3));
-  else
-    eig.reset (new Math::Eigen::Symm<double> (3));
-
-  auto dt = dt_data.voxel();
-
-  ProgressBar progress ("computing tensor metrics...", Image::voxel_count (dt, 0, 3));
-
-  for (dt[2] = 0; dt[2] < dt.dim (2); dt[2]++) {
-    set_zero (1, mask, fa, adc, eval, evec);
-
-    for (dt[1] = 0; dt[1] < dt.dim (1); dt[1]++) {
-      set_zero (0, mask, fa, adc, eval, evec);
-
-      for (dt[0] = 0; dt[0] < dt.dim (0); dt[0]++) {
-
-        bool skip = false;
-        if (mask) if (mask->vox.value() < 0.5) skip = true;
-
-        if (!skip) {
-
-          for (dt[3] = 0; dt[3] < dt.dim (3); dt[3]++)
-            el[dt[3]] = dt.value();
-
-          if (adc) adc->vox.value() = DWI::tensor2ADC (el);
-          if (fa || modulate == 1) faval = DWI::tensor2FA (el);
-          if (fa) fa->vox.value() = faval;
-
-          if (eval || evec) {
-            M (0,0) = el[0];
-            M (1,1) = el[1];
-            M (2,2) = el[2];
-            M (0,1) = M (1,0) = el[3];
-            M (0,2) = M (2,0) = el[4];
-            M (1,2) = M (2,1) = el[5];
-
-            if (evec) {
-              (*eigv) (ev, M, V);
-              Math::Eigen::sort (ev, V);
-              if (modulate == 0) faval = 1.0;
-              evec->vox[3] = 0;
-              for (size_t i = 0; i < vals.size(); i++) {
-                if (modulate == 2) faval = ev[vals[i]];
-                evec->vox.value() = faval*V (0,vals[i]);
-                ++evec->vox[3];
-                evec->vox.value() = faval*V (1,vals[i]);
-                ++evec->vox[3];
-                evec->vox.value() = faval*V (2,vals[i]);
-                ++evec->vox[3];
-              }
-            }
-            else {
-              (*eig) (ev, M);
-              Math::Eigen::sort (ev);
-            }
-
-            if (eval) {
-              if (eval->vox.ndim() > 3) {
-                for (eval->vox[3] = 0; eval->vox[3] < (int) vals.size(); ++eval->vox[3])
-                  eval->vox.value() = ev[vals[eval->vox[3]]];
-              }
-              else 
-                eval->vox.value() = ev[vals[0]];
-            }
-          }
-        }
-
-        ++progress;
-        increment (0, mask, fa, adc, eval, evec);
-      }
-      increment (1, mask, fa, adc, eval, evec);
+    header.set_ndim (3);
+    if (vals.size()>1) {
+      header.set_ndim (4);
+      header.size (3) = vals.size();
     }
-    increment (2, mask, fa, adc, eval, evec);
+    value_img = Image<value_type>::create (opt[0][0], header);
   }
+  
+  auto vector_img = Image<value_type>();
+  opt = get_options ("vector");
+  if (opt.size()) {
+    header.set_ndim (4);
+    header.size (3) = vals.size()*3;
+    vector_img = Image<value_type>::create (opt[0][0], header);
+  }
+  
+  ThreadedLoop ("computing metrics...", dt_img, 0, 3)
+    .run (Processor (mask_img, adc_img, fa_img, ad_img, rd_img, cl_img, cp_img, cs_img, value_img, vector_img, vals, modulate), dt_img);
 }
-

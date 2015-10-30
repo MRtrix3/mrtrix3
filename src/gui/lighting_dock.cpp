@@ -20,10 +20,10 @@
 
 */
 
-#include "math/vector.h"
 #include "gui/color_button.h"
 #include "gui/lighting_dock.h"
 #include "file/config.h"
+#include "math/math.h"
 
 namespace MR
 {
@@ -87,14 +87,14 @@ namespace MR
 
       elevation_slider = new QSlider (Qt::Horizontal);
       elevation_slider->setRange (0,1000);
-      elevation_slider->setSliderPosition (int ( (1000.0/Math::pi) *acos (-info.lightpos[1]/Math::norm (info.lightpos))));
+      elevation_slider->setSliderPosition (int ( (1000.0/Math::pi) *acos (-info.lightpos[1]/Eigen::Map<Eigen::Matrix<float, 3, 1>>(info.lightpos).norm())));
       connect (elevation_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
       grid_layout->addWidget (new QLabel ("Light elevation"), 5, 0);
       grid_layout->addWidget (elevation_slider, 5, 1);
 
       azimuth_slider = new QSlider (Qt::Horizontal);
       azimuth_slider->setRange (-1000,1000);
-      azimuth_slider->setSliderPosition (int ( (1000.0/Math::pi) *atan2 (info.lightpos[0], info.lightpos[2])));
+      azimuth_slider->setSliderPosition (int ( (1000.0/Math::pi) * atan2 (info.lightpos[0], info.lightpos[2])));
       connect (azimuth_slider, SIGNAL (valueChanged (int)), this, SLOT (light_position_slot()));
       grid_layout->addWidget (new QLabel ("Light azimuth"), 6, 0);
       grid_layout->addWidget (azimuth_slider, 6, 1);

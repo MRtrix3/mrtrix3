@@ -31,7 +31,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "Gaussian filter a track scalar file";
@@ -55,11 +55,8 @@ void run ()
   DWI::Tractography::ScalarReader<value_type> reader (argument[0], properties);
   DWI::Tractography::ScalarWriter<value_type> writer (argument[1], properties);
 
-  Options opt = get_options("stdev");
-  float stdev = 4.0;
-  if (opt.size())
-    stdev = opt[0][0];
-
+  float stdev = get_option_value ("stdev", 4.0);
+  
   std::vector<float> kernel (2 * ceil(2.5 * stdev) + 1, 0);
   float norm_factor = 0.0;
   float radius = (kernel.size() - 1.0) / 2.0;

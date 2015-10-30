@@ -26,9 +26,7 @@
 #include <vector>
 
 #include "command.h"
-#include "point.h"
 #include "progressbar.h"
-#include "memory.h"
 
 #include "connectome/connectome.h"
 
@@ -37,16 +35,9 @@
 #include "dwi/tractography/weights.h"
 #include "dwi/tractography/connectome/extract.h"
 #include "dwi/tractography/connectome/streamline.h"
-#include "dwi/tractography/connectome/tck2nodes.h"
 #include "dwi/tractography/mapping/loader.h"
 
-#include "math/matrix.h"
-
-#include "image/buffer.h"
-#include "image/loop.h"
-#include "image/nav.h"
-#include "image/transform.h"
-#include "image/voxel.h"
+#include "image.h"
 
 #include "thread_queue.h"
 
@@ -96,7 +87,7 @@ const OptionGroup TrackWeightsOptions = OptionGroup ("Options for importing / ex
 void usage ()
 {
 
-	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "extract streamlines from a tractogram based on their assignment to parcellated nodes";
@@ -166,7 +157,7 @@ void run ()
   }
 
   const std::string prefix (argument[2]);
-  Options opt = get_options ("prefix_tck_weights_out");
+  auto opt = get_options ("prefix_tck_weights_out");
   const std::string weights_prefix = opt.size() ? std::string (opt[0][0]) : "";
 
   INFO ("Maximum node index is " + str(max_node_index));
@@ -210,26 +201,23 @@ void run ()
 
     // Load the node image, get the centres of mass
     // Generate exemplars - these can _only_ be done per edge, and requires a mutex per edge to multi-thread
-    Image::Buffer<node_t> buffer (opt[0][0]);
-    Image::Buffer<node_t>::voxel_type voxel (buffer);
-    Image::Transform transform (buffer);
-
-    std::vector< Point<float> > COMs (max_node_index+1, Point<float> (0.0, 0.0, 0.0));
+    auto image = Image<node_t>::open (opt[0][0]);
+    std::vector<Eigen::Vector3f> COMs (max_node_index+1, Eigen::Vector3f (0.0f, 0.0f, 0.0f));
     std::vector<size_t> volumes (max_node_index+1, 0);
-    Image::LoopInOrder loop (voxel);
-    for (auto i = loop (voxel); i; ++i) {
-      const node_t index = voxel.value();
+    for (auto i = Loop() (image); i; ++i) {
+      const node_t index = image.value();
       if (index) {
         assert (index <= max_node_index);
-        COMs[index] += Point<float> (voxel[0], voxel[1], voxel[2]);
+        COMs[index] += Eigen::Vector3f (image.index(0), image.index(1), image.index(2));
         ++volumes[index];
       }
     }
+    Transform transform (image);
     for (node_t index = 1; index <= max_node_index; ++index) {
       if (volumes[index])
-        COMs[index] = transform.voxel2scanner (COMs[index] * (1.0f / float(volumes[index])));
+        COMs[index] = (transform.voxel2scanner * (COMs[index] * (1.0f / float(volumes[index]))).cast<default_type>()).cast<float>();
       else
-        COMs[index].invalidate();
+        COMs[index][0] = COMs[index][1] = COMs[index][2] = NAN;
     }
 
     // If user specifies a subset of nodes, only a subset of exemplars need to be calculated

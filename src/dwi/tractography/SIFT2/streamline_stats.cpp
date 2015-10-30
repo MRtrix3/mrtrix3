@@ -34,8 +34,8 @@ namespace MR {
 
 
       StreamlineStats::StreamlineStats() :
-          min (std::numeric_limits<float>::max()),
-          max (-std::numeric_limits<float>::max()),
+          min (std::numeric_limits<double>::infinity()),
+          max (-std::numeric_limits<double>::infinity()),
           mean (0.0),
           mean_abs (0.0),
           var (0.0),
@@ -44,8 +44,8 @@ namespace MR {
 
 
       StreamlineStats::StreamlineStats (const StreamlineStats& that) :
-          min (std::numeric_limits<float>::max()),
-          max (-std::numeric_limits<float>::max()),
+          min (std::numeric_limits<double>::infinity()),
+          max (-std::numeric_limits<double>::infinity()),
           mean (0.0),
           mean_abs (0.0),
           var (0.0),
@@ -54,7 +54,7 @@ namespace MR {
 
 
 
-      StreamlineStats& StreamlineStats::operator+= (const float i)
+      StreamlineStats& StreamlineStats::operator+= (const double i)
       {
         min = std::min (min, i);
         max = std::max (max, i);
