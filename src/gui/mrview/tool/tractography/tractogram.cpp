@@ -536,7 +536,7 @@ namespace MR
             for (size_t i = 0; i < max_sample_stride; ++i)
               buffer.push_back(tck.back());
 
-            sizes.push_back (N - 1);
+            sizes.push_back (N);
             tck_count++;
             if (buffer.size() >= MAX_BUFFER_SIZE)
               load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
