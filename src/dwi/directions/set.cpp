@@ -76,7 +76,7 @@ namespace MR {
           case 469:  az_el_pairs = tesselation_469 (); return;
           case 513:  az_el_pairs = tesselation_513 (); return;
           case 1281: az_el_pairs = tesselation_1281 (); return;
-          default: throw Exception ("No pre-defined data set of " + str (i) + " directions!");
+          default: throw Exception ("No pre-defined data set of " + str (i) + " directions");
         }
       }
 
@@ -85,6 +85,7 @@ namespace MR {
       void Set::initialise_adjacency()
       {
         adj_dirs.assign (size(), std::vector<dir_t>());
+
         for (dir_t i = 0; i != size(); ++i) {
           for (dir_t j = 0; j != size(); ++j) {
             if (j != i) {

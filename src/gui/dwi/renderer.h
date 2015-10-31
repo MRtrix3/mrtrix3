@@ -81,9 +81,9 @@ namespace MR
             (void) buffer_ID; // to silence unused-parameter warnings
             gl::Uniform3fv (origin_ID, 1, origin.data());
             gl::Uniform1i (reverse_ID, 0);
-            gl::DrawElements (gl::TRIANGLES, is_SH ? sh.num_indices() : dixel.num_indices(), gl::UNSIGNED_INT, (void*)0);
+            half_draw();
             gl::Uniform1i (reverse_ID, 1);
-            gl::DrawElements (gl::TRIANGLES, is_SH ? sh.num_indices() : dixel.num_indices(), gl::UNSIGNED_INT, (void*)0);
+            half_draw();
           }
 
           void stop () const {
@@ -99,6 +99,14 @@ namespace MR
           void compile_shader();
           std::string vertex_shader_source() const;
           std::string fragment_shader_source() const;
+
+          void half_draw() const
+          {
+            if (is_SH)
+              gl::DrawElements (gl::TRIANGLES, sh.num_indices(), gl::UNSIGNED_INT, (void*)0);
+            else
+              gl::DrawArrays (gl::TRIANGLES, 0, dixel.num_indices());
+          }
 
 
         public:
@@ -151,7 +159,7 @@ namespace MR
               Dixel () { }
 
               void initGL();
-              void bind() { vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); index_buffer.bind(); }
+              void bind() { vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); }
 
               void update_mesh (const MR::DWI::Directions::Set&);
 
@@ -161,7 +169,6 @@ namespace MR
 
             private:
               GL::VertexBuffer vertex_buffer, value_buffer, normal_buffer;
-              GL::IndexBuffer index_buffer;
               GL::VertexArrayObject VAO;
 
               void update_dixels (const MR::DWI::Directions::Set&);

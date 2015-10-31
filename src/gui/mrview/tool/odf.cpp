@@ -62,8 +62,9 @@ namespace MR
                 lmax = -1;
                 is_SH = false;
                 try {
-                  //dixel.set_shell (dixel.shells.count() - 1 - (dixel.shells.smallest().is_bzero() ? 1 : 0));
-                  dixel.set_shell (dixel.shells.count() - 1);
+                  if (!dixel.shells)
+                    throw Exception ("No shell data");
+                  dixel.set_shell (dixel.shells->count() - 1);
                   DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
                 } catch (...) {
                   try {
@@ -98,27 +99,33 @@ namespace MR
             class DixelPlugin
             {
               public:
-                enum dir_t { DW_SCHEME, HEADER, INTERNAL, FILE, NONE };
+                enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
 
                 DixelPlugin (const MR::Header& H) :
                     dir_type (dir_t::NONE),
-                    grad (MR::DWI::get_DW_scheme (H)),
-                    shells (grad),
-                    shell_index (shells.count()-1)
+                    shell_index (0)
                 {
+                  try {
+                    grad = MR::DWI::get_valid_DW_scheme (H);
+                    shells.reset (new MR::DWI::Shells (grad));
+                    shell_index = shells->count() - 1;
+                  } catch (...) { }
                   auto entry = H.keyval().find ("directions");
                   if (entry != H.keyval().end()) {
                     try {
                       const auto lines = split_lines (entry->second);
                       if (lines.size() != size_t(H.size (3)))
                         throw Exception ("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
-                      // TODO Add compatibility with az/el pairs stored in the header
-                      // TODO Sanity check this data
-                      header_dirs.resize (lines.size(), 3);
                       for (size_t row = 0; row < lines.size(); ++row) {
                         const auto values = parse_floats (lines[row]);
-                        if (values.size() != 3)
-                          throw Exception ("malformed directions field in image \"" + H.name() + "\" - should have 3 columns");
+                        if (!header_dirs.rows()) {
+                          if (values.size() != 2 && values.size() != 3)
+                            throw Exception ("malformed directions field in image \"" + H.name() + "\" - should have 2 or 3 columns");
+                          header_dirs.resize (lines.size(), values.size());
+                        } else if (values.size() != size_t(header_dirs.cols())) {
+                          header_dirs.resize (0, 0);
+                          throw Exception ("malformed directions field in image \"" + H.name() + "\" - variable number of columns");
+                        }
                         for (size_t col = 0; col < values.size(); ++col)
                           header_dirs(row, col) = values[col];
                       }
@@ -130,12 +137,12 @@ namespace MR
                 }
 
                 void set_shell (size_t index) {
-                  if (!shells.count())
-                    throw Exception ("No DWI scheme in header");
-                  if (index >= shells.count())
-                    throw Exception ("Requested DW shell outside range");
-                  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs (shells[index].count(), 3);
-                  const std::vector<size_t>& volumes = shells[index].get_volumes();
+                  if (!shells)
+                    throw Exception ("No valid DW scheme defined in header");
+                  if (index >= shells->count())
+                    throw Exception ("Shell index is outside valid range");
+                  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs ((*shells)[index].count(), 3);
+                  const std::vector<size_t>& volumes = (*shells)[index].get_volumes();
                   for (size_t row = 0; row != volumes.size(); ++row)
                     shell_dirs.row (row) = grad.row (volumes[row]).head<3>().cast<float>();
                   std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (shell_dirs));
@@ -158,6 +165,12 @@ namespace MR
                   dir_type = DixelPlugin::dir_t::INTERNAL;
                 }
 
+                void set_none() {
+                  if (dirs)
+                    delete dirs.release();
+                  dir_type = DixelPlugin::dir_t::NONE;
+                }
+
                 void set_from_file (const std::string& path)
                 {
                   std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (path));
@@ -167,7 +180,8 @@ namespace MR
 
                 Eigen::VectorXf get_shell_data (const Eigen::VectorXf& values) const
                 {
-                  const std::vector<size_t>& volumes (shells[shell_index].get_volumes());
+                  assert (shells);
+                  const std::vector<size_t>& volumes ((*shells)[shell_index].get_volumes());
                   Eigen::VectorXf result (volumes.size());
                   for (size_t i = 0; i != volumes.size(); ++i)
                     result[i] = values[volumes[i]];
@@ -175,15 +189,14 @@ namespace MR
                 }
 
                 size_t num_DW_shells() const {
-                  if (!shells.count()) return 0;
-                  //return (shells.smallest().is_bzero() ? shells.count()-1 : shells.count());
-                  return shells.count();
+                  if (!shells) return 0;
+                  return shells->count();
                 }
 
                 dir_t dir_type;
-                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
                 Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
-                MR::DWI::Shells shells;
+                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
+                std::unique_ptr<MR::DWI::Shells> shells;
                 size_t shell_index;
                 std::unique_ptr<MR::DWI::Directions::Set> dirs;
 
@@ -233,7 +246,6 @@ namespace MR
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
                   std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
-                  //Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
                 catch (Exception& E) {
@@ -376,6 +388,7 @@ namespace MR
             dirs_selector->addItem ("DW scheme");
             dirs_selector->addItem ("Header");
             dirs_selector->addItem ("Internal");
+            dirs_selector->addItem ("None");
             dirs_selector->addItem ("From file");
             dirs_selector->setVisible (false);
             connect (dirs_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(dirs_slot()));
@@ -480,9 +493,11 @@ namespace MR
           if (is_3D) 
             return;
 
-
           Image* settings = get_image();
           if (!settings)
+            return;
+
+          if (!settings->is_SH && settings->dixel.dir_type == Image::DixelPlugin::dir_t::NONE)
             return;
 
           MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
@@ -628,15 +643,14 @@ namespace MR
           shell_selector->setVisible (!image->is_SH);
           shell_selector->blockSignals (true);
           shell_selector->clear();
-          for (size_t i = 0; i != image->dixel.shells.count(); ++i) {
-            //if (!image->dixel.shells[i].is_bzero())
-              shell_selector->addItem (QString::fromStdString (str (int (std::round (image->dixel.shells[i].get_mean())))));
+          if (image->dixel.shells) {
+            for (size_t i = 0; i != image->dixel.shells->count(); ++i)
+              shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
           }
           shell_selector->blockSignals (false);
           if (!image->is_SH && shell_selector->count() && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME)
             shell_selector->setCurrentIndex (image->dixel.shell_index);
-          //shell_selector->setEnabled (image->dixel.shells.count() >= 2);
-          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells.count());
+          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
         }
 
 
@@ -826,7 +840,10 @@ namespace MR
               case 2: // Internal
                 settings->dixel.set_internal (settings->image.header().size (3));
                 break;
-              case 3: // From file
+              case 3: // None
+                settings->dixel.set_none();
+                break;
+              case 4: // From file
                 const std::string path = Dialog::File::get_file (this, "Select directions file", "Text files (*.txt)");
                 if (!path.size()) {
                   dirs_selector->setCurrentIndex (settings->dixel.dir_type);
@@ -835,9 +852,12 @@ namespace MR
                 settings->dixel.set_from_file (path);
                 break;
             }
-            assert (settings->dixel.dirs);
-            assert (renderer);
-            renderer->dixel.update_mesh (*(settings->dixel.dirs));
+            shell_selector->setEnabled (mode == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
+            if (mode != 3) {
+              assert (settings->dixel.dirs);
+              assert (renderer);
+              renderer->dixel.update_mesh (*(settings->dixel.dirs));
+            }
           } catch (Exception& e) {
             e.display();
             dirs_selector->setCurrentIndex (settings->dixel.dir_type);
@@ -943,6 +963,8 @@ namespace MR
           Image* settings = get_image();
           if (!settings)
             return;
+          if (!settings->is_SH)
+            renderer->dixel.update_mesh (*(settings->dixel.dirs));
           setup_ODFtype_UI (settings);
           scale->setValue (settings->scale);
           hide_negative_values_box->setChecked (settings->hide_negative);

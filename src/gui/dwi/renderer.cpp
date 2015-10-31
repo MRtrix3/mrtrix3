@@ -301,7 +301,6 @@ namespace MR
         vertex_buffer.gen();
         value_buffer.gen();
         normal_buffer.gen();
-        index_buffer.gen();
         VAO.gen();
         VAO.bind();
 
@@ -316,8 +315,6 @@ namespace MR
         normal_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (2);
         gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
-
-        index_buffer.bind();
         GL_CHECK_ERROR;
       }
 
@@ -339,16 +336,23 @@ namespace MR
         assert (size_t(data.size()) == directions.size());
         GL_CHECK_ERROR;
 
+        std::vector<GLfloat> values;
         std::vector<Eigen::Vector3f> normals;
         for (auto i : polygons) {
           std::array<Eigen::Vector3f,3> v { data[i[0]] * directions[i[0]] * i.reverse(0),
                                             data[i[1]] * directions[i[1]] * i.reverse(1),
                                             data[i[2]] * directions[i[2]] * i.reverse(2) };
-          normals.push_back (((v[1]-v[0]).cross (v[2]-v[1])).normalized());
+          const Eigen::Vector3f normal = ((v[1]-v[0]).cross (v[2]-v[1])).normalized();
+          normals.push_back (normal);
+          normals.push_back (normal);
+          normals.push_back (normal);
+          values.push_back (data[i[0]]);
+          values.push_back (data[i[1]]);
+          values.push_back (data[i[2]]);
         }
 
         value_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, data.size()*sizeof(float), &data[0], gl::STREAM_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, values.size()*sizeof(GLfloat), &values[0], gl::STREAM_DRAW);
         gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void*)0);
 
         normal_buffer.bind (gl::ARRAY_BUFFER);
@@ -363,7 +367,6 @@ namespace MR
       {
         directions.clear();
         polygons.clear();
-        std::vector<GLuint> indices;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
           directions.push_back (dirs[i]);
@@ -372,20 +375,32 @@ namespace MR
               for (auto k : dirs.get_adj_dirs(j)) {
                 if (k > j) {
 
-                  // FIXME Errors in triangulation
+                  // k's adjacent direction list MUST contain i!
+                  for (auto I : dirs.get_adj_dirs (k)) {
+                    if (I == i) {
 
-                  const Eigen::Vector3f normal ((dirs[i] + dirs[j] + dirs[k]).normalized());
-                  size_t reversed = 3;
-                  if (dirs[i].dot (normal) < 0.0f)
-                    reversed = 0;
-                  else if (dirs[j].dot (normal) < 0.0f)
-                    reversed = 1;
-                  else if (dirs[k].dot (normal) < 0.0f)
-                    reversed = 2;
-                  polygons.push_back (Polygon (i, j, k, reversed));
-                  indices.push_back (i);
-                  indices.push_back (j);
-                  indices.push_back (k);
+                      const Eigen::Vector3f mean_dir ((dirs[i] + dirs[j] + dirs[k]).normalized());
+                      size_t reversed = 3;
+                      if (dirs[i].dot (mean_dir) < 0.0f)
+                        reversed = 0;
+                      else if (dirs[j].dot (mean_dir) < 0.0f)
+                        reversed = 1;
+                      else if (dirs[k].dot (mean_dir) < 0.0f)
+                        reversed = 2;
+                      // Conform to right hand rule
+                      const Eigen::Vector3f normal (((dirs[j]-dirs[i]).cross (dirs[k]-dirs[j])).normalized());
+                      if (normal.dot (mean_dir) < 0.0f) {
+                        if (reversed == 1)
+                          reversed = 2;
+                        else if (reversed == 2)
+                          reversed = 1;
+                        polygons.push_back (Polygon (i, k, j, reversed));
+                      } else {
+                        polygons.push_back (Polygon (i, j, k, reversed));
+                      }
+
+                    }
+                  }
 
                 }
               }
@@ -393,22 +408,17 @@ namespace MR
           }
         }
 
-        std::vector<Eigen::Vector3f> vertices (3 * polygons.size()), normals (3 * polygons.size());
+        std::vector<Eigen::Vector3f> vertices (3 * polygons.size());
         for (size_t i = 0; i != polygons.size(); ++i) {
           vertices[3*i]   = directions[polygons[i][0]] * polygons[i].reverse (0);
           vertices[3*i+1] = directions[polygons[i][1]] * polygons[i].reverse (1);
           vertices[3*i+2] = directions[polygons[i][2]] * polygons[i].reverse (2);
-          const Eigen::Vector3f normal = (vertices[3*i+1] - vertices[3*i]).cross (vertices[3*i+2] - vertices[3*i+1]).normalized();
-          normals[3*i] = normals[3*i+1] = normals[3*i+2] = normal;
         }
 
         GL_CHECK_ERROR;
         vertex_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*3*sizeof(float), &vertices[0][0], gl::STREAM_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Eigen::Vector3f), &vertices[0][0], gl::STREAM_DRAW);
         gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
-
-        index_buffer.bind ();
-        gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices.size()*sizeof(GLuint), &indices[0], gl::STREAM_DRAW);
         GL_CHECK_ERROR;
       }
 
