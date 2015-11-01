@@ -30,6 +30,7 @@
 #include "math/rng.h"
 #include <algorithm>  // std::shuffle
 #include <random>
+// #include "algo/random_loop.h"
 
 namespace MR
 {
@@ -75,9 +76,13 @@ namespace MR
       struct RandomThreadedLoopRunInner<0,Functor,ImageType...>
       {
         const std::vector<size_t>& outer_axes;
+        const std::vector<size_t> inner;
         decltype (Loop (outer_axes)) loop;
+        // Random_loop<Iterator, std::default_random_engine>  random_loop;
         typename std::remove_reference<Functor>::type func;
         double density;
+        size_t max_cnt;
+        size_t cnt;
         // Math::RNG::Uniform<double> rng;
         std::default_random_engine random_engine;
         std::vector<size_t> idx;
@@ -94,33 +99,43 @@ namespace MR
         RandomThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
             const Functor& functor, const double voxel_density, const std::vector<size_t>& dimensions, ImageType&... voxels) :
           outer_axes (outer_axes),
+          inner (inner_axes),
           loop (Loop (inner_axes)),
           func (functor),
           density (voxel_density),
           dims (dimensions) { 
-            VAR(inner_axes); 
-            VAR(outer_axes); 
+            assert (inner_axes.size() == 1);
+            // VAR(inner_axes); 
+            // VAR(outer_axes); 
             Math::RNG rng;
             typename std::default_random_engine::result_type seed = rng.get_seed();
             random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
             idx = std::vector<size_t>(dims[inner_axes[0]]);
             std::iota (std::begin(idx), std::end(idx), 0);
-            std::shuffle(std::begin(idx), std::end(idx), random_engine);
-            // cnt = 0;
-            it = std::begin(idx);
-            stop = std::end(idx);
-            VAR(idx);
           }
 
         void operator() (Iterator& pos) {
-          for (auto i = loop (pos); i; ++i){
+          std::shuffle (std::begin(idx), std::end(idx), random_engine);
+          cnt = 0;
+          it = std::begin(idx);
+          stop = std::end(idx);
+          max_cnt = size_t (density * dims[inner[0]]);
+          // VAR(max_cnt);
+          for (size_t i = 0; i < max_cnt; ++i){
+            pos.index(inner[0]) = *it;
+            it++;
+          // for (auto i = loop (pos); i; ++i){
             // if (rng() >= density){
             //   DEBUG (str(pos) + " ...skipped inner.");
             //   continue;
             // }
             // DEBUG (str(pos) + " ...used inner.");
+            // VAR(pos);
+            // VAR(cnt);
             func (pos);
+            ++cnt;
           }
+          pos.index(inner[0]) = dims[inner[0]];
         }
 
       };
@@ -138,7 +153,7 @@ namespace MR
           {
             if (Thread::number_of_threads() == 0) {
               for (auto i = outer_loop (iterator); i; ++i){ 
-                std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
+                // std::cerr << "outer: " << str(iterator) << " " << voxel_density << " " << dimensions << std::endl;
                 functor (iterator);
               }
               return;

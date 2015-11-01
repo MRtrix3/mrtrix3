@@ -38,11 +38,11 @@ namespace MR
   class Random_loop {
     public:
       Random_loop (ImageType& in,
-        RandomEngine& ramdom_engine,
+        RandomEngine& random_engine,
         const size_t& axis = 0,
         const size_t& number_iterations = std::numeric_limits<ssize_t>::max()):
           image (in),
-          engine (ramdom_engine),
+          engine (random_engine),
           ax (axis),
           idx(image.size(axis)),
           max_cnt (number_iterations),

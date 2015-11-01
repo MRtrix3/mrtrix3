@@ -23,7 +23,8 @@
 #ifndef __registration_metric_evaluate_h__
 #define __registration_metric_evaluate_h__
 
-#include "algo/stochastic_threaded_loop.h"
+// #include "algo/stochastic_threaded_loop.h"
+#include "algo/random_threaded_loop.h"
 #include "algo/random_loop.h"
 #include "registration/metric/thread_kernel.h"
 #include "algo/threaded_loop.h"
@@ -134,39 +135,34 @@ namespace MR
                 if (params.loop_density < 1.0){
                   Eigen::Matrix<default_type, Eigen::Dynamic, 1> optimiser_weights = trafo.get_optimiser_weights();
                   INFO("StochasticThreadedLoop " + str(params.loop_density));
+                  std::vector<size_t> dimensions(3);
+                  dimensions[0] = params.midway_image.size(0);
+                  dimensions[1] = params.midway_image.size(1);
+                  dimensions[2] = params.midway_image.size(2);
                   if (params.robust_estimate){
+                    DEBUG("robust estimate");
+                    DEBUG(str("density: " + str(params.loop_density)));
                     size_t n_estimates = 5;
                     std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> grad_estimates(n_estimates);
                     for (size_t i = 0; i < n_estimates; i++) {
-                      VAR(timer.elapsed());
                       auto gradient_estimate(gradient);
-                      std::cerr << "blip" << std::endl;
                       ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
-                      VAR(timer.elapsed());
-                      std::cerr << "kernel" << std::endl;
-                      VAR(params.loop_density);
-                      VAR(params.loop_density / (default_type) n_estimates);
-                      StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
+                      DEBUG("elapsed: " + str(timer.elapsed()));
+                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
+                      // StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
                       grad_estimates[i] = gradient_estimate;
                       // VAR(gradient_estimate.transpose());
                     }
-                    std::cerr << "blop" << std::endl;
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
-                    std::cerr << "robust_estimate" << std::endl;
-
-                    // VAR(gradient.transpose());
-                    // VAR(x.transpose());
-                    // VAR(optimiser_weights.transpose());
                   } else {
                     ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
-                    StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density);
+                    RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density, dimensions);
                   }
                 }
                 else {
                   ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                   ThreadedLoop (params.midway_image, 0, 3).run (kernel);
                 }
-                VAR(timer.elapsed());
               }
 
             // template <class TransformType_>

@@ -253,10 +253,16 @@ namespace MR
             Eigen::Matrix<default_type, 4, 4> X, X_upd;
             Math::param_vec2mat_affine(parameter_vector, X);
 
-            // TODO weighting
+            // weighting
+            // for (size_t j =0; j < n_estimates; ++j){
+            //   for (size_t i = 0; i<this->optimiser_weights.size(); ++i){
+            //     grad_estimates[j][i] *= this->optimiser_weights[i];
+            //   }
+            // }
+              
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
-              gradient += grad_estimates[j]; // TODO remove me
+              // gradient += grad_estimates[j]; // TODO remove me
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
               // VAR(candidate.transpose());
               Math::param_vec2mat_affine(candidate, trafo_upd.matrix()); // trafo_upd.matrix());

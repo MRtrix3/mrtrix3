@@ -66,7 +66,7 @@ namespace MR
         Linear () :
           max_iter (1, 300),
           scale_factor (2),
-          loop_density (1, 0.0),
+          loop_density (1, 1.0),
           smooth_factor (1.0),
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
@@ -338,7 +338,7 @@ namespace MR
 
               optim.precondition (optimiser_weights);
               // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              optim.run (max_iter[level], 1.0e-30, true, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+              optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){

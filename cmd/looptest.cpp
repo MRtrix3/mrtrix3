@@ -104,8 +104,9 @@ void run ()
     class MyThread {
       public:
         void operator() (const Iterator& iter) {
-          std::cerr << iter.index(0) << " " << iter.index(1) << " " << iter.index(2) << std::endl;
-          throw Exception ("stop");
+          // std::cerr << iter.index(0) << " " << iter.index(1) << " " << iter.index(2) << std::endl;
+          // throw Exception ("stop");
+          INFO(str(iter));
         }
     };
     MyThread thread;
@@ -113,6 +114,7 @@ void run ()
     dimensions[0] = input.size(0);
     dimensions[1] = input.size(1);
     dimensions[2] = input.size(2);
+    VAR(density);
     RandomThreadedLoop (input, 0, 3).run (thread, density, dimensions);
   }
 
