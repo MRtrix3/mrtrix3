@@ -66,7 +66,7 @@ namespace MR
         Linear () :
           max_iter (1, 300),
           scale_factor (2),
-          sparsity (1, 0.0),
+          loop_density (1, 0.0),
           smooth_factor (1.0),
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
@@ -107,11 +107,11 @@ namespace MR
           kernel_extent = extent;
         }
 
-        void set_sparsity (const std::vector<default_type>& sparsity_){
-          for (size_t d = 0; d < sparsity_.size(); ++d)
-            if (sparsity_[d] < 0.0 or sparsity_[d] > 1.0 )
-              throw Exception ("sparsity must be between 0.0 and 1.0");
-          sparsity = sparsity_;
+        void set_loop_density (const std::vector<default_type>& loop_density_){
+          for (size_t d = 0; d < loop_density_.size(); ++d)
+            if (loop_density_[d] < 0.0 or loop_density_[d] > 1.0 )
+              throw Exception ("loop density must be between 0.0 and 1.0");
+          loop_density = loop_density_;
         }
 
         void set_init_type (Transform::Init::InitType type) {
@@ -188,10 +188,10 @@ namespace MR
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
 
-            if (sparsity.size() == 1)
-              sparsity.resize (scale_factor.size(), sparsity[0]);
-            else if (sparsity.size() != scale_factor.size())
-              throw Exception ("the sparsity level needs to be defined for each multi-resolution level");
+            if (loop_density.size() == 1)
+              loop_density.resize (scale_factor.size(), loop_density[0]);
+            else if (loop_density.size() != scale_factor.size())
+              throw Exception ("the loop density level needs to be defined for each multi-resolution level");
 
             std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
@@ -248,7 +248,7 @@ namespace MR
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
                 std::string st;
-                sparsity[level] > 0.0 ? st = ", sparsity: " + str(sparsity[level]) : st = "";
+                loop_density[level] < 1.0 ? st = ", loop density: " + str(loop_density[level]) : st = "";
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
               }
 
@@ -308,8 +308,8 @@ namespace MR
 
               ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized);
 
-              INFO ("sparsity: " +str(sparsity[level]));
-              parameters.sparsity = sparsity[level];
+              INFO ("loop density: " +str(loop_density[level]));
+              parameters.loop_density = loop_density[level];
 
               INFO ("robust_estimate: " +str(robust_estimate));
               parameters.robust_estimate = robust_estimate;
@@ -338,7 +338,7 @@ namespace MR
 
               optim.precondition (optimiser_weights);
               // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+              optim.run (max_iter[level], 1.0e-30, true, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){
@@ -366,7 +366,7 @@ namespace MR
       protected:
         std::vector<int> max_iter;
         std::vector<default_type> scale_factor;
-        std::vector<default_type> sparsity;
+        std::vector<default_type> loop_density;
         default_type smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;

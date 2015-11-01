@@ -4,6 +4,7 @@
 #include "interp/cubic.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
+#include "algo/random_threaded_loop.h"
 #include <numeric>
 #include "algo/random_loop.h"
 // #include <array>      // std::array
@@ -27,28 +28,28 @@ void usage ()
 
   ARGUMENTS
   + Argument ("in", "the input image.").type_image_in ()
-  + Argument ("sparsity", "sparsity.").type_float ()
-  + Argument ("dense", "dense.").type_bool ();
+  + Argument ("density", "density.").type_float ()
+  + Argument ("type", "dense, sparse, dense2.").type_integer ();
 }
 
 
 void run ()
 {
   auto input = Image<float>::open (argument[0]); // .with_direct_io (Stride::contiguous_along_axis(2));
-  float sparsity = argument[1];
+  float density = argument[1];
   // std::vector<ssize_t> a0(input.size(0));
-  bool dense = argument[2];
+  int type = argument[2];
   typedef Image<float> ImageType;
     size_t cnt = 0;
-  if (dense){
+  if (type == 0){
     CONSOLE("dense");
     size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
     auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
 
     for (auto z = 0; z < 1000; ++z){
-    auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * sparsity));
-    auto loop2 = Random_loop<ImageType,decltype(engine)>(input, engine, 1, std::ceil((float) input.size(1) * sparsity));
-    auto loop3 = Random_loop<ImageType,decltype(engine)>(input, engine, 2, std::ceil((float) input.size(2) * sparsity));
+    auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * density));
+    auto loop2 = Random_loop<ImageType,decltype(engine)>(input, engine, 1, std::ceil((float) input.size(1) * density));
+    auto loop3 = Random_loop<ImageType,decltype(engine)>(input, engine, 2, std::ceil((float) input.size(2) * density));
       for (auto i = loop1; i; ++i)
         for (auto j = loop2; j; ++j)
           for (auto k = loop3; k; ++k)
@@ -66,9 +67,9 @@ void run ()
     // std::shuffle(std::begin(kdx), std::end(kdx), engine);
 
     // cnt = 0;
-    // auto loop1 = Iterator_loop<ImageType, decltype(std::begin(idx))>(input,std::begin(idx),std::end(idx), 0, std::ceil((float) input.size(0) * sparsity));
-    // auto loop2 = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(jdx),std::end(jdx), 1, std::ceil((float) input.size(1) * sparsity));
-    // auto loop3 = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(kdx),std::end(kdx), 2, std::ceil((float) input.size(2) * sparsity));
+    // auto loop1 = Iterator_loop<ImageType, decltype(std::begin(idx))>(input,std::begin(idx),std::end(idx), 0, std::ceil((float) input.size(0) * density));
+    // auto loop2 = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(jdx),std::end(jdx), 1, std::ceil((float) input.size(1) * density));
+    // auto loop3 = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(kdx),std::end(kdx), 2, std::ceil((float) input.size(2) * density));
 
     // while (true){
     //   if(loop1) ++loop1;
@@ -78,28 +79,41 @@ void run ()
     //   if (!loop1 and !loop2 and !loop3) break;
     // }
 
-    // for (auto i = Iterator_loop<ImageType, decltype(std::begin(idx))>(input,std::begin(idx),std::end(idx), 0, std::ceil((float) input.size(0) * sparsity)); i; ++i){
-    //   for (auto j = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(jdx),std::end(jdx), 1, std::ceil((float) input.size(1) * sparsity)); j; ++j){
-    //     for (auto k = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(kdx),std::end(kdx), 2, std::ceil((float) input.size(2) * sparsity)); k; ++k){
+    // for (auto i = Iterator_loop<ImageType, decltype(std::begin(idx))>(input,std::begin(idx),std::end(idx), 0, std::ceil((float) input.size(0) * density)); i; ++i){
+    //   for (auto j = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(jdx),std::end(jdx), 1, std::ceil((float) input.size(1) * density)); j; ++j){
+    //     for (auto k = Iterator_loop<ImageType, decltype(std::begin(jdx))>(input,std::begin(kdx),std::end(kdx), 2, std::ceil((float) input.size(2) * density)); k; ++k){
     //       INFO(str(cnt++) + " " + str(input));
     //     }
     //   }
     // }
-  } else {
+  } else if (type == 1) {
     CONSOLE("sparse");
     // auto inner_loop = Loop(1, 3);
     for (auto z = 0; z < 1000; ++z){
-      auto loop1 = Random_sparse_loop<ImageType>(input, 0, std::ceil((float) input.size(0) * sparsity));
-      auto loop2 = Random_sparse_loop<ImageType>(input, 1, std::ceil((float)  input.size(1) * sparsity));
-      auto loop3 = Random_sparse_loop<ImageType>(input, 2, std::ceil((float) input.size(2) * sparsity));
+      auto loop1 = Random_sparse_loop<ImageType>(input, 0, std::ceil((float) input.size(0) * density));
+      auto loop2 = Random_sparse_loop<ImageType>(input, 1, std::ceil((float)  input.size(1) * density));
+      auto loop3 = Random_sparse_loop<ImageType>(input, 2, std::ceil((float) input.size(2) * density));
       for (auto i = loop1; i; ++i)
         for (auto j = loop2; j; ++j)
           for (auto j = loop3; j; ++j)
             INFO(str(cnt++) + " " + str(input)); // << std::endl;
     }
+  } else {
+    CONSOLE ("random threaded");
 
-
-
+    class MyThread {
+      public:
+        void operator() (const Iterator& iter) {
+          std::cerr << iter.index(0) << " " << iter.index(1) << " " << iter.index(2) << std::endl;
+          throw Exception ("stop");
+        }
+    };
+    MyThread thread;
+    std::vector<size_t> dimensions(3);
+    dimensions[0] = input.size(0);
+    dimensions[1] = input.size(1);
+    dimensions[2] = input.size(2);
+    RandomThreadedLoop (input, 0, 3).run (thread, density, dimensions);
   }
 
 

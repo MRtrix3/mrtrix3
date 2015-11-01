@@ -32,7 +32,7 @@
 namespace MR
 {
 
-  /* slower than ThreadedLoop for any sparsity */
+  /* slower than ThreadedLoop for any voxel_density */
 
 
 
@@ -45,23 +45,23 @@ namespace MR
         const std::vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
-        double sparse;
+        double density;
         Math::RNG::Uniform<double> rng;
         std::tuple<ImageType...> vox;
 
         StochasticThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
-            const Functor& functor, const double sparsity, ImageType&... voxels) :
+            const Functor& functor, const double voxel_density, ImageType&... voxels) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
           func (functor), 
-          sparse (sparsity), 
+          density (voxel_density), 
           rng (Math::RNG::Uniform<double>()),
           vox (voxels...) { }
 
         void operator() (const Iterator& pos) {
           assign_pos_of (pos, outer_axes).to (vox);
           for (auto i = unpack (loop, vox); i; ++i) {
-            if (rng() <= sparse){
+            if (rng() >= density){
               //DEBUG (str(pos) + " ...skipped inner");
               continue;
             }
@@ -78,21 +78,21 @@ namespace MR
         const std::vector<size_t>& outer_axes;
         decltype (Loop (outer_axes)) loop;
         typename std::remove_reference<Functor>::type func;
-        double sparse;
+        double density;
         Math::RNG::Uniform<double> rng;
 
 
         StochasticThreadedLoopRunInner (const std::vector<size_t>& outer_axes, const std::vector<size_t>& inner_axes,
-            const Functor& functor, const double sparsity, ImageType&... voxels) :
+            const Functor& functor, const double voxel_density, ImageType&... voxels) :
           outer_axes (outer_axes),
           loop (Loop (inner_axes)),
           func (functor),
-          sparse (sparsity),
+          density (voxel_density),
           rng (Math::RNG::Uniform<double>()) {  }
 
         void operator() (Iterator& pos) {
           for (auto i = loop (pos); i; ++i){
-            if (rng() <= sparse){
+            if (rng() >= density){
               // DEBUG (str(pos) + " ...skipped inner");
               continue;
             }
@@ -111,11 +111,11 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor> 
-          void run_outer (Functor&& functor, const double sparsity)
+          void run_outer (Functor&& functor, const double voxel_density)
           {
             if (Thread::number_of_threads() == 0) {
               for (auto i = outer_loop (iterator); i; ++i){ 
-                // std::cerr << "outer: " << str(iterator) << " " << sparsity << std::endl;
+                // std::cerr << "outer: " << str(iterator) << " " << voxel_density << std::endl;
                 functor (iterator);
               }
               return;
@@ -154,14 +154,14 @@ namespace MR
 
         //! invoke \a functor (const Iterator& pos) per voxel <em> in the outer axes only</em>
         template <class Functor, class... ImageType>
-          void run (Functor&& functor, const double sparsity, ImageType&&... vox)
+          void run (Functor&& functor, const double voxel_density, ImageType&&... vox)
           {
             StochasticThreadedLoopRunInner< 
               sizeof...(ImageType),
               typename std::remove_reference<Functor>::type, 
               typename std::remove_reference<ImageType>::type...
-                > loop_thread (outer_loop.axes, inner_axes, functor, sparsity, vox...);
-            run_outer (loop_thread, sparsity);
+                > loop_thread (outer_loop.axes, inner_axes, functor, voxel_density, vox...);
+            run_outer (loop_thread, voxel_density);
           }
 
       };

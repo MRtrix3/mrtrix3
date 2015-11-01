@@ -334,12 +334,12 @@ void run ()
     affine_smooth_factor = default_type (opt[0][0]);
   }
 
-  opt = get_options ("affine_sparsity");
-  std::vector<default_type> affine_sparsity;
+  opt = get_options ("affine_loop_density");
+  std::vector<default_type> affine_loop_density;
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the affine sparsity factor was input when no affine registration is requested");
-    affine_sparsity = parse_floats (opt[0][0]);
+    affine_loop_density = parse_floats (opt[0][0]);
   }
 
   bool rigid_cc = get_options ("rigid_cc").size() == 1;
@@ -515,8 +515,8 @@ void run ()
     affine_registration.set_smoothing_factor (affine_smooth_factor);
     if (affine_niter.size())
       affine_registration.set_max_iter (affine_niter);
-    if (affine_sparsity.size())
-      affine_registration.set_sparsity (affine_sparsity);
+    if (affine_loop_density.size())
+      affine_registration.set_loop_density (affine_loop_density);
     if (affine_robust_estimator)
       affine_registration.use_robust_estimate (true);
     if (do_rigid) {
