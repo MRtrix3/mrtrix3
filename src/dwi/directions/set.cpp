@@ -25,6 +25,8 @@
 
 #include "dwi/directions/set.h"
 
+#include <set>
+
 #include "math/rng.h"
 
 
@@ -86,33 +88,213 @@ namespace MR {
       {
         adj_dirs.assign (size(), std::vector<dir_t>());
 
+        // New algorithm for determining direction adjacency
+        // * Duplicate all directions to get a full spherical set
+        // * Initialise convex hull using a tetrahedron:
+        //   - Identify 6 extremum points (upper & lower per axis)
+        //   - Take the two furthest extrema to form a line
+        //   - Take the furthest extremum from this line to form a triangle
+        //   - Take the furthest vertex from this triangle to form a tetrahedon
+        // * For each plane (until none remaining):
+        //   * Select the point with the furthest distance from the plane
+        //     - If none exists, append these three edges to the result
+        //   * Identify any planes adjacent to this plane, for which the point is also above the plane
+        //   * Generate new triangles using this point, and the outer border of the planes
+        //   * Append these to the list of planes to process
+
+        class Vertex {
+          public:
+            Vertex (const Set& set, const dir_t index, const bool inverse) :
+                dir (set[index] * (inverse ? -1.0f : 1.0f)),
+                index (index) { }
+            const Eigen::Vector3f dir;
+            const dir_t index; // Indexes the underlying direction set
+        };
+
+        class Plane {
+          public:
+            Plane (const std::vector<Vertex>& vertices, const dir_t one, const dir_t two, const dir_t three) :
+                indices { one, two, three },
+                normal (((vertices[two].dir-vertices[one].dir).cross (vertices[three].dir-vertices[two].dir)).normalized()),
+                dist (std::max ( { vertices[one].dir.dot (normal), vertices[two].dir.dot (normal), vertices[three].dir.dot (normal) } ) ) { }
+            bool includes (const dir_t i) const { return (indices[0] == i || indices[1] == i || indices[2] == i); }
+            const std::array<dir_t,3> indices; // Indexes the vertices vector
+            const Eigen::Vector3f normal;
+            const float dist;
+        };
+
+        class PlaneComp
+        {
+          public:
+            bool operator() (const Plane& one, const Plane& two) const {
+              return (one.dist < two.dist);
+            }
+        };
+
+        std::vector<Vertex> vertices;
+        // Generate antipodal vertices
         for (dir_t i = 0; i != size(); ++i) {
-          for (dir_t j = 0; j != size(); ++j) {
-            if (j != i) {
+          vertices.push_back (Vertex (*this, i, false));
+          vertices.push_back (Vertex (*this, i, true));
+        }
 
-              Eigen::Vector3f p;
-              if (unit_vectors[i].dot (unit_vectors[j]) > 0.0)
-                p = ((unit_vectors[i] + unit_vectors[j]).normalized());
-              else
-                p = ((unit_vectors[i] - unit_vectors[j]).normalized());
-              const float dot_to_i = std::abs (p.dot (unit_vectors[i]));
-              const float dot_to_j = std::abs (p.dot (unit_vectors[j]));
-              const float this_dot_product = std::max (dot_to_i, dot_to_j);
-
-              bool is_adjacent = true;
-              for (dir_t k = 0; (k != size()) && is_adjacent; ++k) {
-                if ((k != i) && (k != j)) {
-                  if (fabs (p.dot (unit_vectors[k])) > this_dot_product)
-                    is_adjacent = false;
-                }
-              }
-
-              if (is_adjacent)
-                adj_dirs[i].push_back (j);
-
+        dir_t extremum_indices[3][2] = { {0, 0}, {0, 0}, {0, 0} };
+        float extremum_values[3][2] = { {1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, -1.0f} };
+        for (size_t i = 0; i != vertices.size(); ++i) {
+          for (size_t axis = 0; axis != 3; ++axis) {
+            if (vertices[i].dir[axis] < extremum_values[axis][0]) {
+              extremum_values[axis][0] = vertices[i].dir[axis];
+              extremum_indices[axis][0] = i;
+            }
+            if (vertices[i].dir[axis] > extremum_values[axis][1]) {
+              extremum_values[axis][1] = vertices[i].dir[axis];
+              extremum_indices[axis][1] = i;
             }
           }
         }
+        // Find the two most distant points out of these six
+        std::vector<dir_t> all_extrema;
+        for (size_t axis = 0; axis != 3; ++axis) {
+          all_extrema.push_back (extremum_indices[axis][0]);
+          all_extrema.push_back (extremum_indices[axis][1]);
+        }
+        std::pair<dir_t, dir_t> distant_pair;
+        float max_dist_sq = 0.0f;
+        for (dir_t i = 0; i != 6; ++i) {
+          for (dir_t j = i + 1; j != 6; ++j) {
+            const float dist_sq = (vertices[all_extrema[j]].dir - vertices[all_extrema[i]].dir).squaredNorm();
+            if (dist_sq > max_dist_sq) {
+              max_dist_sq = dist_sq;
+              distant_pair = std::make_pair (i, j);
+            }
+          }
+        }
+        // This forms the base line of the base triangle of the tetrahedon
+        // Now from the remaining four extrema, find which one is farthest from this line
+        dir_t third_point;
+        float max_dist = 0.0f;
+        for (dir_t i = 0; i != 6; ++i) {
+          if (i != distant_pair.first && i != distant_pair.second) {
+            const float dist = (vertices[all_extrema[i]].dir - (vertices[all_extrema[distant_pair.first]].dir)).cross (vertices[all_extrema[i]].dir - vertices[all_extrema[distant_pair.second]].dir).norm() / (vertices[all_extrema[distant_pair.second]].dir - vertices[all_extrema[distant_pair.first]].dir).norm();
+            if (dist > max_dist) {
+              max_dist = dist;
+              third_point = i;
+            }
+          }
+        }
+        std::multiset<Plane, PlaneComp> planes;
+        planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
+        // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
+        const Plane base_plane = *planes.begin();
+        dir_t fourth_point;
+        max_dist = 0.0f;
+        for (dir_t i = 0; i != vertices.size(); ++i) {
+          // Use the reverse of the base plane normal - searching the other hemisphere
+          const float dist = vertices[i].dir.dot (-base_plane.normal);
+          if (dist > max_dist) {
+            max_dist = dist;
+            fourth_point = i;
+          }
+        }
+        planes.insert (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
+        planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
+        planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
+
+        std::vector<Plane> hull;
+
+        while (planes.size()) {
+          Plane current (*planes.begin());
+          dir_t max_index = vertices.size();
+          float max_dist = current.dist;
+          for (dir_t d = 0; d != vertices.size(); ++d) {
+            if (!current.includes(d)) {
+              const float dist = vertices[d].dir.dot (current.normal);
+              if (dist > max_dist) {
+                max_dist = dist;
+                max_index = d;
+              }
+            }
+          }
+
+          if (max_index == vertices.size()) {
+            hull.push_back (current);
+            planes.erase (planes.begin());
+          } else {
+
+            // Identify all planes that this extremum point is above
+            // More generally this would need to be constrained to only those faces adjacent to the
+            //   current plane, but because the data are on the sphere a complete search should be fine
+            std::vector<std::multiset<Plane, PlaneComp>::iterator> all_planes;
+            for (std::multiset<Plane, PlaneComp>::iterator p = planes.begin(); p != planes.end(); ++p) {
+              if (!p->includes (max_index) && vertices[max_index].dir.dot (p->normal) > p->dist)
+                all_planes.push_back (p);
+            }
+
+            // Find the matching edges from multiple faces, and construct new triangles going up to the new point
+            // Remove any shared edges; non-shared edges are the projection horizon
+            std::set<std::pair<dir_t, dir_t>> horizon;
+            for (auto& p : all_planes) {
+              for (size_t edge_index = 0; edge_index != 3; ++edge_index) {
+                std::pair<dir_t, dir_t> edge;
+                switch (edge_index) {
+                  case 0: edge = std::make_pair (p->indices[0], p->indices[1]); break;
+                  case 1: edge = std::make_pair (p->indices[1], p->indices[2]); break;
+                  case 2: edge = std::make_pair (p->indices[2], p->indices[0]); break;
+                }
+                bool found = false;
+                for (auto h = horizon.begin(); h != horizon.end(); ++h) {
+                  // Since we are only dealing with triangles, the edge will always be in the opposite
+                  //   direction on the adjacent face
+                  if (h->first == edge.second && h->second == edge.first) {
+                    horizon.erase (h);
+                    found = true;
+                    break;
+                  }
+                }
+                if (!found)
+                  horizon.insert (edge);
+              }
+            }
+
+            for (auto& h : horizon)
+              planes.insert (Plane (vertices, h.first, h.second, max_index));
+
+            // Finally, delete the used faces
+            for (auto i : all_planes)
+              planes.erase (i);
+
+          }
+        }
+
+        for (auto& current : hull) {
+
+          // Each of these three directions is adjacent
+          // However: Each edge may have already been added from other triangles
+          for (size_t edge = 0; edge != 6; ++edge) {
+            dir_t from, to;
+            switch (edge) {
+              case 0: from = vertices[current.indices[0]].index; to = vertices[current.indices[1]].index; break;
+              case 1: from = vertices[current.indices[1]].index; to = vertices[current.indices[0]].index; break;
+              case 2: from = vertices[current.indices[1]].index; to = vertices[current.indices[2]].index; break;
+              case 3: from = vertices[current.indices[2]].index; to = vertices[current.indices[1]].index; break;
+              case 4: from = vertices[current.indices[0]].index; to = vertices[current.indices[2]].index; break;
+              case 5: from = vertices[current.indices[2]].index; to = vertices[current.indices[0]].index; break;
+            }
+            bool found = false;
+            for (auto i : adj_dirs[from]) {
+              if (i == to) {
+                found = true;
+                break;
+              }
+            }
+          if (!found)
+            adj_dirs[from].push_back (to);
+          }
+
+        }
+
+        for (auto& i : adj_dirs)
+          std::sort (i.begin(), i.end());
       }
 
       void Set::initialise_mask()
