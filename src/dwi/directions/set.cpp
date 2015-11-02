@@ -171,7 +171,7 @@ namespace MR {
         }
         // This forms the base line of the base triangle of the tetrahedon
         // Now from the remaining four extrema, find which one is farthest from this line
-        dir_t third_point;
+        dir_t third_point = 6;
         float max_dist = 0.0f;
         for (dir_t i = 0; i != 6; ++i) {
           if (i != distant_pair.first && i != distant_pair.second) {
@@ -182,11 +182,12 @@ namespace MR {
             }
           }
         }
+        assert (third_point != 6);
         std::multiset<Plane, PlaneComp> planes;
         planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
         // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
         const Plane base_plane = *planes.begin();
-        dir_t fourth_point;
+        dir_t fourth_point = vertices.size();
         max_dist = 0.0f;
         for (dir_t i = 0; i != vertices.size(); ++i) {
           // Use the reverse of the base plane normal - searching the other hemisphere
@@ -196,6 +197,7 @@ namespace MR {
             fourth_point = i;
           }
         }
+        assert (fourth_point != vertices.size());
         planes.insert (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
         planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
         planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
