@@ -351,6 +351,7 @@ namespace MR
           values.push_back (data[i[2]]);
         }
 
+        VAO.bind();
         value_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, values.size()*sizeof(GLfloat), &values[0], gl::STREAM_DRAW);
         gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void*)0);
@@ -416,8 +417,9 @@ namespace MR
         }
 
         GL_CHECK_ERROR;
+        VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Eigen::Vector3f), &vertices[0][0], gl::STREAM_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);
         gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
         GL_CHECK_ERROR;
       }
