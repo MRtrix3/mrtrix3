@@ -559,7 +559,7 @@ namespace MR
                 Eigen::Vector3f p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
-                if (values[0] == 0.0) continue;
+                if (settings->is_SH && values[0] == 0.0) continue;
                 if (settings->is_SH) {
                   renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
                   renderer->sh.set_data (r_del_daz);
