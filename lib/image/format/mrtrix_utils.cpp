@@ -100,7 +100,12 @@ namespace MR
             throw Exception ("invalid offset specified for embedded MRtrix image \"" + H.name() + "\"");
           fname = H.name();
         } else {
-          fname = Path::join (Path::dirname (H.name()), fname);
+          if (fname[0] != PATH_SEPARATOR[0]
+#ifdef MRTRIX_WINDOWS
+              && fname[0] != PATH_SEPARATOR[1]
+#endif
+             )
+            fname = Path::join (Path::dirname (H.name()), fname);
         }
 
       }
