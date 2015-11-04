@@ -74,7 +74,7 @@ class Node_info
       alpha (a) { }
 
 
-    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB (r,g,b); }
+    void set_colour (const uint8_t r, const uint8_t g, const uint8_t b) { colour = RGB {r,g,b}; }
     void set_colour (const RGB& rgb) { colour = rgb; }
     void set_alpha  (const uint8_t a) { alpha = a; }
 
