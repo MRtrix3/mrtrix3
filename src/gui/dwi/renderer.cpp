@@ -22,6 +22,7 @@
 
 #include <map>
 
+#include "gui/gui.h"
 #include "gui/dwi/renderer.h"
 #include "math/legendre.h"
 #include "gui/projection.h"
@@ -197,6 +198,7 @@ namespace MR
       void Renderer::SH::initGL()
       {
         GL_CHECK_ERROR;
+        Renderer::GrabContext context (parent.context_);
         half_sphere.vertex_buffer.gen();
         surface_buffer.gen();
         half_sphere.index_buffer.gen();
@@ -298,6 +300,7 @@ namespace MR
       void Renderer::Dixel::initGL()
       {
         GL_CHECK_ERROR;
+        Renderer::GrabContext context (parent.context_);
         vertex_buffer.gen();
         value_buffer.gen();
         normal_buffer.gen();
@@ -351,6 +354,7 @@ namespace MR
           values.push_back (data[i[2]]);
         }
 
+        Renderer::GrabContext context (parent.context_);
         VAO.bind();
         value_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, values.size()*sizeof(GLfloat), &values[0], gl::STREAM_DRAW);
@@ -417,6 +421,7 @@ namespace MR
         }
 
         GL_CHECK_ERROR;
+        Renderer::GrabContext context (parent.context_);
         VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
         gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);

@@ -732,7 +732,7 @@ namespace MR
           edge_colour_fixedcolour_button       ->setFixedHeight (height);
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
 
           cube.generate();
           cube_VAO.gen();
@@ -3839,7 +3839,7 @@ namespace MR
           if (meshes.size() != nodes.size())
             throw Exception ("Mesh file contains " + str(meshes.size()) + " objects; expected " + str(nodes.size()));
           have_meshes = false;
-          Window::GrabContext context;
+          MRView::GrabContext context;
           for (node_t i = 1; i <= num_nodes(); ++i)
             nodes[i].assign_mesh (meshes[i]);
           have_meshes = true;

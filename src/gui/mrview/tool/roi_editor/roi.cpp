@@ -316,7 +316,7 @@ namespace MR
         {
           std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
-            Window::GrabContext context; 
+            MRView::GrabContext context;
             roi->texture().bind();
             gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
             gl::GetTexImage (gl::TEXTURE_3D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*) (&data[0]));

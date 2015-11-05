@@ -26,6 +26,8 @@
 
 #include <fstream>
 
+#include <QGLWidget>
+
 #include "app.h"
 #include "gui/dwi/render_frame.h"
 
@@ -58,7 +60,8 @@ namespace MR
         show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
         normalise (false), font (parent->font()), projection (this, font),
         orientation (Math::Versorf::unit()),
-        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0)
+        focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
+        renderer ((QGLWidget*)this)
       {
         setMinimumSize (128, 128);
         lighting = new GL::Lighting (this);

@@ -31,8 +31,8 @@ namespace MR
       namespace Tool
       {
         class Base;
+        class ODF;
       }
-
 
 
       class Window : public QMainWindow, ColourMapButtonObserver
@@ -141,10 +141,6 @@ namespace MR
 
           static void add_commandline_options (MR::App::OptionList& options);
           static Window* main;
-
-          struct GrabContext : public App::GrabContext {
-            GrabContext () : App::GrabContext (main->glarea) { }
-          };
 
         signals:
           void focusChanged ();
@@ -315,8 +311,17 @@ namespace MR
           friend class ImageBase;
           friend class Mode::Base;
           friend class Tool::Base;
+          friend class Tool::ODF;
           friend class Window::GLArea;
+          friend class GrabContext;
       };
+
+
+      class GrabContext : private Context::Grab {
+        public:
+          GrabContext () : Context::Grab (Window::main->glarea) { }
+      };
+
 
     }
   }

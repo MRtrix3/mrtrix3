@@ -41,7 +41,7 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
-            Window::GrabContext context;
+            MRView::GrabContext context;
             ROI_Item* roi = new ROI_Item (std::move (*list[i]));
             roi->load (*list[i]);
             items.push_back (std::unique_ptr<Displayable> (roi));
@@ -53,7 +53,7 @@ namespace MR
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+1);
           {
-            Window::GrabContext context;
+            MRView::GrabContext context;
             ROI_Item* roi = new ROI_Item (std::move (image));
             roi->zero ();
             items.push_back (std::unique_ptr<Displayable> (roi));

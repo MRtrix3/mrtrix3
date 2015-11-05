@@ -35,7 +35,7 @@ namespace MR
 
     void App::displayProgressBar (QString text, int value, bool bounded)
     {
-      GrabContext context;
+      Context::Grab context;
 
       if (!progress_dialog) {
         progress_dialog = new QProgressDialog (text, QString(), 0, bounded ? 100 : 0, main_window);
@@ -56,7 +56,7 @@ namespace MR
     {
       assert (main_window);
       if (progress_dialog) {
-        GrabContext context;
+        Context::Grab context;
         delete progress_dialog;
         progress_dialog = nullptr;
       }

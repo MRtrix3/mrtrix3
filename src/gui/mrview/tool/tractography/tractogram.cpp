@@ -511,7 +511,7 @@ namespace MR
 
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
 
           while (file (tck)) {
 
@@ -552,7 +552,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
 
           erase_nontrack_data();
           // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
@@ -592,7 +592,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
 
           erase_nontrack_data();
           scalar_filename = filename;

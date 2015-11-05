@@ -456,7 +456,7 @@ namespace MR
             connect (lighting, SIGNAL (changed()), this, SLOT (updateGL()));
 
 
-            renderer = new DWI::Renderer;
+            renderer = new DWI::Renderer ((QGLWidget*)Window::main->glarea);
             renderer->initGL();
 
 

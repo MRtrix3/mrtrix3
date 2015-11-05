@@ -30,8 +30,12 @@
 #ifndef __gui_dwi_renderer_h__
 #define __gui_dwi_renderer_h__
 
+#include <QGLWidget>
+
+#include "gui/gui.h"
 #include "dwi/directions/set.h"
 #include "gui/shapes/halfsphere.h"
+#include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 #include "math/SH.h"
 
@@ -57,7 +61,7 @@ namespace MR
           typedef Eigen::VectorXf vector_t;
 
         public:
-          Renderer () : is_SH (true), reverse_ID (0), origin_ID (0) { }
+          Renderer (QGLWidget* widget) : is_SH (true), reverse_ID (0), origin_ID (0), sh (*this), dixel (*this), context_ (widget) { }
 
           bool ready () const { return shader_program; }
 
@@ -113,7 +117,7 @@ namespace MR
           class SH
           {
             public:
-              SH () { }
+              SH (Renderer& parent) : parent (parent) { }
 
               void initGL();
               void bind() { half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); half_sphere.index_buffer.bind(); }
@@ -142,6 +146,7 @@ namespace MR
               GLuint num_indices() const { return half_sphere.num_indices; }
 
             private:
+              Renderer& parent;
               matrix_t transform;
               Shapes::HalfSphere half_sphere;
               GL::VertexBuffer surface_buffer;
@@ -156,7 +161,7 @@ namespace MR
           {
               typedef MR::DWI::Directions::dir_t dir_t;
             public:
-              Dixel () { }
+              Dixel (Renderer& parent) : parent (parent) { }
 
               void initGL();
               void bind() { vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); }
@@ -168,6 +173,7 @@ namespace MR
               GLuint num_indices() const { return 3*polygons.size(); }
 
             private:
+              Renderer& parent;
               GL::VertexBuffer vertex_buffer, value_buffer, normal_buffer;
               GL::VertexArrayObject VAO;
 
@@ -196,6 +202,15 @@ namespace MR
               std::vector<Polygon> polygons;
 
           } dixel;
+
+        private:
+          class GrabContext : public Context::Grab
+          {
+            public:
+              GrabContext (QGLWidget* context) :
+                  Context::Grab (context) { }
+          };
+          QGLWidget* context_;
 
 
       };
