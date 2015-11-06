@@ -69,6 +69,13 @@ namespace MR
         connect (lighting, SIGNAL (changed()), this, SLOT (update()));
       }
 
+      RenderFrame::~RenderFrame()
+      {
+        Context::Grab context (this);
+        axes_VB.clear();
+        axes_VAO.clear();
+      }
+
 
 
 

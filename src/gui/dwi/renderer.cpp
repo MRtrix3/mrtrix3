@@ -194,6 +194,15 @@ namespace MR
 
 
 
+      Renderer::SH::~SH()
+      {
+        Renderer::GrabContext context (parent.context_);
+        half_sphere.vertex_buffer.clear();
+        half_sphere.index_buffer.clear();
+        surface_buffer.clear();
+        VAO.clear();
+      }
+
 
       void Renderer::SH::initGL()
       {
@@ -294,6 +303,19 @@ namespace MR
 
 
 
+
+
+
+
+
+      Renderer::Dixel::~Dixel()
+      {
+        Renderer::GrabContext context (parent.context_);
+        vertex_buffer.clear();
+        value_buffer.clear();
+        normal_buffer.clear();
+        VAO.clear();
+      }
 
 
 

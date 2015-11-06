@@ -52,6 +52,7 @@ namespace MR
 
         public:
           RenderFrame (QWidget* parent);
+          ~RenderFrame();
 
           GL::Lighting* lighting;
 

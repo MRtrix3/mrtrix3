@@ -118,6 +118,7 @@ namespace MR
           {
             public:
               SH (Renderer& parent) : parent (parent) { }
+              ~SH();
 
               void initGL();
               void bind() { half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); half_sphere.index_buffer.bind(); }
@@ -162,6 +163,7 @@ namespace MR
               typedef MR::DWI::Directions::dir_t dir_t;
             public:
               Dixel (Renderer& parent) : parent (parent) { }
+              ~Dixel();
 
               void initGL();
               void bind() { vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); }
