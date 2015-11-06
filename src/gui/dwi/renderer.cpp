@@ -41,53 +41,64 @@ namespace MR
 
 
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
-          bool use_lighting, bool color_by_direction, bool hide_neg_lobes, bool orthographic)
+          bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         if (is_SH)
           sh.bind();
         else
           dixel.bind();
-        shader_program.start();
 
-        gl::UniformMatrix4fv (gl::GetUniformLocation (shader_program, "MV"), 1, gl::FALSE_, projection.modelview());
-        gl::UniformMatrix4fv (gl::GetUniformLocation (shader_program, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
-        gl::Uniform3fv (gl::GetUniformLocation (shader_program, "light_pos"), 1, lighting.lightpos);
-        gl::Uniform1f (gl::GetUniformLocation (shader_program, "ambient"), lighting.ambient);
-        gl::Uniform1f (gl::GetUniformLocation (shader_program, "diffuse"), lighting.diffuse);
-        gl::Uniform1f (gl::GetUniformLocation (shader_program, "specular"), lighting.specular);
-        gl::Uniform1f (gl::GetUniformLocation (shader_program, "shine"), lighting.shine);
-        gl::Uniform1f (gl::GetUniformLocation (shader_program, "scale"), scale);
-        gl::Uniform1i (gl::GetUniformLocation (shader_program, "color_by_direction"), color_by_direction);
-        gl::Uniform1i (gl::GetUniformLocation (shader_program, "use_lighting"), use_lighting);
-        gl::Uniform1i (gl::GetUniformLocation (shader_program, "hide_neg_lobes"), hide_neg_lobes);
-        gl::Uniform1i (gl::GetUniformLocation (shader_program, "orthographic"), orthographic);
-        gl::Uniform3fv (gl::GetUniformLocation (shader_program, "constant_color"), 1, lighting.object_color);
-        reverse_ID = gl::GetUniformLocation (shader_program, "reverse");
-        origin_ID = gl::GetUniformLocation (shader_program, "origin");
+        shader.start (is_SH, use_lighting, colour_by_direction, hide_neg_values, orthographic);
+
+        gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MV"), 1, gl::FALSE_, projection.modelview());
+        gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
+        gl::Uniform3fv (gl::GetUniformLocation (shader, "light_pos"), 1, lighting.lightpos);
+        gl::Uniform1f (gl::GetUniformLocation (shader, "ambient"), lighting.ambient);
+        gl::Uniform1f (gl::GetUniformLocation (shader, "diffuse"), lighting.diffuse);
+        gl::Uniform1f (gl::GetUniformLocation (shader, "specular"), lighting.specular);
+        gl::Uniform1f (gl::GetUniformLocation (shader, "shine"), lighting.shine);
+        gl::Uniform1f (gl::GetUniformLocation (shader, "scale"), scale);
+        gl::Uniform3fv (gl::GetUniformLocation (shader, "constant_color"), 1, lighting.object_color);
+        reverse_ID = gl::GetUniformLocation (shader, "reverse");
+        origin_ID = gl::GetUniformLocation (shader, "origin");
       }
 
 
 
-      void Renderer::compile_shader()
+
+
+
+
+
+
+      void Renderer::Shader::start (bool is_SH, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         GL_CHECK_ERROR;
-        if (shader_program)
-          shader_program.clear();
-        GL::Shader::Vertex vertex_shader (vertex_shader_source());
-        GL::Shader::Fragment fragment_shader (fragment_shader_source());
-        shader_program.attach (vertex_shader);
-        shader_program.attach (fragment_shader);
-        shader_program.link();
+        if (!(*this) || is_SH != is_SH_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ || orthographic != orthographic_) {
+          is_SH_ = is_SH;
+          use_lighting_ = use_lighting;
+          colour_by_direction_ = colour_by_direction;
+          hide_neg_values_ = hide_neg_values;
+          orthographic_ = orthographic;
+          if (*this)
+            clear();
+          GL::Shader::Vertex vertex_shader (vertex_shader_source());
+          GL::Shader::Fragment fragment_shader (fragment_shader_source());
+          attach (vertex_shader);
+          attach (fragment_shader);
+          link();
+        }
+        GL::Shader::Program::start();
         GL_CHECK_ERROR;
       }
 
 
 
-      std::string Renderer::vertex_shader_source() const
+      std::string Renderer::Shader::vertex_shader_source() const
       {
         std::string source;
 
-        if (is_SH) {
+        if (is_SH_) {
           source +=
           "layout(location = 0) in vec3 vertex;\n"
           "layout(location = 1) in vec3 r_del_daz;\n";
@@ -99,88 +110,115 @@ namespace MR
         }
 
         source +=
-          "uniform int color_by_direction, use_lighting, reverse, orthographic;\n"
           "uniform float scale;\n"
+          "uniform int reverse;\n"
           "uniform vec3 constant_color, origin;\n"
           "uniform mat4 MV, MVP;\n"
           "out vec3 position, color, normal;\n"
           "out float amplitude;\n"
           "void main () {\n";
 
-        if (is_SH) {
+        if (is_SH_) {
           source +=
-          "  amplitude = r_del_daz[0];\n"
-          "  if (use_lighting != 0) {\n"
-          "    bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
-          "    float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
-          "    float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel);\n"
-          "    vec3 d1;\n"
-          "    if (atpole)\n"
-          "      d1 = vec3 (-r_del_daz[0]*saz, r_del_daz[0]*caz, r_del_daz[2]);\n"
-          "    else\n"
-          "      d1 = vec3 (r_del_daz[2]*caz*sel - r_del_daz[0]*sel*saz, r_del_daz[2]*saz*sel + r_del_daz[0]*sel*caz, r_del_daz[2]*cel);\n"
-          "    vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
-          "                    -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
-          "                    -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
-          "    normal = cross (d1, d2);\n";
+          "  amplitude = r_del_daz[0];\n";
         } else {
           source +=
-          "  amplitude = value;\n"
-          "  if (use_lighting != 0) {\n"
-          "    normal = face_normal;\n";
+          "  amplitude = value;\n";
+        }
+
+        if (use_lighting_) {
+
+          if (is_SH_) {
+            source +=
+          "  bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
+          "  float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
+          "  float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel);\n"
+          "  vec3 d1;\n"
+          "  if (atpole)\n"
+          "    d1 = vec3 (-r_del_daz[0]*saz, r_del_daz[0]*caz, r_del_daz[2]);\n"
+          "  else\n"
+          "    d1 = vec3 (r_del_daz[2]*caz*sel - r_del_daz[0]*sel*saz, r_del_daz[2]*saz*sel + r_del_daz[0]*sel*caz, r_del_daz[2]*cel);\n"
+          "  vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
+          "                  -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
+          "                  -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
+          "  normal = cross (d1, d2);\n";
+          } else {
+            source +=
+          "  normal = face_normal;\n";
+          }
+
+          source +=
+          "  if (reverse != 0)\n"
+          "    normal = -normal;\n"
+          "  normal = normalize (mat3(MV) * normal);\n";
+
+        }
+
+        if (colour_by_direction_) {
+          source +=
+          "  color = abs (vertex.xyz);\n";
+        } else {
+          source +=
+          "  color = constant_color;\n";
         }
 
         source +=
-          "    if (reverse != 0)\n"
-          "      normal = -normal;\n"
-          "    normal = normalize (mat3(MV) * normal);\n"
-          "  }\n"
-          "  if (color_by_direction != 0)\n"
-          "     color = abs (vertex.xyz);\n"
-          "  else\n"
-          "     color = constant_color;\n"
           "  vec3 pos = vertex * amplitude * scale;\n"
           "  if (reverse != 0)\n"
-          "    pos = -pos;\n"
-          "  if (orthographic != 0)\n"
-          "    position = vec3(0.0, 0.0, 1.0);\n"
-          "  else\n"
-          "    position = -(MV * vec4 (pos, 1.0)).xyz;\n"
+          "    pos = -pos;\n";
+
+        if (orthographic_) {
+          source +=
+          "  position = vec3(0.0, 0.0, 1.0);\n";
+        } else {
+          source +=
+          "  position = -(MV * vec4 (pos, 1.0)).xyz;\n";
+        }
+
+        source +=
           "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n"
           "}\n";
 
         return source;
       }
 
-      std::string Renderer::fragment_shader_source() const
+      std::string Renderer::Shader::fragment_shader_source() const
       {
         std::string source;
         source +=
-          "uniform int use_lighting, hide_neg_lobes;\n"
           "uniform float ambient, diffuse, specular, shine;\n"
           "uniform vec3 light_pos;\n"
           "in vec3 position, color, normal;\n"
           "in float amplitude;\n"
           "out vec3 final_color;\n"
           "void main() {\n"
-          "  if (amplitude < 0.0) {\n"
-          "    if (hide_neg_lobes != 0) discard;\n"
-          "    final_color = vec3(1.0,1.0,1.0);\n"
+          "  if (amplitude < 0.0) {\n";
+
+        if (hide_neg_values_) {
+          source +=
+          "    discard;\n";
+        } else {
+          source +=
+          "    final_color = vec3(1.0,1.0,1.0);\n";
+        }
+
+        source +=
           "  }\n"
-          "  else final_color = color;\n"
-          "  if (use_lighting != 0) {\n"
-          "    vec3 norm = normalize (normal);\n"
-          "    if (amplitude < 0.0)\n"
-          "      norm = -norm;\n"
-          "    final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
-          "    final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position)), 0, 1), shine);\n"
-          "  }\n"
+          "  else final_color = color;\n";
+
+        if (use_lighting_) {
+          source +=
+          "  vec3 norm = normalize (normal);\n"
+          "  if (amplitude < 0.0)\n"
+          "    norm = -norm;\n"
+          "  final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
+          "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position)), 0, 1), shine);\n";
+        }
+
+        source +=
           "}\n";
         return source;
       }
-
-
-
 
 
 

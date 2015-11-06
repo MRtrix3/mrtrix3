@@ -63,19 +63,15 @@ namespace MR
         public:
           Renderer (QGLWidget* widget) : is_SH (true), reverse_ID (0), origin_ID (0), sh (*this), dixel (*this), context_ (widget) { }
 
-          bool ready () const { return shader_program; }
+          bool ready () const { return shader; }
 
           void initGL () {
             sh.initGL();
             dixel.initGL();
-            compile_shader();
           }
 
           void set_mode (const bool set_SH) {
-            if (set_SH == is_SH)
-              return;
             is_SH = set_SH;
-            compile_shader();
           }
 
           void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
@@ -91,18 +87,23 @@ namespace MR
           }
 
           void stop () const {
-            shader_program.stop();
+            shader.stop();
           }
 
 
         protected:
           bool is_SH;
-          GL::Shader::Program shader_program;
           mutable GLuint reverse_ID, origin_ID;
 
-          void compile_shader();
-          std::string vertex_shader_source() const;
-          std::string fragment_shader_source() const;
+          class Shader : public GL::Shader::Program {
+            public:
+              Shader () : is_SH_ (false), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
+              void start (bool is_SH, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);
+            protected:
+              bool is_SH_, use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
+              std::string vertex_shader_source() const;
+              std::string fragment_shader_source() const;
+          } shader;
 
           void half_draw() const
           {
