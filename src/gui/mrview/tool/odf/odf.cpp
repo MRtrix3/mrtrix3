@@ -28,8 +28,10 @@
 #include "gui/lighting_dock.h"
 #include "gui/dwi/render_frame.h"
 #include "gui/mrview/window.h"
-#include "gui/mrview/tool/odf.h"
-#include "gui/mrview/tool/odf_preview.h"
+#include "gui/mrview/tool/odf/item.h"
+#include "gui/mrview/tool/odf/model.h"
+#include "gui/mrview/tool/odf/odf.h"
+#include "gui/mrview/tool/odf/preview.h"
 #include "gui/mrview/mode/base.h"
 
 namespace MR
@@ -40,250 +42,6 @@ namespace MR
     {
       namespace Tool
       {
-
-
-        class ODF::Image {
-          public:
-            Image (MR::Header&& H, const float scale, const bool hide_negative, const bool color_by_direction) :
-                image (std::move (H)),
-                is_SH (true),
-                lmax (Math::SH::LforN (image.header().size (3))),
-                scale (scale),
-                hide_negative (hide_negative),
-                color_by_direction (color_by_direction),
-                dixel (image.header())
-            {
-              // Make an informed guess as to whether or not this is an SH image
-              // If it's not, try to initialise the dixel plugin
-              try {
-                Math::SH::check (image.header());
-                DEBUG ("Image " + image.header().name() + " initialised as SH ODF");
-              } catch (...) {
-                lmax = -1;
-                is_SH = false;
-                try {
-                  if (!dixel.shells)
-                    throw Exception ("No shell data");
-                  dixel.set_shell (dixel.shells->count() - 1);
-                  DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using DW scheme");
-                } catch (...) {
-                  try {
-                    dixel.set_header();
-                    DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using header directions field");
-                  } catch (...) {
-                    try {
-                      dixel.set_internal (image.header().size (3));
-                      DEBUG ("Image " + image.header().name() + " initialised as dixel ODF using internal direction set");
-                    } catch (...) {
-                      DEBUG ("Image " + image.header().name() + " left uninitialised in ODF tool");
-                    }
-                  }
-                }
-              }
-            }
-
-            bool valid() const {
-              if (is_SH)
-                return true;
-              if (!dixel.dirs)
-                return false;
-              return dixel.dirs->size();
-            }
-
-            MRView::Image image;
-            bool is_SH;
-            int lmax;
-            float scale;
-            bool hide_negative, color_by_direction;
-
-            class DixelPlugin
-            {
-              public:
-                enum dir_t { DW_SCHEME, HEADER, INTERNAL, NONE, FILE };
-
-                DixelPlugin (const MR::Header& H) :
-                    dir_type (dir_t::NONE),
-                    shell_index (0)
-                {
-                  try {
-                    grad = MR::DWI::get_valid_DW_scheme (H);
-                    shells.reset (new MR::DWI::Shells (grad));
-                    shell_index = shells->count() - 1;
-                  } catch (...) { }
-                  auto entry = H.keyval().find ("directions");
-                  if (entry != H.keyval().end()) {
-                    try {
-                      const auto lines = split_lines (entry->second);
-                      if (lines.size() != size_t(H.size (3)))
-                        throw Exception ("malformed directions field in image \"" + H.name() + "\" - incorrect number of rows");
-                      for (size_t row = 0; row < lines.size(); ++row) {
-                        const auto values = parse_floats (lines[row]);
-                        if (!header_dirs.rows()) {
-                          if (values.size() != 2 && values.size() != 3)
-                            throw Exception ("malformed directions field in image \"" + H.name() + "\" - should have 2 or 3 columns");
-                          header_dirs.resize (lines.size(), values.size());
-                        } else if (values.size() != size_t(header_dirs.cols())) {
-                          header_dirs.resize (0, 0);
-                          throw Exception ("malformed directions field in image \"" + H.name() + "\" - variable number of columns");
-                        }
-                        for (size_t col = 0; col < values.size(); ++col)
-                          header_dirs(row, col) = values[col];
-                      }
-                    } catch (Exception& e) {
-                      DEBUG (e[0]);
-                      header_dirs.resize (0, 0);
-                    }
-                  }
-                }
-
-                void set_shell (size_t index) {
-                  if (!shells)
-                    throw Exception ("No valid DW scheme defined in header");
-                  if (index >= shells->count())
-                    throw Exception ("Shell index is outside valid range");
-                  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> shell_dirs ((*shells)[index].count(), 3);
-                  const std::vector<size_t>& volumes = (*shells)[index].get_volumes();
-                  for (size_t row = 0; row != volumes.size(); ++row)
-                    shell_dirs.row (row) = grad.row (volumes[row]).head<3>().cast<float>();
-                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (shell_dirs));
-                  std::swap (dirs, new_dirs);
-                  shell_index = index;
-                  dir_type = DixelPlugin::dir_t::DW_SCHEME;
-                }
-
-                void set_header() {
-                  if (!header_dirs.rows())
-                    throw Exception ("No direction scheme defined in header");
-                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (header_dirs));
-                  std::swap (dirs, new_dirs);
-                  dir_type = DixelPlugin::dir_t::HEADER;
-                }
-
-                void set_internal (const size_t n) {
-                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (n));
-                  std::swap (dirs, new_dirs);
-                  dir_type = DixelPlugin::dir_t::INTERNAL;
-                }
-
-                void set_none() {
-                  if (dirs)
-                    delete dirs.release();
-                  dir_type = DixelPlugin::dir_t::NONE;
-                }
-
-                void set_from_file (const std::string& path)
-                {
-                  std::unique_ptr<MR::DWI::Directions::Set> new_dirs (new MR::DWI::Directions::Set (path));
-                  std::swap (dirs, new_dirs);
-                  dir_type = DixelPlugin::dir_t::FILE;
-                }
-
-                Eigen::VectorXf get_shell_data (const Eigen::VectorXf& values) const
-                {
-                  assert (shells);
-                  const std::vector<size_t>& volumes ((*shells)[shell_index].get_volumes());
-                  Eigen::VectorXf result (volumes.size());
-                  for (size_t i = 0; i != volumes.size(); ++i)
-                    result[i] = values[volumes[i]];
-                  return result;
-                }
-
-                size_t num_DW_shells() const {
-                  if (!shells) return 0;
-                  return shells->count();
-                }
-
-                dir_t dir_type;
-                Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> header_dirs;
-                Eigen::Matrix<double, Eigen::Dynamic, 4> grad;
-                std::unique_ptr<MR::DWI::Shells> shells;
-                size_t shell_index;
-                std::unique_ptr<MR::DWI::Directions::Set> dirs;
-
-            } dixel;
-        };
-
-
-
-        class ODF::Model : public QAbstractItemModel
-        {
-          public:
-
-            Model (QObject* parent) :
-              QAbstractItemModel (parent) { }
-
-            QVariant data (const QModelIndex& index, int role) const {
-              if (!index.isValid()) return QVariant();
-              if (role != Qt::DisplayRole) return QVariant();
-              return shorten (items[index.row()]->image.get_filename(), 35, 0).c_str();
-            }
-
-            bool setData (const QModelIndex& index, const QVariant& value, int role) {
-              return QAbstractItemModel::setData (index, value, role);
-            }
-
-            Qt::ItemFlags flags (const QModelIndex& index) const {
-              if (!index.isValid()) return 0;
-              return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
-            }
-
-            QModelIndex parent (const QModelIndex&) const {
-              return QModelIndex(); 
-            }
-
-            int rowCount (const QModelIndex& parent = QModelIndex()) const {
-              (void) parent;  // to suppress warnings about unused parameters
-              return items.size();
-            }
-
-            int columnCount (const QModelIndex& parent = QModelIndex()) const {
-              (void) parent; // to suppress warnings about unused parameters
-              return 1;
-            }
-
-            size_t add_items (const std::vector<std::string>& list, bool colour_by_direction, bool hide_negative_lobes, float scale) {
-              std::vector<std::unique_ptr<MR::Header>> hlist;
-              for (size_t i = 0; i < list.size(); ++i) {
-                try {
-                  std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
-                  hlist.push_back (std::move (header));
-                }
-                catch (Exception& E) {
-                  E.display();
-                }
-              }
-
-              if (hlist.size()) {
-                beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
-                for (size_t i = 0; i < hlist.size(); ++i) 
-                  items.push_back (std::unique_ptr<Image> (new Image (std::move (*hlist[i]), scale, hide_negative_lobes, colour_by_direction)));
-                endInsertRows();
-              }
-
-              return hlist.size();
-            }
-
-            QModelIndex index (int row, int column, const QModelIndex& parent = QModelIndex()) const { 
-              (void ) parent; // to suppress warnings about unused parameters
-              return createIndex (row, column); 
-            }
-
-            void remove_item (QModelIndex& index) {
-              beginRemoveRows (QModelIndex(), index.row(), index.row());
-              items.erase (items.begin() + index.row());
-              endRemoveRows();
-            }
-
-            Image* get_image (QModelIndex& index) {
-              return index.isValid() ? dynamic_cast<Image*>(items[index.row()].get()) : NULL;
-            }
-
-            std::vector<std::unique_ptr<Image>> items;
-        };
-
-
-
-
 
 
 
@@ -331,7 +89,7 @@ namespace MR
             image_list_view->viewport()->setAcceptDrops (true);
             image_list_view->setDropIndicatorShown (true);
 
-            image_list_model = new Model (this);
+            image_list_model = new ODF_Model (this);
             image_list_view->setModel (image_list_model);
 
             main_box->addWidget (image_list_view, 1);
@@ -493,11 +251,11 @@ namespace MR
           if (is_3D) 
             return;
 
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
 
-          if (!settings->is_SH && settings->dixel.dir_type == Image::DixelPlugin::dir_t::NONE)
+          if (!settings->is_SH && settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
             return;
 
           MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
@@ -564,7 +322,7 @@ namespace MR
                   renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
                   renderer->sh.set_data (r_del_daz);
                 } else {
-                  if (settings->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME) {
+                  if (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
                     const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
                     renderer->dixel.set_data (shell_values);
                   } else {
@@ -590,7 +348,7 @@ namespace MR
 
 
 
-        inline ODF::Image* ODF::get_image ()
+        inline ODF_Item* ODF::get_image ()
         {
           QModelIndexList list = image_list_view->selectionModel()->selectedRows();
           if (!list.size())
@@ -622,7 +380,7 @@ namespace MR
 
 
 
-        void ODF::setup_ODFtype_UI (const Image* image)
+        void ODF::setup_ODFtype_UI (const ODF_Item* image)
         {
           assert (image);
           type_selector->blockSignals (true);
@@ -648,9 +406,9 @@ namespace MR
               shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
           }
           shell_selector->blockSignals (false);
-          if (!image->is_SH && shell_selector->count() && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME)
+          if (!image->is_SH && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
             shell_selector->setCurrentIndex (image->dixel.shell_index);
-          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
+          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
         }
 
 
@@ -667,7 +425,7 @@ namespace MR
             return;
           QModelIndex first = image_list_model->index (previous_size, 0, QModelIndex());
           image_list_view->selectionModel()->select (first, QItemSelectionModel::ClearAndSelect);
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           setup_ODFtype_UI (settings);
           assert (renderer);
           if (!settings->is_SH) {
@@ -737,7 +495,7 @@ namespace MR
         void ODF::show_preview_slot ()
         {
           if (!preview) {
-            preview = new Preview (this);
+            preview = new ODF_Preview (this);
             connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
           }
 
@@ -755,7 +513,7 @@ namespace MR
 
         void ODF::colour_by_direction_slot (int) 
         { 
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           settings->color_by_direction = colour_by_direction_box->isChecked();
@@ -771,7 +529,7 @@ namespace MR
 
         void ODF::hide_negative_values_slot (int)
         {
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           settings->hide_negative = hide_negative_values_box->isChecked();
@@ -786,7 +544,7 @@ namespace MR
 
         void ODF::type_change_slot ()
         {
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           const bool mode_is_SH = !type_selector->currentIndex();
@@ -804,7 +562,7 @@ namespace MR
 
         void ODF::lmax_slot (int) 
         { 
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           assert (settings->is_SH);
@@ -818,7 +576,7 @@ namespace MR
 
         void ODF::dirs_slot ()
         {
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           assert (!settings->is_SH);
@@ -870,11 +628,11 @@ namespace MR
 
         void ODF::shell_slot ()
         {
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           assert (!settings->is_SH);
-          assert (settings->dixel.dir_type == Image::DixelPlugin::dir_t::DW_SCHEME);
+          assert (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
           const size_t index = shell_selector->currentIndex();
           assert (index < settings->dixel.num_DW_shells());
           settings->dixel.set_shell (index);
@@ -889,7 +647,7 @@ namespace MR
         void ODF::adjust_scale_slot ()
         {
           scale->setRate (0.01 * scale->value());
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           settings->scale = scale->value();
@@ -946,7 +704,7 @@ namespace MR
             return;
           if (!preview->isVisible())
             return;
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           MRView::Image& image (settings->image);
@@ -960,7 +718,7 @@ namespace MR
 
         void ODF::selection_changed_slot (const QItemSelection &, const QItemSelection &)
         {
-          Image* settings = get_image();
+          ODF_Item* settings = get_image();
           if (!settings)
             return;
           if (!settings->is_SH)

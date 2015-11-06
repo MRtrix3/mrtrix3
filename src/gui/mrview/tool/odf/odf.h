@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __gui_mrview_tool_odf_h__
-#define __gui_mrview_tool_odf_h__
+#ifndef __gui_mrview_tool_odf_odf_h__
+#define __gui_mrview_tool_odf_odf_h__
 
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
@@ -43,6 +43,10 @@ namespace MR
     {
       namespace Tool
       {
+
+        class ODF_Item;
+        class ODF_Model;
+        class ODF_Preview;
 
         class ODF : public Base
         {
@@ -81,15 +85,11 @@ namespace MR
             void close_event() override;
 
           protected:
-             class Model;
-             class Image;
-             class Preview;
-
-             Preview *preview;
+             ODF_Preview *preview;
 
              DWI::Renderer *renderer;
 
-             Model* image_list_model;
+             ODF_Model* image_list_model;
              QListView* image_list_view;
              QPushButton *show_preview_button, *hide_all_button;
              QComboBox *type_selector;
@@ -112,9 +112,9 @@ namespace MR
              virtual void showEvent (QShowEvent* event) override;
              virtual void closeEvent (QCloseEvent* event) override;
 
-             Image* get_image ();
+             ODF_Item* get_image ();
              void get_values (Eigen::VectorXf& SH, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp);
-             void setup_ODFtype_UI (const Image*);
+             void setup_ODFtype_UI (const ODF_Item*);
 
              friend class ODF_Preview;
 
