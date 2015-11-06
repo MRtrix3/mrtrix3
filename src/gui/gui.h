@@ -41,35 +41,17 @@ namespace MR
 
     namespace Context
     {
-#if QT_VERSION >= 0x050400
-        std::pair<QOpenGLContext*,QSurface*> current() {
-          QOpenGLContext* context = QOpenGLContext::currentContext();
-          QSurface* surface = context ? context->surface() : nullptr;
-          return { context, surface };
-        }
 
-        std::pair<QOpenGLContext*,QSurface*> makeCurrent (QWidget* window) {
-          auto previous_context = current();
-          if (window)
-            reinterpret_cast<QOpenGLWidget*> (window)->makeCurrent();
-          return previous_context;
-        }
+      std::pair<int,int> current();
+      std::pair<int,int> makeCurrent (QWidget*);
+      void restore (std::pair<int,int>);
 
-        void restore (std::pair<QOpenGLContext*,QSurface*> previous_context) {
-          if (previous_context.first)
-            previous_context.first->makeCurrent (previous_context.second);
-        }
-#else
-        std::pair<int,int> current() { return { 0, 0 }; }
-        std::pair<int,int> makeCurrent (QWidget*) { return { 0, 0 }; }
-        void restore (std::pair<int,int>) { }
-#endif
 
-        struct Grab {
-          decltype (current()) previous_context;
-          Grab (QWidget* window = nullptr) : previous_context (makeCurrent (window)) { }
-          ~Grab () { restore (previous_context); }
-        };
+      struct Grab {
+        decltype (current()) previous_context;
+        Grab (QWidget* window = nullptr) : previous_context (makeCurrent (window)) { }
+        ~Grab () { restore (previous_context); }
+      };
     }
 
 
