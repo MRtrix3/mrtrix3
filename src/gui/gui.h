@@ -41,10 +41,15 @@ namespace MR
 
     namespace Context
     {
-
-      std::pair<int,int> current();
-      std::pair<int,int> makeCurrent (QWidget*);
-      void restore (std::pair<int,int>);
+#if QT_VERSION >= 0x050400
+        std::pair<QOpenGLContext*,QSurface*> current();
+        std::pair<QOpenGLContext*,QSurface*> makeCurrent (QWidget*);
+        void restore (std::pair<QOpenGLContext*,QSurface*>);
+#else
+        std::pair<int,int> current();
+        std::pair<int,int> makeCurrent (QWidget*);
+        void restore (std::pair<int,int>);
+#endif
 
 
       struct Grab {
