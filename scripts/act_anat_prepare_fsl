@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # Script that receives as argument a T1-weighted image, and outputs a five-tissue-type (5TT) segmented image
-# in a format appropriate for ACT
+#   in a format appropriate for ACT
 # In this script, all major stages of processing are performed using FSL tools:
 # BET for brain extraction, FAST for tissue segmentation, FIRST for sub-cortical grey matter segmentation
 
@@ -16,6 +16,7 @@ from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
 from lib.warnMessage  import warnMessage
 
+lib.app.initCitations([ 'ACT', 'bet', 'fast', 'first', 'FSL' ])
 lib.app.initParser('Generate a 5TT image suitable for ACT from a T1 image using FSL tools')
 lib.app.parser.add_argument('input',  help='The input T1 image')
 lib.app.parser.add_argument('output', help='The output 5TT image')
