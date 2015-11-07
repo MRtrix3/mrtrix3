@@ -56,8 +56,8 @@ namespace MR
       RenderFrame::RenderFrame (QWidget* parent) :
         GL::Area (parent),
         view_angle (40.0), distance (0.3), line_width (1.0), scale (1.0), 
-        lmax_computed (0), lod_computed (0), recompute_mesh (true), recompute_amplitudes (true), 
-        show_axes (true), hide_neg_lobes (true), color_by_dir (true), use_lighting (true), 
+        lmax_computed (0), lod_computed (0), is_SH (true), recompute_mesh (true), recompute_amplitudes (true),
+        show_axes (true), hide_neg_values (true), color_by_dir (true), use_lighting (true),
         normalise (false), font (parent->font()), projection (this, font),
         orientation (Math::Versorf::unit()),
         focus (0.0, 0.0, 0.0), OS (0), OS_x (0), OS_y (0),
@@ -194,23 +194,32 @@ namespace MR
             if (normalise && std::isfinite (values[0]) && values[0] != 0.0)
               final_scale /= values[0];
 
-            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_lobes);
+            renderer.set_mode (is_SH);
 
             if (recompute_mesh) {
-              renderer.sh.update_mesh (lod_computed, lmax_computed);
+              if (is_SH)
+                renderer.sh.update_mesh (lod_computed, lmax_computed);
+              else
+                renderer.dixel.update_mesh (*dirs);
               recompute_mesh = false;
             }
 
+            renderer.start (projection, *lighting, final_scale, use_lighting, color_by_dir, hide_neg_values);
+
             if (recompute_amplitudes) {
-              Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
-              const size_t nSH = Math::SH::NforL (lmax_computed);
-              if (size_t(values.rows()) < nSH) {
-                Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
-                new_values.topRows (values.rows()) = values;
-                std::swap (values, new_values);
+              if (is_SH) {
+                Eigen::Matrix<float, Eigen::Dynamic, 1> r_del_daz;
+                const size_t nSH = Math::SH::NforL (lmax_computed);
+                if (size_t(values.rows()) < nSH) {
+                  Eigen::Matrix<float, Eigen::Dynamic, 1> new_values = Eigen::Matrix<float, Eigen::Dynamic, 1>::Zero (nSH);
+                  new_values.topRows (values.rows()) = values;
+                  std::swap (values, new_values);
+                }
+                renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
+                renderer.sh.set_data (r_del_daz);
+              } else {
+                renderer.dixel.set_data (values);
               }
-              renderer.sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax_computed)));
-              renderer.sh.set_data (r_del_daz);
               recompute_amplitudes = false;
             }
 

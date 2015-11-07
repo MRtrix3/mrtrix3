@@ -499,6 +499,18 @@ namespace MR
             connect (lighting, SIGNAL (changed()), preview, SLOT (lighting_update_slot()));
           }
 
+          ODF_Item* settings = get_image();
+          if (settings) {
+            preview->render_frame->set_is_SH (settings->is_SH);
+            preview->render_frame->set_scale (settings->scale);
+            preview->render_frame->set_hide_neg_values (settings->hide_negative);
+            preview->render_frame->set_color_by_dir (settings->color_by_direction);
+            if (settings->is_SH)
+              preview->render_frame->set_lmax (settings->lmax);
+            else if (settings->dixel.dirs)
+              preview->render_frame->set_dixels (*(settings->dixel.dirs));
+          }
+
           preview->show();
           update_preview();
         }
@@ -517,9 +529,8 @@ namespace MR
           if (!settings)
             return;
           settings->color_by_direction = colour_by_direction_box->isChecked();
-          if (preview) {
+          if (preview)
             preview->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
-          }
           updateGL();
         }
 
@@ -534,7 +545,7 @@ namespace MR
             return;
           settings->hide_negative = hide_negative_values_box->isChecked();
           if (preview) 
-            preview->render_frame->set_hide_neg_lobes (hide_negative_values_box->isChecked());
+            preview->render_frame->set_hide_neg_values (hide_negative_values_box->isChecked());
           updateGL();
         }
 
@@ -555,6 +566,8 @@ namespace MR
           if (mode_is_SH)
             assert (settings->lmax);
           setup_ODFtype_UI (settings);
+          if (preview)
+            preview->render_frame->set_is_SH (mode_is_SH);
           updateGL();
         }
 
@@ -611,10 +624,15 @@ namespace MR
                 break;
             }
             shell_selector->setEnabled (mode == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
-            if (mode != 3) {
+            if (mode == 3) {
+              if (preview)
+                preview->render_frame->clear_dixels();
+            } else {
               assert (settings->dixel.dirs);
               assert (renderer);
               renderer->dixel.update_mesh (*(settings->dixel.dirs));
+              if (preview)
+                preview->render_frame->set_dixels (*(settings->dixel.dirs));
             }
           } catch (Exception& e) {
             e.display();
@@ -639,6 +657,8 @@ namespace MR
           assert (settings->dixel.dirs);
           assert (renderer);
           renderer->dixel.update_mesh (*(settings->dixel.dirs));
+          if (preview)
+            preview->render_frame->set_dixels (*(settings->dixel.dirs));
           updateGL();
         }
 
@@ -721,12 +741,24 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          if (!settings->is_SH)
+          if (!settings->is_SH && settings->dixel.dirs)
             renderer->dixel.update_mesh (*(settings->dixel.dirs));
           setup_ODFtype_UI (settings);
           scale->setValue (settings->scale);
           hide_negative_values_box->setChecked (settings->hide_negative);
           colour_by_direction_box->setChecked (settings->color_by_direction);
+          if (preview) {
+            preview->render_frame->set_is_SH (settings->is_SH);
+            preview->render_frame->set_scale (settings->scale);
+            preview->render_frame->set_hide_neg_values (settings->hide_negative);
+            preview->render_frame->set_color_by_dir (settings->color_by_direction);
+            if (settings->is_SH)
+              preview->render_frame->set_lmax (settings->lmax);
+            else if (settings->dixel.dirs)
+              preview->render_frame->set_dixels (*(settings->dixel.dirs));
+            else
+              preview->render_frame->clear_dixels();
+          }
           updateGL();
           update_preview();
         }

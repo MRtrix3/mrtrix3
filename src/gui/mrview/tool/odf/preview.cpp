@@ -99,7 +99,7 @@ namespace MR
 
           render_frame->set_scale (parent->scale->value());
           render_frame->set_color_by_dir (parent->colour_by_direction_box->isChecked());
-          render_frame->set_hide_neg_lobes (parent->hide_negative_values_box->isChecked());
+          render_frame->set_hide_neg_values (parent->hide_negative_values_box->isChecked());
           render_frame->set_use_lighting (parent->use_lighting_box->isChecked());
           render_frame->set_lmax (parent->lmax_selector->value());
           lock_orientation_to_image_slot (1);

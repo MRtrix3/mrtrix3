@@ -71,6 +71,8 @@ namespace MR {
             initialise (az_el_pairs);
           }
 
+          Set (const Set& that) = default;
+
           Set (Set&& that) :
               unit_vectors (std::move (that.unit_vectors)),
               adj_dirs (std::move (that.adj_dirs)),
