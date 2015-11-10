@@ -249,7 +249,6 @@ namespace MR
               corner.resize(3,n_estimates);
             }
 
-            // Eigen::Matrix<default_type, 12, 1> delta;
             Eigen::Matrix<default_type, 4, 4> X, X_upd;
             Math::param_vec2mat_affine(parameter_vector, X);
 
@@ -262,15 +261,14 @@ namespace MR
               
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
-              // gradient += grad_estimates[j]; // TODO remove me
+              gradient += grad_estimates[j]; // TODO remove me
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
-              // VAR(candidate.transpose());
-              Math::param_vec2mat_affine(candidate, trafo_upd.matrix()); // trafo_upd.matrix());
-              // VAR(trafo_upd.matrix());
+              Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
               for (size_t i = 0; i < n_corners; ++i){
-                transformed_corner[i].col(j) = trafo_upd * corners.col(i); //transformed_corner[i].col(j) =
+                transformed_corner[i].col(j) = trafo_upd * corners.col(i); 
               }
             }
+            return true; // hack
 
             for (size_t i = 0; i < n_corners; ++i){
               Eigen::Matrix<default_type, 3, 1> median_corner;
@@ -278,31 +276,13 @@ namespace MR
               corners_transformed_median.col(i) << median_corner, 1.0;
               corners_4.col(i) << corners.col(i), 1.0;
             }
-            // for (size_t i = 0; i < n_corners; ++i){
-            //   trafo_median.col(0) = 
-            // }
-            // header_out.transform().matrix().block(0,0,3,4) = trafo_median.block(0,0,3,4);
-            // Eigen::Matrix<default_type,4,4> P;
-            // Eigen::Matrix<default_type,4,4> Pdash;
-            // Eigen::fullPivHouseholderQr<Eigen::Matrix3f>() dec(A),
-            // vector3f x = dec.solve(b);
-            // Ax = b;
-            // VAR(corners_4);
-            // VAR(corners_transformed_median);
-            Eigen::ColPivHouseholderQR<Eigen::Matrix<default_type, 4, n_corners>> dec(corners_4.transpose()); // <decltype(corners)>()
+            Eigen::ColPivHouseholderQR<Eigen::Matrix<default_type, 4, n_corners>> dec(corners_4.transpose());
             Eigen::Matrix<default_type,4,4> trafo_median;
             trafo_median.transpose() = dec.solve(corners_transformed_median.transpose());
-            // VAR(trafo_median);
             VectorType x_new;
             x_new.resize(12);
             Math::param_mat2vec_affine(trafo_median, x_new);
-            // VAR(gradient / gradient.norm());
-            gradient = parameter_vector - x_new;
-            // VAR(gradient);
-            // VAR(transformed_corner[0]);
-            // VAR(transformed_corner[1]);
-            // VAR(transformed_corner[2]);
-            // VAR(transformed_corner[3]);
+            // gradient = parameter_vector - x_new; // TODO
             return true;
           }
 

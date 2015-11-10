@@ -141,18 +141,32 @@ namespace MR
                   dimensions[2] = params.midway_image.size(2);
                   if (params.robust_estimate){
                     DEBUG("robust estimate");
-                    DEBUG(str("density: " + str(params.loop_density)));
                     size_t n_estimates = 5;
+                    DEBUG(str("density: " + str(params.loop_density / (default_type) n_estimates)));
                     std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> grad_estimates(n_estimates);
                     for (size_t i = 0; i < n_estimates; i++) {
                       auto gradient_estimate(gradient);
                       ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
-                      DEBUG("elapsed: " + str(timer.elapsed()));
                       RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
+                      INFO("elapsed: (" + str(i) + ") " + str(timer.elapsed()));
                       // StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
                       grad_estimates[i] = gradient_estimate;
-                      // VAR(gradient_estimate.transpose());
                     }
+                    timer = Timer ();
+                    for (size_t i = 0; i < n_estimates; i++) {
+                      auto gradient_estimate(gradient);
+                      ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
+                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
+                    }
+                    WARN("elapsed with kernel: " + str(timer.elapsed() / n_estimates));
+                    timer = Timer ();
+                    auto gradient_estimate(gradient);
+                    ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
+                    for (size_t i = 0; i < n_estimates; i++) {
+                      auto gradient_estimate(gradient);
+                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
+                    }
+                    WARN("elapsed without kernel: " + str(timer.elapsed() / n_estimates));
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
                   } else {
                     ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);

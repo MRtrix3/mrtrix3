@@ -4,12 +4,14 @@
 #include "interp/cubic.h"
 #include "algo/loop.h"
 #include "algo/threaded_loop.h"
-#include "algo/random_threaded_loop.h"
+#include "algo/random_threaded_loop2.h"
 #include <numeric>
 #include "algo/random_loop.h"
 // #include <array>      // std::array
 #include <random>     // std::default_random_engine
 #include <chrono>     // std::chrono::system_clock
+#include "timer.h"
+#include "thread.h"
 
 namespace MR {
 }
@@ -32,6 +34,47 @@ void usage ()
   + Argument ("type", "dense, sparse, dense2.").type_integer ();
 }
 
+template <class ImageType>
+  struct ThreadFunctor {
+    public:
+     ThreadFunctor (
+      ImageType& image,
+       const std::vector<size_t>& inner_axes,
+       const default_type density,
+       size_t& overall_count,
+       Math::RNG& rng_engine) :
+        image(image),
+        inner_axes (inner_axes),
+        density (density),
+        overall_count (overall_count),
+        cnt (0),
+        rng (rng_engine) { assert(inner_axes.size() >= 2); }
+
+      ~ThreadFunctor () {
+        overall_count += cnt;
+      }
+
+      void operator() (const Iterator& iter) {
+        auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
+        DEBUG(str(iter));
+        assign_pos_of(iter).to(image);
+        // auto inner_loop2 = Loop(image, inner_axes[0]);
+        auto inner_loop1 = Random_loop<ImageType,std::default_random_engine>(image, engine, inner_axes[1], std::ceil((float) image.size(inner_axes[1]) * density));
+        for (auto j = inner_loop1; j; ++j)
+          for (auto k = Loop (inner_axes[0]) (image); k; ++k){
+            cnt += 1;
+            INFO(str(image));
+          }
+      }
+    private:
+      ImageType image;
+      std::vector<size_t> inner_axes;
+      default_type density;
+      size_t& overall_count;
+      size_t cnt;
+      Math::RNG rng;
+  };
+
 
 void run ()
 {
@@ -46,15 +89,18 @@ void run ()
     size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
     auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
 
-    for (auto z = 0; z < 1000; ++z){
-    auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * density));
-    auto loop2 = Random_loop<ImageType,decltype(engine)>(input, engine, 1, std::ceil((float) input.size(1) * density));
+    auto timer = Timer();
+    auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * 1.0));
+    auto loop2 = Random_loop<ImageType,decltype(engine)>(input, engine, 1, std::ceil((float) input.size(1) * 1.0));
     auto loop3 = Random_loop<ImageType,decltype(engine)>(input, engine, 2, std::ceil((float) input.size(2) * density));
-      for (auto i = loop1; i; ++i)
-        for (auto j = loop2; j; ++j)
-          for (auto k = loop3; k; ++k)
-            INFO(str(cnt++) + " " + str(input));
-    }
+    for (auto i = loop1; i; ++i)
+      for (auto j = loop2; j; ++j)
+        for (auto k = loop3; k; ++k){
+          cnt++;
+          INFO(str(cnt) + " " + str(input));
+        }
+    CONSOLE(str(timer.elapsed()));
+    VAR(cnt);
 
     // std::vector<size_t> idx(input.size(0));
     // std::vector<size_t> jdx(input.size(1));
@@ -89,35 +135,121 @@ void run ()
   } else if (type == 1) {
     CONSOLE("sparse");
     // auto inner_loop = Loop(1, 3);
-    for (auto z = 0; z < 1000; ++z){
-      auto loop1 = Random_sparse_loop<ImageType>(input, 0, std::ceil((float) input.size(0) * density));
-      auto loop2 = Random_sparse_loop<ImageType>(input, 1, std::ceil((float)  input.size(1) * density));
-      auto loop3 = Random_sparse_loop<ImageType>(input, 2, std::ceil((float) input.size(2) * density));
-      for (auto i = loop1; i; ++i)
-        for (auto j = loop2; j; ++j)
-          for (auto j = loop3; j; ++j)
-            INFO(str(cnt++) + " " + str(input)); // << std::endl;
-    }
-  } else {
-    CONSOLE ("random threaded");
+    auto timer = Timer();
+    size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
+    auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * 1.0));
+    auto loop2 = Random_loop<ImageType,decltype(engine)>(input, engine, 1, std::ceil((float) input.size(1) * 1.0));
+    auto loop3 = Random_sparse_loop<ImageType>(input, 2, std::ceil((float) input.size(2) * density));
+    for (auto i = loop1; i; ++i)
+      for (auto j = loop2; j; ++j)
+        for (auto j = loop3; j; ++j){
+          ++cnt;
+          INFO(str(cnt) + " " + str(input)); // << std::endl;
+        }
+    CONSOLE(str(timer.elapsed()));
+    VAR(cnt);
+  } else if (type == 2) {
+    CONSOLE ("random threaded counting");
 
     class MyThread {
       public:
+        MyThread(size_t& count):
+        overall_count (count),
+        cnt(0) {}
+
+        ~MyThread () {
+          overall_count += cnt;
+        }
+
         void operator() (const Iterator& iter) {
           // std::cerr << iter.index(0) << " " << iter.index(1) << " " << iter.index(2) << std::endl;
           // throw Exception ("stop");
           INFO(str(iter));
+          ++cnt;
         }
+
+      protected:
+        size_t& overall_count;
+        size_t cnt;
     };
-    MyThread thread;
+
+    size_t cnt = 0;
+    MyThread thread(cnt);
     std::vector<size_t> dimensions(3);
     dimensions[0] = input.size(0);
     dimensions[1] = input.size(1);
     dimensions[2] = input.size(2);
     VAR(density);
-    RandomThreadedLoop (input, 0, 3).run (thread, density, dimensions);
-  }
+    auto timer = Timer();
+    size_t n_repeats = 10;
+    for (auto i = 1; i < n_repeats; ++i){
+      RandomThreadedLoop (input, 0, 3).run (thread, density, dimensions);
+    }
+    CONSOLE(str(timer.elapsed()/n_repeats));
+    cnt = (float) cnt / n_repeats;
+    CONSOLE("actual density: " + str((float) cnt / (dimensions[0] * dimensions[1] * dimensions[2]) ));
+    VAR(cnt);
+  } else if (type == 3) {
+    CONSOLE ("test");
+    std::vector<size_t> dimensions(3);
+    dimensions[0] = input.size(0); 
+    dimensions[1] = input.size(1);
+    dimensions[2] = input.size(2);
+    VAR(density);
+    auto timer = Timer();
+    const size_t num_iter = dimensions[0] * dimensions[1];
+    for (auto i = 0; i < num_iter; ++i){
+      Math::RNG rng;
+      typename std::default_random_engine::result_type seed = rng.get_seed();
+      auto random_engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
+      auto idx = std::vector<size_t>(dimensions[2]);
+      std::iota (std::begin(idx), std::end(idx), 0);
+      std::shuffle (std::begin(idx), std::end(idx), random_engine);
+    }
 
+    CONSOLE(str(timer.elapsed()));
+  } else if (type == 4) {
+    // class MyThread {
+    //   public:
+    //     void execute() {
+    //       std::cerr << "thread" << std::endl;
+    //     }
+    // };
+
+    // MyThread thread;
+    // Thread::multi thread_array (thread);
+    // Thread::Exec exec (thread_array, "my threads");
+    // Loop(input, i)
+    // thread:
+    // 
+  //   auto loop1 = Random_loop<ImageType,decltype(engine)>(input, engine, 0, std::ceil((float) input.size(0) * 1.0));
+  //     for j in Random_loop(input, 1)
+  //       if cnt == total_cnt / nthreads / dim(2)
+  //         break
+  //       for k in Loop(im,2)
+  // }
+    // size_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+    // auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(seed)};
+    
+
+  // for (auto i = Loop (0) (input); i; ++i) {
+  //   run_thread
+  // }
+
+  // nst std::string& progress_message,
+  // 447         const HeaderType& source,
+  // 448         size_t from_axis = 0,
+  // 449         size_t to_axis = std::numeric_limits<size_t>::max(), 
+  // 450         size_t num_inner_axes = 1)
+    auto timer = Timer();
+    auto loop = ThreadedLoop ("...", input, 0, 3, 2);
+    Math::RNG rng;
+    size_t cnt;
+    ThreadFunctor<decltype(input)> functor (input, loop.inner_axes, density, cnt, rng);
+    loop.run_outer (functor);
+    CONSOLE(str(timer.elapsed()));
+    VAR(cnt);
 
 
   // size_t ni = input.size(0);
@@ -163,4 +295,5 @@ void run ()
 //   std::cout << value << std::endl;
 
 //   std::cout << gradient << std::endl;
+  }
 }

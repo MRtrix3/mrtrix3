@@ -20,8 +20,8 @@
 
 */
 
-#ifndef __algo_random_threaded_loop_h__
-#define __algo_random_threaded_loop_h__
+#ifndef __algo_random_threaded_loop2_h__
+#define __algo_random_threaded_loop2_h__
 
 #include "debug.h"
 #include "algo/loop.h"
@@ -119,20 +119,10 @@ namespace MR
           cnt = 0;
           it = std::begin(idx);
           stop = std::end(idx);
-          max_cnt = //size_t (density * dims[inner[0]]);
-          (size_t) ceil (density * dims[inner[0]]);
-          // VAR(max_cnt);
+          max_cnt = (size_t) ceil (density * dims[inner[0]]);
           for (size_t i = 0; i < max_cnt; ++i){
             pos.index(inner[0]) = *it;
             it++;
-          // for (auto i = loop (pos); i; ++i){
-            // if (rng() >= density){
-            //   DEBUG (str(pos) + " ...skipped inner.");
-            //   continue;
-            // }
-            // DEBUG (str(pos) + " ...used inner.");
-            // VAR(pos);
-            // VAR(cnt);
             func (pos);
             ++cnt;
           }
