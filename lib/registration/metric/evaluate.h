@@ -213,7 +213,7 @@ namespace MR
                       // VAR(grad_estimates[i].transpose());
                     }
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
-                    VAR(gradient.transpose());
+                    // VAR(gradient.transpose());
                   } else {
                     std::vector<size_t> dimensions(3);
                     dimensions[0] = params.midway_image.size(0);
