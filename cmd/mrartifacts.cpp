@@ -53,7 +53,7 @@ void run ()
     if (mode%2 == 0) INFO("uniform");
     if (mode%2 != 0) INFO("centered");
     std::vector<size_t> extent (3, ext);
-    VAR(extent);
+    INFO("extent: " + str(extent));
     Math::RNG::Uniform<float> rnd;
     Math::RNG::Normal<float> rndn;
     
