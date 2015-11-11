@@ -139,19 +139,21 @@ namespace MR
                   gradient (overall_grad.size()), // BUG: set zero
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
-                  rng (rng_engine),
-                  kern (ThreadKernel<MetricType, ParamType> (metric, params, overall_cost_function, gradient))  { assert(inner_axes.size() >= 2); }
+                  rng (rng_engine)  { 
+                    gradient.setZero();
+                    assert(inner_axes.size() >= 2); }
 
                 ~ThreadFunctor () {
-                  WARN("~ThreadFunctor");
-                  VAR(gradient.transpose());
+                  // WARN("~ThreadFunctor");
+                  // VAR(gradient.transpose());
                   overall_cost_function += cost_function;
                   overall_gradient += gradient;
                 }
 
                 void operator() (const Iterator& iter) {
                   auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
-                  DEBUG(str(iter));
+                  // DEBUG(str(iter));
+                  auto kern = ThreadKernel<MetricType, ParamType> (metric, params, overall_cost_function, gradient);
                   Iterator iterator (iter);
                   assign_pos_of(iter).to(iterator);
                   auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
@@ -173,7 +175,7 @@ namespace MR
                 default_type& overall_cost_function;
                 Eigen::VectorXd& overall_gradient;
                 Math::RNG rng;
-                ThreadKernel<MetricType, ParamType> kern;
+                // ThreadKernel<MetricType, ParamType> kern;
             };
 
             template <class TransformType_>
@@ -203,12 +205,12 @@ namespace MR
                       auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
                       ThreadFunctor functor (loop.inner_axes, density, metric, params, cost, gradient_estimate, rng); // <MetricType, ParamType>
                       assert (gradient_estimate.isApprox(gradient_estimate));
-                      VAR(gradient_estimate.transpose());
+                      // VAR(gradient_estimate.transpose());
                       loop.run_outer (functor);
                       INFO("elapsed: (" + str(i) + ") " + str(timer.elapsed()));
                       // StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
                       grad_estimates[i] = gradient_estimate;
-                      VAR(grad_estimates[i].transpose());
+                      // VAR(grad_estimates[i].transpose());
                     }
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
                     VAR(gradient.transpose());

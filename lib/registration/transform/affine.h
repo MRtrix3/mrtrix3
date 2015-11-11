@@ -261,14 +261,14 @@ namespace MR
               
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
-              gradient += grad_estimates[j]; // TODO remove me
+              // gradient += grad_estimates[j]; // TODO remove me
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
               Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
               for (size_t i = 0; i < n_corners; ++i){
                 transformed_corner[i].col(j) = trafo_upd * corners.col(i); 
               }
             }
-            return true; // hack
+            // return true; // hack
 
             for (size_t i = 0; i < n_corners; ++i){
               Eigen::Matrix<default_type, 3, 1> median_corner;
@@ -282,7 +282,7 @@ namespace MR
             VectorType x_new;
             x_new.resize(12);
             Math::param_mat2vec_affine(trafo_median, x_new);
-            // gradient = parameter_vector - x_new; // TODO
+            gradient = parameter_vector - x_new;
             return true;
           }
 

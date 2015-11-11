@@ -79,14 +79,12 @@ namespace MR
               transform (params.midway_image) {
             #endif
               gradient.setZero();
-              VAR(overall_gradient.transose();)
           }
 
           ~ThreadKernel () {
-            WARN("~ThreadKernel");
+            // WARN("~ThreadKernel");
             overall_cost_function += cost_function;
-            VAR(gradient.transpose());
-            VAR(overall_gradient.transpose());
+            // VAR(overall_gradient.transpose());
             overall_gradient += gradient;
           }
 
