@@ -67,6 +67,12 @@ namespace MR
           }
 
           void set_extent (std::vector<size_t> extent_vector) { extent=std::move(extent_vector); }
+          
+          void update_interpolators (){
+            im1_image_interp.reset (new Im1ImageInterpolatorType (im1_image));
+            im2_image_interp.reset (new Im2ImageInterpolatorType (im2_image));
+          }
+
 
           const std::vector<size_t>& get_extent() const { return extent; }
 

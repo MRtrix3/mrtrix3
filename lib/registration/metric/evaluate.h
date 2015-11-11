@@ -215,12 +215,17 @@ namespace MR
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
                     // VAR(gradient.transpose());
                   } else {
-                    std::vector<size_t> dimensions(3);
-                    dimensions[0] = params.midway_image.size(0);
-                    dimensions[1] = params.midway_image.size(1);
-                    dimensions[2] = params.midway_image.size(2);
-                    ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
-                    RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density, dimensions);
+                    // std::vector<size_t> dimensions(3);
+                    // dimensions[0] = params.midway_image.size(0);
+                    // dimensions[1] = params.midway_image.size(1);
+                    // dimensions[2] = params.midway_image.size(2);
+                    // ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
+                    // RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density, dimensions);
+                    Math::RNG rng;
+                    gradient.setZero();
+                    auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+                    ThreadFunctor functor (loop.inner_axes, params.loop_density, metric, params, cost, gradient, rng); // <MetricType, ParamType>
+                    loop.run_outer (functor);
                   }
                 }
                 else {

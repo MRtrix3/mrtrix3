@@ -48,6 +48,10 @@ namespace MR
                                "using comma separated values (Default: 0.5,1)")
         + Argument ("factor").type_sequence_float ()
 
+      + Option ("affine_repetitions", "number of gradient descent optimisation repetitions for each level "
+                               "using comma separated values (Default: 1,1)")
+        + Argument ("factor").type_sequence_float ()
+
       + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
                                 "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()

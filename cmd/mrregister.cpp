@@ -318,6 +318,15 @@ void run ()
     affine_scale_factors = parse_floats (opt[0][0]);
   }
 
+  opt = get_options ("affine_repetitions");
+  std::vector<int> affine_repetition_factors;
+  if (opt.size ()) {
+    if (!do_affine)
+      throw Exception ("the affine repetition factors were input when no affine registration is requested");
+    affine_repetition_factors = parse_ints (opt[0][0]);
+  }
+  
+
   opt = get_options ("rigid_smooth_factor");
   default_type rigid_smooth_factor = 1.0;
   if (opt.size ()) {
@@ -512,6 +521,8 @@ void run ()
 
     if (affine_scale_factors.size())
       affine_registration.set_scale_factor (affine_scale_factors);
+    if (affine_repetition_factors.size())
+      affine_registration.set_gradient_descent_repetitions(affine_repetition_factors);
     affine_registration.set_smoothing_factor (affine_smooth_factor);
     if (affine_niter.size())
       affine_registration.set_max_iter (affine_niter);

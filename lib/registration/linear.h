@@ -65,6 +65,7 @@ namespace MR
 
         Linear () :
           max_iter (1, 300),
+          gd_repetitions (1, 1),
           scale_factor (2),
           loop_density (1, 1.0),
           smooth_factor (1.0),
@@ -83,6 +84,13 @@ namespace MR
             if (maxiter[i] < 0)
               throw Exception ("the number of iterations must be positive");
           max_iter = maxiter;
+        }
+
+        void set_gradient_descent_repetitions (const std::vector<int>& rep) {
+          for (size_t i = 0; i < rep.size (); ++i)
+            if (rep[i] < 0)
+              throw Exception ("the number of repetitions must be positive");
+          gd_repetitions = rep;
         }
 
         void set_scale_factor (const std::vector<default_type>& scalefactor) {
@@ -187,6 +195,11 @@ namespace MR
               max_iter.resize (scale_factor.size(), max_iter[0]);
             else if (max_iter.size() != scale_factor.size())
               throw Exception ("the max number of iterations needs to be defined for each multi-resolution level");
+
+            if (gd_repetitions.size() == 1)
+              gd_repetitions.resize (scale_factor.size(), gd_repetitions[0]);
+            else if (gd_repetitions.size() != scale_factor.size())
+              throw Exception ("the number of gradient descent repetitions needs to be defined for each multi-resolution level");
 
             if (loop_density.size() == 1)
               loop_density.resize (scale_factor.size(), loop_density[0]);
@@ -311,7 +324,7 @@ namespace MR
               INFO ("loop density: " +str(loop_density[level]));
               parameters.loop_density = loop_density[level];
 
-              INFO ("robust_estimate: " +str(robust_estimate));
+              if (robust_estimate) INFO ("robust estimate");
               parameters.robust_estimate = robust_estimate;
 
               DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
@@ -331,24 +344,23 @@ namespace MR
               if (directions.cols())
                 evaluate.set_directions (directions);
 
+              for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
+                Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType> 
+                  optim (evaluate, *transform.get_gradient_descent_updator());
+                // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
+                optim.precondition (optimiser_weights);
+                // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
+                optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+                parameters.transformation.set_parameter_vector (optim.state());
 
-              Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>,
-                                    typename TransformType::UpdateType > optim (evaluate, *transform.get_gradient_descent_updator());
-              // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
-
-              optim.precondition (optimiser_weights);
-              // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
-              parameters.transformation.set_parameter_vector (optim.state());
-
-              if (log_stream){
-                std::ostream log_os(log_stream);
-                log_os << "\n\n"; // two empty lines for gnuplot's index recognition
+                if (log_stream){
+                  std::ostream log_os(log_stream);
+                  log_os << "\n\n"; // two empty lines for gnuplot's index recognition
+                }
+                // auto params = optim.state();
+                // VAR(optim.function_evaluations());
+                // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
               }
-
-              // auto params = optim.state();
-              // VAR(optim.function_evaluations());
-              // Math::check_function_gradient (evaluate, params, 0.0001, true, optimiser_weights);
             }
 #ifdef DEBUGSYMMETRY
               auto t_forw = transform.get_transform_half();
@@ -360,11 +372,12 @@ namespace MR
               t_back = t_back * t_back;
               save_matrix(t_back.matrix(),"/tmp/t_back_squared.txt");
 #endif
-            // TODO: update midway_image
+            // TODO: resize midway_image
           }
 
       protected:
         std::vector<int> max_iter;
+        std::vector<int> gd_repetitions;
         std::vector<default_type> scale_factor;
         std::vector<default_type> loop_density;
         default_type smooth_factor;
