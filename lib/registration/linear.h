@@ -338,7 +338,7 @@ namespace MR
 
               optim.precondition (optimiser_weights);
               // optim.run (max_iter[level], grad_tolerance, false, step_tolerance, 1e-10, 1e-10, log_stream);
-              optim.run (max_iter[level], 1.0e-30, false, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
+              optim.run (max_iter[level], 1.0e-30, true, 1.0e-30, 1.0e-30, 1.0e-30, log_stream);
               parameters.transformation.set_parameter_vector (optim.state());
 
               if (log_stream){

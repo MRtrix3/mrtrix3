@@ -121,6 +121,61 @@ namespace MR
 //              }
             }
 
+            // template <class MetricType, class ParamType>
+            struct ThreadFunctor {
+              public:
+                ThreadFunctor (
+                    const std::vector<size_t>& inner_axes,
+                    const default_type density,
+                    const MetricType& metric, const ParamType& parameters, 
+                    default_type& overall_cost_function, Eigen::VectorXd& overall_grad,
+                    Math::RNG& rng_engine) :
+                  // kern (kernel),
+                  inner_axes (inner_axes),
+                  density (density),
+                  metric (metric),
+                  params (parameters),
+                  cost_function (0.0),
+                  gradient (overall_grad.size()), // BUG: set zero
+                  overall_cost_function (overall_cost_function),
+                  overall_gradient (overall_grad),
+                  rng (rng_engine),
+                  kern (ThreadKernel<MetricType, ParamType> (metric, params, overall_cost_function, gradient))  { assert(inner_axes.size() >= 2); }
+
+                ~ThreadFunctor () {
+                  WARN("~ThreadFunctor");
+                  VAR(gradient.transpose());
+                  overall_cost_function += cost_function;
+                  overall_gradient += gradient;
+                }
+
+                void operator() (const Iterator& iter) {
+                  auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
+                  DEBUG(str(iter));
+                  Iterator iterator (iter);
+                  assign_pos_of(iter).to(iterator);
+                  auto inner_loop = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], (float) iterator.size(inner_axes[1]) * density);
+                  for (auto j = inner_loop; j; ++j)
+                    for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
+                      // cnt += 1;
+                      DEBUG(str(iterator));
+                      kern(iterator);
+                    }
+                }
+              protected:
+                // typename std::remove_reference<Kernel>::type kern;
+                std::vector<size_t> inner_axes;
+                default_type density;
+                MetricType metric;
+                ParamType params;
+                default_type cost_function;
+                Eigen::VectorXd gradient;
+                default_type& overall_cost_function;
+                Eigen::VectorXd& overall_gradient;
+                Math::RNG rng;
+                ThreadKernel<MetricType, ParamType> kern;
+            };
+
             template <class TransformType_>
               // typename std::enable_if<has_robust_estimator<TransformType_>::value, void>::type // doesn't work with clang
               void
@@ -133,42 +188,35 @@ namespace MR
 
                 auto timer = Timer ();
                 if (params.loop_density < 1.0){
-                  Eigen::Matrix<default_type, Eigen::Dynamic, 1> optimiser_weights = trafo.get_optimiser_weights();
-                  INFO("StochasticThreadedLoop " + str(params.loop_density));
-                  std::vector<size_t> dimensions(3);
-                  dimensions[0] = params.midway_image.size(0);
-                  dimensions[1] = params.midway_image.size(1);
-                  dimensions[2] = params.midway_image.size(2);
+                  // Eigen::Matrix<default_type, Eigen::Dynamic, 1> optimiser_weights = trafo.get_optimiser_weights();
+                  INFO("stochastic gradient descent, density: " + str(params.loop_density));
                   if (params.robust_estimate){
                     DEBUG("robust estimate");
                     size_t n_estimates = 5;
-                    DEBUG(str("density: " + str(params.loop_density / (default_type) n_estimates)));
+                    default_type density = params.loop_density / (default_type) n_estimates;
+                    DEBUG(str("density: " + str(density)));
                     std::vector<Eigen::Matrix<default_type, Eigen::Dynamic, 1>> grad_estimates(n_estimates);
                     for (size_t i = 0; i < n_estimates; i++) {
-                      auto gradient_estimate(gradient);
-                      ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
-                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
+                      Eigen::VectorXd gradient_estimate(gradient.size());
+                      gradient_estimate.setZero();
+                      Math::RNG rng;
+                      auto loop = ThreadedLoop (params.midway_image, 0, 3, 2);
+                      ThreadFunctor functor (loop.inner_axes, density, metric, params, cost, gradient_estimate, rng); // <MetricType, ParamType>
+                      assert (gradient_estimate.isApprox(gradient_estimate));
+                      VAR(gradient_estimate.transpose());
+                      loop.run_outer (functor);
                       INFO("elapsed: (" + str(i) + ") " + str(timer.elapsed()));
                       // StochasticThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates);
                       grad_estimates[i] = gradient_estimate;
+                      VAR(grad_estimates[i].transpose());
                     }
-                    timer = Timer ();
-                    for (size_t i = 0; i < n_estimates; i++) {
-                      auto gradient_estimate(gradient);
-                      ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
-                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
-                    }
-                    WARN("elapsed with kernel: " + str(timer.elapsed() / n_estimates));
-                    timer = Timer ();
-                    auto gradient_estimate(gradient);
-                    ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient_estimate);
-                    for (size_t i = 0; i < n_estimates; i++) {
-                      auto gradient_estimate(gradient);
-                      RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density / (default_type) n_estimates, dimensions);
-                    }
-                    WARN("elapsed without kernel: " + str(timer.elapsed() / n_estimates));
                     params.transformation.robust_estimate(gradient, grad_estimates, params, x);
+                    VAR(gradient.transpose());
                   } else {
+                    std::vector<size_t> dimensions(3);
+                    dimensions[0] = params.midway_image.size(0);
+                    dimensions[1] = params.midway_image.size(1);
+                    dimensions[2] = params.midway_image.size(2);
                     ThreadKernel<MetricType, ParamType> kernel (metric, params, cost, gradient);
                     RandomThreadedLoop (params.midway_image, 0, 3).run (kernel, params.loop_density, dimensions);
                   }

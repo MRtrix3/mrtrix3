@@ -34,16 +34,16 @@ void usage ()
   + Argument ("type", "dense, sparse, dense2.").type_integer ();
 }
 
-template <class ImageType>
+template <class Kernel>
   struct ThreadFunctor {
     public:
-     ThreadFunctor (
-      ImageType& image,
+      ThreadFunctor (
+        Kernel& kernel,
        const std::vector<size_t>& inner_axes,
        const default_type density,
        size_t& overall_count,
        Math::RNG& rng_engine) :
-        image(image),
+        kern (kernel),
         inner_axes (inner_axes),
         density (density),
         overall_count (overall_count),
@@ -57,17 +57,19 @@ template <class ImageType>
       void operator() (const Iterator& iter) {
         auto engine = std::default_random_engine{static_cast<std::default_random_engine::result_type>(rng.get_seed())};
         DEBUG(str(iter));
-        assign_pos_of(iter).to(image);
+        Iterator iterator (iter);
+        assign_pos_of(iter).to(iterator);
         // auto inner_loop2 = Loop(image, inner_axes[0]);
-        auto inner_loop1 = Random_loop<ImageType,std::default_random_engine>(image, engine, inner_axes[1], std::ceil((float) image.size(inner_axes[1]) * density));
+        auto inner_loop1 = Random_loop<Iterator, std::default_random_engine>(iterator, engine, inner_axes[1], std::ceil((float) iterator.size(inner_axes[1]) * density));
         for (auto j = inner_loop1; j; ++j)
-          for (auto k = Loop (inner_axes[0]) (image); k; ++k){
+          for (auto k = Loop (inner_axes[0]) (iterator); k; ++k){
             cnt += 1;
-            INFO(str(image));
+            INFO(str(iterator));
+            kern(iterator);
           }
       }
     private:
-      ImageType image;
+      typename std::remove_reference<Kernel>::type kern;
       std::vector<size_t> inner_axes;
       default_type density;
       size_t& overall_count;
@@ -242,11 +244,17 @@ void run ()
   // 448         size_t from_axis = 0,
   // 449         size_t to_axis = std::numeric_limits<size_t>::max(), 
   // 450         size_t num_inner_axes = 1)
+    struct Kernel {
+      void operator() (const Iterator& iter) {
+        // TODO
+      }
+    };
+    Kernel kern;
     auto timer = Timer();
     auto loop = ThreadedLoop ("...", input, 0, 3, 2);
     Math::RNG rng;
-    size_t cnt;
-    ThreadFunctor<decltype(input)> functor (input, loop.inner_axes, density, cnt, rng);
+    size_t cnt = 0;
+    ThreadFunctor<Kernel> functor (kern, loop.inner_axes, density, cnt, rng); 
     loop.run_outer (functor);
     CONSOLE(str(timer.elapsed()));
     VAR(cnt);
