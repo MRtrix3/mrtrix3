@@ -261,7 +261,17 @@ namespace MR
 
       //! return an Image to access the data
       /*! when this method is invoked, the image data will actually be made
-       * available (i.e. it will be mapped, loaded or allocated into memory).
+       * available (i.e. it will be mapped, loaded or allocated into memory). 
+       *
+       * If \a read_write_if_existing is set, the data will be available
+       * read-write even for input images (by default, these are opened
+       * read-only). 
+       *
+       * \note this call will invalidate the invoking Header, by passing the
+       * relevant internal structures into the Image produced. The Header will
+       * no longer be valid(), and subsequent calls to get_image() will fail.
+       * This done to ensure ownership of the internal data structures remains
+       * clearly defined. 
        *
        * \warning do not modify the Header between its instantiation with the
        * open(), create() or scratch() calls, and obtaining an image via the
@@ -270,7 +280,7 @@ namespace MR
        * problems.
        */
       template <typename ValueType>
-        Image<ValueType> get_image();
+        Image<ValueType> get_image (bool read_write_if_existing = false);
 
       //! get generic key/value text attributes
       const std::map<std::string, std::string>& keyval () const { return keyval_; }
