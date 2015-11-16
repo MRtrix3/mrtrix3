@@ -114,9 +114,9 @@ namespace MR
           auto image = header.get_image<bool>();
           std::vector<GLubyte> data (image.size(0)*image.size(1));
           ProgressBar progress ("loading ROI image \"" + header.name() + "\"...");
-          for (auto outer = MR::Loop(2,3) (image); outer; ++outer) {
+          for (auto outer = MR::Loop(2) (image); outer; ++outer) {
             auto p = data.begin();
-            for (auto inner = MR::Loop (0,2) (image); inner; ++inner)
+            for (auto inner = MR::Loop (0,1) (image); inner; ++inner)
               *(p++) = image.value();
             upload_data ({ { 0, 0, image.index(2) } }, { { image.size(0), image.size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
             ++progress;
