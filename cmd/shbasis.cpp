@@ -124,7 +124,7 @@ void check_and_update (Header& H, const conv_t conversion)
     mzero_terms[Math::SH::index (l, 0)] = true;
 
   // Open in read-write mode if there's a chance of modification
-  auto image = H.get_image<value_type>();
+  auto image = H.get_image<value_type> (true);
 
   // Need to mask out voxels where the DC term is zero
   Header header_mask (H);
