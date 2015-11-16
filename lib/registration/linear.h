@@ -211,6 +211,8 @@ namespace MR
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
+            else if (init_type == Transform::Init::moments)
+              Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
             #ifndef NONSYMREGISTRATION
               // define transfomations that will be applied to the image header when the common space is calculated
               {
@@ -345,7 +347,7 @@ namespace MR
                 evaluate.set_directions (directions);
 
               for (auto gd_iteration = 0; gd_iteration < gd_repetitions[level]; ++gd_iteration){
-                Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType> 
+                Math::GradientDescent<Metric::Evaluate<MetricType, ParamType>, typename TransformType::UpdateType>
                   optim (evaluate, *transform.get_gradient_descent_updator());
                 // GradientDescent (Function& function, UpdateFunctor update_functor = LinearUpdate(), value_type step_size_upfactor = 3.0, value_type step_size_downfactor = 0.1)
                 optim.precondition (optimiser_weights);

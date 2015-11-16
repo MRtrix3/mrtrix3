@@ -7,7 +7,7 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "none", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
@@ -48,10 +48,6 @@ namespace MR
                                "using comma separated values (Default: 0.5,1)")
         + Argument ("factor").type_sequence_float ()
 
-      + Option ("affine_repetitions", "number of gradient descent optimisation repetitions for each level "
-                               "using comma separated values (Default: 1,1)")
-        + Argument ("factor").type_sequence_float ()
-
       + Option ("affine_niter", "the maximum number of iterations. This can be specified either as a single number "
                                 "for all multi-resolution levels, or a single value for each level. (Default: 1000)")
         + Argument ("num").type_sequence_int ()
@@ -59,7 +55,7 @@ namespace MR
       + Option ("affine_smooth_factor", "amount of smoothing before registration (Default: 1.0)")
         + Argument ("num").type_float (0.0, 1.0, std::numeric_limits<float>::infinity())
 
-      + Option ("affine_loop_density", "density of metric evaluation loop in gradient descent. 1.0 for batch or 0.1 for 10 percent density (Default: 1.0)")
+      + Option ("affine_sparsity", "sparsity of gradient descent 0 (batch) to 1.0 (max stochastic) (Default: 0.0)")
         + Argument ("num").type_sequence_float ()
 
       + Option ("affine_cc", "metric: use cross correlation. default: least squares")
@@ -104,7 +100,7 @@ namespace MR
         + Argument ("image").type_image_in ()
 
       + Option ("centre", "for rigid and affine registration only: Initialise the centre of rotation and initial translation. "
-                          "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre) or none. "
+                          "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments or none. "
                           "Default: mass (which may not be suited for multi-modality registration).")
         + Argument ("type").type_choice (initialisation_choices);
 

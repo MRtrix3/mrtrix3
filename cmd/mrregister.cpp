@@ -325,7 +325,7 @@ void run ()
       throw Exception ("the affine repetition factors were input when no affine registration is requested");
     affine_repetition_factors = parse_ints (opt[0][0]);
   }
-  
+
 
   opt = get_options ("rigid_smooth_factor");
   default_type rigid_smooth_factor = 1.0;
@@ -461,6 +461,9 @@ void run ()
         init_centre = Registration::Transform::Init::geometric;
         break;
       case 2:
+        init_centre = Registration::Transform::Init::moments;
+        break;
+      case 3:
         init_centre = Registration::Transform::Init::none;
         break;
       default:
