@@ -444,6 +444,16 @@ namespace MR
 
           menu->addSeparator();
 
+          action = menu->addAction (tr ("Zoom in"), this, SLOT (zoom_in_slot()));
+          action->setShortcut (tr("Ctrl++"));
+          addAction (action);
+
+          action = menu->addAction (tr ("Zoom out"), this, SLOT (zoom_out_slot()));
+          action->setShortcut (tr("Ctrl+-"));
+          addAction (action);
+
+          menu->addSeparator();
+
           action = menu->addAction (tr ("Toggle all annotations"), this, SLOT (toggle_annotations_slot()));
           action->setShortcut (tr("Space"));
           addAction (action);
@@ -960,6 +970,24 @@ namespace MR
         else assert (0);
         glarea->update();
       }
+
+
+
+
+
+      void Window::zoom_in_slot ()
+      {
+        set_FOV (FOV() * std::exp (-0.1));
+        glarea->update();
+      }
+
+      void Window::zoom_out_slot () 
+      {
+        set_FOV (FOV() * std::exp (0.1));
+        glarea->update();
+      }
+
+
 
 
       void Window::reset_view_slot ()
