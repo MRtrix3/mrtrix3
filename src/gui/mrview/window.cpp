@@ -1477,9 +1477,9 @@ namespace MR
 #if QT_VERSION >= 0x050400
         QPoint delta = event->pixelDelta();
         if (delta.isNull())
-          delta = event->angleDelta() / 120.0;
+          delta = event->angleDelta();
 #else
-        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta() / 120.0) : QPoint (event->delta() / 120.0, 0);
+        QPoint delta = event->orientation() == Qt::Vertical ? QPoint (0, event->delta()) : QPoint (event->delta(), 0);
 #endif
         if (delta.isNull())
           return;
@@ -1493,13 +1493,13 @@ namespace MR
             if (buttons_ == Qt::NoButton) {
 
               if (modifiers_ == Qt::ControlModifier) {
-                set_FOV (FOV() * std::exp (-0.1*delta.y()));
+                set_FOV (FOV() * std::exp (-delta.y()/1200.0));
                 glarea->update();
                 event->accept();
                 return;
               }
 
-              float dx = delta.y();
+              float dx = delta.y()/120.0;
               if (modifiers_ == Qt::ShiftModifier) dx *= 10.0;
               else if (modifiers_ != Qt::NoModifier) 
                 return;
@@ -1515,7 +1515,7 @@ namespace MR
               QAction* action = image_group->checkedAction();
               int N = image_group->actions().size();
               int n = image_group->actions().indexOf (action);
-              image_select_slot (image_group->actions()[(n+N+delta.y())%N]);
+              image_select_slot (image_group->actions()[(n+N+int(std::round(delta.y()/120.0)))%N]);
             }
           }
         }
