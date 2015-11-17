@@ -119,8 +119,6 @@ namespace MR
               if (!init_filter.size())
                 init_filter = Eigen::VectorXd::Ones(3);
               init_filter.conservativeResize (size_t (lmax_response/2)+1);
-              if (init_filter.size() > 3)
-                init_filter.tail (init_filter.size()-3).setZero();
 
               auto RH = SH2RH (response);
               if (RH.size() < 1+lmax/2) {
@@ -270,13 +268,13 @@ namespace MR
           work.triangularView<Eigen::Lower>() = shared.Mt_M.triangularView<Eigen::Lower>();
 
           if (neg.size()) {
-            HR_T.resize (neg.size(), shared.HR_trans.cols());
             for (size_t i = 0; i < neg.size(); i++)
-            HR_T.row (i) = shared.HR_trans.row (neg[i]);
-            work.selfadjointView<Eigen::Lower>().rankUpdate (HR_T.transpose());
+              HR_T.row (i) = shared.HR_trans.row (neg[i]);
+            auto HR_T_view = HR_T.topRows (neg.size());
+            work.triangularView<Eigen::Lower>() += HR_T_view.transpose() * HR_T_view; 
           }
 
-          F.noalias() = llt.compute (work.selfadjointView<Eigen::Lower>()).solve (Mt_b);
+          F.noalias() = llt.compute (work.triangularView<Eigen::Lower>()).solve (Mt_b);
 
           computed_once = true;
           old_neg = neg;
