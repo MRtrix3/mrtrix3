@@ -65,7 +65,7 @@ namespace MR
         f.setRedBufferSize (8);
         f.setGreenBufferSize (8);
         f.setBlueBufferSize (8);
-        f.setAlphaBufferSize (8);
+        f.setAlphaBufferSize (0);
 
         int swap_interval = MR::File::Config::get_int ("VSync", 0);
         f.setSwapInterval (swap_interval);
