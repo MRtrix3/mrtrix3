@@ -103,29 +103,38 @@ namespace MR
             Eigen::Matrix<ValueType, 4, 4> X, Delta, A, Asqrt, B, Bsqrt, Bsqrtinv, Xnew;
 
             param_vec2mat_affine(x, X);
-            delta = g * step_size;
-            param_vec2mat_affine(delta, Delta);
+            // reduce step size if determinant of matrix is negative (happens rarely at first few iterations)
+            size_t cnt = 0;
+            default_type factor = 0.9;
+            while (true) {
+              delta = g * step_size;
+              param_vec2mat_affine(delta, Delta);
 
-            A = X - Delta;
-            A(3,3) = 1.0;
-            Asqrt = A.sqrt();
+              A = X - Delta;
+              A(3,3) = 1.0;
+              if (A.determinant() < 0) {
+                step_size *= factor;
+                ++cnt;
+              } else {
+                break;
+              }
+            }
+            if (cnt > 0) INFO("affine: gradient descent step size was too large. Multiplied by factor "
+             + str(std::pow (factor, cnt), 4) + " (now: "+ str(step_size, 4) + ")");
+
+            Asqrt = A.sqrt().eval();
             assert(A.isApprox(Asqrt * Asqrt));
             B = X.inverse() + Delta;
             B(3,3) = 1.0;
-            Bsqrt = B.sqrt();
-            Bsqrtinv = Bsqrt.inverse();
+            assert(B.determinant() > 0.0);
+            Bsqrt = B.sqrt().eval();
+            Bsqrtinv = Bsqrt.inverse().eval();
             assert(B.isApprox(Bsqrt * Bsqrt));
 
             // approximation for symmetry reasons as
             // A and B don't commute
             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
             param_mat2vec_affine(Xnew, newx);
-            // if (verbose){
-            //   Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", ";\n", "", "", "", "");
-            //   WARN("AffineUpdate: newx " + str(newx.transpose(),12));
-            //   VAR(Xnew.sqrt().format(fmt));
-            //   VAR(Xnew.sqrt().inverse().format(fmt));
-            // }
             return !(newx.isApprox(x));
           }
     };
@@ -258,14 +267,14 @@ namespace MR
             //     grad_estimates[j][i] *= this->optimiser_weights[i];
             //   }
             // }
-              
+
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
               // gradient += grad_estimates[j]; // TODO remove me
               Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
               Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
               for (size_t i = 0; i < n_corners; ++i){
-                transformed_corner[i].col(j) = trafo_upd * corners.col(i); 
+                transformed_corner[i].col(j) = trafo_upd * corners.col(i);
               }
             }
             // return true; // hack

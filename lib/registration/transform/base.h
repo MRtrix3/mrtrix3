@@ -24,7 +24,7 @@
 #define __registration_transform_base_h__
 
 #include "types.h"
-#include <unsupported/Eigen/MatrixFunctions>
+#include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
 #include <Eigen/SVD>
 #include <Eigen/Geometry> // Eigen::Translation
 
@@ -209,7 +209,8 @@ namespace MR
               tmp.setIdentity();
               tmp.template block<3,4>(0,0) = trafo.matrix();
               assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
-              tmp = tmp.sqrt();
+              assert(tmp.determinant() > 0);
+              tmp = tmp.sqrt().eval();
               trafo_half.matrix() = tmp.template block<3,4>(0,0);
               trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
               assert(trafo.matrix().isApprox((trafo_half*trafo_half).matrix()));
