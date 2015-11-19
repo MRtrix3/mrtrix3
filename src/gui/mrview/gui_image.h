@@ -52,6 +52,7 @@ namespace MR
       {
         public:
           ImageBase (MR::Header&&);
+          virtual ~ImageBase();
 
           void render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice);
           void render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth);
@@ -83,7 +84,7 @@ namespace MR
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
-          const MR::Transform transform() const { return linear_interp; }
+          const MR::Transform& transform() const { return linear_interp; }
           const std::vector<std::string>& comments() const { return _comments; }
 
         protected:
