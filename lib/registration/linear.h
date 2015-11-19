@@ -68,7 +68,7 @@ namespace MR
           gd_repetitions (1, 1),
           scale_factor (2),
           loop_density (1, 1.0),
-          smooth_factor (1.0),
+          smooth_factor (1, 1.0),
           kernel_extent(3, 1),
           grad_tolerance(1.0e-6),
           step_tolerance(1.0e-10),
@@ -101,9 +101,11 @@ namespace MR
           scale_factor = scalefactor;
         }
 
-        void set_smoothing_factor (const default_type& smoothing_factor) {
-          if (smoothing_factor < 0)
-            throw Exception ("the smoothing factor must be non-negative");
+        void set_smoothing_factor (const std::vector<default_type>& smoothing_factor) {
+          for (size_t level = 0; level < smoothing_factor.size(); ++level) {
+            if (smoothing_factor[level] <= 0)
+              throw Exception ("the smooth factor for each multi-resolution level must be larger than 0");
+          }
           smooth_factor = smoothing_factor;
         }
 
@@ -206,6 +208,11 @@ namespace MR
             else if (loop_density.size() != scale_factor.size())
               throw Exception ("the loop density level needs to be defined for each multi-resolution level");
 
+            if (smooth_factor.size() == 1)
+              smooth_factor.resize (scale_factor.size(), smooth_factor[0]);
+            else if (smooth_factor.size() != scale_factor.size())
+              throw Exception ("the smooth factor needs to be defined for each multi-resolution level");
+
             std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
@@ -282,8 +289,8 @@ namespace MR
                 auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
               #else
                 Filter::Smooth im1_smooth_filter (im1_image);
-                im1_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level]));
-                INFO("smooth_factor " + str(smooth_factor));
+                im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
+                INFO("smooth_factor " + str(smooth_factor[level]));
                 auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
               #endif
 
@@ -296,7 +303,7 @@ namespace MR
                 auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
               #else
                 Filter::Smooth im2_smooth_filter (im2_image);
-                im2_smooth_filter.set_stdev(smooth_factor * 1.0 / (2.0 * scale_factor[level])) ;
+                im2_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level])) ;
                 auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
               #endif
 
@@ -382,7 +389,7 @@ namespace MR
         std::vector<int> gd_repetitions;
         std::vector<default_type> scale_factor;
         std::vector<default_type> loop_density;
-        default_type smooth_factor;
+        std::vector<default_type> smooth_factor;
         std::vector<size_t> kernel_extent;
         default_type grad_tolerance;
         default_type step_tolerance;

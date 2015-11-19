@@ -328,19 +328,19 @@ void run ()
 
 
   opt = get_options ("rigid_smooth_factor");
-  default_type rigid_smooth_factor = 1.0;
+  std::vector<default_type> rigid_smooth_factor(1,1.0);
   if (opt.size ()) {
     if (!do_rigid)
       throw Exception ("the rigid smooth factor was input when no rigid registration is requested");
-    rigid_smooth_factor = default_type (opt[0][0]);
+    rigid_smooth_factor = parse_floats (opt[0][0]);
   }
 
   opt = get_options ("affine_smooth_factor");
-  default_type affine_smooth_factor = 1.0;
+  std::vector<default_type> affine_smooth_factor(1,1.0);
   if (opt.size ()) {
     if (!do_affine)
       throw Exception ("the affine smooth factor was input when no affine registration is requested");
-    affine_smooth_factor = default_type (opt[0][0]);
+    affine_smooth_factor = parse_floats (opt[0][0]);
   }
 
   opt = get_options ("affine_loop_density");
