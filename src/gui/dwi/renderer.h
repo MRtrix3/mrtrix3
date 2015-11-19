@@ -61,7 +61,13 @@ namespace MR
           typedef Eigen::VectorXf vector_t;
 
         public:
-          Renderer (QGLWidget* widget) : is_SH (true), reverse_ID (0), origin_ID (0), sh (*this), dixel (*this), context_ (widget) { }
+          Renderer (QGLWidget* widget) :
+              is_SH (true),
+              reverse_ID (0),
+              origin_ID (0),
+              sh (*this),
+              dixel (*this),
+              context_ (widget) { }
 
           bool ready () const { return shader; }
 

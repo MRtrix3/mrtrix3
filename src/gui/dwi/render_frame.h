@@ -69,6 +69,7 @@ namespace MR
             is_SH = yesno;
             if (is_SH && dirs)
               delete dirs.release();
+            recompute_mesh = recompute_amplitudes = true;
             update();
           }
           void set_show_axes (bool yesno = true) {
@@ -92,12 +93,14 @@ namespace MR
             update();
           }
           void set_lmax (int lmax) {
+            assert (is_SH);
             if (lmax != lmax_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lmax_computed = lmax;
             update();
           }
           void set_LOD (int lod) {
+            assert (is_SH);
             if (lod != lod_computed) 
               recompute_mesh = recompute_amplitudes = true;
             lod_computed = lod;
