@@ -23,7 +23,6 @@
 #ifndef __gui_lighting_dock_h__
 #define __gui_lighting_dock_h__
 
-#include "mrtrix.h"
 #include "gui/opengl/lighting.h"
 
 namespace MR

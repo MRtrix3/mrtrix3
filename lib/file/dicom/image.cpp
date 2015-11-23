@@ -110,8 +110,8 @@ namespace MR {
                   orientation_y[0] = item.get_float()[3];
                   orientation_y[1] = item.get_float()[4];
                   orientation_y[2] = item.get_float()[5];
-                  Math::normalise (orientation_x);
-                  Math::normalise (orientation_y);
+                  orientation_x.normalize();
+                  orientation_y.normalize();
                   return;
                 case 0x9157U: 
                   index = item.get_uint();
@@ -432,39 +432,37 @@ namespace MR {
 
 
 
-      Math::Matrix<float> Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const Math::Matrix<float>& image_transform)
+      std::string Frame::get_DW_scheme (const std::vector<Frame*>& frames, size_t nslices, const transform_type& image_transform)
       {
-        Math::Matrix<float> G;
-
         if (!std::isfinite (frames[0]->bvalue)) {
           DEBUG ("no DW encoding information found in DICOM frames");
-          return G;
+          return { };
         }
 
+        std::string dw_scheme;
         const size_t nDW = frames.size() / nslices;
 
-        G.allocate (nDW, 4);
         const bool rotate_DW_scheme = frames[0]->DW_scheme_wrt_image;
         for (size_t n = 0; n < nDW; ++n) {
           const Frame& frame (*frames[n*nslices]);
-          G(n,0) = G(n,1) = 0.0; G(n,2) = 1.0;
-          G(n,3) = frame.bvalue;
-          if (G(n,3) && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
+          std::array<default_type,4> g = {{ 0.0, 0.0, 0.0, frame.bvalue }};
+          if (g[3] && std::isfinite (frame.G[0]) && std::isfinite (frame.G[1]) && std::isfinite (frame.G[2])) {
 
             if (rotate_DW_scheme) {
-              G(n,0) = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
-              G(n,1) = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
-              G(n,2) = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
+              g[0] = image_transform(0,0)*frame.G[0] + image_transform(0,1)*frame.G[1] - image_transform(0,2)*frame.G[2];
+              g[1] = image_transform(1,0)*frame.G[0] + image_transform(1,1)*frame.G[1] - image_transform(1,2)*frame.G[2];
+              g[2] = image_transform(2,0)*frame.G[0] + image_transform(2,1)*frame.G[1] - image_transform(2,2)*frame.G[2];
             } else {
-              G(n,0) = -frame.G[0];
-              G(n,1) = -frame.G[1];
-              G(n,2) =  frame.G[2];
+              g[0] = -frame.G[0];
+              g[1] = -frame.G[1];
+              g[2] =  frame.G[2];
             }
 
           }
+          add_line (dw_scheme, str(g[0]) + "," + str(g[1]) + "," + str(g[2]) + "," + str(g[3]));
         }
 
-        return G;
+        return dw_scheme;
       }
 
 

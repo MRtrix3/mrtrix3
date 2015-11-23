@@ -25,8 +25,6 @@
 
 #include <functional>
 
-#include "point.h"
-
 #include "gui/opengl/gl.h"
 #include "gui/opengl/shader.h"
 
@@ -59,7 +57,7 @@ namespace MR
         class Entry {
           public:
 
-            typedef std::function< Point<float> (float) > basic_map_fn;
+            typedef std::function< Eigen::Array3f (float) > basic_map_fn;
 
             Entry (const char* name, const char* glsl_mapping, basic_map_fn basic_mapping,
                 const char* amplitude = NULL, bool special = false, bool is_colour = false) :
@@ -150,7 +148,7 @@ namespace MR
             void render (size_t colourmap, bool inverted,
                          float local_min_value, float local_max_value,
                          float global_min_value, float global_range,
-                         Point<float> colour = Point<float>());
+                         Eigen::Array3f colour = { NAN, NAN, NAN });
 
             void render (const Displayable& object, bool inverted);
 

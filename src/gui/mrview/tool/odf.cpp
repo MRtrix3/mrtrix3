@@ -41,8 +41,8 @@ namespace MR
 
         class ODF::Image {
           public:
-            Image (const MR::Image::Header& header, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
-              image (header),
+            Image (MR::Header&& H, int lmax, float scale, bool hide_negative_lobes, bool color_by_direction) :
+              image (std::move (H)),
               lmax (lmax),
               scale (scale),
               hide_negative_lobes (hide_negative_lobes),
@@ -93,10 +93,10 @@ namespace MR
             }
 
             size_t add_items (const std::vector<std::string>& list, int lmax, bool colour_by_direction, bool hide_negative_lobes, float scale) {
-              std::vector<std::unique_ptr<MR::Image::Header>> hlist;
+              std::vector<std::unique_ptr<MR::Header>> hlist;
               for (size_t i = 0; i < list.size(); ++i) {
                 try {
-                  std::unique_ptr<MR::Image::Header> header (new MR::Image::Header (list[i]));
+                  std::unique_ptr<MR::Header> header (new MR::Header (MR::Header::open (list[i])));
                   Math::SH::check (*header);
                   hlist.push_back (std::move (header));
                 }
@@ -108,7 +108,7 @@ namespace MR
               if (hlist.size()) {
                 beginInsertRows (QModelIndex(), items.size(), items.size()+hlist.size());
                 for (size_t i = 0; i < hlist.size(); ++i) 
-                  items.push_back (std::unique_ptr<Image> (new Image (*hlist[i], lmax, scale, hide_negative_lobes, colour_by_direction)));
+                  items.push_back (std::unique_ptr<Image> (new Image (std::move (*hlist[i]), lmax, scale, hide_negative_lobes, colour_by_direction)));
                 endInsertRows();
               }
 
@@ -289,6 +289,10 @@ namespace MR
             delete renderer;
             renderer = nullptr;
           }
+          if (preview) {
+            delete preview;
+            preview = nullptr;
+          }
           if (lighting_dock) {
             delete lighting_dock;
             lighting_dock = nullptr;
@@ -302,6 +306,7 @@ namespace MR
 
         void ODF::draw (const Projection& projection, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (is_3D) 
             return;
 
@@ -332,47 +337,47 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
 
-            Point<> pos (window().target());
+            Eigen::Vector3f pos (window().target());
             pos += projection.screen_normal() * (projection.screen_normal().dot (window().focus() - window().target()));
             if (lock_to_grid_box->isChecked()) {
-              Point<> p = image.interp.scanner2voxel (pos);
+              Eigen::Vector3f p = image.transform().scanner2voxel.cast<float>() * pos;
               p[0] = std::round (p[0]);
               p[1] = std::round (p[1]);
               p[2] = std::round (p[2]);
-              pos = image.interp.voxel2scanner (p);
+              pos = image.transform().voxel2scanner.cast<float>() * p;
             }
 
-            Point<> x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
-            x_dir.normalise();
-            x_dir = image.interp.scanner2image_dir (x_dir);
-            x_dir[0] *= image.interp.vox(0);
-            x_dir[1] *= image.interp.vox(1);
-            x_dir[2] *= image.interp.vox(2);
-            x_dir = image.interp.image2scanner_dir (x_dir);
+            Eigen::Vector3f x_dir = projection.screen_to_model_direction (1.0, 0.0, projection.depth_of (pos));
+            x_dir.normalize();
+            x_dir = image.transform().scanner2image.rotation().cast<float>() * x_dir;
+            x_dir[0] *= image.header().spacing (0);
+            x_dir[1] *= image.header().spacing (1);
+            x_dir[2] *= image.header().spacing (2);
+            x_dir = image.transform().image2scanner.rotation().cast<float>() * x_dir;
 
-            Point<> y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
-            y_dir.normalise();
-            y_dir = image.interp.scanner2image_dir (y_dir);
-            y_dir[0] *= image.interp.vox(0);
-            y_dir[1] *= image.interp.vox(1);
-            y_dir[2] *= image.interp.vox(2);
-            y_dir = image.interp.image2scanner_dir (y_dir);
+            Eigen::Vector3f y_dir = projection.screen_to_model_direction (0.0, 1.0, projection.depth_of (pos));
+            y_dir.normalize();
+            y_dir = image.transform().scanner2image.rotation().cast<float>() * y_dir;
+            y_dir[0] *= image.header().spacing (0);
+            y_dir[1] *= image.header().spacing (1);
+            y_dir[2] *= image.header().spacing (2);
+            y_dir = image.transform().image2scanner.rotation().cast<float>() * y_dir;
 
-            Point<> x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
-            int nx = std::ceil (x_width.norm() / x_dir.norm());
-            Point<> y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
-            int ny = std::ceil (y_width.norm() / y_dir.norm());
+            const Eigen::Vector3f x_width = projection.screen_to_model_direction (projection.width()/2.0, 0.0, projection.depth_of (pos));
+            const int nx = std::ceil (x_width.norm() / x_dir.norm());
+            const Eigen::Vector3f y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
+            const int ny = std::ceil (y_width.norm() / y_dir.norm());
 
-            Math::Vector<float> values (Math::SH::NforL (settings->lmax));
-            Math::Vector<float> r_del_daz;
+            Eigen::VectorXf values (Math::SH::NforL (settings->lmax));
+            Eigen::VectorXf r_del_daz;
 
             for (int y = -ny; y <= ny; ++y) {
               for (int x = -nx; x <= nx; ++x) {
-                Point<> p = pos + float(x)*x_dir + float(y)*y_dir;
+                Eigen::Vector3f p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
                 if (values[0] == 0.0) continue;
-                renderer->compute_r_del_daz (r_del_daz, values.sub (0, Math::SH::NforL (lmax)));
+                renderer->compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
                 renderer->set_data (r_del_daz);
                 renderer->draw (p);
               }
@@ -383,6 +388,7 @@ namespace MR
             gl::Disable (gl::DEPTH_TEST);
             gl::DepthMask (gl::FALSE_);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -404,18 +410,20 @@ namespace MR
 
 
 
-        void ODF::get_values (Math::Vector<float>& values, MRView::Image& image, const Point<>& pos, const bool interp)
+        void ODF::get_values (Eigen::VectorXf& values, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp)
         {
-          Point<> p = image.interp.scanner2voxel (pos);
-          if (!interp) {
-            p[0] = std::round (p[0]);
-            p[1] = std::round (p[1]);
-            p[2] = std::round (p[2]);
+          values.setZero();
+          if (interp) {
+            if (image.linear_interp.scanner (pos))
+              return;
+            for (image.linear_interp.index(3) = 0; image.linear_interp.index(3) < std::min (ssize_t(values.size()), image.linear_interp.size(3)); ++image.linear_interp.index(3))
+              values[image.linear_interp.index(3)] = image.linear_interp.value().real();
+          } else {
+            if (image.nearest_interp.scanner (pos))
+              return;
+            for (image.nearest_interp.index(3) = 0; image.nearest_interp.index(3) < std::min (ssize_t(values.size()), image.nearest_interp.size(3)); ++image.nearest_interp.index(3))
+              values[image.nearest_interp.index(3)] = image.nearest_interp.value().real();
           }
-          image.interp.voxel (p);
-          values.zero();
-          for (image.interp[3] = 0; image.interp[3] < std::min (ssize_t(values.size()), image.interp.dim(3)); ++image.interp[3])
-            values[image.interp[3]] = image.interp.value().real(); 
         }
 
 
@@ -619,7 +627,7 @@ namespace MR
           if (!settings)
             return;
           MRView::Image& image (settings->image);
-          Math::Vector<float> values (Math::SH::NforL (lmax_selector->value()));
+          Eigen::VectorXf values (Math::SH::NforL (lmax_selector->value()));
           get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
         }

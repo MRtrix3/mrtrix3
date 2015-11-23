@@ -68,7 +68,7 @@ inline uint16_t read_hex (const std::string& m)
 
 void run ()
 {
-  Options opt = get_options("tag");
+  auto opt = get_options("tag");
   if (opt.size()) {
     std::istringstream hex;
 

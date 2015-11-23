@@ -32,18 +32,18 @@ namespace MR
    *                       Miscellaneous functions                        *
    ************************************************************************/
 
-  std::vector<float> parse_floats (const std::string& spec)
+  std::vector<default_type> parse_floats (const std::string& spec)
   {
-    std::vector<float> V;
+    std::vector<default_type> V;
     if (!spec.size()) throw Exception ("floating-point sequence specifier is empty");
     std::string::size_type start = 0, end;
-    float range_spec[3];
+    default_type range_spec[3];
     int i = 0;
     try {
       do {
         end = spec.find_first_of (",:", start);
         std::string sub (spec.substr (start, end-start));
-        range_spec[i] = (sub.empty() || sub == "nan") ? NAN : to<float> (sub);
+        range_spec[i] = (sub.empty() || sub == "nan") ? NAN : to<default_type> (sub);
         char last_char = end < spec.size() ? spec[end] : '\0';
         if (last_char == ':') {
           i++;
@@ -52,10 +52,10 @@ namespace MR
           if (i) {
             if (i != 2)
               throw Exception ("For floating-point ranges, must specify three numbers (start:step:end)");
-            float first = range_spec[0], inc = range_spec[1], last = range_spec[2];
+            default_type first = range_spec[0], inc = range_spec[1], last = range_spec[2];
             if (!inc || (inc * (last-first) < 0.0) || !std::isfinite(first) || !std::isfinite(inc) || !std::isfinite(last))
               throw Exception ("Floating-point range does not form a finite set");
-            float value = first;
+            default_type value = first;
             for (size_t mult = 0; (inc>0.0f ? value < last - 0.5f*inc : value > last + 0.5f*inc); ++mult)
               V.push_back ((value = first + (mult * inc)));
           } else {

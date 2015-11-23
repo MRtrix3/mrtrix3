@@ -49,10 +49,12 @@ namespace MR
           virtual void update (const Connectome&) = 0;
 
           void start (const Connectome& parent) {
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             if (*this == 0 || need_update (parent)) {
               recompile (parent);
             }
             GL::Shader::Program::start();
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           }
 
         protected:

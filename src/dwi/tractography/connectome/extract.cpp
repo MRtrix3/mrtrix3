@@ -80,7 +80,7 @@ bool Selector::operator() (const std::vector<node_t>& nodes) const
 
 
 
-WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const std::vector<node_t>& nodes, const bool exclusive, const node_t first_node, const std::vector< Point<float> >& COMs) :
+WriterExemplars::WriterExemplars (const Tractography::Properties& properties, const std::vector<node_t>& nodes, const bool exclusive, const node_t first_node, const std::vector<Eigen::Vector3f>& COMs) :
     step_size (NAN)
 {
   // Determine how many points to use in the initial representation of each exemplar

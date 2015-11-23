@@ -111,7 +111,7 @@ namespace MR
                window().updateGL();
              }
              
-             void add_images (std::vector<std::unique_ptr<MR::Image::Header>>& list);
+             void add_images (std::vector<std::unique_ptr<MR::Header>>& list);
         };
 
       }

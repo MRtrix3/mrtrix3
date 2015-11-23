@@ -48,7 +48,7 @@ namespace MR {
         for (size_t i = 0; i != track_contribution.dim(); ++i) {
           const SIFT2::Fixel& fixel (tckfactor.fixels[track_contribution[i].get_fixel_index()]);
           if (!fixel.is_excluded())
-            fixels.push_back (Fixel (track_contribution[i], tckfactor, track_contribution.get_total_contribution(), Fs, fixel.get_mean_coeff()));
+            fixels.push_back (Fixel (track_contribution[i], tckfactor, Fs, fixel.get_mean_coeff()));
         }
       }
 
@@ -57,7 +57,7 @@ namespace MR {
 
 
       LineSearchFunctor::Result
-      LineSearchFunctor::get (const float dFs) const
+      LineSearchFunctor::get (const double dFs) const
       {
 
         const double coefficient = Fs + dFs;
@@ -94,7 +94,7 @@ namespace MR {
 
 
 
-      double LineSearchFunctor::operator() (const float dFs) const
+      double LineSearchFunctor::operator() (const double dFs) const
       {
         double cf_data = 0.0;
         double cf_reg_tv = 0.0;
@@ -111,7 +111,7 @@ namespace MR {
 
 
 
-      LineSearchFunctor::Fixel::Fixel (const SIFT::Track_fixel_contribution& in, const TckFactor& tckfactor, const float total_contribution, const float Fs, const float fixel_coeff_mean) :
+      LineSearchFunctor::Fixel::Fixel (const SIFT::Track_fixel_contribution& in, const TckFactor& tckfactor, const double Fs, const double fixel_coeff_mean) :
           index (in.get_fixel_index()),
           length (in.get_length()),
           PM (tckfactor.fixels[index].get_weight()),

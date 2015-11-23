@@ -25,8 +25,7 @@
 
 #include <QString>
 
-#include "math/vector.h"
-
+#include "mrtrix.h"
 
 namespace MR
 {
@@ -38,14 +37,15 @@ namespace MR
       {
 
       // Vector that stores the name of the file imported, so it can be displayed in the GUI
-      class FileDataVector : public Math::Vector<float>
+      class FileDataVector : public Eigen::VectorXf
       {
         public:
+          typedef Eigen::VectorXf base_t;
           FileDataVector ();
-          FileDataVector (const FileDataVector& V);
-          FileDataVector (FileDataVector&& V);
-          FileDataVector (size_t nelements);
-          FileDataVector (const std::string& file);
+          FileDataVector (const FileDataVector&);
+          FileDataVector (FileDataVector&&);
+          FileDataVector (const size_t);
+          FileDataVector (const std::string&);
 
           FileDataVector& operator= (const FileDataVector&);
           FileDataVector& operator= (FileDataVector&&);
@@ -56,14 +56,15 @@ namespace MR
           const QString& get_name() const { return name; }
           void set_name (const std::string& s) { name = s.c_str(); }
 
-          float get_min() const { return min; }
-          float get_max() const { return max; }
+          float get_min()  const { return min; }
+          float get_mean() const { return mean; }
+          float get_max()  const { return max; }
 
-          void calc_minmax();
+          void calc_stats();
 
         private:
           QString name;
-          float min, max;
+          float min, mean, max;
 
       };
 

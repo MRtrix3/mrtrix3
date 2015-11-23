@@ -21,7 +21,6 @@
 */
 
 #include "progressbar.h"
-#include "image/stride.h"
 #include "gui/mrview/tool/tractography/tractogram.h"
 #include "gui/mrview/window.h"
 #include "gui/projection.h"
@@ -339,6 +338,7 @@ namespace MR
 
         Tractogram::~Tractogram ()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (vertex_buffers.size())
             gl::DeleteBuffers (vertex_buffers.size(), &vertex_buffers[0]);
           if (vertex_array_objects.size())
@@ -347,6 +347,7 @@ namespace MR
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
           if (scalar_buffers.size())
             gl::DeleteBuffers (scalar_buffers.size(), &scalar_buffers[0]);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -354,6 +355,7 @@ namespace MR
 
         void Tractogram::render (const Projection& transform)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (tractography_tool.do_crop_to_slab && tractography_tool.slab_thickness <= 0.0)
             return;
 
@@ -361,8 +363,7 @@ namespace MR
           transform.set (track_shader);
 
           if (tractography_tool.do_crop_to_slab) {
-            gl::Uniform3f (gl::GetUniformLocation (track_shader, "screen_normal"),
-                transform.screen_normal()[0], transform.screen_normal()[1], transform.screen_normal()[2]);
+            gl::Uniform3fv (gl::GetUniformLocation (track_shader, "screen_normal"), 1, transform.screen_normal().data());
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "crop_var"),
                 window().focus().dot(transform.screen_normal()) - tractography_tool.slab_thickness / 2);
             gl::Uniform1f (gl::GetUniformLocation (track_shader, "slab_width"),
@@ -376,7 +377,7 @@ namespace MR
               gl::Uniform1f (gl::GetUniformLocation (track_shader, "upper"), greaterthan);
           }
           else if (color_type == Manual)
-              gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour);
+              gl::Uniform3fv (gl::GetUniformLocation (track_shader, "const_colour"), 1, colour.data());
 
           if (tractography_tool.use_lighting) {
             gl::UniformMatrix4fv (gl::GetUniformLocation (track_shader, "MV"), 1, gl::FALSE_, transform.modelview());
@@ -390,10 +391,10 @@ namespace MR
           if (!std::isfinite (original_fov)) {
             // set line thickness once upon loading, but don't touch it after that:
             // it shouldn't change when the background image changes
-            float dim[] = {
-              window().image()->header().dim (0) * window().image()->header().vox (0),
-              window().image()->header().dim (1) * window().image()->header().vox (1),
-              window().image()->header().dim (2) * window().image()->header().vox (2)
+            default_type dim[] = {
+              window().image()->header().size (0) * window().image()->header().spacing (0),
+              window().image()->header().size (1) * window().image()->header().spacing (1),
+              window().image()->header().size (2) * window().image()->header().spacing (2)
             };
             original_fov = std::pow (dim[0]*dim[1]*dim[2], 1.0f/3.0f);
           }
@@ -432,6 +433,7 @@ namespace MR
           }
 
           stop (track_shader);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -439,6 +441,7 @@ namespace MR
 
         inline void Tractogram::render_streamlines ()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           for (size_t buf = 0, N= vertex_buffers.size(); buf < N; ++buf) {
             gl::BindVertexArray (vertex_array_objects[buf]);
 
@@ -479,6 +482,7 @@ namespace MR
           }
 
           vao_dirty = false;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -502,18 +506,19 @@ namespace MR
 
         void Tractogram::load_tracks()
         {
+          // Make sure to set graphics context!
+          // We're setting up vertex array objects
+          Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           DWI::Tractography::Reader<float> file (filename, properties);
           DWI::Tractography::Streamline<float> tck;
-          std::vector<Point<float> > buffer;
+          std::vector<Eigen::Vector3f> buffer;
           std::vector<GLint> starts;
           std::vector<GLint> sizes;
           size_t tck_count = 0;
 
           on_FOV_changed();
-
-          // Make sure to set graphics context!
-          // We're setting up vertex array objects
-          Window::GrabContext context;
 
           while (file (tck)) {
 
@@ -545,6 +550,7 @@ namespace MR
             load_tracks_onto_GPU (buffer, starts, sizes, tck_count);
           }
           file.close();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
         
         
@@ -555,35 +561,37 @@ namespace MR
           // Make sure to set graphics context!
           // We're setting up vertex array objects
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
           // TODO Is it possible to read the track endpoints from the GPU buffer rather than re-reading the .tck file?
           DWI::Tractography::Reader<float> file (filename, properties);
           for (size_t buffer_index = 0, N = vertex_buffers.size(); buffer_index < N; ++buffer_index) {
             size_t num_tracks = num_tracks_per_buffer[buffer_index];
-            std::vector< Point<float> > buffer;
+            std::vector<Eigen::Vector3f> buffer;
             DWI::Tractography::Streamline<float> tck;
             while (num_tracks--) {
               file (tck);
-              const Point<float> tangent ((tck.back() - tck.front()).normalise());
-              const Point<float> colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
+              const Eigen::Vector3f tangent ((tck.back() - tck.front()).normalized());
+              const Eigen::Vector3f colour (std::abs (tangent[0]), std::abs (tangent[1]), std::abs (tangent[2]));
               for (auto& i : tck)
                 i = colour;
 
               // Pre padding to coincide with tracks buffer
               for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back(tck.front());
+                buffer.push_back (tck.front());
 
               buffer.insert (buffer.end(), tck.begin(), tck.end());
 
               // Post padding to coincide with tracks buffer
               for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back(tck.back());
+                buffer.push_back (tck.back());
 
             }
             load_end_colours_onto_GPU (buffer);
           }
           file.close();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -595,6 +603,7 @@ namespace MR
           // Make sure to set graphics context!
           // We're setting up vertex array objects
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
           scalar_filename = filename;
@@ -616,17 +625,17 @@ namespace MR
 
               // Pre padding to coincide with tracks buffer
               for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back(tck_scalar.front());
+                buffer.push_back (tck_scalar.front());
 
               for (size_t i = 0; i < tck_size; ++i) {
                 buffer.push_back (tck_scalar[i]);
-                value_max = std::max(value_max, tck_scalar[i]);
-                value_min = std::min(value_min, tck_scalar[i]);
+                value_max = std::max (value_max, tck_scalar[i]);
+                value_min = std::min (value_min, tck_scalar[i]);
               }
 
               // Post padding to coincide with tracks buffer
               for (size_t i = 0; i < max_sample_stride; ++i)
-                buffer.push_back(tck_scalar.back());
+                buffer.push_back (tck_scalar.back());
 
               if (buffer.size() >= MAX_BUFFER_SIZE)
                 load_scalars_onto_GPU (buffer);
@@ -635,11 +644,11 @@ namespace MR
               load_scalars_onto_GPU (buffer);
             file.close();
           } else {
-            Math::Vector<float> scalars (filename);
+            const Eigen::VectorXf scalars = MR::load_vector<float> (filename);
             size_t total_num_tracks = 0;
             for (std::vector<size_t>::const_iterator i = num_tracks_per_buffer.begin(); i != num_tracks_per_buffer.end(); ++i)
               total_num_tracks += *i;
-            if (scalars.size() != total_num_tracks)
+            if (size_t(scalars.size()) != total_num_tracks)
               throw Exception ("The scalar text file does not contain the same number of elements as the selected tractogram");
             size_t running_index = 0;
 
@@ -653,16 +662,16 @@ namespace MR
 
                 // Pre padding to coincide with tracks buffer
                 for (size_t i = 0; i < max_sample_stride; ++i)
-                  buffer.push_back(tck_scalar.front());
+                  buffer.push_back (tck_scalar.front());
 
                 buffer.insert (buffer.end(), tck_scalar.begin(), tck_scalar.end());
 
                 // Post padding to coincide with tracks buffer
                 for (size_t i = 0; i < max_sample_stride; ++i)
-                  buffer.push_back(tck_scalar.back());
+                  buffer.push_back (tck_scalar.back());
 
-                value_max = std::max(value_max, value);
-                value_min = std::min(value_min, value);
+                value_max = std::max (value_max, value);
+                value_min = std::min (value_min, value);
               }
 
               load_scalars_onto_GPU (buffer);
@@ -671,12 +680,15 @@ namespace MR
           this->set_windowing (value_min, value_max);
           greaterthan = value_max;
           lessthan = value_min;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
         
         
         
         void Tractogram::erase_nontrack_data()
         {
+          Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (colour_buffers.size()) {
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);
             colour_buffers.clear();
@@ -687,15 +699,18 @@ namespace MR
             set_use_discard_lower (false);
             set_use_discard_upper (false);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
 
 
-        void Tractogram::load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
+        void Tractogram::load_tracks_onto_GPU (std::vector<Eigen::Vector3f>& buffer,
             std::vector<GLint>& starts,
             std::vector<GLint>& sizes,
-            size_t& tck_count) {
+            size_t& tck_count) 
+        {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           GLuint vertex_array_object;
           gl::GenVertexArrays (1, &vertex_array_object);
@@ -704,7 +719,7 @@ namespace MR
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Eigen::Vector3f), &buffer[0][0], gl::STATIC_DRAW);
 
           vertex_array_objects.push_back (vertex_array_object);
           vertex_buffers.push_back (vertexbuffer);
@@ -718,29 +733,36 @@ namespace MR
           starts.clear();
           sizes.clear();
           tck_count = 0;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
         
         
         
         
         
-        void Tractogram::load_end_colours_onto_GPU (std::vector< Point<float> >& buffer) {
+        void Tractogram::load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>& buffer) 
+        {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
           gl::BindBuffer (gl::ARRAY_BUFFER, vertexbuffer);
-          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Point<float>), &buffer[0][0], gl::STATIC_DRAW);
+          gl::BufferData (gl::ARRAY_BUFFER, buffer.size() * sizeof(Eigen::Vector3f), &buffer[0][0], gl::STATIC_DRAW);
 
           vao_dirty = true;
 
           colour_buffers.push_back (vertexbuffer);
           buffer.clear();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
 
 
 
-        void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) {
+        void Tractogram::load_scalars_onto_GPU (std::vector<float>& buffer) 
+        {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           GLuint vertexbuffer;
           gl::GenBuffers (1, &vertexbuffer);
@@ -751,6 +773,8 @@ namespace MR
 
           scalar_buffers.push_back (vertexbuffer);
           buffer.clear();
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

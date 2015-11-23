@@ -25,7 +25,7 @@
 
 #include "command.h"
 
-#include "image/buffer.h"
+#include "image.h"
 
 #include "math/SH.h"
 
@@ -91,10 +91,10 @@ void usage ()
 void run ()
 {
 
-  Options opt = get_options ("output_debug");
+  auto opt = get_options ("output_debug");
   const bool out_debug = opt.size();
 
-  Image::Buffer<float> in_dwi (argument[1]);
+  auto in_dwi = Image<float>::open (argument[1]);
   Math::SH::check (in_dwi);
   DWI::Directions::FastLookupSet dirs (1281);
 

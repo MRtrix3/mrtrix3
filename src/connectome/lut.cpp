@@ -24,7 +24,7 @@
 
 #include "connectome/lut.h"
 
-
+#include <fstream>
 
 
 
@@ -67,7 +67,7 @@ const OptionGroup LookupTableOption = OptionGroup ("Options for importing inform
 void load_lut_from_cmdline (Node_map& nodes)
 {
 
-  Options
+  auto
   opt = get_options ("lut_basic");
   if (opt.size())
     nodes.load (opt[0][0], LUT_BASIC);
@@ -131,7 +131,7 @@ void Node_map::parse_line_freesurfer (const std::string& line)
     char name [80];
     sscanf (line.c_str(), "%u %s %u %u %u %u", &index, name, &r, &g, &b, &a);
     if (index != std::numeric_limits<node_t>::max()) {
-      if (maxvalue (r, g, b) > 255)
+      if (std::max ({r, g, b}) > 255)
         throw Exception ("Lookup table is malformed");
       if (find (index) != end())
         throw Exception ("Lookup table contains redundant entries (" + str(index) + ")");

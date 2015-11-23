@@ -20,8 +20,9 @@
 
 */
 
-#include "math/vector.h"
 #include "gui/mrview/mode/slice.h"
+
+#include "gui/opengl/transformation.h"
 
 namespace MR
 {
@@ -100,6 +101,7 @@ namespace MR
 
         void Slice::paint (Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // set up OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -107,6 +109,7 @@ namespace MR
           gl::ColorMask (gl::TRUE_, gl::TRUE_, gl::TRUE_, gl::TRUE_);
 
           draw_plane (plane(), slice_shader, with_projection);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void Slice::setup_draw (int axis, Projection& with_projection)
@@ -114,16 +117,17 @@ namespace MR
           // info for projection:
           float fov = FOV() / (float) (with_projection.width()+with_projection.height());
           float depth = 2.0 * std::max (std::max (
-                image()->header().vox(0) * image()->header().dim(0), 
-                image()->header().vox(1) * image()->header().dim(1)), 
-              image()->header().vox(2) * image()->header().dim(2));
+                image()->header().spacing(0) * image()->header().size(0),
+                image()->header().spacing(1) * image()->header().size(1)),
+                image()->header().spacing(2) * image()->header().size(2));
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (
               -with_projection.width()*fov, with_projection.width()*fov,
               -with_projection.height()*fov, with_projection.height()*fov,
               -depth, depth);
-          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->interp.image2scanner_matrix()) : GL::mat4 (orientation());
+          GL::mat4 M = snap_to_image() ? GL::mat4 (image()->transform().image2scanner.matrix()) : GL::mat4 (orientation());
+          M = GL::transpose (M);
           GL::mat4 MV = adjust_projection_matrix (M, axis) * GL::translate (-target());
           with_projection.set (MV, P);
         }
@@ -131,6 +135,7 @@ namespace MR
         // Draw without setting up matrices/no crosshairs/no orientation labels
         void Slice::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // render image:
           if (visible) {
             if (snap_to_image())
@@ -140,15 +145,18 @@ namespace MR
           }
 
           render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         void Slice::draw_plane (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           setup_draw (axis, with_projection);
           draw_plane_primitive (axis, shader_program, with_projection);
           draw_crosshairs (with_projection);
           draw_orientation_labels (with_projection);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

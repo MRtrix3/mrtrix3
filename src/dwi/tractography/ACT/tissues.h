@@ -55,8 +55,8 @@ namespace MR
               set (cg, sg, w, c, p);
             }
 
-            template <class Set>
-            Tissues (Set& data) :
+            template <class ImageType>
+            Tissues (ImageType& data) :
                 cgm  (0.0),
                 sgm  (0.0),
                 wm   (0.0),
@@ -64,7 +64,7 @@ namespace MR
                 path (0.0),
                 is_valid (false)
             {
-              set<Set> (data);
+              set<ImageType> (data);
             }
 
 
@@ -97,14 +97,14 @@ namespace MR
               return ((is_valid = ((cgm + sgm + wm + csf + path) >= TISSUE_SUM_THRESHOLD)));
             }
 
-            template <class Set>
-            bool set (Set& data)
+            template <class ImageType>
+            bool set (ImageType& data)
             {
-              data[3] = 0; const float cg = data.value();
-              data[3] = 1; const float sg = data.value();
-              data[3] = 2; const float w  = data.value();
-              data[3] = 3; const float c  = data.value();
-              data[3] = 4; const float p  = data.value();
+              data.index(3) = 0; const float cg = data.value();
+              data.index(3) = 1; const float sg = data.value();
+              data.index(3) = 2; const float w  = data.value();
+              data.index(3) = 3; const float c  = data.value();
+              data.index(3) = 4; const float p  = data.value();
               return set (cg, sg, w, c, p);
             }
 

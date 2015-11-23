@@ -21,7 +21,6 @@
 */
 
 #include "gui/mrview/tool/tractography/track_scalar_file.h"
-#include "math/vector.h"
 #include "gui/mrview/colourmap.h"
 
 namespace MR
@@ -34,7 +33,7 @@ namespace MR
       {
 
         TrackScalarFile::TrackScalarFile (Dock* parent) :
-          Base (parent)
+            Base (parent)
         {
           main_box = new VBoxLayout (this);
           main_box->setContentsMargins (5, 5, 5, 5);
@@ -141,8 +140,8 @@ namespace MR
             tractogram.scaling_max();
 
           window().colourbar_renderer.render (tractogram.colourmap, tractogram.scale_inverted(),
-                                            min_value, max_value,
-                                            tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
+                                              min_value, max_value,
+                                              tractogram.scaling_min(), tractogram.display_range, tractogram.colour);
         }
 
 

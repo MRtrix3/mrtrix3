@@ -24,7 +24,7 @@
 
 #include "connectome/config/config.h"
 
-
+#include <fstream>
 
 
 
@@ -58,7 +58,7 @@ void load_config (const std::string& path, ConfigInvLookup& config)
       node_t index = max_node_index;
       sscanf (line.c_str(), "%u %s", &index, name);
       if (index != max_node_index)
-        config.insert (std::make_pair (str(name), index));
+        config.insert (std::make_pair (std::string (name), index));
     }
   }
 
@@ -94,7 +94,7 @@ void load_config (const std::string& path, std::vector<std::string>& config)
           config.resize (index + 1);
         if (!(config[index].empty()))
           throw Exception ("Duplicate indices found in connectome config file " + Path::basename(path) + "; cannot create index->name lookup");
-        config[index] = str(name);
+        config[index] = std::string (name);
       }
     }
   }

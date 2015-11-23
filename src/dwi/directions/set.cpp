@@ -49,13 +49,13 @@ namespace MR {
         do {
           ++min_linkage;
           std::vector<dir_t> next_to_expand;
-          for (std::vector<dir_t>::const_iterator i = to_expand.begin(); i != to_expand.end(); ++i) {
-            for (std::vector<dir_t>::const_iterator j = adj_dirs[*i].begin(); j != adj_dirs[*i].end(); ++j) {
-              if (*j == two) {
+          for (const auto& i : to_expand) {
+            for (const auto& j : adj_dirs[i]) {
+              if (j == two) {
                 return min_linkage;
-              } else if (!processed[*j]) {
-                processed[*j] = true;
-                next_to_expand.push_back (*j);
+              } else if (!processed[j]) {
+                processed[j] = true;
+                next_to_expand.push_back (j);
               }
             }
           }
@@ -66,30 +66,30 @@ namespace MR {
 
 
 
-      void Set::load_predefined (Math::Matrix<float>& az_el_pairs, const size_t i)
+      void Set::load_predefined (Eigen::MatrixXd& az_el_pairs, const size_t i)
       {
         switch (i) {
-          case 60:   electrostatic_repulsion_60   (az_el_pairs); return;
-          case 129:  tesselation_129  (az_el_pairs); return;
-          case 300:  electrostatic_repulsion_300  (az_el_pairs); return;
-          case 321:  tesselation_321  (az_el_pairs); return;
-          case 469:  tesselation_469  (az_el_pairs); return;
-          case 513:  tesselation_513  (az_el_pairs); return;
-          case 1281: tesselation_1281 (az_el_pairs); return;
+          case 60:   az_el_pairs = electrostatic_repulsion_60 (); return;
+          case 129:  az_el_pairs = tesselation_129 (); return;
+          case 300:  az_el_pairs = electrostatic_repulsion_300 (); return;
+          case 321:  az_el_pairs = tesselation_321 (); return;
+          case 469:  az_el_pairs = tesselation_469 (); return;
+          case 513:  az_el_pairs = tesselation_513 (); return;
+          case 1281: az_el_pairs = tesselation_1281 (); return;
           default: throw Exception ("No pre-defined data set of " + str (i) + " directions!");
         }
       }
 
 
 
-      void Set::initialise (const Math::Matrix<float>& az_el_pairs)
+      void Set::initialise (const Eigen::MatrixXd& az_el_pairs)
       {
         unit_vectors.resize (az_el_pairs.rows());
         for (size_t i = 0; i != size(); ++i) {
           const float azimuth   = az_el_pairs(i, 0);
           const float elevation = az_el_pairs(i, 1);
           const float sin_elevation = std::sin (elevation);
-          unit_vectors[i].set (std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation));
+          unit_vectors[i] = { std::cos (azimuth) * sin_elevation, std::sin (azimuth) * sin_elevation, std::cos (elevation) };
         }
 
         adj_dirs = new std::vector<dir_t> [size()];
@@ -97,13 +97,13 @@ namespace MR {
           for (dir_t j = 0; j != size(); ++j) {
             if (j != i) {
 
-              Point<float> p;
+              Eigen::Vector3f p;
               if (unit_vectors[i].dot (unit_vectors[j]) > 0.0)
-                p = ((unit_vectors[i] + unit_vectors[j]).normalise());
+                p = ((unit_vectors[i] + unit_vectors[j]).normalized());
               else
-                p = ((unit_vectors[i] - unit_vectors[j]).normalise());
-              const float dot_to_i = fabs (p.dot (unit_vectors[i]));
-              const float dot_to_j = fabs (p.dot (unit_vectors[j]));
+                p = ((unit_vectors[i] - unit_vectors[j]).normalized());
+              const float dot_to_i = std::abs (p.dot (unit_vectors[i]));
+              const float dot_to_j = std::abs (p.dot (unit_vectors[j]));
               const float this_dot_product = std::max (dot_to_i, dot_to_j);
 
               bool is_adjacent = true;
@@ -170,7 +170,7 @@ namespace MR {
 
 
 
-      dir_t FastLookupSet::select_direction (const Point<float>& p) const
+      dir_t FastLookupSet::select_direction (const Eigen::Vector3f& p) const
       {
 
         const size_t grid_index = dir2gridindex (p);
@@ -192,7 +192,7 @@ namespace MR {
 
 
 
-      dir_t FastLookupSet::select_direction_slow (const Point<float>& p) const
+      dir_t FastLookupSet::select_direction_slow (const Eigen::Vector3f& p) const
       {
 
         dir_t dir = 0;
@@ -260,7 +260,7 @@ namespace MR {
               case 3: el += el_grid_step; break;
             }
 
-            const Point<float> p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
+            const Eigen::Vector3f p (cos(az) * sin(el), sin(az) * sin(el), cos (el));
             const dir_t nearest_dir = select_direction_slow (p);
             bool dir_present = false;
             for (std::vector<dir_t>::const_iterator d = grid_lookup[i].begin(); !dir_present && d != grid_lookup[i].end(); ++d)
@@ -296,7 +296,7 @@ namespace MR {
 
 
 
-      size_t FastLookupSet::dir2gridindex (const Point<float>& p) const
+      size_t FastLookupSet::dir2gridindex (const Eigen::Vector3f& p) const
       {
 
         const float azimuth   = atan2(p[1], p[0]);
@@ -320,8 +320,8 @@ namespace MR {
         size_t error_count = 0;
         const size_t checks = 1000000;
         for (size_t i = 0; i != checks; ++i) {
-          Point<float> p (normal(rng), normal(rng), normal(rng));
-          p.normalise();
+          Eigen::Vector3f p (normal(rng), normal(rng), normal(rng));
+          p.normalize();
           if (select_direction (p) != select_direction_slow (p))
             ++error_count;
         }

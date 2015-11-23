@@ -23,7 +23,6 @@
 #ifndef __dwi_tractography_algorithms_sd_stream_h__
 #define __dwi_tractography_algorithms_sd_stream_h__
 
-#include "point.h"
 #include "math/SH.h"
 #include "dwi/tractography/tracking/method.h"
 #include "dwi/tractography/tracking/shared.h"
@@ -43,9 +42,9 @@ class SDStream : public MethodBase {
       public:
         Shared (const std::string& diff_path, DWI::Tractography::Properties& property_set) :
             SharedBase (diff_path, property_set),
-            lmax (Math::SH::LforN (source_buffer.dim(3)))
+            lmax (Math::SH::LforN (source.size(3)))
         {
-          if (source_buffer.dim(3) != int (Math::SH::NforL (Math::SH::LforN (source_buffer.dim(3))))) 
+          if (source.size(3) != int (Math::SH::NforL (Math::SH::LforN (source.size(3))))) 
             throw Exception ("number of volumes in input data does not match that expected for a SH dataset");
 
           if (is_act() && act().backtrack())
@@ -65,7 +64,7 @@ class SDStream : public MethodBase {
           bool precomputed = true;
           properties.set (precomputed, "sh_precomputed");
           if (precomputed)
-            precomputer = new Math::SH::PrecomputedAL<value_type> (lmax);
+            precomputer = new Math::SH::PrecomputedAL<float> (lmax);
         }
 
         ~Shared () {
@@ -73,9 +72,9 @@ class SDStream : public MethodBase {
             delete precomputer;
         }
 
-        value_type dot_threshold;
+        float dot_threshold;
         size_t lmax;
-        Math::SH::PrecomputedAL<value_type>* precomputer;
+        Math::SH::PrecomputedAL<float>* precomputer;
 
     };
 
@@ -87,12 +86,12 @@ class SDStream : public MethodBase {
     SDStream (const Shared& shared) :
       MethodBase (shared),
       S (shared),
-      source (S.source_voxel) { }
+      source (S.source) { }
 
     SDStream (const SDStream& that) :
       MethodBase (that.S),
       S (that.S),
-      source (S.source_voxel) { }
+      source (S.source) { }
 
 
     ~SDStream () { }
@@ -104,14 +103,14 @@ class SDStream : public MethodBase {
       if (!get_data (source))
         return (false);
 
-      if (!S.init_dir) {
-        if (!dir.valid())
+      if (!S.init_dir.allFinite()) {
+        if (!dir.allFinite())
           dir = random_direction();
       } 
       else 
         dir = S.init_dir;
 
-      dir.normalise();
+      dir.normalize();
       if (!find_peak())
         return false;
 
@@ -125,7 +124,7 @@ class SDStream : public MethodBase {
       if (!get_data (source))
         return EXIT_IMAGE;
 
-      const Point<value_type> prev_dir (dir);
+      const Eigen::Vector3f prev_dir (dir);
 
       if (!find_peak())
         return BAD_SIGNAL;
@@ -146,17 +145,17 @@ class SDStream : public MethodBase {
 
     protected:
       const Shared& S;
-      Interpolator<SourceBufferType::voxel_type>::type source;
+      Interpolator<Image<float>>::type source;
 
-      value_type find_peak ()
+      float find_peak ()
       {
-        value_type FOD = Math::SH::get_peak (&values[0], S.lmax, dir, S.precomputer);
+        float FOD = Math::SH::get_peak (values, S.lmax, dir, S.precomputer);
         if (!std::isfinite (FOD) || FOD < S.threshold)
           FOD = 0.0;
         return FOD;
       }
 
-      value_type FOD (const Point<value_type>& d) const
+      float FOD (const Eigen::Vector3f& d) const
       {
         return (S.precomputer ?
             S.precomputer->value (values, d) :

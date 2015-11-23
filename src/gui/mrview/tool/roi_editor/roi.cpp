@@ -24,14 +24,13 @@
 
 #include <string>
 
-#include "point.h"
-#include "image/buffer.h"
-#include "math/versor.h"
+#include "gui/mrview/tool/roi_editor/roi.h"
 
+#include "header.h"
+#include "math/versor.h"
 #include "gui/cursor.h"
 #include "gui/projection.h"
 #include "gui/dialog/file.h"
-#include "gui/mrview/tool/roi_editor/roi.h"
 
 
 namespace MR
@@ -203,7 +202,7 @@ namespace MR
           slice_copy_group->setEnabled (false);
           connect (slice_copy_group, SIGNAL (triggered (QAction*)), this, SLOT (slice_copy_slot (QAction*)));
 
-          layout->addWidget (new QLabel ("Copy slice: "), 0, Qt::AlignRight);
+          layout->addWidget (new QLabel ("Copy from slice: "), 0, Qt::AlignRight);
 
           copy_from_above_button = new QToolButton (this);
           copy_from_above_button->setToolButtonStyle (Qt::ToolButtonTextBesideIcon);
@@ -282,7 +281,8 @@ namespace MR
         void ROI::new_slot ()
         {
           assert (window().image());
-          list_model->create (window().image()->header());
+          MR::Header H (window().image()->header());
+          list_model->create (std::move (H));
           list_view->selectionModel()->clear();
           list_view->selectionModel()->select (list_model->index (list_model->rowCount()-1, 0, QModelIndex()), QItemSelectionModel::Select);
           updateGL ();
@@ -300,9 +300,9 @@ namespace MR
           std::vector<std::string> names = Dialog::File::get_images (this, "Select ROI images to open");
           if (names.empty())
             return;
-          std::vector<std::unique_ptr<MR::Image::Header>> list;
+          std::vector<std::unique_ptr<MR::Header>> list;
           for (size_t n = 0; n < names.size(); ++n)
-            list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (names[n])));
+            list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (names[n]))));
 
           load (list);
           in_insert_mode = false;
@@ -314,23 +314,24 @@ namespace MR
 
         void ROI::save (ROI_Item* roi)
         {
-          std::vector<GLubyte> data (roi->info().dim(0) * roi->info().dim(1) * roi->info().dim(2));
+          std::vector<GLubyte> data (roi->header().size(0) * roi->header().size(1) * roi->header().size(2));
           { 
             Window::GrabContext context; 
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
             roi->texture().bind();
             gl::PixelStorei (gl::PACK_ALIGNMENT, 1);
-            gl::GetTexImage (gl::TEXTURE_3D, 0, GL_RED, GL_UNSIGNED_BYTE, (void*) (&data[0]));
+            gl::GetTexImage (gl::TEXTURE_3D, 0, gl::RED, gl::UNSIGNED_BYTE, (void*) (&data[0]));
+            ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           }
 
           try {
-            MR::Image::Header header;
-            header.info() = roi->info();
+            MR::Header header (roi->header());
             header.set_ndim(3);
             header.datatype() = DataType::Bit;
             std::string name = GUI::Dialog::File::get_save_image_name (&window(), "Select name of ROI to save", roi->get_filename());
             if (name.size()) {
-              MR::Image::Buffer<bool> buffer (name, header);
-              roi->save (buffer.voxel(), data.data());
+              auto out = MR::Image<bool>::create (name, header);
+              roi->save (out, data.data());
             }
           }
           catch (Exception& E) {
@@ -343,11 +344,11 @@ namespace MR
 
 
 
-        int ROI::normal2axis (const Point<>& normal, const MR::Image::Transform& transform) const
+        int ROI::normal2axis (const Eigen::Vector3f& normal, const MR::Transform& transform) const
         {
-          float x_dot_n = std::abs (transform.image2scanner_dir (Point<> (1.0, 0.0, 0.0)).dot (normal));
-          float y_dot_n = std::abs (transform.image2scanner_dir (Point<> (0.0, 1.0, 0.0)).dot (normal));
-          float z_dot_n = std::abs (transform.image2scanner_dir (Point<> (0.0, 0.0, 1.0)).dot (normal));
+          float x_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 1.0f, 0.0f, 0.0f }).dot (normal));
+          float y_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 1.0f, 0.0f }).dot (normal));
+          float z_dot_n = std::abs ((transform.image2scanner.rotation().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, 1.0f }).dot (normal));
           if (x_dot_n > y_dot_n)
             return x_dot_n > z_dot_n ? 0 : 2;
           else
@@ -371,7 +372,7 @@ namespace MR
 
 
 
-        void ROI::load (std::vector<std::unique_ptr<MR::Image::Header>>& list) 
+        void ROI::load (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           list_model->load (list);
           list_view->selectionModel()->clear();
@@ -474,14 +475,14 @@ namespace MR
 
           const Projection* proj = window().get_current_mode()->get_current_projection();
           if (!proj) return;
-          const Point<> current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
+          const Eigen::Vector3f current_origin = proj->screen_to_model (window().mouse_position(), window().focus());
           current_axis = normal2axis (proj->screen_normal(), roi->transform());
-          current_slice = std::lround (roi->transform().scanner2voxel (current_origin)[current_axis]);
+          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() * current_origin)[current_axis]);
 
           roi->start (ROI_UndoEntry (*roi, current_axis, current_slice));
 
           const int source_slice = current_slice + ((action == copy_from_above_button->defaultAction()) ? 1 : -1);
-          if (source_slice < 0 || source_slice >= roi->info().dim (current_axis))
+          if (source_slice < 0 || source_slice >= roi->header().size (current_axis))
             return;
 
           ROI_UndoEntry source (*roi, current_axis, source_slice);
@@ -521,6 +522,7 @@ namespace MR
 
         void ROI::draw (const Projection& projection, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (is_3D) return;
 
           if (!is_3D) {
@@ -549,6 +551,7 @@ namespace MR
             gl::Enable (gl::DEPTH_TEST);
             gl::DepthMask (gl::TRUE_);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -720,17 +723,16 @@ namespace MR
           current_axis = normal2axis (proj->screen_normal(), roi->transform());
 
           // figure out current slice in ROI:
-          current_slice = std::lround (roi->transform().scanner2voxel (current_origin)[current_axis]);
+          current_slice = std::lround ((roi->transform().scanner2voxel.cast<float>() *  current_origin)[current_axis]);
 
           // floating-point version of slice location to keep it consistent on
           // mouse move:
-          Point<> slice_axis (0.0, 0.0, 0.0);
+          Eigen::Vector3f slice_axis { 0.0, 0.0, 0.0 };
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-          slice_axis = roi->transform().image2scanner_dir (slice_axis);
+          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
           current_slice_loc = current_origin.dot (slice_axis);
 
-          Math::Versor<float> orient;
-          orient.from_matrix (roi->info().transform());
+          const Math::Versorf orient (roi->header().transform().rotation().cast<float>());
           window().set_snap_to_image (false);
           window().set_orientation (orient);
 
@@ -775,13 +777,13 @@ namespace MR
           if (!proj) 
             return false;
 
-          Point<> pos =  proj->screen_to_model (window().mouse_position(), window().focus());
-          Point<> slice_axis (0.0, 0.0, 0.0);
+          Eigen::Vector3f pos = proj->screen_to_model (window().mouse_position(), window().focus());
+          Eigen::Vector3f slice_axis (0.0, 0.0, 0.0);
           slice_axis[current_axis] = current_axis == 2 ? 1.0 : -1.0;
-          slice_axis = roi->transform().image2scanner_dir (slice_axis);
+          slice_axis = roi->transform().image2scanner.rotation().cast<float>() * slice_axis;
           float l = (current_slice_loc - pos.dot (slice_axis)) / proj->screen_normal().dot (slice_axis);
           window().set_focus (window().focus() + l * proj->screen_normal());
-          const Point<> pos_adj = pos + l * proj->screen_normal();
+          const Eigen::Vector3f pos_adj = pos + l * proj->screen_normal();
 
           if (brush_button->isChecked()) {
             if (brush_size_button->isMin())
@@ -856,8 +858,8 @@ namespace MR
         bool ROI::process_commandline_option (const MR::App::ParsedOption& opt) 
         {
           if (opt.opt->is ("roi.load")) {
-            std::vector<std::unique_ptr<MR::Image::Header>> list;
-            try { list.push_back (std::unique_ptr<MR::Image::Header> (new MR::Image::Header (opt[0]))); }
+            std::vector<std::unique_ptr<MR::Header>> list;
+            try { list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (opt[0])))); }
             catch (Exception& e) { e.display(); }
             load (list);
             return true;

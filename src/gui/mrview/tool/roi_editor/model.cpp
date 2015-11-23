@@ -37,24 +37,25 @@ namespace MR
 
 
 
-        void ROI_Model::load (std::vector<std::unique_ptr<MR::Image::Header>>& list)
+        void ROI_Model::load (std::vector<std::unique_ptr<MR::Header>>& list)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+list.size());
           for (size_t i = 0; i < list.size(); ++i) {
             Window::GrabContext context;
-            ROI_Item* roi = new ROI_Item (*list[i]);
+            MR::Header H (*list[i]);
+            ROI_Item* roi = new ROI_Item (std::move(H));
             roi->load (*list[i]);
             items.push_back (std::unique_ptr<Displayable> (roi));
           }
           endInsertRows();
         }
 
-        void ROI_Model::create (MR::Image::Header& image)
+        void ROI_Model::create (MR::Header&& image)
         {
           beginInsertRows (QModelIndex(), items.size(), items.size()+1);
-          { 
+          {
             Window::GrabContext context;
-            ROI_Item* roi = new ROI_Item (image);
+            ROI_Item* roi = new ROI_Item (std::move (image));
             roi->zero ();
             items.push_back (std::unique_ptr<Displayable> (roi));
           }

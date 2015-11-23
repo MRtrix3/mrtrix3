@@ -21,11 +21,8 @@
 */
 
 #include "command.h"
-#include "point.h"
-#include "math/vector.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
-#include "image/loop.h"
+#include "image.h"
+#include "algo/loop.h"
 
 
 using namespace std;
@@ -49,32 +46,30 @@ void usage ()
 
 void run ()
 {
-  Image::Buffer<float> dir_buf (argument[0]);
-  auto dir_vox = dir_buf.voxel();
+  auto dir = Image<float>::open (argument[0]);
 
-  Image::Header header (argument[0]);
-  header.dim(3) = header.dim(3)/3;
+  auto header = dir.original_header();
+  header.size(3) = header.size(3)/3;
 
-  Image::Buffer<float> amp_buf (argument[1], header);
-  auto amp_vox = amp_buf.voxel();
+  auto amp = Image<float>::create (argument[1], header);
+  
+  auto loop = Loop("converting directions to amplitudes...", 0, 3);
 
-  Image::LoopInOrder loop (dir_vox, "converting directions to amplitudes...", 0, 3);
-
-  for (auto i = loop (dir_vox, amp_vox); i; ++i) {
-    Math::Vector<float> dir (3);
-    dir_vox[3] = 0;
-    amp_vox[3] = 0;
-    while (dir_vox[3] < dir_vox.dim(3)) {
-      dir[0] = dir_vox.value(); ++dir_vox[3];
-      dir[1] = dir_vox.value(); ++dir_vox[3];
-      dir[2] = dir_vox.value(); ++dir_vox[3];
+  for (auto i = loop (dir, amp); i; ++i) {
+    Eigen::Vector3f n;
+    dir.index(3) = 0;
+    amp.index(3) = 0;
+    while (dir.index(3) < dir.size(3)) {
+      n[0] = dir.value(); ++dir.index(3);
+      n[1] = dir.value(); ++dir.index(3);
+      n[2] = dir.value(); ++dir.index(3);
 
       float amplitude = 0.0;
-      if (std::isfinite (dir[0]) && std::isfinite (dir[1]) && std::isfinite (dir[2]))
-        amplitude = Math::norm (dir);
+      if (std::isfinite (n[0]) && std::isfinite (n[1]) && std::isfinite (n[2]))
+        amplitude = n.norm();
 
-      amp_vox.value() = amplitude;
-      ++amp_vox[3];
+      amp.value() = amplitude;
+      ++amp.index(3);
     }
   }
 }

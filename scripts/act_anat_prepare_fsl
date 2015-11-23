@@ -14,12 +14,12 @@ from lib.errorMessage import errorMessage
 from lib.getFSLSuffix import getFSLSuffix
 from lib.printMessage import printMessage
 from lib.runCommand   import runCommand
+from lib.warnMessage  import warnMessage
 
-numArgs = 2
-if len(sys.argv) <= numArgs:
-  sys.stderr.write('Usage: ' + os.path.basename(sys.argv[0]) + ' <input image> <output image> (options)\n')
-  exit(0)
-lib.app.initialise(numArgs)
+lib.app.initParser('Generate a 5TT image suitable for ACT from a T1 image using FSL tools')
+lib.app.parser.add_argument('input',  help='The input T1 image')
+lib.app.parser.add_argument('output', help='The output 5TT image')
+lib.app.initialise()
 
 fsl_path = os.environ.get('FSLDIR', '')
 if not fsl_path:
@@ -58,7 +58,7 @@ fsl_suffix = getFSLSuffix()
 
 sgm_structures = [ 'L_Accu', 'R_Accu', 'L_Caud', 'R_Caud', 'L_Pall', 'R_Pall', 'L_Puta', 'R_Puta', 'L_Thal', 'R_Thal' ]
 
-runCommand('mrconvert ' + sys.argv[1] + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride +1,+2,+3')
+runCommand('mrconvert ' + lib.app.args.input + ' ' + os.path.join(lib.app.tempDir, 'T1.nii') + ' -stride +1,+2,+3')
 
 lib.app.gotoTempDir()
 
@@ -75,11 +75,16 @@ else:
   if os.path.exists (mni_mask_path):
     mni_mask_dilation = 2;
 
+# standard_space_roi can sometimes crash; if this happens, try to allow the script to continue
 if mni_mask_dilation:
   runCommand('maskfilter ' + mni_mask_path + ' dilate mni_mask.nii -npass ' + str(mni_mask_dilation))
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -maskMASK mni_mask.nii -roiFOV', False)
 else:
-  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b')
+  runCommand(ssroi_cmd + ' T1.nii T1_preBET' + fsl_suffix + ' -b', False)
+
+if not os.path.isfile('T1_preBET' + fsl_suffix):
+  warnMessage('FSL command ' + ssroi_cmd + ' appears to have failed; passing T1 directly to BET')
+  runCommand('mrconvert T1.nii T1_preBET' + fsl_suffix)
 
 # BET
 runCommand(bet_cmd + ' T1_preBET' + fsl_suffix + ' T1_bet' + fsl_suffix + ' -f 0.15 -R')
@@ -104,23 +109,34 @@ for struct in sgm_structures:
 pve_cat = ' '.join(pve_image_list)
 runCommand('mrmath ' + pve_cat + ' sum - | mrcalc - 1.0 -min all_sgms.nii')
 
-# Combine all tissue types using the 5ttgen command
 # Looks like FAST in 5.0 ignores FSLOUTPUTTYPE when writing the PVE images
 # Will have to wait and see whether this changes, and update the script accordingly
 if fast_cmd == 'fast':
   fast_suffix = fsl_suffix
 else:
   fast_suffix = '.nii.gz'
-runCommand('5ttgen T1_bet_pve_0' + fast_suffix + ' T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' all_sgms.nii combined_precrop.mif')
+
+# Combine the tissue images into the 5TT format within the script itself
+# Step 1: Run LCC on the WM image
+runCommand('mrthreshold T1_bet_pve_2' + fast_suffix + ' - -abs 0.001 | maskfilter - connected wm_mask.mif -largest')
+# Step 2: Generate the images in the same fashion as the 5ttgen command
+runCommand('mrconvert T1_bet_pve_0' + fast_suffix + ' csf.mif')
+runCommand('mrcalc 1 csf.mif -sub all_sgms.nii -min sgm.mif')
+runCommand('mrcalc 1.0 csf.mif sgm.mif -add -sub T1_bet_pve_1' + fast_suffix + ' T1_bet_pve_2' + fast_suffix + ' -add -div multiplier.mif')
+runCommand('mrcalc multiplier.mif -finite multiplier.mif -mult multiplier_noNAN.mif')
+runCommand('mrcalc T1_bet_pve_1' + fast_suffix + ' multiplier_noNAN.mif -mult cgm.mif')
+runCommand('mrcalc T1_bet_pve_2' + fast_suffix + ' multiplier_noNAN.mif -mult wm.mif')
+runCommand('mrcalc 0 wm.mif -min path.mif')
+runCommand('mrcat cgm.mif sgm.mif wm.mif csf.mif path.mif - -axis 3 | mrconvert - combined_precrop.mif -stride +2,+3,+4,+1')
 
 # Use mrcrop to reduce file size (improves caching of image data during tracking)
-root,ext = os.path.splitext(sys.argv[2])
+root,ext = os.path.splitext(lib.app.args.output)
 if ext.lower() == '.gz':
   ext = os.path.splitext(root)[1] + ext
 result_path = 'result' + ext
 runCommand('mrmath combined_precrop.mif sum - -axis 3 | mrthreshold - - -abs 0.5 | mrcrop combined_precrop.mif ' + result_path + ' -mask -')
 
-lib.app.moveFileToDest(result_path, sys.argv[2])
+lib.app.moveFileToDest(result_path, lib.app.args.output)
 
-lib.app.terminate()
+lib.app.complete()
 

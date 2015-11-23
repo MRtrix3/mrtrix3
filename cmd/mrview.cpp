@@ -13,7 +13,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (d.raffelt@brain.org.au) and Robert E. Smith (r.smith@brain.org.au)";
+  AUTHOR = "J-Donald Tournier (d.tournier@brain.org.au), Dave Raffelt (david.raffelt@florey.edu.au) and Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
   + "the MRtrix image viewer.";
@@ -51,11 +51,11 @@ void run ()
   window.show();
 
   if (argument.size()) {
-    std::vector<std::unique_ptr<MR::Image::Header>> list;
+    std::vector<std::unique_ptr<MR::Header>> list;
 
     for (size_t n = 0; n < argument.size(); ++n) {
       try {
-        list.push_back (std::unique_ptr<MR::Image::Header> (new Image::Header (argument[n])));
+        list.push_back (std::unique_ptr<MR::Header> (new MR::Header (MR::Header::open (argument[n]))));
       }
       catch (Exception& e) {
         e.display();

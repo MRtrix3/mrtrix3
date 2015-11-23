@@ -78,7 +78,7 @@ class Selector
 class WriterExemplars
 {
   public:
-    WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector< Point<float> >&);
+    WriterExemplars (const Tractography::Properties&, const std::vector<node_t>&, const bool, const node_t, const std::vector<Eigen::Vector3f>&);
 
     bool operator() (const Tractography::Connectome::Streamline_nodepair&);
     bool operator() (const Tractography::Connectome::Streamline_nodelist&);
@@ -108,7 +108,7 @@ class WriterExtraction
 {
 
   public:
-    WriterExtraction (const Tractography::Properties& p, const std::vector<node_t>& nodes, const bool exclusive);
+    WriterExtraction (const Tractography::Properties&, const std::vector<node_t>&, const bool);
     ~WriterExtraction();
 
     void add (const node_t, const std::string&, const std::string);
@@ -124,12 +124,12 @@ class WriterExtraction
 
 
   private:
-    Tractography::Properties properties;
+    const Tractography::Properties& properties;
     const std::vector<node_t>& node_list;
     const bool exclusive;
     std::vector< Selector > selectors;
     std::vector< Tractography::WriterUnbuffered<float>* > writers;
-    std::vector< Point<float> > empty_tck;
+    Tractography::Streamline<> empty_tck;
 
 };
 

@@ -22,7 +22,6 @@
 
 #include "file/config.h"
 #include "gui/opengl/lighting.h"
-#include "math/vector.h"
 #include "gui/mrview/mode/volume.h"
 #include "gui/mrview/tool/base.h"
 #include "gui/mrview/adjust_button.h"
@@ -77,9 +76,9 @@ namespace MR
           std::vector<float> clip_color = { 1.0, 0.0, 0.0, 0.1 };
           if (clip_color_spec.size()) {
             auto colour = parse_floats (clip_color_spec);
-            if (colour.size() < 4) 
+            if (colour.size() != 4)
               WARN ("malformed config file entry for \"MRViewClipPlaneColour\" - expected 4 comma-separated values");
-            clip_color = colour;
+            clip_color = { float(colour[0]), float(colour[1]), float(colour[2]), float(colour[3]) };
           }
 
           std::string source = object.declare_shader_variables() +
@@ -280,7 +279,7 @@ namespace MR
 
         namespace {
 
-          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const Point<>& ray, const GL::vec4& plane) 
+          inline GL::vec4 clip_real2tex (const GL::mat4& T2S, const GL::mat4& S2T, const Eigen::Vector3f& ray, const GL::vec4& plane)
           {
             GL::vec4 normal = T2S * GL::vec4 (plane[0], plane[1], plane[2], 0.0);
             GL::vec4 on_plane = S2T * GL::vec4 (plane[3]*plane[0], plane[3]*plane[1], plane[3]*plane[2], 1.0);
@@ -296,10 +295,10 @@ namespace MR
 
           inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
-            Point<> pos = image.transform().voxel2scanner (Point<> (-0.5f, -0.5f, -0.5f));
-            Point<> vec_X = image.transform().voxel2scanner_dir (Point<> (image.info().dim(0), 0.0f, 0.0f));
-            Point<> vec_Y = image.transform().voxel2scanner_dir (Point<> (0.0f, image.info().dim(1), 0.0f));
-            Point<> vec_Z = image.transform().voxel2scanner_dir (Point<> (0.0f, 0.0f, image.info().dim(2)));
+            const Eigen::Vector3f pos   = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
+            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
+            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
+            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];
@@ -335,25 +334,26 @@ namespace MR
 
         void Volume::paint (Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           GL_CHECK_ERROR;
           // info for projection:
           int w = width(), h = height();
           float fov = FOV() / (float) (w+h);
 
-          float depth = std::max (image()->interp.dim(0)*image()->interp.vox(0),
-              std::max (image()->interp.dim(1)*image()->interp.vox(1),
-                image()->interp.dim(2)*image()->interp.vox(2)));
+          float depth = std::max<float> ( { float(image()->image.size(0)*image()->image.spacing(0)),
+                                            float(image()->image.size(1)*image()->image.spacing(1)),
+                                            float(image()->image.size(2)*image()->image.spacing(2)) } );
 
 
-          Math::Versor<float> Q = orientation();
-          if (!Q) {
-            Q = Math::Versor<float> (1.0, 0.0, 0.0, 0.0);
-            set_orientation (Q);
+          Math::Versorf V = orientation();
+          if (!V) {
+            V = Math::Versorf::unit();
+            set_orientation (V);
           }
 
           // set up projection & modelview matrices:
           GL::mat4 P = GL::ortho (-w*fov, w*fov, -h*fov, h*fov, -depth, depth);
-          GL::mat4 MV = adjust_projection_matrix (Q) * GL::translate  (-target()[0], -target()[1], -target()[2]);
+          GL::mat4 MV = adjust_projection_matrix (GL::transpose (V)) * GL::translate  (-target()[0], -target()[1], -target()[2]);
           projection.set (MV, P);
 
           GL_CHECK_ERROR;
@@ -379,18 +379,13 @@ namespace MR
           GL::mat4 M = projection.modelview_projection() * T2S;
           GL::mat4 S2T = GL::inv (T2S);
 
-          int min_vox_index;
-          if (image()->interp.vox(0) < image()->interp.vox (1)) 
-            min_vox_index = image()->interp.vox(0) < image()->interp.vox (2) ? 0 : 2;
-          else 
-            min_vox_index = image()->interp.vox(1) < image()->interp.vox (2) ? 1 : 2;
-          float step_size = 0.5 * image()->interp.vox(min_vox_index);
-          Point<> ray = image()->interp.scanner2voxel_dir (projection.screen_normal());
-          Point<> ray_real_space = ray;
+          float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
+          Eigen::Vector3f ray = image()->transform().scanner2voxel.rotation().cast<float>() * projection.screen_normal();
+          Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
-          ray[0] /= image()->interp.dim(0);
-          ray[1] /= image()->interp.dim(1);
-          ray[2] /= image()->interp.dim(2);
+          ray[0] /= image()->header().size(0);
+          ray[1] /= image()->header().size(1);
+          ray[2] /= image()->header().size(2);
 
 
 
@@ -472,7 +467,7 @@ namespace MR
 
           image()->start (volume_shader, image()->scale_factor());
           gl::UniformMatrix4fv (gl::GetUniformLocation (volume_shader, "M"), 1, gl::FALSE_, M);
-          gl::Uniform3fv (gl::GetUniformLocation (volume_shader, "ray"), 1, ray);
+          gl::Uniform3fv (gl::GetUniformLocation (volume_shader, "ray"), 1, ray.data());
           gl::Uniform1i (gl::GetUniformLocation (volume_shader, "image_sampler"), 0);
           gl::Uniform1f (gl::GetUniformLocation (volume_shader, "selection_thickness"), 3.0*step_size);
 
@@ -550,6 +545,8 @@ namespace MR
 
           GL_CHECK_ERROR;
           draw_orientation_labels (projection);
+
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         inline Tool::View* Volume::get_view_tool () const
@@ -586,7 +583,7 @@ namespace MR
 
         inline void Volume::move_clip_planes_in_out (std::vector<GL::vec4*>& clip, float distance)
         {
-          Point<> d = get_current_projection()->screen_normal();
+          Eigen::Vector3f d = get_current_projection()->screen_normal();
           for (size_t n = 0; n < clip.size(); ++n) {
             GL::vec4& p (*clip[n]);
             p[3] += distance * (p[0]*d[0] + p[1]*d[1] + p[2]*d[2]);
@@ -595,17 +592,16 @@ namespace MR
         }
 
 
-        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versor<float>& rot)
+        inline void Volume::rotate_clip_planes (std::vector<GL::vec4*>& clip, const Math::Versorf& rot)
         {
           for (size_t n = 0; n < clip.size(); ++n) {
             GL::vec4& p (*clip[n]);
             float distance_to_focus = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - p[3];
-            Math::Versor<float> norm (0.0f, p[0], p[1], p[2]);
-            Math::Versor<float> rotated = norm * rot;
-            rotated.normalise();
-            p[0] = rotated[1];
-            p[1] = rotated[2];
-            p[2] = rotated[3];
+            const Math::Versorf norm (0.0f, p[0], p[1], p[2]);
+            const Math::Versorf rotated = norm * rot;
+            p[0] = rotated.x();
+            p[1] = rotated.y();
+            p[2] = rotated.z();
             p[3] = p[0]*focus()[0] + p[1]*focus()[1] + p[2]*focus()[2] - distance_to_focus;
           }
           updateGL();
@@ -622,8 +618,8 @@ namespace MR
           if (clip.size()) {
             const auto &header = image()->header();
             float increment = snap_to_image() ?
-              x * header.vox(plane()) :
-              x * std::pow (header.vox(0) * header.vox(1) * header.vox(2), 1/3.f);
+              x * header.spacing (plane()) :
+              x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1/3.f);
             move_clip_planes_in_out (clip, increment);
           } else
             Base::slice_move_event (x);
@@ -635,7 +631,7 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            Point<> move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
+            Eigen::Vector3f move = get_current_projection()->screen_to_model_direction (window().mouse_displacement(), target());
             for (size_t n = 0; n < clip.size(); ++n) {
               GL::vec4& p (*clip[n]);
               p[3] += (p[0]*move[0] + p[1]*move[1] + p[2]*move[2]);
@@ -662,8 +658,8 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            Math::Versor<float> rot = get_tilt_rotation();
-            if (!rot) 
+            const Math::Versorf rot = get_tilt_rotation();
+            if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }
@@ -677,8 +673,8 @@ namespace MR
         {
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            Math::Versor<float> rot = get_rotate_rotation();
-            if (!rot) 
+            const Math::Versorf rot = get_rotate_rotation();
+            if (!rot)
               return;
             rotate_clip_planes (clip, rot);
           }

@@ -21,10 +21,9 @@
 */
 
 #include "command.h"
-#include "image/header.h"
+#include "math/math.h"
+#include "image.h"
 #include "file/nifti1_utils.h"
-#include "math/matrix.h"
-#include "math/LU.h"
 
 
 using namespace MR;
@@ -53,57 +52,43 @@ void usage ()
 }
 
 
-Math::Matrix<float> get_flirt_transform (const Image::Header& header)
+transform_type get_flirt_transform (const Header& header)
 {
   std::vector<size_t> axes;
-  Math::Matrix<float> nifti_transform = File::NIfTI::adjust_transform (header, axes);
-  if (Math::LU::sgndet (nifti_transform) < 0.0) 
+  transform_type nifti_transform = File::NIfTI::adjust_transform (header, axes);
+  if (nifti_transform.matrix().topLeftCorner<3,3>().determinant() < 0.0)
     return nifti_transform;
-
-  Math::Matrix<float> coord_switch (4,4);
-  coord_switch.identity();
+  transform_type coord_switch;
+  coord_switch.setIdentity();
   coord_switch(0,0) = -1.0f;
-  coord_switch(0,3) = (header.dim(axes[0])-1) * header.vox(axes[0]);
-
-  Math::Matrix<float> updated_transform;
-  return Math::mult (updated_transform, nifti_transform, coord_switch);
-}
-
-
-inline void cleanup_4x4_transform (Math::Matrix<float>& transform)
-{
-  transform(3,0) = transform(3,1) = transform(3,2) = 0.0f;
-  transform(3,3) = 1.0f;
+  coord_switch(0,3) = (header.size(axes[0])-1) * header.spacing(axes[0]);
+  return nifti_transform * coord_switch;
 }
 
 
 
 void run ()
 {
-  Math::Matrix<float> transform;
-  transform.load (argument[0]);
+  auto flirt_opt = get_options ("flirt_import");
 
-  Options opt = get_options ("flirt_import");
-  if (opt.size()) {
-    Image::Header src_header (opt[0][0]);
-    Math::Matrix<float> src_flirt_to_scanner = get_flirt_transform (src_header);
+  if (flirt_opt.size()) {
+    transform_type transform = load_transform<float> (argument[0]);
+    if (transform.matrix().topLeftCorner<3,3>().determinant() == float(0.0))
+        WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
 
-    Image::Header dest_header (opt[0][1]);
-    Math::Matrix<float> dest_flirt_to_scanner = get_flirt_transform (dest_header);
+    auto src_header = Header::open (flirt_opt[0][0]);
+    transform_type src_flirt_to_scanner = get_flirt_transform (src_header);
 
-    Math::Matrix<float> scanner_to_src_flirt = Math::LU::inv (src_flirt_to_scanner);
+    auto dest_header = Header::open (flirt_opt[0][1]);
+    transform_type dest_flirt_to_scanner = get_flirt_transform (dest_header);
 
-    Math::Matrix<float> scanner_to_transformed_dest_flirt;
-    Math::mult (scanner_to_transformed_dest_flirt, transform, scanner_to_src_flirt);
-
-    Math::Matrix<float> forward_transform;
-    Math::mult (forward_transform, dest_flirt_to_scanner, scanner_to_transformed_dest_flirt);
-
-    transform = Math::LU::inv (forward_transform);
+    transform_type forward_transform = dest_flirt_to_scanner * transform * src_flirt_to_scanner.inverse();
+    if (((forward_transform.matrix().array() != forward_transform.matrix().array())).any())
+      WARN ("NAN in transformation.");
+    save_transform (forward_transform.inverse(), argument[1]);
+  } else {
+    throw Exception ("you must supply the in and ref images using the -flirt_import option");
   }
-
-  cleanup_4x4_transform (transform);
-
-  transform.save (argument[1]);
 }
+
 

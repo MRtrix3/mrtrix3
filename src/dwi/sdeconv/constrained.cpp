@@ -48,8 +48,9 @@ namespace MR
       + Argument ("value").type_float (-1.0, 0.0, 10.0)
 
       + Option ("niter",
-                "the maximum number of iterations to perform for each voxel (default = 50).")
-      + Argument ("number").type_integer (1, 50, 1000);
+                "the maximum number of iterations to perform for each voxel (default = 50). "
+                "Use '-niter 0' for a linear unconstrained spherical deconvolution.")
+      + Argument ("number").type_integer (0, 50, 1000);
 
 
   }

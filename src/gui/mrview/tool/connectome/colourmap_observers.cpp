@@ -44,7 +44,7 @@ namespace MR
         }
         void NodeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
-          master.node_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.node_fixed_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
           master.calculate_node_colours();
           master.window().updateGL();
         }
@@ -80,7 +80,7 @@ namespace MR
         }
         void EdgeColourObserver::selected_custom_colour (const QColor& c, const ColourMapButton&)
         {
-          master.edge_fixed_colour.set (c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f);
+          master.edge_fixed_colour = { c.red() / 255.0f, c.green() / 255.0f, c.blue() / 255.0f };
           master.calculate_edge_colours();
           master.window().updateGL();
         }

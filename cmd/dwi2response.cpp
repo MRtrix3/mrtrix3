@@ -21,23 +21,17 @@
 */
 
 #include "command.h"
-#include "args.h"
 #include "exception.h"
 #include "mrtrix.h"
 #include "progressbar.h"
 
-#include "image/buffer.h"
-#include "image/buffer_scratch.h"
-#include "image/copy.h"
-#include "image/loop.h"
-#include "image/position.h"
-#include "image/threaded_loop.h"
-#include "image/utils.h"
-#include "image/value.h"
+#include "image.h"
+#include "algo/copy.h"
+#include "algo/loop.h"
+#include "algo/threaded_loop.h"
 
 #include "math/math.h"
 #include "math/SH.h"
-#include "math/vector.h"
 
 #include "thread_queue.h"
 
@@ -150,85 +144,75 @@ void usage () {
 void run () 
 {
 
-  Image::Header H (argument[0]);
+  Header H = Header::open (argument[0]);
 
-  Image::Info info (H);
-  info.set_ndim (3);
-  Image::BufferScratch<bool> mask (info);
-  auto v_mask = mask.voxel();
+  Header H_mask (H);
+  H_mask.set_ndim (3);
+  auto mask = Image<bool>::scratch (H_mask, "SF mask scratch");
 
   std::string mask_path;
-  Options opt = get_options ("mask");
+  auto opt = get_options ("mask");
   if (opt.size()) {
-    mask_path = std::string(opt[0][0]);
-    Image::Buffer<bool> in (mask_path);
-    if (!Image::dimensions_match (H, in, 0, 3))
+    mask_path = std::string (opt[0][0]);
+    auto in = Image<bool>::open (mask_path);
+    if (!dimensions_match (H_mask, in, 0, 3))
       throw Exception ("Input mask image does not match DWI");
-    if (!(in.ndim() == 3 || (in.ndim() == 4 && in.dim(3) == 1)))
+    if (!(in.ndim() == 3 || (in.ndim() == 4 && in.size(3) == 1)))
       throw Exception ("Input mask image must be a 3D image");
-    auto v_in = in.voxel();
-    Image::copy (v_in, v_mask, 0, 3);
+    copy (in, mask, 0, 3);
   } else {
-    for (auto l = Image::LoopInOrder (v_mask) (v_mask); l; ++l) 
-      v_mask.value() = true;
+    for (auto l = Loop(mask) (mask); l; ++l)
+      mask.value() = true;
   }
 
-  DWI::CSDeconv<float>::Shared shared (H);
+  DWI::CSDeconv::Shared shared (H);
 
   const size_t lmax = DWI::lmax_for_directions (shared.DW_dirs);
   if (lmax < 4)
     throw Exception ("Cannot run dwi2response with lmax less than 4");
   shared.lmax = lmax;
 
-  Image::BufferPreload<float> dwi (H, Image::Stride::contiguous_along_axis (3));
+  auto dwi = H.get_image<float>().with_direct_io (MR::Stride::contiguous_along_axis (3));
   DWI::Directions::Set directions (1281);
 
-  Math::Vector<float> response (lmax/2+1);
-  response.zero();
+  Eigen::Matrix<default_type, Eigen::Dynamic, 1> response = Eigen::Matrix<default_type, Eigen::Dynamic, 1>::Zero (lmax/2+1);
 
   {
     // Initialise response function
     // Use lmax = 2, get the DWI intensity mean and standard deviation within the mask and
     //   use these as the first two coefficients
-    auto v_dwi = dwi.voxel();
-    double sum = 0.0, sq_sum = 0.0;
+    default_type sum = 0.0, sq_sum = 0.0;
     size_t count = 0;
-    Image::LoopInOrder loop (dwi, "initialising response function... ", 0, 3);
-    for (auto l = loop (v_dwi, v_mask); l; ++l) {
-      if (v_mask.value()) {
+    for (auto l = Loop("initialising response function... ", dwi, 0, 3) (dwi, mask); l; ++l) {
+      if (mask.value()) {
         for (size_t volume_index = 0; volume_index != shared.dwis.size(); ++volume_index) {
-          v_dwi[3] = shared.dwis[volume_index];
-          const float value = v_dwi.value();
+          dwi.index(3) = shared.dwis[volume_index];
+          const default_type value = dwi.value();
           sum += value;
           sq_sum += Math::pow2 (value);
           ++count;
         }
       }
     }
-    response[0] = sum / double (count);
-    response[1] = - 0.5 * std::sqrt ((sq_sum / double(count)) - Math::pow2 (response[0]));
+    response[0] = sum / default_type (count);
+    response[1] = - 0.5 * std::sqrt ((sq_sum / default_type(count)) - Math::pow2 (response[0]));
     // Account for scaling in SH basis
     response *= std::sqrt (4.0 * Math::pi);
   }
-  INFO ("Initial response function is [" + str(response, 2) + "]");
+  INFO ("Initial response function is [" + str(response.transpose(), 2) + "]");
 
   // Algorithm termination options
-  opt = get_options ("max_iters");
-  const size_t max_iters = opt.size() ? int(opt[0][0]) : DWI2RESPONSE_DEFAULT_MAX_ITERS;
-  opt = get_options ("max_change");
-  const float max_change = 0.01 * (opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_MAX_CHANGE);
+  const size_t max_iters = get_option_value ("max_iters", DWI2RESPONSE_DEFAULT_MAX_ITERS);
+  const default_type max_change = 0.01 * get_option_value ("max_change", DWI2RESPONSE_DEFAULT_MAX_CHANGE);
 
   // Should all voxels (potentially within a user-specified mask) be tested at every iteration?
   opt = get_options ("test_all");
   const bool reset_mask = opt.size();
 
   // Single-fibre voxel selection options
-  opt = get_options ("volume_ratio");
-  const float volume_ratio = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_VOLUME_RATIO;
-  opt = get_options ("dispersion_multiplier");
-  const float dispersion_multiplier = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER;
-  opt = get_options ("integral_multiplier");
-  const float integral_multiplier = opt.size() ? float(opt[0][0]) : DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER;
+  const default_type volume_ratio = get_option_value ("volume_ratio", DWI2RESPONSE_DEFAULT_VOLUME_RATIO);
+  const default_type dispersion_multiplier = get_option_value ("dispersion_multiplier", DWI2RESPONSE_DEFAULT_DISPERSION_MULTIPLIER);
+  const default_type integral_multiplier = get_option_value ("integral_multiplier", DWI2RESPONSE_DEFAULT_INTEGRAL_STDEV_MULTIPLIER);
 
   SFThresholds thresholds (volume_ratio); // Only threshold the lobe volume ratio for now; other two are not yet used
 
@@ -253,12 +237,11 @@ void run ()
 
       if (reset_mask) {
         if (mask_path.size()) {
-          Image::Buffer<bool> in (mask_path);
-          auto v_in = in.voxel();
-          Image::copy (v_in, v_mask, 0, 3);
+          auto in = Image<bool>::open (mask_path);
+          copy (in, mask, 0, 3);
         } else {
-          for (auto l = Image::LoopInOrder(v_mask) (v_mask); l; ++l)
-            v_mask.value() = true;
+          for (auto l = Loop(mask) (mask); l; ++l)
+            mask.value() = true;
         }
         ++progress;
       }
@@ -266,8 +249,7 @@ void run ()
       std::vector<FODSegResult> seg_results;
       {
         FODCalcAndSeg processor (dwi, mask, shared, directions, lmax, seg_results);
-        Image::ThreadedLoop loop (mask, 0, 3);
-        loop.run (processor);
+        ThreadedLoop (mask, 0, 3).run (processor);
       }
 
       ++progress;
@@ -278,7 +260,8 @@ void run ()
       ++progress;
 
       Response output (lmax);
-      mask.zero();
+      for (auto l = Loop(mask) (mask); l; ++l)
+        mask.value() = false;
       {
         SFSelector selector (seg_results, thresholds, mask);
         ResponseEstimator estimator (dwi, shared, lmax, output);
@@ -286,14 +269,14 @@ void run ()
       }
       if (!output.get_count())
         throw Exception ("Cannot estimate response function; all voxels have been excluded from selection");
-      const Math::Vector<float> new_response = output.result();
+      const Eigen::Matrix<default_type, Eigen::Dynamic, 1> new_response = output.result();
       const size_t sf_count = output.get_count();
 
       ++progress;
 
       if (App::log_level >= 2)
         std::cerr << "\n";
-      INFO ("Iteration " + str(iter) + ", " + str(sf_count) + " SF voxels, new response function: [" + str(new_response, 2) + "]");
+      INFO ("Iteration " + str(iter) + ", " + str(sf_count) + " SF voxels, new response function: [" + str(new_response.transpose(), 2) + "]");
 
       if (sf_count == prev_sf_count) {
         INFO ("terminating due to convergence of single-fibre voxel selection");
@@ -304,7 +287,7 @@ void run ()
         iterate = false;
       }
       bool rf_changed = false;
-      for (size_t i = 0; i != response.size(); ++i) {
+      for (size_t i = 0; i != size_t(response.size()); ++i) {
         if (std::abs ((new_response[i] - response[i]) / new_response[i]) > max_change)
           rf_changed = true;
       }
@@ -332,12 +315,14 @@ void run ()
 
   }
 
-  CONSOLE ("final response function: [" + str(response, 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
-  response.save (argument[1]);
+  CONSOLE ("final response function: [" + str(response.transpose(), 2) + "] (reached after " + str(total_iter) + " iterations using " + str(prev_sf_count) + " voxels)");
+  save_vector (response, argument[1]);
 
   opt = get_options ("sf");
   if (opt.size())
-    v_mask.save (std::string (opt[0][0]));
+    H_mask.datatype() = DataType::Bit;
+    auto out = Image<bool>::create (opt[0][0], H_mask);
+    threaded_copy (mask, out);
 
 }
 

@@ -21,9 +21,6 @@
 #ifndef __math_stats_permutation_h__
 #define __math_stats_permutation_h__
 
-#include "math/vector.h"
-#include "math/matrix.h"
-
 namespace MR
 {
   namespace Math
@@ -81,12 +78,12 @@ namespace MR
       }
 
 
-      inline void statistic2pvalue (const Math::Vector<value_type>& perm_dist,
+      inline void statistic2pvalue (const Eigen::Matrix<value_type, Eigen::Dynamic, 1>& perm_dist,
                                     const std::vector<value_type>& stats,
                                     std::vector<value_type>& pvalues)
       {
         std::vector <value_type> permutations (perm_dist.size(), 0);
-        for (size_t i = 0; i < perm_dist.size(); i++)
+        for (ssize_t i = 0; i < perm_dist.size(); i++)
           permutations[i] = perm_dist[i];
         std::sort (permutations.begin(), permutations.end());
         pvalues.resize (stats.size());

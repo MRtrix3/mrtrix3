@@ -23,6 +23,8 @@
 #ifndef __gui_mrview_mode_base_h__
 #define __gui_mrview_mode_base_h__
 
+#include "math/versor.h"
+
 #include "gui/opengl/gl.h"
 #include "gui/opengl/transformation.h"
 #include "gui/projection.h"
@@ -105,13 +107,13 @@ namespace MR
             void paintGL ();
 
             const Image* image () const { return window().image(); }
-            const Point<>& focus () const { return window().focus(); }
-            const Point<>& target () const { return window().target(); }
+            const Eigen::Vector3f& focus () const { return window().focus(); }
+            const Eigen::Vector3f& target () const { return window().target(); }
             float FOV () const { return window().FOV(); }
             int plane () const { return window().plane(); }
-            Math::Versor<float> orientation () const { 
+            Math::Versorf orientation () const {
               if (snap_to_image()) 
-                return Math::Versor<float>(1.0f, 0.0f, 0.0f, 0.0f);
+                return Math::Versorf::unit();
               return window().orientation(); 
             }
 
@@ -122,37 +124,37 @@ namespace MR
             Image* image () { return window().image(); }
 
             void move_target_to_focus_plane (const Projection& projection) {
-              Point<> in_plane_target = projection.model_to_screen (target());
+              Eigen::Vector3f in_plane_target = projection.model_to_screen (target());
               in_plane_target[2] = projection.depth_of (focus());
               set_target (projection.screen_to_model (in_plane_target));
             }
             void set_visible (bool v) { if(visible != v) { visible = v; updateGL(); } }
-            void set_focus (const Point<>& p) { window().set_focus (p); }
-            void set_target (const Point<>& p) { window().set_target (p); }
+            void set_focus (const Eigen::Vector3f& p) { window().set_focus (p); }
+            void set_target (const Eigen::Vector3f& p) { window().set_target (p); }
             void set_FOV (float value) { window().set_FOV (value); }
             void set_plane (int p) { window().set_plane (p); }
-            void set_orientation (const Math::Versor<float>& Q) { window().set_orientation (Q); }
+            void set_orientation (const Math::Versorf& V) { window().set_orientation (V); }
             void reset_orientation () { 
-              Math::Versor<float> orient;
+              Math::Versorf orient (Math::Versorf::unit());
               if (image()) 
-                orient.from_matrix (image()->header().transform());
+                orient = Math::Versorf (image()->header().transform().rotation().cast<float>());
               set_orientation (orient);
             }
 
-            QGLWidget* glarea () const {
-              return reinterpret_cast <QGLWidget*> (window().glarea);
+            GL::Area* glarea () const {
+              return reinterpret_cast <GL::Area*> (window().glarea);
             }
 
-            Point<> move_in_out_displacement (float distance, const Projection& projection) const {
-              Point<> move (projection.screen_normal());
-              move.normalise();
+            Eigen::Vector3f move_in_out_displacement (float distance, const Projection& projection) const {
+              Eigen::Vector3f move (projection.screen_normal());
+              move.normalize();
               move *= distance;
               return move;
             }
 
             void move_in_out (float distance, const Projection& projection) {
               if (!image()) return;
-              Point<> move = move_in_out_displacement (distance, projection);
+              Eigen::Vector3f move = move_in_out_displacement (distance, projection);
               set_focus (focus() + move);
             }
 
@@ -164,17 +166,21 @@ namespace MR
               QList<QAction*> tools = window().tools()->actions();
               for (int i = 0; i < tools.size(); ++i) {
                 Tool::Dock* dock = dynamic_cast<Tool::__Action__*>(tools[i])->dock;
-                if (dock)
+                if (dock) {
+                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
                   dock->tool->draw (projection, is_3D, axis, slice);
+                  ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+                }
               }
             }
 
-            Math::Versor<float> get_tilt_rotation () const;
-            Math::Versor<float> get_rotate_rotation () const;
+            Math::Versorf get_tilt_rotation () const;
+            Math::Versorf get_rotate_rotation () const;
 
-            Point<> voxel_at (const Point<>& pos) const {
-              if (!image()) return Point<>();
-              return image()->transform().scanner2voxel (pos);
+            Eigen::Vector3f voxel_at (const Eigen::Vector3f& pos) const {
+              if (!image()) return Eigen::Vector3f { NAN, NAN, NAN };
+              const Eigen::Vector3f result = image()->transform().scanner2voxel.cast<float>() * pos;
+              return result;
             }
 
             void draw_crosshairs (const Projection& with_projection) const {

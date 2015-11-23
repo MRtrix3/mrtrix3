@@ -24,6 +24,7 @@
 #include "gui/mrview/window.h"
 #include "gui/mrview/mode/base.h"
 #include "gui/mrview/tool/screen_capture.h"
+#include "gui/opengl/transformation.h"
 
 
 namespace MR
@@ -221,10 +222,9 @@ namespace MR
           const auto image = window().image();
           if(!image) return;
 
-          Image::VoxelType& vox (image->interp);
-          int max_axis = std::max((int)vox.ndim() - 1, 0);
-          volume_axis->setMaximum(max_axis);
-          volume_axis->setValue(std::min(volume_axis->value(), max_axis));
+          int max_axis = std::max((int)image->header().ndim() - 1, 0);
+          volume_axis->setMaximum (max_axis);
+          volume_axis->setValue (std::min (volume_axis->value(), max_axis));
         }
 
 
@@ -252,15 +252,15 @@ namespace MR
         {
             if (!window().image())
               return;
-            Image::VoxelType& vox (window().image()->interp);
+            auto& image (window().image()->image);
 
             cached_state.emplace( cached_state.end(),
               window().orientation(), window().focus(), window().target(), window().FOV(),
-              volume_axis->value() < ssize_t (vox.ndim()) ? vox[volume_axis->value()] : 0,
+              volume_axis->value() < ssize_t (image.ndim()) ? image.index (volume_axis->value()) : 0,
               volume_axis->value(), start_index->value(), window().plane()
             );
 
-            if(cached_state.size() > max_cache_size)
+            if (cached_state.size() > max_cache_size)
               cached_state.pop_front();
         }
 
@@ -291,7 +291,7 @@ namespace MR
         void Capture::run (bool with_capture)
         {
           Window& win (window ());
-          MRView::Image* img (win.image ());
+          MRView::Image* img (win.image());
 
           if (!img)
             return;
@@ -300,8 +300,7 @@ namespace MR
 
           cache_capture_state();
 
-          auto& interp (img->interp);
-          Image::VoxelType& vox (interp);
+          auto& image (img->image);
 
           if (std::isnan (rotation_axis_x->value()))
             rotation_axis_x->setValue (0.0);
@@ -337,10 +336,10 @@ namespace MR
           size_t first_index = start_index->value();
 
           float volume = 0, volume_inc = 0;
-          if (volume_axis->value() < ssize_t (vox.ndim())) {
-            if (target_volume->value() >= vox.dim(volume_axis->value()))
-              target_volume->setValue (vox.dim(volume_axis->value())-1);
-            volume = vox[volume_axis->value()];
+          if (volume_axis->value() < ssize_t (image.ndim())) {
+            if (target_volume->value() >= image.size (volume_axis->value()))
+              target_volume->setValue (image.size (volume_axis->value())-1);
+            volume = image.index (volume_axis->value());
             volume_inc = target_volume->value() / (float)frames_value;
           }
 
@@ -352,16 +351,14 @@ namespace MR
               win.captureGL (folder + "/" + prefix + printf ("%04d.png", i));
 
             // Rotation
-            Math::Versor<float> orientation (win.orientation());
-            Math::Vector<float> axis (3);
-            axis[0] = rotation_axis_x->value ();
-            axis[1] = rotation_axis_y->value ();
-            axis[2] = rotation_axis_z->value ();
-            Math::Versor<float> rotation (radians, axis.ptr());
+            Math::Versorf orientation (win.orientation());
+            Eigen::Vector3f axis { rotation_axis_x->value(), rotation_axis_y->value(), rotation_axis_z->value() };
+            axis.normalize();
+            Math::Versorf rotation (radians, axis);
 
             switch (rotation_type) {
               case RotationType::World:
-                orientation = rotation*orientation;
+                orientation = rotation * orientation;
                 break;
               case RotationType::Eye:
               case RotationType::Image:
@@ -374,25 +371,19 @@ namespace MR
             win.set_orientation (orientation);
 
             // Translation
-            Point<float> trans_vec (translate_x->value (), translate_y->value (), translate_z->value ());
+            Eigen::Vector3f trans_vec { translate_x->value(), translate_y->value(), translate_z->value() };
             trans_vec /= frames_value;
 
-            Point<float> focus (win.focus());
-            Point<float> target (win.target());
+            Eigen::Vector3f focus (win.focus());
+            Eigen::Vector3f target (win.target());
 
             switch (translation_type) {
               case TranslationType::Voxel:
-                trans_vec = interp.voxel2scanner_dir (trans_vec);
+                trans_vec = img->transform().voxel2scanner.rotation().cast<float>() * trans_vec;
                 break;
               case TranslationType::Camera:
               {
-                float T[16];
-                Math::Matrix<float> M (T, 3, 3, 4);
-                orientation.to_matrix (M);
-                T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0f;
-                T[15] = 1.0f;
-
-                GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (T)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
+                const GL::vec4 trans_gl_vec =  GL::inv (GL::mat4 (orientation)) * GL::vec4 (trans_vec[0], trans_vec[1], trans_vec[2], 1.0f);
                 trans_vec[0] = trans_gl_vec[0];
                 trans_vec[1] = trans_gl_vec[1];
                 trans_vec[2] = trans_gl_vec[2];
@@ -405,20 +396,14 @@ namespace MR
             }
 
 
-            Point<float> focus_delta (trans_vec);
+            Eigen::Vector3f focus_delta (trans_vec);
 
 
             // If rotating image we need to offset the translation so that the rotation is relative to
             // the center (i.e. target) of the image
             if (rotation_type == RotationType::Image) {
-              float T[16];
-              Math::Matrix<float> M (T, 3, 3, 4);
-              rotation.to_matrix (M);
-              T[3] = T[7] = T[11] = T[12] = T[13] = T[14] = 0.0f;
-              T[15] = 1.0f;
-
-              GL::vec4 target_after = GL::inv (GL::mat4 (T)) * GL::vec4 (target[0], target[1], target[2], 1.0f);
-              trans_vec += Point<float> (target_after[0], target_after[1], target_after[2]) - target;
+              GL::vec4 target_after = GL::mat4 (rotation) * GL::vec4 (target[0], target[1], target[2], 1.0f);
+              trans_vec += Eigen::Vector3f { target_after[0], target_after[1], target_after[2] } - target;
             }
 
 
@@ -429,7 +414,7 @@ namespace MR
             win.set_target (target);
 
             // Volume
-            if (volume_axis->value() < ssize_t (vox.ndim())) {
+            if (volume_axis->value() < ssize_t (image.ndim())) {
               volume += volume_inc;
               win.set_image_volume (volume_axis->value(), std::round(volume));
             }

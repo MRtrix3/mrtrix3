@@ -47,7 +47,7 @@ namespace MR
         if (start >= end)
           return false;
         out.first = start;
-        const track_t last = MIN (start + size, end);
+        const track_t last = std::min (start + size, end);
         out.second = last;
         start = last;
         if (progress)

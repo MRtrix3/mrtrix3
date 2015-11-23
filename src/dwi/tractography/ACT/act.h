@@ -24,9 +24,7 @@
 #define __dwi_tractography_act_act_h__
 
 #include "app.h"
-#include "point.h"
-
-#include "image/header.h"
+#include "header.h"
 
 
 // Actually think it's preferable to not use these
@@ -56,8 +54,7 @@ namespace MR
 
         void load_act_properties (Properties& properties);
 
-
-        void verify_5TT_image (const Image::Header&);
+        void verify_5TT_image (const Header&);
 
 
       }

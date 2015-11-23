@@ -25,56 +25,33 @@
 #define __dwi_directions_load_h__
 
 #include "math/SH.h"
-#include "math/matrix.h"
 
 namespace MR {
   namespace DWI {
     namespace Directions {
 
-      template <typename ValueType>
-        inline Math::Matrix<ValueType> load_cartesian (const std::string& filename) 
-        {
-          Math::Matrix<ValueType> directions (filename);
-          if (directions.columns() == 2) 
-            directions = Math::SH::S2C (directions);
-          else {
-            if (directions.columns() != 3)
-              throw Exception ("unexpected number of columns for directions file \"" + filename + "\"");
-            for (size_t n  = 0; n < directions.rows(); ++n) {
-              ValueType norm = Math::norm (directions.row(n));
-              if (std::abs(ValueType(1.0) - norm) > 1e-4)
-                WARN ("directions file \"" + filename + "\" contains non-unit direction vectors");
-              directions.row(n) *= norm ? ValueType(1.0)/norm : ValueType(0.0);
-            }
-          }
-          return directions;
-        }
+      Eigen::MatrixXd load_cartesian (const std::string& filename);
 
-
-      template <typename ValueType>
-        inline void save_cartesian (const Math::Matrix<ValueType>& directions, const std::string& filename) 
+      template <class MatrixType>
+        inline void save_cartesian (const MatrixType& directions, const std::string& filename) 
         {
-          if (directions.columns() == 2) {
-            Math::Matrix<ValueType> output = Math::SH::S2C (directions);
-            output.save (filename);
-          }
+          if (directions.cols() == 2) 
+            save_matrix (Math::SH::spherical2cartesian (directions), filename);
           else 
-            directions.save (filename);
+            save_matrix (directions, filename);
         }
 
-      template <typename ValueType>
-        inline void save_spherical (const Math::Matrix<ValueType>& directions, const std::string& filename) 
+      template <class MatrixType>
+        inline void save_spherical (const MatrixType& directions, const std::string& filename) 
         {
-          if (directions.columns() == 3) {
-            Math::Matrix<ValueType> output = Math::SH::C2S (directions);
-            output.save (filename);
-          }
+          if (directions.cols() == 3) 
+            save_matrix (Math::SH::cartesian2spherical (directions), filename);
           else 
-            directions.save (filename);
+            save_matrix (directions, filename);
         }
 
-      template <typename ValueType>
-        inline void save (const Math::Matrix<ValueType>& directions, const std::string& filename, bool cartesian) 
+      template <class MatrixType>
+        inline void save (const MatrixType& directions, const std::string& filename, bool cartesian) 
         {
           if (cartesian) 
             save_cartesian (directions, filename);

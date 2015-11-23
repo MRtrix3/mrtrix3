@@ -20,33 +20,22 @@
 
 */
 
-#ifndef __dwi_sdeconv_rf_estimation_h__
-#define __dwi_sdeconv_rf_estimation_h__
 
 
 #include <limits>
 #include <vector>
 
 #include "exception.h"
-#include "point.h"
+#include "image.h"
 #include "memory.h"
+#include "thread.h"
+
+#include "algo/iterator.h"
 
 #include "file/ofstream.h"
 
-#include "image/buffer.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/iterator.h"
-#include "image/nav.h"
-#include "image/position.h"
-#include "image/value.h"
-
-#include "math/matrix.h"
 #include "math/rng.h"
 #include "math/SH.h"
-#include "math/vector.h"
-
-#include "thread.h"
 
 #include "dwi/fmls.h"
 #include "dwi/gradient.h"
@@ -68,21 +57,21 @@ class FODSegResult;
 class SFThresholds
 {
   public:
-    SFThresholds (const float volume_ratio) :
+    SFThresholds (const default_type volume_ratio) :
         volume_ratio   (volume_ratio),
         min_integral   (0.0),
-        max_integral   (std::numeric_limits<float>::max()),
-        max_dispersion (std::numeric_limits<float>::max()) { }
+        max_integral   (std::numeric_limits<default_type>::max()),
+        max_dispersion (std::numeric_limits<default_type>::max()) { }
 
-    float get_volume_ratio  () const { return volume_ratio; }
-    float get_min_integral  () const { return min_integral; }
-    float get_max_integral  () const { return max_integral; }
-    float get_max_dispersion() const { return max_dispersion; }
+    default_type get_volume_ratio  () const { return volume_ratio; }
+    default_type get_min_integral  () const { return min_integral; }
+    default_type get_max_integral  () const { return max_integral; }
+    default_type get_max_dispersion() const { return max_dispersion; }
 
-    void update (const std::vector<FODSegResult>&, const float, const float, const size_t);
+    void update (const std::vector<FODSegResult>&, const default_type, const default_type, const size_t);
 
   private:
-    float volume_ratio, min_integral, max_integral, max_dispersion;
+    default_type volume_ratio, min_integral, max_integral, max_dispersion;
 };
 
 
@@ -99,7 +88,7 @@ class FODSegResult
         dispersion (integral / lobes[0].get_peak_value())
     {
       assert (lobes.size());
-      float sum_integrals = 0.0;
+      default_type sum_integrals = 0.0;
       for (size_t i = 1; i != lobes.size(); ++i)
         sum_integrals += lobes[i].get_integral();
       volume_ratio = sum_integrals / lobes[0].get_integral();
@@ -109,18 +98,18 @@ class FODSegResult
 
     bool is_sf (const SFThresholds& thresholds) const;
 
-    const Point<int>&   get_vox()      const { return vox; }
-    const Point<float>& get_peak_dir() const { return peak_dir; }
+    const Eigen::Array3i&  get_vox()      const { return vox; }
+    const Eigen::Vector3f& get_peak_dir() const { return peak_dir; }
 
-    float get_integral()     const { return integral; }
-    float get_dispersion()   const { return dispersion; }
-    float get_volume_ratio() const { return volume_ratio; }
+    default_type get_integral()     const { return integral; }
+    default_type get_dispersion()   const { return dispersion; }
+    default_type get_volume_ratio() const { return volume_ratio; }
 
 
   private:
-    Point<int> vox;
-    Point<float> peak_dir;
-    float integral, dispersion, volume_ratio;
+    Eigen::Array3i vox;
+    Eigen::Vector3f peak_dir;
+    default_type integral, dispersion, volume_ratio;
 
 };
 
@@ -131,12 +120,12 @@ class FODSegResult
 class FODCalcAndSeg
 {
   public:
-    FODCalcAndSeg (Image::BufferPreload<float>& dwi,
-               Image::BufferScratch<bool>& mask,
-               const DWI::CSDeconv<float>::Shared& csd_shared,
-               const DWI::Directions::Set& dirs,
-               const size_t lmax,
-               std::vector<FODSegResult>& output) :
+    FODCalcAndSeg (Image<float>& dwi,
+                   Image<bool>& mask,
+                   const DWI::CSDeconv::Shared& csd_shared,
+                   const DWI::Directions::Set& dirs,
+                   const size_t lmax,
+                   std::vector<FODSegResult>& output) :
         in (dwi),
         mask (mask),
         csd (csd_shared),
@@ -159,24 +148,24 @@ class FODCalcAndSeg
 
 
     FODCalcAndSeg (const FODCalcAndSeg& that) :
-        in         (that.in),
-        mask       (that.mask),
-        csd        (that.csd),
-        fmls       (that.fmls),
-        lmax       (that.lmax),
-        output     (that.output),
-        mutex      (that.mutex) { }
+        in     (that.in),
+        mask   (that.mask),
+        csd    (that.csd),
+        fmls   (that.fmls),
+        lmax   (that.lmax),
+        output (that.output),
+        mutex  (that.mutex) { }
 
     ~FODCalcAndSeg() { }
 
 
-    bool operator() (const Image::Iterator& pos);
+    bool operator() (const Iterator& pos);
 
 
   private:
-    Image::BufferPreload<float>::voxel_type in;
-    Image::BufferScratch<bool>::voxel_type mask;
-    DWI::CSDeconv<float> csd;
+    Image<float> in;
+    Image<bool> mask;
+    DWI::CSDeconv csd;
     std::shared_ptr<DWI::FMLS::Segmenter> fmls;
     const size_t lmax;
     std::vector<FODSegResult>& output;
@@ -194,17 +183,17 @@ class SFSelector
   public:
     SFSelector (const std::vector<FODSegResult>& results,
                 const SFThresholds& thresholds,
-                Image::BufferScratch<bool>& output_mask) :
-        input (results),
+                Image<bool>& output_mask) :
+        input      (results),
         thresholds (thresholds),
-        it (input.begin()),
-        output (output_mask) { }
+        it         (input.begin()),
+        output     (output_mask) { }
 
     SFSelector (const SFSelector& that) :
-        input (that.input),
+        input      (that.input),
         thresholds (that.thresholds),
-        it (that.it),
-        output (that.output)
+        it         (that.it),
+        output     (that.output)
     {
       throw Exception ("Do not instantiate copy constructor of SFSelector class!");
     }
@@ -216,7 +205,7 @@ class SFSelector
     const SFThresholds& thresholds;
 
     std::vector<FODSegResult>::const_iterator it;
-    Image::BufferScratch<bool>::voxel_type output;
+    Image<bool> output;
 
 };
 
@@ -231,14 +220,14 @@ class SFSelector
 class Response
 {
   public:
-    Response (const size_t lmax) :
-        data (lmax/2+1),
-        count (0)
-    {
-      data.zero();
-    }
 
-    Response& operator+= (const Math::Vector<float>& i)
+    typedef Eigen::Matrix<default_type, Eigen::Dynamic, 1> vector_t;
+
+    Response (const size_t lmax) :
+        data (vector_t::Zero (lmax/2+1)),
+        count (0) { }
+
+    Response& operator+= (const vector_t& i)
     {
       assert (i.size() == data.size());
       data += i;
@@ -246,18 +235,18 @@ class Response
       return *this;
     }
 
-    Math::Vector<float> result() const
+    vector_t result() const
     {
       assert (count);
-      Math::Vector<float> result (data);
-      result /= float(count);
+      vector_t result (data);
+      result /= default_type(count);
       return result;
     }
 
     size_t get_count() const { return count; }
 
   private:
-    Math::Vector<double> data;
+    vector_t data;
     size_t count;
 };
 
@@ -270,39 +259,39 @@ class ResponseEstimator
 {
 
   public:
-    ResponseEstimator (Image::BufferPreload<float>& dwi_data,
-                       const DWI::CSDeconv<float>::Shared& csd_shared,
+    ResponseEstimator (Image<float>& dwi_data,
+                       const DWI::CSDeconv::Shared& csd_shared,
                        const size_t lmax,
                        Response& output) :
-        dwi (dwi_data),
+        dwi    (dwi_data),
         shared (csd_shared),
-        lmax (lmax),
+        lmax   (lmax),
         output (output),
-        mutex (new std::mutex()) { }
+        mutex  (new std::mutex()) { }
 
     ResponseEstimator (const ResponseEstimator& that) :
-        dwi (that.dwi),
+        dwi    (that.dwi),
         shared (that.shared),
-        lmax (that.lmax),
+        lmax   (that.lmax),
         output (that.output),
-        rng (that.rng),
-        mutex (that.mutex) { }
+        rng    (that.rng),
+        mutex  (that.mutex) { }
 
 
     bool operator() (const FODSegResult&);
 
 
   private:
-    Image::BufferPreload<float>::voxel_type dwi;
-    const DWI::CSDeconv<float>::Shared& shared;
+    Image<float> dwi;
+    const DWI::CSDeconv::Shared& shared;
     const size_t lmax;
     Response& output;
 
-    mutable Math::RNG::Uniform<float> rng;
+    mutable Math::RNG::Uniform<default_type> rng;
 
     std::shared_ptr<std::mutex> mutex;
 
-    Math::Matrix<float> gen_rotation_matrix (const Point<float>&) const;
+    Eigen::Matrix<default_type, 3, 3> gen_rotation_matrix (const Eigen::Vector3&) const;
 
 };
 
@@ -313,5 +302,4 @@ class ResponseEstimator
 }
 }
 
-#endif
 

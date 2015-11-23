@@ -106,7 +106,7 @@ namespace MR
              virtual void closeEvent (QCloseEvent* event) override;
 
              Image* get_image ();
-             void get_values (Math::Vector<float>& SH, MRView::Image& image, const Point<>& pos, const bool interp);
+             void get_values (Eigen::VectorXf& SH, MRView::Image& image, const Eigen::Vector3f& pos, const bool interp);
 
              friend class ODF_Preview;
 

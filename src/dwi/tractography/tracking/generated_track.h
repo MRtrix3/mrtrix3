@@ -26,8 +26,6 @@
 
 #include <vector>
 
-#include "point.h"
-
 #include "dwi/tractography/tracking/types.h"
 
 
@@ -42,10 +40,10 @@ namespace MR
 
 
 
-    class GeneratedTrack : public std::vector< Point<Tracking::value_type> >
+    class GeneratedTrack : public std::vector<Eigen::Vector3f>
     {
 
-        typedef std::vector< Point<Tracking::value_type> > BaseType;
+        typedef std::vector<Eigen::Vector3f> BaseType;
 
       public:
         GeneratedTrack() : seed_index (0) { }

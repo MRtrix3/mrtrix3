@@ -28,6 +28,8 @@
 #include <sys/time.h>
 #endif
 
+#include <mutex>
+
 #include "mrtrix.h"
 
 namespace MR
@@ -44,6 +46,7 @@ namespace MR
      * variable. The copy constructor will seed itself using 1 + the last seed
      * used - this ensures the seeds are unique across instances in
      * multi-threading. */
+    // TODO consider switch to std::mt19937_64
     class RNG : public std::mt19937
     {
       public:
@@ -54,6 +57,8 @@ namespace MR
         template <typename ValueType> class Normal; 
 
         static std::mt19937::result_type get_seed () {
+          static std::mutex mutex;
+          std::lock_guard<std::mutex> lock (mutex);
           static std::mt19937::result_type current_seed = get_seed_private();
           return current_seed++;
         }

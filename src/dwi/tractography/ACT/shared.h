@@ -40,23 +40,21 @@ namespace MR
         class ACT_Shared_additions {
 
           public:
-            ACT_Shared_additions (const std::string& path, DWI::Tractography::Properties& property_set) :
-              buffer (path),
-              bt (false),
-              voxel (buffer)
+            ACT_Shared_additions (const std::string& path, Properties& property_set) :
+              voxel (Image<float>::open (path)),
+              bt (false)
             {
-              verify_5TT_image (buffer);
+              verify_5TT_image (voxel.original_header());
               property_set.set (bt, "backtrack");
               if (property_set.find ("crop_at_gmwmi") != property_set.end())
-                gmwmi_finder.reset (new GMWMI_finder (buffer));
+                gmwmi_finder.reset (new GMWMI_finder (voxel));
             }
 
 
             bool backtrack() const { return bt; }
-            const Image::Info& info() const { return buffer.info(); }
 
             bool crop_at_gmwmi() const { return bool (gmwmi_finder); }
-            void crop_at_gmwmi (std::vector< Point<float> >& tck) const
+            void crop_at_gmwmi (std::vector<Eigen::Vector3f>& tck) const
             {
               assert (gmwmi_finder);
               tck.back() = gmwmi_finder->find_interface (tck, true);
@@ -64,14 +62,13 @@ namespace MR
 
 
           private:
-            Image::Buffer<float> buffer;
+            Image<float> voxel;
             bool bt;
 
             std::unique_ptr<GMWMI_finder> gmwmi_finder;
 
 
           protected:
-            const Image::Buffer<float>::voxel_type voxel;
             friend class ACT_Method_additions;
 
         };

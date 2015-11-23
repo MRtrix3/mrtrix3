@@ -46,12 +46,12 @@ namespace MR
       ProgressInfo (const ProgressInfo& p) = delete;
       ProgressInfo (ProgressInfo&& p) = delete; 
 
-      ProgressInfo (const std::string& text, size_t target) :
-        value (0), text (text), current_val (0), multiplier (0.0), data (nullptr) { 
+      FORCE_INLINE ProgressInfo (const std::string& text, size_t target) :
+        value (0), text (text), current_val (0), next_percent (0), next_time (0.0), multiplier (0.0), data (nullptr) { 
           set_max (target);
         }
 
-      ~ProgressInfo  () {
+      FORCE_INLINE ~ProgressInfo  () {
         done_func (*this);
       }
 
@@ -97,7 +97,7 @@ namespace MR
         display_now();
       }
 
-      void set_text (const std::string& new_text) {
+      FORCE_INLINE void set_text (const std::string& new_text) {
         if (new_text.size()) {
 #ifdef MRTRIX_WINDOWS
           size_t old_size = text.size();
@@ -112,7 +112,7 @@ namespace MR
 
       //! update text displayed and optionally increment counter
       template <class TextFunc> 
-        inline void update (TextFunc&& text_func, const bool increment = true) {
+        FORCE_INLINE void update (TextFunc&& text_func, const bool increment = true) {
           double time = timer.elapsed();
           if (increment && multiplier) {
             if (++current_val >= next_percent) {
@@ -137,12 +137,12 @@ namespace MR
           }
         }
 
-      void display_now () {
+      FORCE_INLINE void display_now () {
         display_func (*this);
       }
 
       //! increment the current value by one.
-      void operator++ () {
+      FORCE_INLINE void operator++ () {
         if (multiplier) {
           if (++current_val >= next_percent) {
             value = std::round (current_val / multiplier);
@@ -161,7 +161,7 @@ namespace MR
         }
       }
 
-      void operator++ (int) {
+      FORCE_INLINE void operator++ (int) {
         ++ (*this);
       }
 
@@ -216,7 +216,7 @@ namespace MR
       /*! The progress may not be shown if the -quiet option has been supplied
        * to the application.
         * \returns true if the progress will be shown, false otherwise. */
-      operator bool () const {
+      FORCE_INLINE operator bool () const {
         return show;
       }
 
@@ -224,7 +224,7 @@ namespace MR
       /*! The progress may not be shown if the -quiet option has been supplied
        * to the application.
        * \returns true if the progress will not be shown, false otherwise. */
-      bool operator! () const {
+      FORCE_INLINE bool operator! () const {
         return !show;
       }
 
@@ -233,13 +233,13 @@ namespace MR
        * created with a non-zero target value. In other words, the ProgressBar
        * has been created to display a percentage value, rather than a busy
        * indicator. */
-      void set_max (size_t new_target) {
+      FORCE_INLINE void set_max (size_t new_target) {
         target = new_target;
         if (show && prog)
           prog->set_max (target);
       }
 
-      void set_text (const std::string& new_text) {
+      FORCE_INLINE void set_text (const std::string& new_text) {
         text = new_text;
         if (show && prog)
           prog->set_text (new_text);
@@ -267,7 +267,7 @@ namespace MR
        * before the ProgressBar's done() function is called (typically in the
        * destructor when it goes out of scope).*/
       template <class TextFunc>
-        void update (TextFunc&& text_func, bool increment = true) {
+        FORCE_INLINE void update (TextFunc&& text_func, bool increment = true) {
           if (show) {
             if (!prog) 
               prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
@@ -276,7 +276,7 @@ namespace MR
         }
 
       //! increment the current value by one.
-      void operator++ () {
+      FORCE_INLINE void operator++ () {
         if (show) {
           if (!prog) 
             prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
@@ -284,11 +284,11 @@ namespace MR
         }
       }
 
-      void operator++ (int) {
+      FORCE_INLINE void operator++ (int) {
         ++ (*this);
       }
 
-      void done () {
+      FORCE_INLINE void done () {
         prog.reset();
       }
 

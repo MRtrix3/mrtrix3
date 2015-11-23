@@ -23,9 +23,7 @@
 
 #include "command.h"
 #include "math/SH.h"
-#include "image/matrix_multiply.h"
-#include "image/buffer.h"
-#include "image/voxel.h"
+#include "image.h"
 #include "dwi/gradient.h"
 
 
@@ -35,7 +33,7 @@ using namespace App;
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (d.raffelt@brain.org.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
 
   DESCRIPTION
   + "Evaluate the amplitude of an image of spherical harmonic functions "
@@ -59,63 +57,70 @@ void usage ()
     + Option ("nonnegative",
               "cap all negative amplitudes to zero")
 
-    + Image::Stride::StrideOption
+    + Stride::Options
     + DataType::options();
 }
 
 
 typedef float value_type;
 
-class remove_negative 
+
+class SH2Amp
 {
   public:
-    remove_negative (bool nonnegative) : nonnegative (nonnegative) { }
-    value_type operator () (value_type val) const { return nonnegative ? std::max (val, value_type (0.0)) : val; }
-  protected:
-    const bool nonnegative;
+    template <class MatrixType>
+    SH2Amp (const MatrixType& dirs, const size_t lmax, bool nonneg) 
+      : transformer(dirs.template cast<value_type>(), lmax), nonnegative(nonneg) { }
+    
+    void operator() (Image<value_type>& in, Image<value_type>& out) {
+      transformer.SH2A(r, in.row(3));
+      if (nonnegative)
+        r = r.cwiseMax(value_type(0.0));
+      out.row(3) = r;
+    }
+
+  private:
+    Math::SH::Transform<value_type> transformer;
+    bool nonnegative;
+    Eigen::Matrix<value_type, Eigen::Dynamic, 1> r;
 };
 
 
 
 void run ()
 {
-  Image::Buffer<value_type> sh_data (argument[0]);
+  auto sh_data = Image<value_type>::open(argument[0]);
   Math::SH::check (sh_data);
 
-  Image::Header amp_header (sh_data);
+  auto amp_header = sh_data.original_header();
 
-  Math::Matrix<value_type> directions;
+  Eigen::MatrixXd directions;
 
   if (get_options("gradient").size()) {
-    Math::Matrix<value_type> grad;
-    grad.load (argument[1]);
+    Eigen::MatrixXd grad;
+    grad = load_matrix(argument[1]);
     DWI::Shells shells (grad);
     directions = DWI::gen_direction_matrix (grad, shells.largest().get_volumes());
   } else {
-    directions.load (argument[1]);
+    directions = load_matrix(argument[1]);
   }
 
   if (!directions.rows())
     throw Exception ("no directions found in input directions file");
 
   std::stringstream dir_stream;
-  for (size_t d = 0; d < directions.rows() - 1; ++d)
+  for (ssize_t d = 0; d < directions.rows() - 1; ++d)
     dir_stream << directions(d,0) << "," << directions(d,1) << "\n";
   dir_stream << directions(directions.rows() - 1,0) << "," << directions(directions.rows() - 1,1);
-  amp_header.insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
+  amp_header.keyval().insert(std::pair<std::string, std::string> ("directions", dir_stream.str()));
 
-  amp_header.dim(3) = directions.rows();
-  Image::Stride::set_from_command_line (amp_header, Image::Stride::contiguous_along_axis (3));
+  amp_header.size(3) = directions.rows();
+  Stride::set_from_command_line (amp_header, Stride::contiguous_along_axis (3));
   amp_header.datatype() = DataType::from_command_line (DataType::Float32);
 
-  Image::Buffer<value_type> amp_data (argument[2], amp_header);
+  auto amp_data = Image<value_type>::create(argument[2], amp_header);
 
-  Math::SH::Transform<value_type> transformer (directions, Math::SH::LforN (sh_data.dim(3)));
-  Image::matrix_multiply (
-      "computing amplitudes...",
-      transformer.mat_SH2A(),
-      sh_data.voxel(), 
-      amp_data.voxel(),
-      Image::NoOp<value_type>, remove_negative (get_options("nonnegative").size()), 3);
-
+  SH2Amp sh2amp (directions, Math::SH::LforN (sh_data.size(3)), get_options("nonnegative").size());
+  ThreadedLoop("computing amplitudes...", sh_data, 0, 3, 2).run(sh2amp, sh_data, amp_data);
+  
 }
