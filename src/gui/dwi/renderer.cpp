@@ -83,8 +83,11 @@ namespace MR
           if (*this)
             clear();
           GL::Shader::Vertex vertex_shader (vertex_shader_source());
+          GL::Shader::Geometry geometry_shader (geometry_shader_source());
           GL::Shader::Fragment fragment_shader (fragment_shader_source());
           attach (vertex_shader);
+          if ((GLuint) geometry_shader)
+            attach (geometry_shader);
           attach (fragment_shader);
           link();
         }
@@ -105,16 +108,30 @@ namespace MR
         } else {
           source +=
           "layout(location = 0) in vec3 vertex;\n"
-          "layout(location = 1) in float value;\n"
-          "layout(location = 2) in vec3 face_normal;\n";
+          "layout(location = 1) in float value;\n";
         }
+
+        std::string VSout = "";
+        if (!is_SH_)
+          VSout = "_GSin";
 
         source +=
           "uniform float scale;\n"
           "uniform int reverse;\n"
           "uniform vec3 constant_color, origin;\n"
           "uniform mat4 MV, MVP;\n"
-          "out vec3 position, color, normal;\n"
+          "out vec3 position"+VSout+", color"+VSout+";\n";
+
+        if (is_SH_) {
+          source +=
+          "out vec3 vert_normal;\n";
+        } else {
+          source +=
+          "out vec3 vert_dir;\n"
+          "out vec3 vert_pos;\n";
+        }
+
+        source +=
           "out float amplitude;\n"
           "void main () {\n";
 
@@ -126,10 +143,8 @@ namespace MR
           "  amplitude = value;\n";
         }
 
-        if (use_lighting_) {
-
-          if (is_SH_) {
-            source +=
+        if (is_SH_ && use_lighting_) {
+          source +=
           "  bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
           "  float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
           "  float caz = cos (az), saz = sin (az), cel = vertex.z, sel = sqrt (1.0 - cel*cel);\n"
@@ -141,55 +156,127 @@ namespace MR
           "  vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
           "                  -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
           "                  -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
-          "  normal = cross (d1, d2);\n";
-          } else {
-            source +=
-          "  normal = face_normal;\n";
-          }
-
-          source +=
+          "  vert_normal = cross (d1, d2);\n"
           "  if (reverse != 0)\n"
-          "    normal = -normal;\n"
-          "  normal = normalize (mat3(MV) * normal);\n";
-
+          "    vert_normal = -vert_normal;\n"
+          "  vert_normal = normalize (mat3(MV) * vert_normal);\n";
         }
 
         if (colour_by_direction_) {
           source +=
-          "  color = abs (vertex.xyz);\n";
+          "  color"+VSout+" = abs (vertex.xyz);\n";
         } else {
           source +=
-          "  color = constant_color;\n";
+          "  color"+VSout+" = constant_color;\n";
         }
 
-        source +=
+        if (is_SH_) {
+          source +=
           "  vec3 pos = vertex * amplitude * scale;\n"
           "  if (reverse != 0)\n"
           "    pos = -pos;\n";
-
-        if (orthographic_) {
+          if (orthographic_) {
+            source +=
+          "  position"+VSout+" = vec3(0.0, 0.0, 1.0);\n";
+          } else {
+            source +=
+          "  position"+VSout+" = -(MV * vec4 (pos, 1.0)).xyz;\n";
+          }
           source +=
-          "  position = vec3(0.0, 0.0, 1.0);\n";
+          "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n";
         } else {
           source +=
-          "  position = -(MV * vec4 (pos, 1.0)).xyz;\n";
+          "  vert_dir = vertex;\n"
+          "  vert_pos = vertex * amplitude;\n"
+          "  if (reverse != 0) {\n"
+          "     vert_dir = -vert_dir;\n"
+          "     vert_pos = -vert_pos;\n"
+          "  }\n";
         }
 
         source +=
-          "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n"
           "}\n";
 
+        return source;
+      }
+
+      std::string Renderer::Shader::geometry_shader_source() const{
+        std::string source;
+        if (!is_SH_) {
+          source +=
+            "layout(triangles) in;\n"
+            "layout(triangle_strip, max_vertices = 3) out;\n"
+            "uniform mat4 MV, MVP;\n"
+            "uniform vec3 origin;\n"
+            "uniform float scale;\n"
+            "uniform int reverse;\n"
+            "in vec3 vert_dir[], vert_pos[];\n"
+            "in vec3 position_GSin[], color_GSin[];\n"
+            "flat out vec3 face_normal;\n"
+            "out vec3 position_GSout, color_GSout;\n"
+            "void main() {\n"
+            "  vec3 mean_dir = normalize (vert_dir[0] + vert_dir[1] + vert_dir[2]);\n"
+            "  vec3 vertices[3];\n"
+            "  vec3 positions[3];\n";
+          for (size_t vertex = 0; vertex != 3; ++vertex) {
+            const std::string v = str(vertex);
+            source +=
+            "  if (dot (mean_dir, vert_dir["+v+"]) > 0.0) {\n"
+            "    vertices["+v+"] = vert_pos["+v+"];\n"
+            "    positions["+v+"] = position_GSin["+v+"];\n"
+            "  } else {\n"
+            "    vertices["+v+"] = -vert_pos["+v+"];\n"
+            "    positions["+v+"] = -position_GSin["+v+"];\n"
+            "  }\n";
+          }
+          source +=
+            "  face_normal = normalize (cross (vertices[1]-vertices[0], vertices[2]-vertices[1]));\n"
+            "  if (reverse != 0)\n"
+            "    face_normal = -face_normal;\n"
+            "  face_normal = normalize (mat3(MV) * face_normal);\n";
+          for (size_t vertex = 0; vertex != 3; ++vertex) {
+            const std::string v = str(vertex);
+            source +=
+            "  gl_Position = MVP * vec4 (origin + (vertices["+v+"] * scale), 1.0);\n";
+            if (orthographic_) {
+              source +=
+            "  position_GSout = vec3(0.0, 0.0, 1.0);\n";
+            } else {
+              source +=
+            "  position_GSout = -(MV * vec4 (vertices["+v+"] * scale, 1.0)).xyz;\n";
+            }
+            source +=
+            "  color_GSout = color_GSin["+v+"];\n"
+            "  EmitVertex();\n";
+          }
+          source +=
+            "  EndPrimitive();\n"
+            "}";
+        }
         return source;
       }
 
       std::string Renderer::Shader::fragment_shader_source() const
       {
         std::string source;
+        std::string FSin = "";
+        if (!is_SH_)
+          FSin = "_GSout";
         source +=
           "uniform float ambient, diffuse, specular, shine;\n"
           "uniform vec3 light_pos;\n"
-          "in vec3 position, color, normal;\n"
           "in float amplitude;\n"
+          "in vec3 position"+FSin+", color"+FSin+";\n";
+
+        if (is_SH_) {
+          source +=
+          "in vec3 vert_normal;\n";
+        } else {
+          source +=
+          "flat in vec3 face_normal;\n";
+        }
+
+        source +=
           "out vec3 final_color;\n"
           "void main() {\n"
           "  if (amplitude < 0.0) {\n";
@@ -204,15 +291,21 @@ namespace MR
 
         source +=
           "  }\n"
-          "  else final_color = color;\n";
+          "  else final_color = color"+FSin+";\n";
 
         if (use_lighting_) {
+          if (is_SH_) {
           source +=
-          "  vec3 norm = normalize (normal);\n"
+          "  vec3 norm = normalize (vert_normal);\n";
+          } else {
+          source +=
+          "  vec3 norm = face_normal;\n";
+          }
+          source +=
           "  if (amplitude < 0.0)\n"
           "    norm = -norm;\n"
           "  final_color *= ambient + diffuse * clamp (dot (norm, light_pos), 0, 1);\n"
-          "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position)), 0, 1), shine);\n";
+          "  final_color += specular * pow (clamp (dot (reflect (-light_pos, norm), normalize(position"+FSin+")), 0, 1), shine);\n";
         }
 
         source +=
@@ -351,7 +444,7 @@ namespace MR
         Renderer::GrabContext context (parent.context_);
         vertex_buffer.clear();
         value_buffer.clear();
-        normal_buffer.clear();
+        index_buffer.clear();
         VAO.clear();
       }
 
@@ -363,7 +456,7 @@ namespace MR
         Renderer::GrabContext context (parent.context_);
         vertex_buffer.gen();
         value_buffer.gen();
-        normal_buffer.gen();
+        index_buffer.gen();
         VAO.gen();
         VAO.bind();
 
@@ -374,10 +467,6 @@ namespace MR
         value_buffer.bind (gl::ARRAY_BUFFER);
         gl::EnableVertexAttribArray (1);
         gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void*)0);
-
-        normal_buffer.bind (gl::ARRAY_BUFFER);
-        gl::EnableVertexAttribArray (2);
-        gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
         GL_CHECK_ERROR;
       }
 
@@ -396,33 +485,14 @@ namespace MR
       void Renderer::Dixel::set_data (const vector_t& data, int buffer_ID) const
       {
         (void)buffer_ID;
-        assert (size_t(data.size()) == directions.size());
+        assert (data.size() == vertex_count);
+
         GL_CHECK_ERROR;
-
-        std::vector<GLfloat> values;
-        std::vector<Eigen::Vector3f> normals;
-        for (auto i : polygons) {
-          std::array<Eigen::Vector3f,3> v { data[i[0]] * directions[i[0]] * i.reverse(0),
-                                            data[i[1]] * directions[i[1]] * i.reverse(1),
-                                            data[i[2]] * directions[i[2]] * i.reverse(2) };
-          const Eigen::Vector3f normal = ((v[1]-v[0]).cross (v[2]-v[1])).normalized();
-          normals.push_back (normal);
-          normals.push_back (normal);
-          normals.push_back (normal);
-          values.push_back (data[i[0]]);
-          values.push_back (data[i[1]]);
-          values.push_back (data[i[2]]);
-        }
-
         Renderer::GrabContext context (parent.context_);
         VAO.bind();
         value_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, values.size()*sizeof(GLfloat), &values[0], gl::STREAM_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, vertex_count*sizeof(GLfloat), &data[0], gl::STREAM_DRAW);
         gl::VertexAttribPointer (1, 1, gl::FLOAT, gl::FALSE_, sizeof(GLfloat), (void*)0);
-
-        normal_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, normals.size()*3*sizeof(float), normals[0].data(), gl::STREAM_DRAW);
-        gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
         GL_CHECK_ERROR;
       }
 
@@ -430,11 +500,9 @@ namespace MR
 
       void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
       {
-        directions.clear();
-        polygons.clear();
+        std::vector<std::array<GLint,3>> indices_data;
 
         for (size_t i = 0; i != dirs.size(); ++i) {
-          directions.push_back (dirs[i]);
           for (auto j : dirs.get_adj_dirs(i)) {
             if (j > i) {
               for (auto k : dirs.get_adj_dirs(j)) {
@@ -444,25 +512,19 @@ namespace MR
                   for (auto I : dirs.get_adj_dirs (k)) {
                     if (I == i) {
 
-                      const Eigen::Vector3f mean_dir ((dirs[i] + dirs[j] + dirs[k]).normalized());
-                      size_t reversed = 3;
-                      if (dirs[i].dot (mean_dir) < 0.0f)
-                        reversed = 0;
-                      else if (dirs[j].dot (mean_dir) < 0.0f)
-                        reversed = 1;
-                      else if (dirs[k].dot (mean_dir) < 0.0f)
-                        reversed = 2;
-                      // Conform to right hand rule
-                      const Eigen::Vector3f normal (((dirs[j]-dirs[i]).cross (dirs[k]-dirs[j])).normalized());
-                      if (normal.dot (mean_dir) < 0.0f) {
-                        if (reversed == 1)
-                          reversed = 2;
-                        else if (reversed == 2)
-                          reversed = 1;
-                        polygons.push_back (Polygon (i, k, j, reversed));
-                      } else {
-                        polygons.push_back (Polygon (i, j, k, reversed));
+                      // Invert a direction if required
+                      std::array<Eigen::Vector3f, 3> d { dirs[i], dirs[j], dirs[k] };
+                      const Eigen::Vector3f mean_dir ((d[0]+d[1]+d[2]).normalized());
+                      for (size_t v = 0; v != 3; ++v) {
+                        if (d[v].dot (mean_dir) < 0.0f)
+                          d[v] = -d[v];
                       }
+                      // Conform to right hand rule
+                      const Eigen::Vector3f normal (((d[1]-d[0]).cross (d[2]-d[1])).normalized());
+                      if (normal.dot (mean_dir) < 0.0f)
+                        indices_data.push_back ( {GLint(i), GLint(k), GLint(j)} );
+                      else
+                        indices_data.push_back ( {GLint(i), GLint(j), GLint(k)} );
 
                     }
                   }
@@ -473,20 +535,18 @@ namespace MR
           }
         }
 
-        std::vector<Eigen::Vector3f> vertices (3 * polygons.size());
-        for (size_t i = 0; i != polygons.size(); ++i) {
-          vertices[3*i]   = directions[polygons[i][0]] * polygons[i].reverse (0);
-          vertices[3*i+1] = directions[polygons[i][1]] * polygons[i].reverse (1);
-          vertices[3*i+2] = directions[polygons[i][2]] * polygons[i].reverse (2);
-        }
-
         GL_CHECK_ERROR;
         Renderer::GrabContext context (parent.context_);
         VAO.bind();
         vertex_buffer.bind (gl::ARRAY_BUFFER);
-        gl::BufferData (gl::ARRAY_BUFFER, vertices.size()*sizeof(Eigen::Vector3f), &vertices[0][0], gl::STATIC_DRAW);
+        gl::BufferData (gl::ARRAY_BUFFER, dirs.size()*sizeof(Eigen::Vector3f), &dirs.get_dirs()[0][0], gl::STATIC_DRAW);
         gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
+        index_buffer.bind();
+        gl::BufferData (gl::ELEMENT_ARRAY_BUFFER, indices_data.size()*sizeof(std::array<GLint,3>), &indices_data[0], gl::STATIC_DRAW);
         GL_CHECK_ERROR;
+
+        vertex_count = dirs.size();
+        index_count = 3 * indices_data.size();
       }
 
 

@@ -131,12 +131,15 @@ namespace MR {
             }
         };
 
+        ProgressBar progress ("computing convex hull of direction set...");
+
         std::vector<Vertex> vertices;
         // Generate antipodal vertices
         for (dir_t i = 0; i != size(); ++i) {
           vertices.push_back (Vertex (*this, i, false));
           vertices.push_back (Vertex (*this, i, true));
         }
+        ++progress;
 
         dir_t extremum_indices[3][2] = { {0, 0}, {0, 0}, {0, 0} };
         float extremum_values[3][2] = { {1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, -1.0f} };
@@ -152,6 +155,8 @@ namespace MR {
             }
           }
         }
+        ++progress;
+
         // Find the two most distant points out of these six
         std::vector<dir_t> all_extrema;
         for (size_t axis = 0; axis != 3; ++axis) {
@@ -169,6 +174,8 @@ namespace MR {
             }
           }
         }
+        ++progress;
+
         // This forms the base line of the base triangle of the tetrahedon
         // Now from the remaining four extrema, find which one is farthest from this line
         dir_t third_point = 6;
@@ -183,6 +190,8 @@ namespace MR {
           }
         }
         assert (third_point != 6);
+        ++progress;
+
         std::multiset<Plane, PlaneComp> planes;
         planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
         // Find the most distant point to this plane, and use it as the tip point of the tetrahedon
@@ -201,6 +210,7 @@ namespace MR {
         planes.insert (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
         planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
         planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
+        ++progress;
 
         std::vector<Plane> hull;
 
@@ -266,6 +276,7 @@ namespace MR {
               planes.erase (i);
 
           }
+          ++progress;
         }
 
         for (auto& current : hull) {
@@ -289,9 +300,10 @@ namespace MR {
                 break;
               }
             }
-          if (!found)
-            adj_dirs[from].push_back (to);
+            if (!found)
+              adj_dirs[from].push_back (to);
           }
+          ++progress;
 
         }
 

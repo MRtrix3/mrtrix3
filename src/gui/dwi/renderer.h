@@ -108,17 +108,14 @@ namespace MR
             protected:
               bool is_SH_, use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
               std::string vertex_shader_source() const;
+              std::string geometry_shader_source() const;
               std::string fragment_shader_source() const;
           } shader;
 
           void half_draw() const
           {
-            if (is_SH)
-              gl::DrawElements (gl::TRIANGLES, sh.num_indices(), gl::UNSIGNED_INT, (void*)0);
-            else
-              gl::DrawArrays (gl::TRIANGLES, 0, dixel.num_indices());
+            gl::DrawElements (gl::TRIANGLES, is_SH ? sh.num_indices() : dixel.num_indices(), gl::UNSIGNED_INT, (void*)0);
           }
-
 
         public:
           class SH
@@ -169,7 +166,7 @@ namespace MR
           {
               typedef MR::DWI::Directions::dir_t dir_t;
             public:
-              Dixel (Renderer& parent) : parent (parent) { }
+              Dixel (Renderer& parent) : parent (parent), vertex_count (0), index_count (0) { }
               ~Dixel();
 
               void initGL();
@@ -179,36 +176,16 @@ namespace MR
 
               void set_data (const vector_t&, int buffer_ID = 0) const;
 
-              GLuint num_indices() const { return 3*polygons.size(); }
+              GLuint num_indices() const { return index_count; }
 
             private:
               Renderer& parent;
-              GL::VertexBuffer vertex_buffer, value_buffer, normal_buffer;
+              GL::VertexBuffer vertex_buffer, value_buffer;
+              GL::IndexBuffer index_buffer;
               GL::VertexArrayObject VAO;
+              GLuint vertex_count, index_count;
 
               void update_dixels (const MR::DWI::Directions::Set&);
-
-              // TODO Could potentially compress the below code...
-              //   Separate value from vertex direction in the shader?
-              //   - Think this would then require normal calculation in a geometry shader
-
-              // Need this in order to calculate normals on CPU
-              std::vector<Eigen::Vector3f> directions;
-
-              // Store the details for each polygon
-              class Polygon
-              {
-                public:
-                  Polygon (const dir_t i, const dir_t j, const dir_t k, const dir_t r) :
-                      voxels { i, j, k },
-                      dir_to_reverse (r) { }
-                  dir_t operator[] (const size_t i) const { assert (i < 3); return voxels[i]; }
-                  float reverse (const size_t i) const { assert (i < 3); return (dir_to_reverse == i ? -1.0f : 1.0f); }
-                private:
-                  const std::array<dir_t,3> voxels;
-                  const dir_t dir_to_reverse;
-              };
-              std::vector<Polygon> polygons;
 
           } dixel;
 
