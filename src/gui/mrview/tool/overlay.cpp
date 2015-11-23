@@ -316,8 +316,8 @@ namespace MR
             if (image && image->show) {
               std::string value_str = Path::basename(image->get_filename()) + " overlay value: ";
               cfloat value = image->interpolate() ?
-                image->nearest_neighbour_value(window().focus()) :
-                image->trilinear_value(window().focus());
+                image->trilinear_value(window().focus()) :
+                image->nearest_neighbour_value(window().focus());
               if(std::isnan(std::abs(value)))
                 value_str += "?";
               else value_str += str(value);
