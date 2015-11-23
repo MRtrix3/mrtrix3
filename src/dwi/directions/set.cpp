@@ -25,6 +25,7 @@
 
 #include "dwi/directions/set.h"
 
+#include <list>
 #include <set>
 
 #include "math/rng.h"
@@ -131,15 +132,12 @@ namespace MR {
             }
         };
 
-        ProgressBar progress ("computing convex hull of direction set...");
-
         std::vector<Vertex> vertices;
         // Generate antipodal vertices
         for (dir_t i = 0; i != size(); ++i) {
           vertices.push_back (Vertex (*this, i, false));
           vertices.push_back (Vertex (*this, i, true));
         }
-        ++progress;
 
         dir_t extremum_indices[3][2] = { {0, 0}, {0, 0}, {0, 0} };
         float extremum_values[3][2] = { {1.0f, -1.0f}, {1.0f, -1.0f}, {1.0f, -1.0f} };
@@ -155,7 +153,6 @@ namespace MR {
             }
           }
         }
-        ++progress;
 
         // Find the two most distant points out of these six
         std::vector<dir_t> all_extrema;
@@ -174,7 +171,6 @@ namespace MR {
             }
           }
         }
-        ++progress;
 
         // This forms the base line of the base triangle of the tetrahedon
         // Now from the remaining four extrema, find which one is farthest from this line
@@ -190,7 +186,6 @@ namespace MR {
           }
         }
         assert (third_point != 6);
-        ++progress;
 
         std::multiset<Plane, PlaneComp> planes;
         planes.insert (Plane (vertices, all_extrema[distant_pair.first], all_extrema[distant_pair.second], all_extrema[third_point]));
@@ -210,25 +205,29 @@ namespace MR {
         planes.insert (Plane (vertices, base_plane.indices[0], fourth_point, base_plane.indices[1]));
         planes.insert (Plane (vertices, base_plane.indices[1], fourth_point, base_plane.indices[2]));
         planes.insert (Plane (vertices, base_plane.indices[2], fourth_point, base_plane.indices[0]));
-        ++progress;
 
         std::vector<Plane> hull;
 
+        // Speedup: Only test those directions that have not yet been incorporated into any plane
+        std::list<size_t> unassigned;
+        for (size_t i = 0; i != vertices.size(); ++i) {
+          if (!base_plane.includes (i) && fourth_point != i)
+            unassigned.push_back (i);
+        }
+
         while (planes.size()) {
           Plane current (*planes.begin());
-          dir_t max_index = vertices.size();
+          auto max_index = unassigned.end();
           float max_dist = current.dist;
-          for (dir_t d = 0; d != vertices.size(); ++d) {
-            if (!current.includes(d)) {
-              const float dist = vertices[d].dir.dot (current.normal);
-              if (dist > max_dist) {
-                max_dist = dist;
-                max_index = d;
-              }
+          for (auto d = unassigned.begin(); d != unassigned.end(); ++d) {
+            const float dist = vertices[*d].dir.dot (current.normal);
+            if (dist > max_dist) {
+              max_dist = dist;
+              max_index = d;
             }
           }
 
-          if (max_index == vertices.size()) {
+          if (max_index == unassigned.end()) {
             hull.push_back (current);
             planes.erase (planes.begin());
           } else {
@@ -238,7 +237,7 @@ namespace MR {
             //   current plane, but because the data are on the sphere a complete search should be fine
             std::vector<std::multiset<Plane, PlaneComp>::iterator> all_planes;
             for (std::multiset<Plane, PlaneComp>::iterator p = planes.begin(); p != planes.end(); ++p) {
-              if (!p->includes (max_index) && vertices[max_index].dir.dot (p->normal) > p->dist)
+              if (!p->includes (*max_index) && vertices[*max_index].dir.dot (p->normal) > p->dist)
                 all_planes.push_back (p);
             }
 
@@ -269,18 +268,19 @@ namespace MR {
             }
 
             for (auto& h : horizon)
-              planes.insert (Plane (vertices, h.first, h.second, max_index));
+              planes.insert (Plane (vertices, h.first, h.second, *max_index));
 
-            // Finally, delete the used faces
+            // Delete the used faces
             for (auto i : all_planes)
               planes.erase (i);
 
+            // This point no longer needs to be tested
+            unassigned.erase (max_index);
+
           }
-          ++progress;
         }
 
         for (auto& current : hull) {
-
           // Each of these three directions is adjacent
           // However: Each edge may have already been added from other triangles
           for (size_t edge = 0; edge != 6; ++edge) {
@@ -303,8 +303,6 @@ namespace MR {
             if (!found)
               adj_dirs[from].push_back (to);
           }
-          ++progress;
-
         }
 
         for (auto& i : adj_dirs)
