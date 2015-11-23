@@ -136,7 +136,7 @@ namespace MR
             source += "in float v_include[];\n"
               "out float g_include;\n";
 
-          if (use_lighting || color_type == Direction)
+          if (use_lighting || color_type == Direction || scalarfile_by_direction)
             source += "out vec3 g_tangent;\n";
 
           if (color_type == ScalarFile || color_type == Ends)
@@ -157,7 +157,7 @@ namespace MR
               "  if (v_include[0] > 1.0 && v_include[1] > 1.0) return;\n";
 
           // First vertex:
-          if (use_lighting || color_type == Direction)
+          if (use_lighting || color_type == Direction || scalarfile_by_direction)
             source += "  g_tangent = v_tangent[0];\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[0];\n";
@@ -179,7 +179,7 @@ namespace MR
             "  EmitVertex();\n";
 
           // Second vertex:
-          if (use_lighting || color_type == Direction)
+          if (use_lighting || color_type == Direction || scalarfile_by_direction)
             source += "  g_tangent = v_tangent[1];\n";
           if (do_crop_to_slab)
             source += "  g_include = v_include[1];\n";
@@ -217,7 +217,7 @@ namespace MR
 
           if (color_type == ScalarFile || color_type == Ends)
             source += "in vec3 fColour;\n";
-          if (use_lighting || color_type == Direction)
+          if (use_lighting || color_type == Direction || scalarfile_by_direction)
             source += "in vec3 g_tangent;\n";
 
           if (color_type == ScalarFile)
@@ -246,6 +246,11 @@ namespace MR
                 source += "  if (g_amp < lower) discard;\n";
               if (tractogram.use_discard_upper())
                 source += "  if (g_amp > upper) discard;\n";
+              if (scalarfile_by_direction)
+                source += "  colour = abs (normalize (g_tangent));\n";
+              else
+                source += "  colour = fColour;\n";
+              break;
             case Ends:
               source += "  colour = fColour;\n";
               break;
