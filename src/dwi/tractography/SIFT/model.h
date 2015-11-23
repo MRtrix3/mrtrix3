@@ -48,6 +48,8 @@
 #include "dwi/tractography/SIFT/track_index_range.h"
 #include "dwi/tractography/SIFT/types.h"
 
+#include "file/path.h"
+
 #include "image/loop.h"
 
 #include "thread_queue.h"
@@ -79,6 +81,7 @@ namespace MR
           {
             Track_fixel_contribution::set_scaling (dwi);
           }
+          Model (const Model& that) = delete;
 
           virtual ~Model ();
 
@@ -113,9 +116,6 @@ namespace MR
           using ModelBase<Fixel>::TD_sum;
 
 
-          Model (const Model& that) : ModelBase<Fixel> (that) { assert (0); }
-
-
         private:
           // Some member classes to support multi-threaded processes
           class MappedTrackReceiver
@@ -135,7 +135,7 @@ namespace MR
               bool operator() (const Mapping::SetDixel&);
             private:
               Model& master;
-              RefPtr<std::mutex> mutex;
+              std::shared_ptr<std::mutex> mutex;
               double TD_sum;
               std::vector<double> fixel_TDs;
           };
@@ -178,9 +178,9 @@ namespace MR
         Tractography::Properties properties;
         Tractography::Reader<float> file (path, properties);
 
-        if (properties.find ("count") == properties.end())
-          throw Exception ("Input .tck file does not specify number of streamlines (run tckfixcount on your .tck file!)");
-        const track_t count = to<track_t>(properties["count"]);
+        const track_t count = (properties.find ("count") == properties.end()) ? 0 : to<track_t>(properties["count"]);
+        if (!count)
+          throw Exception ("Cannot map streamlines: track file " + Path::basename(path) + " is empty");
 
         contributions.assign (count, nullptr);
 

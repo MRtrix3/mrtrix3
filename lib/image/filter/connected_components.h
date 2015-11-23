@@ -23,6 +23,7 @@
 #ifndef __image_filter_connected_h__
 #define __image_filter_connected_h__
 
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/info.h"
 #include "image/loop.h"
@@ -302,6 +303,13 @@ namespace MR
             dim_to_ignore[3] = true;
         }
 
+        template <class InfoType>
+        ConnectedComponents (const InfoType& in, const std::string& message) :
+          ConnectedComponents (in)
+        {
+          set_message (message);
+        }
+
 
         template <class InputVoxelType, class OutputVoxelType>
         void operator() (InputVoxelType& in, OutputVoxelType& out) {
@@ -314,9 +322,9 @@ namespace MR
 
           connector.precompute_adjacency (in);
 
-          Ptr<ProgressBar> progress;
+          std::unique_ptr<ProgressBar> progress;
           if (message.size()) {
-            progress = new ProgressBar (message);
+            progress.reset (new ProgressBar (message));
             ++(*progress);
           }
 

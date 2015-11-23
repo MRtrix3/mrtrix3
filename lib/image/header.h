@@ -26,8 +26,8 @@
 #include <map>
 
 #include "debug.h"
-#include "ptr.h"
 #include "types.h"
+#include "memory.h"
 #include "datatype.h"
 #include "image/info.h"
 #include "image/handler/base.h"
@@ -164,11 +164,11 @@ namespace MR
           return stream;
         }
 
-        RefPtr<Handler::Base> __get_handler () const {
+        std::shared_ptr<Handler::Base> __get_handler () const {
           return handler_;
         }
 
-        void __set_handler (RefPtr<Handler::Base> handler) {
+        void __set_handler (std::shared_ptr<Handler::Base> handler) {
           handler_ = handler;
         }
 
@@ -181,7 +181,7 @@ namespace MR
         Math::Matrix<float> DW_scheme_;
         float offset_, scale_;
         std::vector<std::string> comments_;
-        RefPtr<Handler::Base> handler_;
+        std::shared_ptr<Handler::Base> handler_;
 
         void open (const std::string& image_name);
         void create (const std::string& image_name);
@@ -202,6 +202,9 @@ namespace MR
         ConstHeader () { }
 
         ConstHeader (const Header& H) : Header (H) { 
+          set_intensity_scaling (H);
+        }
+        ConstHeader (const ConstHeader& H) : Header (H) { 
           set_intensity_scaling (H);
         }
 

@@ -38,6 +38,7 @@ namespace MR
 
       typedef float value_type;
 
+
       /** \addtogroup Statistics
       @{ */
 

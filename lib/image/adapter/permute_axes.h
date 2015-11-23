@@ -49,7 +49,7 @@ namespace MR
                   if (axes_[a] == i)
                     goto next_axis;
                 if (parent_vox.dim (i) != 1)
-                  throw Exception ("ommitted axis \"" + str (i) + "\" has dimension greater than 1");
+                  throw Exception ("omitted axis \"" + str (i) + "\" has dimension greater than 1");
 next_axis:
                 continue;
               }

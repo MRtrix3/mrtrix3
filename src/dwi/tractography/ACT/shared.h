@@ -23,7 +23,7 @@
 #ifndef __dwi_tractography_act_shared_h__
 #define __dwi_tractography_act_shared_h__
 
-
+#include "memory.h"
 #include "dwi/tractography/ACT/gmwmi.h"
 
 
@@ -48,14 +48,14 @@ namespace MR
               verify_5TT_image (buffer);
               property_set.set (bt, "backtrack");
               if (property_set.find ("crop_at_gmwmi") != property_set.end())
-                gmwmi_finder = new GMWMI_finder (buffer);
+                gmwmi_finder.reset (new GMWMI_finder (buffer));
             }
 
 
             bool backtrack() const { return bt; }
             const Image::Info& info() const { return buffer.info(); }
 
-            bool crop_at_gmwmi() const { return gmwmi_finder; }
+            bool crop_at_gmwmi() const { return bool (gmwmi_finder); }
             void crop_at_gmwmi (std::vector< Point<float> >& tck) const
             {
               assert (gmwmi_finder);
@@ -67,7 +67,7 @@ namespace MR
             Image::Buffer<float> buffer;
             bool bt;
 
-            Ptr<GMWMI_finder> gmwmi_finder;
+            std::unique_ptr<GMWMI_finder> gmwmi_finder;
 
 
           protected:

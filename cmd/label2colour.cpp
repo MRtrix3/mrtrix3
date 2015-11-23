@@ -33,15 +33,15 @@
 
 #include "math/rng.h"
 
-#include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/config/config.h"
+#include "connectome/connectome.h"
+#include "connectome/lut.h"
 
 
 
 using namespace MR;
 using namespace App;
-using namespace MR::DWI::Tractography::Connectomics;
+using namespace MR::Connectome;
 
 
 void usage ()
@@ -77,7 +77,7 @@ void run ()
   auto nodes = nodes_data.voxel();
 
   Node_map node_map;
-  load_lookup_table (node_map);
+  load_lut_from_cmdline (node_map);
 
   Options opt = get_options ("config");
   if (opt.size()) {
@@ -119,13 +119,14 @@ void run ()
 
     node_map.insert (std::make_pair (0, Node_info ("None", 0, 0, 0, 0)));
     Math::RNG rng;
+    std::uniform_int_distribution<uint8_t> dist;
 
     for (node_t i = 1; i <= max_index; ++i) {
       Point<uint8_t> colour;
       do {
-        colour[0] = rng.uniform_int (255);
-        colour[1] = rng.uniform_int (255);
-        colour[2] = rng.uniform_int (255);
+        colour[0] = dist (rng);
+        colour[1] = dist (rng);
+        colour[2] = dist (rng);
       } while (int(colour[0]) + int(colour[1]) + int(colour[2]) < 100);
       node_map.insert (std::make_pair (i, Node_info (str(i), colour)));
     }

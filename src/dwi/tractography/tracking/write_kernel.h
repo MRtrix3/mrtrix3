@@ -25,8 +25,8 @@
 
 #include <string>
 #include <vector>
+#include <cinttypes>
 
-#include "ptr.h"
 #include "timer.h"
 #include "file/ofstream.h"
 
@@ -58,19 +58,23 @@ namespace MR
               const std::string& output_file,
               const DWI::Tractography::Properties& properties) :
                 S (shared),
-                writer (output_file, properties)
+                writer (output_file, properties),
+                finite_seeds (S.properties.seeds.is_finite()),
+                progress (printf ("       0 generated,        0 selected", 0, 0), finite_seeds ? S.max_num_attempts : S.max_num_tracks)
           {
             DWI::Tractography::Properties::const_iterator seed_output = properties.find ("seed_output");
             if (seed_output != properties.end()) {
-              seeds = new File::OFStream (seed_output->second, std::ios_base::out | std::ios_base::trunc);
+              seeds.reset (new File::OFStream (seed_output->second, std::ios_base::out | std::ios_base::trunc));
               (*seeds) << "#Track_index,Seed_index,Pos_x,Pos_y,Pos_z,\n";
             }
           }
 
+          WriteKernel (const WriteKernel&) = delete;
+          WriteKernel& operator= (const WriteKernel&) = delete;
+
           ~WriteKernel ()
           {
-            if (App::log_level > 0)
-              fprintf (stderr, "\33[2K\r%8lu generated, %8lu selected    [100%%]\n", (long unsigned int)writer.total_count, (long unsigned int)writer.count);
+            progress.set_text (printf ("%8" PRIu64 " generated, %8" PRIu64 " selected", writer.total_count, writer.count));
             if (seeds) {
               (*seeds) << "\n";
               seeds->close();
@@ -87,9 +91,9 @@ namespace MR
         protected:
           const SharedBase& S;
           Writer<value_type> writer;
-          Ptr<File::OFStream> seeds;
-          IntervalTimer timer;
-
+          const bool finite_seeds;
+          std::unique_ptr<File::OFStream> seeds;
+          ProgressBar progress;
       };
 
 

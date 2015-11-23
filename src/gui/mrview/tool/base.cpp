@@ -20,6 +20,7 @@
 
 */
 
+#include "app.h"
 #include "gui/mrview/tool/base.h"
 
 namespace MR
@@ -31,38 +32,43 @@ namespace MR
       namespace Tool
       {
 
-        Base::Base (Window& main_window, Dock* parent) : 
-          QFrame (parent),
-          window (main_window) { 
-            QFont f = font();
-            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-1));
-            setFont (f);
+        void Dock::closeEvent (QCloseEvent*) { assert (tool); tool->close_event(); }
 
+        Base::Base (Dock* parent) : 
+          QFrame (parent) {
+            QFont f = font();
+            //CONF option: MRViewToolFontSize
+            //CONF default: 2 points less than the standard system font
+            //CONF The point size for the font to use in MRView Tools.
+            f.setPointSize (MR::File::Config::get_int ("MRViewToolFontSize", f.pointSize()-2));
+            setFont (f);
             setFrameShadow (QFrame::Sunken); 
             setFrameShape (QFrame::Panel);
           }
 
-
-
-        QSize Base::sizeHint () const
+        void Base::adjustSize () 
         {
-          return minimumSizeHint();
+          layout()->update();
+          layout()->activate();
+          setMinimumSize (layout()->minimumSize());
         }
+
+
+        QSize Base::sizeHint () const { return minimumSize(); }
 
 
         void Base::draw (const Projection&, bool, int, int) { }
 
-        void Base::drawOverlays (const Projection&) { }
-
-        bool Base::process_batch_command (const std::string&, const std::string&) 
-        {
-          return false;
-        }
+        void Base::draw_colourbars () { }
 
         bool Base::mouse_press_event () { return false; }
         bool Base::mouse_move_event () { return false; }
         bool Base::mouse_release_event () { return false; }
         QCursor* Base::get_cursor () { return nullptr; }
+
+        bool Base::process_commandline_option (const MR::App::ParsedOption&) { return false; }
+        void Base::add_commandline_options (MR::App::OptionList&) { }
+
       }
     }
   }

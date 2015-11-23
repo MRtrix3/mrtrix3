@@ -137,14 +137,12 @@ class Segmented_FOD_receiver
   private:
     Image::Header H;
 
-    Ptr< Image::BufferSparse<FixelMetric> > afd_data;
-    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > afd;
-    Ptr< Image::BufferSparse<FixelMetric> > peak_data;
-    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > peak;
-    Ptr< Image::BufferSparse<FixelMetric> > disp_data;
-    Ptr< Image::BufferSparse<FixelMetric>::voxel_type > disp;
-
-
+    std::unique_ptr<Image::BufferSparse<FixelMetric>> afd_data;
+    std::unique_ptr<Image::BufferSparse<FixelMetric>::voxel_type> afd;
+    std::unique_ptr<Image::BufferSparse<FixelMetric>> peak_data;
+    std::unique_ptr<Image::BufferSparse<FixelMetric>::voxel_type> peak;
+    std::unique_ptr<Image::BufferSparse<FixelMetric>> disp_data;
+    std::unique_ptr<Image::BufferSparse<FixelMetric>::voxel_type> disp;
 };
 
 
@@ -153,22 +151,22 @@ class Segmented_FOD_receiver
 void Segmented_FOD_receiver::set_afd_output (const std::string& path)
 {
   assert (!afd_data);
-  afd_data = new Image::BufferSparse<FixelMetric> (path, H);
-  afd = new Image::BufferSparse<FixelMetric>::voxel_type (*afd_data);
+  afd_data.reset (new Image::BufferSparse<FixelMetric> (path, H));
+  afd.reset (new Image::BufferSparse<FixelMetric>::voxel_type (*afd_data));
 }
 
 void Segmented_FOD_receiver::set_peak_output (const std::string& path)
 {
   assert (!peak_data);
-  peak_data = new Image::BufferSparse<FixelMetric> (path, H);
-  peak = new Image::BufferSparse<FixelMetric>::voxel_type (*peak_data);
+  peak_data.reset (new Image::BufferSparse<FixelMetric> (path, H));
+  peak.reset (new Image::BufferSparse<FixelMetric>::voxel_type (*peak_data));
 }
 
 void Segmented_FOD_receiver::set_disp_output (const std::string& path)
 {
   assert (!disp_data);
-  disp_data = new Image::BufferSparse<FixelMetric> (path, H);
-  disp = new Image::BufferSparse<FixelMetric>::voxel_type (*disp_data);
+  disp_data.reset (new Image::BufferSparse<FixelMetric> (path, H));
+  disp.reset (new Image::BufferSparse<FixelMetric>::voxel_type (*disp_data));
 }
 
 size_t Segmented_FOD_receiver::num_outputs() const
@@ -242,9 +240,9 @@ void run ()
   FMLS::FODQueueWriter<Image::Buffer<float>::voxel_type> writer (fod_data);
 
   opt = get_options ("mask");
-  Ptr<Image::Buffer<bool> > mask_buffer_ptr;
+  std::unique_ptr<Image::Buffer<bool> > mask_buffer_ptr;
   if (opt.size()) {
-    mask_buffer_ptr = new Image::Buffer<bool> (std::string (opt[0][0]));
+    mask_buffer_ptr.reset (new Image::Buffer<bool> (std::string (opt[0][0])));
     if (!Image::dimensions_match (fod_data, *mask_buffer_ptr, 0, 3))
       throw Exception ("Cannot use image \"" + str(opt[0][0]) + "\" as mask image; dimensions do not match FOD image");
     writer.set_mask (*mask_buffer_ptr);

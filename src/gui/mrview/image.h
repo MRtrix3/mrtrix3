@@ -29,6 +29,7 @@
 #include "image/voxel.h"
 #include "math/versor.h"
 #include "image/interp/linear.h"
+#include "image/interp/nearest.h"
 
 
 namespace MR
@@ -44,40 +45,38 @@ namespace MR
 
       class Window;
 
-      class Image : public Volume
+      class ImageBase : public Volume
+      {
+        public:
+          ImageBase (const MR::Image::Info&);
+
+          void render2D (Displayable::Shader& shader_program, const Projection& projection, const int plane, const int slice);
+          void render3D (Displayable::Shader& shader_program, const Projection& projection, const float depth);
+
+          virtual void update_texture2D (const int plane, const int slice) = 0;
+          virtual void update_texture3D() = 0;
+
+          void get_axes (const int plane, int& x, int& y) const;
+
+        protected:
+          GL::Texture texture2D[3];
+          std::vector<ssize_t> position;
+
+      };
+
+      class Image : public ImageBase
       {
         public:
           Image (const MR::Image::Header& image_header);
-          Image (Window& parent, const MR::Image::Header& image_header);
 
           MR::Image::Header& header () { return buffer; }
           const MR::Image::Header& header () const { return buffer; }
 
-          void update_texture2D (int plane, int slice);
-          void update_texture3D ();
+          void update_texture2D (const int plane, const int slice) override;
+          void update_texture3D() override;
 
-          void render2D (Displayable::Shader& shader_program, const Projection& projection, int plane, int slice);
-          void render3D (Displayable::Shader& shader_program, const Projection& projection, float depth);
-
-          void request_render_colourbar(DisplayableVisitor& visitor, const Projection& projection) override
-          { if(show_colour_bar) visitor.render_image_colourbar(*this, projection); }
-
-          void get_axes (int plane, int& x, int& y) {
-            if (plane) {
-              if (plane == 1) {
-                x = 0;
-                y = 2;
-              }
-              else {
-                x = 0;
-                y = 1;
-              }
-            }
-            else {
-              x = 1;
-              y = 2;
-            }
-          }
+          void request_render_colourbar(DisplayableVisitor& visitor) override
+          { if(show_colour_bar) visitor.render_image_colourbar(*this); }
 
           typedef MR::Image::Buffer<cfloat> BufferType;
           typedef BufferType::voxel_type VoxelType;
@@ -89,12 +88,27 @@ namespace MR
         public:
           InterpVoxelType interp;
           VoxelType& voxel () { return interp; }
+          cfloat trilinear_value (const Point<float> &scanner_point) {
+            if (interp.scanner (scanner_point)) 
+              return cfloat(NAN, NAN); 
+            return interp.value();
+          }
+          cfloat nearest_neighbour_value (const Point<float> &scanner_point) {
+            auto p = interp.scanner2voxel (scanner_point);
+            ssize_t v[3] = { ssize_t (std::round (p[0])), ssize_t (std::round (p[1])), ssize_t (std::round (p[2])) };
+            if (v[0] < 0 || v[0] >= voxel().dim(0) ||
+                v[1] < 0 || v[1] >= voxel().dim(1) ||
+                v[2] < 0 || v[2] >= voxel().dim(2)) 
+              return cfloat(NAN, NAN); 
+            voxel()[0] = v[0];
+            voxel()[1] = v[1];
+            voxel()[2] = v[2];
+            return voxel().value();
+          }
 
         private:
-          GL::Texture texture2D[3];
-          std::vector<ssize_t> position;
-
           bool volume_unchanged ();
+          bool format_unchanged ();
           size_t guess_colourmap () const;
 
           template <typename T> void copy_texture_3D ();

@@ -25,8 +25,9 @@
 
 
 #include <string>
+#include <cinttypes>
 
-#include "timer.h"
+#include "progressbar.h"
 
 #include "dwi/tractography/file.h"
 #include "dwi/tractography/properties.h"
@@ -46,20 +47,19 @@ namespace MR {
 
           public:
 
-            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t c, const size_t n, const size_t s) :
+            Receiver (const std::string& path, const Tractography::Properties& properties, const size_t n, const size_t s, const bool e) :
               writer (path, properties),
-              in_count (c),
               number (n),
               skip (s),
+              ends_only (e),
               // Need to use local counts instead of writer class members due to track cropping
               count (0),
-              total_count (0) { }
+              total_count (0),
+              progress ("       0 read,        0 written") { }
 
             ~Receiver()
             {
-              print();
-              if (App::log_level > 0)
-                fprintf (stderr, "\n");
+              progress.set_text (printf ("%8" PRIu64 " read, %8" PRIu64 " written", total_count, count));
               if (number && (count != number))
                 WARN ("User requested " + str(number) + " streamlines, but only " + str(count) + " were written to file");
             }
@@ -71,13 +71,13 @@ namespace MR {
           private:
 
             Tractography::Writer<> writer;
-            const size_t in_count, number;
-            size_t skip;
-            size_t count, total_count;
-            IntervalTimer timer;
+            const uint64_t number;
+            uint64_t skip;
+            const bool ends_only;
+            uint64_t count, total_count;
+            ProgressBar progress;
 
-            void update_cmdline();
-            void print();
+            void output (const Tractography::Streamline<>&);
 
         };
 

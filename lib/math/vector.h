@@ -554,16 +554,46 @@ namespace MR
 
         //! read the vector data from \a stream and assign to the vector \a V
         friend std::istream& operator>> (std::istream& stream, Vector& V) {
-          std::vector<ValueType> vec;
-          std::string entry;
-          while (stream >> entry) 
-            vec.push_back (to<ValueType> (entry));
+
+          std::vector<ValueType> data;
+          size_t axis = 0; // Expect data in rows, 1 value per line (value 1 = data in columns, 1 line only)
+          std::string sbuf;
+
+          while (getline (stream, sbuf)) {
+            sbuf = strip (sbuf.substr (0, sbuf.find_first_of ('#')));
+            if (sbuf.empty())
+              continue;
+
+            std::vector<ValueType> line;
+
+            const auto elements = MR::split (sbuf, " ,;\t", true);
+            for (const auto& entry : elements) 
+              line.push_back (to<ValueType> (entry));
+
+            if (line.size()) {
+              if (axis) {
+                throw Exception ("file contains matrix, not vector");
+              } else {
+                if (line.size() > 1) {
+                  if (data.size())
+                    throw Exception ("file contains matrix, not vector");
+                  data = std::move (line);
+                  axis = 1;
+                } else {
+                  data.push_back (line[0]);
+                }
+              }
+            }
+          }
           if (stream.bad()) 
             throw Exception (strerror (errno));
 
-          V.allocate (vec.size());
-          for (size_t n = 0; n < V.size(); n++)
-            V[n] = vec[n];
+          if (!data.size())
+            throw Exception ("no data in file");
+
+          V.allocate (data.size());
+          for (size_t i = 0; i < V.size(); i++)
+            V[i] = data[i];
           return stream;
         }
 

@@ -86,7 +86,7 @@ namespace MR {
         }
 
 
-        gen_direction_matrix (directions, grad, dwis);
+        directions = gen_direction_matrix (grad, dwis);
 
         size_t ncol = 0;
         for (size_t n = 0; n < response.size(); ++n) {

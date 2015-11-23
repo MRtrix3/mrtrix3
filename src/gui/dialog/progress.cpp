@@ -21,6 +21,7 @@
 */
 
 #include <cassert>
+#include "gui/gui.h"
 #include "gui/dialog/progress.h"
 
 namespace MR
@@ -35,19 +36,24 @@ namespace MR
         void display (ProgressInfo& p)
         {
           if (!p.data) {
-            INFO (App::NAME + ": " + p.text);
-            p.data = new QProgressDialog (p.text.c_str(), "Cancel", 0, p.multiplier ? 100 : 0);
-            reinterpret_cast<QProgressDialog*> (p.data)->setWindowModality (Qt::WindowModal);
+            INFO (MR::App::NAME + ": " + p.text);
+            QMetaObject::invokeMethod (GUI::App::application, "startProgressBar", Qt::DirectConnection);
+            p.data = new Timer;
           }
-          reinterpret_cast<QProgressDialog*> (p.data)->setValue (p.value);
+          else {
+            if (reinterpret_cast<Timer*>(p.data)->elapsed() > 1.0) 
+              QMetaObject::invokeMethod (GUI::App::application, "displayProgressBar", Qt::DirectConnection,
+                  Q_ARG (QString, p.text.c_str()), Q_ARG (int, p.value), Q_ARG(bool, p.multiplier));
+          }
         }
 
 
         void done (ProgressInfo& p)
         {
-          INFO (App::NAME + ": " + p.text + " [done]");
-          delete reinterpret_cast<QProgressDialog*> (p.data);
-          p.data = NULL;
+          INFO (MR::App::NAME + ": " + p.text + " [done]");
+          if (p.data) 
+            QMetaObject::invokeMethod (GUI::App::application, "doneProgressBar", Qt::DirectConnection);
+          p.data = nullptr;
         }
 
       }

@@ -73,8 +73,8 @@ namespace MR
       uint32_t get_count (T& data)
       {
         auto vox = data.voxel();
-        uint32_t count = 0;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) ++count; }, vox);
+        std::atomic<uint32_t> count (0);
+        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { if (v.value()) count.fetch_add (1, std::memory_order_relaxed); }, vox);
         return count;
       }
 
@@ -83,8 +83,18 @@ namespace MR
       float get_volume (T& data)
       {
         auto vox = data.voxel();
-        float volume = 0.0f;
-        Image::ThreadedLoop (vox).run ([&] (decltype(vox)& v) { volume += v.value(); }, vox);
+        std::atomic<float> volume (0.0f);
+        Image::ThreadedLoop (vox).run (
+            [&] (decltype(vox)& v) {
+              const float value = v.value();
+              if (value) {
+                float current = volume.load (std::memory_order_relaxed);
+                float target;
+                do {
+                  target = current + value;
+                } while (!volume.compare_exchange_weak (current, target, std::memory_order_relaxed));
+              }
+            }, vox);
         return volume;
       }
 
@@ -95,10 +105,9 @@ namespace MR
       class Base {
 
         public:
-          Base (const std::string& in, const Math::RNG& seed_rng, const std::string& desc, const size_t attempts) :
+          Base (const std::string& in, const std::string& desc, const size_t attempts) :
             volume (0.0),
             count (0),
-            rng (seed_rng),
             type (desc),
             name (Path::exists (in) ? Path::basename (in) : in),
             max_attempts (attempts) { }
@@ -126,7 +135,7 @@ namespace MR
           float volume;
           uint32_t count;
           // These are not used by all possible seed classes, but it's easier to have them within the base class anyway
-          Math::RNG rng;
+          Math::RNG::Uniform<float> rng;
           std::mutex mutex;
           const std::string type; // Text describing the type of seed this is
 

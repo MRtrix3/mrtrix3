@@ -210,7 +210,10 @@ namespace MR
         strncpy (descrip, NH.descrip, 80);
         if (descrip[0]) {
           descrip[80] = '\0';
-          H.comments().push_back (descrip);
+          if (strncmp (descrip, "MRtrix version: ", 16) == 0)
+            H["mrtrix_version"] = descrip+16;
+          else
+            H.comments().push_back (descrip);
         }
 
         if (is_nifti) {
@@ -282,7 +285,12 @@ namespace MR
         }
         else {
           H.transform().clear();
-          if (!File::Config::get_bool ("Analyse.LeftToRight", true))
+          //CONF option: Analyse.LeftToRight
+          //CONF default: 0 (false)
+          //CONF A boolean value to indicate whether images in Analyse format
+          //CONF should be assumed to be in LAS orientation (default) or RAS
+          //CONF (when this is option is turned on).
+          if (!File::Config::get_bool ("Analyse.LeftToRight", false))
             H.stride(0) = -H.stride (0);
           if (!right_left_warning_issued) {
             INFO ("assuming Analyse images are encoded " + std::string (H.stride (0) >0 ? "left to right" : "right to left"));
@@ -320,7 +328,7 @@ namespace MR
         if (!has_nii_suffix) {
           for (size_t i = 0; i < H.ndim(); ++i)
             H.stride(i) = i+1;
-          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", true);
+          bool analyse_left_to_right = File::Config::get_bool ("Analyse.LeftToRight", false);
           if (analyse_left_to_right)
             H.stride(0) = -H.stride (0);
 
@@ -332,6 +340,13 @@ namespace MR
 
         // by default, prevent output of bitwise data in NIfTI, since most 3rd
         // party software package can't handle them
+
+        //CONF option: NIFTI.AllowBitwise
+        //CONF default: 0 (false)
+        //CONF A boolean value to indicate whether bitwise storage of binary
+        //CONF data is permitted (most 3rd party software packages don't
+        //CONF support bitwise data). If false (the default), data will be
+        //CONF stored using more widely supported unsigned 8-bit integers.
         if (H.datatype() == DataType::Bit) 
           if (!File::Config::get_bool ("NIFTI.AllowBitwise", false))
             H.datatype() = DataType::UInt8;
@@ -370,10 +385,19 @@ namespace MR
 
         // data set dimensions:
         put<int16_t> (H.ndim(), &NH.dim[0], is_BE);
-        for (size_t i = 0; i < 3; i++)
-          put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
-        for (size_t i = 3; i < H.ndim(); i++)
-          put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+        {
+          size_t i = 0;
+          for (; i < 3; i++)
+            put<int16_t> (H.dim (axes[i]), &NH.dim[i+1], is_BE);
+          for (; i < H.ndim(); i++)
+            put<int16_t> (H.dim (i), &NH.dim[i+1], is_BE);
+
+          // pad out the other dimensions with 1, fix for fslview
+          ++i;
+          for (; i < 8; i++) 
+            put<int16_t> (1, &NH.dim[i], is_BE);
+        }
+
 
         // data type:
         int16_t dt = 0;
@@ -449,19 +473,11 @@ namespace MR
 
         NH.xyzt_units = SPACE_TIME_TO_XYZT (NIFTI_UNITS_MM, NIFTI_UNITS_SEC);
 
-        int pos = 0;
-        char descrip[81];
-        descrip[0] = '\0';
-        for (size_t i = 1; i < H.comments().size(); i++) {
-          if (pos >= 75) break;
-          if (i > 1) {
-            descrip[pos++] = ';';
-            descrip[pos++] = ' ';
-          }
-          strncpy (descrip + pos, H.comments() [i].c_str(), 80-pos);
-          pos += H.comments() [i].size();
-        }
-        strncpy ( (char*) &NH.descrip, descrip, 80);
+        memset ((char*) &NH.descrip, 0, 80);
+        std::string version_string = std::string("MRtrix version: ") + App::mrtrix_version;
+        if (App::project_version)
+          version_string += std::string(", project version: ") + App::project_version;
+        strncpy ( (char*) &NH.descrip, version_string.c_str(), 79);
 
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.qform_code, is_BE);
         put<int16_t> (NIFTI_XFORM_SCANNER_ANAT, &NH.sform_code, is_BE);

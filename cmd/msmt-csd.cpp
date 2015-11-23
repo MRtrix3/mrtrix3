@@ -146,7 +146,7 @@ void usage ()
 
   OPTIONS
     + DWI::MTCSD::Options
-    + DWI::GradImportOptions
+    + DWI::GradImportOptions()
     + DWI::ShellOption
     + Image::Stride::StrideOption;
 }

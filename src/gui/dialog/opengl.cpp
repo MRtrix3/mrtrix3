@@ -32,7 +32,7 @@ namespace MR
     namespace Dialog
     {
 
-      OpenGL::OpenGL (QWidget* parent, const QGLFormat& format) : QDialog (parent)
+      OpenGL::OpenGL (QWidget* parent, const GL::Format& format) : QDialog (parent)
       {
         TreeModel* model = new TreeModel (this);
 
@@ -59,9 +59,14 @@ namespace MR
         bit_depths->appendChild (new TreeItem ("depth", str (format.depthBufferSize()), bit_depths));
         bit_depths->appendChild (new TreeItem ("stencil", str (format.stencilBufferSize()), bit_depths));
 
-        root->appendChild (new TreeItem ("Double buffering", format.doubleBuffer() ? "on" : "off", root));
+#if QT_VERSION >= 0x050400
+        root->appendChild (new TreeItem ("Buffering", format.swapBehavior() == QSurfaceFormat::SingleBuffer ? "single" :
+               ( format.swapBehavior() == QSurfaceFormat::DoubleBuffer ? "double" : "triple" ), root));
+#else
+        root->appendChild (new TreeItem ("Buffering", format.doubleBuffer() ? "double" : "single", root));
+#endif
         root->appendChild (new TreeItem ("VSync", format.swapInterval() ? "on" : "off", root));
-        root->appendChild (new TreeItem ("Multisample anti-aliasing", format.sampleBuffers() ? str(format.samples()).c_str() : "off", root));
+        root->appendChild (new TreeItem ("Multisample anti-aliasing", format.samples() ? str(format.samples()).c_str() : "off", root));
 
         gl::GetIntegerv (gl::MAX_TEXTURE_SIZE, &i);
         root->appendChild (new TreeItem ("Maximum texture size", str (i), root));

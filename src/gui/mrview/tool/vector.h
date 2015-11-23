@@ -37,20 +37,24 @@ namespace MR
     {
       namespace Tool
       {
-        class Vector : public Base, public ColourMapButtonObserver
+        class Vector : public Base, public ColourMapButtonObserver, public DisplayableVisitor
         {
             Q_OBJECT
 
           public:
             class Model;
 
-            Vector (Window& main_window, Dock* parent);
+            Vector (Dock* parent);
 
             virtual ~Vector ();
 
-            void draw (const Projection& transform, bool is_3D, int axis, int slice);
-            void drawOverlays (const Projection& transform) override;
-            bool process_batch_command (const std::string& cmd, const std::string& args);
+            void draw (const Projection& transform, bool is_3D, int axis, int slice) override;
+            void draw_colourbars () override;
+            size_t visible_number_colourbars () override;
+            void render_fixel_colourbar(const Tool::AbstractFixel& fixel) override;
+
+            static void add_commandline_options (MR::App::OptionList& options);
+            virtual bool process_commandline_option (const MR::App::ParsedOption& opt) override;
 
             void selected_colourmap(size_t index, const ColourMapButton&) override;
             void selected_custom_colour(const QColor& colour, const ColourMapButton&) override;
@@ -59,8 +63,7 @@ namespace MR
             void reset_colourmap(const ColourMapButton&) override;
 
             QPushButton* hide_all_button;
-            float line_thickness;
-            bool do_crop_to_slice;
+            bool do_lock_to_grid, do_crop_to_slice;
             bool not_3D;
             float line_opacity;
             Model* fixel_list_model;
@@ -73,6 +76,7 @@ namespace MR
             void toggle_shown_slot (const QModelIndex&, const QModelIndex&);
             void hide_all_slot ();
             void update_selection();
+            void on_lock_to_grid_slot (bool is_checked);
             void on_crop_to_slice_slot (bool is_checked);
             void opacity_slot (int opacity);
             void line_thickness_slot (int thickness);
@@ -103,8 +107,7 @@ namespace MR
             QSlider *line_thickness_slider;
             QSlider *opacity_slider;
 
-            QGroupBox *crop_to_slice;
-
+            QGroupBox *lock_to_grid, *crop_to_slice;
         };
       }
     }

@@ -39,7 +39,7 @@ namespace MR
     }
 
     //CONF option: NumberOfThreads
-    //CONF default: nnumber of threads provided by hardware
+    //CONF default: number of threads provided by hardware
     //CONF set the default number of CPU threads to use for multi-threading.
 
     size_t number_of_threads ()
@@ -77,18 +77,19 @@ namespace MR
 
     void __Backend::thread_print_func (const std::string& msg)
     {
-      std::lock_guard<std::mutex> lock (get_lock());
+      std::lock_guard<std::mutex> lock (mutex);
       previous_print_func (msg);
     }
 
     void __Backend::thread_report_to_user_func (const std::string& msg, int type)
     {
-      std::lock_guard<std::mutex> lock (get_lock());
+      std::lock_guard<std::mutex> lock (mutex);
       previous_report_to_user_func (msg, type);
     }
 
 
     __Backend* __Backend::backend = nullptr;
+    std::mutex __Backend::mutex;
 
   }
 }

@@ -51,14 +51,39 @@ namespace MR
         return c+61;
       }
 
+      //CONF option: TmpFileDir
+      //CONF default: `/tmp` (on Unix), `.` (on Windows)
+      //CONF The prefix for temporary files (as used in pipelines). By default,
+      //CONF these files get written to the current folder, which may cause
+      //CONF performance issues when operating over distributed file systems. 
+      //CONF In this case, it may be better to specify `/tmp/` here.
       const std::string& tmpfile_dir () {
-        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", ".");
+        static const std::string __tmpfile_dir = File::Config::get ("TmpFileDir", 
+#ifdef MRTRIX_WINDOWS
+            "."
+#else
+            "/tmp"
+#endif
+            );
         return __tmpfile_dir;
       }
 
+      //CONF option: TmpFilePrefix
+      //CONF default: `mrtrix-tmp-`
+      //CONF The prefix to use for the basename of temporary files. This will
+      //CONF be used to generate a unique filename for the temporary file, by
+      //CONF adding random characters to this prefix, followed by a suitable
+      //CONF suffix (depending on file type). Note that this prefix can also be
+      //CONF manipulated using the `MRTRIX_TMPFILE_PREFIX` environment
+      //CONF variable, without editing the config file.
+      const std::string __get_tmpfile_prefix () { 
+        const char* from_env = getenv ("MRTRIX_TMPFILE_PREFIX");
+        if (from_env) return from_env;
+        return File::Config::get ("TmpFilePrefix", "mrtrix-tmp-"); 
+      }
 
       const std::string& tmpfile_prefix () {
-        static const std::string __tmpfile_prefix = File::Config::get ("TmpFilePrefix", "mrtrix-tmp-");
+        static const std::string __tmpfile_prefix = __get_tmpfile_prefix();
         return __tmpfile_prefix;
       }
 
@@ -73,8 +98,10 @@ namespace MR
       if (fid < 0) {
         if (App::check_overwrite_files_func && errno == EEXIST) 
           App::check_overwrite_files_func (filename);
-        else 
+        else if (errno == EEXIST)
           throw Exception ("output file \"" + filename + "\" already exists (use -force option to force overwrite)");
+        else
+          throw Exception ("error creating output file \"" + filename + "\": " + std::strerror (errno));
         fid = open (filename.c_str(), O_CREAT | O_RDWR | O_TRUNC, 0666);
       }
       if (fid < 0) {

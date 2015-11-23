@@ -51,13 +51,6 @@ namespace MR
               _transform (_info),
               interpolation (gl::LINEAR),
               texture_mode_changed (true) { }
-          template <class InfoType>
-            Volume (Window& parent, const InfoType& info) :
-              Displayable (parent, info.name()),
-              _info (info),
-              _transform (_info),
-              interpolation (gl::LINEAR),
-              texture_mode_changed (true) { }
 
           void set_interpolate (bool linear) { interpolation = linear ? gl::LINEAR : gl::NEAREST; }
           bool interpolate () const { return interpolation == gl::LINEAR; }
@@ -113,12 +106,12 @@ namespace MR
           }
 
 
-            inline void upload_data (const std::array<ssize_t,3>& x, const std::array<ssize_t,3>& size, const void* data) {
-              gl::TexSubImage3D (gl::TEXTURE_3D, 0,
-                  x[0], x[1], x[2],
-                  size[0], size[1], size[2],
-                  format, type, data);
-            }
+          inline void upload_data (const std::array<ssize_t,3>& x, const std::array<ssize_t,3>& size, const void* data) {
+            gl::TexSubImage3D (gl::TEXTURE_3D, 0,
+                x[0], x[1], x[2],
+                size[0], size[1], size[2],
+                format, type, data);
+          }
 
         protected:
           MR::Image::Info _info;

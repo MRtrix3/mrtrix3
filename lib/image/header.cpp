@@ -110,7 +110,7 @@ namespace MR
 
         while (++item < list.size()) {
           Header header (*this);
-          RefPtr<Handler::Base> H_handler;
+          std::shared_ptr<Handler::Base> H_handler;
           header.name() = list[item].name();
           if (!(H_handler = (*format_handler)->read (header)))
             throw Exception ("image specifier contains mixed format files");
@@ -156,6 +156,10 @@ namespace MR
       try {
         INFO ("creating image \"" + image_name + "\"...");
 
+        (*this)["mrtrix_version"] = App::mrtrix_version;
+        if (App::project_version)
+          (*this)["project_version"] = App::project_version;
+
         sanitise();
 
         NameParser parser;
@@ -199,7 +203,7 @@ namespace MR
 
         while (get_next (num, Pdim)) {
           header.name() = parser.name (num);
-          RefPtr<Handler::Base> H_handler ((*format_handler)->create (header));
+          std::shared_ptr<Handler::Base> H_handler ((*format_handler)->create (header));
           assert (H_handler);
           merge (header);
           handler_->merge (*H_handler);

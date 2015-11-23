@@ -21,7 +21,6 @@
 */
 
 #include "command.h"
-#include "ptr.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
 #include "image/voxel.h"
@@ -51,7 +50,7 @@ void usage ()
     "Magnetic Resonance in Medicine, 2006, 56, 104-117";
 
   OPTIONS
-  + DWI::GradImportOptions
+  + DWI::GradImportOptions()
   + DWI::ShellOption
 
   + Option ("lmax",
@@ -164,8 +163,7 @@ void run ()
   // Keep the b=0 shell (may be used for normalisation), but force single non-zero shell
   shells.select_shells (true, true);
 
-  Math::Matrix<value_type> DW_dirs;
-  DWI::gen_direction_matrix (DW_dirs, grad, shells.largest().get_volumes());
+  Math::Matrix<value_type> DW_dirs = DWI::gen_direction_matrix (grad, shells.largest().get_volumes());
 
   Options opt = get_options ("lmax");
   lmax = opt.size() ? opt[0][0] : Math::SH::LforN (shells.largest().count());

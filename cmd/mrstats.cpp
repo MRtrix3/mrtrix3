@@ -25,7 +25,7 @@
 
 #include "command.h"
 #include "point.h"
-#include "ptr.h"
+#include "memory.h"
 #include "file/ofstream.h"
 #include "image/voxel.h"
 #include "image/buffer.h"
@@ -253,13 +253,13 @@ void run () {
   Image::Loop inner_loop (0, 3);
   Image::Loop outer_loop (3);
 
-  Ptr<File::OFStream> dumpstream, hist_stream, position_stream;
+  std::unique_ptr<File::OFStream> dumpstream, hist_stream, position_stream;
 
   Options opt = get_options ("histogram");
   if (opt.size()) {
     if (data.datatype().is_complex())
       throw Exception ("histogram generation not supported for complex data types");
-    hist_stream = new File::OFStream (opt[0][0]);
+    hist_stream.reset (new File::OFStream (opt[0][0]));
   }
 
   int nbins = 100;
@@ -271,11 +271,11 @@ void run () {
 
   opt = get_options ("dump");
   if (opt.size())
-    dumpstream = new File::OFStream (opt[0][0]);
+    dumpstream.reset (new File::OFStream (opt[0][0]));
 
   opt = get_options ("position");
   if (opt.size())
-    position_stream = new File::OFStream (opt[0][0]);
+    position_stream.reset (new File::OFStream (opt[0][0]));
 
   std::vector<std::string> fields;
   opt = get_options ("output");

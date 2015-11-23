@@ -1,18 +1,19 @@
 function write_mrtrix (image, filename)
 
-% function: read_mrtrix (image, filename)
+% function: write_mrtrix (image, filename)
 %
 % write the data contained in the structure 'image' in the MRtrix 
 % format image 'filename' (i.e. files with the extension '.mif' or '.mih').
 %
 % 'image' is either a N-dimensional array (N <= 16), or a structure containing
 % the following fields:
-%    image.data:       a N-dimensional array (N <= 16)
-%    image.vox:        N-vector of voxel sizes (in mm) (default: { 2 }) [optional]
-%    image.comments:   a cell array of strings [optional]
-%    image.datatype:   the datatype specifier (default: float32) [optional]
-%    image.transform:  a 4x4 matrix [optional]
-%    image.DW_scheme:  a NDWx4 matrix of gradient directions [optional]
+%    image.data:            a N-dimensional array (N <= 16)
+%    image.vox:             N-vector of voxel sizes (in mm) (default: { 2 }) [optional]
+%    image.comments:        a cell array of strings [optional]
+%    image.datatype:        the datatype specifier (default: float32) [optional]
+%    image.mrtrix_version:  a character array [optional]
+%    image.transform:       a 4x4 matrix [optional]
+%    image.DW_scheme:       a NDWx4 matrix of gradient directions [optional]
 
 
 fid = fopen (filename, 'w');
@@ -73,6 +74,8 @@ else
   byteorder = 'n';
 end
 fprintf (fid, [ '\ndatatype: ' datatype ]);
+
+fprintf (fid, '\nmrtrix_version: %s', 'matlab');
 
 if isstruct (image) && isfield (image, 'comments')
   for i=1:numel(image.comments)

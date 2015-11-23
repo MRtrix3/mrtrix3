@@ -85,7 +85,8 @@ namespace MR
 
       + Option ("stop", "stop propagating a streamline once it has traversed all include regions")
 
-      + Option ("downsample", "downsample the generated streamlines to reduce output file size")
+      + Option ("downsample", "downsample the generated streamlines to reduce output file size "
+                              "(default is (samples-1) for iFOD2, 1 for all other algorithms)")
           + Argument ("factor").type_integer (1, 1, 100);
 
 

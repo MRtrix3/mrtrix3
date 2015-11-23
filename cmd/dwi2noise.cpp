@@ -59,7 +59,7 @@ void usage ()
             "diffusion-weighted images up to lmax = 8.")
   +   Argument ("order").type_integer (0, 8, 8)
 
-  + DWI::GradImportOptions
+  + DWI::GradImportOptions()
   + DWI::ShellOption;
 
 }
@@ -77,11 +77,13 @@ void run ()
   header.datatype() = DataType::Float32;
   Image::Buffer<value_type> noise_buffer (argument[1], header);
 
-  std::vector<size_t> dwis, bzeros;
+  std::vector<size_t> dwis;
   Math::Matrix<value_type> mapping;
   {
-    Math::Matrix<value_type> grad, directions;
-    mapping = DWI::get_SH2amp_mapping<value_type> (dwi_buffer, grad, mapping, dwis, bzeros);
+    Math::Matrix<value_type> grad = DWI::get_valid_DW_scheme<value_type> (dwi_buffer);
+    dwis = DWI::Shells (grad).select_shells (true, true).largest().get_volumes();
+    auto dirs = DWI::gen_direction_matrix (grad, dwis);
+    mapping = DWI::compute_SH2amp_mapping (dirs);
   }
 
 

@@ -29,6 +29,7 @@
 #include "app.h"
 #include "file/config.h"
 #include "types.h"
+#include "memory.h"
 #include "point.h"
 #include "file/key_value.h"
 #include "file/ofstream.h"
@@ -60,7 +61,7 @@ namespace MR
               open (file, "tracks", properties);
               App::Options opt = App::get_options ("tck_weights_in");
               if (opt.size()) {
-                weights_file = new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in);
+                weights_file.reset (new std::ifstream (str(opt[0][0]).c_str(), std::ios_base::in));
                 if (!weights_file->good())
                   throw Exception ("Unable to open streamlines weights file " + str(opt[0][0]));
               }
@@ -120,8 +121,8 @@ namespace MR
           using __ReaderBase__::in;
           using __ReaderBase__::dtype;
 
-          size_t current_index;
-          Ptr<std::ifstream> weights_file;
+          uint64_t current_index;
+          std::unique_ptr<std::ifstream> weights_file;
 
           //! takes care of byte ordering issues
           Point<value_type> get_next_point ()
@@ -212,6 +213,7 @@ namespace MR
           File::OFStream out (name, std::ios::out | std::ios::binary | std::ios::trunc);
 
           const_cast<Properties&> (properties).set_timestamp();
+          const_cast<Properties&> (properties).set_version_info();
 
           create (out, properties, "tracks");
           barrier_addr = out.tellp();
@@ -346,10 +348,16 @@ namespace MR
            * option (TrackWriterBufferSize), or in the constructor by
            * specifying a value in bytes for \c default_buffer_capacity
            * (default is 16M). */
+          //CONF option: TrackWriterBufferSize
+          //CONF default: 16777216
+          //CONF The size of the write-back buffer (in bytes) to use when
+          //CONF writing track files. MRtrix will store the output tracks in a
+          //CONF relatively large buffer to limit the number of write() calls,
+          //CONF avoid associated issues such as file fragmentation. 
           Writer (const std::string& file, const Properties& properties, size_t default_buffer_capacity = 16777216) :
             WriterUnbuffered<T> (file, properties), 
             buffer_capacity (File::Config::get_int ("TrackWriterBufferSize", default_buffer_capacity) / sizeof (Point<value_type>)),
-            buffer (new Point<value_type> [buffer_capacity+2]),
+            buffer (new Point<value_type> [buffer_capacity]),
             buffer_size (0) { }
 
           //! commits any remaining data to file
@@ -360,7 +368,7 @@ namespace MR
           //! append track to file
           bool operator() (const Streamline<value_type>& tck) {
             if (tck.size()) {
-              if (buffer_size + tck.size() > buffer_capacity)
+              if (buffer_size + tck.size() + 2 > buffer_capacity)
                 commit ();
 
               for (typename std::vector<Point<value_type> >::const_iterator i = tck.begin(); i != tck.end(); ++i)
@@ -379,7 +387,7 @@ namespace MR
 
         protected:
           const size_t buffer_capacity;
-          Ptr<Point<value_type>,true> buffer;
+          std::unique_ptr<Point<value_type>[]> buffer;
           size_t buffer_size;
           std::string weights_buffer;
 
@@ -389,7 +397,7 @@ namespace MR
           }
 
           void commit () {
-            WriterUnbuffered<T>::commit (buffer, buffer_size);
+            WriterUnbuffered<T>::commit (buffer.get(), buffer_size);
             buffer_size = 0;
 
             if (weights_name.size()) {
@@ -398,14 +406,8 @@ namespace MR
             }
           }
 
-
           //! copy construction explicitly disabled
-          Writer (const Writer& W) : 
-            WriterUnbuffered<value_type> (W),
-            buffer_capacity (W.buffer_capacity), 
-            buffer_size (0) {
-              assert (0); 
-            }
+          Writer (const Writer& W) = delete;
       };
 
 

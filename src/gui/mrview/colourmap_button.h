@@ -28,14 +28,18 @@ class ColourMapButton : public QToolButton
 {
     Q_OBJECT
 public:
-    ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs, bool use_special_colourmaps = true);
+    ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
+                    bool use_shortcuts = false,
+                    bool use_special_colourmaps = true,
+                    bool use_customise_state_items = true);
     void set_colourmap_index(size_t index);
     std::vector<QAction*> colourmap_actions;
 private:
-    void init_menu(bool create_shortcuts, bool use_special);
+    void init_menu(bool create_shortcuts, bool use_special, bool customise_state);
     void init_core_menu_items(bool create_shortcuts);
     void init_custom_colour_menu_items();
     void init_special_colour_menu_items(bool create_shortcuts);
+    void init_customise_state_menu_items();
 
     static const std::vector<ColourMap::Entry> core_colourmaps_entries;
     static const std::vector<ColourMap::Entry> special_colourmaps_entries;

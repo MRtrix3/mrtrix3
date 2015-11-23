@@ -72,23 +72,13 @@ void usage ()
             "-1 at the corresponding position in the list.")
   + Argument ("axes").type_sequence_int()
 
-  + Option ("zero",
-            "replace non-finite values with zeros.")
-
-  + Option ("prs",
-            "assume that the DW gradients are specified in the PRS frame (Siemens DICOM only).")
-
   + Image::Stride::StrideOption
 
   + DataType::options()
 
-  + DWI::GradImportOptions
-  + DWI::GradExportOptions;
+  + DWI::GradImportOptions (false)
+  + DWI::GradExportOptions();
 }
-
-
-
-typedef cfloat complex_type;
 
 
 
@@ -96,7 +86,10 @@ typedef cfloat complex_type;
 template <class InfoType>
 inline std::vector<int> set_header (Image::Header& header, const InfoType& input)
 {
+  // need to preserve dataype, already parsed from command-line:
+  auto datatype = header.datatype();
   header.info() = input.info();
+  header.datatype() = datatype;
 
   header.intensity_offset() = 0.0;
   header.intensity_scale() = 1.0;
@@ -114,6 +107,13 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
         throw Exception ("axis supplied to option -axes is out of bounds");
       header.dim(i) = axes[i] < 0 ? 1 : input.dim (axes[i]);
     }
+  } else {
+    header.set_ndim (input.ndim());
+    axes.assign (input.ndim(), 0);
+    for (size_t i = 0; i < axes.size(); ++i) {
+      axes[i] = i;
+      header.dim (i) = input.dim (i);
+    }
   }
 
   opt = get_options ("vox");
@@ -129,67 +129,46 @@ inline std::vector<int> set_header (Image::Header& header, const InfoType& input
 
   Image::Stride::set_from_command_line (header);
 
-  opt = get_options ("prs");
-  if (opt.size() &&
-      header.DW_scheme().rows() &&
-      header.DW_scheme().columns() == 4) {
-    Math::Matrix<float>& M (header.DW_scheme());
-    for (size_t row = 0; row < M.rows(); ++row) {
-      float tmp = M (row, 0);
-      M (row, 0) = M (row, 1);
-      M (row, 1) = tmp;
-      M (row, 2) = -M (row, 2);
-    }
-  }
-
   return axes;
 }
 
 
 
 
-class zero_non_finite {
-  public:
-    template <class VoxelType1, class VoxelType2>
-      void operator() (const VoxelType1& in, VoxelType2& out) 
-      {
-        complex_type val = in.value();
-        out.value() = complex_type (
-            std::isfinite (val.real()) ? val.real() : 0.0, 
-            std::isfinite (val.imag()) ? val.imag() : 0.0
-            );
-      }
-};
-
-  template <class InputVoxelType>
-inline void copy_permute (InputVoxelType& in, Image::Header& header_out, const std::string& output_filename)
+template <typename T>
+inline void copy_permute (Image::Header& header_in, Image::Header& header_out, const std::vector< std::vector<int> >& pos, const std::string& output_filename)
 {
-  bool replace_nans = App::get_options ("zero").size();
+  typedef Image::Buffer<T> buffer_type;
+  typedef typename buffer_type::voxel_type voxel_type;
+  typedef Image::Adapter::Extract<voxel_type> extract_type;
 
-  DataType datatype = header_out.datatype();
-  std::vector<int> axes = set_header (header_out, in);
-  header_out.datatype() = datatype;
-  Image::Buffer<complex_type> buffer_out (output_filename, header_out);
-  DWI::export_grad_commandline (buffer_out);
+  buffer_type buffer_in (header_in);
+  voxel_type in = buffer_in.voxel();
 
-  auto out = buffer_out.voxel();
 
-  if (axes.size()) {
-    Image::Adapter::PermuteAxes<InputVoxelType> perm (in, axes);
+  if (pos.empty()) {
 
-    if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (perm.name()) + "\" to \"" + shorten (out.name()) + "\"...", perm, 2)
-        .run (zero_non_finite(), perm, out);
-    else 
-      Image::threaded_copy_with_progress (perm, out, 2);
+    const std::vector<int> axes = set_header (header_out, in);
+    buffer_type buffer_out (output_filename, header_out);
+    voxel_type out = buffer_out.voxel();
+    DWI::export_grad_commandline (buffer_out);
+
+    Image::Adapter::PermuteAxes<voxel_type> perm (in, axes);
+    Image::threaded_copy_with_progress (perm, out, 2);
+
+  } else {
+
+    extract_type extract (in, pos);
+    const std::vector<int> axes = set_header (header_out, extract);
+    buffer_type buffer_out (output_filename, header_out);
+    voxel_type out = buffer_out.voxel();
+    DWI::export_grad_commandline (buffer_out);
+
+    Image::Adapter::PermuteAxes<extract_type> perm (extract, axes);
+    Image::threaded_copy_with_progress (perm, out, 2);
+
   }
-  else {
-    if (replace_nans)
-      Image::ThreadedLoop ("copying from \"" + shorten (in.name()) + "\" to \"" + shorten (out.name()) + "\"...", in, 2)
-        .run (zero_non_finite(), in, out);
-    else
-      Image::threaded_copy_with_progress (in, out, 2);
-  }
+
 }
 
 
@@ -205,24 +184,23 @@ void run ()
 {
   Image::Header header_in (argument[0]);
 
-  Image::Buffer<complex_type> buffer_in (header_in);
-  auto in = buffer_in.voxel();
-
   Image::Header header_out (header_in);
   header_out.datatype() = DataType::from_command_line (header_out.datatype());
 
   if (header_in.datatype().is_complex() && !header_out.datatype().is_complex())
     WARN ("requested datatype is real but input datatype is complex - imaginary component will be ignored");
 
-
   Options opt = get_options ("coord");
+  std::vector< std::vector<int> > pos;
   if (opt.size()) {
-    std::vector<std::vector<int> > pos (buffer_in.ndim());
+    pos.assign (header_in.ndim(), std::vector<int>());
     for (size_t n = 0; n < opt.size(); n++) {
       int axis = opt[n][0];
+      if (axis >= (int)header_in.ndim())
+        throw Exception ("axis " + str(axis) + " provided with -coord option is out of range of input image");
       if (pos[axis].size())
         throw Exception ("\"coord\" option specified twice for axis " + str (axis));
-      pos[axis] = parse_ints (opt[n][1], buffer_in.dim(axis)-1);
+      pos[axis] = parse_ints (opt[n][1], header_in.dim(axis)-1);
       if (axis == 3 && header_in.DW_scheme().is_set()) {
         Math::Matrix<float>& grad (header_in.DW_scheme());
         if ((int)grad.rows() != header_in.dim(3)) {
@@ -238,19 +216,40 @@ void run ()
       }
     }
 
-    for (size_t n = 0; n < buffer_in.ndim(); ++n) {
+    for (size_t n = 0; n < header_in.ndim(); ++n) {
       if (pos[n].empty()) {
-        pos[n].resize (buffer_in.dim (n));
+        pos[n].resize (header_in.dim (n));
         for (size_t i = 0; i < pos[n].size(); i++)
           pos[n][i] = i;
       }
     }
-
-    Image::Adapter::Extract<decltype(in)> extract (in, pos);
-    copy_permute (extract, header_out, argument[1]);
   }
-  else
-    copy_permute (in, header_out, argument[1]);
+
+  switch (header_out.datatype()() & DataType::Type) {
+    case DataType::Undefined: throw Exception ("Undefined output image data type"); break;
+    case DataType::Bit:
+    case DataType::UInt8:
+    case DataType::UInt16:
+    case DataType::UInt32:
+      if (header_out.datatype().is_signed())
+        copy_permute<int32_t> (header_in, header_out, pos, argument[1]);
+      else
+        copy_permute<uint32_t> (header_in, header_out, pos, argument[1]);
+      break;
+    case DataType::UInt64:
+      if (header_out.datatype().is_signed())
+        copy_permute<int64_t> (header_in, header_out, pos, argument[1]);
+      else
+        copy_permute<uint64_t> (header_in, header_out, pos, argument[1]);
+      break;
+    case DataType::Float32:
+    case DataType::Float64:
+      if (header_out.datatype().is_complex())
+        copy_permute<cdouble> (header_in, header_out, pos, argument[1]);
+      else
+        copy_permute<double> (header_in, header_out, pos, argument[1]);
+      break;
+  }
 
 }
 

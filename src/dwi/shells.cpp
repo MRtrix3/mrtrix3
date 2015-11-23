@@ -1,7 +1,6 @@
 
 #include "dwi/shells.h"
 
-#include "file/config.h"
 
 
 namespace MR
@@ -22,8 +21,6 @@ namespace MR
         + Argument ("list").type_sequence_float();
 
 
-
-    const float bzero_threshold = File::Config::get_float ("BZeroThreshold", 10.0);
 
 
 
@@ -53,7 +50,7 @@ namespace MR
 
 
 
-    void Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
+    Shells& Shells::select_shells (const bool keep_bzero, const bool force_single_shell)
     {
 
       // Easiest way to restrict processing to particular shells is to simply erase
@@ -76,7 +73,7 @@ namespace MR
             throw Exception ("Cannot select shells corresponding to negative b-values");
 
           // Automatically select a b=0 shell if the requested b-value is zero
-          if (*b <= bzero_threshold) {
+          if (*b <= bzero_threshold()) {
 
             if (smallest().is_bzero()) {
               to_retain[0] = true;
@@ -165,7 +162,7 @@ namespace MR
 
       if (to_retain.full()) {
         DEBUG ("No DW shells to be removed");
-        return;
+        return *this;
       }
 
       // Erase the unwanted shells
@@ -176,12 +173,13 @@ namespace MR
       }
       shells.swap (new_shells);
 
+      return *this;
     }
 
 
 
 
-    void Shells::reject_small_shells (const size_t min_volumes)
+    Shells& Shells::reject_small_shells (const size_t min_volumes)
     {
       for (std::vector<Shell>::iterator s = shells.begin(); s != shells.end();) {
         if (!s->is_bzero() && s->count() < min_volumes)
@@ -189,6 +187,7 @@ namespace MR
         else
           ++s;
       }
+      return *this;
     }
 
 
@@ -254,7 +253,7 @@ namespace MR
           std::vector<size_t> neighborIdx;
           regionQuery (bvals, b, neighborIdx);
 
-          if (b > bzero_threshold && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
+          if (b > bzero_threshold() && neighborIdx.size() < DWI_SHELLS_MIN_LINKAGE) {
 
             clusters[ii] = 0;
 

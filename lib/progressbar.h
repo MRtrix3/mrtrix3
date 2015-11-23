@@ -67,15 +67,10 @@ namespace MR
       /*! only used when progress is shown as a percentage */
       size_t current_val;
 
-      //! next value to trigger a UI update
-      /*! when progress is shown as a percentage, \c next_val.i is the value of
-       * \c current_val that will trigger the next update. Otherwise, \c
-       * next_val.d is the time interval (from the start of the progressbar)
-       * that will trigger the next update. */
-      union {
-        size_t i;
-        double d;
-      } next_val;
+      //! the value of \c current_val that will trigger the next update. 
+      size_t next_percent;
+       //! the time (from the start of the progressbar) that will trigger the next update. 
+      double next_time;
 
       //! the factor to convert from absolute value to percentage
       /*! if zero, the progressbar is used as a busy indicator */
@@ -90,41 +85,78 @@ namespace MR
       void set_max (size_t target) {
         if (target) {
           multiplier = 0.01 * target;
-          next_val.i = multiplier;
-          if (!next_val.i)
-            next_val.i = 1;
+          next_percent = multiplier;
+          if (!next_percent)
+            next_percent = 1;
         }
         else {
           multiplier = 0.0;
-          next_val.d = BUSY_INTERVAL;
+          next_time = BUSY_INTERVAL;
           timer.start();
         }
-        display_func (*this);
+        display_now();
       }
 
       void set_text (const std::string& new_text) {
-        text = new_text;
-        display_func (*this);
+        if (new_text.size()) {
+#ifdef MRTRIX_WINDOWS
+          size_t old_size = text.size();
+#endif
+          text = new_text;
+#ifdef MRTRIX_WINDOWS
+          if (text.size() < old_size)
+            text.resize (old_size, ' ');
+#endif
+	}
       };
+
+      //! update text displayed and optionally increment counter
+      template <class TextFunc> 
+        inline void update (TextFunc&& text_func, const bool increment = true) {
+          double time = timer.elapsed();
+          if (increment && multiplier) {
+            if (++current_val >= next_percent) {
+              set_text (text_func());
+              value = std::round (current_val / multiplier);
+              next_percent = std::ceil ((value+1) * multiplier);
+              next_time = time;
+              display_now();
+              return;
+            }
+          }
+          if (time >= next_time) {
+            set_text (text_func());
+            if (multiplier)
+              next_time = time + BUSY_INTERVAL;
+            else {
+              value = time / BUSY_INTERVAL;
+              do { next_time += BUSY_INTERVAL; }
+              while (next_time <= time);
+            }
+            display_now();
+          }
+        }
+
+      void display_now () {
+        display_func (*this);
+      }
 
       //! increment the current value by one.
       void operator++ () {
         if (multiplier) {
-          if (++current_val >= next_val.i) {
-            value = current_val / multiplier;
-            next_val.i = std::ceil ((value+1.0) * multiplier);
-            display_func (*this);
+          if (++current_val >= next_percent) {
+            value = std::round (current_val / multiplier);
+            next_percent = std::ceil ((value+1) * multiplier);
+            display_now();
           }
         }
         else {
           double time = timer.elapsed();
-          if (time >= next_val.d) {
+          if (time >= next_time) {
             value = time / BUSY_INTERVAL;
-            do {
-              next_val.d += BUSY_INTERVAL;
-            }
-            while (next_val.d <= time);
-            display_func (*this);
+            do { next_time += BUSY_INTERVAL; }
+            while (next_time <= time);
+            display_now();
           }
         }
       }
@@ -212,6 +244,36 @@ namespace MR
         if (show && prog)
           prog->set_text (new_text);
       };
+
+      //! update text displayed and optionally increment counter
+      /*! This expects a function, functor or lambda function that should
+       * return a std::string to replace the text. This functor will only be
+       * called when necessary, i.e. when BUSY_INTERVAL time has elapsed, or if
+       * the percentage value to display has changed. The reason for passing a
+       * functor rather than the text itself is to minimise the overhead of
+       * forming the string in cases where this is sufficiently expensive to
+       * impact performance if invoked every iteration. By passing a function,
+       * this operation is only performed when strictly necessary. 
+       *
+       * The simplest way to use this method is using C++11 lambda functions,
+       * for example:
+       * \code
+       * progress.update ([&](){ return "current energy = " + str(energy_value); });
+       * \endcode
+       *
+       * \note due to this lazy update, the text is not guaranteed to be up to
+       * date by the time processing is finished. If this is important, you
+       * should also use the set_text() method to set the final text displayed
+       * before the ProgressBar's done() function is called (typically in the
+       * destructor when it goes out of scope).*/
+      template <class TextFunc>
+        void update (TextFunc&& text_func, bool increment = true) {
+          if (show) {
+            if (!prog) 
+              prog = std::unique_ptr<ProgressInfo> (new ProgressInfo (text, target));
+            prog->update (std::forward<TextFunc> (text_func), increment);
+          }
+        }
 
       //! increment the current value by one.
       void operator++ () {

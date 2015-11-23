@@ -78,6 +78,8 @@ namespace MR
           if (!in.good())
             throw Exception ("error preloading contents of file \"" + Entry::name + "\": " + strerror(errno));
         }
+        else 
+          memset (first, 0, msize);
         DEBUG ("file \"" + Entry::name + "\" held in RAM at " + str ( (void*) first) + ", size " + str (msize));
       }
       else {

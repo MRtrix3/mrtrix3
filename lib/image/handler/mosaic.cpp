@@ -49,12 +49,12 @@ namespace MR
 
         DEBUG ("loading mosaic image \"" + name + "\"...");
         addresses.resize (1);
-        addresses[0] = new uint8_t [files.size() * bytes_per_segment];
+        addresses[0].reset (new uint8_t [files.size() * bytes_per_segment]);
         if (!addresses[0])
           throw Exception ("failed to allocate memory for image \"" + name + "\"");
 
         ProgressBar progress ("reformatting DICOM mosaic images...", slices*files.size());
-        uint8_t* data = addresses[0];
+        uint8_t* data = addresses[0].get();
         for (size_t n = 0; n < files.size(); n++) {
           File::MMap file (files[n], false, false, m_xdim * m_ydim * datatype.bytes());
           size_t nx = 0, ny = 0;

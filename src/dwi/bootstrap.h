@@ -23,7 +23,6 @@
 #ifndef __dwi_bootstrap_h__
 #define __dwi_bootstrap_h__
 
-#include "ptr.h"
 #include "image/position.h"
 #include "image/adapter/voxel.h"
 
@@ -43,8 +42,8 @@ namespace MR {
         Bootstrap (const VoxelType& Image, const Functor& functor) :
           Image::Adapter::Voxel<VoxelType> (Image),
           func (functor),
-          next_voxel (NULL),
-          last_voxel (NULL) {
+          next_voxel (nullptr),
+          last_voxel (nullptr) {
             assert (Image::Adapter::Voxel<VoxelType>::ndim() == 4);
           }
 
@@ -69,8 +68,8 @@ namespace MR {
         {
           voxels.clear(); 
           if (voxel_buffer.empty())
-            voxel_buffer.push_back (new value_type [NUM_VOX_PER_CHUNK * dim(3)]);
-          next_voxel = voxel_buffer[0];
+            voxel_buffer.push_back (std::vector<value_type> (NUM_VOX_PER_CHUNK * dim(3)));
+          next_voxel = &voxel_buffer[0][0];
           last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
           current_chunk = 0;
         }
@@ -78,7 +77,7 @@ namespace MR {
       protected:
         Functor func;
         std::map<Point<ssize_t>,value_type*> voxels;
-        VecPtr<value_type,true> voxel_buffer;
+        std::vector<std::vector<value_type>> voxel_buffer;
         value_type* next_voxel;
         value_type* last_voxel;
         size_t current_chunk;
@@ -88,9 +87,9 @@ namespace MR {
           if (next_voxel == last_voxel) {
             ++current_chunk;
             if (current_chunk >= voxel_buffer.size()) 
-              voxel_buffer.push_back (new value_type [NUM_VOX_PER_CHUNK * dim(3)]);
+              voxel_buffer.push_back (std::vector<value_type> (NUM_VOX_PER_CHUNK * dim(3)));
             assert (current_chunk < voxel_buffer.size());
-            next_voxel = voxel_buffer.back();
+            next_voxel = &voxel_buffer.back()[0];
             last_voxel = next_voxel + NUM_VOX_PER_CHUNK * dim(3);
           }
           value_type* retval = next_voxel;
@@ -100,7 +99,7 @@ namespace MR {
 
         value_type* get_voxel ()
         {
-          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (parent_vox[0], parent_vox[1], parent_vox[2]), (float*)NULL)).first->second);
+          value_type*& data (voxels.insert (std::make_pair (Point<ssize_t> (parent_vox[0], parent_vox[1], parent_vox[2]), nullptr)).first->second);
           if (!data) {
             data = allocate_voxel ();
             ssize_t pos = parent_vox[3];

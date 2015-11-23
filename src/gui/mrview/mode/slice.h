@@ -38,8 +38,8 @@ namespace MR
         class Slice : public Base
         {
           public:
-            Slice (Window& parent) :
-              Base (parent, FocusContrast | MoveTarget | TiltRotate) { }
+            Slice () :
+              Base (FocusContrast | MoveTarget | TiltRotate) { }
             virtual ~Slice ();
 
             virtual void paint (Projection& with_projection);

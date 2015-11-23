@@ -16,10 +16,10 @@ The fourth argument is a brief description of the mode, to be displayed in a too
 
 Use the MODE_OPTION variant if your mode supplies its own command-line options. */
 
-MODE_OPTION (Slice, slice, single slice, display a single slice)
-MODE (Ortho, ortho, OrthoView, axial-coronal-sagittal display)
-MODE (Volume, volume, Volume, volumetric render)
-MODE (LightBox, lightbox, LightBox, light-box display)
+MODE_OPTION (Slice, slice, Single slice, Single slice display)
+MODE (Ortho, ortho, Ortho view, Composite axial-coronal-sagittal display)
+MODE (Volume, volume, Volume render, Volumetric render)
+MODE (LightBox, lightbox, Light box, Light box display)
 
 #endif
 

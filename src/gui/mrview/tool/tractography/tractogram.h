@@ -51,15 +51,17 @@ namespace MR
           Q_OBJECT
 
           public:
-            Tractogram (Window& parent, Tractography& tool, const std::string& filename);
+            Tractogram (Tractography& tool, const std::string& filename);
 
             ~Tractogram ();
 
+            Window& window () const { return *Window::main; }
+
             void render (const Projection& transform);
 
-            void renderColourBar (const Projection& transform) {
+            void request_render_colourbar(DisplayableVisitor& visitor) override {
               if (color_type == ScalarFile && show_colour_bar)
-                colourbar_renderer.render (transform, *this, colourbar_position_index, this->scale_inverted());
+                visitor.render_tractogram_colourbar(*this);
             }
 
             void load_tracks();
@@ -77,17 +79,19 @@ namespace MR
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
+            bool should_update_stride;
             TrackColourType color_type;
-            float colour[3];
+            float colour[3], original_fov;
             std::string scalar_filename;
 
             class Shader : public Displayable::Shader {
               public:
                 Shader () : do_crop_to_slab (false), scalarfile_by_direction (false), use_lighting (false), color_type (Direction) { }
-                virtual std::string vertex_shader_source (const Displayable& tractogram);
-                virtual std::string fragment_shader_source (const Displayable& tractogram);
-                virtual bool need_update (const Displayable& object) const;
-                virtual void update (const Displayable& object);
+                std::string vertex_shader_source (const Displayable& displayable) override;
+                std::string fragment_shader_source (const Displayable& displayable) override;
+                std::string geometry_shader_source (const Displayable&) override;
+                virtual bool need_update (const Displayable& object) const override;
+                virtual void update (const Displayable& object) override;
               protected:
                 bool do_crop_to_slab, scalarfile_by_direction, use_lighting;
                 TrackColourType color_type;
@@ -98,7 +102,7 @@ namespace MR
             void scalingChanged ();
 
           private:
-            Window& window;
+            static const int max_sample_stride = 6;
             Tractography& tractography_tool;
             std::string filename;
             std::vector<GLuint> vertex_buffers;
@@ -108,9 +112,12 @@ namespace MR
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
+            std::vector<std::vector<GLint> > original_track_sizes;
+            std::vector<std::vector<GLint> > original_track_starts;
             std::vector<size_t> num_tracks_per_buffer;
-            ColourMap::Renderer colourbar_renderer;
-            int colourbar_position_index;
+            GLint sample_stride;
+            float line_thickness_screenspace;
+            bool vao_dirty;
 
 
             void load_tracks_onto_GPU (std::vector<Point<float> >& buffer,
@@ -122,6 +129,14 @@ namespace MR
 
             void load_scalars_onto_GPU (std::vector<float>& buffer);
 
+            void render_streamlines ();
+
+            void update_stride ();
+
+          private slots:
+            void on_FOV_changed() {
+              should_update_stride = true;
+            }
         };
       }
     }

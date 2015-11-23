@@ -10,25 +10,32 @@ namespace GUI
 namespace MRView
 {
 
+
+// FIXME Why is this duplicating colourmap code?
 using Entry = ColourMap::Entry;
 const std::vector<Entry> ColourMapButton::core_colourmaps_entries{{
     Entry ("Gray",
-        "color.rgb = vec3 (amplitude);\n"),
+        "color.rgb = vec3 (amplitude);\n",
+        [] (float amplitude) { return Point<float> (amplitude, amplitude, amplitude); }),
 
     Entry ("Hot",
-        "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n"),
+        "color.rgb = vec3 (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727);\n",
+        [] (float amplitude) { return Point<float> (2.7213 * amplitude, 2.7213 * amplitude - 1.0, 3.7727 * amplitude - 2.7727); }),
 
     Entry ("Cool",
-        "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n"),
+        "color.rgb = 1.0 - (vec3 (2.7213 * (1.0 - amplitude), 2.7213 * (1.0 - amplitude) - 1.0, 3.7727 * (1.0 - amplitude) - 2.7727));\n",
+        [] (float amplitude) { return Point<float> (1.0 - (2.7213 * (1.0 - amplitude)), 1.0 - (2.7213 * (1.0 - amplitude) - 1.0), 1.0 - (3.7727 * (1.0 - amplitude) - 2.7727)); }),
 
     Entry ("Jet",
-        "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n")
+        "color.rgb = 1.5 - 4.0 * abs (1.0 - amplitude - vec3(0.25, 0.5, 0.75));\n",
+        [] (float amplitude) { return Point<float> (1.5 - 4.0 * std::abs (1.0 - amplitude - 0.25), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.5), 1.5 - 4.0 * std::abs (1.0 - amplitude - 0.75)); })
 }};
 
 
 const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
     Entry ("RGB",
            "color.rgb = scale * (abs(color.rgb) - offset);\n",
+           Entry::basic_map_fn(),
            "length (color.rgb)", true),
 
     Entry ("Complex",
@@ -37,11 +44,15 @@ const std::vector<Entry> ColourMapButton::special_colourmaps_entries{{
            "if (phase > 2.0) color.b -= 6.0;\n"
            "if (phase < -2.0) color.r += 6.0;\n"
            "color.rgb = clamp (scale * (amplitude - offset), 0.0, 1.0) * (2.0 - abs (color.rgb));\n",
+           Entry::basic_map_fn(),
            "length (color.rg)", true)
 }};
 
 
-ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs, bool use_special_colourmaps) :
+ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs,
+                                 bool use_shortcuts,
+                                 bool use_special_colourmaps,
+                                 bool use_customise_state_items) :
     QToolButton(parent),
     colourmap_actions(ColourMapButton::core_colourmaps_entries.size()),
     observer(obs),
@@ -51,7 +62,7 @@ ColourMapButton::ColourMapButton(QWidget* parent, ColourMapButtonObserver& obs, 
     setIcon(QIcon(":/colourmap.svg"));
     setPopupMode(QToolButton::InstantPopup);
 
-    init_menu(false, use_special_colourmaps);
+    init_menu(use_shortcuts, use_special_colourmaps, use_customise_state_items);
 }
 
 
@@ -83,7 +94,7 @@ void ColourMapButton::init_core_menu_items(bool create_shortcuts)
 
 void ColourMapButton::init_custom_colour_menu_items()
 {
-    custom_colour_action = new QAction(tr("Custom colour..."), nullptr);
+    custom_colour_action = new QAction(tr("Custom colour..."), this);
     custom_colour_action->setCheckable(true);
     connect(custom_colour_action, SIGNAL(triggered ()), this, SLOT(select_colour_slot()));
 
@@ -92,7 +103,7 @@ void ColourMapButton::init_custom_colour_menu_items()
     addAction(custom_colour_action);
     colourmap_actions.push_back(custom_colour_action);
 
-    auto choose_random_colour = new QAction(tr("Random colour"), nullptr);
+    auto choose_random_colour = new QAction(tr("Random colour"), this);
     connect(choose_random_colour, SIGNAL(triggered ()), this, SLOT(select_random_colour_slot()));
 
     colourmap_menu->addAction(choose_random_colour);
@@ -120,7 +131,22 @@ void ColourMapButton::init_special_colour_menu_items(bool create_shortcuts)
     }
 }
 
-void ColourMapButton::init_menu(bool create_shortcuts, bool use_special)
+void ColourMapButton::init_customise_state_menu_items()
+{
+    auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
+    show_colour_bar->setCheckable(true);
+    show_colour_bar->setChecked(true);
+    addAction(show_colour_bar);
+
+    auto invert_scale = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
+    invert_scale->setCheckable(true);
+    addAction(invert_scale);
+
+    QAction* reset_intensity = colourmap_menu->addAction(tr("Reset intensity"), this, SLOT(reset_intensity_slot()));
+    addAction(reset_intensity);
+}
+
+void ColourMapButton::init_menu(bool create_shortcuts, bool use_special, bool customise_state)
 {
     colourmap_menu = new QMenu(tr("Colourmap menu"), this);
 
@@ -135,17 +161,8 @@ void ColourMapButton::init_menu(bool create_shortcuts, bool use_special)
         colourmap_menu->addSeparator();
     }
 
-    auto show_colour_bar = colourmap_menu->addAction(tr("Show colour bar"), this, SLOT(show_colour_bar_slot(bool)));
-    show_colour_bar->setCheckable(true);
-    show_colour_bar->setChecked(true);
-    addAction(show_colour_bar);
-
-    auto invert_scale = colourmap_menu->addAction(tr("Invert"), this, SLOT(invert_colourmap_slot(bool)));
-    invert_scale->setCheckable(true);
-    addAction(invert_scale);
-
-    QAction* reset_intensity = colourmap_menu->addAction(tr("Reset intensity"), this, SLOT(reset_intensity_slot()));
-    addAction(reset_intensity);
+    if(customise_state)
+        init_customise_state_menu_items();
 
     setMenu(colourmap_menu);
 }
@@ -186,12 +203,12 @@ void ColourMapButton::select_random_colour_slot()
 {
     size_t colour[3];
     Math::RNG rng;
-    size_t max = std::numeric_limits<unsigned char>::max();
-    size_t max_half = max/2;
+    std::uniform_int_distribution<unsigned char> uniform_int;
+    constexpr size_t max_half = std::numeric_limits<unsigned char>::max()/2;
     do {
-      colour[0] = rng.uniform_int(max);
-      colour[1] = rng.uniform_int(max);
-      colour[2] = rng.uniform_int(max);
+      colour[0] = uniform_int(rng);
+      colour[1] = uniform_int(rng);
+      colour[2] = uniform_int(rng);
     } while (colour[0] < max_half && colour[1] < max_half && colour[2] < max_half);
 
     custom_colour_action->setChecked(true);

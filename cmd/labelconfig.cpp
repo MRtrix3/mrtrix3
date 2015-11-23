@@ -32,9 +32,9 @@
 #include "image/voxel.h"
 #include "image/interp/nearest.h"
 
-#include "dwi/tractography/connectomics/config.h"
-#include "dwi/tractography/connectomics/connectomics.h"
-#include "dwi/tractography/connectomics/lut.h"
+#include "connectome/config/config.h"
+#include "connectome/connectome.h"
+#include "connectome/lut.h"
 
 
 #include <fstream>
@@ -50,8 +50,8 @@
 
 using namespace MR;
 using namespace App;
-using namespace MR::DWI::Tractography::Connectomics;
-using MR::DWI::Tractography::Connectomics::node_t;
+using namespace MR::Connectome;
+using MR::Connectome::node_t;
 
 
 
@@ -64,7 +64,7 @@ void usage ()
 	+ "prepare a parcellated image for connectome construction by modifying the image values; "
 	  "typically this involves making the parcellation intensities increment from 1 to coincide with rows and columns of a matrix. "
 	  "The configuration file passed as the second argument specifies the indices that should be assigned to different structures; "
-	  "examples of such configuration files are provided in src//dwi//tractography//connectomics//example_configs//";
+	  "examples of such configuration files are provided in src//connectome//config//";
 
 
 	ARGUMENTS
@@ -89,7 +89,7 @@ void run ()
 
   // Load the lookup table - need this info to match config file structure names to indices in the input image
   Node_map in_nodes;
-  load_lookup_table (in_nodes);
+  load_lut_from_cmdline (in_nodes);
   if (in_nodes.empty())
     throw Exception ("Must provide the lookup table corresponding to the input image parcellation");
 
@@ -115,7 +115,7 @@ void run ()
 
   // Create a new header for the output file
   Image::Header H (in_data);
-  H.comments().push_back ("Created by mrprep4connectome");
+  H.comments().push_back ("Created by labelconfig");
   H.comments().push_back ("Basis image: " + Path::basename (argument[0]));
   H.comments().push_back ("Configuration file: " + Path::basename (argument[1]));
 

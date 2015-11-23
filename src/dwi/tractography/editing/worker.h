@@ -47,11 +47,12 @@ namespace MR {
         {
 
           public:
-            Worker (Tractography::Properties& p, const size_t upsample_ratio, const size_t downsample_ratio, const bool inv) :
+            Worker (Tractography::Properties& p, const size_t upsample_ratio, const size_t downsample_ratio, const bool inv, const bool end) :
               properties (p),
               upsampler (upsample_ratio),
               downsampler (downsample_ratio),
               inverse (inv),
+              ends_only (end),
               thresholds (p),
               include_visited (properties.include.size(), false) { }
 
@@ -60,6 +61,7 @@ namespace MR {
               upsampler (that.upsampler),
               downsampler (that.downsampler),
               inverse (that.inverse),
+              ends_only (that.ends_only),
               thresholds (that.thresholds),
               include_visited (properties.include.size(), false) { }
 
@@ -71,7 +73,7 @@ namespace MR {
             const Tractography::Properties& properties;
             Upsampler<> upsampler;
             Downsampler downsampler;
-            const bool inverse;
+            const bool inverse, ends_only;
 
             class Thresholds
             {
@@ -80,8 +82,9 @@ namespace MR {
                 Thresholds (const Thresholds&);
                 bool operator() (const Tractography::Streamline<>&) const;
               private:
-                size_t max_num_points, min_num_points;
+                float max_length, min_length;
                 float max_weight, min_weight;
+                float step_size;
             } thresholds;
 
             mutable std::vector<bool> include_visited;

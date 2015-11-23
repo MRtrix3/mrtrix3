@@ -43,11 +43,11 @@ namespace MR
        * For example:
        * \code
        * // source and destination data:
-       * Image::Header source_header (...);
-       * Image::Voxel<float> source (source_header);
+       * Image::Buffer<float> source_buffer (...);
+       * auto source = source_buffer.voxel();
        *
-       * Image::Header destination_header (...);
-       * Image::Voxel<float> destination (destination_header);
+       * Image::Buffer<float> destination_buffer (...);
+       * auto destination = destination_buffer.voxel();
        *
        * // regrid source onto destination using linear interpolation:
        * Image::Filter::reslice<Image::Interp::Linear> (source, destination, operation);

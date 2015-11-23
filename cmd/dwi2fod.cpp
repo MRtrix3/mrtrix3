@@ -1,5 +1,5 @@
 #include "command.h"
-#include "ptr.h"
+#include "memory.h"
 #include "progressbar.h"
 #include "image/threaded_loop.h"
 #include "image/buffer.h"
@@ -48,7 +48,7 @@ void usage ()
         "the output spherical harmonics coefficients image.").type_image_out();
 
   OPTIONS
-    + DWI::GradImportOptions
+    + DWI::GradImportOptions()
     + DWI::ShellOption
     + DWI::CSD_options
     + Image::Stride::StrideOption;
@@ -71,7 +71,7 @@ class Processor
   public:
     Processor (InputBufferType::voxel_type& DWI_vox,
         OutputBufferType::voxel_type& FOD_vox,
-        Ptr<MaskBufferType::voxel_type>& mask_vox,
+        copy_ptr<MaskBufferType::voxel_type>& mask_vox,
         const DWI::CSDeconv<value_type>::Shared& shared) :
       dwi (DWI_vox),
       fod (FOD_vox),
@@ -107,7 +107,7 @@ class Processor
   private:
     InputBufferType::voxel_type dwi;
     OutputBufferType::voxel_type fod;
-    Ptr<MaskBufferType::voxel_type> mask;
+    copy_ptr<MaskBufferType::voxel_type> mask;
     DWI::CSDeconv<value_type> sdeconv;
     Math::Vector<value_type> data;
 
@@ -116,8 +116,12 @@ class Processor
     bool load_data (const Image::Iterator& pos) {
       if (mask) {
         Image::voxel_assign (*mask, pos);
-        if (!mask->value())
+        if (!mask->value()) {
+          Image::voxel_assign (fod, pos);
+          for (auto l = Image::Loop (3) (fod); l; ++l)
+            fod.value() = 0.0;
           return false;
+        }
       }
 
       Image::voxel_assign (dwi, pos);
@@ -154,12 +158,12 @@ void run ()
 {
   InputBufferType dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
 
-  Ptr<MaskBufferType> mask_data;
-  Ptr<MaskBufferType::voxel_type> mask_vox;
+  copy_ptr<MaskBufferType> mask_data;
+  copy_ptr<MaskBufferType::voxel_type> mask_vox;
   Options opt = get_options ("mask");
   if (opt.size()) {
-    mask_data = new MaskBufferType (opt[0][0]);
-    mask_vox = new MaskBufferType::voxel_type (*mask_data);
+    mask_data.reset (new MaskBufferType (opt[0][0]));
+    mask_vox.reset (new MaskBufferType::voxel_type (*mask_data));
   }
 
   DWI::CSDeconv<value_type>::Shared shared (dwi_buffer);

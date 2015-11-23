@@ -37,31 +37,31 @@ namespace MR
       class BufferPreload : public Buffer<ValueType>
     {
       public:
-        BufferPreload (const std::string& image_name) :
+        explicit BufferPreload (const std::string& image_name) :
           Buffer<value_type> (image_name),
           data_ (NULL) {
             init();
           }
 
-        BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
+        explicit BufferPreload (const std::string& image_name, const Image::Stride::List& desired_strides) :
           Buffer<value_type> (image_name),
           data_ (NULL) {
             init (desired_strides);
           }
 
-        BufferPreload (const Header& header) :
+        explicit BufferPreload (const Header& header) :
           Buffer<value_type> (header),
           data_ (NULL) {
             init();
           }
 
-        BufferPreload (const Header& header, const Image::Stride::List& desired_strides) :
+        explicit BufferPreload (const Header& header, const Image::Stride::List& desired_strides) :
           Buffer<value_type> (header),
           data_ (NULL) {
             init (desired_strides);
           }
 
-        BufferPreload (const Buffer<ValueType>& buffer) :
+        explicit BufferPreload (const Buffer<ValueType>& buffer) :
           Buffer<value_type> (buffer),
           data_ (NULL) {
             init();
@@ -105,7 +105,7 @@ namespace MR
         value_type* data_;
         using Buffer<value_type>::handler_;
 
-        template <class Set> BufferPreload& operator= (const Set& H) { assert (0); return *this; }
+        template <class Set> BufferPreload& operator= (const Set&) { assert (0); return *this; }
 
         void init (const Stride::List& desired_strides) {
           Stride::List new_strides = Image::Stride::get_nearest_match (static_cast<ConstHeader&> (*this), desired_strides);

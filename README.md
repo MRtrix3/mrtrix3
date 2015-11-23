@@ -1,7 +1,9 @@
 # MRtrix
 
-The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/jdtournier/mrtrix3/wiki),
-including a detailed decription of the installation procedure. The official website for MRtrix is hosted on <a href="https://plus.google.com/110975114527807720518" rel="publisher">Google+</a>.
+[![Build Status](https://travis-ci.org/MRtrix3/mrtrix3.svg?branch=master)](https://travis-ci.org/MRtrix3/mrtrix3)
+
+The complete documentation for MRtrix will eventually be found on the [wiki](https://github.com/MRtrix3/mrtrix3/wiki),
+including a detailed decription of the installation procedure. The official website for MRtrix is www.mrtrix.org.
 
 ## Getting help 
 
@@ -18,7 +20,7 @@ account if you don't already have one.
 
 2. Clone Git repository and compile: 
 
-        $ git clone https://github.com/jdtournier/mrtrix3.git
+        $ git clone https://github.com/MRtrix3/mrtrix3.git
         $ cd mrtrix3/
         $ ./configure 
         $ ./build
@@ -37,3 +39,15 @@ account if you don't already have one.
 
         $ mrview
 
+## Keeping MRtrix3 up to date
+
+1. You can update your installation at any time by opening a terminal in the mrtrix3 folder, and typing:
+
+        git pull
+		./build
+		
+2. If this doesn't work immediately, it may be that you need to re-run the configure script:
+
+        ./configure
+
+    and re-run step 1 again.

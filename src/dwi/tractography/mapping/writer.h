@@ -23,7 +23,7 @@
 #ifndef __dwi_tractography_mapping_writer_h__
 #define __dwi_tractography_mapping_writer_h__
 
-
+#include "memory.h"
 #include "file/path.h"
 #include "file/utils.h"
 #include "image/buffer_scratch.h"
@@ -65,7 +65,7 @@ class MapWriterBase
     typedef Image::BufferScratch<float>::voxel_type counts_voxel_type;
 
   public:
-    MapWriterBase (Image::Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
+    MapWriterBase (const Image::Header& header, const std::string& name, const vox_stat_t s = V_SUM, const writer_dim t = GREYSCALE) :
         H (header),
         output_image_name (name),
         direct_dump (false),
@@ -75,15 +75,7 @@ class MapWriterBase
       assert (type != UNDEFINED);
     }
 
-    MapWriterBase (const MapWriterBase& that) :
-        H (that.H),
-        output_image_name (that.output_image_name),
-        direct_dump (that.direct_dump),
-        voxel_statistic (that.voxel_statistic),
-        type (that.type)
-    {
-      throw Exception ("Do not instantiate copy constructor for MapWriterBase");
-    }
+    MapWriterBase (const MapWriterBase&) = delete;
 
     virtual ~MapWriterBase() { }
 
@@ -108,7 +100,7 @@ class MapWriterBase
 
 
   protected:
-    Image::Header& H;
+    const Image::Header H;
     const std::string output_image_name;
     bool direct_dump;
     const vox_stat_t voxel_statistic;
@@ -117,8 +109,8 @@ class MapWriterBase
     // This gets used with mean voxel statistic for some (but not all) writers,
     //   or if the output is a voxel_summed DEC image.
     // It's also hijacked to store per-voxel min/max factors in the case of TOD
-    Ptr<counts_buffer_type> counts;
-    Ptr<counts_voxel_type > v_counts;
+    std::unique_ptr<counts_buffer_type> counts;
+    std::unique_ptr<counts_voxel_type > v_counts;
 
 };
 
@@ -137,7 +129,7 @@ class MapWriter : public MapWriterBase
   typedef typename Mapping::BufferScratchDump<value_type>::voxel_type buffer_voxel_type;
 
   public:
-    MapWriter (Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
+    MapWriter (const Image::Header& header, const std::string& name, const vox_stat_t voxel_statistic = V_SUM, const writer_dim type = GREYSCALE) :
         MapWriterBase (header, name, voxel_statistic, type),
         buffer (header, "TWI " + str(writer_dims[type]) + " buffer"),
         v_buffer (buffer)
@@ -168,7 +160,7 @@ class MapWriter : public MapWriterBase
 
       // With TOD, hijack the counts buffer in voxel statistic min/max mode
       //   (use to store maximum / minimum factors and hence decide when to update the TOD)
-      if ((voxel_statistic == V_MEAN) ||
+      if ((type != DEC && voxel_statistic == V_MEAN) ||
           (type == TOD && (voxel_statistic == V_MIN || voxel_statistic == V_MAX)) ||
           (type == DEC && voxel_statistic == V_SUM))
       {
@@ -177,9 +169,9 @@ class MapWriter : public MapWriterBase
           H_counts.set_ndim (3);
           H_counts.sanitise();
         }
-        counts = new counts_buffer_type (H_counts, "TWI streamline count buffer");
+        counts.reset (new counts_buffer_type (H_counts, "TWI streamline count buffer"));
         counts->zero();
-        v_counts = new counts_voxel_type (*counts);
+        v_counts.reset (new counts_voxel_type (*counts));
       }
     }
 
@@ -191,7 +183,7 @@ class MapWriter : public MapWriterBase
       throw Exception ("Do not instantiate copy constructor for MapWriter");
     }
 
-    ~MapWriter ()
+    virtual ~MapWriter ()
     {
 
       Image::LoopInOrder loop (v_buffer, 0, 3);
@@ -202,7 +194,9 @@ class MapWriter : public MapWriterBase
             for (auto l = loop (v_buffer, *v_counts); l; ++l) {
               if (v_counts->value()) {
                 Point<value_type> value (get_dec());
-                value *= v_counts->value() / value.norm();
+                const float norm = value.norm();
+                if (norm)
+                  value *= v_counts->value() / norm;
                 set_dec (value);
               }
             }
@@ -223,12 +217,10 @@ class MapWriter : public MapWriterBase
                 v_buffer.value() /= float(v_counts->value());
             }
           } else if (type == DEC) {
-            for (auto l = loop (v_buffer, *v_counts); l; ++l) {
+            for (auto l = loop (v_buffer); l; ++l) {
               Point<value_type> value (get_dec());
-              if (value.norm2()) {
-                value /= v_counts->value();
-                set_dec (value);
-              }
+              if (value.norm2())
+                set_dec (value.normalise());
             }
           } else if (type == TOD) {
             for (auto l = loop (v_buffer, *v_counts); l; ++l) {
@@ -280,28 +272,34 @@ class MapWriter : public MapWriterBase
 
       } else {
 
-        image_type out (output_image_name, H);
-        image_voxel_type v_out (out);
-        if (type == DEC) {
-          Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-          for (auto l = loop_out (v_out, v_buffer); l; ++l) {
-            Point<value_type> value (get_dec());
-            v_out[3] = 0; v_out.value() = value[0];
-            v_out[3] = 1; v_out.value() = value[1];
-            v_out[3] = 2; v_out.value() = value[2];
+        try {
+
+          image_type out (output_image_name, H);
+          image_voxel_type v_out (out);
+          if (type == DEC) {
+            Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
+            for (auto l = loop_out (v_out, v_buffer); l; ++l) {
+              Point<value_type> value (get_dec());
+              v_out[3] = 0; v_out.value() = value[0];
+              v_out[3] = 1; v_out.value() = value[1];
+              v_out[3] = 2; v_out.value() = value[2];
+            }
+          } else if (type == TOD) {
+            Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
+            for (auto l = loop_out (v_out, v_buffer); l; ++l) {
+              Math::Vector<float> value;
+              get_tod (value);
+              for (v_out[3] = 0; v_out[3] != v_out.dim(3); ++v_out[3])
+                v_out.value() = value[size_t(v_out[3])];
+            }
+          } else { // Greyscale and Dixel
+            Image::LoopInOrder loop_out (v_out, "writing image to file...");
+            for (auto l = loop_out (v_out, v_buffer); l; ++l)
+              v_out.value() = v_buffer.value();
           }
-        } else if (type == TOD) {
-          Image::LoopInOrder loop_out (v_out, "writing image to file...", 0, 3);
-          for (auto l = loop_out (v_out, v_buffer); l; ++l) {
-            Math::Vector<float> value;
-            get_tod (value);
-            for (v_out[3] = 0; v_out[3] != v_out.dim(3); ++v_out[3])
-              v_out.value() = value[size_t(v_out[3])];
-          }
-        } else { // Greyscale and Dixel
-          Image::LoopInOrder loop_out (v_out, "writing image to file...");
-          for (auto l = loop_out (v_out, v_buffer); l; ++l) 
-            v_out.value() = v_buffer.value();
+
+        } catch (Exception& e) {
+          e.display();
         }
 
       }

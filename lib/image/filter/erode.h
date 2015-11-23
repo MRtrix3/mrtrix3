@@ -24,7 +24,7 @@
 #define __image_filter_erode_h__
 
 #include "progressbar.h"
-#include "ptr.h"
+#include "memory.h"
 #include "image/buffer_scratch.h"
 #include "image/copy.h"
 #include "image/loop.h"
@@ -69,24 +69,30 @@ namespace MR
             datatype_ = DataType::Bit;
           }
 
+          template <class InfoType>
+          Erode (const InfoType& in, const std::string& message) :
+              Base (in, message),
+              npass_ (1)
+          {
+            datatype_ = DataType::Bit;
+          }
+
 
           template <class InputVoxelType, class OutputVoxelType>
           void operator() (InputVoxelType& input, OutputVoxelType& output) {
 
-            RefPtr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
-            RefPtr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
+            std::shared_ptr <BufferScratch<bool> > in_data (new BufferScratch<bool> (input));
+            std::shared_ptr <BufferScratch<bool>::voxel_type> in (new BufferScratch<bool>::voxel_type (*in_data));
             Image::copy (input, *in);
 
-            RefPtr <BufferScratch<bool> > out_data;
-            RefPtr <BufferScratch<bool>::voxel_type> out;
+            std::shared_ptr <BufferScratch<bool> > out_data;
+            std::shared_ptr <BufferScratch<bool>::voxel_type> out;
 
-            Ptr<ProgressBar> progress;
-            if (message.size())
-              progress = new ProgressBar (message, npass_ + 1);
+            std::shared_ptr<ProgressBar> progress (message.size() ? new ProgressBar (message, npass_ + 1) : nullptr);
 
             for (unsigned int pass = 0; pass < npass_; pass++) {
-              out_data = new BufferScratch<bool> (input);
-              out = new BufferScratch<bool>::voxel_type (*out_data);
+              out_data.reset (new BufferScratch<bool> (input));
+              out.reset (new BufferScratch<bool>::voxel_type (*out_data));
               for (auto l = LoopInOrder(*in) (*in, *out); l; ++l) 
                out->value() = erode (*in);
               

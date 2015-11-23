@@ -49,9 +49,12 @@ const OptionGroup ExtractOption = OptionGroup ("Options to print only specific i
     + Option ("properties", "any text properties embedded in the image header")
     + Option ("transform", "the image transform")
     + Option ("dwgrad", "the diffusion-weighting gradient table, as stored in the header "
-        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)");
+        "(i.e. without any interpretation, scaling of b-values, or normalisation of gradient vectors)")
+    + Option ("shells", "list the average b-value of each shell")
+    + Option ("shellcounts", "list the number of volumes in each shell");
 
-
+const OptionGroup GradImportOptions = DWI::GradImportOptions();
+const OptionGroup GradExportOptions = DWI::GradExportOptions();
 
 
 
@@ -89,8 +92,13 @@ void usage ()
         "and strides as they are actually stored in the header, rather than as "
         "MRtrix interprets them.") 
     + ExtractOption
-    + DWI::GradImportOptions
-    + DWI::GradExportOptions;
+    + GradImportOptions
+    + Option ("raw_dwgrad", 
+        "do not modify the gradient table from what was found in the image headers. This skips the "
+        "validation steps normally performed within MRtrix applications (i.e. do not verify that "
+        "the number of entries in the gradient table matches the number of volumes in the image, "
+        "do not scale b-values by gradient norms, do not normalise gradient vectors)")
+    + GradExportOptions;
 
 }
 
@@ -155,37 +163,44 @@ void print_properties (const Image::Header& header)
 
 void run ()
 {
+  auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
+
+  bool export_grad = check_option_group (GradExportOptions);
+
+  if (export_grad && argument.size() > 1 )
+    throw Exception ("can only export DW gradient table to file if a single input image is provided");
+
   if (get_options ("norealign").size())
     Image::Header::do_not_realign_transform = true;
 
-  const bool format     = get_options("format")        .size();
-  const bool ndim       = get_options("ndim")          .size();
-  const bool dimensions = get_options("dimensions")    .size();
-  const bool vox        = get_options("vox")           .size();
-  const bool dt_long    = get_options("datatype_long") .size();
-  const bool dt_short   = get_options("datatype_short").size();
-  const bool stride     = get_options("stride")        .size();
-  const bool offset     = get_options("offset")        .size();
-  const bool multiplier = get_options("multiplier")    .size();
-  const bool comments   = get_options("comments")      .size();
-  const bool properties = get_options("properties")    .size();
-  const bool transform  = get_options("transform")     .size();
-  const bool dwgrad     = get_options("dwgrad")        .size();
+  const bool format      = get_options("format")        .size();
+  const bool ndim        = get_options("ndim")          .size();
+  const bool dimensions  = get_options("dimensions")    .size();
+  const bool vox         = get_options("vox")           .size();
+  const bool dt_long     = get_options("datatype_long") .size();
+  const bool dt_short    = get_options("datatype_short").size();
+  const bool stride      = get_options("stride")        .size();
+  const bool offset      = get_options("offset")        .size();
+  const bool multiplier  = get_options("multiplier")    .size();
+  const bool comments    = get_options("comments")      .size();
+  const bool properties  = get_options("properties")    .size();
+  const bool transform   = get_options("transform")     .size();
+  const bool dwgrad      = get_options("dwgrad")        .size();
+  const bool shells      = get_options("shells")        .size();
+  const bool shellcounts = get_options("shellcounts")   .size();
+  const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
 
-  auto check_option_group = [](const App::OptionGroup& g) { for (auto o: g) if (get_options (o.id).size()) return true; return false; };
-  bool import_grad = check_option_group (DWI::GradImportOptions);
-  bool export_grad = dwgrad || check_option_group (DWI::GradExportOptions);
+  const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride || 
+      offset || multiplier || comments || properties || transform || dwgrad || export_grad || shells || shellcounts);
 
-  const bool print_full_header = !(format || ndim || dimensions || vox || dt_long || dt_short || stride
-                                  || offset || multiplier || comments || properties || transform || export_grad);
-
-  if (( import_grad || export_grad ) && argument.size() > 1 )
-    throw Exception ("Can only import/export gradient table information if a single input image is provided");
 
   for (size_t i = 0; i < argument.size(); ++i) {
     Image::Header header (argument[i]);
-    if (import_grad)
+    if (raw_dwgrad) 
       header.DW_scheme() = DWI::get_DW_scheme<float> (header);
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts) 
+      header.DW_scheme() = DWI::get_valid_DW_scheme<float> (header, true);
+
 
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
@@ -200,6 +215,19 @@ void run ()
     if (properties) print_properties (header);
     if (transform)  std::cout << header.transform();
     if (dwgrad)     std::cout << header.DW_scheme();
+    if (shells || shellcounts)     { 
+      DWI::Shells dwshells (header.DW_scheme()); 
+      if (shells) {
+        for (size_t i = 0; i < dwshells.count(); i++) 
+          std::cout << dwshells[i].get_mean() << " ";
+        std::cout << "\n";
+      }
+      if (shellcounts) {
+        for (size_t i = 0; i < dwshells.count(); i++) 
+          std::cout << dwshells[i].count() << " ";
+        std::cout << "\n";
+      }
+    }
 
     DWI::export_grad_commandline (header);
 
