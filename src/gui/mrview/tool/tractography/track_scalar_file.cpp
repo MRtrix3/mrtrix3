@@ -43,11 +43,10 @@ namespace MR
           hlayout->setContentsMargins (0, 0, 0, 0);
           hlayout->setSpacing (0);
 
-          file_button = new QPushButton (this);
-          file_button->setToolTip (tr ("Open scalar track file"));
-          connect (file_button, SIGNAL (clicked()), this, SLOT (open_track_scalar_file_slot ()));
-          hlayout->addWidget (file_button);
-
+          intensity_file_button = new QPushButton (this);
+          intensity_file_button->setToolTip (tr ("Open scalar track file"));
+          connect (intensity_file_button, SIGNAL (clicked()), this, SLOT (open_intensity_track_scalar_file_slot ()));
+          hlayout->addWidget (intensity_file_button);
 
           // Colourmap menu:
           colourmap_menu = new QMenu (tr ("Colourmap menu"), this);
@@ -118,6 +117,15 @@ namespace MR
           connect (threshold_upper, SIGNAL (valueChanged()), this, SLOT (threshold_upper_value_changed()));
           hlayout->addWidget (threshold_upper);
 
+          hlayout = new HBoxLayout;
+
+          threshold_file_button = new QPushButton (this);
+          threshold_file_button->setToolTip (tr ("Open scalar track file"));
+          connect (threshold_file_button, SIGNAL (clicked()), this, SLOT (open_threshold_track_scalar_file_slot ()));
+          hlayout->addWidget (threshold_file_button);
+
+          main_box->addLayout (hlayout);
+
           main_box->addStretch ();
           setMinimumSize (main_box->minimumSize());
         }
@@ -147,8 +155,10 @@ namespace MR
 
 
         void TrackScalarFile::clear_tool_display () {
-          file_button->setText ("");
-          file_button->setEnabled (false);
+          intensity_file_button->setText ("");
+          intensity_file_button->setEnabled (false);
+          threshold_file_button->setText ("");
+          threshold_file_button->setEnabled (false);
           min_entry->setEnabled (false);
           max_entry->setEnabled (false);
           min_entry->clear();
@@ -172,8 +182,9 @@ namespace MR
             return;
           }
 
-          if (tractogram->scalar_filename.size()) {
-            file_button->setEnabled (true);
+          if (tractogram->intensity_scalar_filename.size()) {
+            intensity_file_button->setEnabled (true);
+            threshold_file_button->setEnabled (true);
             min_entry->setEnabled (true);
             max_entry->setEnabled (true);
             min_entry->setRate (tractogram->scaling_rate());
@@ -204,32 +215,60 @@ namespace MR
             show_colour_bar->setChecked (tractogram->show_colour_bar);
             invert_scale->setChecked (tractogram->scale_inverted());
             scalarfile_by_direction->setChecked (tractogram->scalarfile_by_direction);
-            if (tractogram->scalar_filename.length()) {
-              file_button->setText (shorten (tractogram->scalar_filename, 35, 0).c_str());
+            if (tractogram->intensity_scalar_filename.length()) {
+              intensity_file_button->setText (shorten (tractogram->intensity_scalar_filename, 35, 0).c_str());
               min_entry->setValue (tractogram->scaling_min());
               max_entry->setValue (tractogram->scaling_max());
             } else {
-              file_button->setText ("");
+              intensity_file_button->setText (tr("Open File"));
             }
+
+            if (tractogram->threshold_scalar_filename.length()) {
+              threshold_file_button->setText (shorten (tractogram->threshold_scalar_filename, 35, 0).c_str());
+            } else {
+              threshold_file_button->setText (tr("Open File"));
+            }
+
           } else {
             clear_tool_display ();
-            file_button->setText (tr("Open File"));
-            file_button->setEnabled (true);
+            intensity_file_button->setText (tr("Open File"));
+            intensity_file_button->setEnabled (true);
+
+            threshold_file_button->setText (tr("Open File"));
+            threshold_file_button->setEnabled (true);
           }
         }
 
 
-        bool TrackScalarFile::open_track_scalar_file_slot ()
+        bool TrackScalarFile::open_intensity_track_scalar_file_slot ()
         {
           std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
           if (scalar_file.empty())
             return false;
 
           try {
-            tractogram->load_track_scalars (scalar_file);
+            tractogram->load_intensity_track_scalars (scalar_file);
             tractogram->color_type = ScalarFile;
             set_tractogram (tractogram);
           } 
+          catch (Exception& E) {
+            E.display();
+            return false;
+          }
+          return true;
+        }
+
+        bool TrackScalarFile::open_threshold_track_scalar_file_slot ()
+        {
+          std::string scalar_file = Dialog::File::get_file (this, "Select scalar text file or Track Scalar file (.tsf) to open", "");
+          if (scalar_file.empty())
+            return false;
+
+          try {
+            tractogram->load_threshold_track_scalars (scalar_file);
+            tractogram->color_type = ScalarFile;
+            set_tractogram (tractogram);
+          }
           catch (Exception& E) {
             E.display();
             return false;

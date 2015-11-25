@@ -49,7 +49,8 @@ namespace MR
               void render_tractogram_colourbar (const Tool::Tractogram&) override;
 
             public slots:
-              bool open_track_scalar_file_slot ();
+              bool open_intensity_track_scalar_file_slot ();
+              bool open_threshold_track_scalar_file_slot ();
 
             private slots:
               void show_colour_bar_slot();
@@ -76,7 +77,8 @@ namespace MR
               QAction **colourmap_actions;
               QActionGroup *colourmap_group;
               QToolButton *colourmap_button;
-              QPushButton *file_button;
+              QPushButton *intensity_file_button;
+              QPushButton *threshold_file_button;
               AdjustButton *max_entry, *min_entry;
               AdjustButton *threshold_lower, *threshold_upper;
               QCheckBox *threshold_upper_box, *threshold_lower_box;

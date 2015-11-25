@@ -67,10 +67,15 @@ namespace MR
             void load_tracks();
 
             void load_end_colours();
-            void load_track_scalars (const std::string&);
+            void load_intensity_track_scalars (const std::string&);
+            void load_threshold_track_scalars (const std::string&);
             void erase_nontrack_data();
+            void erase_intensity_scalar_data ();
+            void erase_threshold_scalar_data ();
 
             void set_colour (float c[3]) { colour = { c[0], c[1], c[2] }; }
+
+            bool has_threshold_scalar_file () const { return threshold_scalar_filename.length(); }
 
             bool scalarfile_by_direction;
             bool show_colour_bar;
@@ -78,7 +83,8 @@ namespace MR
             TrackColourType color_type;
             Eigen::Array3f colour;
             float original_fov;
-            std::string scalar_filename;
+            std::string intensity_scalar_filename;
+            std::string threshold_scalar_filename;
 
             class Shader : public Displayable::Shader {
               public:
@@ -104,7 +110,8 @@ namespace MR
             std::vector<GLuint> vertex_buffers;
             std::vector<GLuint> vertex_array_objects;
             std::vector<GLuint> colour_buffers;
-            std::vector<GLuint> scalar_buffers;
+            std::vector<GLuint> intensity_scalar_buffers;
+            std::vector<GLuint> threshold_scalar_buffers;
             DWI::Tractography::Properties properties;
             std::vector<std::vector<GLint> > track_starts;
             std::vector<std::vector<GLint> > track_sizes;
@@ -123,7 +130,8 @@ namespace MR
                                               
             void load_end_colours_onto_GPU (std::vector<Eigen::Vector3f>&);
 
-            void load_scalars_onto_GPU (std::vector<float>& buffer);
+            void load_intensity_scalars_onto_GPU (std::vector<float>& buffer);
+            void load_threshold_scalars_onto_GPU (std::vector<float>& buffer);
 
             void render_streamlines ();
 
