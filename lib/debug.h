@@ -54,6 +54,12 @@ namespace MR {
   std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = " << (variable.format(fmt)) << "\n"; \
 }
 
+#define VEC(variable) { \
+  std::cerr << MR::App::NAME << " [" << __FILE__  << ": " << __LINE__ << "]: " << #variable << " = "; \
+  for (ssize_t i=0; i<variable.size(); ++i){std::cerr << str(variable[i]) << " "; } \
+  std::cerr << std::endl; \
+}
+
 
 /** \brief Stops execution and prints current function, file and line number.
   Remuses on user input (i.e. Return key). */
