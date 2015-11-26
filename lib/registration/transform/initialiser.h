@@ -40,7 +40,7 @@ namespace MR
     {
       namespace Init
       {
-        enum InitType {mass, geometric, moments, none};
+        enum InitType {mass, geometric, moments, linear_from_file, none};
 
         template <class ImageType, class ValueType>
           void get_geometric_centre (const ImageType& image, Eigen::Matrix<ValueType, 3, 1>& centre)
@@ -79,9 +79,11 @@ namespace MR
             std::sort( std::begin(eval_idx_vec), std::end(eval_idx_vec), std::greater<std::pair<decltype(eval[0]), ssize_t>>() );
 
             for(ssize_t i = 0; i < eval.size(); ++i ) {
-              eigenvals[i] = eval[eval_idx_vec[i].second]; // or eval_idx_vec[i].first
+              eigenvals[i] = eval_idx_vec[i].first;
               eigenvectors.col(i) = evec.col(eval_idx_vec[i].second);
             }
+            VAR(eval.transpose());
+            VAR(eigenvals.transpose());
             return true;
           }
 
@@ -205,7 +207,12 @@ namespace MR
               return;
             }
 
+            VAR(im1_eval.transpose());
+            VAR(im2_eval.transpose());
+
             // TODO decide whether rotation is sensible using covariance eigenvalues
+            // Maaref, A., & Aïssa, S. (2007). Eigenvalue distributions of wishart-type random matrices with application to the performance analysis of MIMO MRC systems. IEEE Transactions on Wireless Communications, 6(7), 2678–2689. doi:10.1109/TWC.2007.05990
+            // Edelman, A. (1991). The distribution and moments of the smallest eigenvalue of a random matrix of wishart type. Linear Algebra and Its Applications, 159, 55–80. doi:10.1016/0024-3795(91)90076-9
 
             // std::cerr << im2_covariance_matrix.format(python_fmt) << std::endl;
             // VAR(im2_evec.format(python_fmt));
@@ -251,6 +258,7 @@ namespace MR
             A = dec.solve(im1_evec_transpose);
             assert((A * im1_evec).isApprox(im2_evec));
             assert(std::abs(A.determinant() - 1.0) < 0.0001);
+            A = A.transpose().eval();
 
             // TODO decide whether rotation matrix is sensible
             // Eigen::EigenSolver<Eigen::Matrix<default_type, 3, 3>> es((Eigen::Matrix<default_type, 3, 3>) A);
@@ -261,14 +269,16 @@ namespace MR
             // std::cerr << "\nw:" << quaternion.w() << " x:" << quaternion.x() << " y:" << quaternion.y() << " z:" << quaternion.z() << "\n";
             // Eigen::Quaternion<default_type, Eigen::AutoAlign> quaternion ((Eigen::Matrix<default_type, 3, 3>) A);
             // std::cerr << "\nw:" << quaternion.w() << " x:" << quaternion.x() << " y:" << quaternion.y() << " z:" << quaternion.z() << "\n";
-
+            transform.set_matrix (A);
             Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
             transform.set_centre (centre);
             Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
             transform.set_translation (translation);
-            transform.set_matrix (A.transpose().eval());
             // transform.set_matrix (A);
-            // MAT(transform.get_transform().matrix());
+            MAT(A);
+            MAT(centre.transpose());
+            MAT(translation.transpose());
+            MAT(transform.get_transform().matrix());
             // VAR(timer.elapsed());
         }
 
@@ -307,6 +317,9 @@ namespace MR
 
             Eigen::Vector3 centre = (im1_centre_of_mass + im2_centre_of_mass) / 2.0;
             Eigen::Vector3 translation = im1_centre_of_mass - im2_centre_of_mass;
+            VEC(im1_centre_of_mass);
+            VEC(im2_centre_of_mass);
+            VEC(translation);
             transform.set_centre (centre);
             transform.set_translation (translation);
         }

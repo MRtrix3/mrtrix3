@@ -85,7 +85,15 @@ namespace MR
                 if (isnan (default_type (im2_value)))
                   return 0.0;
 
-                default_type diff = im1_value - im2_value;
+                default_type diff = (default_type) im1_value - (default_type) im2_value;
+#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+                DEBUG("midway_point:" + str(midway_point.transpose()));
+                DEBUG("im1_point:" + str(im1_point.transpose()));
+                DEBUG("im2_point:" + str(im2_point.transpose()));
+                DEBUG("diff: " + str(diff));
+                DEBUG("im1_grad: " + str(im1_grad));
+                DEBUG("im2_grad: " + str(im2_grad));
+#endif
                 for (ssize_t par = 0; par < gradient.size(); par++) {
                   default_type sum = 0.0;
                   for ( size_t dim = 0; dim < 3; dim++)

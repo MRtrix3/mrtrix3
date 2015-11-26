@@ -7,7 +7,7 @@ namespace MR
 
     using namespace App;
 
-    const char* initialisation_choices[] = { "mass", "geometric", "moments", "none", NULL };
+    const char* initialisation_choices[] = { "mass", "geometric", "moments", "linear", "none", NULL };
 
     const OptionGroup rigid_options =
       OptionGroup ("Rigid registration options")
@@ -100,7 +100,7 @@ namespace MR
         + Argument ("image").type_image_in ()
 
       + Option ("centre", "for rigid and affine registration only: Initialise the centre of rotation and initial translation. "
-                          "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments or none. "
+                          "Valid choices are: mass (which uses the image center of mass), geometric (geometric image centre), moments (image moments), linear (from linear transformation file specified via rigid_init or affine_init) or none. "
                           "Default: mass (which may not be suited for multi-modality registration).")
         + Argument ("type").type_choice (initialisation_choices);
 

@@ -27,6 +27,7 @@
 #include <unsupported/Eigen/MatrixFunctions> // Eigen::MatrixBase::sqrt()
 #include <Eigen/SVD>
 #include <Eigen/Geometry> // Eigen::Translation
+#include "datatype.h" // debug
 
 namespace MR
 {
@@ -84,37 +85,37 @@ namespace MR
             out = trafo_half_inverse * in;
           }
 
-          void set_transform (transform_type& transform) {
-            trafo.matrix() = transform.matrix();
-            compute_offset();
+          template <class TrafoType>
+          void set_transform (TrafoType& transform) {
+            trafo.matrix().template block<3,4>(0,0) = transform.matrix().template block<3,4>(0,0);
             compute_halfspace_transformations();
           }
 
-          transform_type get_transform () const {
-            transform_type transform;
-            transform.matrix() = trafo.matrix();
-            return transform;
-          }
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform () const {
+              Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> transform;
+              transform.matrix() = trafo.matrix();
+              return transform;
+            }
 
-          transform_type get_transform_half () const {
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half () const {
             return trafo_half;
           }
 
-          transform_type get_transform_half_inverse () const {
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> get_transform_half_inverse () const {
             return trafo_half_inverse;
           }
 
-          void set_matrix (const Eigen::Matrix<default_type, 3, 3>& mat) {
+          void set_matrix (const Eigen::Matrix<ParameterType, 3, 3>& mat) {
             trafo.linear() = mat;
             compute_offset();
             compute_halfspace_transformations();
           }
 
-          const Eigen::Matrix<default_type, 3, 3> get_matrix () const {
+          const Eigen::Matrix<ParameterType, 3, 3> get_matrix () const {
             return trafo.linear();
           }
 
-          void set_translation (const Eigen::Vector3& trans) {
+          void set_translation (const Eigen::Matrix<ParameterType, 1, 3>& trans) {
             trafo.translation() = trans;
             compute_offset();
             compute_halfspace_transformations();
@@ -159,13 +160,14 @@ namespace MR
         #ifndef NONSYMREGISTRATION
           void debug(){
             INFO("debug():");
+            INFO("parameters of type " + str(DataType::from<ParameterType>().specifier()));
             Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "");
             INFO("trafo:\n"+str(trafo.matrix().format(fmt)));
             INFO("trafo.inverse():\n"+str(trafo.inverse().matrix().format(fmt)));
             INFO("trafo_half:\n"+str(trafo_half.matrix().format(fmt)));
             INFO("trafo_half_inverse:\n"+str(trafo_half_inverse.matrix().format(fmt)));
             INFO("centre: "+str(centre.transpose(),12));
-            Eigen::Vector3 in, out, half, half_inverse;
+            Eigen::Matrix<ParameterType, 3, 1> in, out, half, half_inverse;
             in << 1.0, 2.0, 3.0;
             transform (out, in);
             transform_half (half, in);
@@ -205,7 +207,7 @@ namespace MR
 
           void compute_halfspace_transformations(){
             #ifndef NONSYMREGISTRATION
-              Eigen::Matrix<default_type, 4, 4> tmp;
+              Eigen::Matrix<ParameterType, 4, 4> tmp;
               tmp.setIdentity();
               tmp.template block<3,4>(0,0) = trafo.matrix();
               assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
@@ -221,12 +223,12 @@ namespace MR
 
           size_t number_of_parameters;
           // TODO matrix, translation and offset are only here for the rigid class. to be removed
-            Eigen::Matrix<default_type, 3, 3> matrix;
+            Eigen::Matrix<ParameterType, 3, 3> matrix;
             Eigen::Vector3 translation;
             Eigen::Vector3 offset;
-          transform_type trafo;
-          transform_type trafo_half;
-          transform_type trafo_half_inverse;
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo;
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half;
+          Eigen::Transform<ParameterType, 3, Eigen::AffineCompact> trafo_half_inverse;
           Eigen::Vector3 centre;
           Eigen::VectorXd optimiser_weights;
 

@@ -64,7 +64,7 @@ namespace MR
       public:
 
         Linear () :
-          max_iter (1, 300),
+          max_iter (1, 500),
           gd_repetitions (1, 1),
           scale_factor (2),
           loop_density (1, 1.0),
@@ -103,8 +103,8 @@ namespace MR
 
         void set_smoothing_factor (const std::vector<default_type>& smoothing_factor) {
           for (size_t level = 0; level < smoothing_factor.size(); ++level) {
-            if (smoothing_factor[level] <= 0)
-              throw Exception ("the smooth factor for each multi-resolution level must be larger than 0");
+            if (smoothing_factor[level] < 0)
+              throw Exception ("the smooth factor for each multi-resolution level must be positive");
           }
           smooth_factor = smoothing_factor;
         }
@@ -213,25 +213,28 @@ namespace MR
             else if (smooth_factor.size() != scale_factor.size())
               throw Exception ("the smooth factor needs to be defined for each multi-resolution level");
 
-            std::vector<Eigen::Transform<default_type, 3, Eigen::Projective>> init_transforms;
+            std::vector<Eigen::Transform<double, 3, Eigen::Projective>> init_transforms;
             if (init_type == Transform::Init::mass)
               Transform::Init::initialise_using_image_mass (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::geometric)
               Transform::Init::initialise_using_image_centres (im1_image, im2_image, transform);
             else if (init_type == Transform::Init::moments)
               Transform::Init::initialise_using_image_moments (im1_image, im2_image, transform);
+            // transformation file initialisation is done in mrregister.cpp
+            // transform.debug();
+
             #ifndef NONSYMREGISTRATION
               // define transfomations that will be applied to the image header when the common space is calculated
               {
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_t = transform.get_transform_half();
-                Eigen::Transform<default_type, 3, Eigen::Projective> init_trafo_m = transform.get_transform_half_inverse();
-                init_transforms.push_back(init_trafo_t);
-                init_transforms.push_back(init_trafo_m);
+                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
+                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
+                init_transforms.push_back(init_trafo_2);
+                init_transforms.push_back(init_trafo_1);
               }
             #endif
 
-            typedef Image<float> MidwayImageType;
-            typedef Image<float> ProcessedImageType;
+            typedef Im1ImageType MidwayImageType;
+            typedef Im1ImageType ProcessedImageType;
             typedef Image<bool> ProcessedMaskType;
 
             typedef Interp::SplineInterp<Im1ImageType, Math::UniformBSpline<typename Im1ImageType::value_type>, Math::SplineProcessingType::ValueAndGradient> Im1ImageInterpolatorType;
@@ -264,7 +267,7 @@ namespace MR
               headers.push_back(im2_image.original_header());
               headers.push_back(im1_image.original_header());
               auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
-              auto midway_image = Header::scratch (midway_image_header).get_image<float>();
+              auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
             #endif
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
@@ -284,33 +287,32 @@ namespace MR
                 Filter::Resize im1_resize_filter (im1_image);
                 im1_resize_filter.set_scale_factor (scale_factor[level]);
                 im1_resize_filter.set_interp_type (1);
-                auto im1_resized = Image<float>::scratch (im1_resize_filter);
+                auto im1_resized = Image<typename Im1ImageType::value_type>::scratch (im1_resize_filter);
                 Filter::Smooth im1_smooth_filter (im1_resized);
-                auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
+                auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
               #else
                 Filter::Smooth im1_smooth_filter (im1_image);
                 im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
-                INFO("smooth_factor " + str(smooth_factor[level]));
-                auto im1__smoothed = Image<float>::scratch (im1_smooth_filter);
+                auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
               #endif
 
               #ifdef NONSYMREGISTRATION
                 Filter::Resize im2_resize_filter (im2_image);
                 im2_resize_filter.set_scale_factor (scale_factor[level]);
                 im2_resize_filter.set_interp_type (1);
-                auto im2_resized = Image<float>::scratch (im2_resize_filter);
+                auto im2_resized = Image<typename Im2ImageType::value_type>::scratch (im2_resize_filter);
                 Filter::Smooth im2_smooth_filter (im2_resized);
-                auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
+                auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
               #else
                 Filter::Smooth im2_smooth_filter (im2_image);
                 im2_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level])) ;
-                auto im2__smoothed = Image<float>::scratch (im2_smooth_filter);
+                auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
               #endif
 
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
-              auto midway_resized = Image<float>::scratch (midway_resize_filter); //.get_image<uint32_t>();
+              auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter); //.get_image<uint32_t>();
 
               {
                 LogLevelLatch log_level (0);

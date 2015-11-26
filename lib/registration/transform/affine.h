@@ -37,9 +37,9 @@ namespace MR
 
     //! \addtogroup Optimisation
     // @{
-    template<class MatrixType = Eigen::Matrix<default_type, 4, 4>>
+    template<class MatrixType = Eigen::Matrix<double, 4, 4>>
     void param_mat2vec_affine (const MatrixType& transformation_matrix,
-                                      Eigen::Matrix<default_type,
+                                      Eigen::Matrix<double,
                                       Eigen::Dynamic, 1>& param_vector) {
         assert(transformation_matrix.cols()==4);
         assert(transformation_matrix.rows()>=3);
@@ -53,8 +53,8 @@ namespace MR
           param_vector[index++] = transformation_matrix(dim,3);
       }
 
-    template<class MatrixType = Eigen::Matrix<default_type, 4, 4>>
-    void param_vec2mat_affine (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector,
+    template<class MatrixType = Eigen::Matrix<double, 4, 4>>
+    void param_vec2mat_affine (const Eigen::Matrix<double, Eigen::Dynamic, 1>& param_vector,
                                      MatrixType& transformation_matrix) {
         assert(transformation_matrix.cols()==4);
         assert(transformation_matrix.rows()>=3);
@@ -95,6 +95,7 @@ namespace MR
               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& x,
               const Eigen::Matrix<ValueType, Eigen::Dynamic, 1>& g,
               ValueType step_size) {
+            DEBUG("step size: " + str(step_size));
             assert (newx.size() == 12);
             assert (x.size() == 12);
             assert (g.size() == 12);
@@ -135,6 +136,16 @@ namespace MR
             // A and B don't commute
             Xnew = (Asqrt * Bsqrtinv) - ((Asqrt * Bsqrtinv - Bsqrtinv * Asqrt) * 0.5);
             param_mat2vec_affine(Xnew, newx);
+#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+            if (newx.isApprox(x)){
+              ValueType debug = 0;
+              for (ssize_t i=0; i<newx.size(); ++i){
+                debug += std::abs(newx[i]-x[i]);
+              }
+              INFO("affine update parameter cumulative change: " + str(debug));
+              VEC(newx);
+            }
+#endif
             return !(newx.isApprox(x));
           }
     };
@@ -174,6 +185,7 @@ namespace MR
         public:
 
           typedef typename Base::ParameterType ParameterType;
+          // typedef Math::AffineLinearNonSymmetricUpdate UpdateType;
           typedef Math::AffineUpdate UpdateType;
           typedef AffineRobustEstimator RobustEstimatorType;
           typedef int has_robust_estimator;
@@ -181,7 +193,7 @@ namespace MR
 
           Affine () : Base (12) {
             for (size_t i = 0; i < 9; ++i)
-              this->optimiser_weights[i] = 0.003;
+              this->optimiser_weights[i] = 0.0003; // was 0.003 but hessian suggest smaller should be better
             for (size_t i = 9; i < 12; ++i)
               this->optimiser_weights[i] = 1.0;
           }
@@ -207,7 +219,7 @@ namespace MR
           }
 
 
-          void set_parameter_vector (const Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) {
+          void set_parameter_vector (const Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector) {
             size_t index = 0;
             for (size_t row = 0; row < 3; ++row) {
               for (size_t col = 0; col < 3; ++col)
@@ -218,7 +230,7 @@ namespace MR
             this->compute_halfspace_transformations();
           }
 
-          void get_parameter_vector (Eigen::Matrix<default_type, Eigen::Dynamic, 1>& param_vector) const {
+          void get_parameter_vector (Eigen::Matrix<ParameterType, Eigen::Dynamic, 1>& param_vector) const {
             param_vector.resize (12);
             size_t index = 0;
             for (size_t row = 0; row < 3; ++row) {
@@ -243,9 +255,9 @@ namespace MR
             size_t n_estimates = grad_estimates.size();
             assert (n_estimates>1);
             const size_t n_corners = 4;
-            Eigen::Matrix<default_type, 3, n_corners> corners;
-            Eigen::Matrix<default_type, 4, n_corners> corners_4;
-            Eigen::Matrix<default_type, 4, n_corners> corners_transformed_median;
+            Eigen::Matrix<ParameterType, 3, n_corners> corners;
+            Eigen::Matrix<ParameterType, 4, n_corners> corners_4;
+            Eigen::Matrix<ParameterType, 4, n_corners> corners_transformed_median;
             corners.col(0) << 1.0,    0, -Math::sqrt1_2;
             corners.col(1) <<-1.0,    0, -Math::sqrt1_2;
             corners.col(2) <<   0,  1.0,  Math::sqrt1_2;
@@ -253,12 +265,12 @@ namespace MR
             corners *= 10.0;
 
 
-            std::vector<Eigen::Matrix<default_type, 3, Eigen::Dynamic>> transformed_corner(4);
+            std::vector<Eigen::Matrix<ParameterType, 3, Eigen::Dynamic>> transformed_corner(4);
             for (auto& corner : transformed_corner){
               corner.resize(3,n_estimates);
             }
 
-            Eigen::Matrix<default_type, 4, 4> X, X_upd;
+            Eigen::Matrix<ParameterType, 4, 4> X, X_upd;
             Math::param_vec2mat_affine(parameter_vector, X);
 
             // weighting
@@ -271,7 +283,7 @@ namespace MR
             transform_type trafo_upd;
             for (size_t j =0; j < n_estimates; ++j){
               // gradient += grad_estimates[j]; // TODO remove me
-              Eigen::Matrix<default_type, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j] / grad_estimates[j].norm();
+              Eigen::Matrix<ParameterType, Eigen::Dynamic, 1> candidate =  parameter_vector - grad_estimates[j];
               Math::param_vec2mat_affine(candidate, trafo_upd.matrix());
               for (size_t i = 0; i < n_corners; ++i){
                 transformed_corner[i].col(j) = trafo_upd * corners.col(i);
@@ -280,13 +292,13 @@ namespace MR
             // return true; // hack
 
             for (size_t i = 0; i < n_corners; ++i){
-              Eigen::Matrix<default_type, 3, 1> median_corner;
+              Eigen::Matrix<ParameterType, 3, 1> median_corner;
               Math::geometric_median3 (transformed_corner[i], median_corner);
               corners_transformed_median.col(i) << median_corner, 1.0;
               corners_4.col(i) << corners.col(i), 1.0;
             }
-            Eigen::ColPivHouseholderQR<Eigen::Matrix<default_type, 4, n_corners>> dec(corners_4.transpose());
-            Eigen::Matrix<default_type,4,4> trafo_median;
+            Eigen::ColPivHouseholderQR<Eigen::Matrix<ParameterType, 4, n_corners>> dec(corners_4.transpose());
+            Eigen::Matrix<ParameterType,4,4> trafo_median;
             trafo_median.transpose() = dec.solve(corners_transformed_median.transpose());
             VectorType x_new;
             x_new.resize(12);

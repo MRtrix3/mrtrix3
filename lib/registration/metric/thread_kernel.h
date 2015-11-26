@@ -136,15 +136,26 @@ namespace MR
                 if (!params.im1_mask_interp->value())
                   return;
               }
-              
+
               params.im1_image_interp->scanner (im1_point);
               if (!(*params.im1_image_interp))
                 return;
-              
+
               params.im2_image_interp->scanner (im2_point);
               if (!(*params.im2_image_interp))
                 return;
 
+#ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+              Eigen::Vector3 also_im1_point;
+              params.transformation.transform (also_im1_point, im2_point);
+              if (!also_im1_point.isApprox(im1_point)){
+                VEC(im1_point.transpose());
+                VEC(also_im1_point.transpose());
+                VEC(im2_point.transpose());
+                VEC((also_im1_point - im1_point).transpose());
+                throw Exception ("this is not right");
+              }
+#endif
               cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
             }
           #endif

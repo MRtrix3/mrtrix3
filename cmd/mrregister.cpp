@@ -19,6 +19,7 @@
  along with MRtrix.  If not, see <http://www.gnu.org/licenses/>.
 
  */
+// #define REGISTRATION_GRADIENT_DESCENT_DEBUG
 
 #include "command.h"
 #include "image.h"
@@ -130,6 +131,9 @@ void load_image (std::string filename, size_t num_vols, Image<value_type>& image
 
 void run ()
 {
+  #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+    std::remove("/tmp/gddebug/log.txt");
+  #endif
   const auto im1_header = Header::open (argument[0]);
   const auto im2_header = Header::open (argument[1]);
 
@@ -196,10 +200,10 @@ void run ()
     std::vector<Header> headers;
     headers.push_back(im1_image.original_header());
     headers.push_back(im2_image.original_header());
-    std::vector<transform_type> void_trafo;
+    std::vector<Eigen::Transform<double, 3, Eigen::AffineCompact>> void_trafo;
     auto padding = Eigen::Matrix<double, 4, 1>(1.0, 1.0, 1.0, 1.0);
     value_type resolution = 1.0;
-    auto mid_way_image = compute_minimum_average_header<double,transform_type>(headers, resolution, padding, void_trafo);
+    auto mid_way_image = compute_minimum_average_header<double,Eigen::Transform<double, 3, Eigen::AffineCompact>>(headers, resolution, padding, void_trafo);
     image1_midway = Image<value_type>::create (opt[0][0], mid_way_image);
     image1_midway.original_header().datatype() = DataType::from_command_line (DataType::Float32);
     image2_midway = Image<value_type>::create (opt[0][1], mid_way_image);
@@ -420,7 +424,7 @@ void run ()
   if (opt.size()) {
     throw Exception ("initialise with rigid not yet implemented");
     init_rigid_set = true;
-    transform_type init_rigid = load_transform (opt[0][0]);
+    Eigen::Transform<double, 3, Eigen::AffineCompact> init_rigid = load_transform (opt[0][0]);
     //TODO // set initial rigid....need to rejig wrt centre. Would be easier to save Versor coefficients and centre of rotation
     CONSOLE(str(init_rigid.matrix()));
   }
@@ -429,15 +433,17 @@ void run ()
   opt = get_options ("affine_init");
   bool init_affine_set = false;
   if (opt.size()) {
-    throw Exception ("initialise with affine not yet implemented");
+    if(do_syn)
+      throw Exception ("initialise with affine not yet implemented");
     if (init_rigid_set)
       throw Exception ("you cannot initialise registrations with both a rigid and affine transformation");
     if (do_rigid)
       throw Exception ("you cannot initialise a rigid registration with an affine transformation");
     init_affine_set = true;
-    transform_type init_affine = load_transform(opt[0][0]);
+    Eigen::Transform<default_type, 3, Eigen::AffineCompact> init_affine = load_transform(opt[0][0]);
     //TODO // set affine....need to rejig wrt centre
-    CONSOLE(str(init_affine.matrix()));
+    // CONSOLE(str(init_affine.matrix()));
+    affine.set_transform(init_affine);
   }
 
   opt = get_options ("syn_init");
@@ -464,12 +470,23 @@ void run ()
         init_centre = Registration::Transform::Init::moments;
         break;
       case 3:
+        init_centre = Registration::Transform::Init::linear_from_file;
+        break;
+      case 4:
         init_centre = Registration::Transform::Init::none;
         break;
       default:
         break;
     }
   }
+  if (init_rigid_set and
+      (init_centre != Registration::Transform::Init::linear_from_file and
+        init_centre != Registration::Transform::Init::none))
+    WARN("rigid_init option will be overwritten by centre option. Use -centre linear to use transformation file.");
+  if (init_affine_set and
+    (init_centre != Registration::Transform::Init::linear_from_file and
+        init_centre != Registration::Transform::Init::none))
+    WARN("affine_init option will be overwritten by centre option. Use -centre linear to use transformation file.");
 
   Eigen::MatrixXd directions_az_el;
   opt = get_options ("directions");
@@ -497,7 +514,7 @@ void run ()
 
     if (im2_image.ndim() == 4) {
       if (rigid_cc)
-        throw Exception ("rigid cross correlation not implemted for > 3D data");
+        throw Exception ("rigid cross correlation not implemted for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       rigid_registration.run_masked (metric, rigid, im1_image, im2_image, mask1_image, mask2_image);
     } else {
@@ -519,7 +536,6 @@ void run ()
 
   if (do_affine) {
     CONSOLE ("running affine registration");
-    INFO("smooth_factor:" + str(affine_smooth_factor));
     Registration::Linear affine_registration;
 
     if (affine_scale_factors.size())
@@ -549,7 +565,7 @@ void run ()
 
     if (im2_image.ndim() == 4) {
       if (affine_cc)
-        throw Exception ("affine cross correlation not implemted for > 3D data");
+        throw Exception ("affine cross correlation not implemented for data with more than 3 dimensions");
       Registration::Metric::MeanSquared4D metric;
       affine_registration.run_masked (metric, affine, im1_image, im2_image, mask1_image, mask2_image);
     } else {
@@ -635,7 +651,6 @@ void run ()
         Registration::Transform::reorient (msg, image2_midway, affine.get_transform_half_inverse(), directions_cartesian);
       }
     } else {
-      Filter::reslice<Interp::Cubic> (im2_image, image2_midway, rigid.get_transform_half_inverse(), Adapter::AutoOverSample, 0.0);
       if (do_reorientation) {
         std::string msg ("reorienting...");
         Registration::Transform::reorient (msg, image2_midway, rigid.get_transform_half_inverse(), directions_cartesian);

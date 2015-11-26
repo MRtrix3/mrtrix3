@@ -108,6 +108,7 @@ namespace MR
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " +str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
+              DEBUG ("  norm(gradient): " + str(gradient.norm()));
               return overall_cost_function;
               // std::unique_ptr<Image<float> > reoriented_moving; // MP unused
               // std::unique_ptr<Image<float> > reoriented_template; // MP unused
@@ -127,7 +128,7 @@ namespace MR
                 ThreadFunctor (
                     const std::vector<size_t>& inner_axes,
                     const default_type density,
-                    const MetricType& metric, const ParamType& parameters, 
+                    const MetricType& metric, const ParamType& parameters,
                     default_type& overall_cost_function, Eigen::VectorXd& overall_grad,
                     Math::RNG& rng_engine) :
                   // kern (kernel),
@@ -139,7 +140,7 @@ namespace MR
                   gradient (overall_grad.size()), // BUG: set zero
                   overall_cost_function (overall_cost_function),
                   overall_gradient (overall_grad),
-                  rng (rng_engine)  { 
+                  rng (rng_engine)  {
                     gradient.setZero();
                     assert(inner_axes.size() >= 2); }
 
@@ -263,6 +264,7 @@ namespace MR
               DEBUG ("Metric evaluate iteration: " + str(iteration++) + ", cost: " + str(overall_cost_function));
               DEBUG ("  x: " + str(x.transpose()));
               DEBUG ("  gradient: " + str(gradient.transpose()));
+              DEBUG ("  norm(gradient): " + str(gradient.norm()));
               return overall_cost_function;
             }
 

@@ -30,6 +30,7 @@
 #include <fstream>
 #include <deque>
 #include <limits>
+#include <fstream>
 
 // #include <iterator>
 #include "math/check_gradient.h"
@@ -95,10 +96,33 @@ namespace MR
                     std::streambuf* log_stream = nullptr)
           {
             init (verbose);
+            INFO ("Gradient descent iteration: init; cost: " + str(f));
+            #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+              VEC(x);
+              VEC(g);
+            #endif
             value_type gradient_tolerance = grad_tolerance * normg;
             gradient_criterion = std::numeric_limits<value_type>::quiet_NaN();
             f0 = std::numeric_limits<value_type>::quiet_NaN();
             relative_cost_improvement = std::numeric_limits<value_type>::quiet_NaN();
+
+            #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+              auto hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
+              save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(0) + "_hessian" +".txt");
+              save_matrix(x, "/tmp/gddebug/" "iter_" + str(0) + "_x" +".txt");
+              save_matrix(g, "/tmp/gddebug/" "iter_" + str(0) + "_g" +".txt");
+              std::ofstream outfile;
+
+              outfile.open("/tmp/gddebug/log.txt", std::ios::app);
+              outfile << "#iteration " << 0 << std::endl;
+              outfile << "cost " << str(f) << std::endl;
+              outfile << "step_size " << str(dt) << std::endl;
+              outfile << "x " << str(x.transpose()) << std::endl;
+              outfile << "g " << str(g.transpose()) << std::endl;
+              for (ssize_t row = 0; row < hessian.rows(); ++row) {
+                outfile << "hessian " << str(hessian.row(row)) << std::endl;
+              }
+            #endif
 
             #ifdef GRADIENT_DESCENT_LOG
               std::ostream log_os(log_stream? log_stream : std::cerr.rdbuf());
@@ -106,7 +130,7 @@ namespace MR
               if (log_stream){
                 log_os << "'iteration,cost,relative_cost_improvement,gradient_criterion_" +
                   str(sliding_cost_window_size) + ",normg,stepsize,grad_stop";
-                for ( size_t a = 0 ; a < x.size() ; a++ )
+                for ( ssize_t a = 0 ; a < x.size() ; a++ )
                   log_os << delim + "param_" + str(a+1) ;
                 log_os << + "\n";
                 log_os.flush();
@@ -117,7 +141,7 @@ namespace MR
                     + str(step_unscaled*dt) + delim + str(normg/(gradient_tolerance/grad_tolerance)) + delim;
                   // std::copy(x.begin(),x.end() - 1, std::ostream_iterator<double>(log_os,delim.c_str()));
                   // log_os << str(x[x.size()-1]) + "\n";
-                  for ( size_t a = 0 ; a < x.size() ; a++ )
+                  for ( ssize_t a = 0 ; a < x.size() ; a++ )
                     log_os << delim + str(x[a]);
                   log_os << "\n";
                   log_os.flush();
@@ -125,18 +149,36 @@ namespace MR
             #endif
 
             for (int niter = 1; niter < max_iterations; niter++) {
-              // Math::check_function_gradient (func, x, 0.1, false, preconditioner_weights);
               bool retval = iterate (verbose);
               {
-                std::string cost = std::to_string(f);
-                INFO ("Gradient descent iteration: " + str(niter) + "; cost: " + cost);
+                // std::string cost = std::to_string(f);
+                INFO ("Gradient descent iteration: " + str(niter) + "; cost: " + str(f));
+                #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
+                  VEC(x);
+                  VEC(g);
+                  INFO("step size: " + str(dt));
+
+                  hessian = Math::check_function_gradient (func, x, 0.001, true, preconditioner_weights);
+                  save_matrix(hessian, "/tmp/gddebug/" "iter_" + str(niter) + "_hessian" +".txt");
+                  save_matrix(x, "/tmp/gddebug/" "iter_" + str(niter) + "_x" +".txt");
+                  save_matrix(g, "/tmp/gddebug/" "iter_" + str(niter) + "_g" +".txt");
+
+                  outfile << "#iteration " << niter << std::endl;
+                  outfile << "cost " << str(f) << std::endl;
+                  outfile << "step_size " << str(dt) << std::endl;
+                  outfile << "x " << str(x.transpose()) << std::endl;
+                  outfile << "g " << str(g.transpose()) << std::endl;
+                  for (ssize_t row = 0; row < hessian.rows(); ++row) {
+                    outfile << "hessian " << str(hessian.row(row)) << std::endl;
+                  }
+                #endif
                 #ifdef GRADIENT_DESCENT_LOG
                   if (log_stream){
-                    log_os << str(niter) + delim + cost + delim + str(relative_cost_improvement) + delim + str(gradient_criterion) + delim + str(normg) + delim
+                    log_os << str(niter) + delim + str(f) + delim + str(relative_cost_improvement) + delim + str(gradient_criterion) + delim + str(normg) + delim
                       + str(step_unscaled*dt) + delim + str(normg/(gradient_tolerance/grad_tolerance)) + delim;
                     // std::copy(x.begin(),x.end() - 1, std::ostream_iterator<double>(log_os,delim.c_str()));
                     // log_os << str(x[x.size()-1]) + "\n";
-                    for ( size_t a = 0 ; a < x.size() ; a++ )
+                    for ( ssize_t a = 0 ; a < x.size() ; a++ )
                       log_os << delim + str(x[a]);
                     log_os << "\n";
                     log_os.flush();
