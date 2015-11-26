@@ -111,7 +111,7 @@ namespace MR
           if (x > dim) return dim;
           return x;
         }
-        
+
       private:
         value_type value () {
           throw Exception ("spline interpolation: value() not implemented for this SplineProcessingType");
@@ -179,7 +179,7 @@ namespace MR
               value_type partial_weight = H[1].weights[y] * H[2].weights[z];
               for (ssize_t x = 0; x < 4; ++x) {
                 weights_vec[i] = H[0].weights[x] * partial_weight;
-                i += 1;
+                ++i;
               }
             }
           }
@@ -226,7 +226,7 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                i += 1;
+                ++i;
               }
             }
           }
@@ -253,7 +253,7 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_matrix.col (i) = ImageType::row (axis);
-                i += 1;
+                ++i;
               }
             }
           }
@@ -325,7 +325,7 @@ namespace MR
                 weights_matrix(i,0) = H[0].deriv_weights[x] * partial_weight;
                 weights_matrix(i,1) = H[0].weights[x] * partial_weight_dy;
                 weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
-                i += 1;
+                ++i;
               }
             }
           }
@@ -372,7 +372,7 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                i += 1;
+                ++i;
               }
             }
           }
@@ -408,7 +408,7 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_matrix.col (i) = ImageType::row (3);
-                i += 1;
+                ++i;
               }
             }
           }
@@ -493,7 +493,7 @@ namespace MR
                 weights_matrix(i,2) = H[0].weights[x] * partial_weight_dz;
                 // Value
                 weights_matrix(i,3) = H[0].weights[x] * partial_weight;
-                i += 1;
+                ++i;
               }
             }
           }
@@ -523,7 +523,7 @@ namespace MR
               for (ssize_t x = 0; x < 4; ++x) {
                 ImageType::index(0) = check (c[0] + x, size (0)-1);
                 coeff_vec[i] = ImageType::value ();
-                i += 1;
+                ++i;
               }
             }
           }
