@@ -23,6 +23,7 @@
 #ifndef __math_check_gradient_h__
 #define __math_check_gradient_h__
 
+#include <Eigen/SVD>
 #include "debug.h"
 #include "datatype.h"
 
@@ -30,10 +31,10 @@ namespace MR {
   namespace Math {
 
     template <class Function>
-      void check_function_gradient (
-          Function& function, 
+      Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, Eigen::Dynamic> check_function_gradient (
+          Function& function,
           Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1> x,
-          typename Function::value_type increment, 
+          typename Function::value_type increment,
           bool show_hessian = false,
           Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1> conditioner = Eigen::Matrix<typename Function::value_type, Eigen::Dynamic, 1>())
       {
@@ -57,9 +58,11 @@ namespace MR {
         Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic> hessian;
         if (show_hessian) {
           hessian.resize(N, N);
-          if (conditioner.size()) 
+          if (conditioner.size()){
+            assert (conditioner.size() == (ssize_t) N && "conditioner size must equal number of parameters");
             for (size_t n = 0; n < N; ++n)
               conditioner[n] = std::sqrt(conditioner[n]);
+          }
         }
 
         for (size_t n = 0; n < N; ++n) {
@@ -72,7 +75,7 @@ namespace MR {
           value_type f1 = function (x, g);
           if (show_hessian) {
             if (conditioner.size())
-              g *= conditioner;
+              g.cwiseProduct(conditioner);
             hessian.col(n) = g;
           }
 
@@ -82,7 +85,7 @@ namespace MR {
           x[n] = old_x;
           if (show_hessian) {
             if (conditioner.size())
-              g *= conditioner;
+              g.cwiseProduct(conditioner);
             hessian.col(n) -= g;
           }
 
@@ -95,15 +98,19 @@ namespace MR {
           hessian /= 4.0*increment;
           for (size_t j = 0; j < N; ++j) {
             size_t i;
-            for (i = 0; i < j; ++i) 
+            for (i = 0; i < j; ++i)
               hessian(i,j) = hessian(j,i);
-            for (; i < N; ++i) 
+            for (; i < N; ++i)
               hessian(i,j) += hessian(j,i);
           }
-          CONSOLE ("hessian = [ " + str(hessian) + "]");
+          // CONSOLE ("hessian = [ " + str(hessian) + "]");
+          MAT(hessian);
+          auto v = Eigen::JacobiSVD<decltype(hessian)> (hessian).singularValues();
+          auto conditionnumber = v[0] / v[v.size()-1];
+          CONSOLE("\033[00;34mcondition number: " + str(conditionnumber)+"\033[0m");
         }
+      return hessian;
       }
-
   }
 }
 
