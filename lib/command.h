@@ -24,6 +24,7 @@
 #define __command_h__
 
 
+#include <xmmintrin.h>
 #include "project_version.h"
 #include "app.h"
 
@@ -71,7 +72,16 @@ extern "C" void R_usage (char** output)
 #else
 
 int main (int cmdline_argc, char** cmdline_argv) 
-{ 
+{
+#ifdef FLUSH_TO_ZERO
+  // use gcc switches: -msse -mfpmath=sse -ffast-math
+  int mxcsr = _mm_getcsr ();
+  // Sets denormal results from floating-point calculations to zero:
+  mxcsr |= (1<<15) | (1<<11); // flush-to-zero
+  // Treats denormal values used as input to floating-point instructions as zero:
+  mxcsr |= (1<<6); // denormals-are-zero
+  _mm_setcsr (mxcsr);
+#endif
   ::MR::App::build_date = __DATE__; 
 #ifdef MRTRIX_PROJECT_VERSION
   ::MR::App::project_version = MRTRIX_PROJECT_VERSION;
