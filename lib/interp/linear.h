@@ -23,6 +23,8 @@
 #ifndef __interp_linear_h__
 #define __interp_linear_h__
 
+#include <complex>
+#include <type_traits>
 #include "transform.h"
 #include "datatype.h"
 
@@ -69,12 +71,24 @@ namespace MR
      * transform_type M = input.transform(); // a valid 4x4 transformation matrix
      * \endcode
      */
+    template <class C>
+    struct value_type_of
+    {
+      typedef C type;
+    };
+
+    template <class X>
+    struct value_type_of<std::complex<X>>
+    {
+      typedef X type;
+    };
 
     template <class ImageType>
       class Linear : public ImageType, public Transform
     {
       public:
         typedef typename ImageType::value_type value_type;
+        typedef typename value_type_of<value_type>::type coef_type;
 
         using ImageType::size;
         using ImageType::index;
@@ -90,7 +104,9 @@ namespace MR
         Linear (const ImageType& parent, value_type value_when_out_of_bounds = Transform::default_out_of_bounds_value<value_type>()) :
           ImageType (parent),
           Transform (parent),
-          out_of_bounds_value (value_when_out_of_bounds) { }
+          out_of_bounds_value (value_when_out_of_bounds),
+          zero (0.0),
+          eps (1.0e-6) { }
 
         //! Set the current position to <b>voxel space</b> position \a pos
         /*! This will set the position from which the image intensity values will
@@ -129,21 +145,21 @@ namespace MR
           }
 
           faaa = (1.0-f[0]) * (1.0-f[1]) * (1.0-f[2]);
-          if (faaa < 1e-6) faaa = 0.0;
+          if (faaa < eps) faaa = 0.0;
           faab = (1.0-f[0]) * (1.0-f[1]) *      f[2];
-          if (faab < 1e-6) faab = 0.0;
+          if (faab < eps) faab = 0.0;
           faba = (1.0-f[0]) *      f[1]  * (1.0-f[2]);
-          if (faba < 1e-6) faba = 0.0;
+          if (faba < eps) faba = 0.0;
           fabb = (1.0-f[0]) *      f[1]  *      f[2];
-          if (fabb < 1e-6) fabb = 0.0;
+          if (fabb < eps) fabb = 0.0;
           fbaa =      f[0]  * (1.0-f[1]) * (1.0-f[2]);
-          if (fbaa < 1e-6) fbaa = 0.0;
+          if (fbaa < eps) fbaa = 0.0;
           fbab =      f[0]  * (1.0-f[1])      * f[2];
-          if (fbab < 1e-6) fbab = 0.0;
+          if (fbab < eps) fbab = 0.0;
           fbba =      f[0]  *      f[1]  * (1.0-f[2]);
-          if (fbba < 1e-6) fbba = 0.0;
+          if (fbba < eps) fbba = 0.0;
           fbbb =      f[0]  *      f[1]  *      f[2];
-          if (fbbb < 1e-6) fbbb = 0.0;
+          if (fbbb < eps) fbbb = 0.0;
 
           return false;
         }
@@ -171,21 +187,21 @@ namespace MR
           if (out_of_bounds)
             return out_of_bounds_value;
           value_type val = 0.0;
-          if (faaa) val  = faaa * value_type (ImageType::value());
+          if (faaa != zero) val  = faaa * value_type (ImageType::value());
           index(2)++;
-          if (faab) val += faab * value_type (ImageType::value());
+          if (faab != zero) val += faab * value_type (ImageType::value());
           index(1)++;
-          if (fabb) val += fabb * value_type (ImageType::value());
+          if (fabb != zero) val += fabb * value_type (ImageType::value());
           index(2)--;
-          if (faba) val += faba * value_type (ImageType::value());
+          if (faba != zero) val += faba * value_type (ImageType::value());
           index(0)++;
-          if (fbba) val += fbba * value_type (ImageType::value());
+          if (fbba != zero) val += fbba * value_type (ImageType::value());
           index(1)--;
-          if (fbaa) val += fbaa * value_type (ImageType::value());
+          if (fbaa != zero) val += fbaa * value_type (ImageType::value());
           index(2)++;
-          if (fbab) val += fbab * value_type (ImageType::value());
+          if (fbab != zero) val += fbab * value_type (ImageType::value());
           index(1)++;
-          if (fbbb) val += fbbb * value_type (ImageType::value());
+          if (fbbb != zero) val += fbbb * value_type (ImageType::value());
           index(0)--;
           index(1)--;
           index(2)--;
@@ -203,21 +219,21 @@ namespace MR
 
           Eigen::Matrix<value_type, Eigen::Dynamic, 1> row (ImageType::size(axis));
           row.setZero();
-          if (faaa) row  = faaa * ImageType::row(axis);
+          if (faaa != zero) row  = faaa * ImageType::row(axis);
           index(2)++;
-          if (faab) row += faab * ImageType::row(axis);
+          if (faab != zero) row += faab * ImageType::row(axis);
           index(1)++;
-          if (fabb) row += fabb * ImageType::row(axis);
+          if (fabb != zero) row += fabb * ImageType::row(axis);
           index(2)--;
-          if (faba) row += faba * ImageType::row(axis);
+          if (faba != zero) row += faba * ImageType::row(axis);
           index(0)++;
-          if (fbba) row += fbba * ImageType::row(axis);
+          if (fbba != zero) row += fbba * ImageType::row(axis);
           index(1)--;
-          if (fbaa) row += fbaa * ImageType::row(axis);
+          if (fbaa != zero) row += fbaa * ImageType::row(axis);
           index(2)++;
-          if (fbab) row += fbab * ImageType::row(axis);
+          if (fbab != zero) row += fbab * ImageType::row(axis);
           index(1)++;
-          if (fbbb) row += fbbb * ImageType::row(axis);
+          if (fbbb != zero) row += fbbb * ImageType::row(axis);
           index(0)--;
           index(1)--;
           index(2)--;
@@ -225,9 +241,10 @@ namespace MR
         }
 
         const value_type out_of_bounds_value;
+        const coef_type zero, eps;
 
       protected:
-        float  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
+        coef_type  faaa, faab, faba, fabb, fbaa, fbab, fbba, fbbb;
     };
 
     template <class ImageType, typename... Args>

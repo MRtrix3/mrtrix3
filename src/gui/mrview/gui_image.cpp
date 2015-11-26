@@ -392,7 +392,23 @@ namespace MR
       template <typename ValueType>
         inline void Image::copy_texture_3D ()
         {
-          auto V (image);
+
+          struct WithType : public MR::Image<cfloat> {
+            using MR::Image<cfloat>::data_offset;
+            using MR::Image<cfloat>::buffer;
+
+            WithType (const MR::Image<cfloat>& source) : MR::Image<cfloat> (source) {
+              __set_fetch_store_functions (fetch_func, store_func, buffer->datatype());
+            } 
+            FORCE_INLINE ValueType value () const {
+              ssize_t nseg = data_offset / buffer->get_io()->segment_size();
+              return fetch_func (buffer->get_io()->segment (nseg), data_offset - nseg*buffer->get_io()->segment_size(), 0.0, 1.0);
+            }
+            std::function<ValueType(const void*,size_t,default_type,default_type)> fetch_func;
+            std::function<void(ValueType,void*,size_t,default_type,default_type)> store_func;
+          } V (image);
+
+
           const size_t N = ( format == gl::RED ? 1 : 3 );
           std::vector<ValueType> data (N * V.size(0) * V.size(1));
 
@@ -408,8 +424,7 @@ namespace MR
 
               for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
                 for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
-                  const float value = cfloat(V.value()).real();
-                  const ValueType val = *p = (std::is_integral<ValueType>::value ? std::round (value) : value);
+                  ValueType val = *p = V.value();
                   if (std::isfinite (val)) {
                     if (val < value_min) value_min = val;
                     if (val > value_max) value_max = val;
@@ -433,8 +448,7 @@ namespace MR
                 auto p = data.begin() + n;
                 for (V.index(1) = 0; V.index(1) < V.size(1); ++V.index(1)) {
                   for (V.index(0) = 0; V.index(0) < V.size(0); ++V.index(0)) {
-                    const float value = cfloat(V.value()).real();
-                    const ValueType val = *p = (std::is_integral<ValueType>::value ? std::round (value) : value);
+                    ValueType val = *p = abs_if_signed (ValueType (V.value()));
                     if (std::isfinite (val)) {
                       if (val < value_min) value_min = val;
                       if (val > value_max) value_max = val;
@@ -457,7 +471,6 @@ namespace MR
             upload_data ({ { 0, 0, V.index(2) } }, { { V.size(0), V.size(1), 1 } }, reinterpret_cast<void*> (&data[0]));
             ++progress;
           }
-
         }
 
 

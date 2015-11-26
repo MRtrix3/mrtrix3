@@ -88,7 +88,7 @@ namespace MR
               throw Exception ("the kernel extent must be positive");
           }
           if (new_extent.size() == 1)
-            for (unsigned int i = 0; i < this->ndim(); i++)
+            for (unsigned int i = 0; i < 3; i++)
               extent[i] = new_extent[0];
           else
             extent = new_extent;

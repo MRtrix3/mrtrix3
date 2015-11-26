@@ -71,6 +71,12 @@ namespace MR
           return { context, surface };
         }
 
+        static std::pair<QOpenGLContext*,QSurface*> getContext (QWidget* window) { 
+          QOpenGLContext* context = reinterpret_cast<QOpenGLWidget*> (window)->context();
+          QSurface* surface = context ? context->surface() : nullptr;
+          return { context, surface }; 
+        }
+
         static std::pair<QOpenGLContext*,QSurface*> makeContextCurrent (QWidget* window) { 
           auto previous_context = currentContext();
           if (window) 
@@ -84,6 +90,7 @@ namespace MR
         }
 #else
         static std::pair<int,int> currentContext () { return { 0, 0 }; }
+        static std::pair<int,int> getContext (QWidget*) { return { 0, 0 }; }
         static std::pair<int,int> makeContextCurrent (QWidget*) { return { 0, 0 }; }
         static void restoreContext (std::pair<int,int>) { }
 #endif
@@ -103,6 +110,17 @@ namespace MR
         void doneProgressBar ();
 
     };
+
+#ifndef NDEBUG
+# define ASSERT_GL_CONTEXT_IS_CURRENT(window) { \
+  auto __current_context = ::MR::GUI::App::currentContext(); \
+  auto __expected_context = ::MR::GUI::App::getContext (window); \
+  assert (__current_context == __expected_context); \
+}
+#else 
+# define ASSERT_GL_CONTEXT_IS_CURRENT(window)
+#endif
+
 
   }
 }

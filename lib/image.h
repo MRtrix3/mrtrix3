@@ -159,8 +159,8 @@ namespace MR
          * without scaling. */
         ValueType* address () const { return data_pointer ? static_cast<ValueType*>(data_pointer) + data_offset : nullptr; }
 
-        static Image open (const std::string& image_name) {
-          return Header::open (image_name).get_image<ValueType>();
+        static Image open (const std::string& image_name, bool read_write_if_existing = false) {
+          return Header::open (image_name).get_image<ValueType> (read_write_if_existing);
         }
         template <class HeaderType>
           static Image create (const std::string& image_name, const HeaderType& template_header) {
@@ -319,12 +319,12 @@ namespace MR
 
 
   template <typename ValueType>
-    Image<ValueType> Header::get_image()
+    Image<ValueType> Header::get_image (bool read_write_if_existing)
     {
       assert (valid());
       if (!valid())
         throw Exception ("FIXME: don't invoke get_image() with invalid Header!");
-      auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this);
+      auto buffer = std::make_shared<typename Image<ValueType>::Buffer> (*this, read_write_if_existing);
       return { buffer };
     }
 

@@ -68,8 +68,10 @@ namespace MR {
         for (size_t n = 0; n < N; ++n) {
           value_type old_x = x[n];
           value_type inc = increment;
-          if (conditioner.size())
+          if (conditioner.size()){
+            assert (conditioner.size() == (ssize_t) N && "conditioner size must equal number of parameters");
             inc *= conditioner[n];
+          }
 
           x[n] += inc;
           value_type f1 = function (x, g);

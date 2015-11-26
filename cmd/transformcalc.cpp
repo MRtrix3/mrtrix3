@@ -88,7 +88,7 @@ transform_type get_flirt_transform (const Header& header)
 {
   std::vector<size_t> axes;
   transform_type nifti_transform = File::NIfTI::adjust_transform (header, axes);
-  if (nifti_transform.matrix().determinant() < 0.0)
+  if (nifti_transform.matrix().topLeftCorner<3,3>().determinant() < 0.0)
     return nifti_transform;
   transform_type coord_switch;
   coord_switch.setIdentity();
@@ -221,7 +221,7 @@ void run ()
 
   if (flirt_opt.size()) {
     transform_type transform = load_transform<float> (flirt_opt[0][0]);
-    if(transform.matrix().determinant() == float(0.0))
+    if(transform.matrix().topLeftCorner<3,3>().determinant() == float(0.0))
         WARN ("Transformation matrix determinant is zero. Replace hex with plain text numbers.");
 
     auto src_header = Header::open (flirt_opt[0][1]);

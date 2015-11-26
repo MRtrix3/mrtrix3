@@ -8,7 +8,7 @@
 
 
 from __future__ import print_function
-import getopt, sys, os, re, subprocess
+import getopt, sys, os, re, subprocess, locale
 
 def usage():
   print ('''
@@ -111,6 +111,8 @@ def parse_commands (commands_dir, completion_path, commands):
 #                         END INNER PARSE FUNCTIONS
 ###########################################################################
 
+	encoding = locale.getdefaultlocale()[1]
+
 	for command in commands:
 		single_dash_options = ""
 		double_dash_options = ""
@@ -128,9 +130,10 @@ _%s()
 ''' % (command), file = completion_file)
 
 		try:
-			process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+			process = subprocess.Popen ([ os.path.join( commands_dir, command ), '__print_full_usage__'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)	
+	
 			for line in process.stdout:
-				words = line.split (' ')
+				words = line.decode(encoding).split (' ')
 				
 				if not words:
 					continue				

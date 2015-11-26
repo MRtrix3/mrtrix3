@@ -45,9 +45,6 @@ namespace MR
       bool undefined () const {
         return dt == Undefined;
       }
-      uint8_t& operator() () {
-        return dt;
-      }
       const uint8_t& operator() () const {
         return dt;
       }

@@ -90,11 +90,8 @@ namespace MR
               max_niter (max_iterations ? max_iterations : 10*problem_matrix.cols()) {
 
                 // form quadratic problem matrix H'*H:
-                // TODO: check whether rank update genuinely is faster than
-                // general matrix-matrix product - there is a chance it might
-                // not be due to e.g. vectorisation...
                 chol_HtH.setZero();
-                chol_HtH.template selfadjointView<Eigen::Lower>().rankUpdate (H.transpose());
+                chol_HtH.template triangularView<Eigen::Lower>() = H.transpose() * H;
                 // add minimum norm constraint:
                 chol_HtH.diagonal().array() += solution_min_norm_regularisation * chol_HtH.diagonal().maxCoeff();
                 // get Cholesky decomposition:
@@ -131,7 +128,7 @@ namespace MR
             Solver (const Problem<value_type>& problem) :
               P (problem),
               BtB (P.chol_HtH.rows(), P.chol_HtH.cols()),
-              B_active (P.B.rows(), P.B.cols()),
+              B (P.B.rows(), P.B.cols()),
               y_u (BtB.rows()),
               c (P.B.rows()),
               c_u (P.B.rows()),
@@ -148,7 +145,7 @@ namespace MR
 #endif
               // compute unconstrained solution:
               y_u = P.b2d.transpose() * b;
-              // compute constraint violaions for unconstrained solution:
+              // compute constraint violations for unconstrained solution:
               c_u = P.B * y_u;
 
               // set all Lagrangian multipliers to zero:
@@ -171,25 +168,22 @@ namespace MR
 
                 while (1) {
                   // form submatrix of active constraints:
-                  B_active.resizeLike (P.B);
-                  l.resize (P.B.rows());
                   size_t num_active = 0;
                   for (size_t n = 0; n < active.size(); ++n) {
                     if (active[n]) {
-                      B_active.row (num_active) = P.B.row (n);
+                      B.row (num_active) = P.B.row (n);
                       l[num_active] = -c_u[n];
                       ++num_active;
                     }
                   }
-                  B_active.conservativeResize (num_active, Eigen::NoChange);
-                  l.conservativeResize (num_active);
+                  auto B_active = B.topRows (num_active);
+                  auto l_active = l.head (num_active);
 
                   BtB.resize (num_active, num_active);
                   // solve for l in B*B'l = -c_u by Cholesky decomposition:
-                  BtB.setZero();
-                  BtB.template selfadjointView<Eigen::Lower>().rankUpdate (B_active);
+                  BtB = B_active * B_active.transpose();
                   BtB.diagonal().array() += P.lambda_min_norm;
-                  BtB.template selfadjointView<Eigen::Lower>().llt().solveInPlace (l);
+                  BtB.template selfadjointView<Eigen::Lower>().llt().solveInPlace (l_active);
 
                   // update lambda values in full vector 
                   // and identify worst offender if any lambda < 0
@@ -200,14 +194,14 @@ namespace MR
                   size_t a = 0;
                   for (size_t n = 0; n < active.size(); ++n) {
                     if (active[n]) {
-                      if (l[a] < 0.0) {
-                        value_type s = lambda_prev[n] / (lambda_prev[n] - l[a]);
+                      if (l_active[a] < 0.0) {
+                        value_type s = lambda_prev[n] / (lambda_prev[n] - l_active[a]);
                         if (s < s_min) {
                           s_min = s;
                           s_min_index = n;
                         }
                       }
-                      lambda[n] = l[a];
+                      lambda[n] = l_active[a];
                       ++a;
                     }
                     else
@@ -215,8 +209,11 @@ namespace MR
                   }
 
                   // if no lambda < 0, proceed:
-                  if (!std::isfinite (s_min))
+                  if (!std::isfinite (s_min)) {
+                    // update solution vector:
+                    x = y_u + B_active.transpose() * l_active;
                     break;
+                  }
 #ifdef MRTRIX_ICLS_DEBUG
                 l_stream << lambda << "\n";
 #endif
@@ -232,8 +229,6 @@ namespace MR
                 lambda_prev = lambda;
 
 
-                // update solution vector:
-                x = y_u + B_active.transpose() * l;
 #ifdef MRTRIX_ICLS_DEBUG
                 l_stream << lambda << "\n";
                 for (const auto& a : active)
@@ -256,7 +251,7 @@ namespace MR
 
           protected:
             const Problem<value_type>& P;
-            matrix_type BtB, B_active;
+            matrix_type BtB, B;
             vector_type y_u, c, c_u, lambda, lambda_prev, l;
             std::vector<bool> active;
         };

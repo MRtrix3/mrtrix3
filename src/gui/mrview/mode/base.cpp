@@ -49,6 +49,7 @@ namespace MR
 
         void Base::paintGL ()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           GL_CHECK_ERROR;
 
           projection.set_viewport (window(), 0, 0, width(), height());
@@ -149,6 +150,7 @@ namespace MR
 
 done_painting:
           update_overlays = false;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

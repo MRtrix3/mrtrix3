@@ -84,7 +84,7 @@ class Processor
         if (sdeconv.iterate())
           break;
 
-      if (n >= sdeconv.shared.niter)
+      if (sdeconv.shared.niter && n >= sdeconv.shared.niter)
         INFO ("voxel [ " + str (dwi.index(0)) + " " + str (dwi.index(1)) + " " + str (dwi.index(2)) +
             " ] did not reach full convergence");
 

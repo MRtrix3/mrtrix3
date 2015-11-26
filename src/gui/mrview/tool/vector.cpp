@@ -240,11 +240,13 @@ namespace MR
 
         void Vector::draw (const Projection& transform, bool is_3D, int, int)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           not_3D = !is_3D;
           for (int i = 0; i < fixel_list_model->rowCount(); ++i) {
             if (fixel_list_model->items[i]->show && !hide_all_button->isChecked())
               dynamic_cast<AbstractFixel*>(fixel_list_model->items[i].get())->render (transform);
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -278,6 +280,7 @@ namespace MR
 
         void Vector::render_fixel_colourbar(const Tool::AbstractFixel& fixel)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           float min_value = fixel.use_discard_lower() ?
                       fixel.scaling_min_thresholded() :
                       fixel.scaling_min();
@@ -290,6 +293,7 @@ namespace MR
                                               min_value, max_value,
                                               fixel.scaling_min(), fixel.display_range,
                                               Eigen::Array3f { fixel.colour[0] / 255.0f, fixel.colour[1] / 255.0f, fixel.colour[2] / 255.0f });
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

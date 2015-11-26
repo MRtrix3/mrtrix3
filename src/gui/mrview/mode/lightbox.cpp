@@ -119,13 +119,16 @@ namespace MR
 
         void LightBox::draw_plane_primitive (int axis, Displayable::Shader& shader_program, Projection& with_projection)
         {
-          if(visible)
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+          if (visible)
             image()->render3D (shader_program, with_projection, with_projection.depth_of (focus()));
           render_tools (with_projection, false, axis, slice (axis));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::paint(Projection&)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           // Setup OpenGL environment:
           gl::Disable (gl::BLEND);
           gl::Disable (gl::DEPTH_TEST);
@@ -183,10 +186,12 @@ namespace MR
             gl::Disable(gl::DEPTH_TEST);
             draw_grid();
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::draw_grid()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if(n_cols < 1 && n_rows < 1)
             return;
 
@@ -195,8 +200,6 @@ namespace MR
           GL::mat4 MV = GL::identity();
           GL::mat4 P = GL::ortho (0, width(), 0, height(), -1.0, 1.0);
           projection.set (MV, P);
-
-          gl::LineWidth (2.0);
 
           if (!frame_VB || !frame_VAO) {
             frame_VB.gen();
@@ -259,6 +262,7 @@ namespace MR
           frame_program.start();
           gl::DrawArrays (gl::LINES, 0, num_points / 2);
           frame_program.stop();
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void LightBox::mouse_press_event()

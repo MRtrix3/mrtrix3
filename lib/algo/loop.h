@@ -123,13 +123,13 @@ namespace MR
 
           apply (set_pos (from, 0), vox);
           size_t axis = from+1;
-          do {
-            apply (inc_pos ({ axis }), vox);
+          while (axis < to) {
+            apply (inc_pos (axis), vox);
             if (std::get<0>(vox).index(axis) < std::get<0>(vox).size(axis))
               return;
             apply (set_pos (axis, 0), vox);
             ++axis;
-          } while (axis < to);
+          }
           ok = false;
         }
         FORCE_INLINE void operator++(int) { operator++(); }
@@ -195,13 +195,13 @@ namespace MR
 
           apply (set_pos (from, 0), vox);
           auto axis = axes.begin()+1;
-          do {
-            apply (inc_pos ({ *axis }), vox);
+          while (axis != axes.end()) {
+            apply (inc_pos (*axis), vox);
             if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis))
               return;
             apply (set_pos (*axis, 0), vox);
             ++axis;
-          } while (axis != axes.end());
+          } 
           ok = false;
         }
         FORCE_INLINE void operator++(int) { operator++(); }
@@ -255,7 +255,7 @@ namespace MR
           auto axis = axes.cbegin()+1;
           while (axis != axes.cend()) {
             apply (set_pos (*(axis-1), 0), vox);
-            apply (inc_pos ({ *axis }), vox);
+            apply (inc_pos (*axis), vox);
             if (std::get<0>(vox).index(*axis) < std::get<0>(vox).size(*axis)) 
               return;
             ++axis;

@@ -118,6 +118,7 @@ namespace MR
           data.push_back (parent.get_node_centre (1));
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           vertex_buffer.gen();
           vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -137,6 +138,7 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         Edge::Line::~Line()
@@ -149,6 +151,7 @@ namespace MR
 
         void Edge::Line::render() const
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           Window::GrabContext context;
@@ -156,6 +159,7 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::DrawArrays (gl::LINES, 0, 2);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -193,6 +197,7 @@ namespace MR
         Edge::Streamline::Streamline (const Exemplar& data)
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           assert (data.tangents.size() == data.vertices.size());
 
           count = data.vertices.size();
@@ -215,6 +220,7 @@ namespace MR
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (1);
           gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         Edge::Streamline::~Streamline()
@@ -227,12 +233,14 @@ namespace MR
 
         void Edge::Streamline::render() const
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::DrawArrays (gl::LINE_STRIP, 0, count);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -248,6 +256,7 @@ namespace MR
             count (data.vertices.size())
         {
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           assert (data.normals.size() == data.vertices.size());
           assert (data.binormals.size() == data.vertices.size());
 
@@ -302,6 +311,7 @@ namespace MR
           normal_buffer.bind (gl::ARRAY_BUFFER);
           gl::EnableVertexAttribArray (2);
           gl::VertexAttribPointer (2, 3, gl::FLOAT, gl::FALSE_, 0, (void*)(0));
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         Edge::Streamtube::~Streamtube()
@@ -315,6 +325,7 @@ namespace MR
 
         void Edge::Streamtube::render() const
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!vertex_buffer || !tangent_buffer || !normal_buffer || !vertex_array_object)
             return;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
@@ -322,6 +333,7 @@ namespace MR
           normal_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
           gl::MultiDrawElements (gl::TRIANGLE_STRIP, shared.element_counts, gl::UNSIGNED_INT, (const GLvoid* const*)shared.element_indices, count-1);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 

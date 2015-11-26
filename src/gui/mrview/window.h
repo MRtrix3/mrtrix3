@@ -136,6 +136,7 @@ namespace MR
             image.save (filename.c_str());
           }
 
+          GL::Area* glwidget () const { return glarea; }
           GL::Lighting& lighting () { return *lighting_; }
           ColourMap::Renderer colourbar_renderer;
 
@@ -317,6 +318,13 @@ namespace MR
           friend class Tool::Base;
           friend class Window::GLArea;
       };
+
+
+#ifndef NDEBUG
+# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT ASSERT_GL_CONTEXT_IS_CURRENT (::MR::GUI::MRView::Window::main->glwidget())
+#else 
+# define ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT
+#endif
 
     }
   }

@@ -733,6 +733,7 @@ namespace MR
           edge_colour_colourmap_button         ->setFixedHeight (height);
 
           Window::GrabContext context;
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           cube.generate();
           cube_VAO.gen();
@@ -768,6 +769,7 @@ namespace MR
           GL_CHECK_ERROR;
 
           enable_all (false);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -776,6 +778,7 @@ namespace MR
 
         void Connectome::draw (const Projection& projection, bool /*is_3D*/, int /*axis*/, int /*slice*/)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (hide_all_button->isChecked()) return;
 
           // If using transparency, only want to draw the close surface;
@@ -802,11 +805,13 @@ namespace MR
             gl::Disable (gl::CULL_FACE);
           else
             gl::Enable (gl::CULL_FACE);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
         void Connectome::draw_colourbars()
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!buffer) return;
           if (hide_all_button->isChecked()) return;
           if (((node_colour == node_colour_t::CONNECTOME && matrix_list_model->rowCount()) || node_colour == node_colour_t::VECTOR_FILE || node_colour == node_colour_t::MATRIX_FILE) && show_node_colour_bar)
@@ -819,6 +824,7 @@ namespace MR
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value(),
                                                 edge_colour_lower_button->value(), edge_colour_upper_button->value() - edge_colour_lower_button->value(),
                                                 edge_fixed_colour);
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
@@ -2436,6 +2442,7 @@ namespace MR
 
         void Connectome::draw_nodes (const Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (node_visibility != node_visibility_t::NONE) {
 
             if (node_geometry == node_geometry_t::OVERLAY) {
@@ -2599,10 +2606,12 @@ namespace MR
 
           }
 
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
         void Connectome::draw_edges (const Projection& projection)
         {
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (edge_visibility != edge_visibility_t::NONE) {
 
             edge_shader.start (*this);
@@ -2735,6 +2744,7 @@ namespace MR
 
             edge_shader.stop();
           }
+          ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
         }
 
 
