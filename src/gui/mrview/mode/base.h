@@ -137,7 +137,7 @@ namespace MR
             void reset_orientation () { 
               Math::Versorf orient (Math::Versorf::unit());
               if (image()) 
-                orient = Math::Versorf (image()->original_header().transform().rotation().cast<float>());
+                orient = Math::Versorf (image()->header().transform().rotation().cast<float>());
               set_orientation (orient);
             }
 

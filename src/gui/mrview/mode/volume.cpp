@@ -296,9 +296,9 @@ namespace MR
           inline GL::mat4 get_tex_to_scanner_matrix (const ImageBase& image)
           {
             const Eigen::Vector3f pos   = image.transform().voxel2scanner.cast<float>() * Eigen::Vector3f { -0.5f, -0.5f, -0.5f };
-            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { float(image.original_header().size(0)), 0.0f, 0.0f };
-            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, float(image.original_header().size(1)), 0.0f };
-            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.original_header().size(2)) };
+            const Eigen::Vector3f vec_X = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { float(image.header().size(0)), 0.0f, 0.0f };
+            const Eigen::Vector3f vec_Y = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, float(image.header().size(1)), 0.0f };
+            const Eigen::Vector3f vec_Z = image.transform().voxel2scanner.linear().cast<float>() * Eigen::Vector3f { 0.0f, 0.0f, float(image.header().size(2)) };
             GL::mat4 T2S;
             T2S(0,0) = vec_X[0];
             T2S(1,0) = vec_X[1];
@@ -378,13 +378,13 @@ namespace MR
           GL::mat4 M = projection.modelview_projection() * T2S;
           GL::mat4 S2T = GL::inv (T2S);
 
-          float step_size = 0.5f * std::min ( { float(image()->original_header().spacing (0)), float(image()->original_header().spacing (1)), float(image()->original_header().spacing (2)) } );
+          float step_size = 0.5f * std::min ( { float(image()->header().spacing (0)), float(image()->header().spacing (1)), float(image()->header().spacing (2)) } );
           Eigen::Vector3f ray = image()->transform().scanner2voxel.rotation().cast<float>() * projection.screen_normal();
           Eigen::Vector3f ray_real_space = ray;
           ray *= step_size;
-          ray[0] /= image()->original_header().size(0);
-          ray[1] /= image()->original_header().size(1);
-          ray[2] /= image()->original_header().size(2);
+          ray[0] /= image()->header().size(0);
+          ray[1] /= image()->header().size(1);
+          ray[2] /= image()->header().size(2);
 
 
 
@@ -613,7 +613,7 @@ namespace MR
          
           std::vector<GL::vec4*> clip = get_clip_planes_to_be_edited();
           if (clip.size()) {
-            const auto &header = image()->original_header();
+            const auto &header = image()->header();
             float increment = snap_to_image() ?
               x * header.spacing (plane()) :
               x * std::pow (header.spacing (0) * header.spacing (1) * header.spacing (2), 1/3.f);

@@ -113,7 +113,7 @@ namespace MR
         {
           from = { { 0, 0, 0 } };
           from[current_axis] = current_slice;
-          size = { { GLint(roi.original_header().size(0)), GLint(roi.original_header().size(1)), GLint(roi.original_header().size(2)) } };
+          size = { { GLint(roi.header().size(0)), GLint(roi.header().size(1)), GLint(roi.header().size(2)) } };
           size[current_axis] = 1;
 
           if (current_axis == 0) { slice_axes[0] = 1; slice_axes[1] = 2; }
@@ -217,7 +217,7 @@ namespace MR
           Eigen::Array3i v (int(std::round (p[0])), int(std::round (p[1])), int(std::round (p[2])));
           const Eigen::Array3i final_vox (int(std::round (final_pos[0])), int(std::round (final_pos[1])), int(std::round (final_pos[2])));
           do {
-            if (v[0] >= 0 && v[0] < roi.original_header().size(0) && v[1] >= 0 && v[1] < roi.original_header().size(1) && v[2] >= 0 && v[2] < roi.original_header().size(2))
+            if (v[0] >= 0 && v[0] < roi.header().size(0) && v[1] >= 0 && v[1] < roi.header().size(1) && v[2] >= 0 && v[2] < roi.header().size(2))
               after[v[0]-from[0] + size[0] * (v[1]-from[1] + size[1] * (v[2]-from[2]))] = value;
             if ((v - final_vox).abs().maxCoeff()) {
               Eigen::Array3i step (0, 0, 0);
@@ -262,11 +262,11 @@ namespace MR
           std::array<int,3> a = { { int(std::lround (std::min (start[0], end[0]))),   int(std::lround (std::min (start[1], end[1]))),   int(std::lround (std::min (start[2], end[2])))   } };
           std::array<int,3> b = { { int(std::lround (std::max (start[0], end[0])))+1, int(std::lround (std::max (start[1], end[1])))+1, int(std::lround (std::max (start[2], end[2])))+1 } };
 
-          int rad[2] = { int(std::ceil (radius/roi.original_header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.original_header().spacing (slice_axes[1]))) };
+          int rad[2] = { int(std::ceil (radius/roi.header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.header().spacing (slice_axes[1]))) };
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
-          b[slice_axes[0]] = std::min (int(roi.original_header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
-          b[slice_axes[1]] = std::min (int(roi.original_header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
 
           for (int k = a[2]; k < b[2]; ++k) {
             for (int j = a[1]; j < b[1]; ++j) {
@@ -276,7 +276,7 @@ namespace MR
                 const Eigen::Vector3f v (p - start);
                 if ((v.dot (dir) > 0.0f) && (v.dot (dir) < offset_norm)) {
                   Eigen::Vector3f d (v - (dir * v.dot (dir)));
-                  d[0] *= roi.original_header().spacing(0); d[1] *= roi.original_header().spacing(1); d[2] *= roi.original_header().spacing(2);
+                  d[0] *= roi.header().spacing(0); d[1] *= roi.header().spacing(1); d[2] *= roi.header().spacing(2);
                   if (d.squaredNorm() < radius_sq)
                     after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
                 }
@@ -302,18 +302,18 @@ namespace MR
           std::array<int,3> a = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           std::array<int,3> b = { { a[0]+1, a[1]+1, a[2]+1 } };
 
-          int rad[2] = { int(std::ceil (radius/roi.original_header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.original_header().spacing (slice_axes[1]))) };
+          int rad[2] = { int(std::ceil (radius/roi.header().spacing (slice_axes[0]))), int(std::ceil (radius/roi.header().spacing (slice_axes[1]))) };
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]-rad[0]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]-rad[1]);
-          b[slice_axes[0]] = std::min (int(roi.original_header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
-          b[slice_axes[1]] = std::min (int(roi.original_header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])), b[slice_axes[0]]+rad[0]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])), b[slice_axes[1]]+rad[1]);
 
           for (int k = a[2]; k < b[2]; ++k)
             for (int j = a[1]; j < b[1]; ++j)
               for (int i = a[0]; i < b[0]; ++i)
-                if (Math::pow2 (roi.original_header().spacing(0) * (vox[0]-i)) +
-                    Math::pow2 (roi.original_header().spacing(1) * (vox[1]-j)) +
-                    Math::pow2 (roi.original_header().spacing(2) * (vox[2]-k)) < radius_sq)
+                if (Math::pow2 (roi.header().spacing(0) * (vox[0]-i)) +
+                    Math::pow2 (roi.header().spacing(1) * (vox[1]-j)) +
+                    Math::pow2 (roi.header().spacing(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
           Window::GrabContext context;
@@ -338,8 +338,8 @@ namespace MR
 
           a[slice_axes[0]] = std::max (0, a[slice_axes[0]]);
           a[slice_axes[1]] = std::max (0, a[slice_axes[1]]);
-          b[slice_axes[0]] = std::min (int(roi.original_header().size (slice_axes[0])-1), b[slice_axes[0]]);
-          b[slice_axes[1]] = std::min (int(roi.original_header().size (slice_axes[1])-1), b[slice_axes[1]]);
+          b[slice_axes[0]] = std::min (int(roi.header().size (slice_axes[0])-1), b[slice_axes[0]]);
+          b[slice_axes[1]] = std::min (int(roi.header().size (slice_axes[1])-1), b[slice_axes[1]]);
 
           after = before;
           for (int k = a[2]; k <= b[2]; ++k)
@@ -360,7 +360,7 @@ namespace MR
           const std::array<int,3> seed_voxel = { { int(std::lround (vox[0])), int(std::lround (vox[1])), int(std::lround (vox[2])) } };
           for (size_t axis = 0; axis != 3; ++axis) {
             if (seed_voxel[axis] < 0) return;
-            if (seed_voxel[axis] >= int(roi.original_header().size (axis))) return;
+            if (seed_voxel[axis] >= int(roi.header().size (axis))) return;
           }
           const GLubyte fill_value = insert_mode_value ? 1 : 0;
           const size_t seed_index = seed_voxel[0]-from[0] + size[0] * (seed_voxel[1]-from[1] + size[1] * (seed_voxel[2]-from[2]));
@@ -379,7 +379,7 @@ namespace MR
                 case 2: adj[slice_axes[1]] -= 1; break;
                 case 3: adj[slice_axes[1]] += 1; break;
               }
-              if (adj[0] >= 0 && adj[0] < int(roi.original_header().size (0)) && adj[1] >= 0 && adj[1] < int(roi.original_header().size (1)) && adj[2] >= 0 && adj[2] < int(roi.original_header().size (2))) {
+              if (adj[0] >= 0 && adj[0] < int(roi.header().size (0)) && adj[1] >= 0 && adj[1] < int(roi.header().size (1)) && adj[2] >= 0 && adj[2] < int(roi.header().size (2))) {
                 const size_t adj_index = adj[0]-from[0] + size[0] * (adj[1]-from[1] + size[1] * (adj[2]-from[2]));
                 const bool adj_value = after[adj_index];
                 if (adj_value != insert_mode_value) {

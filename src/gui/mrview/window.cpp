@@ -735,12 +735,13 @@ namespace MR
       void Window::add_images (std::vector<std::unique_ptr<MR::Header>>& list)
       {
         for (size_t i = 0; i < list.size(); ++i) {
+          const std::string name = list[i]->name(); // Gets move-constructed out
           QAction* action = new Image (std::move (*list[i]));
-          action->setText (shorten (list[i]->name(), 20, 0).c_str());
+          action->setText (shorten (name, 20, 0).c_str());
           action->setParent (Window::main);
           action->setCheckable (true);
-          action->setToolTip (list[i]->name().c_str());
-          action->setStatusTip (list[i]->name().c_str());
+          action->setToolTip (name.c_str());
+          action->setStatusTip (name.c_str());
           image_group->addAction (action);
           image_menu->addAction (action);
           connect (action, SIGNAL(scalingChanged()), this, SLOT(on_scaling_changed()));
@@ -759,7 +760,7 @@ namespace MR
           return;
 
         try {
-          auto dest = MR::Image<cfloat>::create (image_name, image()->original_header());
+          auto dest = MR::Image<cfloat>::create (image_name, image()->header());
           MR::copy_with_progress (image()->image, dest);
         }
         catch (Exception& E) {
@@ -794,7 +795,7 @@ namespace MR
       void Window::image_properties_slot ()
       {
         assert (image());
-        Dialog::ImageProperties props (this, image()->original_header());
+        Dialog::ImageProperties props (this, image()->header());
         props.exec();
       }
 

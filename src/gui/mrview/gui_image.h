@@ -43,6 +43,11 @@ namespace MR
 
       class Window;
 
+      namespace Tool
+      {
+        class ODF;
+      }
+
       class ImageBase : public Volume
       {
         public:
@@ -74,12 +79,17 @@ namespace MR
           { if (show_colour_bar) visitor.render_image_colourbar (*this); }
 
           MR::Image<cfloat> image;
-          mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
-          mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
+
           cfloat trilinear_value (const Eigen::Vector3f&) const;
           cfloat nearest_neighbour_value (const Eigen::Vector3f&) const;
 
           const MR::Transform transform() const { return linear_interp; }
+          const std::vector<std::string>& comments() const { return _comments; }
+
+        protected:
+          mutable MR::Interp::Linear <MR::Image<cfloat>> linear_interp;
+          mutable MR::Interp::Nearest<MR::Image<cfloat>> nearest_interp;
+          friend class Tool::ODF;
 
         private:
           bool volume_unchanged ();
@@ -88,6 +98,8 @@ namespace MR
 
           template <typename T> void copy_texture_3D ();
           void copy_texture_3D_complex ();
+
+          std::vector<std::string> _comments;
 
       };
 

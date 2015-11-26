@@ -431,7 +431,7 @@ namespace MR
           QModelIndexList indices = image_list_view->selectionModel()->selectedIndexes();
           if (indices.size() != 1) return;
           Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-          if (overlay->original_header().ndim() < 4) return;
+          if (overlay->header().ndim() < 4) return;
           overlay->image.index(3) = volume_selecter->value();
           if (overlay->show)
             updateGL();
@@ -601,9 +601,9 @@ namespace MR
 
           if (indices.size() == 1) {
             Image* overlay = dynamic_cast<Image*> (image_list_model->get_image (indices[0]));
-            if (overlay->original_header().ndim() == 4 && overlay->original_header().size(3) > 1) {
+            if (overlay->header().ndim() == 4 && overlay->header().size(3) > 1) {
               volume_label->setEnabled (true);
-              volume_selecter->setMaximum (overlay->original_header().size(3)-1);
+              volume_selecter->setMaximum (overlay->header().size(3)-1);
               volume_selecter->setValue (overlay->image.index(3));
               volume_selecter->setEnabled (true);
             } else {

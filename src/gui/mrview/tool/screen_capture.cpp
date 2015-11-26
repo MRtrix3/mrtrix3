@@ -222,7 +222,7 @@ namespace MR
           const auto image = window().image();
           if(!image) return;
 
-          int max_axis = std::max((int)image->original_header().ndim() - 1, 0);
+          int max_axis = std::max((int)image->header().ndim() - 1, 0);
           volume_axis->setMaximum (max_axis);
           volume_axis->setValue (std::min (volume_axis->value(), max_axis));
         }
