@@ -29,8 +29,8 @@
 #include <Eigen/Geometry> // Eigen::Translation
 
 
-namespace MR 
-{  
+namespace MR
+{
    namespace Math
    {
       template<class MatrixArrayType, class MatrixType>
@@ -44,11 +44,11 @@ namespace MR
           assert( rows == (size_t) mat.rows());
           cols = mat.cols(); // TODO hack to remove unused variable compiler warning
         }
-        
+
         mat_avg.setIdentity();
 
-        MatrixType mat_s(rows,cols);  // sum 
-        MatrixType mat_l(rows,cols);  
+        MatrixType mat_s(rows,cols);  // sum
+        MatrixType mat_l(rows,cols);
         for (size_t i = 0; i<1000; ++i){
           mat_s.setZero(rows,cols);
           Eigen::ColPivHouseholderQR<MatrixType> dec(mat_avg); // QR decomposition with column pivoting
@@ -64,12 +64,12 @@ namespace MR
             break;
           }
         }
-      }  
+      }
    }
 }
 
-namespace MR 
-{ 
+namespace MR
+{
 
    template<class ComputeType>
    Eigen::Matrix<ComputeType, 8, 4> get_bounding_box(const Eigen::Matrix<ComputeType, 4, 1>& width){
@@ -80,13 +80,13 @@ namespace MR
     // faces << 1, 2, 3, 4,   2, 6, 7, 3,   4, 3, 7, 8,   1, 5, 8, 4,   1, 2, 6, 5,   5, 6, 7, 8;
     corners << 0.0, 0.0, 0.0, 1.0,
                0.0, 1.0, 0.0, 1.0,
-               1.0, 1.0, 0.0, 1.0, 
-               1.0, 0.0, 0.0, 1.0, 
-               0.0, 0.0, 1.0, 1.0, 
-               0.0, 1.0, 1.0, 1.0, 
-               1.0, 1.0, 1.0, 1.0, 
+               1.0, 1.0, 0.0, 1.0,
+               1.0, 0.0, 0.0, 1.0,
+               0.0, 0.0, 1.0, 1.0,
+               0.0, 1.0, 1.0, 1.0,
+               1.0, 1.0, 1.0, 1.0,
                1.0, 0.0, 1.0, 1.0;
-    corners *= width.asDiagonal();  
+    corners *= width.asDiagonal();
     return corners;
   }
 
@@ -103,22 +103,21 @@ namespace MR
 
   template<class ComputeType, class TransformType>
   Eigen::Matrix<ComputeType, 8, 4> get_bounding_box(const Header& header, const TransformType& voxel2scanner){
-    if (header.ndim() < 3)
-      throw Exception("get_bounding_box: image dimension has to be >= 3");
+    assert (header.ndim() >= 3 && "get_bounding_box: image dimension has to be >= 3");
     Eigen::Matrix<ComputeType, 4, 1> width = Eigen::Matrix<ComputeType, 4, 1>::Ones(4);
     // width in voxels
     for (size_t i=0; i<3; i++){
       width(i) = header.size(i) - 1.0;
     }
-    // get image boundary box corners in voxels
+    // get image boundary box corners in scanner space
     Eigen::Matrix<ComputeType, 8, 4>  corners = get_bounding_box<ComputeType, TransformType>(width, voxel2scanner);
     return corners;
   }
 
    template<class ComputeType, class TransformType>
    Header  compute_minimum_average_header(
-      std::vector<Header> input_headers, 
-      ComputeType voxel_subsampling, 
+      std::vector<Header> input_headers,
+      ComputeType voxel_subsampling,
       Eigen::Matrix<ComputeType, 4, 1>  padding,
       std::vector<TransformType>& transform_header_with){
       // typedef Eigen::Transform< ComputeType, 3, Eigen::Projective> TransformType;
@@ -135,19 +134,19 @@ namespace MR
 
          // get voxel2scanner transformation
          auto v2s_trafo = (Eigen::Transform< ComputeType, 3, Eigen::Projective>) Transform(input_headers[iFile]).voxel2scanner; // cast to Projective trafo to fill the last row of the matrix
-         // v2s_trafo.makeAffine(); // Sets the last row to [0 ... 0 1] 
+         // v2s_trafo.makeAffine(); // Sets the last row to [0 ... 0 1]
 
          if (transform_header_with.size()>iFile)
             v2s_trafo = transform_header_with[iFile] * v2s_trafo;
          transformation_matrices.push_back(v2s_trafo.matrix());
 
          bounding_box_corners.template block<8,4>(iFile*8,0) = get_bounding_box<ComputeType, decltype(v2s_trafo)>(input_headers[iFile], v2s_trafo);
-      }  
- 
+      }
+
       // create average space header
       Header header_out (input_headers[0]);
       header_out.set_ndim(3); // TODO
-      header_out.datatype() = DataType::Float32; 
+      header_out.datatype() = DataType::Float32;
 
 
       auto vox_scaling = Eigen::Matrix<ComputeType, Eigen::Dynamic, 1>(4);
@@ -178,7 +177,7 @@ namespace MR
       MatrixType bounding_box_corners_inv = bounding_box_corners;
       for (int i=0; i<bounding_box_corners_inv.rows(); i++)
           bounding_box_corners_inv.transpose().col(i) = (average_s2v_trafo * bounding_box_corners.transpose().col(i));
-      // minimum axis-aligned corners in inverse average space 
+      // minimum axis-aligned corners in inverse average space
       VectorType bounding_box_corners_inv_min = bounding_box_corners_inv.colwise().minCoeff();
       VectorType bounding_box_corners_inv_max = bounding_box_corners_inv.colwise().maxCoeff();
       VectorType bounding_box_corners_inv_width = bounding_box_corners_inv_max - bounding_box_corners_inv_min;
@@ -189,10 +188,10 @@ namespace MR
 
       // transform boundary box corners back into scanner space
       for (int i=0; i<bounding_box_corners.rows();i++){
-        bounding_box_corners.row(i) += bounding_box_corners_inv_min - padding; 
+        bounding_box_corners.row(i) += bounding_box_corners_inv_min - padding;
         bounding_box_corners.row(i)(3) = 1.0;
         bounding_box_corners.row(i) = ( average_v2s_trafo * bounding_box_corners.row(i).transpose()).transpose();
-      } 
+      }
 
       // std::cout << "average space axis-aligned minimum bounding box:\n" << bounding_box_corners << std::endl;
 
@@ -221,8 +220,8 @@ namespace MR
       ext = average_s2v * ext;
       // VAR(ext);
       for (size_t i=0;i<3;i++){
-        header_out.size(i) = std::ceil(ext(i)) ; 
-      }    
+        header_out.size(i) = std::ceil(ext(i)) ;
+      }
       // return header_out;
       // auto scratch = Header::scratch (input_headers[0], "my buffer").get_image<uint32_t>();
       // std::cout << "average voxel to scanner transformation:\n" << average_v2s_trafo.matrix() <<std::endl;
