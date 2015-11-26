@@ -70,7 +70,7 @@ namespace MR
             void show_preview_slot ();
             void hide_all_slot ();
             void selection_changed_slot (const QItemSelection &, const QItemSelection &);
-            void type_change_slot();
+            void mode_change_slot();
             void lmax_slot (int);
             void dirs_slot();
             void shell_slot();

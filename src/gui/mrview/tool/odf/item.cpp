@@ -39,7 +39,7 @@ namespace MR
 
         ODF_Item::ODF_Item (MR::Header&& H, const float scale, const bool hide_negative, const bool color_by_direction) :
             image (std::move (H)),
-            is_SH (true),
+            mode (mode_t::SH),
             lmax (Math::SH::LforN (image.header().size (3))),
             scale (scale),
             hide_negative (hide_negative),
@@ -48,12 +48,16 @@ namespace MR
         {
           // Make an informed guess as to whether or not this is an SH image
           // If it's not, try to initialise the dixel plugin
+          // Currently, not possible to initialise as a tensor overlay;
+          //   6 volumes is compatible with SH also
+          // One possibility would be to output the S0 intensity as the first volume;
+          //   tensor images would then have 7 volumes
           try {
             Math::SH::check (image.header());
             DEBUG ("Image " + image.header().name() + " initialised as SH ODF");
           } catch (...) {
             lmax = -1;
-            is_SH = false;
+            mode = mode_t::DIXEL;
             try {
               if (!dixel.shells)
                 throw Exception ("No shell data");
@@ -76,7 +80,7 @@ namespace MR
         }
 
         bool ODF_Item::valid() const {
-          if (is_SH)
+          if (mode == mode_t::SH || mode == mode_t::TENSOR)
             return true;
           if (!dixel.dirs)
             return false;

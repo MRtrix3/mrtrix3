@@ -112,8 +112,9 @@ namespace MR
             box_layout->addWidget (label, 0, 0);
             type_selector = new QComboBox (this);
             type_selector->addItem ("SH");
+            type_selector->addItem ("tensor");
             type_selector->addItem ("amps");
-            connect (type_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(type_change_slot()));
+            connect (type_selector, SIGNAL (currentIndexChanged(int)), this, SLOT(mode_change_slot()));
             box_layout->addWidget (type_selector, 0, 1);
 
             level_of_detail_label = new QLabel ("detail");
@@ -255,22 +256,27 @@ namespace MR
           if (!settings)
             return;
 
-          if (!settings->is_SH && settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
+          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL && settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::NONE)
             return;
 
           MRView::Image& image (main_grid_box->isChecked() ? *window().image() : settings->image);
 
           if (!hide_all_button->isChecked()) {
 
-            if (settings->is_SH) {
+            if (settings->mode == GUI::DWI::Renderer::mode_t::SH) {
               if (lmax != settings->lmax || level_of_detail != level_of_detail_selector->value()) {
                 lmax = settings->lmax;
                 level_of_detail = level_of_detail_selector->value();
                 renderer->sh.update_mesh (level_of_detail, lmax);
               }
+            } else if (settings->mode == GUI::DWI::Renderer::mode_t::TENSOR) {
+              if (level_of_detail != level_of_detail_selector->value()) {
+                level_of_detail = level_of_detail_selector->value();
+                renderer->tensor.update_mesh (level_of_detail);
+              }
             }
 
-            renderer->set_mode (settings->is_SH);
+            renderer->set_mode (settings->mode);
 
             renderer->start (projection, *lighting, settings->scale, 
                 use_lighting_box->isChecked(), settings->color_by_direction, settings->hide_negative, true);
@@ -309,7 +315,18 @@ namespace MR
             const Eigen::Vector3f y_width = projection.screen_to_model_direction (0.0, projection.height()/2.0, projection.depth_of (pos));
             const int ny = std::ceil (y_width.norm() / y_dir.norm());
 
-            Eigen::VectorXf values (settings->is_SH ? Math::SH::NforL (settings->lmax) : settings->image.header().size (3));
+            Eigen::VectorXf values;
+            switch (settings->mode) {
+              case GUI::DWI::Renderer::mode_t::SH:
+                values.resize (Math::SH::NforL (settings->lmax));
+                break;
+              case GUI::DWI::Renderer::mode_t::TENSOR:
+                values.resize (6);
+                break;
+              case GUI::DWI::Renderer::mode_t::DIXEL:
+                values.resize (settings->image.header().size (3));
+                break;
+            }
             Eigen::VectorXf r_del_daz;
 
             for (int y = -ny; y <= ny; ++y) {
@@ -317,18 +334,26 @@ namespace MR
                 Eigen::Vector3f p = pos + float(x)*x_dir + float(y)*y_dir;
                 get_values (values, settings->image, p, interpolation_box->isChecked());
                 if (!std::isfinite (values[0])) continue;
-                if (settings->is_SH && values[0] == 0.0) continue;
-                if (settings->is_SH) {
-                  renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
-                  renderer->sh.set_data (r_del_daz);
-                } else {
-                  if (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
-                    const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
-                    renderer->dixel.set_data (shell_values);
-                  } else {
-                    renderer->dixel.set_data (values);
-                  }
+
+                switch (settings->mode) {
+                  case GUI::DWI::Renderer::mode_t::SH:
+                    if (values[0] == 0.0) continue;
+                    renderer->sh.compute_r_del_daz (r_del_daz, values.topRows (Math::SH::NforL (lmax)));
+                    renderer->sh.set_data (r_del_daz);
+                    break;
+                  case GUI::DWI::Renderer::mode_t::TENSOR:
+                    renderer->tensor.set_data (values);
+                    break;
+                  case GUI::DWI::Renderer::mode_t::DIXEL:
+                    if (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME) {
+                      const Eigen::VectorXf shell_values = settings->dixel.get_shell_data (values);
+                      renderer->dixel.set_data (shell_values);
+                    } else {
+                      renderer->dixel.set_data (values);
+                    }
+                    break;
                 }
+
                 GL_CHECK_ERROR;
                 renderer->draw (p);
                 GL_CHECK_ERROR;
@@ -384,21 +409,23 @@ namespace MR
         {
           assert (image);
           type_selector->blockSignals (true);
-          type_selector->setCurrentIndex (image->is_SH ? 0 : 1);
-          type_selector->setEnabled (image->lmax >= 0);
+          type_selector->setCurrentIndex (image->mode == GUI::DWI::Renderer::mode_t::SH ? 0 :
+                                         (image->mode == GUI::DWI::Renderer::mode_t::TENSOR ? 1 : 2));
           type_selector->blockSignals (false);
-          lmax_label->setVisible (image->is_SH);
-          level_of_detail_label->setVisible (image->is_SH);
-          lmax_selector->setVisible (image->is_SH);
-          if (image->lmax >= 0)
+          lmax_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH);
+          lmax_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH);
+          type_selector->blockSignals (true);
+          if (image->mode == GUI::DWI::Renderer::mode_t::SH)
             lmax_selector->setValue (image->lmax);
-          level_of_detail_selector->setVisible (image->is_SH);
-          dirs_label->setVisible (!image->is_SH);
-          shell_label->setVisible (!image->is_SH);
-          dirs_selector->setVisible (!image->is_SH);
-          if (!image->is_SH)
+          type_selector->blockSignals (false);
+          level_of_detail_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH || image->mode == GUI::DWI::Renderer::mode_t::TENSOR);
+          level_of_detail_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::SH || image->mode == GUI::DWI::Renderer::mode_t::TENSOR);
+          dirs_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          shell_label->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          dirs_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL)
             dirs_selector->setCurrentIndex (image->dixel.dir_type);
-          shell_selector->setVisible (!image->is_SH);
+          shell_selector->setVisible (image->mode == GUI::DWI::Renderer::mode_t::DIXEL);
           shell_selector->blockSignals (true);
           shell_selector->clear();
           if (image->dixel.shells) {
@@ -406,9 +433,9 @@ namespace MR
               shell_selector->addItem (QString::fromStdString (str (int (std::round ((*image->dixel.shells)[i].get_mean())))));
           }
           shell_selector->blockSignals (false);
-          if (!image->is_SH && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
+          if (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && shell_selector->count() && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME)
             shell_selector->setCurrentIndex (image->dixel.shell_index);
-          shell_selector->setEnabled (!image->is_SH && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
+          shell_selector->setEnabled (image->mode == GUI::DWI::Renderer::mode_t::DIXEL && image->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME && image->dixel.shells && image->dixel.shells->count() > 1);
         }
 
 
@@ -428,7 +455,7 @@ namespace MR
           ODF_Item* settings = get_image();
           setup_ODFtype_UI (settings);
           assert (renderer);
-          if (!settings->is_SH) {
+          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
             assert (settings->dixel.dirs);
             renderer->dixel.update_mesh (*(settings->dixel.dirs));
           }
@@ -501,11 +528,11 @@ namespace MR
 
           ODF_Item* settings = get_image();
           if (settings) {
-            preview->render_frame->set_is_SH (settings->is_SH);
+            preview->render_frame->set_mode (settings->mode);
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
-            if (settings->is_SH)
+            if (settings->mode == GUI::DWI::Renderer::mode_t::SH)
               preview->render_frame->set_lmax (settings->lmax);
             else if (settings->dixel.dirs)
               preview->render_frame->set_dixels (*(settings->dixel.dirs));
@@ -532,6 +559,7 @@ namespace MR
           if (preview)
             preview->render_frame->set_color_by_dir (colour_by_direction_box->isChecked());
           updateGL();
+          update_preview();
         }
 
 
@@ -547,28 +575,67 @@ namespace MR
           if (preview) 
             preview->render_frame->set_hide_neg_values (hide_negative_values_box->isChecked());
           updateGL();
+          update_preview();
         }
 
 
 
 
 
-        void ODF::type_change_slot ()
+        void ODF::mode_change_slot ()
         {
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          const bool mode_is_SH = !type_selector->currentIndex();
-          if (settings->is_SH == mode_is_SH)
+          const GUI::DWI::Renderer::mode_t mode = (!type_selector->currentIndex() ? GUI::DWI::Renderer::mode_t::SH :
+                                                  (type_selector->currentIndex() == 1 ? GUI::DWI::Renderer::mode_t::TENSOR : GUI::DWI::Renderer::mode_t::DIXEL));
+          if (settings->mode == mode)
             return;
-          settings->is_SH = mode_is_SH;
-          // If image isn't compatible with SH, this shouldn't be accessible in the UI
-          if (mode_is_SH)
-            assert (settings->lmax);
+
+          auto reset_GUI = [&] (const GUI::DWI::Renderer::mode_t mode) {
+            switch (mode) {
+              case GUI::DWI::Renderer::mode_t::SH:     type_selector->setCurrentIndex (0); break;
+              case GUI::DWI::Renderer::mode_t::TENSOR: type_selector->setCurrentIndex (1); break;
+              case GUI::DWI::Renderer::mode_t::DIXEL:  type_selector->setCurrentIndex (2); break;
+            }
+          };
+
+          // Mode change combobox is now always enabled;
+          // Need to detect bad selections here and act accordingly
+          switch (mode) {
+
+            case GUI::DWI::Renderer::mode_t::SH:
+              try {
+                Math::SH::check (settings->image.header());
+              } catch (Exception& e) {
+                e.display();
+                reset_GUI (settings->mode);
+                return;
+              }
+              renderer->sh.update_mesh (level_of_detail, lmax);
+              break;
+
+            case GUI::DWI::Renderer::mode_t::TENSOR:
+              if (settings->image.header().size(3) != 6) {
+                Exception e ("Cannot use image " + settings->image.header().name() + " as tensor overlay; must have 6 volumes");
+                e.display();
+                reset_GUI (settings->mode);
+                return;
+              }
+              renderer->tensor.update_mesh (level_of_detail);
+              break;
+
+            case GUI::DWI::Renderer::mode_t::DIXEL:
+              break;
+
+          }
+
+          settings->mode = mode;
           setup_ODFtype_UI (settings);
           if (preview)
-            preview->render_frame->set_is_SH (mode_is_SH);
+            preview->render_frame->set_mode (mode);
           updateGL();
+          update_preview();
         }
 
 
@@ -578,7 +645,7 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (settings->is_SH);
+          assert (settings->mode == GUI::DWI::Renderer::mode_t::SH);
           settings->lmax = lmax_selector->value();
           if (preview) 
             preview->render_frame->set_lmax (lmax_selector->value());
@@ -592,12 +659,12 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (!settings->is_SH);
-          const size_t mode = dirs_selector->currentIndex();
-          if (mode == settings->dixel.dir_type)
+          assert (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL);
+          const size_t dir_type = dirs_selector->currentIndex();
+          if (dir_type == settings->dixel.dir_type)
             return;
           try {
-            switch (mode) {
+            switch (dir_type) {
               case 0: // DW scheme
                 if (!settings->dixel.num_DW_shells())
                   throw Exception ("Cannot draw orientation information from DW scheme: no such scheme stored in header");
@@ -623,8 +690,8 @@ namespace MR
                 settings->dixel.set_from_file (path);
                 break;
             }
-            shell_selector->setEnabled (mode == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
-            if (mode == 3) {
+            shell_selector->setEnabled (dir_type == 0 && settings->dixel.shells && settings->dixel.shells->count() > 1);
+            if (dir_type == 3) {
               if (preview)
                 preview->render_frame->clear_dixels();
             } else {
@@ -649,7 +716,7 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          assert (!settings->is_SH);
+          assert (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL);
           assert (settings->dixel.dir_type == ODF_Item::DixelPlugin::dir_t::DW_SCHEME);
           const size_t index = shell_selector->currentIndex();
           assert (index < settings->dixel.num_DW_shells());
@@ -683,6 +750,7 @@ namespace MR
           if (preview) 
             preview->render_frame->set_use_lighting (use_lighting_box->isChecked());
           updateGL();
+          update_preview();
         }
 
 
@@ -727,8 +795,19 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
+          Eigen::VectorXf values;
+          switch (settings->mode) {
+            case GUI::DWI::Renderer::mode_t::SH:
+              values.resize (Math::SH::NforL (lmax_selector->value()));
+              break;
+            case GUI::DWI::Renderer::mode_t::TENSOR:
+              values.resize (6);
+              break;
+            case GUI::DWI::Renderer::mode_t::DIXEL:
+              values.resize (settings->image.header().size (3));
+              break;
+          }
           MRView::Image& image (settings->image);
-          Eigen::VectorXf values (settings->is_SH ? Math::SH::NforL (lmax_selector->value()) : settings->image.header().size (3));
           get_values (values, image, window().focus(), preview->interpolate());
           preview->set (values);
         }
@@ -741,23 +820,25 @@ namespace MR
           ODF_Item* settings = get_image();
           if (!settings)
             return;
-          if (!settings->is_SH && settings->dixel.dirs)
+          if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL && settings->dixel.dirs)
             renderer->dixel.update_mesh (*(settings->dixel.dirs));
           setup_ODFtype_UI (settings);
           scale->setValue (settings->scale);
           hide_negative_values_box->setChecked (settings->hide_negative);
           colour_by_direction_box->setChecked (settings->color_by_direction);
           if (preview) {
-            preview->render_frame->set_is_SH (settings->is_SH);
+            preview->render_frame->set_mode (settings->mode);
             preview->render_frame->set_scale (settings->scale);
             preview->render_frame->set_hide_neg_values (settings->hide_negative);
             preview->render_frame->set_color_by_dir (settings->color_by_direction);
-            if (settings->is_SH)
+            if (settings->mode == GUI::DWI::Renderer::mode_t::SH) {
               preview->render_frame->set_lmax (settings->lmax);
-            else if (settings->dixel.dirs)
-              preview->render_frame->set_dixels (*(settings->dixel.dirs));
-            else
-              preview->render_frame->clear_dixels();
+            } else if (settings->mode == GUI::DWI::Renderer::mode_t::DIXEL) {
+              if (settings->dixel.dirs)
+                preview->render_frame->set_dixels (*(settings->dixel.dirs));
+              else
+                preview->render_frame->clear_dixels();
+            }
           }
           updateGL();
           update_preview();

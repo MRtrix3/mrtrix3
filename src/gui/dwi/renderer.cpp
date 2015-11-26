@@ -43,12 +43,16 @@ namespace MR
       void Renderer::start (const Projection& projection, const GL::Lighting& lighting, float scale, 
           bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
-        if (is_SH)
-          sh.bind();
-        else
-          dixel.bind();
+        switch (mode) {
+          case mode_t::SH:     sh.bind(); break;
+          case mode_t::TENSOR: tensor.bind(); break;
+          case mode_t::DIXEL:  dixel.bind(); break;
+        }
 
-        shader.start (is_SH, use_lighting, colour_by_direction, hide_neg_values, orthographic);
+        if (mode == mode_t::TENSOR)
+          scale *= 1000.0f;
+
+        shader.start (mode, use_lighting, colour_by_direction, hide_neg_values, orthographic);
 
         gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MV"), 1, gl::FALSE_, projection.modelview());
         gl::UniformMatrix4fv (gl::GetUniformLocation (shader, "MVP"), 1, gl::FALSE_, projection.modelview_projection());
@@ -71,11 +75,11 @@ namespace MR
 
 
 
-      void Renderer::Shader::start (bool is_SH, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
+      void Renderer::Shader::start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic)
       {
         GL_CHECK_ERROR;
-        if (!(*this) || is_SH != is_SH_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ || orthographic != orthographic_) {
-          is_SH_ = is_SH;
+        if (!(*this) || mode != mode_ || use_lighting != use_lighting_ || colour_by_direction != colour_by_direction_ || hide_neg_values != hide_neg_values_ || orthographic != orthographic_) {
+          mode_ = mode;
           use_lighting_ = use_lighting;
           colour_by_direction_ = colour_by_direction;
           hide_neg_values_ = hide_neg_values;
@@ -101,31 +105,42 @@ namespace MR
       {
         std::string source;
 
-        if (is_SH_) {
+        if (mode_ == mode_t::SH) {
           source +=
           "layout(location = 0) in vec3 vertex;\n"
           "layout(location = 1) in vec3 r_del_daz;\n";
-        } else {
+        } else if (mode_ == mode_t::TENSOR) {
+          source +=
+          "layout(location = 0) in vec3 vertex;\n";
+        } else if (mode_ == mode_t::DIXEL) {
           source +=
           "layout(location = 0) in vec3 vertex;\n"
           "layout(location = 1) in float value;\n";
         }
 
         std::string VSout = "";
-        if (!is_SH_)
+        if (mode_ == mode_t::DIXEL)
           VSout = "_GSin";
 
         source +=
           "uniform float scale;\n"
           "uniform int reverse;\n"
           "uniform vec3 constant_color, origin;\n"
-          "uniform mat4 MV, MVP;\n"
+          "uniform mat4 MV, MVP;\n";
+
+        if (mode_ == mode_t::TENSOR) {
+          source +=
+          "uniform mat3 inv_tensor;\n"
+          "uniform vec3 dec;\n";
+        }
+
+        source +=
           "out vec3 position"+VSout+", color"+VSout+";\n";
 
-        if (is_SH_) {
+        if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
           "out vec3 vert_normal;\n";
-        } else {
+        } else if (mode_ == mode_t::DIXEL) {
           source +=
           "out vec3 vert_dir;\n"
           "out vec3 vert_pos;\n";
@@ -135,15 +150,19 @@ namespace MR
           "out float amplitude;\n"
           "void main () {\n";
 
-        if (is_SH_) {
+        if (mode_ == mode_t::SH) {
           source +=
           "  amplitude = r_del_daz[0];\n";
-        } else {
+        } else if (mode_ == mode_t::TENSOR) {
+          source +=
+          "  amplitude = 1.0 / dot (vertex, inv_tensor * vertex);\n";
+        } else if (mode_ == mode_t::DIXEL) {
           source +=
           "  amplitude = value;\n";
         }
 
-        if (is_SH_ && use_lighting_) {
+        if (use_lighting_ && (mode_ == mode_t::SH || mode_ == mode_t::TENSOR)) {
+          if (mode_ == mode_t::SH) {
           source +=
           "  bool atpole = ( vertex.x == 0.0 && vertex.y == 0.0 );\n"
           "  float az = atpole ? 0.0 : atan (vertex.y, vertex.x);\n"
@@ -156,21 +175,31 @@ namespace MR
           "  vec3 d2 = vec3 (-r_del_daz[1]*caz*sel - r_del_daz[0]*caz*cel,\n"
           "                  -r_del_daz[1]*saz*sel - r_del_daz[0]*saz*cel,\n"
           "                  -r_del_daz[1]*cel     + r_del_daz[0]*sel);\n"
-          "  vert_normal = cross (d1, d2);\n"
+          "  vert_normal = cross (d1, d2);\n";
+          } else if (mode_ == mode_t::TENSOR) {
+          source +=
+          "  vert_normal = normalize (inv_tensor * vertex);\n";
+          }
+          source +=
           "  if (reverse != 0)\n"
           "    vert_normal = -vert_normal;\n"
           "  vert_normal = normalize (mat3(MV) * vert_normal);\n";
         }
 
         if (colour_by_direction_) {
+          if (mode_ == mode_t::TENSOR) {
+          source +=
+          "  color = dec;\n";
+          } else {
           source +=
           "  color"+VSout+" = abs (vertex.xyz);\n";
+          }
         } else {
           source +=
           "  color"+VSout+" = constant_color;\n";
         }
 
-        if (is_SH_) {
+        if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
           "  vec3 pos = vertex * amplitude * scale;\n"
           "  if (reverse != 0)\n"
@@ -184,7 +213,7 @@ namespace MR
           }
           source +=
           "  gl_Position = MVP * vec4 (pos + origin, 1.0);\n";
-        } else {
+        } else if (mode_ == mode_t::DIXEL) {
           source +=
           "  vert_dir = vertex;\n"
           "  vert_pos = vertex * amplitude;\n"
@@ -202,7 +231,7 @@ namespace MR
 
       std::string Renderer::Shader::geometry_shader_source() const{
         std::string source;
-        if (!is_SH_) {
+        if (mode_ == mode_t::DIXEL) {
           source +=
             "layout(triangles) in;\n"
             "layout(triangle_strip, max_vertices = 3) out;\n"
@@ -260,7 +289,7 @@ namespace MR
       {
         std::string source;
         std::string FSin = "";
-        if (!is_SH_)
+        if (mode_ == mode_t::DIXEL)
           FSin = "_GSout";
         source +=
           "uniform float ambient, diffuse, specular, shine;\n"
@@ -268,10 +297,10 @@ namespace MR
           "in float amplitude;\n"
           "in vec3 position"+FSin+", color"+FSin+";\n";
 
-        if (is_SH_) {
+        if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
           "in vec3 vert_normal;\n";
-        } else {
+        } else if (mode_ == mode_t::DIXEL) {
           source +=
           "flat in vec3 face_normal;\n";
         }
@@ -294,10 +323,10 @@ namespace MR
           "  else final_color = color"+FSin+";\n";
 
         if (use_lighting_) {
-          if (is_SH_) {
+          if (mode_ == mode_t::SH || mode_ == mode_t::TENSOR) {
           source +=
           "  vec3 norm = normalize (vert_normal);\n";
-          } else {
+          } else if (mode_ == mode_t::DIXEL) {
           source +=
           "  vec3 norm = face_normal;\n";
           }
@@ -334,7 +363,6 @@ namespace MR
         VAO.clear();
       }
 
-
       void Renderer::SH::initGL()
       {
         GL_CHECK_ERROR;
@@ -357,18 +385,31 @@ namespace MR
         GL_CHECK_ERROR;
       }
 
+      void Renderer::SH::bind()
+      {
+        half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+        VAO.bind();
+        half_sphere.index_buffer.bind();
+      }
 
+      void Renderer::SH::set_data (const vector_t& r_del_daz, int buffer_ID) const {
+        (void) buffer_ID; // to silence unused-parameter warnings
+        surface_buffer.bind (gl::ARRAY_BUFFER);
+        gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
+        gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
+      }
 
       void Renderer::SH::update_mesh (const size_t LOD, const int lmax)
       {
         INFO ("updating ODF SH renderer transform...");
         QApplication::setOverrideCursor (Qt::BusyCursor);
-        half_sphere.LOD (LOD);
+        {
+          Renderer::GrabContext context (parent.context_);
+          half_sphere.LOD (LOD);
+        }
         update_transform (half_sphere.vertices, lmax);
         QApplication::restoreOverrideCursor();
       }
-
-
 
       void Renderer::SH::update_transform (const std::vector<Shapes::HalfSphere::Vertex>& vertices, int lmax)
       {
@@ -439,6 +480,84 @@ namespace MR
 
 
 
+
+
+      Renderer::Tensor::~Tensor()
+      {
+        Renderer::GrabContext context (parent.context_);
+        half_sphere.vertex_buffer.clear();
+        half_sphere.index_buffer.clear();
+        VAO.clear();
+      }
+
+      void Renderer::Tensor::initGL()
+      {
+        GL_CHECK_ERROR;
+        Renderer::GrabContext context (parent.context_);
+        half_sphere.vertex_buffer.gen();
+        half_sphere.index_buffer.gen();
+        VAO.gen();
+        VAO.bind();
+
+        half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+        gl::EnableVertexAttribArray (0);
+        gl::VertexAttribPointer (0, 3, gl::FLOAT, gl::FALSE_, sizeof(Shapes::HalfSphere::Vertex), (void*)0);
+
+        half_sphere.index_buffer.bind();
+        GL_CHECK_ERROR;
+      }
+
+      void Renderer::Tensor::bind()
+      {
+        half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER);
+        VAO.bind();
+        half_sphere.index_buffer.bind();
+      }
+
+      void Renderer::Tensor::update_mesh (const size_t LOD)
+      {
+        INFO ("updating tensor renderer...");
+        QApplication::setOverrideCursor (Qt::BusyCursor);
+        {
+          Renderer::GrabContext context (parent.context_);
+          half_sphere.LOD (LOD);
+        }
+        QApplication::restoreOverrideCursor();
+      }
+
+      void Renderer::Tensor::set_data (const vector_t& data, int buffer_ID) const
+      {
+        (void) buffer_ID; // to silence unused-parameter warnings
+        // For tensor overlay, send the (inverse) tensor coefficients and colour directly to the shader as a uniform
+        assert (data.size() == 6);
+        tensor_t D;
+        D(0,0) = data[0]; D(1,1) = data[1]; D(2,2) = data[2];
+        D(0,1) = D(1,0) = data[3]; D(0,2) = D(2,0) = data[4]; D(1,2) = D(2,1) = data[5];
+        Eigen::FullPivLU<tensor_t> lu_decomp (D);
+        const tensor_t Dinv = lu_decomp.inverse();
+        if (data[0] <= 0.0f || data[1] <= 0.0f || data[2] <= 0.0f || Dinv.diagonal().minCoeff() < 0.0f) {
+          const tensor_t Dinv = tensor_t::Zero();
+          gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());
+          const vector_t dec = vector_t::Zero (3);
+          gl::Uniform3fv (gl::GetUniformLocation (parent.shader, "dec"), 1, dec.data());
+        } else {
+          gl::UniformMatrix3fv (gl::GetUniformLocation (parent.shader, "inv_tensor"), 1, gl::FALSE_, Dinv.data());
+          eig.computeDirect (D);
+          const vector_t dec = eig.eigenvectors().col(2).array().abs();
+          gl::Uniform3fv (gl::GetUniformLocation (parent.shader, "dec"), 1, dec.data());
+        }
+      }
+
+
+
+
+
+
+
+
+
+
+
       Renderer::Dixel::~Dixel()
       {
         Renderer::GrabContext context (parent.context_);
@@ -447,8 +566,6 @@ namespace MR
         index_buffer.clear();
         VAO.clear();
       }
-
-
 
       void Renderer::Dixel::initGL()
       {
@@ -470,17 +587,11 @@ namespace MR
         GL_CHECK_ERROR;
       }
 
-
-
-      void Renderer::Dixel::update_mesh (const MR::DWI::Directions::Set& dirs)
+      void Renderer::Dixel::bind()
       {
-        INFO ("updating ODF dixel renderer transform...");
-        QApplication::setOverrideCursor (Qt::BusyCursor);
-        update_dixels (dirs);
-        QApplication::restoreOverrideCursor();
+        vertex_buffer.bind (gl::ARRAY_BUFFER);
+        VAO.bind();
       }
-
-
 
       void Renderer::Dixel::set_data (const vector_t& data, int buffer_ID) const
       {
@@ -496,7 +607,13 @@ namespace MR
         GL_CHECK_ERROR;
       }
 
-
+      void Renderer::Dixel::update_mesh (const MR::DWI::Directions::Set& dirs)
+      {
+        INFO ("updating ODF dixel renderer transform...");
+        QApplication::setOverrideCursor (Qt::BusyCursor);
+        update_dixels (dirs);
+        QApplication::restoreOverrideCursor();
+      }
 
       void Renderer::Dixel::update_dixels (const MR::DWI::Directions::Set& dirs)
       {
@@ -548,6 +665,10 @@ namespace MR
         vertex_count = dirs.size();
         index_count = 3 * indices_data.size();
       }
+
+
+
+
 
 
 

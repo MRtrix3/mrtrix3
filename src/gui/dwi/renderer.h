@@ -1,4 +1,4 @@
-/*
+﻿/*
     Copyright 2008 Brain Research Institute, Melbourne, Australia
 
     Written by J-Donald Tournier, 27/06/08.
@@ -31,6 +31,7 @@
 #define __gui_dwi_renderer_h__
 
 #include <QGLWidget>
+#include <Eigen/Eigenvalues>
 
 #include "gui/gui.h"
 #include "dwi/directions/set.h"
@@ -59,13 +60,18 @@ namespace MR
 
           typedef Eigen::MatrixXf matrix_t;
           typedef Eigen::VectorXf vector_t;
+          typedef Eigen::Matrix3f tensor_t;
 
         public:
+
+          enum class mode_t { SH, TENSOR, DIXEL };
+
           Renderer (QGLWidget* widget) :
-              is_SH (true),
+              mode (mode_t::SH),
               reverse_ID (0),
               origin_ID (0),
               sh (*this),
+              tensor (*this),
               dixel (*this),
               context_ (widget) { }
 
@@ -73,11 +79,12 @@ namespace MR
 
           void initGL () {
             sh.initGL();
+            tensor.initGL();
             dixel.initGL();
           }
 
-          void set_mode (const bool set_SH) {
-            is_SH = set_SH;
+          void set_mode (const mode_t i) {
+            mode = i;
           }
 
           void start (const Projection& projection, const GL::Lighting& lighting, float scale, 
@@ -98,15 +105,16 @@ namespace MR
 
 
         protected:
-          bool is_SH;
+          mode_t mode;
           mutable GLuint reverse_ID, origin_ID;
 
           class Shader : public GL::Shader::Program {
             public:
-              Shader () : is_SH_ (false), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
-              void start (bool is_SH, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);
+              Shader () : mode_ (mode_t::SH), use_lighting_ (true), colour_by_direction_ (true), hide_neg_values_ (true), orthographic_ (false) { }
+              void start (mode_t mode, bool use_lighting, bool colour_by_direction, bool hide_neg_values, bool orthographic);
             protected:
-              bool is_SH_, use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
+              mode_t mode_;
+              bool use_lighting_, colour_by_direction_, hide_neg_values_, orthographic_;
               std::string vertex_shader_source() const;
               std::string geometry_shader_source() const;
               std::string fragment_shader_source() const;
@@ -114,27 +122,39 @@ namespace MR
 
           void half_draw() const
           {
-            gl::DrawElements (gl::TRIANGLES, is_SH ? sh.num_indices() : dixel.num_indices(), gl::UNSIGNED_INT, (void*)0);
+            const GLuint num_indices = (mode == mode_t::SH ? sh.num_indices() : (mode == mode_t::TENSOR ? tensor.num_indices() : dixel.num_indices()));
+            gl::DrawElements (gl::TRIANGLES, num_indices, gl::UNSIGNED_INT, (void*)0);
           }
 
-        public:
-          class SH
+        private:
+          class ModeBase
           {
             public:
-              SH (Renderer& parent) : parent (parent) { }
+              ModeBase (Renderer& parent) : parent (parent) { }
+              virtual ~ModeBase() { }
+
+              virtual void initGL() = 0;
+              virtual void bind() = 0;
+              virtual void set_data (const vector_t&, int buffer_ID = 0) const = 0;
+              virtual GLuint num_indices() const = 0;
+
+            protected:
+              Renderer& parent;
+          };
+
+        public:
+          class SH : public ModeBase
+          {
+            public:
+              SH (Renderer& parent) : ModeBase (parent) { }
               ~SH();
 
-              void initGL();
-              void bind() { half_sphere.vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); half_sphere.index_buffer.bind(); }
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t& r_del_daz, int buffer_ID = 0) const override;
+              GLuint num_indices() const override { return half_sphere.num_indices; }
 
               void update_mesh (const size_t LOD, const int lmax);
-
-              void set_data (const vector_t& r_del_daz, int buffer_ID = 0) const {
-                (void) buffer_ID; // to silence unused-parameter warnings
-                surface_buffer.bind (gl::ARRAY_BUFFER);
-                gl::BufferData (gl::ARRAY_BUFFER, r_del_daz.size()*sizeof(float), &r_del_daz[0], gl::STREAM_DRAW);
-                gl::VertexAttribPointer (1, 3, gl::FLOAT, gl::FALSE_, 3*sizeof(GLfloat), (void*)0);
-              }
 
               void compute_r_del_daz (matrix_t& r_del_daz, const matrix_t& SH) const {
                 if (!SH.rows() || !SH.cols()) return;
@@ -148,10 +168,7 @@ namespace MR
                 r_del_daz.noalias() = transform * SH;
               }
 
-              GLuint num_indices() const { return half_sphere.num_indices; }
-
             private:
-              Renderer& parent;
               matrix_t transform;
               Shapes::HalfSphere half_sphere;
               GL::VertexBuffer surface_buffer;
@@ -162,24 +179,46 @@ namespace MR
           } sh;
 
 
-          class Dixel
+          class Tensor : public ModeBase
+          {
+            public:
+              Tensor (Renderer& parent) : ModeBase (parent) { }
+              ~Tensor();
+
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t& data, int buffer_ID = 0) const override;
+              GLuint num_indices() const { return half_sphere.num_indices; }
+
+              void update_mesh (const size_t LOD);
+
+            private:
+              Shapes::HalfSphere half_sphere;
+              GL::VertexArrayObject VAO;
+
+              mutable Eigen::SelfAdjointEigenSolver<tensor_t> eig;
+
+          } tensor;
+
+
+          class Dixel : public ModeBase
           {
               typedef MR::DWI::Directions::dir_t dir_t;
             public:
-              Dixel (Renderer& parent) : parent (parent), vertex_count (0), index_count (0) { }
+              Dixel (Renderer& parent) :
+                  ModeBase (parent),
+                  vertex_count (0),
+                  index_count (0) { }
               ~Dixel();
 
-              void initGL();
-              void bind() { vertex_buffer.bind (gl::ARRAY_BUFFER); VAO.bind(); }
+              void initGL() override;
+              void bind() override;
+              void set_data (const vector_t&, int buffer_ID = 0) const;
+              GLuint num_indices() const { return index_count; }
 
               void update_mesh (const MR::DWI::Directions::Set&);
 
-              void set_data (const vector_t&, int buffer_ID = 0) const;
-
-              GLuint num_indices() const { return index_count; }
-
             private:
-              Renderer& parent;
               GL::VertexBuffer vertex_buffer, value_buffer;
               GL::IndexBuffer index_buffer;
               GL::VertexArrayObject VAO;
