@@ -103,7 +103,7 @@ namespace MR
           std::vector<default_type> new_voxel_size (3);
           for (size_t d = 0; d < 3; ++d) {
             if (image_res[d] <= 0)
-              throw Exception ("the image resolution must be larger that zero for all 3 spatial dimensions");
+              throw Exception ("the image resolution must be larger than zero for all 3 spatial dimensions");
             new_voxel_size[d] = (this->size(d) * this->spacing(d)) / image_res[d];
           }
           set_voxel_size (new_voxel_size);
