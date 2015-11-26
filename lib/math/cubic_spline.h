@@ -22,7 +22,6 @@
 
 #ifndef __math_cubic_spline_h__
 #define __math_cubic_spline_h__
-
 namespace MR
 {
   namespace Math
@@ -81,12 +80,14 @@ namespace MR
         void (CubicSpline::*_internal_set) (T);
 
         inline void _set_value (T position) {
-          const auto vec = WeightVector (position * position * position, position * position, position, 1);
+          const T p2 = Math::pow2(position);
+          const auto vec = WeightVector (p2 * position, p2, position, 1.0);
           weights = (vec * basis_matrix);
         }
 
         inline void _set_value_deriv (T position) {
-          const auto vec = WeightVector (position * position * position, position * position, position, 1);
+          const T p2 = Math::pow2(position);
+          const auto vec = WeightVector (position * p2, p2, position, 1.0);
           weights = (vec * basis_matrix);
           deriv_weights = (vec * deriv_basis_matrix);
         }
