@@ -104,7 +104,7 @@ void usage ()
   + DataType::options();
 }
 
-typedef float value_type;
+typedef double value_type;
 
 void load_image (std::string filename, size_t num_vols, Image<value_type>& image) {
   auto temp_image = Image<value_type>::open (filename);
