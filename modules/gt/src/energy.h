@@ -26,8 +26,6 @@
 
 #include <vector>
 
-#include "ptr.h"
-
 #include "particle.h"
 #include "gt.h"
 

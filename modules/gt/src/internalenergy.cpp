@@ -73,8 +73,8 @@ namespace MR {
                   pe.par = *it;
                   if (pe.par == p)
                     continue;
-                  d1 = dist2(ep, pe.par->getEndPoint(-1));
-                  d2 = dist2(ep, pe.par->getEndPoint(1));
+                  d1 = (ep - pe.par->getEndPoint(-1)).squaredNorm();
+                  d2 = (ep - pe.par->getEndPoint(+1)).squaredNorm();
                   d = (d1 < d2) ? d1 : d2;
                   pe.alpha = (d1 < d2) ? -1 : 1;
                   if ( (pe.alpha == -1) ? (pe.par->hasPredecessor() && pe.par->getPredecessor() != p) : (pe.par->hasSuccessor() && pe.par->getSuccessor() != p) )		// Exclude connected endpoints, unless they are connected to the current particle.
@@ -99,7 +99,7 @@ namespace MR {
         ParticleEnd InternalEnergyComputer::pickNeighbour()
         {
           double sum = 0.0;
-          double t = rng.uniform() * normalization;
+          double t = rng_uniform() * normalization;
           ParticleEnd pe;
           for (std::vector<ParticleEnd>::iterator it = neighbourhood.begin(); it != neighbourhood.end(); ++it)
           {

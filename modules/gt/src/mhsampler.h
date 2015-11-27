@@ -24,9 +24,8 @@
 #ifndef __gt_mhsampler_h__
 #define __gt_mhsampler_h__
 
-#include "ptr.h"
-#include "image/transform.h"
-#include "image/buffer_preload.h"
+#include "image.h"
+#include "transform.h"
 
 #include "math/rng.h"
 
@@ -48,12 +47,12 @@ namespace MR {
         class MHSampler
         {
         public:
-          MHSampler(const Image::Info &dwi, Properties& p, Stats& s, ParticleGrid& pgrid, 
-                    EnergyComputer* e, Image::BufferPreload<bool>* m = NULL);
+          MHSampler(const Image<float>& dwi, Properties& p, Stats& s, ParticleGrid& pgrid, 
+                    EnergyComputer* e, Image<bool>& m);
           
           MHSampler(const MHSampler& other)
             : props(other.props), stats(other.stats), pGrid(other.pGrid), E(other.E->clone()), 
-              T(other.T), mask(other.mask), lock(other.lock), rng(other.rng), sigpos(other.sigpos), sigdir(other.sigdir)
+              T(other.T), mask(other.mask), lock(other.lock), rng_uniform(), rng_normal(), sigpos(other.sigpos), sigdir(other.sigdir)
           {
             dims[0] = other.dims[0];
             dims[1] = other.dims[1];
@@ -80,12 +79,13 @@ namespace MR {
           ParticleGrid& pGrid;
           EnergyComputer* E;      // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
           
-          Image::Transform T;
+          Transform T;
           int dims[3];
-          Ptr<Image::BufferPreload<bool>::voxel_type > mask;    // Smart pointers make deep copy in copy constructor.
+          Image<bool> mask;
           
-          RefPtr<SpatialLock<> > lock;
-          Math::RNG rng;
+          SpatialLock<float>& lock;
+          Math::RNG::Uniform<float> rng_uniform;
+          Math::RNG::Normal<float> rng_normal;
           float sigpos, sigdir;
           
           

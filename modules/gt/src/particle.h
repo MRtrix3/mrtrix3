@@ -24,14 +24,15 @@
 #ifndef __gt_particle_h__
 #define __gt_particle_h__
 
-#include "point.h"
+#include <Eigen/Dense>
+
 
 namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
         
-        typedef Point<float> Point_t;
+        typedef Eigen::Vector3f Point_t;
         
         /**
          * A particle is a segment of a track and consists of a position and a direction.
@@ -90,7 +91,7 @@ namespace MR {
           
           // Getters and setters ----------------------------------------------------------
           
-          Point<> getPosition() const
+          Point_t getPosition() const
           {
             return pos;
           }
@@ -100,7 +101,7 @@ namespace MR {
             pos = p;
           }
           
-          Point<> getDirection() const
+          Point_t getDirection() const
           {
             return dir;
           }
@@ -108,10 +109,10 @@ namespace MR {
           void setDirection(const Point_t& d)
           {
             dir = d;
-            dir.normalise();
+            dir.normalize();
           }
           
-          Point<> getEndPoint(const int a) const
+          Point_t getEndPoint(const int a) const
           {
             return (pos + a*L*dir);
           }
@@ -213,8 +214,6 @@ namespace MR {
         };
 
         
-        // Initialize particle length
-        //float Particle::L = 1.;
         
         /**
          * Small data structure that refers to one end of a particle.
@@ -229,21 +228,6 @@ namespace MR {
           double p_suc;
         };
         
-        
-//        // Define bias term ("chemical potential") in the internal energy.
-//        static float ChemPot;// = 1.0;
-        
-//        /**
-//         * Calculates the connection energy between any 2 particles P1 and P2 at their end points ep1 and ep2 (-1,1).
-//         *
-//         * Note that this function does not check whether both particles are connected!
-//         */
-//        inline float calcConnectionEnergy(const Particle* P1, const int ep1, const Particle* P2, const int ep2)
-//        {
-//          Point<> Xm = (P1->getPosition() + P2->getPosition()) * 0.5;	// midpoint between both segments
-//          float Ucon = (dist2(P1->getEndPoint(ep1), Xm) + dist2(P2->getEndPoint(ep2), Xm)) / (Particle::L * Particle::L);
-//          return Ucon - ChemPot;
-//        }
         
         
       }

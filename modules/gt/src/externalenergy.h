@@ -24,10 +24,7 @@
 #ifndef __gt_externalenergy_h__
 #define __gt_externalenergy_h__
 
-#include "point.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
-#include "image/transform.h"
+#include "image.h"
 #include "math/constrained_least_squares.h"
 
 #include "particle.h"
@@ -47,56 +44,55 @@ namespace MR {
           class Shared
           {
           public:
-            Shared(Image::BufferPreload<float>& dwimage, const Properties& props);
+            Shared(const Image<float>& dwimage, const Properties& props);
             
-            ~Shared();
+//            ~Shared();
             
-            Image::BufferScratch<float>& getTOD() 
-            { 
-              if (tod)
-                return *tod;
-              else
-                throw Exception("Uninitialised TOD grid.");
-            }
+//            Image::BufferScratch<float>& getTOD() 
+//            { 
+//              if (tod)
+//                return *tod;
+//              else
+//                throw Exception("Uninitialised TOD grid.");
+//            }
             
-            Image::BufferScratch<float>& getFiso() 
-            { 
-              if (fiso)
-                return *fiso;
-              else
-                throw Exception("Uninitialised TOD grid.");
-            }
+//            Image::BufferScratch<float>& getFiso() 
+//            { 
+//              if (fiso)
+//                return *fiso;
+//              else
+//                throw Exception("Uninitialised TOD grid.");
+//            }
             
-            Image::BufferScratch<float>& getEext() 
-            { 
-              if (eext)
-                return *eext;
-              else
-                throw Exception("Uninitialised TOD grid.");
-            }           
+//            Image::BufferScratch<float>& getEext() 
+//            { 
+//              if (eext)
+//                return *eext;
+//              else
+//                throw Exception("Uninitialised TOD grid.");
+//            }           
             
             
           protected:
             int lmax, nrows, ncols, nf;
             double beta, mu;
             
-            Image::BufferPreload<float>& dwi;
-            Image::BufferScratch<float>* tod; 
-            Image::BufferScratch<float>* fiso;
-            Image::BufferScratch<float>* eext;
+//            Image::BufferPreload<float>& dwi;
+//            Image::BufferScratch<float>* tod; 
+//            Image::BufferScratch<float>* fiso;
+//            Image::BufferScratch<float>* eext;
             
-            Math::Matrix<double> K, Ak, H, Hinv;
+            Eigen::MatrixXd K, Ak, H, Hinv;
             
             friend class ExternalEnergyComputer;
           };
           
           
           ExternalEnergyComputer(Stats& stat, const Shared& shared)
-            : EnergyComputer(stat), s(shared), dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
-              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
-              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
+            : EnergyComputer(stat), s(shared), //dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
+              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), dE(0.0)
           {
-            Math::Matrix<double> eye (s.nf+1, s.nf+1);
+            auto eye  = Eigen::MatrixXd::Zero(s.nf+1, s.nf+1);
             for (size_t i = 0; i <= s.nf; i++)
               eye(i,i) = 1.0;
             nnls = Math::ICLS::Problem<double>(s.Ak, eye);
@@ -104,18 +100,18 @@ namespace MR {
             resetEnergy();
           }
           
-          ExternalEnergyComputer(const ExternalEnergyComputer& E)
-            : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
-              T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
-              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
-          {
-            Math::Matrix<double> eye (s.nf+1, s.nf+1);
-            for (size_t i = 0; i <= s.nf; i++)
-              eye(i,i) = 1.0;
-            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
-          }
+//          ExternalEnergyComputer(const ExternalEnergyComputer& E)
+//            : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
+//              T(E.T), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), 
+//              f(fk.sub(1, s.nf+1)), A(s.Ak.sub(0, s.nrows, 1, s.nf+1)), dE(0.0)
+//          {
+//            Math::Matrix<double> eye (s.nf+1, s.nf+1);
+//            for (size_t i = 0; i <= s.nf; i++)
+//              eye(i,i) = 1.0;
+//            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
+//          }
           
-          ~ExternalEnergyComputer() { }
+//          ~ExternalEnergyComputer() { }
           
           
           void resetEnergy();
@@ -150,29 +146,29 @@ namespace MR {
         protected:
           const Shared& s;
           
-          Image::BufferPreload<float>::voxel_type dwi_vox;
-          Image::BufferScratch<float>::voxel_type tod_vox;
-          Image::BufferScratch<float>::voxel_type fiso_vox;
-          Image::BufferScratch<float>::voxel_type eext_vox;
+          Image<float> dwi_vox;
+          Image<float> tod_vox;
+          Image<float> fiso_vox;
+          Image<float> eext_vox;
           
-          Image::Transform T;
+          Transform T;
           
-          Math::Vector<double> y, t, d, fk, c;
-          Math::Vector<double>::View f;
-          const Math::Matrix<double>::View A;
+          Eigen::VectorXd y, t, d, fk, c;
+//          Math::Vector<double>::View f;
+//          const Math::Matrix<double>::View A;
           double dE;
           
           Math::ICLS::Problem<double> nnls;
           
-          std::vector<Point<int> > changes_vox;
-          std::vector<Math::Vector<float> > changes_tod;
-          std::vector<Math::Vector<float> > changes_fiso;
-          std::vector<float> changes_eext;
+          std::vector<Eigen::Vector3i > changes_vox;
+          std::vector<Eigen::VectorXd > changes_tod;
+          std::vector<Eigen::VectorXd > changes_fiso;
+          std::vector<double> changes_eext;
           
           
           void add(const Point_t& pos, const Point_t& dir, const double factor = 1.);
           
-          void add2vox(const Point<int> &vox, const double w);
+          void add2vox(const Eigen::Vector3i& vox, const double w);
           
           double eval();
           

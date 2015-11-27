@@ -31,22 +31,21 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        MHSampler::MHSampler(const Image::Info &dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
-                             EnergyComputer* e, Image::BufferPreload<bool>* m)
-          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), sigpos(Particle::L / 8.), sigdir(0.2)
+        MHSampler::MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
+                             EnergyComputer* e, Image<bool>& m)
+          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), lock(5*Particle::L), sigpos(Particle::L / 8.), sigdir(0.2)
         {
-          lock = new SpatialLock<>(5*Particle::L);  // FIXME take voxel size into account for setting lock threshold.
-          if (m) {
-            T = Image::Transform(*m);
-            dims[0] = m->dim(0);
-            dims[1] = m->dim(1);
-            dims[2] = m->dim(2);
-            mask = new Image::BufferPreload<bool>::voxel_type(*m);
+          if (m.valid()) {
+            T = Transform(m);
+            dims[0] = m.size(0);
+            dims[1] = m.size(1);
+            dims[2] = m.size(2);
+            mask = m;
           }
           else {
-            dims[0] = dwi.dim(0);
-            dims[1] = dwi.dim(1);
-            dims[2] = dwi.dim(2);
+            dims[0] = dwi.size(0);
+            dims[1] = dwi.size(1);
+            dims[2] = dwi.size(2);
           }
         }
         
@@ -64,7 +63,7 @@ namespace MR {
         
         void MHSampler::next()
         {
-          float p = rng.uniform();
+          float p = rng_uniform();
           float s = props.p_birth;
           if (p < s)
             return birth();
@@ -93,12 +92,12 @@ namespace MR {
           Point_t pos;
           do {
             pos = getRandPosInMask();
-          } while (! lock->lockIfNotLocked(pos));
+          } while (! lock.lockIfNotLocked(pos));
           Point_t dir = getRandDir();
           
           double dE = E->stageAdd(pos, dir);
           double R = std::exp(-dE) * props.density / (pGrid.getTotalCount()+1) * props.p_death / props.p_birth;
-          if (R > rng.uniform()) {
+          if (R > rng_uniform()) {
             E->acceptChanges();
             pGrid.add(pos, dir);
             stats.incNa('b');
@@ -106,7 +105,7 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          lock->unlock(pos);
+          lock.unlock(pos);
         }
         
         
@@ -115,18 +114,18 @@ namespace MR {
           //TRACE;
           stats.incN('d');
           
-          unsigned int idx;
+          size_t idx;
           Particle* par;
            do {
             par = pGrid.getRandom(idx);
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
+          } while (! lock.lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           double dE = E->stageRemove(par);
           double R = std::exp(-dE) * pGrid.getTotalCount() / props.density * props.p_birth / props.p_death;
-          if (R > rng.uniform()) {
+          if (R > rng_uniform()) {
             E->acceptChanges();
             pGrid.remove(idx);
             stats.incNa('d');
@@ -135,7 +134,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock->unlock(pos0);
+          lock.unlock(pos0);
         }
         
         
@@ -144,25 +143,25 @@ namespace MR {
           //TRACE;
           stats.incN('r');
           
-          unsigned int idx;
+          size_t idx;
           Particle* par;
           do {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
+          } while (! lock.lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           Point_t pos, dir;
           moveRandom(par, pos, dir);
           
-          if (!inMask(T.scanner2voxel(pos))) {
-            lock->unlock(pos0);
+          if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
+            lock.unlock(pos0);
             return;
           }
           double dE = E->stageShift(par, pos, dir);
           double R = exp(-dE);
-          if (R > rng.uniform()) {
+          if (R > rng_uniform()) {
             E->acceptChanges();
             pGrid.shift(par, pos, dir);
             stats.incNa('r');
@@ -171,7 +170,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock->unlock(pos0);
+          lock.unlock(pos0);
         }
         
         
@@ -180,26 +179,26 @@ namespace MR {
           //TRACE;
           stats.incN('o');
           
-          unsigned int idx;
+          size_t idx;
           Particle* par;
           do {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
+          } while (! lock.lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           Point_t pos, dir;
           bool moved = moveOptimal(par, pos, dir);
-          if (!moved || !inMask(T.scanner2voxel(pos))) {
-            lock->unlock(pos0);
+          if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
+            lock.unlock(pos0);
             return;
           }
           
           double dE = E->stageShift(par, pos, dir);
           double p_prop = calcShiftProb(par, pos, dir);
           double R = exp(-dE) * props.p_shift * p_prop / (props.p_shift * p_prop + props.p_optshift);
-          if (R > rng.uniform()) {
+          if (R > rng_uniform()) {
             E->acceptChanges();
             pGrid.shift(par, pos, dir);
             stats.incNa('o');
@@ -208,7 +207,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock->unlock(pos0);
+          lock.unlock(pos0);
         }
         
         
@@ -217,15 +216,15 @@ namespace MR {
           //TRACE;
           stats.incN('c');
           
-          unsigned int idx;
+          size_t idx;
           Particle* par;
           do {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock->lockIfNotLocked(par->getPosition()));
+          } while (! lock.lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
-          int alpha0 = (rng.uniform() < 0.5) ? -1 : 1;
+          int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
           ParticleEnd pe0;
           pe0.par = par;
           pe0.alpha = alpha0;
@@ -234,7 +233,7 @@ namespace MR {
           pe2.par = NULL;
           double dE = E->stageConnect(pe0, pe2);
           double R = exp(-dE);
-          if (R > rng.uniform()) {
+          if (R > rng_uniform()) {
             E->acceptChanges();
             if (pe2.par) {
               if (alpha0 == -1)
@@ -253,7 +252,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock->unlock(pos0);
+          lock.unlock(pos0);
         }
         
         
@@ -263,11 +262,11 @@ namespace MR {
         {
           Point_t p;
           do {
-            p[0] = rng.uniform() * (dims[0]-1);
-            p[1] = rng.uniform() * (dims[1]-1);
-            p[2] = rng.uniform() * (dims[2]-1);
+            p[0] = rng_uniform() * (dims[0]-1);
+            p[1] = rng_uniform() * (dims[1]-1);
+            p[2] = rng_uniform() * (dims[2]-1);
           } while (!inMask(p));           // FIXME Schrijf dit expliciet uit ifv random integer initialisatie,
-          return T.voxel2scanner(p);      // voeg hier dan nog random ruis aan toe. Dan kan je inMask terug ifv
+          return T.voxel2scanner.cast<float>() * p;      // voeg hier dan nog random ruis aan toe. Dan kan je inMask terug ifv
         }                                 // scanner positie schrijven.
         
         
@@ -280,11 +279,11 @@ namespace MR {
 //              (p[1] <= 0.0) || (p[1] >= dims[1]-1.0) ||
 //              (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
             return false;
-          if (mask) {
-            (*mask)[0] = Math::round<size_t>(p[0]);
-            (*mask)[1] = Math::round<size_t>(p[1]);
-            (*mask)[2] = Math::round<size_t>(p[2]);
-            return mask->value();
+          if (mask.valid()) {
+            mask.index(0) = Math::round<size_t>(p[0]);
+            mask.index(1) = Math::round<size_t>(p[1]);
+            mask.index(2) = Math::round<size_t>(p[2]);
+            return mask.value();
           }
           return true;
         }
@@ -292,17 +291,17 @@ namespace MR {
         
         Point_t MHSampler::getRandDir()
         {
-          Point_t dir = Point_t(rng.normal(), rng.normal(), rng.normal());
-          dir.normalise();
+          Point_t dir = Point_t(rng_normal(), rng_normal(), rng_normal());
+          dir.normalize();
           return dir;
         }
         
         
         void MHSampler::moveRandom(const Particle *par, Point_t &pos, Point_t &dir)
         {
-          pos = par->getPosition() + Point_t(rng.normal(sigpos), rng.normal(sigpos), rng.normal(sigpos));
-          dir = par->getDirection() + Point_t(rng.normal(sigdir), rng.normal(sigdir), rng.normal(sigdir));
-          dir.normalise();
+          pos = par->getPosition() + Point_t(rng_normal()*sigpos, rng_normal()*sigpos, rng_normal()*sigpos);
+          dir = par->getDirection() + Point_t(rng_normal()*sigdir, rng_normal()*sigdir, rng_normal()*sigdir);
+          dir.normalize();
         }
         
         
@@ -315,7 +314,7 @@ namespace MR {
             int a3 = (par->getSuccessor()->getPredecessor() == par) ? -1 : 1;
             pos = (par->getPredecessor()->getEndPoint(a1) + par->getSuccessor()->getEndPoint(a3)) / 2;
             dir = par->getSuccessor()->getPosition() - par->getPredecessor()->getPosition();
-            dir.normalise();
+            dir.normalize();
             return true;
           }
           else if (par->hasPredecessor())

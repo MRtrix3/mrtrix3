@@ -32,8 +32,8 @@
 #include <vector>
 #include <mutex>
 
-#include "math/matrix.h"
-#include "math/vector.h"
+#include <Eigen/Dense>
+
 #include "progressbar.h"
 
 
@@ -64,8 +64,8 @@ namespace MR {
           double beta;
           double ppot;
           
-          Math::Matrix<float> resp_WM;
-          std::vector< Math::Vector<float> > resp_ISO;
+          Eigen::MatrixXf resp_WM;
+          std::vector< Eigen::VectorXf > resp_ISO;
           
         };
         
@@ -75,7 +75,7 @@ namespace MR {
         {
         public:
           
-          Stats(const double T0, const double T1, const float maxiter) 
+          Stats(const double T0, const double T1, const double maxiter) 
             : Text(T1), Tint(T0), EextTot(0.0), EintTot(0.0), n_iter(0), n_max(maxiter), 
               progress("running MH sampler", n_max/ITER_BIGSTEP)
           {

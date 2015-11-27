@@ -24,9 +24,8 @@
 #ifndef __gt_spatiallock_h__
 #define __gt_spatiallock_h__
 
-#include "point.h"
+#include <Eigen/Dense>
 #include <mutex>
-
 #include <set>
 
 
@@ -43,6 +42,7 @@ namespace MR {
         {
         public:
           typedef T value_type;
+          typedef Eigen::Matrix<value_type, 3, 1> point_type;
           
           SpatialLock() : _tx(0), _ty(0), _tz(0) { }
           SpatialLock(const value_type t) : _tx(t), _ty(t), _tz(t) { }
@@ -62,11 +62,11 @@ namespace MR {
             _tz = tz;
           }
           
-          bool lockIfNotLocked(const Point<T>& pos) {
+          bool lockIfNotLocked(const point_type& pos) {
             std::lock_guard<std::mutex> lock (mutex);
-            Point<value_type> d;
-            for (typename std::set<Point<value_type> >::iterator it = lockcentres.begin(); it != lockcentres.end(); ++it) {
-              d = *it - pos;
+            point_type d;
+            for (auto& x : lockcentres) {
+              d = x - pos;
               if ((std::fabs(d[0]) < _tx) && (std::fabs(d[1]) < _ty) && (std::fabs(d[2]) < _tz))
                 return false;
             }
@@ -74,14 +74,14 @@ namespace MR {
             return true;
           }
           
-          void unlock(const Point<T>& pos) {
+          void unlock(const point_type& pos) {
             std::lock_guard<std::mutex> lock (mutex);
             lockcentres.erase(pos);
           }
           
         protected:
           std::mutex mutex;
-          std::set<Point<value_type> > lockcentres;
+          std::set<point_type> lockcentres;
           value_type _tx, _ty, _tz;
           
         };

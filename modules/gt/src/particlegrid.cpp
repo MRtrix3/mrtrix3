@@ -28,21 +28,17 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        ParticleGrid::ParticleGrid(const Image::Info& image)
-          : T(image)
+        template <class HeaderType>
+        ParticleGrid::ParticleGrid(const HeaderType& image)
         {
-          n[0] = Math::ceil<size_t>( image.dim(0) * image.vox(0) / (2*Particle::L) );
-          n[1] = Math::ceil<size_t>( image.dim(1) * image.vox(1) / (2*Particle::L) );
-          n[2] = Math::ceil<size_t>( image.dim(2) * image.vox(2) / (2*Particle::L) );
+          n[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2*Particle::L) );
+          n[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2*Particle::L) );
+          n[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2*Particle::L) );
           grid.resize(n[0]*n[1]*n[2]);
           
-          Image::Info info (image);
-          info.vox(0) = info.vox(1) = info.vox(2) = 2*Particle::L;
-          info.dim(0) = n[0];
-          info.dim(1) = n[1];
-          info.dim(2) = n[2];
-          info.sanitise();
-          T = Image::Transform(info);
+          Eigen::DiagonalMatrix<default_type, 3> newspacing (2*Particle::L, 2*Particle::L, 2*Particle::L);
+          T = image.transform() * newspacing;
+          T = T.inverse();
         }
         
         void ParticleGrid::add(const Point_t &pos, const Point_t &dir)
@@ -69,7 +65,7 @@ namespace MR {
           grid[gidx1].push_back(p);
         }
         
-        void ParticleGrid::remove(const unsigned int idx)
+        void ParticleGrid::remove(const size_t idx)
         {
           std::lock_guard<std::mutex> lock (mutex);
           Particle* p = list[idx];
@@ -101,11 +97,12 @@ namespace MR {
           return &grid[xyz2idx(x, y, z)];
         }
         
-        Particle* ParticleGrid::getRandom(unsigned int &idx)
+        Particle* ParticleGrid::getRandom(size_t& idx)
         {
           if (list.empty())
             return NULL;
-          idx = rng.uniform_int(list.size());
+          std::uniform_int_distribution<size_t> dist(0, list.size()-1);
+          idx = dist(rng);
           return list[idx];
         }
         

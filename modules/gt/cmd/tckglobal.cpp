@@ -27,9 +27,9 @@
 #include <limits>
 
 #include "math/SH.h"
-#include "image/buffer_preload.h"
-#include "image/buffer_scratch.h"
+#include "image.h"
 #include "thread.h"
+#include "algo/copy.h"
 
 #include "particlegrid.h"
 #include "gt.h"
@@ -48,7 +48,7 @@ void usage ()
 
   AUTHOR = "Daan Christiaens (daan.christiaens@esat.kuleuven.be)";
   
-  COPYRIGHT = "KU Leuven, Dept. Electrical Engineering, Medical Image Computing,\n"
+  COPYRIGHT = "KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
               "Herestraat 49 box 7003, 3000 Leuven, Belgium";
 
   DESCRIPTION
@@ -174,66 +174,48 @@ void run ()
   
   // Parse options ----------------------------------------------------------------------
   
-  Options opt = get_options("length");
-  if (opt.size())
-    Particle::L = opt[0][0];    
+  Particle::L = get_option_value("length", 1.0);    
   
-  double ChemPot = 1.0;
-  opt = get_options("cpot");
-  if (opt.size())
-    ChemPot = opt[0][0];
+  double CPot = get_option_value("cpot", 1.0);
   
   Properties properties;
-  properties.Lmax = 8;
+  properties.Lmax = get_option_value("lmax", 8);
   properties.p_birth = 0.25;
   properties.p_death = 0.05;
   properties.p_shift = 0.25;
   properties.p_optshift = 0.10;
   properties.p_connect = 0.35;
-  properties.density = 1.;
-  properties.weight = 0.1;
+  properties.density = get_option_value("density", 1.);
+  properties.weight = get_option_value("weight", 0.1);
   properties.lam_ext = 1.;
   properties.lam_int = 1.;
-  properties.beta = 0.0;
+  properties.beta = get_option_value("beta", 0.0);
   properties.ppot = 0.0;
   
-  opt = get_options("lmax");
-  if (opt.size()) 
-    properties.Lmax = opt[0][0];
-  
-  opt = get_options("density");
-  if (opt.size()) 
-    properties.density = opt[0][0];
-  
-  opt = get_options("weight");
-  if (opt.size())
-    properties.weight = opt[0][0];
-  
-  opt = get_options("wmr");
-  Math::Matrix<float> wmr (opt[0][0]);
-  properties.resp_WM = wmr;
+  auto opt = get_options("wmr");
+  properties.resp_WM = load_matrix<float> (opt[0][0]);
   
   double wmscale2 = (properties.resp_WM(0,0)*properties.resp_WM(0,0))/M_4PI;
   
-  Math::Vector<float> riso;
+  Eigen::VectorXf riso;
   opt = get_options("csfr");
   if (opt.size())
   {
-    riso.load(opt[0][0]);
+    riso = load_vector<float>(opt[0][0]);
     properties.resp_ISO.push_back(riso);
   }
   
   opt = get_options("gmr");
   if (opt.size())
   {
-    riso.load(opt[0][0]);
+    riso = load_vector<float>(opt[0][0]);
     properties.resp_ISO.push_back(riso);
   }
   
   opt = get_options("riso");
   for (size_t i = 0; i < opt.size(); i++)
   {
-    riso.load(opt[i][0]);
+    riso = load_vector<float>(opt[i][0]);
     properties.resp_ISO.push_back(riso);
   }
 
@@ -264,35 +246,17 @@ void run ()
   }
   
   
-  Image::BufferPreload<bool>* mask = NULL;
+  auto mask = Image<bool>();
   opt = get_options("mask");
   if (opt.size())
-    mask = new Image::BufferPreload<bool>(opt[0][0]);
+    mask = Image<bool>::open(opt[0][0]);
   
   
-  float niter = 1e6;
-  opt = get_options("niter");
-  if (opt.size())
-    niter = opt[0][0];
+  double niter = get_option_value("niter", 1e6);
+  double t0 = get_option_value("t0", 0.1);
+  double t1 = get_option_value("t1", 0.001);
   
-  double t0 = 0.1;
-  opt = get_options("t0");
-  if (opt.size())
-    t0 = opt[0][0];
-  
-  double t1 = 0.001;
-  opt = get_options("t1");
-  if (opt.size())
-    t1 = opt[0][0];
-  
-  opt = get_options("beta");
-  if (opt.size())
-    properties.beta = opt[0][0];
-  
-  double mu = 0.0;
-  opt = get_options("ppot");
-  if (opt.size())
-    mu = opt[0][0];
+  double mu = get_option_value("ppot", 0.0);
   properties.ppot = mu * wmscale2 * properties.weight;
   
   opt = get_options("lambda");
@@ -305,9 +269,8 @@ void run ()
   // Prepare buffers --------------------------------------------------------------------
   
   //PAUSE;
-
-  Image::BufferPreload<float> dwi_buffer (argument[0], Image::Stride::contiguous_along_axis(3));
-  //Image::ConstInfo dwi_info (dwi_buffer);
+  
+  auto dwi = Image<float>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
 
   Stats stats (t0, t1, niter);
   
@@ -315,19 +278,19 @@ void run ()
   if (opt.size())
     stats.open_stream(opt[0][0]);
   
-  ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi_buffer, properties);
+  ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi, properties);
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, EextShared);
   
-  ParticleGrid pgrid = ParticleGrid(dwi_buffer);
+  ParticleGrid pgrid = ParticleGrid(dwi);
   
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
-  Eint->setConnPot(ChemPot);
+  Eint->setConnPot(CPot);
   
   
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
   
   
-  MHSampler mhs (dwi_buffer, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
+  MHSampler mhs (dwi, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
     
   auto t = Thread::run (Thread::multi(mhs), "MH sampler");
   t.wait();
@@ -349,7 +312,7 @@ void run ()
   ftfileprops.comments.push_back("segment density = " + std::to_string((long double) properties.density));
   ftfileprops.comments.push_back("segment weight = " + std::to_string((long double) properties.weight));
   ftfileprops.comments.push_back("");
-  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) ChemPot));
+  ftfileprops.comments.push_back("connection potential = " + std::to_string((long double) CPot));
   ftfileprops.comments.push_back("particle potential = " + std::to_string((long double) mu));
   ftfileprops.comments.push_back("balance = " + std::to_string((long double) lam));
   ftfileprops.comments.push_back("");
@@ -362,34 +325,28 @@ void run ()
   
   
   // Save fiso, tod and eext
-  Image::Header header (dwi_buffer);
+  Header header (dwi);
   header.datatype() = DataType::Float32;
   
   opt = get_options("todi");
   if (opt.size()) {
-    header.dim(3) = Math::SH::NforL(properties.Lmax);
-    Image::Buffer<float> TOD (opt[0][0], header);
-    Image::Buffer<float>::voxel_type vox_out (TOD);
-    Image::BufferScratch<float>::voxel_type vox_in (EextShared.getTOD());
-    Image::copy_with_progress_message("copying TOD image", vox_in, vox_out);
+    header.size(3) = Math::SH::NforL(properties.Lmax);
+    auto TOD = Image<float>::create (opt[0][0], header);
+    copy_with_progress_message("copying TOD image", EextShared.getTOD(), TOD);
   }
   
   opt = get_options("fiso");
   if (opt.size()) {
-    header.dim(3) = properties.resp_ISO.size();
-    Image::Buffer<float> Fiso (opt[0][0], header);
-    Image::Buffer<float>::voxel_type vox_out (Fiso);
-    Image::BufferScratch<float>::voxel_type vox_in (EextShared.getFiso());
-    Image::copy_with_progress_message("copying isotropic fractions", vox_in, vox_out);
+    header.size(3) = properties.resp_ISO.size();
+    auto Fiso = Image<float>::create (opt[0][0], header);
+    copy_with_progress_message("copying isotropic fractions", EextShared.getFiso(), Fiso);
   }
   
   opt = get_options("eext");
   if (opt.size()) {
     header.set_ndim(3);
-    Image::Buffer<float> EextI (opt[0][0], header);
-    Image::Buffer<float>::voxel_type vox_out (EextI);
-    Image::BufferScratch<float>::voxel_type vox_in (EextShared.getEext());
-    Image::copy_with_progress_message("copying external energy", vox_in, vox_out);
+    auto EextI = Image<float>::create (opt[0][0], header);
+    copy_with_progress_message("copying external energy", EextShared.getEext(), EextI);
   }
   
   

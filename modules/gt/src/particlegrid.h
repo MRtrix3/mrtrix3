@@ -25,14 +25,15 @@
 #define __gt_particlegrid_h__
 
 #include <mutex>
-#include "image/info.h"
-#include "image/transform.h"
-#include "dwi/tractography/file.h"
 
+#include "header.h"
+#include "transform.h"
+#include "dwi/tractography/file.h"
 #include "math/rng.h"
 
 #include "particle.h"
 #include "particlepool.h"
+
 
 namespace MR {
   namespace DWI {
@@ -48,7 +49,8 @@ namespace MR {
           
           typedef std::vector<Particle*> ParticleVectorType;
           
-          ParticleGrid(const Image::Info& image);
+          template <class HeaderType>
+          ParticleGrid(const HeaderType& image);
           
           ParticleGrid(const ParticleGrid& other)
             : mutex(), pool(), list(other.list), grid(other.grid), rng(), T(other.T)
@@ -71,13 +73,13 @@ namespace MR {
           
           void shift(Particle* p, const Point_t& pos, const Point_t& dir);
           
-          void remove(const unsigned int idx);
+          void remove(const size_t idx);
           
           void clear();
           
           const ParticleVectorType* at(const int x, const int y, const int z) const;
           
-          Particle* getRandom(unsigned int& idx);
+          Particle* getRandom(size_t& idx);
           
           void exportTracks(Tractography::Writer<float>& writer);
           
@@ -88,7 +90,7 @@ namespace MR {
           ParticleVectorType list;
           std::vector<ParticleVectorType> grid;
           Math::RNG rng;
-          MR::Image::Transform T;
+          transform_type T;
           size_t n[3];     // grid dimensions
           
           
@@ -102,7 +104,7 @@ namespace MR {
         public:
           inline void pos2xyz(const Point_t& pos, size_t& x, size_t& y, size_t& z) const
           {
-            Point_t gpos = T.scanner2voxel(pos);
+            Point_t gpos = T.cast<float>() * pos;
             x = Math::round<size_t>(gpos[0]);
             y = Math::round<size_t>(gpos[1]);
             z = Math::round<size_t>(gpos[2]);

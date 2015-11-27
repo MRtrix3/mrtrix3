@@ -44,7 +44,7 @@ namespace MR {
         public:
           
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)
-            : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng()
+            : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng_uniform()
           {
             neighbourhood.reserve(1000);
             ParticleEnd pe;
@@ -127,7 +127,7 @@ namespace MR {
           double cpot, dEint;
           std::vector<ParticleEnd> neighbourhood;
           double normalization;
-          Math::RNG rng;
+          Math::RNG::Uniform<double> rng_uniform;
           
           
           double calcEnergy(const Particle* P1, const int ep1, const Particle* P2, const int ep2)
@@ -138,7 +138,7 @@ namespace MR {
           double calcEnergy(const Point_t& pos1, const Point_t& ep1, const Point_t& pos2, const Point_t& ep2)
           {
             Point_t Xm = (pos1 + pos2) * 0.5;	// midpoint between both segments
-            double Ucon = (dist2(ep1, Xm) + dist2(ep2, Xm)) / (Particle::L * Particle::L);
+            double Ucon = ( (ep1 - Xm).squaredNorm() + (ep2 - Xm).squaredNorm() ) / (Particle::L * Particle::L);
             return Ucon - cpot;
           }
           
