@@ -46,7 +46,7 @@ const char* transformation_choices[] = { "rigid", "affine", "syn", "rigid_affine
 
 void usage ()
 {
-  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au)";
+  AUTHOR = "David Raffelt (david.raffelt@florey.edu.au) & Max Pietsch (maximilian.pietsch@kcl.ac.uk)";
 
   DESCRIPTION
       + "Register two images together using a rigid, affine or a symmetric diffeomorphic (SyN) transformation model."
