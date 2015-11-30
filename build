@@ -231,7 +231,6 @@ OPTIONS:
                          -showdep=target; the default) or for all files
   -tree                  [only used with -showdep) print full dependency tree for 
                          each file
-  -disablethreading      disable multithreading and build using a single core only
   -nobashcompletion      do not generate bash autocompletion file
 ''')
     exit (0)
@@ -247,8 +246,6 @@ OPTIONS:
       sys.exit (1)
   elif '-tree'.startswith(arg):
     dep_recursive = True
-  elif '-disablethreading'.startswith(arg): 
-    use_multiple_cores = False
   elif '-nobashcompletion'.startswith(arg):
     generate_bash_completion = False
   elif arg[0] == '-':
@@ -1067,13 +1064,10 @@ log ('TODO list contains ' + str(len(todo)) + ''' items
 if not len(todo): sys.exit(0)
 
 
-if use_multiple_cores:
+try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
+except:
   try: num_processors = os.sysconf('SC_NPROCESSORS_ONLN')
-  except:
-    try: num_processors = int(os.environ['NUMBER_OF_PROCESSORS'])
-    except: num_processors = 1
-else:
-  num_processors = 1
+  except: num_processors = 1
   
 log ('''
 
