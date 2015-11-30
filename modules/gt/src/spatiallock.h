@@ -27,12 +27,26 @@
 #include <Eigen/Dense>
 #include <mutex>
 #include <set>
+#include <algorithm>
 
 
 namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
+        
+        template <typename T>
+        struct vec_compare
+        {
+            bool operator()(const T& v, const T& w) const
+            {
+              for (int i = 0; i < v.size(); ++i) {
+                if (v[i] < w[i]) return true;
+                if (v[i] > w[i]) return false;
+              }
+              return false;
+            }
+        };
 
         /**
          * @brief SpatialLock manages a mutex lock on n positions in 3D space.
@@ -81,7 +95,7 @@ namespace MR {
           
         protected:
           std::mutex mutex;
-          std::set<point_type> lockcentres;
+          std::set<point_type, vec_compare<point_type> > lockcentres;
           value_type _tx, _ty, _tz;
           
         };

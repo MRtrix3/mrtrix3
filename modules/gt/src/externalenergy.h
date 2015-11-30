@@ -25,6 +25,7 @@
 #define __gt_externalenergy_h__
 
 #include "image.h"
+#include "transform.h"
 #include "math/constrained_least_squares.h"
 
 #include "particle.h"
@@ -41,64 +42,66 @@ namespace MR {
         {
         public:
           
-          class Shared
-          {
-          public:
-            Shared(const Image<float>& dwimage, const Properties& props);
+//          class Shared
+//          {
+//          public:
+//            Shared(const Image<float>& dwimage, const Properties& props);
             
-//            ~Shared();
+////            ~Shared();
             
-//            Image::BufferScratch<float>& getTOD() 
-//            { 
-//              if (tod)
-//                return *tod;
-//              else
-//                throw Exception("Uninitialised TOD grid.");
-//            }
+////            Image::BufferScratch<float>& getTOD() 
+////            { 
+////              if (tod)
+////                return *tod;
+////              else
+////                throw Exception("Uninitialised TOD grid.");
+////            }
             
-//            Image::BufferScratch<float>& getFiso() 
-//            { 
-//              if (fiso)
-//                return *fiso;
-//              else
-//                throw Exception("Uninitialised TOD grid.");
-//            }
+////            Image::BufferScratch<float>& getFiso() 
+////            { 
+////              if (fiso)
+////                return *fiso;
+////              else
+////                throw Exception("Uninitialised TOD grid.");
+////            }
             
-//            Image::BufferScratch<float>& getEext() 
-//            { 
-//              if (eext)
-//                return *eext;
-//              else
-//                throw Exception("Uninitialised TOD grid.");
-//            }           
+////            Image::BufferScratch<float>& getEext() 
+////            { 
+////              if (eext)
+////                return *eext;
+////              else
+////                throw Exception("Uninitialised TOD grid.");
+////            }           
             
             
-          protected:
-            int lmax, nrows, ncols, nf;
-            double beta, mu;
+//          protected:
+//            int lmax, nrows, ncols, nf;
+//            double beta, mu;
             
-//            Image::BufferPreload<float>& dwi;
-//            Image::BufferScratch<float>* tod; 
-//            Image::BufferScratch<float>* fiso;
-//            Image::BufferScratch<float>* eext;
+////            Image::BufferPreload<float>& dwi;
+////            Image::BufferScratch<float>* tod; 
+////            Image::BufferScratch<float>* fiso;
+////            Image::BufferScratch<float>* eext;
             
-            Eigen::MatrixXd K, Ak, H, Hinv;
+//            Eigen::MatrixXd K, Ak, H, Hinv;
             
-            friend class ExternalEnergyComputer;
-          };
+//            friend class ExternalEnergyComputer;
+//          };
           
           
-          ExternalEnergyComputer(Stats& stat, const Shared& shared)
-            : EnergyComputer(stat), s(shared), //dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
-              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), dE(0.0)
-          {
-            auto eye  = Eigen::MatrixXd::Zero(s.nf+1, s.nf+1);
-            for (size_t i = 0; i <= s.nf; i++)
-              eye(i,i) = 1.0;
-            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
+          ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props);
+          
+//          ExternalEnergyComputer(Stats& stat, const Shared& shared)
+//            : EnergyComputer(stat), s(shared), //dwi_vox(s.dwi), tod_vox(*(s.tod)), fiso_vox(*(s.fiso)), eext_vox(*(s.eext)),
+//              T(s.dwi), y(s.nrows), t(s.ncols), d(s.ncols), fk(s.nf+1), c(s.nf+1), dE(0.0)
+//          {
+//            auto eye  = Eigen::MatrixXd::Zero(s.nf+1, s.nf+1);
+//            for (size_t i = 0; i <= s.nf; i++)
+//              eye(i,i) = 1.0;
+//            nnls = Math::ICLS::Problem<double>(s.Ak, eye);
             
-            resetEnergy();
-          }
+//            resetEnergy();
+//          }
           
 //          ExternalEnergyComputer(const ExternalEnergyComputer& E)
 //            : EnergyComputer(E.stats), s(E.s), dwi_vox(E.dwi_vox), tod_vox(E.tod_vox), fiso_vox(E.fiso_vox), eext_vox(E.eext_vox),
@@ -113,6 +116,10 @@ namespace MR {
           
 //          ~ExternalEnergyComputer() { }
           
+          
+          Image<float>& getTOD() { return tod; }
+          Image<float>& getFiso() { return fiso; }
+          Image<float>& getEext() { return eext; }
           
           void resetEnergy();
           
@@ -144,21 +151,24 @@ namespace MR {
           
           
         protected:
-          const Shared& s;
+//          const Shared& s;
           
-          Image<float> dwi_vox;
-          Image<float> tod_vox;
-          Image<float> fiso_vox;
-          Image<float> eext_vox;
+          Image<float> dwi;
+          Image<float> tod;
+          Image<float> fiso;
+          Image<float> eext;
           
-          Transform T;
+          transform_type T;
           
-          Eigen::VectorXd y, t, d, fk, c;
+          size_t lmax, nrows, ncols, nf;
+          double beta, mu, dE;
+          Eigen::MatrixXd K, Ak;
+          Eigen::VectorXd y, t, d, fk;//, c;
 //          Math::Vector<double>::View f;
 //          const Math::Matrix<double>::View A;
-          double dE;
           
           Math::ICLS::Problem<double> nnls;
+//          Math::ICLS::Solver<double> nnls_solver;
           
           std::vector<Eigen::Vector3i > changes_vox;
           std::vector<Eigen::VectorXd > changes_tod;
@@ -176,7 +186,7 @@ namespace MR {
           
           inline double hanning(const double w) const
           {
-            return (w <= (1.0-s.beta)/2) ? 0.0 : (w >= (1.0+s.beta)/2) ? 1.0 : (1 - std::cos(M_PI * (w-(1.0-s.beta)/2)/s.beta )) / 2;
+            return (w <= (1.0-beta)/2) ? 0.0 : (w >= (1.0+beta)/2) ? 1.0 : (1 - std::cos(M_PI * (w-(1.0-beta)/2)/beta )) / 2;
           }
           
         };

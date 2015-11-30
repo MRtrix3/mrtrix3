@@ -31,23 +31,24 @@ namespace MR {
     namespace Tractography {
       namespace GT {
 
-        MHSampler::MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
-                             EnergyComputer* e, Image<bool>& m)
-          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), lock(5*Particle::L), sigpos(Particle::L / 8.), sigdir(0.2)
-        {
-          if (m.valid()) {
-            T = Transform(m);
-            dims[0] = m.size(0);
-            dims[1] = m.size(1);
-            dims[2] = m.size(2);
-            mask = m;
-          }
-          else {
-            dims[0] = dwi.size(0);
-            dims[1] = dwi.size(1);
-            dims[2] = dwi.size(2);
-          }
-        }
+//        MHSampler::MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
+//                             EnergyComputer* e, Image<bool>& m)
+//          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), sigpos(Particle::L / 8.), sigdir(0.2)
+//        {
+//          //dims = {size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))};
+////          if (m.valid()) {
+////            T = Transform(m);
+////            dims[0] = m.size(0);
+////            dims[1] = m.size(1);
+////            dims[2] = m.size(2);
+////            mask = m;
+////          }
+////          else {
+////            dims[0] = dwi.size(0);
+////            dims[1] = dwi.size(1);
+////            dims[2] = dwi.size(2);
+////          }
+//        }
         
         
         // RUNTIME METHODS --------------------------------------------------------------
@@ -92,7 +93,7 @@ namespace MR {
           Point_t pos;
           do {
             pos = getRandPosInMask();
-          } while (! lock.lockIfNotLocked(pos));
+          } while (! lock->lockIfNotLocked(pos));
           Point_t dir = getRandDir();
           
           double dE = E->stageAdd(pos, dir);
@@ -105,7 +106,7 @@ namespace MR {
           else {
             E->clearChanges();
           }
-          lock.unlock(pos);
+          lock->unlock(pos);
         }
         
         
@@ -120,7 +121,7 @@ namespace MR {
             par = pGrid.getRandom(idx);
             if (par == NULL || par->hasPredecessor() || par->hasSuccessor())
               return;
-          } while (! lock.lockIfNotLocked(par->getPosition()));
+          } while (! lock->lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           double dE = E->stageRemove(par);
@@ -134,7 +135,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock.unlock(pos0);
+          lock->unlock(pos0);
         }
         
         
@@ -149,14 +150,14 @@ namespace MR {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock.lockIfNotLocked(par->getPosition()));
+          } while (! lock->lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           Point_t pos, dir;
           moveRandom(par, pos, dir);
           
           if (!inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock.unlock(pos0);
+            lock->unlock(pos0);
             return;
           }
           double dE = E->stageShift(par, pos, dir);
@@ -170,7 +171,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock.unlock(pos0);
+          lock->unlock(pos0);
         }
         
         
@@ -185,13 +186,13 @@ namespace MR {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock.lockIfNotLocked(par->getPosition()));
+          } while (! lock->lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           
           Point_t pos, dir;
           bool moved = moveOptimal(par, pos, dir);
           if (!moved || !inMask(T.scanner2voxel.cast<float>() * pos)) {
-            lock.unlock(pos0);
+            lock->unlock(pos0);
             return;
           }
           
@@ -207,7 +208,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock.unlock(pos0);
+          lock->unlock(pos0);
         }
         
         
@@ -222,7 +223,7 @@ namespace MR {
             par = pGrid.getRandom(idx);
             if (par == NULL)
               return;
-          } while (! lock.lockIfNotLocked(par->getPosition()));
+          } while (! lock->lockIfNotLocked(par->getPosition()));
           Point_t pos0 = par->getPosition();
           int alpha0 = (rng_uniform() < 0.5) ? -1 : 1;
           ParticleEnd pe0;
@@ -252,7 +253,7 @@ namespace MR {
             E->clearChanges();
           }
           
-          lock.unlock(pos0);
+          lock->unlock(pos0);
         }
         
         
@@ -270,14 +271,11 @@ namespace MR {
         }                                 // scanner positie schrijven.
         
         
-        bool MHSampler::inMask(const Point_t p) const
+        bool MHSampler::inMask(const Point_t p)
         {
           if ((p[0] <= -0.5) || (p[0] >= dims[0]-0.5) || 
               (p[1] <= -0.5) || (p[1] >= dims[1]-0.5) ||
               (p[2] <= -0.5) || (p[2] >= dims[2]-0.5))
-//          if ((p[0] <= 0.0) || (p[0] >= dims[0]-1.0) || 
-//              (p[1] <= 0.0) || (p[1] >= dims[1]-1.0) ||
-//              (p[2] <= 0.0) || (p[2] >= dims[2]-1.0))
             return false;
           if (mask.valid()) {
             mask.index(0) = Math::round<size_t>(p[0]);
@@ -336,21 +334,6 @@ namespace MR {
             return false;
           }
         }
-        
-        
-        double MHSampler::calcShiftProb(const Particle *par, const Point_t &pos, const Point_t &dir) const
-        {
-          Point_t Dpos = par->getPosition() - pos;
-          Point_t Ddir = par->getDirection() - dir;
-          return gsl_ran_gaussian_pdf(Dpos[0], sigpos) * gsl_ran_gaussian_pdf(Dpos[1], sigpos) * gsl_ran_gaussian_pdf(Dpos[2], sigpos) *
-              gsl_ran_gaussian_pdf(Ddir[0], sigdir) * gsl_ran_gaussian_pdf(Ddir[1], sigdir) * gsl_ran_gaussian_pdf(Ddir[2], sigdir);
-//	  Point_t Dep1 = par->getEndPoint(-1) - (pos - Particle::L * dir);
-//	  Point_t Dep2 = par->getEndPoint(1) - (pos + Particle::L * dir);
-//	  double sigma = Particle::L/2;
-//	  return gsl_ran_gaussian_pdf(Dep1[0], sigma) * gsl_ran_gaussian_pdf(Dep1[1], sigma) * gsl_ran_gaussian_pdf(Dep1[2], sigma) *
-//		 gsl_ran_gaussian_pdf(Dep2[0], sigma) * gsl_ran_gaussian_pdf(Dep2[1], sigma) * gsl_ran_gaussian_pdf(Dep2[2], sigma);
-        }
-        
         
         
 

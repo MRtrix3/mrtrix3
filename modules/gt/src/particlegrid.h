@@ -50,7 +50,17 @@ namespace MR {
           typedef std::vector<Particle*> ParticleVectorType;
           
           template <class HeaderType>
-          ParticleGrid(const HeaderType& image);
+          ParticleGrid(const HeaderType& image)
+          {
+            n[0] = Math::ceil<size_t>( image.size(0) * image.spacing(0) / (2*Particle::L) );
+            n[1] = Math::ceil<size_t>( image.size(1) * image.spacing(1) / (2*Particle::L) );
+            n[2] = Math::ceil<size_t>( image.size(2) * image.spacing(2) / (2*Particle::L) );
+            grid.resize(n[0]*n[1]*n[2]);
+            
+            Eigen::DiagonalMatrix<default_type, 3> newspacing (2*Particle::L, 2*Particle::L, 2*Particle::L);
+            T = image.transform() * newspacing;
+            T = T.inverse();
+          }
           
           ParticleGrid(const ParticleGrid& other)
             : mutex(), pool(), list(other.list), grid(other.grid), rng(), T(other.T)

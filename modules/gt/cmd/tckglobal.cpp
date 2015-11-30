@@ -29,7 +29,7 @@
 #include "math/SH.h"
 #include "image.h"
 #include "thread.h"
-#include "algo/copy.h"
+#include "algo/threaded_copy.h"
 
 #include "particlegrid.h"
 #include "gt.h"
@@ -172,6 +172,11 @@ void run ()
 
   using namespace DWI::Tractography::GT;
   
+  // Parse arguments --------------------------------------------------------------------
+  
+  auto dwi = Image<float>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
+  
+  
   // Parse options ----------------------------------------------------------------------
   
   Particle::L = get_option_value("length", 1.0);    
@@ -230,10 +235,9 @@ void run ()
   }
   
   opt = get_options("prob");
-  std::vector<float> prob;
   if (opt.size())
   {
-    prob = opt[0][0];
+    auto prob = opt[0][0].as_sequence_float();
     if (prob.size() == 5) {
       properties.p_birth = prob[0];
       properties.p_death = prob[1];
@@ -248,8 +252,10 @@ void run ()
   
   auto mask = Image<bool>();
   opt = get_options("mask");
-  if (opt.size())
+  if (opt.size()) {
     mask = Image<bool>::open(opt[0][0]);
+    check_dimensions(dwi, mask, 0, 3);
+  }
   
   
   double niter = get_option_value("niter", 1e6);
@@ -266,20 +272,16 @@ void run ()
   }
 
 
-  // Prepare buffers --------------------------------------------------------------------
+  // Prepare data structures ------------------------------------------------------------
   
-  //PAUSE;
-  
-  auto dwi = Image<float>::open(argument[0]).with_direct_io(Stride::contiguous_along_axis(3));
-
   Stats stats (t0, t1, niter);
   
   opt = get_options("etrend");
   if (opt.size())
     stats.open_stream(opt[0][0]);
   
-  ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi, properties);
-  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, EextShared);
+//  ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi, properties);
+  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
   
   ParticleGrid pgrid = ParticleGrid(dwi);
   
@@ -332,21 +334,21 @@ void run ()
   if (opt.size()) {
     header.size(3) = Math::SH::NforL(properties.Lmax);
     auto TOD = Image<float>::create (opt[0][0], header);
-    copy_with_progress_message("copying TOD image", EextShared.getTOD(), TOD);
+    threaded_copy_with_progress_message("copying TOD image", Eext->getTOD(), TOD);
   }
   
   opt = get_options("fiso");
   if (opt.size()) {
     header.size(3) = properties.resp_ISO.size();
     auto Fiso = Image<float>::create (opt[0][0], header);
-    copy_with_progress_message("copying isotropic fractions", EextShared.getFiso(), Fiso);
+    threaded_copy_with_progress_message("copying isotropic fractions", Eext->getFiso(), Fiso);
   }
   
   opt = get_options("eext");
   if (opt.size()) {
     header.set_ndim(3);
     auto EextI = Image<float>::create (opt[0][0], header);
-    copy_with_progress_message("copying external energy", EextShared.getEext(), EextI);
+    threaded_copy_with_progress_message("copying external energy", Eext->getEext(), EextI);
   }
   
   

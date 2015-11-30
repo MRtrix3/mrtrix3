@@ -47,16 +47,21 @@ namespace MR {
         class MHSampler
         {
         public:
-          MHSampler(const Image<float>& dwi, Properties& p, Stats& s, ParticleGrid& pgrid, 
-                    EnergyComputer* e, Image<bool>& m);
+          MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
+                    EnergyComputer* e, Image<bool>& m)
+            : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), 
+              dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, 
+              mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), 
+              sigpos(Particle::L / 8.), sigdir(0.2)
+          { }
           
           MHSampler(const MHSampler& other)
             : props(other.props), stats(other.stats), pGrid(other.pGrid), E(other.E->clone()), 
               T(other.T), mask(other.mask), lock(other.lock), rng_uniform(), rng_normal(), sigpos(other.sigpos), sigdir(other.sigdir)
           {
-            dims[0] = other.dims[0];
-            dims[1] = other.dims[1];
-            dims[2] = other.dims[2];
+//            dims[0] = other.dims[0];
+//            dims[1] = other.dims[1];
+//            dims[2] = other.dims[2];
           }
           
           ~MHSampler() { delete E; }
@@ -80,10 +85,10 @@ namespace MR {
           EnergyComputer* E;      // Polymorphic copy requires call to EnergyComputer::clone(), hence references or smart pointers won't do.
           
           Transform T;
-          int dims[3];
+          std::vector<size_t> dims;
           Image<bool> mask;
           
-          SpatialLock<float>& lock;
+          std::shared_ptr< SpatialLock<float> > lock;
           Math::RNG::Uniform<float> rng_uniform;
           Math::RNG::Normal<float> rng_normal;
           float sigpos, sigdir;
@@ -91,7 +96,7 @@ namespace MR {
           
           Point_t getRandPosInMask();
           
-          bool inMask(const Point_t p) const;
+          bool inMask(const Point_t p);
           
           Point_t getRandDir();
           
@@ -99,7 +104,17 @@ namespace MR {
           
           bool moveOptimal(const Particle* par, Point_t& pos, Point_t& dir) const;
           
-          double calcShiftProb(const Particle* par, const Point_t& pos, const Point_t& dir) const;
+          inline double calcShiftProb(const Particle* par, const Point_t& pos, const Point_t& dir) const
+          {
+            Point_t Dpos = par->getPosition() - pos;
+            Point_t Ddir = par->getDirection() - dir;
+            return gaussian_pdf(Dpos, sigpos) * gaussian_pdf(Ddir, sigdir);
+          }
+          
+          // move to math library at some point
+          inline double gaussian_pdf(const Point_t& x, double sigma) const {
+            return std::exp( -x.squaredNorm() / (2*sigma) ) / std::sqrt( 2*Math::pi * sigma*sigma);
+          }
           
           
         };
