@@ -42,6 +42,7 @@ system = None
 dependencies = 0
 dep_recursive = False
 verbose = False
+nowarnings = False
 targets = []
 use_multiple_cores = True
 generate_bash_completion = True
@@ -227,6 +228,7 @@ config folder (by default: 'release').
 OPTIONS:
 
   -verbose               print each command as it is being invoked
+  -nowarnings            do not print out non-fatal compiler messages (warnings, etc)
   -showdep[=target|all]  print the list of dependencies for every target (with 
                          -showdep=target; the default) or for all files
   -tree                  [only used with -showdep) print full dependency tree for 
@@ -236,6 +238,8 @@ OPTIONS:
     exit (0)
   elif '-verbose'.startswith(arg): 
     verbose = True
+  elif '-nowarnings'.startswith(arg):
+    nowarnings = True
   elif '-showdep'.startswith(arg): 
     dependencies = 1
   elif arg.startswith ('-showdep='):
@@ -612,7 +616,7 @@ def execute (message, cmd):
     if len(stderr):
       errstr += stderr.decode (errors='ignore') + '\n\n'
 
-    if errstr:
+    if errstr and not nowarnings:
       disp (errstr);
 
   except OSError:
