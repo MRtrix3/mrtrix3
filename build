@@ -48,13 +48,14 @@ use_multiple_cores = True
 generate_bash_completion = True
 
 
-global todo, headers, object_deps, file_flags, lock, print_lock, stop
+global todo, headers, object_deps, file_flags, lock, print_lock, stop, main_cindex
 global include_paths
 todo, headers, object_deps, file_flags = {}, {}, {}, {}
 lock = threading.Lock()
 print_lock = threading.Lock()
 stop = False
 error_stream = None
+main_cindex = 0
 
 logfile = open ('build.log', 'wb')
 
@@ -398,7 +399,7 @@ class Entry:
 
     
 
-  def execute (self):
+  def execute (self, cindex, formatstr):
     folder = os.path.dirname (self.name)
     try:
       os.makedirs (folder)
@@ -417,7 +418,7 @@ class Entry:
         fd.write ('</qresource>\n</RCC>\n')
       
     if len(self.cmd) > 0: 
-      return execute ('[' + self.action + '] ' + self.name, self.cmd)
+      return execute (formatstr.format (cindex, self.action, self.name), self.cmd)
     else: 
       return None
 
@@ -743,7 +744,10 @@ def list_lib_deps ():
 
 
 def build_next (id):
-  global todo, lock, stop
+  global todo, lock, stop, main_cindex
+  total_count = len(todo)
+  cindex = 0
+  formatstr = '({:>'+str(len(str(total_count)))+'}/'+str(total_count)+') [{}] {}'
 
   try:
     while not stop:
@@ -756,6 +760,8 @@ def build_next (id):
           if not len(unsatisfied_deps):
             todo[item].currently_being_processed = True
             current = item
+            main_cindex+=1 
+            cindex = main_cindex
             break
       else: stop = max (stop, 1)
       lock.release()
@@ -766,7 +772,7 @@ def build_next (id):
         continue
   
       target = todo[current]
-      if target.execute():
+      if target.execute(cindex, formatstr):
         stop = 2
         return
 
