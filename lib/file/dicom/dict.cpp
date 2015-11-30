@@ -3564,7 +3564,7 @@ namespace MR {
 
         // Siemens private tags:
         dict[0x0019100CUL] =  "DSSiemensBValue";
-        dict[0x0019100EUL] =  "FDSiemensBValue";
+        dict[0x0019100EUL] =  "FDSiemensDWDirection";
         dict[0x00291010UL] =  "UNSiemensCSA1";
         dict[0x00291020UL] =  "UNSiemensCSA2";
         
