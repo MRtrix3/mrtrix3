@@ -98,18 +98,29 @@ namespace MR
         }
 
 
-        void reverse_track() { }
+        virtual void reverse_track() { if (act_method_additions) act().reverse_track(); }
         bool init() { return false; }
         term_t next() { return term_t(); }
         float get_metric() { return NAN; }
 
 
-        void truncate_track (std::vector< Point<value_type> >& tck, const size_t revert_step)
+        void truncate_track (GeneratedTrack& tck, const size_t length_to_revert_from, const size_t revert_step)
         {
-          for (size_t i = revert_step; i && tck.size(); --i)
-            tck.pop_back();
+          if (tck.get_seed_index() + revert_step >= length_to_revert_from) {
+            tck.clear();
+            pos.invalidate();
+            dir.invalidate();
+            return;
+          }
+          const size_t new_size = length_to_revert_from - revert_step;
+          if (tck.size() == 2 || new_size == 1)
+            dir = (tck[1] - tck[0]).normalise();
+          else
+            dir = (tck[new_size] - tck[new_size - 2]).normalise();
+          tck.resize (length_to_revert_from - revert_step);
+          pos = tck.back();
           if (S.is_act())
-            act().sgm_depth = MAX (0, act().sgm_depth - int(revert_step));
+            act().sgm_depth = (act().sgm_depth > revert_step) ? act().sgm_depth - revert_step : 0;
         }
 
 

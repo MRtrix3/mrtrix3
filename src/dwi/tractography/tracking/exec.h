@@ -233,14 +233,13 @@ namespace MR
             void gen_track_unidir (GeneratedTrack& tck)
             {
 
-              if (S.is_act())
-                method.act().sgm_depth = 0;
-
               term_t termination = CONTINUE;
 
               if (S.is_act() && S.act().backtrack()) {
 
-                size_t revert_step = 0;
+                size_t revert_step = 1;
+                size_t max_size_at_backtrack = tck.size();
+                unsigned int revert_count = 0;
 
                 do {
                   termination = iterate();
@@ -249,12 +248,20 @@ namespace MR
                   if (termination) {
                     apply_priors (termination);
                     if (track_excluded && termination != ENTER_EXCLUDE) {
-                      method.truncate_track (tck, ++revert_step);
-                      if (tck.size() > tck.get_seed_index() + 1) {
+                      if (tck.size() > max_size_at_backtrack) {
+                        max_size_at_backtrack = tck.size();
+                        revert_step = 1;
+                        revert_count = 1;
+                      } else {
+                        if (revert_count++ == ACT_BACKTRACK_ATTEMPTS) {
+                          revert_count = 1;
+                          ++revert_step;
+                        }
+                      }
+                      method.truncate_track (tck, max_size_at_backtrack, revert_step);
+                      if (method.pos.valid()) {
                         track_excluded = false;
                         termination = CONTINUE;
-                        method.pos = tck.back();
-                        method.dir = (tck.back() - tck[tck.size() - 2]).normalise();
                       }
                     }
                   } else if (tck.size() >= S.max_num_points) {
@@ -412,6 +419,9 @@ namespace MR
               // If using the Seed_test algorithm (indicated by max_num_points == 2), don't want to execute this check
               if (S.max_num_points == 2)
                 return true;
+              // If the seed was in SGM, need to confirm that one side of the track actually made it to WM
+              if (method.act().seed_in_sgm && !method.act().sgm_seed_to_wm)
+                return false;
               // Used these in the ACT paper, but wasn't entirely happy with the method; can change these #defines to re-enable
               // ACT instead now defaults to a 2-voxel minimum length
               if (!ACT_WM_INT_REQ && !ACT_WM_ABS_REQ)

@@ -175,17 +175,13 @@ namespace MR
           return EXIT_IMAGE;
 
         value_type max_val = 0.0;
-        size_t nan_count = 0;
         for (size_t i = 0; i < calibrate_list.size(); ++i) {
           value_type val = FOD (rotate_direction (dir, calibrate_list[i]));
           if (std::isnan (val))
-            ++nan_count;
+            return EXIT_IMAGE;
           else if (val > max_val)
             max_val = val;
         }
-
-        if (nan_count == calibrate_list.size())
-          return EXIT_IMAGE;
 
         if (max_val <= 0.0)
           return CALIBRATE_FAIL;

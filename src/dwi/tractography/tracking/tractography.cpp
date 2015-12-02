@@ -26,14 +26,15 @@ namespace MR
       + Option ("number",
             "set the desired number of tracks. The program will continue to "
             "generate tracks until this number of tracks have been selected "
-            "and written to the output file.")
+            "and written to the output file; set to 0 to ignore limit.")
           + Argument ("tracks").type_integer (0, 0, std::numeric_limits<int>::max())
 
       + Option ("maxnum",
             "set the maximum number of tracks to generate. The program will "
             "not generate more tracks than this number, even if the desired "
-            "number of tracks hasn't yet been reached (default is 100 x number).")
-          + Argument ("tracks").type_integer (1, 1, INT_MAX)
+            "number of tracks hasn't yet been reached (default is 100 x number); "
+            "set to 0 to ignore limit.")
+          + Argument ("tracks").type_integer (0, 0, INT_MAX)
 
       + Option ("maxlength",
             "set the maximum length of any track in mm (default is 100 x voxelsize).")
