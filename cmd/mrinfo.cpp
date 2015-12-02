@@ -72,18 +72,18 @@ void usage ()
     +   Option ("offset", "image intensity offset")
     +   Option ("multiplier", "image intensity multiplier")
     +   Option ("transform", "the image transform")
-    +   Option ("norealign", 
+    +   Option ("norealign",
           "do not realign transform to near-default RAS coordinate system (the "
           "default behaviour on image load). This is useful to inspect the transform "
           "and strides as they are actually stored in the header, rather than as "
-          "MRtrix interprets them.") 
+          "MRtrix interprets them.")
 
     + Option ("property", "any text properties embedded in the image header under the "
         "specified key (use 'all' to list all keys found)").allow_multiple()
     +   Argument ("key").type_text()
 
     + GradImportOptions
-    + Option ("raw_dwgrad", 
+    + Option ("raw_dwgrad",
         "do not modify the gradient table from what was found in the image headers. This skips the "
         "validation steps normally performed within MRtrix applications (i.e. do not verify that "
         "the number of entries in the gradient table matches the number of volumes in the image, "
@@ -147,7 +147,7 @@ void print_properties (const Header& header, const std::string& key)
     const auto values = header.keyval().find (key);
     if (values != header.keyval().end())
       std::cout << values->second << "\n";
-    else 
+    else
       WARN ("no \"" + key + "\" entries found in \"" + header.name() + "\"");
   }
 }
@@ -184,17 +184,18 @@ void run ()
   const bool shellcounts = get_options("shellcounts")   .size();
   const bool raw_dwgrad  = get_options("raw_dwgrad")    .size();
 
-  const bool print_full_header = !(format || ndim || size || vox || datatype || stride || 
+  const bool print_full_header = !(format || ndim || size || vox || datatype || stride ||
       offset || multiplier || properties.size() || transform || dwgrad || export_grad || shells || shellcounts);
 
 
   for (size_t i = 0; i < argument.size(); ++i) {
     auto header = Header::open (argument[i]);
-    if (raw_dwgrad) 
+    if (raw_dwgrad)
       header.set_DW_scheme (DWI::get_DW_scheme (header));
-    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts) 
+    else if (export_grad || check_option_group (GradImportOptions) || dwgrad || shells || shellcounts)
       header.set_DW_scheme (DWI::get_valid_DW_scheme (header, true));
 
+    Eigen::IOFormat fmt(Eigen::FullPrecision, 0, ", ", "\n", "", "", "", "\n");
     if (format)     std::cout << header.format() << "\n";
     if (ndim)       std::cout << header.ndim() << "\n";
     if (size)       print_dimensions (header);
@@ -203,22 +204,22 @@ void run ()
     if (stride)     print_strides (header);
     if (offset)     std::cout << header.intensity_offset() << "\n";
     if (multiplier) std::cout << header.intensity_scale() << "\n";
-    if (transform)  std::cout << header.transform().matrix();
+    if (transform)  std::cout << header.transform().matrix().format(fmt);
     if (dwgrad)     std::cout << header.parse_DW_scheme();
-    if (shells || shellcounts)     { 
-      DWI::Shells dwshells (header.parse_DW_scheme()); 
+    if (shells || shellcounts)     {
+      DWI::Shells dwshells (header.parse_DW_scheme());
       if (shells) {
-        for (size_t i = 0; i < dwshells.count(); i++) 
+        for (size_t i = 0; i < dwshells.count(); i++)
           std::cout << dwshells[i].get_mean() << " ";
         std::cout << "\n";
       }
       if (shellcounts) {
-        for (size_t i = 0; i < dwshells.count(); i++) 
+        for (size_t i = 0; i < dwshells.count(); i++)
           std::cout << dwshells[i].count() << " ";
         std::cout << "\n";
       }
     }
-    for (size_t n = 0; n < properties.size(); ++n) 
+    for (size_t n = 0; n < properties.size(); ++n)
       print_properties (header, properties[n][0]);
 
     DWI::export_grad_commandline (header);

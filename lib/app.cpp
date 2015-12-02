@@ -22,9 +22,6 @@
 
 #include <unistd.h>
 
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_errno.h>
-
 #include "app.h"
 #include "debug.h"
 #include "progressbar.h"
@@ -42,14 +39,6 @@
 
 namespace MR
 {
-
-
-  void mrtrix_gsl_error_handler (const char* reason, const char* file, int line, int gsl_errno)
-  {
-    throw Exception (std::string ("GSL error: ") + reason);
-  }
-
-
 
   namespace App
   {
@@ -536,7 +525,7 @@ namespace MR
 #endif
         " version, built " __DATE__ 
         + ( project_version ? std::string(" against MRtrix ") + mrtrix_version : std::string("") ) 
-        + ", using GSL " + gsl_version + "\n"
+        + ", using Eigen " + str(EIGEN_WORLD_VERSION) + "." + str(EIGEN_MAJOR_VERSION) + "." + str(EIGEN_MINOR_VERSION) + "\n"
         "Author(s): " + AUTHOR + "\n" +
         COPYRIGHT + "\n";
 
@@ -911,8 +900,6 @@ namespace MR
 #endif
 
       srand (time (nullptr));
-
-      gsl_set_error_handler (&mrtrix_gsl_error_handler);
     }
 
 
