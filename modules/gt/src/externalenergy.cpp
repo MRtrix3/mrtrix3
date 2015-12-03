@@ -36,96 +36,12 @@ namespace MR {
     namespace Tractography {
       namespace GT {
         
-//        ExternalEnergyComputer::Shared::Shared(const Image<float>& dwimage, const Properties& props)
-//          : lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), nf(props.resp_ISO.size()), 
-//            beta(props.beta), mu(props.ppot)
-//        {
-////          // Set buffers
-////          Header info (dwimage);
-////          info.datatype() = DataType::Float32;
-////          info.size(3) = ncols;
-////          tod = new Image::BufferScratch<float>(info);
-////          tod->zero();
-          
-////          info.dim(3) = nf;
-////          fiso = new Image::BufferScratch<float>(info);
-////          fiso->zero();
-          
-////          info.set_ndim(3);
-////          eext = new Image::BufferScratch<float>(info);
-////          eext->zero();
-          
-//          // Set kernel matrices
-//          auto grad = DWI::get_DW_scheme(dwimage);
-//          nrows = grad.rows();
-//          DWI::Shells shells (grad);
-          
-//          if (props.resp_WM.rows() != shells.count())
-//            FAIL("WM kernel size does not match the no. b-values in the image.");
-//          for (size_t j = 0; j < props.resp_ISO.size(); j++) {
-//            if (props.resp_ISO[j].size() != shells.count())
-//              FAIL("Isotropic kernel size does not match the no. b-values in the image.");
-//          }
-                    
-//          K.resize(nrows, ncols);
-//          K.setZero();
-//          Ak.resize(nrows, nf+1);
-//          Ak.setZero();
-          
-//          Eigen::VectorXd delta_vec (ncols);
-//          Eigen::VectorXd wmr_sh (lmax/2+1), wmr_rh (lmax/2+1);
-//          wmr_sh.setZero();
-//          Eigen::Vector3d unit_dir;
-//          double wmr0;
-          
-//          for (size_t s = 0; s < shells.count(); s++)
-//          {
-//            for (int l = 0; l <= lmax/2; l++)
-//              wmr_sh[l] = (l < props.resp_WM.cols()) ? props.resp_WM(s, l) : 0.0;
-//            wmr_rh = Math::SH::SH2RH(wmr_sh);
-//            wmr0 = props.resp_WM(s,0) / std::sqrt(4*M_PI);
-            
-//            for (std::vector<size_t>::const_iterator it = shells[s].get_volumes().begin(); it != shells[s].get_volumes().end(); ++it)
-//            {
-//              size_t r = *it;
-//              // K
-//              unit_dir << grad(r,0), grad(r,1), grad(r,2);
-//              double n = unit_dir.norm();
-//              if (n > 0.0)
-//                unit_dir /= n;
-//              Math::SH::delta(delta_vec, unit_dir, lmax);
-//              Math::SH::sconv(delta_vec, wmr_rh, delta_vec);
-//              K.row(r) = delta_vec;
-//              // Ak
-//              Ak(r,0) = wmr0;
-//              for (size_t j = 0; j < props.resp_ISO.size(); j++)
-//                Ak(r,j+1) = props.resp_ISO[j][s];
-//            }
-//          }
-//          K *= props.weight;
-//          //VAR(K);
-//          //VAR(Ak);
-          
-//          H = Ak.transpose() * Ak;
-//          Hinv = H.inverse();  // invert in place
-//        }
-        
-        
-//        ExternalEnergyComputer::Shared::~Shared()
-//        {
-//          delete tod;
-//          delete fiso;
-//          delete eext;
-//        }
-        
-        
-        
         ExternalEnergyComputer::ExternalEnergyComputer(Stats& stat, const Image<float>& dwimage, const Properties& props)
           : EnergyComputer(stat),
             dwi(dwimage),
             T(Transform(dwimage).scanner2voxel),
             lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), nf(props.resp_ISO.size()),
-            beta(props.beta), mu(props.ppot), dE(0.0)
+            beta(props.beta), mu(props.ppot*M_sqrt4PI), dE(0.0)
         {
           DEBUG("Initialise computation of external energy.");
           // Create images --------------------------------------------------------------
@@ -206,21 +122,15 @@ namespace MR {
         void ExternalEnergyComputer::resetEnergy()
         {
           DEBUG("Reset external energy.");
-//          Image::Loop loop (0, 3);  // Loop over spatial dimensions
           double e;
           dE = 0.0;
-//          for (loop.start(dwi_vox); loop.ok(); loop.next(dwi_vox))
           for (auto l = Loop(dwi, 0, 3) (dwi, tod, fiso, eext); l; ++l)
           {
-//            tod_vox[0] = fiso_vox[0] = eext_vox[0] = dwi_vox[0];
-//            tod_vox[1] = fiso_vox[1] = eext_vox[1] = dwi_vox[1];
-//            tod_vox[2] = fiso_vox[2] = eext_vox[2] = dwi_vox[2];
             y = dwi.row(3).cast<double>();
             t = tod.row(3).cast<double>();
             e = calcEnergy();
             eext.value() = e;
             dE += e;
-            //memcpy(fiso_vox.address(), fiso.ptr(), s.nf*sizeof(float));
             fiso.row(3) = fk.tail(nf).cast<float>();
           }
           stats.incEextTotal(dE - stats.getEextTotal());  // Reset total external energy
@@ -232,12 +142,7 @@ namespace MR {
         {
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
-//            tod_vox[0] = fiso_vox[0] = eext_vox[0] = changes_vox[k][0];
-//            tod_vox[1] = fiso_vox[1] = eext_vox[1] = changes_vox[k][1];
-//            tod_vox[2] = fiso_vox[2] = eext_vox[2] = changes_vox[k][2];
             assign_pos_of(changes_vox[k], 0, 3).to(tod, fiso, eext);
-//            memcpy(tod_vox.address(), changes_tod[k].ptr(), s.ncols*sizeof(float));
-//            memcpy(fiso_vox.address(), changes_fiso[k].ptr(), s.nf*sizeof(float));
             tod.row(3) = changes_tod[k].cast<float>();
             fiso.row(3) = changes_fiso[k].cast<float>();
             eext.value() = changes_eext[k];
@@ -288,9 +193,6 @@ namespace MR {
         {
           if (w == 0.0)
             return;
-//          tod_vox[0] = vox[0];
-//          tod_vox[1] = vox[1];
-//          tod_vox[2] = vox[2];
           assign_pos_of(vox, 0, 3).to(tod);
           if (!tod.valid())
             return;
@@ -303,7 +205,6 @@ namespace MR {
             }
           }
           changes_vox.push_back(vox);
-//          t += Math::Vector<float>(tod_vox.address(), s.ncols);
           t += tod.row(3).cast<double>();
           changes_tod.push_back(t);
         }
@@ -315,11 +216,7 @@ namespace MR {
           double e;
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
-//            dwi_vox[0] = eext_vox[0] = changes_vox[k][0];
-//            dwi_vox[1] = eext_vox[1] = changes_vox[k][1];
-//            dwi_vox[2] = eext_vox[2] = changes_vox[k][2];
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
-//            y = Math::Vector<float>(dwi_vox.address(), s.nrows);
             y = dwi.row(3).cast<double>();
             t = changes_tod[k];
             e = calcEnergy();
@@ -334,18 +231,11 @@ namespace MR {
         
         double ExternalEnergyComputer::calcEnergy()
         {
-          //Math::mult(y, 1.0, -1.0, CblasNoTrans, s.K, t);   // y = d - K t
-          //Math::mult(c, 1.0, CblasTrans, s.Ak, y);          // c = Ak^T y
-          //Math::solve_LS_nonneg_Hf(fk, s.H, s.Hinv, c);     // H fk = c
-          
           y.noalias() -= K * t;
           Math::ICLS::Solver<double> nnls_solver (nnls);
           nnls_solver(fk, y);
-          
-//          Math::mult(y, 1.0, -1.0, CblasNoTrans, A, f);     // res = y - A f
-//          return Math::norm2(y) / s.nrows + s.mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
           y.noalias() -= Ak.rightCols(nf) * fk.tail(nf);
-          return y.squaredNorm() / nrows + mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
+          return y.squaredNorm() / nrows + mu * t[0];     // MSE + L1 regularizer
         }
         
         

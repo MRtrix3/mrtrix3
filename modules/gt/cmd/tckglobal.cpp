@@ -280,7 +280,6 @@ void run ()
   if (opt.size())
     stats.open_stream(opt[0][0]);
   
-//  ExternalEnergyComputer::Shared EextShared = ExternalEnergyComputer::Shared(dwi, properties);
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
   
   ParticleGrid pgrid = ParticleGrid(dwi);

@@ -56,18 +56,6 @@ namespace MR {
             neighbourhood.push_back(pe);
           }
           
-//          InternalEnergyComputer(const InternalEnergyComputer& other)
-//            : EnergyComputer(other.stats), pGrid(other.pGrid), cpot(other.cpot), 
-//              dEint(0.0), neighbourhood(), normalization(1.0), rng()
-//          {
-//            neighbourhood.reserve(1000);
-//            ParticleEnd pe;
-//            pe.par = NULL;
-//            pe.alpha = 0;
-//            pe.p_suc = 1.0;
-//            pe.e_conn = 0.0;
-//            neighbourhood.push_back(pe);
-//          }
           
           double stageShift(const Particle* par, const Point_t& pos, const Point_t& dir)
           {

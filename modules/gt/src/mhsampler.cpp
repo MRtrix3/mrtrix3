@@ -30,26 +30,6 @@ namespace MR {
   namespace DWI {
     namespace Tractography {
       namespace GT {
-
-//        MHSampler::MHSampler(const Image<float>& dwi, Properties &p, Stats &s, ParticleGrid &pgrid, 
-//                             EnergyComputer* e, Image<bool>& m)
-//          : props(p), stats(s), pGrid(pgrid), E(e), T(dwi), dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), sigpos(Particle::L / 8.), sigdir(0.2)
-//        {
-//          //dims = {size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))};
-////          if (m.valid()) {
-////            T = Transform(m);
-////            dims[0] = m.size(0);
-////            dims[1] = m.size(1);
-////            dims[2] = m.size(2);
-////            mask = m;
-////          }
-////          else {
-////            dims[0] = dwi.size(0);
-////            dims[1] = dwi.size(1);
-////            dims[2] = dwi.size(2);
-////          }
-//        }
-        
         
         // RUNTIME METHODS --------------------------------------------------------------
         
