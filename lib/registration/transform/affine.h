@@ -202,19 +202,13 @@ namespace MR
           Eigen::MatrixXd get_jacobian_wrt_params (const Eigen::Vector3& p) const {
             Eigen::MatrixXd jacobian (3, 12);
             jacobian.setZero();
-            Eigen::Vector3 v;
-            v[0] = p[0] - this->centre[0];
-            v[1] = p[1] - this->centre[1];
-            v[2] = p[2] - this->centre[2];
-            size_t blockOffset = 0;
-            for (size_t block = 0; block < 3; ++block) {
-              for (size_t dim = 0; dim < 3; ++dim)
-                jacobian (block, blockOffset + dim) = v[dim];
-              blockOffset += 3;
-            }
-            for (size_t dim = 0; dim < 3; ++dim) {
-              jacobian (dim, blockOffset + dim) = 1.0;
-            }
+            Eigen::Matrix<double, 1, 3> v (p - centre); // const Matrix is slower
+            jacobian.block<1, 3>(0, 0) = v;
+            jacobian (0, 9) = 1.0;
+            jacobian.block<1, 3>(1, 3) = v;
+            jacobian (1, 10) = 1.0;
+            jacobian.block<1, 3>(2, 6) = v;
+            jacobian (2, 11) = 1.0;
             return jacobian;
           }
 
