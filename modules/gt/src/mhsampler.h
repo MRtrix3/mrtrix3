@@ -53,15 +53,15 @@ namespace MR {
               dims{size_t(dwi.size(0)), size_t(dwi.size(1)), size_t(dwi.size(2))}, 
               mask(m), lock(std::make_shared<SpatialLock<float>>(5*Particle::L)), 
               sigpos(Particle::L / 8.), sigdir(0.2)
-          { }
+          {
+            DEBUG("Initialise Metropolis Hastings sampler.");
+          }
           
           MHSampler(const MHSampler& other)
             : props(other.props), stats(other.stats), pGrid(other.pGrid), E(other.E->clone()), 
-              T(other.T), mask(other.mask), lock(other.lock), rng_uniform(), rng_normal(), sigpos(other.sigpos), sigdir(other.sigdir)
+              T(other.T), dims(other.dims), mask(other.mask), lock(other.lock), rng_uniform(), rng_normal(), sigpos(other.sigpos), sigdir(other.sigdir)
           {
-//            dims[0] = other.dims[0];
-//            dims[1] = other.dims[1];
-//            dims[2] = other.dims[2];
+            DEBUG("Copy Metropolis Hastings sampler.");
           }
           
           ~MHSampler() { delete E; }

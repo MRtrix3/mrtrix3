@@ -127,6 +127,7 @@ namespace MR {
             lmax(props.Lmax), ncols(Math::SH::NforL(lmax)), nf(props.resp_ISO.size()),
             beta(props.beta), mu(props.ppot), dE(0.0)
         {
+          DEBUG("Initialise computation of external energy.");
           // Create images --------------------------------------------------------------
           Header header (dwimage);
           header.datatype() = DataType::Float32;
@@ -204,6 +205,7 @@ namespace MR {
         
         void ExternalEnergyComputer::resetEnergy()
         {
+          DEBUG("Reset external energy.");
 //          Image::Loop loop (0, 3);  // Loop over spatial dimensions
           double e;
           dE = 0.0;
@@ -336,13 +338,13 @@ namespace MR {
           //Math::mult(c, 1.0, CblasTrans, s.Ak, y);          // c = Ak^T y
           //Math::solve_LS_nonneg_Hf(fk, s.H, s.Hinv, c);     // H fk = c
           
-          y -= K * t;
+          y.noalias() -= K * t;
           Math::ICLS::Solver<double> nnls_solver (nnls);
           nnls_solver(fk, y);
           
 //          Math::mult(y, 1.0, -1.0, CblasNoTrans, A, f);     // res = y - A f
 //          return Math::norm2(y) / s.nrows + s.mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
-          y -= Ak.rightCols(nf) * fk.tail(nf);
+          y.noalias() -= Ak.rightCols(nf) * fk.tail(nf);
           return y.squaredNorm() / nrows + mu * t[0]*M_sqrt4PI;  // MSE + L1 regularizer
         }
         

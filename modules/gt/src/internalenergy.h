@@ -46,6 +46,7 @@ namespace MR {
           InternalEnergyComputer(Stats& s, ParticleGrid& pgrid)
             : EnergyComputer(s), pGrid(pgrid), cpot(1.0), dEint(0.0), neighbourhood(), normalization(1.0), rng_uniform()
           {
+            DEBUG("Initialise computation of internal energy.");
             neighbourhood.reserve(1000);
             ParticleEnd pe;
             pe.par = NULL;

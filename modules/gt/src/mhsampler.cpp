@@ -266,9 +266,9 @@ namespace MR {
             p[0] = rng_uniform() * (dims[0]-1);
             p[1] = rng_uniform() * (dims[1]-1);
             p[2] = rng_uniform() * (dims[2]-1);
-          } while (!inMask(p));           // FIXME Schrijf dit expliciet uit ifv random integer initialisatie,
-          return T.voxel2scanner.cast<float>() * p;      // voeg hier dan nog random ruis aan toe. Dan kan je inMask terug ifv
-        }                                 // scanner positie schrijven.
+          } while (!inMask(p));                           // FIXME Schrijf dit expliciet uit ifv random integer initialisatie,
+          return T.voxel2scanner.cast<float>() * p;       // voeg hier dan nog random ruis aan toe. Dan kan je inMask terug ifv
+        }                                                 // scanner positie schrijven.
         
         
         bool MHSampler::inMask(const Point_t p)
