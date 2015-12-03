@@ -46,13 +46,13 @@ using namespace App;
 void usage ()
 {
 
-  AUTHOR = "Daan Christiaens (daan.christiaens@esat.kuleuven.be)";
+  AUTHOR = "Daan Christiaens (daan.christiaens@kuleuven.be)";
   
   COPYRIGHT = "KU Leuven, Dept. Electrical Engineering, ESAT/PSI,\n"
               "Herestraat 49 box 7003, 3000 Leuven, Belgium";
 
   DESCRIPTION
-  + "perform global tractography.";
+  + "Multi-Shell Multi-Tissue Global Tractography.";
   
   REFERENCES
   + "Christiaens, D.; Reisert, M.; Dhollander, T.; Sunaert, S.; Suetens, P. & Maes, F. "
@@ -70,7 +70,7 @@ void usage ()
   OPTIONS
 
   + Option ("grad",
-            "specify the diffusion encoding scheme (if not supplied in the header)")
+            "specify the diffusion encoding scheme (if not supplied in the header).")
     + Argument ("scheme").type_file_in()
 
   + Option ("lmax",
@@ -90,7 +90,7 @@ void usage ()
     + Argument ("w").type_float(1e-6, 0.1, 1.0)
 
   + Option ("wmr",
-            "set the response of a single particle on the DWI signal.").required()
+            "set the response of a single particle on the DWI signal. (required)").required()
     + Argument ("response").type_file_in()
 
   + Option ("csfr",
@@ -107,11 +107,11 @@ void usage ()
 
   + Option ("ppot",
             "set the particle potential, i.e., the cost of adding one segment, relative to the particle weight. (default = 5% w)")
-    + Argument ("t").type_float(0.0, 0.05, 1.)
+    + Argument ("u").type_float(0.0, 0.05, 1.)
 
   + Option ("cpot",
             "set the connection potential, i.e., the energy term that drives two segments together. (default = 0.5)")
-    + Argument ("c").type_float(0, 0.5, 1e6)
+    + Argument ("v").type_float(0, 0.5, 1e6)
 
   + Option ("t0",
             "set the initial temperature of the metropolis hastings optimizer. (default = 0.1)")
@@ -126,9 +126,9 @@ void usage ()
     + Argument ("n").type_float(0, 1e6, std::numeric_limits<float>::max())
 
   + Option ("balance",
-            "set the balance between internal and external energy. (default = 0)"
+            "balance internal and external energy. (default = 0)\n"
             "Negative values give more weight to the internal energy, positive to the external energy.")
-    + Argument ("bal").type_float(-100, 0, 100)
+    + Argument ("b").type_float(-100, 0, 100)
 
   + Option ("density",
             "set the desired density of the free Poisson process. (default = 1)")
@@ -143,23 +143,24 @@ void usage ()
     + Argument ("b").type_float(0.0, 0.0, 1.0)
 
   + Option ("lambda",
-            "set the weight of the internal energy. (default = 1.0)")
+            "set the weight of the internal energy directly. (default = 1.0)\n"
+            "If provided, any value of -balance will be ignored.")
     + Argument ("lam").type_float(0.0, 1.0, 1e5)
 
   + Option ("todi",
-            "filename of the resulting TOD image.")
+            "filename of the resulting TOD image. (output)")
     + Argument ("todimage").type_image_out()
 
   + Option ("fiso",
-            "filename of the resulting ISO fractions image.")
+            "filename of the resulting isotropic fractions image. (output)")
     + Argument ("iso").type_image_out()
 
   + Option ("eext",
-            "filename of the resulting image of the residual external energy.")
+            "filename of the resulting image of the residual external energy. (output)")
     + Argument ("eext").type_image_out()
 
   + Option ("etrend",
-            "internal and external energy trend and cooling statistics.")
+            "internal and external energy trend and cooling statistics. (output)")
     + Argument ("stats").type_file_out();
 
 
@@ -274,31 +275,31 @@ void run ()
 
   // Prepare data structures ------------------------------------------------------------
   
-  Stats stats (t0, t1, niter);
+  INFO("Initialise data structures for global tractography.");
   
+  Stats stats (t0, t1, niter);
   opt = get_options("etrend");
   if (opt.size())
     stats.open_stream(opt[0][0]);
   
-  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
-  
   ParticleGrid pgrid (dwi);
   
+  ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(CPot);
-  
-  
   EnergySumComputer* Esum = new EnergySumComputer(stats, Eint, properties.lam_int, Eext, properties.lam_ext / ( wmscale2 * properties.weight*properties.weight));
   
-  
   MHSampler mhs (dwi, properties, stats, pgrid, Esum, mask);   // All EnergyComputers are recursively destroyed upon destruction of mhs, except for the shared data.
-    
+  
+  
+  INFO("Start MH sampler");
+  
   auto t = Thread::run (Thread::multi(mhs), "MH sampler");
   t.wait();
   
-  VAR(pgrid.getTotalCount());
-  
-  std::cout << stats << std::endl;
+  INFO("Final no. particles: " + std::to_string(pgrid.getTotalCount()));
+  INFO("Final external energy: " + std::to_string(stats.getEextTotal()));
+  INFO("Final internal energy: " + std::to_string(stats.getEintTotal()));
   
   
   // Copy results to output buffers -----------------------------------------------------
@@ -331,23 +332,26 @@ void run ()
   
   opt = get_options("todi");
   if (opt.size()) {
+    INFO("Saving TOD image to file");
     header.size(3) = Math::SH::NforL(properties.Lmax);
     auto TOD = Image<float>::create (opt[0][0], header);
-    threaded_copy_with_progress_message("copying TOD image", Eext->getTOD(), TOD);
+    threaded_copy(Eext->getTOD(), TOD);
   }
   
   opt = get_options("fiso");
   if (opt.size()) {
+    INFO("Saving isotropic fractions to file");
     header.size(3) = properties.resp_ISO.size();
     auto Fiso = Image<float>::create (opt[0][0], header);
-    threaded_copy_with_progress_message("copying isotropic fractions", Eext->getFiso(), Fiso);
+    threaded_copy(Eext->getFiso(), Fiso);
   }
   
   opt = get_options("eext");
   if (opt.size()) {
+    INFO("Saving external energy to file");
     header.set_ndim(3);
     auto EextI = Image<float>::create (opt[0][0], header);
-    threaded_copy_with_progress_message("copying external energy", Eext->getEext(), EextI);
+    threaded_copy(Eext->getEext(), EextI);
   }
   
   
