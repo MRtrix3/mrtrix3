@@ -48,13 +48,13 @@ namespace MR {
           Header header (dwimage);
           header.datatype() = DataType::Float32;
           header.size(3) = ncols;
-          tod = Image<float>::scratch(header, "TOD image");
+          tod = Image<float>::scratch(header, "TOD image").with_direct_io(Stride::contiguous_along_axis(3));
           
           header.size(3) = nf;
-          fiso = Image<float>::scratch(header, "isotropic fractions");
+          fiso = Image<float>::scratch(header, "isotropic fractions").with_direct_io(Stride::contiguous_along_axis(3));
           
           header.set_ndim(3);
-          eext = Image<float>::scratch(header, "external energy");
+          eext = Image<float>::scratch(header, "external energy").with_direct_io(Stride::contiguous_along_axis(3));
           
           // Set kernel matrices --------------------------------------------------------
           auto grad = DWI::get_DW_scheme(dwimage);

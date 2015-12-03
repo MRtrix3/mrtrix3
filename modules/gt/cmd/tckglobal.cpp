@@ -282,7 +282,7 @@ void run ()
   
   ExternalEnergyComputer* Eext = new ExternalEnergyComputer(stats, dwi, properties);
   
-  ParticleGrid pgrid = ParticleGrid(dwi);
+  ParticleGrid pgrid (dwi);
   
   InternalEnergyComputer* Eint = new InternalEnergyComputer(stats, pgrid);
   Eint->setConnPot(CPot);

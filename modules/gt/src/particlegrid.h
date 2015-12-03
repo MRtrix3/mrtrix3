@@ -63,14 +63,8 @@ namespace MR {
             T = T.inverse();
           }
           
-          ParticleGrid(const ParticleGrid& other)
-            : mutex(), pool(), list(other.list), grid(other.grid), rng(), T(other.T)
-          {
-            DEBUG("Copy particle grid.");    // Needed for C++11 clang compilation (?). Should not be called though.
-            n[0] = other.n[0];
-            n[1] = other.n[1];
-            n[2] = other.n[2];
-          }
+          ParticleGrid(const ParticleGrid&) = delete;
+          ParticleGrid& operator=(const ParticleGrid&) = delete;
           
           ~ParticleGrid() {
             clear();

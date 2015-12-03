@@ -46,6 +46,9 @@ namespace MR {
         {
         public:
           ParticlePool() { }
+          
+          ParticlePool(const ParticlePool&) = delete;
+          ParticlePool& operator=(const ParticlePool&) = delete;
           ~ParticlePool() { }
           
           /**
