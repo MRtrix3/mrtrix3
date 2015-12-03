@@ -38,7 +38,6 @@ namespace MR
       {
         if (!Path::has_suffix (H.name(), ".mif.gz"))
           return std::unique_ptr<ImageIO::Base>();
-
         File::GZ zf (H.name(), "r");
         std::string first_line = zf.getline();
         if (first_line != "mrtrix image") {
@@ -61,10 +60,10 @@ namespace MR
         write_offset = header.str().size() + size_t(24);
         write_offset += ((4 - (offset % 4)) % 4);
         header << "file: . " << write_offset << "\nEND\n";
-        
-        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, offset));
+
+        std::unique_ptr<ImageIO::GZ> io_handler (new ImageIO::GZ (H, write_offset));
         memcpy (io_handler.get()->header(), header.str().c_str(), header.str().size());
-        memset (io_handler.get()->header() + header.str().size(), 0, offset - header.str().size());
+        memset (io_handler.get()->header() + header.str().size(), 0, write_offset - header.str().size());
         io_handler->files.push_back (File::Entry (H.name(), offset));
 
         return std::move (io_handler);
