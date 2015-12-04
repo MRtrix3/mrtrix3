@@ -243,12 +243,12 @@ namespace MR {
         {
           Point_t p;
           do {
-            p[0] = rng_uniform() * (dims[0]-1);
-            p[1] = rng_uniform() * (dims[1]-1);
-            p[2] = rng_uniform() * (dims[2]-1);
-          } while (!inMask(p));                           // FIXME Schrijf dit expliciet uit ifv random integer initialisatie,
-          return T.voxel2scanner.cast<float>() * p;       // voeg hier dan nog random ruis aan toe. Dan kan je inMask terug ifv
-        }                                                 // scanner positie schrijven.
+            p[0] = rng_uniform() * dims[0] - 0.5;
+            p[1] = rng_uniform() * dims[1] - 0.5;
+            p[2] = rng_uniform() * dims[2] - 0.5;
+          } while (!inMask(p));
+          return T.voxel2scanner.cast<float>() * p;
+        }
         
         
         bool MHSampler::inMask(const Point_t p)
@@ -285,7 +285,7 @@ namespace MR {
         
         bool MHSampler::moveOptimal(const Particle *par, Point_t &pos, Point_t &dir) const
         {
-          // assert(par != NULL)
+          // assert(par != NULL);
           if (par->hasPredecessor() && par->hasSuccessor())
           {
             int a1 = (par->getPredecessor()->getPredecessor() == par) ? -1 : 1;

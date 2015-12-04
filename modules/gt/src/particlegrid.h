@@ -59,8 +59,11 @@ namespace MR {
             grid.resize(n[0]*n[1]*n[2]);
             
             Eigen::DiagonalMatrix<default_type, 3> newspacing (2*Particle::L, 2*Particle::L, 2*Particle::L);
+            Eigen::Vector3 shift (image.spacing(0)/2 - Particle::L, 
+                                  image.spacing(1)/2 - Particle::L, 
+                                  image.spacing(2)/2 - Particle::L);
             T = image.transform() * newspacing;
-            T = T.inverse();
+            T = T.inverse().translate(shift);
           }
           
           ParticleGrid(const ParticleGrid&) = delete;

@@ -143,6 +143,7 @@ namespace MR {
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(tod, fiso, eext);
+            assert(!is_out_of_bounds(tod));
             tod.row(3) = changes_tod[k].cast<float>();
             fiso.row(3) = changes_fiso[k].cast<float>();
             eext.value() = changes_eext[k];
@@ -194,10 +195,9 @@ namespace MR {
           if (w == 0.0)
             return;
           assign_pos_of(vox, 0, 3).to(tod);
-          if (!tod.valid())
+          if (is_out_of_bounds(tod))
             return;
-          t = d;
-          t *= w;
+          t = w * d;
           for (int k = 0; k != changes_vox.size(); ++k) {
             if (changes_vox[k] == vox) {
               changes_tod[k] += t;
@@ -217,6 +217,7 @@ namespace MR {
           for (int k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
+            assert(!is_out_of_bounds(dwi));
             y = dwi.row(3).cast<double>();
             t = changes_tod[k];
             e = calcEnergy();
