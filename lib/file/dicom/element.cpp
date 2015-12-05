@@ -311,7 +311,7 @@ namespace MR {
         else if (VR == VR_FL)
           for (const uint8_t* p = data; p < data + size; p += sizeof (float32)) 
             V.push_back (get<float32> (p, is_BE));
-        else if (VR == VR_DS) {
+        else if (VR == VR_DS || VR == VR_IS) {
           std::vector<std::string> strings (split (std::string (reinterpret_cast<const char*> (data), size), "\\", false));
           V.resize (strings.size());
           for (size_t n = 0; n < V.size(); n++) 

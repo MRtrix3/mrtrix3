@@ -366,7 +366,7 @@ exe_suffix = ''
 lib_prefix = 'lib'
 
 system = platform.system().lower()
-if system.startswith('mingw'):
+if system.startswith('mingw') or system.startswith('msys'):
   system = 'windows'
 report ('Detecting OS: ' + system + '\n')
 if system == 'linux':
