@@ -59,8 +59,8 @@ namespace MR
               const DWI::Tractography::Properties& properties) :
                 S (shared),
                 writer (output_file, properties),
-                finite_seeds (S.properties.seeds.is_finite()),
-                progress (printf ("       0 generated,        0 selected", 0, 0), finite_seeds ? S.max_num_attempts : S.max_num_tracks)
+                always_increment (S.properties.seeds.is_finite() || !S.max_num_tracks),
+                progress (printf ("       0 generated,        0 selected", 0, 0), always_increment ? S.max_num_attempts : S.max_num_tracks)
           {
             const auto seed_output = properties.find ("seed_output");
             if (seed_output != properties.end()) {
@@ -85,13 +85,13 @@ namespace MR
 
           bool operator() (const GeneratedTrack&);
 
-          bool complete() const { return (writer.count >= S.max_num_tracks || writer.total_count >= S.max_num_attempts); }
+          bool complete() const { return ((S.max_num_tracks && writer.count >= S.max_num_tracks) || (S.max_num_attempts && writer.total_count >= S.max_num_attempts)); }
 
 
         protected:
           const SharedBase& S;
           Writer<> writer;
-          const bool finite_seeds;
+          const bool always_increment;
           std::unique_ptr<File::OFStream> seeds;
           ProgressBar progress;
       };

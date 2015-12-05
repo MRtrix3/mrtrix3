@@ -33,6 +33,9 @@
 
 #define GMWMI_ACCURACY 0.01 // Absolute value of tissue proportion difference
 
+// Number of times a backtrack attempt will be made from a certain maximal track length before the length of truncation is increased
+#define ACT_BACKTRACK_ATTEMPTS 3
+
 
 namespace MR
 {

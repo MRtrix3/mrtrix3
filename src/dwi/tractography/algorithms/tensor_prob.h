@@ -90,11 +90,10 @@ namespace MR
             }
 
 
-            void truncate_track (std::vector<Eigen::Vector3f>& tck, const int revert_step) {}
+            void truncate_track (std::vector<Eigen::Vector3f>& tck, const size_t length_to_revert_from, const int revert_step) {}
 
 
           protected:
-
 
             class WildBootstrap {
               public:
