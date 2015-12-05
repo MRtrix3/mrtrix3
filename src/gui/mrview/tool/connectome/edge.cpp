@@ -117,7 +117,7 @@ namespace MR
           data.push_back (parent.get_node_centre (0));
           data.push_back (parent.get_node_centre (1));
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           vertex_buffer.gen();
@@ -143,7 +143,7 @@ namespace MR
 
         Edge::Line::~Line()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -154,7 +154,6 @@ namespace MR
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (!vertex_buffer || !tangent_buffer || !vertex_array_object)
             return;
-          Window::GrabContext context;
           vertex_buffer.bind (gl::ARRAY_BUFFER);
           tangent_buffer.bind (gl::ARRAY_BUFFER);
           vertex_array_object.bind();
@@ -196,7 +195,7 @@ namespace MR
 
         Edge::Streamline::Streamline (const Exemplar& data)
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           assert (data.tangents.size() == data.vertices.size());
 
@@ -225,7 +224,7 @@ namespace MR
 
         Edge::Streamline::~Streamline()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           vertex_array_object.clear();
@@ -255,8 +254,9 @@ namespace MR
         Edge::Streamtube::Streamtube (const Exemplar& data) :
             count (data.vertices.size())
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           assert (data.normals.size() == data.vertices.size());
           assert (data.binormals.size() == data.vertices.size());
 
@@ -316,7 +316,7 @@ namespace MR
 
         Edge::Streamtube::~Streamtube()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           tangent_buffer.clear();
           normal_buffer.clear();

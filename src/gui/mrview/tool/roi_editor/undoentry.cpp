@@ -43,7 +43,7 @@ namespace MR
         ROI_UndoEntry::Shared::Shared() :
             count (1)
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           GL::Shader::Vertex vertex_shader (
               "layout(location = 0) in ivec3 vertpos;\n"
               "void main() {\n"
@@ -88,7 +88,7 @@ namespace MR
         ROI_UndoEntry::Shared::~Shared()
         {
           assert (!count);
-          Window::GrabContext context;
+          MRView::GrabContext context;
           program.clear();
           vertex_buffer.clear();
           vertex_array_object.clear();
@@ -121,8 +121,9 @@ namespace MR
           else { slice_axes[0] = 0; slice_axes[1] = 1; }
           tex_size = { { size[slice_axes[0]], size[slice_axes[1]] } };
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
+
           if (!shared)
             shared.reset (new Shared());
           else
@@ -241,7 +242,7 @@ namespace MR
             }
           } while ((v - final_vox).abs().maxCoeff());
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -287,7 +288,7 @@ namespace MR
 
           } } }
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -322,7 +323,7 @@ namespace MR
                     Math::pow2 (roi.header().spacing(2) * (vox[2]-k)) < radius_sq)
                   after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -355,7 +356,7 @@ namespace MR
               for (int i = a[0]; i <= b[0]; ++i)
                 after[i-from[0] + size[0] * (j-from[1] + size[1] * (k-from[2]))] = value;
 
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -399,7 +400,7 @@ namespace MR
               }
             }
           }
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -412,7 +413,7 @@ namespace MR
 
         void ROI_UndoEntry::undo (ROI_Item& roi) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&before[0]));
@@ -421,7 +422,7 @@ namespace MR
 
         void ROI_UndoEntry::redo (ROI_Item& roi) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           roi.texture().bind();
           gl::TexSubImage3D (gl::TEXTURE_3D, 0, from[0], from[1], from[2], size[0], size[1], size[2], gl::RED, gl::UNSIGNED_BYTE, (void*) (&after[0]));
@@ -430,7 +431,7 @@ namespace MR
 
         void ROI_UndoEntry::copy (ROI_Item& roi, ROI_UndoEntry& source) 
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           after = source.before;
           roi.texture().bind();

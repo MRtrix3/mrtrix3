@@ -25,7 +25,7 @@
 
 #include "gui/dwi/render_frame.h"
 
-#include "gui/mrview/tool/odf.h"
+#include "gui/mrview/tool/odf/odf.h"
 #include "gui/mrview/spin_box.h"
 #include "gui/mrview/window.h"
 
@@ -38,7 +38,7 @@ namespace MR
       namespace Tool
       {
 
-        class ODF::Preview : public QWidget
+        class ODF_Preview : public QWidget
         {
             Q_OBJECT
 
@@ -58,7 +58,7 @@ namespace MR
             };
 
           public:
-            Preview (ODF*);
+            ODF_Preview (ODF*);
             void set (const Eigen::VectorXf&);
             bool interpolate() const { return interpolation_box->isChecked(); }
             Window& window () const { return *Window::main; }

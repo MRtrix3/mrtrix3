@@ -45,6 +45,15 @@ namespace MR
         tex_positions[0] = tex_positions[1] = tex_positions[2] = -1;
       }
 
+      ImageBase::~ImageBase()
+      {
+        MRView::GrabContext context;
+        for (size_t axis = 0; axis != 3; ++axis) {
+          if (texture2D[axis])
+            texture2D[axis].clear();
+        }
+      }
+
 
 
 

@@ -513,7 +513,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           DWI::Tractography::Reader<float> file (filename, properties);
@@ -565,7 +565,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
@@ -607,7 +607,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           erase_nontrack_data();
@@ -692,7 +692,7 @@ namespace MR
         
         void Tractogram::erase_nontrack_data()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
           if (colour_buffers.size()) {
             gl::DeleteBuffers (colour_buffers.size(), &colour_buffers[0]);

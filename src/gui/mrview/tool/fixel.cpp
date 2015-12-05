@@ -59,7 +59,7 @@ namespace MR
 
         AbstractFixel::~AbstractFixel()
         {
-          Window::GrabContext context;
+          MRView::GrabContext context;
           vertex_buffer.clear();
           direction_buffer.clear();
           vertex_array_object.clear();
@@ -330,6 +330,8 @@ namespace MR
           if(!regular_grid_buffer_pos.size())
             return;
 
+          MRView::GrabContext context;
+
           regular_grid_vao.bind();
           regular_grid_vertex_buffer.bind (gl::ARRAY_BUFFER);
           gl::BufferData (gl::ARRAY_BUFFER, regular_grid_buffer_pos.size() * sizeof(Eigen::Vector3f),
@@ -358,7 +360,7 @@ namespace MR
         {
           // Make sure to set graphics context!
           // We're setting up vertex array objects
-          Window::GrabContext context;
+          MRView::GrabContext context;
           ASSERT_GL_MRVIEW_CONTEXT_IS_CURRENT;
 
           load_image_buffer ();

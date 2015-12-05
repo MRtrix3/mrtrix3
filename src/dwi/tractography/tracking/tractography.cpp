@@ -40,7 +40,8 @@ namespace MR
           + Argument ("value").type_float (0.0, 0.0, INFINITY)
 
       + Option ("minlength",
-            "set the minimum length of any track in mm (default is 5 x voxelsize).")
+            "set the minimum length of any track in mm "
+            "(default is 5 x voxelsize without ACT, 2 x voxelsize with ACT).")
           + Argument ("value").type_float (0.0, 0.0, INFINITY)
 
       + Option ("cutoff",

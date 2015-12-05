@@ -23,6 +23,7 @@
 #ifndef __cmdline_option_h__
 #define __cmdline_option_h__
 
+#include <cassert>
 #include <string>
 #include <vector>
 #include <limits>
@@ -399,6 +400,7 @@ namespace MR
         }
 
         OptionGroup& operator+ (const Argument& argument) { 
+          assert (!empty());
           back() + argument;
           return *this;
         }

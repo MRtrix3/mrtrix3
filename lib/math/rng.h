@@ -55,6 +55,7 @@ namespace MR
         RNG (const RNG&) : std::mt19937 (get_seed()) { }
         template <typename ValueType> class Uniform; 
         template <typename ValueType> class Normal; 
+        template <typename ValueType> class Integer;
 
         static std::mt19937::result_type get_seed () {
           static std::mutex mutex;
@@ -99,6 +100,16 @@ namespace MR
           std::normal_distribution<ValueType> dist;
           ValueType operator() () { return dist (rng); }
       };
+
+      template <typename ValueType>
+        class RNG::Integer {
+          public:
+            Integer (const ValueType max) :
+                dist (0, max) { }
+            RNG rng;
+            std::uniform_int_distribution<ValueType> dist;
+            ValueType operator() () { return dist (rng); }
+        };
 
   }
 }

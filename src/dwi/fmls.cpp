@@ -202,6 +202,7 @@ namespace MR {
               std::sort (adj_lobes.begin(), adj_lobes.end());
               for (size_t j = 1; j != adj_lobes.size(); ++j)
                 out[adj_lobes[0]].merge (out[adj_lobes[j]]);
+              out[adj_lobes[0]].add (i.second, i.first);
               for (auto j = retrospective_assignments.begin(); j != retrospective_assignments.end(); ++j) {
                 bool modified = false;
                 for (size_t k = 1; k != adj_lobes.size(); ++k) {
