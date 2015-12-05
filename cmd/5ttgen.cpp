@@ -45,7 +45,8 @@ void usage ()
 	AUTHOR = "Robert E. Smith (r.smith@brain.org.au)";
 
   DESCRIPTION
-  + "concatenate segmentation results from FSL FAST and FIRST into the 5TT format required for ACT";
+  + "concatenate segmentation results from FSL FAST and FIRST into the 5TT format required for ACT"
+  + "Note: if you need to add a pathological tissue mask, use the 5ttedit command.";
 
   ARGUMENTS
   + Argument ("in_fast_one",   "first output PVE image from FAST (should be CSF)").type_image_in()
