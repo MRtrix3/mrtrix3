@@ -43,7 +43,7 @@ class Mapper
 {
 
   public:
-    Mapper (Tck2nodes_base& a, const Metric_base& b) :
+    Mapper (const Tck2nodes_base& a, const Metric_base& b) :
       tck2nodes (a),
       metric (b) { }
 
@@ -76,7 +76,7 @@ class Mapper
 
 
   private:
-    Tck2nodes_base& tck2nodes;
+    const Tck2nodes_base& tck2nodes;
     const Metric_base& metric;
 
 };

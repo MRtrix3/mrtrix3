@@ -36,13 +36,16 @@ namespace Connectome {
 
 
 
-node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<>& tck, const bool end) const
+node_t Tck2nodes_end_voxels::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
 {
-  const Tractography::Streamline<>::point_type& p (end ? tck.back() : tck.front());
-  if (!nearest.scanner (p))
-    return nearest.value();
-  else
+  const Eigen::Vector3 p ((end ? tck.back() : tck.front()).cast<default_type>());
+  const Eigen::Vector3 v_float (transform->scanner2voxel * p);
+  for (size_t axis = 0; axis != 3; ++axis)
+    v.index(axis) = std::round (v_float[axis]);
+  if (is_out_of_bounds (v))
     return 0;
+  else
+    return v.value();
 }
 
 
@@ -71,18 +74,18 @@ void Tck2nodes_radial::initialise_search ()
 
 
 
-node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, const bool end) const
+node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
 {
   default_type min_dist = max_dist;
   node_t node = 0;
 
   const Eigen::Vector3 p = (end ? tck.back() : tck.front()).cast<default_type>();
   const Eigen::Vector3 v_float = transform->scanner2voxel * p;
-  const voxel_type v { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
+  const voxel_type centre { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
 
   for (std::vector<voxel_type>::const_iterator offset = radial_search.begin(); offset != radial_search.end(); ++offset) {
 
-    const voxel_type this_voxel (v + *offset);
+    const voxel_type this_voxel (centre + *offset);
     const Eigen::Vector3 p_voxel (transform->voxel2scanner * this_voxel.matrix().cast<default_type>());
     const default_type dist ((p - p_voxel).norm());
 
@@ -90,9 +93,9 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, con
       return node;
 
     if (dist < min_dist) {
-      assign_pos_of (this_voxel).to (nodes);
-      if (!is_out_of_bounds (nodes)) {
-        const node_t this_node = nodes.value();
+      assign_pos_of (this_voxel).to (v);
+      if (!is_out_of_bounds (v)) {
+        const node_t this_node = v.value();
         if (this_node) {
           node = this_node;
           min_dist = dist;
@@ -107,7 +110,7 @@ node_t Tck2nodes_radial::select_node (const Tractography::Streamline<>& tck, con
 
 
 
-node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, const bool end) const
+node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
 {
   const int midpoint_index = end ? (tck.size() / 2) : ((tck.size() + 1) / 2);
   const int start_index    = end ? (tck.size() - 1) : 0;
@@ -117,10 +120,10 @@ node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, 
 
   for (int index = start_index; index != midpoint_index; index += step) {
     const Eigen::Vector3 v_float = transform->scanner2voxel * tck[index].cast<default_type>();
-    const voxel_type v { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
-    assign_pos_of (v).to (nodes);
-    if (!is_out_of_bounds (nodes)) {
-      const node_t this_node = nodes.value();
+    const voxel_type voxel { int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])) };
+    assign_pos_of (voxel).to (v);
+    if (!is_out_of_bounds (v)) {
+      const node_t this_node = v.value();
       if (this_node)
         return this_node;
     }
@@ -136,7 +139,7 @@ node_t Tck2nodes_revsearch::select_node (const Tractography::Streamline<>& tck, 
 
 
 
-node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& tck, const bool end) const
+node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& tck, Image<node_t>& v, const bool end) const
 {
   // Start by defining the endpoint and the tangent at the endpoint
   const int index = end ? (tck.size() - 1) : 0;
@@ -164,21 +167,21 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
   // Voxel containing streamline endpoint not guaranteed to be appropriate
   // Should it be tested anyway? Probably
   const Eigen::Vector3 vp (transform->scanner2voxel * p);
-  const voxel_type v { int(std::round (vp[0])), int(std::round (vp[1])), int(std::round (vp[2])) };
-  if (is_out_of_bounds (nodes, v))
+  const voxel_type voxel { int(std::round (vp[0])), int(std::round (vp[1])), int(std::round (vp[2])) };
+  if (is_out_of_bounds (v, voxel))
     return 0;
-  visited.insert (v);
-  to_test.insert (std::make_pair (default_type(0.0), v));
+  visited.insert (voxel);
+  to_test.insert (std::make_pair (default_type(0.0), voxel));
 
   while (to_test.size()) {
 
-    const voxel_type v = to_test.begin()->second;
+    const voxel_type voxel = to_test.begin()->second;
     to_test.erase (to_test.begin());
 
-    assign_pos_of (v).to (nodes);
-    if (is_out_of_bounds (nodes))
+    assign_pos_of (voxel).to (v);
+    if (is_out_of_bounds (v))
       continue;
-    const node_t value = nodes.value();
+    const node_t value = v.value();
     if (value)
       return value;
 
@@ -188,7 +191,7 @@ node_t Tck2nodes_forwardsearch::select_node (const Tractography::Streamline<>& t
       for (offset[1] = -1; offset[1] <= 1; ++offset[1]) {
         for (offset[0] = -1; offset[0] <= 1; ++offset[0]) {
 
-          const voxel_type v_neighbour = v + offset;
+          const voxel_type v_neighbour = voxel + offset;
           if (visited.find (v_neighbour) == visited.end()) {
             visited.insert (v_neighbour);
             const float cf = get_cf (p, t, v_neighbour);
@@ -234,15 +237,15 @@ default_type Tck2nodes_forwardsearch::get_cf (const Eigen::Vector3& p, const Eig
 
 
 
-void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, std::vector<node_t>& out) const
+void Tck2nodes_all_voxels::select_nodes (const Streamline<>& tck, Image<node_t>& v, std::vector<node_t>& out) const
 {
   std::set<node_t> result;
   for (Streamline<>::const_iterator p = tck.begin(); p != tck.end(); ++p) {
     const Eigen::Vector3 v_float = transform->scanner2voxel * p->cast<default_type>();
-    const voxel_type v (int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])));
-    assign_pos_of (v).to (nodes);
-    if (!is_out_of_bounds (nodes)) {
-      const node_t this_node = nodes.value();
+    const voxel_type voxel (int(std::round (v_float[0])), int(std::round (v_float[1])), int(std::round (v_float[2])));
+    assign_pos_of (voxel).to (v);
+    if (!is_out_of_bounds (v)) {
+      const node_t this_node = v.value();
       if (this_node)
         result.insert (this_node);
     }
