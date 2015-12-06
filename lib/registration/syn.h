@@ -25,11 +25,16 @@
 
 #include <vector>
 #include "image.h"
+#include "filter/resize.h"
+#include "registration/transform/reorient.h"
+#include "registration/transform/compose.h"
+#include "registration/transform/convert.h"
+#include "filter/warp.h"
 
 namespace MR
 {
-    namespace Registration
-    {
+  namespace Registration
+  {
 
     class SyN
     {
@@ -38,53 +43,173 @@ namespace MR
 
         typedef float value_type;
 
-        SyN (){}
+        SyN ():
+          max_iter (1, 500),
+          scale_factor (2),
+          grad_smoothing (0.0),
+          disp_smoothing (0.0),
+          gradient_step (0.2) {
+            scale_factor[0] = 0.5;
+            scale_factor[1] = 1;
+        }
 
-//          run_masked
-//
-////
-//          value_type smooth_grad =  template_header.vox(0) + template_header.vox(1) + template_header.vox(2);
-//          if (opt.size())
-//            smooth_grad = opt[0][0];
-//
-//          opt = get_options ("smooth_disp");
-//          value_type smooth_disp =  (template_header.vox(0) + template_header.vox(1) + template_header.vox(2)) / 3.0;
-//          void set_max_iter (const std::vector<int>& maxiter) {
-//            for (size_t i = 0; i < maxiter.size (); ++i)
-//              if (maxiter[i] < 0)
-//                throw Exception ("the number of iterations must be positive");
-//            max_iter = maxiter;
-//          }
-//
-//          void set_scale_factor (const std::vector<float>& scalefactor) {
-//            for (size_t i = 0; i < scale_factors.size(); ++i)
-//              if (scale_factors[i] < 0)
-//                throw Exception ("the multi-resolution scale factor must be positive");
-//            scale_factor = scalefactor;
-//          }
-//
-//        protected:
-//          std::vector<int> max_iter;
-//          std::vector<float> scale_factor;
-//
-//          Math::Matrix affine_transform;
-//          Image::BufferScratch deformation;
-//          Image::BufferScratch inverse_deformation;
-//
-//          std::vector<float> m_GradientDescentParameters;
-//
-//          float gradient_smoothing;
-//          float deformation_smoothing;
-//          float gradient_step;
-//
-//          std::vector<float> energy;
-//          std::vector<float> last_energy;
-//          std::vector<unsigned int> energy_bad;
-//
-//          Image::BufferScratch template_deformation;
-//          Image::BufferScratch template_inverse_deformation;
-//          Image::BufferScratch moving_deformation;
-//          Image::BufferScratch moving_inverse_deformation;
+
+
+
+        template <class MidWayImageType, class MetricType, class TransformType, class Im1ImageType, class Im2ImageType, class Im1MaskType, class Im2MaskType>
+        void run_masked (
+          MidWayImageType& midway_image,
+          MetricType& metric,
+          transform_type im1_affine,
+          transform_type im2_affine,
+          Im1ImageType& im1_image,
+          Im2ImageType& im2_image,
+          Im1MaskType& im1_mask,
+          Im2MaskType& im2_mask) {
+
+
+            if (max_iter.size() == 1)
+              max_iter.resize (scale_factor.size(), max_iter[0]);
+            else if (max_iter.size() != scale_factor.size())
+              throw Exception ("the max number of SyN iterations needs to be defined for each multi-resolution level");
+
+            for (size_t level = 0; level < scale_factor.size(); level++) {
+                CONSOLE ("SyN: multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]));
+
+                //Setup energy curve
+
+                //Grad_Step_altered = grad_step.
+
+
+                // Resize midway image
+                Filter::Resize resize_filter (midway_image);
+                resize_filter.set_scale_factor (scale_factor[level]);
+                resize_filter.set_interp_type (1);
+                auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (resize_filter);
+
+                // Smooth input images
+                Filter::Smooth im1_smooth_filter (im1_image);
+                im1_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));
+                auto im1_smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
+
+                Filter::Smooth im2_smooth_filter (im2_image);
+                im2_smooth_filter.set_stdev (1.0 / (2.0 * scale_factor[level]));  // TODO compare this with SyNFOD line489
+                auto im2_smoothed = Image<typename Im1ImageType::value_type>::scratch (im2_smooth_filter);
+
+                {
+                  LogLevelLatch log_level (0);
+                  resize_filter (midway_image, midway_resized);
+
+                  im1_smooth_filter (im1_image, im1_smoothed);
+                  im2_smooth_filter (im2_image, im2_smoothed);
+                }
+
+                if (grad_smoothing == 0.0)
+                  grad_smoothing = midway_resized.size(0) + midway_resized.size(1) + midway_resized.size(2); //TODO check this with ANTS
+
+                if (disp_smoothing == 0.0)
+                  grad_smoothing = (midway_resized.size(0) + midway_resized.size(1) + midway_resized.size(2)) / 3.0;
+
+                Header field_header (midway_resized);
+                field_header.set_ndim(4);
+                field_header.size(3) = 3;
+
+                //Initialise fields
+                if (level == 0) {
+                  im1_disp_field.reset (new Image<float> (Image<float>::scratch (field_header)));
+                  im1_disp_field_inv.reset (new Image<float> (Image<float>::scratch (field_header)));
+                  im2_disp_field.reset (new Image<float> (Image<float>::scratch (field_header)));
+                  im2_disp_field_inv.reset (new Image<float> (Image<float>::scratch (field_header)));
+                //Upsample
+                } else {
+                  im1_disp_field = std::move (reslice (*im1_disp_field, field_header));
+                  im1_disp_field_inv = std::move (reslice (*im1_disp_field_inv, field_header));
+                  im2_disp_field = std::move (reslice (*im2_disp_field, field_header));
+                  im2_disp_field_inv = std::move (reslice (*im2_disp_field_inv, field_header));
+                }
+
+
+//                Registration::Metric::SynDemons<Interp::Linear> metric (im1_smoothed, im2_smoothed, im1_mask, im2_mask);
+                bool converged = false;
+                while (!converged) {
+
+                  // TODO look at composing on the fly (not sure what is faster with FOD reorientation)
+//                  Image<float> im1_deform_field = Image<float>::scratch (field_header);
+//                  Registration::Transform::compose_affine_displacement (im1_affine, im1_disp_field, im1_deform_field);
+
+//                  Image<float> im2_deform_field = Image<float>::scratch (field_header);
+//                  Registration::Transform::compose_affine_displacement (im2_affine, im2_disp_field, im2_deform_field);
+
+//                  Image<float> im1_update_field = Image<float>::scratch (field_header);
+//                  Image<float> im2_update_field = Image<float>::scratch (field_header);
+
+//                  default_type energy = metric (im1_deform_field, im1_deform_field, im1_update_field, im1_update_field);
+
+
+//                  store energy of current interation (from metric)
+
+//                  Smooth update field (making sure boundary is still identity)
+
+//                  Normalise updated field
+//                  Normalise updatedInv field
+
+//                  Compose updated and displacements transforms
+
+//                  Smooth displacement field
+
+//                  Invert fields x 2
+
+                    //current_iteration++
+
+                    //track the energy profile to check for convergence.
+
+                }
+
+            }
+          }
+
+
+          void set_max_iter (const std::vector<size_t>& maxiter) {
+            for (size_t i = 0; i < maxiter.size (); ++i)
+              if (maxiter[i] < 0)
+                throw Exception ("the number of iterations must be positive");
+            max_iter = maxiter;
+          }
+
+
+          void set_scale_factor (const std::vector<default_type>& scalefactor) {
+            for (size_t i = 0; i < scalefactor.size(); ++i)
+              if (scalefactor[i] < 0)
+                throw Exception ("the multi-resolution scale factor must be positive");
+            scale_factor = scalefactor;
+          }
+
+
+        protected:
+
+          std::unique_ptr<Image<float> > reslice (Image<float>& image, Header& header) {
+            std::unique_ptr<Image<float> > temp (new Image<float> (Image<float>::scratch (header)));
+            Filter::reslice<Interp::Cubic> (image, *temp);
+            return temp;
+          }
+
+          std::vector<size_t> max_iter;
+          std::vector<default_type> scale_factor;
+          default_type grad_smoothing;
+          default_type disp_smoothing;
+          default_type gradient_step;
+
+          std::unique_ptr<Image<float> > im1_disp_field;
+          std::unique_ptr<Image<float> > im1_disp_field_inv;
+          std::unique_ptr<Image<float> > im2_disp_field;
+          std::unique_ptr<Image<float> > im2_disp_field_inv;
+
+
+          std::vector<default_type> gradientDescentParameters;
+          std::vector<default_type> energy;
+          std::vector<default_type> last_energy;
+          std::vector<size_t> energy_bad;
+
 
 //          unsigned int m_BSplineFieldOrder;
 //          ArrayType m_GradSmoothingMeshSize;

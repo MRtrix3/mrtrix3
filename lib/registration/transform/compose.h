@@ -34,29 +34,48 @@ namespace MR
     {
 
     template <class WarpImageType>
-      class ComposeKernel {
+      class ComposeDeformKernel {
         public:
-          ComposeKernel (const transform_type& transform, WarpImageType& warp_in, WarpImageType& warp_out) :
-                           transform (transform.cast<typename WarpImageType::value_type>()), warp_in (warp_in), warp_out (warp_out) {}
+          ComposeDeformKernel (const transform_type& transform) :
+                               transform (transform.cast<typename WarpImageType::value_type>()) {}
 
-          void operator() (const Iterator& index) {
-            assign_pos_of (index, 0, 3).to (warp_out, warp_in);
+          void operator() (WarpImageType& warp_in, WarpImageType& warp_out) {
             warp_out.row(3) = transform * warp_in.row(3).colwise().homogeneous();
           }
 
         protected:
           const Eigen::Transform<typename WarpImageType::value_type, 3, Eigen::AffineCompact> transform;
-          WarpImageType warp_in;
-          WarpImageType warp_out;
       };
 
 
-
-      // Compose a 4x4 linear transform to each point in a deformation field. The input and output warp can be the same image.
       template <class WarpImageType>
-      void compose (const transform_type& transform, WarpImageType& warp_in, WarpImageType& warp_out)
+        class ComposeDispKernel {
+          public:
+            ComposeDispKernel (const transform_type& transform) :
+                                 transform (transform.cast<typename WarpImageType::value_type>()) {}
+
+            void operator() (WarpImageType& warp_in, WarpImageType& warp_out) {
+              Eigen::Vector3 voxel ((default_type)warp_in.index(0), (default_type)warp_in.index(1), (default_type)warp_in.index(2));
+              warp_out.row(3) = transform * ((transform.voxel2scanner * voxel).template cast<typename WarpImageType::value_type> () + warp_in.row(3));
+            }
+
+          protected:
+            const Eigen::Transform<typename WarpImageType::value_type, 3, Eigen::AffineCompact> transform;
+        };
+
+
+      // Compose a linear transform and a deformation field. The input and output can be the same image.
+      template <class WarpImageType>
+      void compose_affine_deformation (const transform_type& transform, WarpImageType& deform_in, WarpImageType& deform_out)
       {
-        ThreadedLoop ("composing linear transform with warp...", warp_in, 0, 3).run (ComposeKernel<WarpImageType> (transform, warp_in, warp_out));
+        ThreadedLoop ("composing linear transform with warp...", deform_in, 0, 3).run (ComposeDeformKernel<WarpImageType> (transform), deform_in, deform_out);
+      }
+
+      // Compose a linear transform and a displacement field. The output field is a deformation field. The input and output can be the same image.
+      template <class WarpImageType>
+      void compose_affine_displacement (const transform_type& transform, WarpImageType& disp_in, WarpImageType& deform_out)
+      {
+        ThreadedLoop ("composing linear transform with warp...", disp_in, 0, 3).run (ComposeDispKernel<WarpImageType> (transform), disp_in, deform_out);
       }
 
     }

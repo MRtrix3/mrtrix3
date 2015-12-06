@@ -66,7 +66,7 @@ namespace MR
         template <class HeaderType>
         Resize (const HeaderType& in) :
             Base (in),
-            interp_type (2) { }
+            interp_type (2) { } // Cubic
 
 
         void set_voxel_size (default_type size)

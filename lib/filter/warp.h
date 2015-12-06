@@ -47,7 +47,7 @@ namespace MR
 
 
 
-    //! convenience function to warp one DataSet onto another
+    //! convenience function to warp one image onto another
     /*! This function resamples (regrids) the Image \a source onto the
      * Image& \a destination, using the templated interpolator class and a supplied deformation field.
      *

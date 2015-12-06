@@ -316,7 +316,7 @@ namespace MR
 
               {
                 LogLevelLatch log_level (0);
-                midway_resize_filter(midway_image,midway_resized);
+                midway_resize_filter (midway_image, midway_resized);
 
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
                 #ifdef NONSYMREGISTRATION
