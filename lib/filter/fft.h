@@ -25,13 +25,14 @@
 
 #include <complex>
 
+#include <unsupported/Eigen/FFT>
+
 #include "datatype.h"
 #include "memory.h"
 #include "image.h"
 #include "algo/copy.h"
 #include "algo/threaded_copy.h"
 #include "filter/base.h"
-#include "math/fft.h"
 
 namespace MR
 {
@@ -136,25 +137,29 @@ namespace MR
         template <class ComplexImageType>
         class FFTKernel {
           public:
-            FFTKernel (ComplexImageType& voxel, size_t FFT_axis, bool inverse_FFT) :
+            FFTKernel (const ComplexImageType& voxel, const size_t FFT_axis, const bool inverse_FFT) :
                 vox (voxel),
-                data (vox.size (FFT_axis)),
+                data_in (vox.size (FFT_axis)),
+                data_out (data_in.size()),
                 axis (FFT_axis),
                 inverse (inverse_FFT) { }
 
             void operator () (const Iterator& pos) {
               assign_pos_of (pos).to (vox);
               for (vox.index(axis) = 0; vox.index(axis) < vox.size(axis); ++vox.index(axis))
-                data[vox.index(axis)] = cdouble (vox.value());
-              fft (data, inverse);
+                data_in[vox.index(axis)] = cdouble (vox.value());
+              if (inverse)
+                fft.inv (data_out, data_in);
+              else
+                fft.fwd (data_out, data_in);
               for (vox.index(axis) = 0; vox.index(axis) < vox.size(axis); ++vox.index(axis))
-                vox.value() = typename ComplexImageType::value_type (data[vox.index(axis)]);
+                vox.value() = typename ComplexImageType::value_type (data_out[vox.index(axis)]);
             }
 
           protected:
             ComplexImageType vox;
-            std::vector<cdouble> data;
-            Math::FFT fft;
+            Eigen::Matrix<cdouble, Eigen::Dynamic, 1> data_in, data_out;
+            Eigen::FFT<double> fft;
             size_t axis;
             bool inverse;
         };
@@ -164,7 +169,7 @@ namespace MR
 
 
     template <class ImageType>
-      void fft (ImageType&& vox, size_t axis, bool inverse = false) {
+      void fft (ImageType&& vox, const size_t axis, const bool inverse = false) {
         auto axes = Stride::order (vox);
         for (size_t n = 0; n < axes.size(); ++n)
           if (axis == axes[n])
@@ -172,17 +177,20 @@ namespace MR
 
         struct Kernel {
           Kernel (const ImageType& v, size_t axis, bool inverse) :
-            data (v.size (axis)), axis (axis), inverse (inverse) { }
+            data_in (v.size (axis)), data_out (data_in.size()), axis (axis), inverse (inverse) { }
 
           void operator ()(ImageType& v) {
             for (auto l = Loop (axis, axis+1) (v); l; ++l)
-              data[v[axis]] = cdouble (v.value());
-            fft (data, inverse);
+              data_in[v[axis]] = cdouble (v.value());
+            if (inverse)
+              fft.inv (data_out, data_in);
+            else
+              fft.fwd (data_out, data_in);
             for (auto l = Loop (axis, axis+1) (v); l; ++l)
-              v.value() = typename std::remove_reference<ImageType>::type::value_type (data[v[axis]]);
+              v.value() = typename std::remove_reference<ImageType>::type::value_type (data_out[v[axis]]);
           }
-          Math::FFT fft;
-          std::vector<cdouble> data;
+          Eigen::FFT<double> fft;
+          Eigen::Matrix<cdouble, Eigen::Dynamic, 1> data_in, data_out;
           const size_t axis;
           const bool inverse;
         } kernel (vox, axis, inverse);
