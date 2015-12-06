@@ -326,7 +326,7 @@ lib_dir = os.path.join (mrtrix_dir[-1], lib_dir)
 
 
 if ld_enabled and len(runpath):
-    ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
+  ld_flags += [ runpath+os.path.relpath (target_lib_dir,target_bin_dir) ]
 
 if separate_project:
   if ld_enabled and len(runpath):
@@ -432,7 +432,7 @@ class Entry:
     self.deps = list_cmd_deps(cc_file)
 
     skip = False
-    flags = copy.copy (gsl_ldflags)
+    flags = []
     if 'Q' in file_flags[cc_file]: flags += qt_ldflags
 
     if not skip: 
@@ -457,7 +457,7 @@ class Entry:
     self.action = 'CC'
     cc_file = self.name[:-len(obj_suffix)] + cpp_suffix
 
-    flags = copy.copy (gsl_cflags)
+    flags = copy.copy (eigen_cflags)
 
     if is_moc (cc_file):
       cc_file = split_intermediate (cc_file)

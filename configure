@@ -124,23 +124,15 @@ LDFLAGS         Any additional flags to the linker.
 
 LDLIB_FLAGS     Any additional flags to the linker to generate a shared library.
 
-GSL_CFLAGS      Any flags required to compile with the GSL.
+EIGEN_CFLAGS    Any flags required to compile with Eigen.
                 This may include in particular the path to the
                 include files, if not in a standard location
                 For example:
-                $ GSL_CFLAGS="-I/usr/local/include" ./configure
-
-GSL_LDFLAGS     Any flags required to link with the GSL.
-                This may include in particular the path to the
-                libraries, if not in a standard location
-                For example:
-                $ GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure
+                $ EIGEN_CFLAGS="-I/usr/local/include/eigen3" ./configure
 
 ZLIB_CFLAGS     Any flags required to compile with the zlib compression library.
 
 ZLIB_LDFLAGS    Any flags required to link with the zlib compression library.
-
-CBLAS_LDFLAGS   Any flags required to link with an alternate cblas library.
 
 QMAKE           The command to run to invoke qmake. 
 
@@ -223,11 +215,10 @@ if static:
 ld_lib_args = 'OBJECTS LDLIB_FLAGS -o LIB'.split()
 ld_lib_flags = [ ]
 
+eigen_cflags = []
+
 zlib_cflags = []
 zlib_ldflags = [ '-lz' ]
-
-gsl_cflags = []
-gsl_ldflags = [ '-lgsl', '-lgslcblas' ]
 
 
 class TempFile:
@@ -673,107 +664,6 @@ except:
 
 
 
-# GSL flags:
-
-report ('Checking for GNU Scientific Library: ')
-if 'GSL_CFLAGS' in os.environ.keys(): 
-  gsl_cflags = shlex.split (os.environ['GSL_CFLAGS'])
-else:
-  try: 
-    gsl_cflags = shlex.split (execute ([ 'gsl-config', '--cflags' ], RuntimeError)[1])
-    gsl_cflags = [ c for c in gsl_cflags if c is not 0 ]
-  except:
-    log ('gsl-config not in PATH - assuming defaults for GSL_CFLAGS\n\n')
-    
-if 'GSL_LDFLAGS' in os.environ.keys(): 
-  gsl_ldflags = shlex.split (os.environ['GSL_LDFLAGS'])
-else:
-  try: 
-    gsl_ldflags = shlex.split (execute ([ 'gsl-config', '--libs' ], RuntimeError)[1])
-    gsl_ldflags = [ c for c in gsl_ldflags if c is not 0 ]
-  except:
-    log ('gsl-config not in PATH - assuming defaults for GSL_LDFLAGS\n\n')
-    
-
-try:
-  gsl_version = compile ('''
-#include <iostream>
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_matrix.h>
-
-int main() { 
-  std::cout << gsl_version; 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  return (M->size1 != 3);
-}
-''', cpp_flags + gsl_cflags, ld_flags + gsl_ldflags)
-  report (gsl_version + '\n')
-except CompileError:
-  error ('''compiler error!
-
-Use the GSL_CFLAGS environment variable to set the path to the GSL include files'
-For example:'
-     GSL_CFLAGS=-I/usr/local/include ./configure''')
-except LinkError:
-  error ('''linker error!'
-
-Use the GSL_LDFLAGS environment variable to set the path to the GSL libraries'
-and include any required libraries'
-For example:'
-     GSL_LDFLAGS="-L/usr/local/lib -lgsl -lgslcblas" ./configure''')
-
-ld_lib_flags += gsl_ldflags
-
-report ('Checking whether GSL compiles with -DHAVE_INLINE: ')
-try:
-  gsl_version = compile ('''
-#include <gsl/gsl_matrix.h>
-int main() { 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  gsl_matrix_set(M,0,0,3.14); 
-  return (gsl_matrix_get(M,0,0) != 3.14); 
-}''', cpp_flags + gsl_cflags + [ '-DHAVE_INLINE' ], ld_flags + gsl_ldflags)
-  gsl_cflags += [ '-DHAVE_INLINE' ]
-  report ('yes\n')
-except:
-  report ('no\n')
-
-
-
-
-# check for alternate cblas libraries:
-
-if 'CBLAS_LDFLAGS' in os.environ.keys(): 
-  cblas_ldflags = shlex.split (os.environ['CBLAS_LDFLAGS'])
-  flags = gsl_ldflags[:]
-  flags.remove ('-lgslcblas')
-  flags += cblas_ldflags;
-  report ('Checking whether GSL compiles with alternate C BLAS libraries ("' + ' '.join(cblas_ldflags) + '"): ')
-  try:
-    compile ('''
-#include <iostream>
-#include <gsl/gsl_version.h>
-#include <gsl/gsl_matrix.h>
-
-int main() { 
-  std::cout << gsl_version; 
-  gsl_matrix* M = gsl_matrix_alloc (3,3); 
-  return (M->size1 != 3);
-}
-''', cpp_flags + gsl_cflags, ld_flags + flags)
-    report ('yes\n')
-    gsl_ldflags = flags
-  except:
-    error ('''Error compiling and/or linking with alternative C BLAS libraries provided!
-Check whether the information provided by the CBLAS_LDFLAGS environment
-variable is correct.''')
-
-
-
-
-
-
-
 # shared library generation:
 if not noshared:
   report ('Checking shared library generation: ')
@@ -1197,8 +1087,7 @@ else:
   cache.write ('True\n')
   commit ('ld_lib', ld_lib);
   commit ('ld_lib_flags', ld_lib_flags);
-commit ('gsl_cflags', gsl_cflags)
-commit ('gsl_ldflags', gsl_ldflags)
+commit ('eigen_cflags', eigen_cflags)
 
 commit ('moc', moc)
 commit ('rcc', rcc)
