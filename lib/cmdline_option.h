@@ -133,7 +133,7 @@ namespace MR
             int def;
           } choices;
           struct {
-            int def, min, max;
+            int64_t def, min, max;
           } i;
           struct {
             default_type def, min, max;
@@ -194,7 +194,7 @@ namespace MR
         //! specifies that the argument should be an integer
         /*! if desired, a default value can be specified, along with a range of
          * allowed values. */
-        Argument& type_integer (int min = std::numeric_limits<int>::min(), int def = 0, int max = std::numeric_limits<int>::max()) {
+        Argument& type_integer (int64_t min = std::numeric_limits<int64_t>::min(), int64_t def = 0, int64_t max = std::numeric_limits<int64_t>::max()) {
           type = Integer;
           defaults.i.min = min;
           defaults.i.def = def;

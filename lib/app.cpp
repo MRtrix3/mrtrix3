@@ -947,9 +947,61 @@ namespace MR
     int64_t App::ParsedArgument::as_int () const
     {
       if (arg->type == Integer) {
-        const int retval = to<int> (p);
-        const int min = arg->defaults.i.min;
-        const int max = arg->defaults.i.max;
+
+        // Check to see if there are any alpha characters in here
+        // - If a single character at the end, use as integer multiplier
+        //   - Unless there's a dot point before the multiplier; in which case,
+        //     parse the number as a float, multiply, then cast to integer
+        // - If a single 'e' or 'E' in the middle, parse as float and convert to integer
+        size_t alpha_count = 0;
+        bool alpha_is_last = false;
+        bool contains_dotpoint = false;
+        char alpha_char = 0;
+        for (const char* c = p; *c; ++c) {
+          if (std::isalpha (*c)) {
+            ++alpha_count;
+            alpha_is_last = true;
+            alpha_char = *c;
+          } else {
+            alpha_is_last = false;
+          }
+          if (*c == '.')
+            contains_dotpoint = true;
+        }
+        if (alpha_count > 1)
+          throw Exception ("error converting string " + str(p) + " to integer: too many letters");
+        int64_t retval = 0;
+        if (alpha_count) {
+          if (alpha_is_last) {
+            std::string num (p);
+            const char postfix = num.back();
+            num.pop_back();
+            int64_t multiplier = 1.0;
+            switch (postfix) {
+              case 'k': case 'K': multiplier = 1000; break;
+              case 'm': case 'M': multiplier = 1000000; break;
+              case 'b': case 'B': multiplier = 1000000000; break;
+              case 't': case 'T': multiplier = 1000000000000; break;
+              default: throw Exception ("error converting string " + str(p) + " to integer: unexpected postfix \'" + postfix + "\'");
+            }
+            if (contains_dotpoint) {
+              const default_type prefix = to<default_type> (num);
+              retval = std::round (prefix * default_type(multiplier));
+            } else {
+              retval = to<int64_t> (num) * multiplier;
+            }
+          } else if (alpha_char == 'e' || alpha_char == 'E') {
+            const default_type as_float = to<default_type> (p);
+            retval = std::round (as_float);
+          } else {
+            throw Exception ("error converting string " + str(p) + " to integer: unexpected character");
+          }
+        } else {
+          retval = to<int64_t> (p);
+        }
+
+        const int64_t min = arg->defaults.i.min;
+        const int64_t max = arg->defaults.i.max;
         if (retval < min || retval > max) {
           std::string msg ("value supplied for ");
           if (opt) msg += std::string ("option \"") + opt->id;
