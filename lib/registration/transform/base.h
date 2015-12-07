@@ -50,25 +50,14 @@ namespace MR
         public:
 
           typedef default_type ParameterType;
-          #ifdef NONSYMREGISTRATION
-            Base (size_t number_of_parameters) :
+          Base (size_t number_of_parameters) :
             number_of_parameters(number_of_parameters),
             optimiser_weights (number_of_parameters) {
-              matrix.setIdentity();
-              translation.setZero();
+              trafo.matrix().setIdentity();
+              trafo_half.matrix().setIdentity();
+              trafo_half_inverse.matrix().setIdentity();
               centre.setZero();
-              offset.setZero();
-            }
-          #else
-            Base (size_t number_of_parameters) :
-              number_of_parameters(number_of_parameters),
-              optimiser_weights (number_of_parameters) {
-                trafo.matrix().setIdentity();
-                trafo_half.matrix().setIdentity();
-                trafo_half_inverse.matrix().setIdentity();
-                centre.setZero();
-            }
-          #endif
+          }
 
           template <class OutPointType, class InPointType>
           inline void transform (OutPointType& out, const InPointType& in) const {
@@ -157,7 +146,6 @@ namespace MR
             compute_halfspace_transformations();
           }
 
-        #ifndef NONSYMREGISTRATION
           void debug(){
             INFO("debug():");
             INFO("parameters of type " + str(DataType::from<ParameterType>().specifier()));
@@ -176,7 +164,6 @@ namespace MR
             VAR(half.transpose());
             VAR(half_inverse.transpose());
           }
-        #endif
 
           template <class ParamType, class VectorType>
           bool robust_estimate( VectorType& gradient,
@@ -193,26 +180,24 @@ namespace MR
 
         protected:
 
-            void compute_offset () {
-              Eigen::Vector3 offset = trafo.translation() + centre - trafo.linear() * centre;
-              trafo.translation() = offset;
-            }
+          void compute_offset () {
+            Eigen::Vector3 offset = trafo.translation() + centre - trafo.linear() * centre;
+            trafo.translation() = offset;
+          }
 
 
           void compute_halfspace_transformations(){
-            #ifndef NONSYMREGISTRATION
-              Eigen::Matrix<ParameterType, 4, 4> tmp;
-              tmp.setIdentity();
-              tmp.template block<3,4>(0,0) = trafo.matrix();
-              assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
-              assert(tmp.determinant() > 0);
-              tmp = tmp.sqrt().eval();
-              trafo_half.matrix() = tmp.template block<3,4>(0,0);
-              trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
-              assert(trafo.matrix().isApprox((trafo_half*trafo_half).matrix()));
-              assert(trafo.inverse().matrix().isApprox((trafo_half_inverse*trafo_half_inverse).matrix()));
-              // debug();
-            #endif
+            Eigen::Matrix<ParameterType, 4, 4> tmp;
+            tmp.setIdentity();
+            tmp.template block<3,4>(0,0) = trafo.matrix();
+            assert((tmp.template block<3,3>(0,0).isApprox(trafo.linear())));
+            assert(tmp.determinant() > 0);
+            tmp = tmp.sqrt().eval();
+            trafo_half.matrix() = tmp.template block<3,4>(0,0);
+            trafo_half_inverse.matrix() = trafo_half.inverse().matrix();
+            assert(trafo.matrix().isApprox((trafo_half*trafo_half).matrix()));
+            assert(trafo.inverse().matrix().isApprox((trafo_half_inverse*trafo_half_inverse).matrix()));
+            // debug();
             }
 
           size_t number_of_parameters;

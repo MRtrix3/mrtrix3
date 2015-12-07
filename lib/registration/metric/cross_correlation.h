@@ -222,10 +222,6 @@ namespace MR
               default_type precompute(ParamType& parameters) const {
                 INFO("precomputing cross correlation data...");
 
-#ifdef NONSYMREGISTRATION
-                throw Exception("cross correlation not compatible with non-symmetric metric");
-                return 0;
-#else
                 typedef decltype(parameters.im1_image) Im1Type;
                 typedef decltype(parameters.im2_image) Im2Type;
                 typedef decltype(parameters.im1_mask) Im1MaskType;
@@ -286,7 +282,6 @@ namespace MR
                 parameters.processed_image_interp.reset (new CCInterpType (parameters.processed_image));
                 // display<Image<float>>(parameters.processed_image);
                 return 0;
-#endif
               }
 
             template <class Params>

@@ -73,92 +73,56 @@ namespace MR
             gradient (overall_gradient.size()),
             overall_cost_function (overall_cost_function),
             overall_gradient (overall_gradient),
-            #ifdef NONSYMREGISTRATION
-              transform (params.im2_image) {
-            #else
-              transform (params.midway_image) {
-            #endif
-              gradient.setZero();
-          }
+            transform (params.midway_image) { gradient.setZero(); }
 
           ~ThreadKernel () {
-            // WARN("~ThreadKernel");
             overall_cost_function += cost_function;
-            // VAR(overall_gradient.transpose());
             overall_gradient += gradient;
           }
 
-          #ifdef NONSYMREGISTRATION
-            template <class U = MetricType>
-            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
-              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
-              Eigen::Vector3 im2_point = transform.voxel2scanner * voxel_pos;
-              if (params.im2_mask_interp) {
-                params.im2_mask_interp->scanner (im2_point);
-                if (!params.im2_mask_interp->value())
-                  return;
-              }
+          template <class U = MetricType>
+          void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
+            Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
-              Eigen::Vector3 im1_point;
+            Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
 
-              params.transformation.transform (im1_point, im2_point);
-              if (params.im1_mask_interp) {
-                params.im1_mask_interp->scanner (im1_point);
-                if (!params.im1_mask_interp->value())
-                  return;
-              }
-              assign_pos_of (iter).to (params.im2_image);
-              params.im1_image_interp->scanner (im1_point);
-              if (!(*params.im1_image_interp))
+            Eigen::Vector3 im2_point;
+            params.transformation.transform_half_inverse (im2_point, midway_point);
+            if (params.im2_mask_interp) {
+              params.im2_mask_interp->scanner (im2_point);
+              if (params.im2_mask_interp->value() < 0.5)
                 return;
-              cost_function += metric (params, im2_point, gradient);
             }
-          #else
-            template <class U = MetricType>
-            void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::no = 0) {
-              Eigen::Vector3 voxel_pos ((default_type)iter.index(0), (default_type)iter.index(1), (default_type)iter.index(2));
 
-              Eigen::Vector3 midway_point = transform.voxel2scanner * voxel_pos;
-
-
-              Eigen::Vector3 im2_point;
-              params.transformation.transform_half_inverse (im2_point, midway_point);
-              if (params.im2_mask_interp) {
-                params.im2_mask_interp->scanner (im2_point);
-                if (params.im2_mask_interp->value() < 0.5)
-                  return;
-              }
-
-              Eigen::Vector3 im1_point;
-              params.transformation.transform_half (im1_point, midway_point);
-              if (params.im1_mask_interp) {
-                params.im1_mask_interp->scanner (im1_point);
-                if (params.im1_mask_interp->value() < 0.5)
-                  return;
-              }
-
-              params.im1_image_interp->scanner (im1_point);
-              if (!(*params.im1_image_interp))
+            Eigen::Vector3 im1_point;
+            params.transformation.transform_half (im1_point, midway_point);
+            if (params.im1_mask_interp) {
+              params.im1_mask_interp->scanner (im1_point);
+              if (params.im1_mask_interp->value() < 0.5)
                 return;
+            }
 
-              params.im2_image_interp->scanner (im2_point);
-              if (!(*params.im2_image_interp))
-                return;
+            params.im1_image_interp->scanner (im1_point);
+            if (!(*params.im1_image_interp))
+              return;
+
+            params.im2_image_interp->scanner (im2_point);
+            if (!(*params.im2_image_interp))
+              return;
 
 #ifdef REGISTRATION_GRADIENT_DESCENT_DEBUG
-              Eigen::Vector3 also_im1_point;
-              params.transformation.transform (also_im1_point, im2_point);
-              if (!also_im1_point.isApprox(im1_point)){
-                VEC(im1_point.transpose());
-                VEC(also_im1_point.transpose());
-                VEC(im2_point.transpose());
-                VEC((also_im1_point - im1_point).transpose());
-                throw Exception ("this is not right");
-              }
-#endif
-              cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
+            Eigen::Vector3 also_im1_point;
+            params.transformation.transform (also_im1_point, im2_point);
+            if (!also_im1_point.isApprox(im1_point)){
+              VEC(im1_point.transpose());
+              VEC(also_im1_point.transpose());
+              VEC(im2_point.transpose());
+              VEC((also_im1_point - im1_point).transpose());
+              throw Exception ("this is not right");
             }
-          #endif
+#endif
+            cost_function += metric (params, im1_point, im2_point, midway_point, gradient);
+          }
 
           template <class U = MetricType>
             void operator() (const Iterator& iter, typename is_neighbourhood_metric<U>::yes = 0, typename use_processed_image<U>::no = 0) {

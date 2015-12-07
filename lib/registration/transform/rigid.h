@@ -221,10 +221,9 @@ namespace MR
             this->matrix = versor.matrix();
             this->translation = param_vector.tail(3);
             this->compute_offset();
-            #ifndef NONSYMREGISTRATION
-              this->compute_halfspace_transformations(); // TODO
-              throw Exception("rigid symmetric registration not implemented yet");
-            #endif
+
+            throw Exception("rigid symmetric registration not implemented yet");
+            this->compute_halfspace_transformations(); // TODO
 
             std::cout << param_vector.transpose() << std::endl;
             std::cout << versor.w() << " " << versor.x() << " " << versor.y() << " " << versor.z() << std::endl;

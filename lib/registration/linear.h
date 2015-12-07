@@ -23,7 +23,6 @@
 #ifndef __registration_linear_h__
 #define __registration_linear_h__
 
-// #define NONSYMREGISTRATION
 // #define DEBUGSYMMETRY
 #include <vector>
 
@@ -223,15 +222,13 @@ namespace MR
             // transformation file initialisation is done in mrregister.cpp
             // transform.debug();
 
-            #ifndef NONSYMREGISTRATION
               // define transfomations that will be applied to the image header when the common space is calculated
-              {
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
-                Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
-                init_transforms.push_back(init_trafo_2);
-                init_transforms.push_back(init_trafo_1);
-              }
-            #endif
+            {
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_2 = transform.get_transform_half();
+              Eigen::Transform<double, 3, Eigen::Projective> init_trafo_1 = transform.get_transform_half_inverse();
+              init_transforms.push_back(init_trafo_2);
+              init_transforms.push_back(init_trafo_1);
+            }
 
             typedef Im1ImageType MidwayImageType;
             typedef Im1ImageType ProcessedImageType;
@@ -259,18 +256,13 @@ namespace MR
             Eigen::Matrix<typename TransformType::ParameterType, Eigen::Dynamic, 1> optimiser_weights = transform.get_optimiser_weights();
 
             // get midway (affine average) space
-            #ifdef NONSYMREGISTRATION
-              auto midway_image = im1_image;
-              CONSOLE("non-symmetric metric");
-            #else
-              auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
-              default_type im2_res = 1.0;
-              std::vector<Header> headers;
-              headers.push_back(im2_image.original_header());
-              headers.push_back(im1_image.original_header());
-              auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
-              auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
-            #endif
+            auto padding = Eigen::Matrix<default_type, 4, 1>(0.0, 0.0, 0.0, 0.0);
+            default_type im2_res = 1.0;
+            std::vector<Header> headers;
+            headers.push_back(im2_image.original_header());
+            headers.push_back(im1_image.original_header());
+            auto midway_image_header = compute_minimum_average_header<default_type, Eigen::Transform<default_type, 3, Eigen::Projective>>(headers, im2_res, padding, init_transforms);
+            auto midway_image = Header::scratch (midway_image_header).get_image<typename Im1ImageType::value_type>();
 
             for (size_t level = 0; level < scale_factor.size(); level++) {
               {
@@ -279,65 +271,36 @@ namespace MR
                 CONSOLE ("multi-resolution level " + str(level + 1) + ", scale factor: " + str(scale_factor[level]) + st);
               }
 
-
-              // TODO: When we go symmetric, and change the gradient calculation to use the UniformBSline interpolation on the fly,
-              // lets ditch the resize of moving and "template", and just smooth. We can then get the value of the image as the same time as the gradient for little extra cost.
-              // Note that we will still need to resize the 'halfway' template grid. Maybe we should rename the input images to input1 and input2 to avoid confusion.
+              // TODO We will still need to resize the 'halfway' template grid.
 
 
-              #ifdef NONSYMREGISTRATION
-                Filter::Resize im1_resize_filter (im1_image);
-                im1_resize_filter.set_scale_factor (scale_factor[level]);
-                im1_resize_filter.set_interp_type (1);
-                auto im1_resized = Image<typename Im1ImageType::value_type>::scratch (im1_resize_filter);
-                Filter::Smooth im1_smooth_filter (im1_resized);
-                auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
-              #else
-                Filter::Smooth im1_smooth_filter (im1_image);
-                im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
-                auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
-              #endif
+              Filter::Smooth im1_smooth_filter (im1_image);
+              im1_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level]));
+              auto im1__smoothed = Image<typename Im1ImageType::value_type>::scratch (im1_smooth_filter);
 
-              #ifdef NONSYMREGISTRATION
-                Filter::Resize im2_resize_filter (im2_image);
-                im2_resize_filter.set_scale_factor (scale_factor[level]);
-                im2_resize_filter.set_interp_type (1);
-                auto im2_resized = Image<typename Im2ImageType::value_type>::scratch (im2_resize_filter);
-                Filter::Smooth im2_smooth_filter (im2_resized);
-                auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
-              #else
-                Filter::Smooth im2_smooth_filter (im2_image);
-                im2_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level])) ;
-                auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
-              #endif
+              Filter::Smooth im2_smooth_filter (im2_image);
+              im2_smooth_filter.set_stdev(smooth_factor[level] * 1.0 / (2.0 * scale_factor[level])) ;
+              auto im2__smoothed = Image<typename Im2ImageType::value_type>::scratch (im2_smooth_filter);
 
               Filter::Resize midway_resize_filter (midway_image);
               midway_resize_filter.set_scale_factor (scale_factor[level]);
               midway_resize_filter.set_interp_type (1);
-              auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter); //.get_image<uint32_t>();
+              auto midway_resized = Image<typename Im1ImageType::value_type>::scratch (midway_resize_filter);
 
               {
                 LogLevelLatch log_level (0);
                 midway_resize_filter (midway_image, midway_resized);
-
                 // TODO check this. Shouldn't we be smoothing then resizing? DR: No, smoothing automatically happens within resize. We can probably remove smoothing when using the bspline cubic gradient interpolator
-                #ifdef NONSYMREGISTRATION
-                  im1_resize_filter (im1_image, im1_resized);
-                  im1_smooth_filter (im1_resized, im1__smoothed);
-                  im2_resize_filter (im2_image, im2_resized);
-                  im2_smooth_filter (im2_resized, im2__smoothed);
-                #else
-                  im1_smooth_filter (im1_image, im1__smoothed);
-                  im2_smooth_filter (im2_image, im2__smoothed);
-                #endif
+                im1_smooth_filter (im1_image, im1__smoothed);
+                im2_smooth_filter (im2_image, im2__smoothed);
               }
 
               ParamType parameters (transform, im1__smoothed, im2__smoothed, midway_resized, im1_mask, im2_mask);
 
-              INFO ("loop density: " +str(loop_density[level]));
+              INFO ("loop density: " + str(loop_density[level]));
               parameters.loop_density = loop_density[level];
 
-              if (robust_estimate) INFO ("robust estimate");
+              if (robust_estimate) INFO ("using robust estimate");
               parameters.robust_estimate = robust_estimate;
 
               DEBUG ("neighbourhood kernel extent: " +str(kernel_extent));
