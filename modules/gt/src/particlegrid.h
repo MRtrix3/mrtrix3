@@ -86,7 +86,7 @@ namespace MR {
           
           void clear();
           
-          const ParticleVectorType* at(const int x, const int y, const int z) const;
+          const ParticleVectorType* at(const ssize_t x, const ssize_t y, const ssize_t z) const;
           
           Particle* getRandom(size_t& idx);
           

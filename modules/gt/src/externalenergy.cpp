@@ -66,13 +66,13 @@ namespace MR {
           nrows = grad.rows();
           DWI::Shells shells (grad);
           
-          if (props.resp_WM.rows() != shells.count())
+          if (size_t(props.resp_WM.rows()) != shells.count())
             FAIL("WM kernel size does not match the no. b-values in the image.");
-          for (size_t j = 0; j < props.resp_ISO.size(); j++) {
-            if (props.resp_ISO[j].size() != shells.count())
+          for (auto r : props.resp_ISO) {
+            if (size_t(r.size()) != shells.count())
               FAIL("Isotropic kernel size does not match the no. b-values in the image.");
           }
-                    
+          
           K.resize(nrows, ncols);
           K.setZero();
           Ak.resize(nrows, nf+1);
@@ -144,7 +144,7 @@ namespace MR {
         
         void ExternalEnergyComputer::acceptChanges()
         {
-          for (int k = 0; k != changes_vox.size(); ++k) 
+          for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(tod, eext);
             assert(!is_out_of_bounds(tod));
@@ -205,7 +205,7 @@ namespace MR {
           if (is_out_of_bounds(tod))
             return;
           t = w * d;
-          for (int k = 0; k != changes_vox.size(); ++k) {
+          for (size_t k = 0; k != changes_vox.size(); ++k) {
             if (changes_vox[k] == vox) {
               changes_tod[k] += t;
               return;
@@ -221,7 +221,7 @@ namespace MR {
         {
           dE = 0.0;
           double e;
-          for (int k = 0; k != changes_vox.size(); ++k) 
+          for (size_t k = 0; k != changes_vox.size(); ++k) 
           {
             assign_pos_of(changes_vox[k], 0, 3).to(dwi, eext);
             assert(!is_out_of_bounds(dwi));

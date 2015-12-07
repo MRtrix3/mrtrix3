@@ -87,7 +87,8 @@ namespace MR {
           
           transform_type T;
           
-          size_t lmax, nrows, ncols, nf;
+          int lmax; 
+          size_t nrows, ncols, nf;
           double beta, mu, dE;
           Eigen::MatrixXd K, Ak;
           Eigen::VectorXd y, t, d, fk;
