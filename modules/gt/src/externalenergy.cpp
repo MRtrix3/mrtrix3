@@ -44,6 +44,7 @@ namespace MR {
             beta(props.beta), mu(props.ppot*M_sqrt4PI), dE(0.0)
         {
           DEBUG("Initialise computation of external energy.");
+          
           // Create images --------------------------------------------------------------
           Header header (dwimage);
           header.datatype() = DataType::Float32;
@@ -51,9 +52,10 @@ namespace MR {
           tod = Image<float>::scratch(header, "TOD image");
           
           if (nf > 0) {
-            WARN("No isotropic response functions provided; using single-tissue white matter model.");
             header.size(3) = nf;
             fiso = Image<float>::scratch(header, "isotropic fractions");
+          } else {
+            WARN("No isotropic response functions provided; using single-tissue white matter model.");
           }
           
           header.set_ndim(3);
